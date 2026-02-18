@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Map Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; color: #333; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #eee; border-radius: 4px; font-weight: bold; }
+        .tab.active { background: #01579b; color: white; }
+        .graph-container { overflow: auto; min-height: 500px; display: none; }
+        .graph-container.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Software Map Viewer</h1>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('app')">Application</div>
+            <div class="tab" onclick="showTab('agentic')">Agentic Core</div>
+        </div>
+        
+        <div id="app-graph" class="graph-container active">
+            <div class="mermaid" id="app-mermaid"></div>
+        </div>
+        
+        <div id="agentic-graph" class="graph-container">
+            <div class="mermaid" id="agentic-mermaid"></div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+        async function loadGraphs() {
+            try {
+                const appResp = await fetch('../feature_graph_app.mmd');
+                const appMmd = await appResp.text();
+                document.getElementById('app-mermaid').innerHTML = appMmd;
+
+                const agenticResp = await fetch('../feature_graph_agentic.mmd');
+                const agenticMmd = await agenticResp.text();
+                document.getElementById('agentic-mermaid').innerHTML = agenticMmd;
+
+                await mermaid.run();
+            } catch (e) {
+                console.error("Failed to load Mermaid graphs", e);
+            }
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.graph-container').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'app') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('app-graph').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('agentic-graph').classList.add('active');
+            }
+        }
+
+        loadGraphs();
+    </script>
+</body>
+</html>
