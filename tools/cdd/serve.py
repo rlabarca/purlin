@@ -93,6 +93,15 @@ def get_feature_status(features_rel, features_abs):
             if file_mod_ts <= test_ts:
                 status = "TESTING"
 
+        if status == "COMPLETE" and CONFIG.get("critic_gate_blocking", False):
+            stem = os.path.splitext(fname)[0]
+            cs = get_feature_critic_status(stem, TESTS_DIR)
+            if cs == "FAIL":
+                if test_ts > 0 and file_mod_ts <= test_ts:
+                    status = "TESTING"
+                else:
+                    status = "TODO"
+
         if status == "COMPLETE":
             complete.append((fname, complete_ts))
         elif status == "TESTING":
@@ -123,6 +132,28 @@ def get_feature_test_status(feature_stem, tests_dir):
         return "FAIL"
 
 
+def get_feature_critic_status(feature_stem, tests_dir):
+    """Looks up tests/<feature_stem>/critic.json and returns status or None.
+
+    Returns "PASS", "WARN", "FAIL", or None (when no critic.json exists).
+    Derives status from the worse of spec_gate.status and implementation_gate.status.
+    Malformed JSON is treated as FAIL.
+    """
+    critic_path = os.path.join(tests_dir, feature_stem, "critic.json")
+    if not os.path.isfile(critic_path):
+        return None
+    try:
+        with open(critic_path, 'r') as f:
+            data = json.load(f)
+        spec_status = data.get("spec_gate", {}).get("status", "FAIL")
+        impl_status = data.get("implementation_gate", {}).get("status", "FAIL")
+        severity = {"PASS": 0, "WARN": 1, "FAIL": 2}
+        worse = max(spec_status, impl_status, key=lambda s: severity.get(s, 2))
+        return worse
+    except (json.JSONDecodeError, IOError, OSError):
+        return "FAIL"
+
+
 def aggregate_test_statuses(statuses):
     """Aggregates per-feature test statuses into a top-level status.
 
@@ -141,6 +172,7 @@ def generate_feature_status_json():
     complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
 
     all_test_statuses = []
+    all_critic_statuses = []
 
     def make_entry(fname):
         rel_path = os.path.normpath(os.path.join(FEATURES_REL, fname))
@@ -151,14 +183,21 @@ def generate_feature_status_json():
         if ts is not None:
             entry["test_status"] = ts
             all_test_statuses.append(ts)
+        cs = get_feature_critic_status(stem, TESTS_DIR)
+        if cs is not None:
+            entry["critic_status"] = cs
+            all_critic_statuses.append(cs)
         return entry
 
+    features = {
+        "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
+        "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
+        "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
+    }
+
     return {
-        "features": {
-            "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
-            "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
-            "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
-        },
+        "critic_status": aggregate_test_statuses(all_critic_statuses),
+        "features": features,
         "generated_at": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         "test_status": aggregate_test_statuses(all_test_statuses),
     }
@@ -191,13 +230,24 @@ def _test_badge_html(feature_stem):
     return f' <span class="{css}">[{ts}]</span>'
 
 
+def _critic_badge_html(feature_stem):
+    """Returns an HTML badge for per-feature critic status, or empty string."""
+    cs = get_feature_critic_status(feature_stem, TESTS_DIR)
+    if cs is None:
+        return ""
+    css_map = {"PASS": "st-pass", "WARN": "st-warn", "FAIL": "st-fail"}
+    css = css_map.get(cs, "st-fail")
+    return f' <span class="{css}">[CRITIC: {cs}]</span>'
+
+
 def _feature_list_html(features, css_class):
     """Renders a <ul> of feature names with status squares and test badges."""
     if not features:
         return ""
     items = ''.join(
         f'<li><span class="sq {css_class}"></span>{name}'
-        f'{_test_badge_html(os.path.splitext(name)[0])}</li>'
+        f'{_test_badge_html(os.path.splitext(name)[0])}'
+        f'{_critic_badge_html(os.path.splitext(name)[0])}</li>'
         for name in features
     )
     return f'<ul class="fl">{items}</ul>'
@@ -211,17 +261,27 @@ def generate_html():
 
     # Aggregate per-feature test statuses for the top-level badge
     all_test_statuses = []
+    all_critic_statuses = []
     all_fnames = [n for n, _ in complete_tuples] + testing + todo
     for fname in all_fnames:
         stem = os.path.splitext(fname)[0]
         ts = get_feature_test_status(stem, TESTS_DIR)
         if ts is not None:
             all_test_statuses.append(ts)
+        cs = get_feature_critic_status(stem, TESTS_DIR)
+        if cs is not None:
+            all_critic_statuses.append(cs)
     test_status = aggregate_test_statuses(all_test_statuses)
     test_msg = (
         "All features nominal" if test_status == "PASS"
         else "No test reports found" if test_status == "UNKNOWN"
         else f"{sum(1 for s in all_test_statuses if s == 'FAIL')} feature(s) failing"
+    )
+    critic_status = aggregate_test_statuses(all_critic_statuses)
+    critic_msg = (
+        "All features nominal" if critic_status == "PASS"
+        else "No critic reports found" if critic_status == "UNKNOWN"
+        else f"{sum(1 for s in all_critic_statuses if s == 'FAIL')} feature(s) failing"
     )
 
     # COMPLETE capping
@@ -270,6 +330,7 @@ h3{{font-size:11px;color:#888;margin:8px 0 2px;text-transform:uppercase;letter-s
 .test-bar{{margin-top:8px;padding-top:6px;border-top:1px solid #2A2F36}}
 .st-pass{{color:#32CD32;font-weight:bold}}
 .st-fail{{color:#FF4500;font-weight:bold}}
+.st-warn{{color:#FFA500;font-weight:bold}}
 .st-unknown{{color:#666;font-weight:bold}}
 .ctx{{background:#1A2028;border-radius:4px;padding:8px 10px}}
 .clean{{color:#32CD32}}
@@ -293,6 +354,10 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
     <div class="test-bar">
         <span class="st-{test_status.lower()}">{test_status}</span>
         <span class="dim">Tests: {test_msg}</span>
+    </div>
+    <div class="test-bar">
+        <span class="st-{critic_status.lower()}">{critic_status}</span>
+        <span class="dim">Critic: {critic_msg}</span>
     </div>
 </div>
 <div class="ctx">

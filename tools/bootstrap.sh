@@ -127,6 +127,45 @@ LAUNCHER_EOF
 
 chmod +x "$PROJECT_ROOT/run_claude_builder.sh"
 
+# --- QA Launcher ---
+cat > "$PROJECT_ROOT/run_claude_qa.sh" << 'LAUNCHER_EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAUNCHER_EOF
+
+cat >> "$PROJECT_ROOT/run_claude_qa.sh" << LAUNCHER_EOF
+CORE_DIR="$FRAMEWORK_VAR"
+LAUNCHER_EOF
+
+cat >> "$PROJECT_ROOT/run_claude_qa.sh" << 'LAUNCHER_EOF'
+
+# Fall back to local instructions/ if not a submodule consumer
+if [ ! -d "$CORE_DIR/instructions" ]; then
+    CORE_DIR="$SCRIPT_DIR"
+fi
+
+PROMPT_FILE=$(mktemp)
+trap "rm -f '$PROMPT_FILE'" EXIT
+
+cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
+printf "\n\n" >> "$PROMPT_FILE"
+cat "$CORE_DIR/instructions/QA_BASE.md" >> "$PROMPT_FILE"
+
+if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
+    printf "\n\n" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
+fi
+
+if [ -f "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" ]; then
+    printf "\n\n" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" >> "$PROMPT_FILE"
+fi
+
+claude --append-system-prompt-file "$PROMPT_FILE"
+LAUNCHER_EOF
+
+chmod +x "$PROJECT_ROOT/run_claude_qa.sh"
+
 ###############################################################################
 # 6. Project Scaffolding
 ###############################################################################
@@ -217,6 +256,7 @@ echo "  .agentic_devops/config.json   (tools_root: $TOOLS_ROOT_VALUE)"
 echo "  .agentic_devops/.upstream_sha (submodule SHA: ${CURRENT_SHA:0:12}...)"
 echo "  run_claude_architect.sh       (launcher)"
 echo "  run_claude_builder.sh         (launcher)"
+echo "  run_claude_qa.sh              (launcher)"
 [ ! -d "$PROJECT_ROOT/features" ] || echo "  features/                     (feature specs directory)"
 [ ! -f "$PROJECT_ROOT/PROCESS_HISTORY.md" ] || echo "  PROCESS_HISTORY.md            (process log)"
 echo ""
@@ -224,4 +264,5 @@ echo "Next steps:"
 echo "  1. Review and customize .agentic_devops/ override files."
 echo "  2. Run ./run_claude_architect.sh to start the Architect agent."
 echo "  3. Run ./run_claude_builder.sh to start the Builder agent."
+echo "  4. Run ./run_claude_qa.sh to start the QA agent."
 echo ""

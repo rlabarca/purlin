@@ -5,7 +5,8 @@ import json
 import sys
 import tempfile
 import shutil
-from serve import (get_feature_test_status, aggregate_test_statuses,
+from serve import (get_feature_test_status, get_feature_critic_status,
+                    aggregate_test_statuses,
                     get_feature_status, COMPLETE_CAP, extract_label,
                     generate_feature_status_json)
 
@@ -51,6 +52,54 @@ class TestPerFeatureTestStatus(unittest.TestCase):
     def test_extra_metadata_ignored(self):
         self._write_tests_json("detailed", {"status": "PASS", "tests": 10, "failures": 0})
         self.assertEqual(get_feature_test_status("detailed", self.test_dir), "PASS")
+
+
+class TestPerFeatureCriticStatus(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _write_critic_json(self, feature_stem, data):
+        d = os.path.join(self.test_dir, feature_stem)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "critic.json"), "w") as f:
+            json.dump(data, f)
+
+    def _write_raw(self, feature_stem, content):
+        d = os.path.join(self.test_dir, feature_stem)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "critic.json"), "w") as f:
+            f.write(content)
+
+    def test_critic_pass_status(self):
+        self._write_critic_json("my_feature", {
+            "spec_gate": {"status": "PASS"},
+            "implementation_gate": {"status": "PASS"}
+        })
+        self.assertEqual(get_feature_critic_status("my_feature", self.test_dir), "PASS")
+
+    def test_critic_warn_status(self):
+        self._write_critic_json("my_feature", {
+            "spec_gate": {"status": "WARN"},
+            "implementation_gate": {"status": "PASS"}
+        })
+        self.assertEqual(get_feature_critic_status("my_feature", self.test_dir), "WARN")
+
+    def test_critic_fail_status(self):
+        self._write_critic_json("my_feature", {
+            "spec_gate": {"status": "PASS"},
+            "implementation_gate": {"status": "FAIL"}
+        })
+        self.assertEqual(get_feature_critic_status("my_feature", self.test_dir), "FAIL")
+
+    def test_critic_missing_file_returns_none(self):
+        self.assertIsNone(get_feature_critic_status("nonexistent", self.test_dir))
+
+    def test_critic_malformed_json_returns_fail(self):
+        self._write_raw("bad_feature", "{ invalid json")
+        self.assertEqual(get_feature_critic_status("bad_feature", self.test_dir), "FAIL")
 
 
 class TestAggregateTestStatuses(unittest.TestCase):
@@ -215,6 +264,64 @@ class TestFeatureStatusJSON(unittest.TestCase):
             files = [item["file"] for item in items]
             self.assertEqual(files, sorted(files),
                              f"{status_key} array not sorted by file path")
+
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TESTS_DIR', '/tmp/test_tests')
+    @patch('serve.get_feature_status')
+    @patch('serve.get_feature_test_status')
+    @patch('serve.get_feature_critic_status')
+    @patch('serve.extract_label')
+    def test_per_feature_critic_status_included(self, mock_label, mock_critic, mock_test, mock_features):
+        mock_features.return_value = ([], [], ["feat_with_critic.md"])
+        mock_label.return_value = "Label"
+        mock_test.return_value = None
+
+        def critic_side_effect(stem, _tests_dir):
+            if stem == "feat_with_critic":
+                return "WARN"
+            return None
+        mock_critic.side_effect = critic_side_effect
+
+        data = generate_feature_status_json()
+        entry = data["features"]["todo"][0]
+        self.assertEqual(entry["critic_status"], "WARN")
+
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TESTS_DIR', '/tmp/test_tests')
+    @patch('serve.get_feature_status')
+    @patch('serve.get_feature_test_status')
+    @patch('serve.get_feature_critic_status')
+    @patch('serve.extract_label')
+    def test_per_feature_critic_status_omitted(self, mock_label, mock_critic, mock_test, mock_features):
+        mock_features.return_value = ([], [], ["feat_no_critic.md"])
+        mock_label.return_value = "Label"
+        mock_test.return_value = None
+        mock_critic.return_value = None
+
+        data = generate_feature_status_json()
+        entry = data["features"]["todo"][0]
+        self.assertNotIn("critic_status", entry)
+
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TESTS_DIR', '/tmp/test_tests')
+    @patch('serve.get_feature_status')
+    @patch('serve.get_feature_test_status')
+    @patch('serve.get_feature_critic_status')
+    @patch('serve.extract_label')
+    def test_aggregate_critic_status(self, mock_label, mock_critic, mock_test, mock_features):
+        mock_features.return_value = ([], [], ["good.md", "bad.md"])
+        mock_label.return_value = "Label"
+        mock_test.return_value = None
+
+        def critic_side_effect(stem, _tests_dir):
+            return "PASS" if stem == "good" else "FAIL"
+        mock_critic.side_effect = critic_side_effect
+
+        data = generate_feature_status_json()
+        self.assertEqual(data["critic_status"], "FAIL")
 
     @patch('serve.FEATURES_REL', 'features')
     @patch('serve.FEATURES_ABS', '/tmp/test_features')
