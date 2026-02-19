@@ -9,6 +9,12 @@ This log tracks the evolution of the **Agentic DevOps Core** framework itself. T
 - **Scenario Updated:** "Agent Reads Feature Status" scenario rewritten to specify the config-driven port discovery and API call protocol.
 - **Commit Mandate Broadened:** Renamed "Instruction Commit Mandate" to "Commit Mandate" in both Architect instruction files (active and sample). Now covers ALL Architect-owned artifacts (specs, policies, instructions, process history, scripts), not just instruction files.
 
+## [2026-02-18] Manual Verification Protocol for Web UIs
+- **Problem:** Automated tests cannot meaningfully validate web dashboard rendering and visual layout. The Builder was attempting to start servers and scrape HTML.
+- **Scenario Classification:** Both CDD Monitor and Software Map feature specs now separate scenarios into "Automated Scenarios" (API/data, tested by Builder) and "Manual Scenarios (Human Verification Required)" (web UI, verified by User).
+- **Server Startup Prohibition:** Added rule to active `BUILDER_INSTRUCTIONS.md` (Section 5): the Builder MUST NOT start DevOps tool servers. The Builder must instruct the User to start them and provide the exact command. This rule is specific to agentic-dev-core and is NOT propagated to the sample template.
+- **Test Scope Notes:** Added explicit "Test Scope" implementation notes to both feature specs defining the boundary between automated and manual verification.
+
 ## [2026-02-18] Builder: Feature Status Lifecycle Protocol
 - **Status Lifecycle Table:** Added explicit Section 2 to `BUILDER_INSTRUCTIONS.md` defining the TODO/TESTING/COMPLETE state machine and the git commit tags that drive each transition.
 - **Critical Rule:** Documented that any feature file edit (including Implementation Notes) resets status to TODO. The status tag commit MUST be the last commit touching the feature file.

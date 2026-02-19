@@ -60,3 +60,4 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
 ## 5. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
+*   **Server Startup Prohibition:** You MUST NOT start DevOps tool servers (CDD Monitor, Software Map, etc.). If a server needs to be running for verification, instruct the User to start it and provide the exact command (e.g., `tools/cdd/start.sh`).

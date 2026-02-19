@@ -60,14 +60,10 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 
 ## 3. Scenarios
 
-### Scenario: Domain Isolation
-    Given a feature completion in the Agentic domain
-    When the CDD monitor refreshes
-    Then the feature appears in the COMPLETE section of the Agentic column
-    And it does NOT appear in the Application column
-    And feature_status.json reflects the updated status
+### Automated Scenarios
+These scenarios are validated by the Builder's automated test suite.
 
-### Scenario: Agent Reads Feature Status via API
+#### Scenario: Agent Reads Feature Status via API
     Given the CDD server is running
     When an agent needs to check feature queue status
     Then the agent reads cdd_port from .agentic_devops/config.json
@@ -75,13 +71,35 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     And the agent receives a valid JSON response
     And the agent does NOT scrape the web dashboard or guess ports
 
-### Scenario: Zero-Queue Verification
+#### Scenario: Domain Isolation in JSON Output
+    Given a feature completion in the Agentic domain
+    When GET /status.json is called
+    Then the feature appears in the "agentic" domain of the JSON response
+    And it does NOT appear in the "application" domain
+
+#### Scenario: Zero-Queue Verification
     Given a release is being prepared
     When the Architect checks the Zero-Queue Mandate
     Then the Architect calls GET /status.json on the configured CDD port
     And verifies that the "todo" and "testing" arrays are empty in both domains
 
+### Manual Scenarios (Human Verification Required)
+These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
+
+#### Scenario: Web Dashboard Domain Display
+    Given the CDD server is running
+    When the User opens the web dashboard in a browser
+    Then two distinct columns are visible: "Application" and "Agentic Core"
+    And each column displays TODO, TESTING, and COMPLETE sections
+    And status indicators use distinct color coding per state
+
+#### Scenario: Web Dashboard Auto-Refresh
+    Given the User is viewing the web dashboard
+    When a feature status changes (e.g., a status commit is made)
+    Then the dashboard reflects the updated status within 5 seconds
+
 ## 4. Implementation Notes
+*   **Test Scope:** Automated tests MUST only cover the `/status.json` API endpoint and the underlying status logic. The web dashboard HTML rendering and visual layout MUST NOT be tested through automated tests. The Builder MUST NOT start the CDD server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/cdd/start.sh`) and visually verify the dashboard.
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
 *   **Test Isolation:** The Agentic aggregator scans `tools/*/test_status.json` and treats malformed JSON as FAIL.
 *   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.

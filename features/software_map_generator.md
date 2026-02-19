@@ -53,26 +53,39 @@ Generates a visual and machine-readable representation of the project's feature 
 
 ## 3. Scenarios
 
-### Scenario: Update Feature Graph
+### Automated Scenarios
+These scenarios are validated by the Builder's automated test suite.
+
+#### Scenario: Update Feature Graph
     Given a new feature file is added with prerequisites
     When the software map generator is run
-    Then the dependency graph is updated
-    And the new feature appears in the interactive view
-    And dependency_graph.json is regenerated with the new feature
+    Then dependency_graph.json is regenerated with the new feature
+    And the Mermaid export files are regenerated
 
-### Scenario: Reactive Update on Feature Change
+#### Scenario: Reactive Update on Feature Change
     Given the software map server is running
     When a feature file is created, modified, or deleted
     Then the tool automatically regenerates the Mermaid exports
     And the tool automatically regenerates dependency_graph.json
 
-### Scenario: Agent Reads Dependency Graph
+#### Scenario: Agent Reads Dependency Graph
     Given dependency_graph.json exists at tools/software_map/dependency_graph.json
     When an agent needs to query the dependency graph
     Then the agent reads dependency_graph.json directly
     And the agent does NOT use the web UI or parse Mermaid files
 
+### Manual Scenarios (Human Verification Required)
+These scenarios MUST NOT be validated through automated tests. The Builder MUST NOT start the server. The Builder must instruct the User to start the server (`tools/software_map/start.sh`) and verify the web UI visually.
+
+#### Scenario: Interactive Web View
+    Given the software map server is running
+    When the User opens the web UI in a browser
+    Then a filterable, searchable tree of features is displayed
+    And prerequisite links are rendered as graph edges
+    And the view reflects the current state of dependency_graph.json
+
 ## 4. Implementation Notes
+*   **Test Scope:** Automated tests MUST only cover graph generation, cycle detection, and `dependency_graph.json` output. The web UI MUST NOT be tested through automated tests. The Builder MUST NOT start the server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/software_map/start.sh`) and visually verify the web view.
 *   **Acyclic Mandate:** The tool is the primary enforcer of the acyclic graph rule defined in the workflow.
 *   **Agent Interface:** `dependency_graph.json` is the single machine-readable contract. All agent tooling (Context Clear Protocol, Dependency Integrity checks, Release Protocol) MUST read this file.
 *   **Cycle Detection:** Uses DFS with 3-color marking (WHITE/GRAY/BLACK). External prerequisites (not in the features directory) are skipped without triggering false positives.
