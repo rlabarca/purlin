@@ -5,26 +5,24 @@
 
 
 ## 1. Overview
-The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files across both the Application and Agentic (Workflow) domains. Provides both a web dashboard for human review and a canonical JSON output for agent consumption.
+The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files in `features/`. Provides both a web dashboard for human review and a canonical JSON output for agent consumption.
 
 ## 2. Requirements
 
-### 2.1 Domain Separation
-*   **Split View:** The UI must display two distinct columns/sections: "Application" and "Agentic Core".
-*   **Path Awareness:** The monitor must scan the host project's `features/` for Application status and the core framework's `features/` for Agentic status.
+### 2.1 Feature Scanning
+*   **Path Awareness:** The monitor must scan the project's `features/` directory for all feature files.
 *   **Status Detection:** Status is derived from a combination of file modification timestamps (for [TODO] detection) and source control history/tags.
 
 ### 2.2 UI & Layout
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
-*   **COMPLETE List Capping:** The "COMPLETE" section for each domain should be limited to the most recent items.
+*   **COMPLETE List Capping:** The "COMPLETE" section should be limited to the most recent items.
 *   **Status Indicators:** Use distinct color coding for TODO, TESTING, and COMPLETE states.
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
 
 ### 2.3 Verification Signals
-*   **Application Tests:** Monitor the primary project's test summary.
-*   **Agentic Tests (Standardized Protocol):**
+*   **Test Status (Standardized Protocol):**
     *   The monitor must scan all subdirectories in `tools/` for a file named `test_status.json`.
-    *   **Aggregation:** If ANY `test_status.json` reports a failure, the "Agentic Test Status" must show **FAIL**.
+    *   **Aggregation:** If ANY `test_status.json` reports a failure, the test status must show **FAIL**.
     *   **Success:** Only shows **PASS** if all existing status files report success.
 
 ### 2.4 Machine-Readable Output (Agent Interface)
@@ -34,23 +32,11 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     ```json
     {
       "generated_at": "<ISO 8601 timestamp>",
-      "domains": {
-        "application": {
-          "test_status": "PASS | FAIL | UNKNOWN",
-          "features": {
-            "todo": [{"file": "<relative path>", "label": "<label>"}],
-            "testing": [{"file": "<relative path>", "label": "<label>"}],
-            "complete": [{"file": "<relative path>", "label": "<label>"}]
-          }
-        },
-        "agentic": {
-          "test_status": "PASS | FAIL | UNKNOWN",
-          "features": {
-            "todo": [...],
-            "testing": [...],
-            "complete": [...]
-          }
-        }
+      "test_status": "PASS | FAIL | UNKNOWN",
+      "features": {
+        "todo": [{"file": "<relative path>", "label": "<label>"}],
+        "testing": [{"file": "<relative path>", "label": "<label>"}],
+        "complete": [{"file": "<relative path>", "label": "<label>"}]
       }
     }
     ```
@@ -71,26 +57,19 @@ These scenarios are validated by the Builder's automated test suite.
     And the agent receives a valid JSON response
     And the agent does NOT scrape the web dashboard or guess ports
 
-#### Scenario: Domain Isolation in JSON Output
-    Given a feature completion in the Agentic domain
-    When GET /status.json is called
-    Then the feature appears in the "agentic" domain of the JSON response
-    And it does NOT appear in the "application" domain
-
 #### Scenario: Zero-Queue Verification
     Given a release is being prepared
     When the Architect checks the Zero-Queue Mandate
     Then the Architect calls GET /status.json on the configured CDD port
-    And verifies that the "todo" and "testing" arrays are empty in both domains
+    And verifies that the "todo" and "testing" arrays are empty
 
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
-#### Scenario: Web Dashboard Domain Display
+#### Scenario: Web Dashboard Display
     Given the CDD server is running
     When the User opens the web dashboard in a browser
-    Then two distinct columns are visible: "Application" and "Agentic Core"
-    And each column displays TODO, TESTING, and COMPLETE sections
+    Then the feature list is visible with TODO, TESTING, and COMPLETE sections
     And status indicators use distinct color coding per state
 
 #### Scenario: Web Dashboard Auto-Refresh
@@ -101,10 +80,9 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 ## 4. Implementation Notes
 *   **Test Scope:** Automated tests MUST only cover the `/status.json` API endpoint and the underlying status logic. The web dashboard HTML rendering and visual layout MUST NOT be tested through automated tests. The Builder MUST NOT start the CDD server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/cdd/start.sh`) and visually verify the dashboard.
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
-*   **Test Isolation:** The Agentic aggregator scans `tools/*/test_status.json` and treats malformed JSON as FAIL.
+*   **Test Isolation:** The test aggregator scans `tools/*/test_status.json` and treats malformed JSON as FAIL.
 *   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.
 *   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND `file_mod_ts <= complete_ts`. Any file edit after the completion commit resets status to `TODO` (the "Status Reset" protocol).
 *   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.
 *   **Agent Interface:** The `/status.json` API endpoint is the primary machine-readable contract. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST use `curl http://localhost:<cdd_port>/status.json`. The disk file `feature_status.json` is a secondary artifact. Agents MUST read the port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and MUST NOT hardcode or guess port numbers.
-*   **Path Normalization (Meta Mode):** In meta mode, `os.path.relpath` resolves to `.`, making `features_rel` = `./features`. The `f_path` used for git grep MUST be normalized with `os.path.normpath()` to strip the `./` prefix, otherwise status commit patterns like `[Complete features/file.md]` won't match `./features/file.md`.
-*   **Two-Column Layout (Meta Mode):** In meta mode, both Application and Agentic Core columns MUST be present in DOMAINS so the HTML dashboard always renders two columns. Both point to the same `features/` directory. The Application domain is added first with meta-appropriate paths, then the Agentic Core domain as usual.
+*   **Path Normalization:** `os.path.relpath` may resolve to `.`, making `features_rel` = `./features`. The `f_path` used for git grep MUST be normalized with `os.path.normpath()` to strip the `./` prefix, otherwise status commit patterns like `[Complete features/file.md]` won't match `./features/file.md`.

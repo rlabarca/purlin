@@ -37,7 +37,7 @@ Instead of separate documentation or global logs, implementation discoveries, ha
     *   **Builder:** `.agentic_devops/BUILDER_INSTRUCTIONS.md`
 
 3.  **Customize Config:**
-    Edit `.agentic_devops/config.json` to set your preferred ports or enable Meta-Mode (`is_meta_agentic_dev: true`) if developing the framework itself.
+    Edit `.agentic_devops/config.json` to set your preferred ports for the CDD Monitor and Software Map tools.
 
 ## Directory Structure
 

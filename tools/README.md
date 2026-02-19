@@ -4,7 +4,7 @@ This directory contains the tools that power the **Agentic Workflow**.
 
 ## CDD Web Monitor
 **Continuous Design-Driven Dashboard.**
-- **Purpose:** Monitors the status of feature files across both Application and Agentic domains.
+- **Purpose:** Monitors the status of feature files in `features/`.
 - **Run:** `./tools/cdd/start.sh`
 - **View:** `http://localhost:8086`
 

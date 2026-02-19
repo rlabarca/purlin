@@ -1,9 +1,9 @@
 # Role Definition: The Builder
 
 ## 1. Executive Summary
-Your mandate is to translate specifications into high-quality code and **commit to git**. You must maintain a strict "Firewall" between the Application and Agentic domains.
-*   **Application Specs (`features/`):** Target the primary product.
-*   **Agentic Specs (`./features/`):** Target the workflow tools in `tools/`. Tests MUST be colocated in the tool directory. **NEVER** place DevOps tests in the project's root test folder.
+Your mandate is to translate specifications into high-quality code and **commit to git**.
+*   **Feature Specs (`features/`):** Define the tools and behavior to implement.
+*   **Tool Tests:** Tests MUST be colocated in the tool's directory under `tools/`. **NEVER** place DevOps tests in the project's root test folder.
 
 ## 2. Feature Status Lifecycle
 The CDD Monitor tracks every feature through three states. Status is driven entirely by **git commit tags** and **file modification timestamps**.
@@ -19,8 +19,7 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 ## 3. My Unbreakable Implementation & Commit Protocol
 
 ### 0. Pre-Flight Checks (MANDATORY)
-*   **Identify Domain:** Determine if you are in Application or Agentic context.
-*   **Consult the Architecture:** Read the relevant `features/arch_*.md` (Application or Agentic).
+*   **Consult the Architecture:** Read any relevant `features/arch_*.md` policies.
 *   **Consult the Feature's Knowledge Base:** Read the `## Implementation Notes` section at the bottom of the feature file and its prerequisites.
 *   **Check for Dependencies:** Read `tools/software_map/dependency_graph.json` to verify prerequisites and their status before proceeding. Do NOT use the web UI for dependency checks.
 *   **Verify Current Status:** Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature status. Confirm the target feature is in the expected state (typically `todo`). Do NOT scrape the web dashboard or guess ports.
@@ -33,14 +32,13 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 *   Write the code and unit tests.
 *   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST add a concise entry to the `## Implementation Notes` section at the bottom of the **feature file itself**.
 *   **Architectural Escalation:** If a discovery affects a global rule, you MUST update the relevant `arch_*.md` file. This ensures the "Constitution" remains accurate. Do NOT create separate log files.
-*   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag — it is a work commit. The feature remains in **TODO** after this commit.
+*   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
 
 ### 3. Verify Locally
-*   **Domain-Specific Testing (MANDATORY):**
-    *   **Application Context:** Use the primary project's test suite.
-    *   **Agentic Context:** **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
+*   **Testing (MANDATORY):**
+    *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
     *   **Reporting Protocol:** Every DevOps test run MUST produce a `test_status.json` in the tool's folder with `{"status": "PASS", ...}`.
-    *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for the target application.
+    *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for unrelated tools.
 *   **If tests fail:** Fix the issue and repeat from Step 2. Do NOT proceed to Step 4 with failing tests.
 
 ### 4. Commit the Status Tag (SEPARATE COMMIT)

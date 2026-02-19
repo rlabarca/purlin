@@ -2,6 +2,20 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-18] Remove Dual-Domain Separation (Single-Project Simplification)
+- **Problem:** The CDD Monitor and Software Map specs carried a dual-domain model ("Application" vs "Agentic Core") with a "Meta Mode" workaround for when both domains pointed to the same `features/` directory. With agentic-dev-core tracked as its own standalone project, this separation was vestigial complexity.
+- **Spec Changes:**
+    - `features/cdd_status_monitor.md`: Removed Section 2.1 "Domain Separation", removed `domains` wrapper from JSON schema (flat `features` object), removed "Domain Isolation" scenario, simplified UI to single feature list, removed Meta Mode and Two-Column Layout implementation notes.
+    - `features/software_map_generator.md`: Removed `domains` wrapper from JSON schema (flat `features` array), removed Meta Mode implementation note.
+- **Instruction Updates:**
+    - `.agentic_devops/ARCHITECT_INSTRUCTIONS.md`: Removed Application/Agentic domain language from Source of Truth, Feature Design, Context Clear Protocol. Renamed "Dual-Domain Release Protocol" to "Release Protocol" and simplified verification steps.
+    - `.agentic_devops/BUILDER_INSTRUCTIONS.md`: Removed Application/Agentic domain firewall from Executive Summary and Pre-Flight Checks. Simplified testing protocol to remove domain-specific branching.
+- **Supporting Files:**
+    - `HOW_WE_WORK.md`: Removed Application/Agentic domain distinction from Core Philosophy.
+    - `tools/README.md`: Simplified CDD description.
+    - `.agentic_devops/config.json`: Removed `is_meta_agentic_dev` flag (no longer needed).
+- **Impact:** Both feature specs reset to `[TODO]`. Builder must re-implement to match simplified schemas.
+
 ## [2026-02-18] CDD Monitor: JSON API Endpoint for Agent Status Queries
 - **Problem:** Agents were reading `tools/cdd/feature_status.json` from disk, but this file is only generated as a side-effect of web dashboard requests. When no dashboard request has been made, the file does not exist, causing agents to fail and resort to port-scanning.
 - **Spec Change:** Added `/status.json` API endpoint requirement to `features/cdd_status_monitor.md`. This endpoint serves fresh JSON directly with `Content-Type: application/json`. The disk file remains as a secondary artifact.

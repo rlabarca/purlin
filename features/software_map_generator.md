@@ -10,7 +10,7 @@ Generates a visual and machine-readable representation of the project's feature 
 ## 2. Requirements
 
 ### 2.1 Core Graph Generation
-*   **Tree Generation:** Recursively parses `> Prerequisite:` links in all feature files.
+*   **Tree Generation:** Recursively parses `> Prerequisite:` links in all feature files in `features/`.
 *   **Cycle Detection:** Must identify and flag circular dependencies.
 *   **Mermaid Export:** Generates Mermaid diagrams for documentation and the interactive web view.
 
@@ -20,21 +20,14 @@ Generates a visual and machine-readable representation of the project's feature 
     ```json
     {
       "generated_at": "<ISO 8601 timestamp>",
-      "domains": {
-        "application": {
-          "features": [
-            {
-              "file": "<relative path to feature file>",
-              "label": "<Label from metadata>",
-              "category": "<Category from metadata>",
-              "prerequisites": ["<relative path>", "..."]
-            }
-          ]
-        },
-        "agentic": {
-          "features": [...]
+      "features": [
+        {
+          "file": "<relative path to feature file>",
+          "label": "<Label from metadata>",
+          "category": "<Category from metadata>",
+          "prerequisites": ["<relative path>", "..."]
         }
-      },
+      ],
       "cycles": ["<description of any detected cycles>"],
       "orphans": ["<files with no prerequisite links>"]
     }
@@ -43,7 +36,7 @@ Generates a visual and machine-readable representation of the project's feature 
 *   **Agent Contract:** This file is the ONLY interface agents should use to query the dependency graph. Agents MUST NOT scrape the web UI or parse Mermaid files.
 
 ### 2.3 Reactive Generation
-*   **File Watch Mode:** When the web server is running (`start.sh`), the tool MUST watch `features/` directories for file changes (create, modify, delete).
+*   **File Watch Mode:** When the web server is running (`start.sh`), the tool MUST watch `features/` for file changes (create, modify, delete).
 *   **Auto-Regenerate:** When a change is detected, the tool MUST automatically re-run the graph generation, updating both the Mermaid exports and `dependency_graph.json`.
 *   **Manual Trigger:** Running `generate_tree.py` directly MUST always regenerate all outputs regardless of whether changes were detected.
 
@@ -112,6 +105,5 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 *   **Acyclic Mandate:** The tool is the primary enforcer of the acyclic graph rule defined in the workflow.
 *   **Agent Interface:** `dependency_graph.json` is the single machine-readable contract. All agent tooling (Context Clear Protocol, Dependency Integrity checks, Release Protocol) MUST read this file.
 *   **Cycle Detection:** Uses DFS with 3-color marking (WHITE/GRAY/BLACK). External prerequisites (not in the features directory) are skipped without triggering false positives.
-*   **File Watch Mode:** `serve.py` polls `features/` directories every 2 seconds using `os.scandir` mtime snapshots. No external dependencies required (no `watchdog`).
+*   **File Watch Mode:** `serve.py` polls `features/` directory every 2 seconds using `os.scandir` mtime snapshots. No external dependencies required (no `watchdog`).
 *   **Deterministic JSON:** `dependency_graph.json` uses `sort_keys=True` on `json.dump` and all arrays are pre-sorted by filename/path before serialization.
-*   **Meta Mode:** When `is_meta_agentic_dev: true`, both Application and Agentic domains resolve to the same `features/` directory. This is expected - the core framework IS the project.

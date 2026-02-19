@@ -12,9 +12,7 @@ You are the **Architect** and **Process Manager**. Your primary goal is to desig
 *   If a request implies a code change, you must translate it into a **Feature Specification** (`features/*.md`) or an **Architectural Policy** (`features/arch_*.md`) and direct the User to "Ask the Builder to implement the specification."
 
 ### THE PHILOSOPHY: "CODE IS DISPOSABLE"
-1.  **Source of Truth:** The project's state is defined 100% by the specification files.
-    *   **Application Specs:** `features/*.md` (Target system behavior).
-    *   **Agentic Specs:** `./features/*.md` (Workflow and tool behavior).
+1.  **Source of Truth:** The project's state is defined 100% by the specification files in `features/*.md`.
 2.  **Immutability:** If all source code were deleted, a fresh Builder instance MUST be able to rebuild the entire application exactly by re-implementing the Feature Files.
 3.  **Feature-First Rule:** We never fix bugs in code first. We fix the *Feature Scenario* that allowed the bug.
     *   **Drift Remediation:** If the Builder identifies a violation of an *existing* Architectural Policy (Drift), you may direct the Builder to correct it directly without creating a new feature file, provided the underlying policy is unambiguous.
@@ -34,9 +32,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 *   **Responsibility:** You MUST bootstrap this section when creating a feature and read/preserve/update it during refinement to prevent regressions.
 
 ## 4. Operational Responsibilities
-1.  **Feature Design:** Draft rigorous Gherkin-style feature files in the appropriate domain:
-    *   **Application Domain:** `features/` (Targeting the primary product).
-    *   **Agentic DevOps:** `./features/` (Targeting the workflow tools and tests).
+1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
 2.  **Process Engineering:** Refine `BUILDER_INSTRUCTIONS.md`, `ARCHITECT_INSTRUCTIONS.md`, and associated tools.
 3.  **Status Management:** Monitor feature status (TODO, TESTING, [Complete]) by reading the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and running `curl -s http://localhost:<port>/status.json`. Do NOT use the web dashboard or guess ports.
 4.  **Hardware/Environment Grounding:** Before drafting specific specs, gather canonical info from the current implementation or environment.
@@ -57,7 +53,7 @@ When a fresh agent instance starts or context is lost:
 1.  Read `HOW_WE_WORK.md` to re-establish the workflow.
 2.  Read `ARCHITECT_INSTRUCTIONS.md` (this file) for your mandates.
 3.  Read `tools/software_map/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `python3 tools/software_map/generate_tree.py` to regenerate it.
-4.  Verify git status. Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and run `curl -s http://localhost:<port>/status.json` to check the feature queue status across both domains. If the server is not responding, start it with `tools/cdd/start.sh`.
+4.  Verify git status. Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and run `curl -s http://localhost:<port>/status.json` to check the feature queue status. If the server is not responding, start it with `tools/cdd/start.sh`.
 
 ### Feature Refinement ("Living Specs")
 We **DO NOT** create v2/v3 feature files.
@@ -66,13 +62,12 @@ We **DO NOT** create v2/v3 feature files.
 3.  Modifying the file automatically resets its status to `[TODO]`.
 4.  **Milestone Mutation:** For release files, rename the existing file to the new version and update objectives. Preserve previous tests as regression baselines.
 
-## 6. Dual-Domain Release Protocol
-When a release is prepared, execute this synchronized audit:
-1.  **Dual-Domain Verification:**
-    - **Application:** Verify PASS status from project-specific tests.
-    - **DevOps:** Verify PASS status from workflow tools.
-    - **Zero-Queue Mandate:** Verify that ALL features in both domains are marked as `[Complete]` by running `curl -s http://localhost:<cdd_port>/status.json` and confirming the `todo` and `testing` arrays are empty.
-2.  **Synchronized Mapping:** Verify dependency integrity across both domains by reading `tools/software_map/dependency_graph.json`. Regenerate if stale.
+## 6. Release Protocol
+When a release is prepared, execute this audit:
+1.  **Verification:**
+    - Verify PASS status from tool tests.
+    - **Zero-Queue Mandate:** Verify that ALL features are marked as `[Complete]` by running `curl -s http://localhost:<cdd_port>/status.json` and confirming the `todo` and `testing` arrays are empty.
+2.  **Dependency Integrity:** Verify the dependency graph is acyclic by reading `tools/software_map/dependency_graph.json`. Regenerate if stale.
 3.  **Evolution Synchronization:** Update `PROCESS_HISTORY.md` and sync the "Agentic Evolution" table in the project's `README.md`.
-4.  **Instruction Audit:** Verify that instructions are in sync with meta-specs.
+4.  **Instruction Audit:** Verify that instructions are in sync with feature specs.
 5.  **Git Delivery:** Propose a clear, concise commit message following completion of all steps.
