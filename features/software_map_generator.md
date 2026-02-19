@@ -2,7 +2,7 @@
 
 > Label: "Tool: Software Map"
 > Category: "DevOps Tools"
-> Prerequisite: HOW_WE_WORK.md
+
 
 ## 1. Overview
 Generates a visual and machine-readable representation of the project's feature dependency graph. Provides both a web UI for human review and a canonical JSON output for agent consumption.
