@@ -12,16 +12,20 @@ The Critic tool is the automated enforcement engine for the Critic Quality Gate 
 ### 2.1 Spec Gate (Pre-Implementation Validation)
 The Spec Gate validates that a feature specification is structurally complete and properly formed. It runs without requiring any implementation code.
 
+Architectural policy files (`arch_*.md`) receive a REDUCED Spec Gate evaluation. They are checked only for section presence of Purpose and Invariants (not Overview/Requirements/Scenarios). Scenario classification and Gherkin quality checks are skipped (reported as PASS with "N/A - policy file"). Policy files also skip the Implementation Gate entirely — their `implementation_gate.status` is reported as "PASS" with detail "N/A - policy file exempt".
+
 | Check | PASS | WARN | FAIL |
 |-------|------|------|------|
 | Section completeness | All required sections present (Overview, Requirements, Scenarios) | Implementation Notes empty | Missing Overview, Requirements, or Scenarios |
 | Scenario classification | Both Automated + Manual subsections present | Only one subsection | No scenarios at all |
-| Policy anchoring | Has `> Prerequisite:` linking to `arch_*.md` | Has prerequisite but not to a policy file | No prerequisite (unless IS a policy file) |
+| Policy anchoring | Has `> Prerequisite:` linking to `arch_*.md` | Has prerequisite but not to a policy file; OR no prerequisite (unless IS a policy file) | Referenced prerequisite file missing on disk |
 | Prerequisite integrity | All referenced prerequisite files exist on disk | N/A | Referenced file missing |
 | Gherkin quality | All scenarios have Given/When/Then | Some scenarios missing steps | N/A (degrades to WARN) |
 
 ### 2.2 Implementation Gate (Post-Implementation Validation)
 The Implementation Gate validates that the implementation aligns with the specification. It requires implementation code and test results to exist.
+
+> Policy files (`arch_*.md`) are exempt from the Implementation Gate. All checks report PASS with "N/A - policy file exempt".
 
 | Check | PASS | WARN | FAIL |
 |-------|------|------|------|
@@ -193,6 +197,18 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
     Given tests/<feature_name>/critic.json exists with spec_gate.status PASS
     When the CDD server processes status for that feature
     Then the feature entry includes critic_status PASS
+
+#### Scenario: Spec Gate Policy File Reduced Evaluation
+    Given a feature file is an architectural policy (arch_*.md)
+    When the Critic tool runs the Spec Gate
+    Then section_completeness checks for Purpose and Invariants instead of Overview/Requirements/Scenarios
+    And scenario_classification and gherkin_quality report PASS with "N/A - policy file"
+
+#### Scenario: Implementation Gate Policy File Exempt
+    Given a feature file is an architectural policy (arch_*.md)
+    When the Critic tool runs the Implementation Gate
+    Then all checks report PASS with "N/A - policy file exempt"
+    And the overall implementation_gate status is PASS
 
 ### Manual Scenarios (Human Verification Required)
 

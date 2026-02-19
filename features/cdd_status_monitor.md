@@ -14,9 +14,14 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Status Detection:** Status is derived from a combination of file modification timestamps (for [TODO] detection) and source control history/tags.
 
 ### 2.2 UI & Layout
+*   **Table Layout:** Each status section (TODO, TESTING, COMPLETE) MUST render features in a table with the following columns:
+    *   **Feature** -- The feature filename.
+    *   **Tests** -- The test status badge (PASS, FAIL, or blank if no `tests.json` exists).
+    *   **Critic** -- The critic status badge (PASS, WARN, FAIL, or blank if no `critic.json` exists).
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
-*   **COMPLETE List Capping:** The "COMPLETE" section should be limited to the most recent items.
-*   **Status Indicators:** Use distinct color coding for TODO, TESTING, and COMPLETE states.
+*   **COMPLETE Table Capping:** The "COMPLETE" section should be limited to the most recent items.
+*   **Status Indicators:** Use distinct color coding for TODO, TESTING, and COMPLETE section headers.
+*   **Badge Colors:** PASS = green, WARN = orange, FAIL = red. Blank cells when no data exists (no badge, no "UNKNOWN" text).
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
 
 ### 2.3 Verification Signals
@@ -92,8 +97,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 #### Scenario: Web Dashboard Display
     Given the CDD server is running
     When the User opens the web dashboard in a browser
-    Then the feature list is visible with TODO, TESTING, and COMPLETE sections
-    And status indicators use distinct color coding per state
+    Then each status section (TODO, TESTING, COMPLETE) displays features in a table
+    And the table has columns for Feature, Tests, and Critic
+    And test/critic badges show PASS/WARN/FAIL with appropriate colors
+    And cells are blank when no tests.json or critic.json exists for that feature
 
 #### Scenario: Web Dashboard Auto-Refresh
     Given the User is viewing the web dashboard

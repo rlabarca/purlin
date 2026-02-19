@@ -2,7 +2,7 @@
 
 > Label: "Tool: Bootstrap"
 > Category: "Initialization & Update"
-> Prerequisite: HOW_WE_WORK.md (Section 6: Layered Instruction Architecture)
+> Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 6: Layered Instruction Architecture)
 
 ## 1. Overview
 Initializes a consumer project that has added `agentic-dev-core` as a git submodule. Creates the `.agentic_devops/` override directory, generates launcher scripts, and configures the project for the layered instruction architecture.

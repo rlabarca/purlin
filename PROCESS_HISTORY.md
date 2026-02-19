@@ -2,6 +2,20 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Critic and CDD Spec Refinements (QA Feedback)
+- **Problem:** QA verification revealed CRITIC:FAIL badges on nearly every feature in the CDD dashboard due to incorrect evaluation of policy files, overly strict policy anchoring, and list-based layout making badges hard to scan.
+- **Critic Spec Changes** (`features/critic_tool.md`):
+    - Policy files (`arch_*.md`) now receive reduced Spec Gate evaluation (checks Purpose/Invariants instead of Overview/Requirements/Scenarios) and are exempt from the Implementation Gate entirely.
+    - Policy anchoring severity relaxed: "No prerequisite" downgraded from FAIL to WARN. FAIL now only triggers when a referenced prerequisite file is missing on disk.
+    - Added two new automated scenarios for policy file handling.
+- **CDD Spec Changes** (`features/cdd_status_monitor.md`):
+    - Dashboard layout changed from lists with inline badges to tables with columns (Feature, Tests, Critic).
+    - Blank cells when no `tests.json` or `critic.json` exists (no misleading badges).
+    - Updated manual verification scenario for table layout.
+- **Stale Prerequisite Fix** (`features/submodule_bootstrap.md`):
+    - Updated prerequisite from `HOW_WE_WORK.md` to `instructions/HOW_WE_WORK_BASE.md`.
+- **Impact:** All three feature specs reset to TODO. Builder must re-implement critic policy file handling, CDD table layout, and re-run tests.
+
 ## [2026-02-19] QA Agent: Interactive Verification Workflow
 - **Problem:** The QA process required the human tester to manually edit `.md` files, run scripts, and understand the discovery recording format. Too cumbersome for practical use.
 - **Solution: Interactive-First QA Agent:**
