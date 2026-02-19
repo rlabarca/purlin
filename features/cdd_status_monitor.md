@@ -2,7 +2,7 @@
 
 > Label: "Tool: CDD Monitor"
 > Category: "DevOps Tools"
-> Prerequisite: features/arch_agentic_workflow.md
+> Prerequisite: HOW_WE_WORK.md
 
 ## 1. Overview
 The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files across both the Application and Agentic (Workflow) domains.

@@ -2,7 +2,7 @@
 
 > Label: "Tool: Software Map"
 > Category: "DevOps Tools"
-> Prerequisite: features/arch_agentic_workflow.md
+> Prerequisite: HOW_WE_WORK.md
 
 ## 1. Overview
 Generates a visual and textual representation of the project's feature dependency graph.

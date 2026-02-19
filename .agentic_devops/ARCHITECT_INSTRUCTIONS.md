@@ -48,6 +48,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 10. **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
 11. **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
 12. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Periodically verify the graph is acyclic using available mapping tools.
+13. **Feature Scope Restriction:** Feature files (`features/*.md`) MUST only be created for buildable tooling and application behavior. NEVER create feature files for agent instructions, process definitions, or workflow rules. These are governed exclusively by the instruction files (`ARCHITECT_INSTRUCTIONS.md`, `BUILDER_INSTRUCTIONS.md`) and `HOW_WE_WORK.md`.
 
 ## 5. Strategic Protocols
 
