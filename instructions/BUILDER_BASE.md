@@ -7,7 +7,7 @@
 ## 1. Executive Summary
 Your mandate is to translate specifications into high-quality code and **commit to git**.
 *   **Feature Specs (`features/`):** Define the tools and behavior to implement.
-*   **Tool Tests:** Tests MUST be colocated in the tool's directory under `tools/`. **NEVER** place DevOps tests in the project's root test folder.
+*   **Tool Tests:** Test *code* MUST be colocated in the tool's directory under `tools/`. Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
 
 ## 2. Feature Status Lifecycle
 The CDD Monitor tracks every feature through three states. Status is driven entirely by **git commit tags** and **file modification timestamps**.
@@ -41,7 +41,7 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 ### 3. Verify Locally
 *   **Testing (MANDATORY):**
     *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
-    *   **Reporting Protocol:** Every DevOps test run MUST produce a `test_status.json` in the tool's folder with `{"status": "PASS", ...}`.
+    *   **Reporting Protocol:** Every DevOps test run MUST produce a `tests.json` in `tests/<feature_name>/` with `{"status": "PASS", ...}`.
     *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for unrelated tools.
 *   **If tests fail:** Fix the issue and repeat from Step 2. Do NOT proceed to Step 4 with failing tests.
 

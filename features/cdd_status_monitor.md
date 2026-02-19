@@ -20,10 +20,12 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
 
 ### 2.3 Verification Signals
-*   **Test Status (Standardized Protocol):**
-    *   The monitor must scan all subdirectories in `tools/` for a file named `test_status.json`.
-    *   **Aggregation:** If ANY `test_status.json` reports a failure, the test status must show **FAIL**.
-    *   **Success:** Only shows **PASS** if all existing status files report success.
+*   **Test Status (Per-Feature Protocol):**
+    *   The monitor resolves `tests/` relative to `PROJECT_ROOT`.
+    *   For each feature `features/<name>.md`, the monitor looks up `tests/<name>/tests.json`.
+    *   Only the `"status"` field is evaluated; other fields are metadata.
+    *   **Per-Feature Display:** Each feature entry shows its own test status (`PASS`, `FAIL`, `UNKNOWN`). If no `tests/<name>/tests.json` exists, the `test_status` key is omitted from that entry.
+    *   **Aggregation:** The top-level `test_status` aggregates all per-feature results. If ANY feature reports `FAIL`, the aggregate is **FAIL**. Only **PASS** if all features with test files report success. **UNKNOWN** if no test files exist.
 
 ### 2.4 Machine-Readable Output (Agent Interface)
 *   **API Endpoint:** The server MUST expose a `/status.json` route that returns the feature status JSON directly with `Content-Type: application/json`. This is the **primary** agent interface.
@@ -34,12 +36,13 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
       "generated_at": "<ISO 8601 timestamp>",
       "test_status": "PASS | FAIL | UNKNOWN",
       "features": {
-        "todo": [{"file": "<relative path>", "label": "<label>"}],
+        "todo": [{"file": "<relative path>", "label": "<label>", "test_status": "PASS | FAIL | UNKNOWN"}],
         "testing": [{"file": "<relative path>", "label": "<label>"}],
-        "complete": [{"file": "<relative path>", "label": "<label>"}]
+        "complete": [{"file": "<relative path>", "label": "<label>", "test_status": "PASS"}]
       }
     }
     ```
+    Note: The `test_status` key on individual feature entries is present only when `tests/<feature_name>/tests.json` exists.
 *   **Regeneration:** The JSON MUST be freshly computed on every `/status.json` request. The file on disk is also regenerated on dashboard and API requests.
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
 *   **Agent Contract:** Agents MUST query status via `curl http://localhost:<port>/status.json` where `<port>` is read from `.agentic_devops/config.json` (`cdd_port`, default `8086`). Agents MUST NOT scrape the web dashboard or guess ports.
@@ -80,7 +83,8 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 ## 4. Implementation Notes
 *   **Test Scope:** Automated tests MUST only cover the `/status.json` API endpoint and the underlying status logic. The web dashboard HTML rendering and visual layout MUST NOT be tested through automated tests. The Builder MUST NOT start the CDD server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/cdd/start.sh`) and visually verify the dashboard.
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
-*   **Test Isolation:** The test aggregator scans `tools/*/test_status.json` and treats malformed JSON as FAIL.
+*   **Test Isolation:** The test aggregator scans `tests/<feature_name>/tests.json` (resolved relative to `PROJECT_ROOT`) and treats malformed JSON as FAIL.
+*   **Name Convention:** Feature-to-test mapping uses the feature file's stem: `features/<name>.md` maps to `tests/<name>/tests.json`. The `<name>` must match exactly (case-sensitive).
 *   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.
 *   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND `file_mod_ts <= complete_ts`. Any file edit after the completion commit resets status to `TODO` (the "Status Reset" protocol).
 *   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.

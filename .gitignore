@@ -18,6 +18,7 @@ tools/software_map/feature_graph_*.mmd
 tools/feature_graph_*.mmd
 tools/cdd/feature_status.json
 tools/software_map/dependency_graph.json
+tests/*/tests.json
 
 # Temp
 tmp/
