@@ -1,0 +1,23 @@
+# OS & Editors
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+env/
+venv/
+
+# Agentic Tool Logs & Artifacts
+*.log
+*.pid
+*.mmd
+tools/software_map/feature_graph_*.mmd
+tools/feature_graph_*.mmd
+
+# Temp
+tmp/
+dist/
+build/

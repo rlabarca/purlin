@@ -36,6 +36,10 @@ Defines the implementation protocols and domain-aware requirements for the Build
     *   **Format:** `{"status": "PASS" | "FAIL", "timestamp": "...", "message": "..."}`
 *   **No Pollution:** Running Agentic tests must never trigger a re-compilation or execution of the primary application tests.
 
+### 2.6 Agentic Team Orchestration
+*   **Delegation Mandate:** The Builder is encouraged to act as a "Lead Developer" and delegate complex sub-tasks to specialized sub-agents.
+*   **Specialized Personas:** The Builder may spawn internal personas (e.g., "The Critic") to improve implementation quality.
+
 ## 3. Scenarios
 
 ### Scenario: Implementing a Workflow Tool
@@ -43,6 +47,13 @@ Defines the implementation protocols and domain-aware requirements for the Build
     When the Builder implements the script
     Then all code must stay within `tools/`
     And any tests must be internal to the tools directory
+    And a test_status.json must be generated upon verification
+
+### Scenario: Complex Feature Delegation
+    Given a high-complexity feature specification
+    When the Builder plans the implementation
+    Then the Builder identifies sub-tasks suitable for delegation
+    And the Builder manages the output of specialized sub-agents
 
 ## 4. Implementation Notes
 *   **Context Isolation:** The Builder must maintain a strict mental firewall between the application domain and the workflow automation domain.

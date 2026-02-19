@@ -4,18 +4,21 @@ import re
 import sys
 from collections import defaultdict
 
-# Root is typically 3 levels up from this script in a project
-# But we should allow overrides or environment-based discovery
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../'))
+# Robust ROOT_DIR discovery
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 
-# Adjust if we are running in standalone mode
-if not os.path.exists(os.path.join(ROOT_DIR, "features")):
-    ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
+# If we are embedded in another project, the root might be further up
+if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
+    # Try one level up (standard embedded structure)
+    PARENT_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, "../"))
+    if os.path.exists(os.path.join(PARENT_ROOT, ".agentic_devops")):
+        PROJECT_ROOT = PARENT_ROOT
 
+ROOT_DIR = PROJECT_ROOT # Using ROOT_DIR alias for consistency with rest of script
 CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 
-MMD_FILE_APP = os.path.join(CORE_DIR, "tools/feature_graph_app.mmd")
-MMD_FILE_AGENTIC = os.path.join(CORE_DIR, "tools/feature_graph_agentic.mmd")
+MMD_FILE_APP = os.path.join(CORE_DIR, "tools/software_map/feature_graph_app.mmd")
+MMD_FILE_AGENTIC = os.path.join(CORE_DIR, "tools/software_map/feature_graph_agentic.mmd")
 FEATURES_DIR_APP = os.path.join(ROOT_DIR, "features")
 FEATURES_DIR_AGENTIC = os.path.join(CORE_DIR, "features")
 README_FILE = os.path.join(ROOT_DIR, "README.md")
@@ -80,8 +83,7 @@ def generate_mermaid_content(features):
 
     for category, node_ids in sorted(grouped_categories.items()):
         category_id = category.replace(' ', '_').replace(':', '')
-        lines.append(f'
-    subgraph {category_id} [" "]')
+        lines.append(f'\n    subgraph {category_id} [" "]')
         
         title_id = f"title_{category_id}"
         lines.append(f'        {title_id}["{category.upper()}"]')
@@ -104,8 +106,7 @@ def generate_mermaid_content(features):
             lines.append(f'        {title_id} ~~~ {node_id}')
         lines.append("    end")
 
-    lines.append("
-    %% Relationships")
+    lines.append("\n    %% Relationships")
     for node_id in sorted(features.keys()):
         data = features[node_id]
         for prereq_id in data["prerequisites"]:
@@ -114,8 +115,7 @@ def generate_mermaid_content(features):
             else:
                 lines.append(f'    {prereq_id}["{prereq_id}?"] -.-> {node_id}')
     
-    lines.append("
-    %% Styling Definitions")
+    lines.append("\n    %% Styling Definitions")
     lines.append("    classDef default fill:#e1f5fe,stroke:#01579b,stroke-width:1px,color:black;")
     lines.append("    classDef release fill:#f96,stroke:#333,stroke-width:2px,color:black,font-weight:bold;")
     lines.append("    classDef hardware fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:black;")
@@ -123,16 +123,13 @@ def generate_mermaid_content(features):
     lines.append("    classDef process fill:#f1f8e9,stroke:#558b2f,stroke-width:1px,color:black;")
     lines.append("    classDef subgraphTitle fill:none,stroke:none,color:#111,font-size:32px,font-weight:bold;")
     
-    lines.append("
-    %% Style Applications")
+    lines.append("\n    %% Style Applications")
     lines.extend(style_apps)
     
-    return "
-".join(lines)
+    return "\n".join(lines)
 
 def generate_text_tree(features):
-    output = ["# Project Feature Dependency Tree
-"]
+    output = ["# Project Feature Dependency Tree\n"]
     dependents = defaultdict(list)
     for node_id, data in features.items():
         for prereq in data["prerequisites"]:
@@ -157,8 +154,7 @@ def generate_text_tree(features):
     for root in sorted(roots):
         print_node(root)
         
-    return "
-".join(output)
+    return "\n".join(output)
 
 def update_domain(features_dir, mmd_file, domain_name):
     features = parse_features(features_dir)
@@ -175,8 +171,7 @@ def update_domain(features_dir, mmd_file, domain_name):
     if domain_name == "Application":
         update_readme(mmd_content)
         
-    print(f"
-{'='*40}")
+    print(f"\n{'='*40}")
     print(f"DEPENDENCY TREE FOR {domain_name}")
     print(f"{'='*40}")
     print(text_tree)
@@ -189,11 +184,7 @@ def update_readme(mmd_content):
             
         start_marker = "<!-- MERMAID_START -->"
         end_marker = "<!-- MERMAID_END -->"
-        new_block = f"{start_marker}
-```mermaid
-{mmd_content}
-```
-{end_marker}"
+        new_block = f"{start_marker}\n```mermaid\n{mmd_content}\n```\n{end_marker}"
         pattern = re.compile(f"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
         
         if pattern.search(readme_content):

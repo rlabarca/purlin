@@ -38,13 +38,39 @@
 
         async function loadGraphs() {
             try {
-                const appResp = await fetch('../feature_graph_app.mmd');
-                const appMmd = await appResp.text();
-                document.getElementById('app-mermaid').innerHTML = appMmd;
+                // Load config to determine mode
+                let isMeta = false;
+                try {
+                    const configResp = await fetch('config.json');
+                    if (configResp.ok) {
+                        const config = await configResp.json();
+                        isMeta = config.is_meta_agentic_dev === true;
+                    }
+                } catch (e) {
+                    console.warn("Could not load config.json", e);
+                }
 
-                const agenticResp = await fetch('../feature_graph_agentic.mmd');
-                const agenticMmd = await agenticResp.text();
-                document.getElementById('agentic-mermaid').innerHTML = agenticMmd;
+                if (isMeta) {
+                    // Meta-mode: Hide tabs and show Agentic Core only
+                    document.querySelector('.tabs').style.display = 'none';
+                    showTab('agentic');
+                } else {
+                    // Normal mode: Show Application by default
+                    showTab('app');
+                }
+
+                // Load Graphs (paths are now relative to this file)
+                const appResp = await fetch('feature_graph_app.mmd');
+                if (appResp.ok) {
+                    const appMmd = await appResp.text();
+                    document.getElementById('app-mermaid').innerHTML = appMmd;
+                }
+
+                const agenticResp = await fetch('feature_graph_agentic.mmd');
+                if (agenticResp.ok) {
+                    const agenticMmd = await agenticResp.text();
+                    document.getElementById('agentic-mermaid').innerHTML = agenticMmd;
+                }
 
                 await mermaid.run();
             } catch (e) {
@@ -57,10 +83,12 @@
             document.querySelectorAll('.graph-container').forEach(c => c.classList.remove('active'));
             
             if (tab === 'app') {
-                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                const tabEl = document.querySelector('.tab:nth-child(1)');
+                if (tabEl) tabEl.classList.add('active');
                 document.getElementById('app-graph').classList.add('active');
             } else {
-                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                const tabEl = document.querySelector('.tab:nth-child(2)');
+                if (tabEl) tabEl.classList.add('active');
                 document.getElementById('agentic-graph').classList.add('active');
             }
         }

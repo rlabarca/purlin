@@ -8,34 +8,48 @@ from datetime import datetime
 PORT = 8086
 # When running as part of the core engine, we need to know where the host project is.
 # Default to assuming we are in a subdirectory of the core engine, which is in the project root.
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../'))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 
-# Adjust if we are running in standalone mode (within the core engine itself)
-if not os.path.exists(os.path.join(PROJECT_ROOT, "features")):
-    PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
+# If we are embedded in another project, the root might be further up
+if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
+    # Try one level up (standard embedded structure)
+    PARENT_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, "../"))
+    if os.path.exists(os.path.join(PARENT_ROOT, ".agentic_devops")):
+        PROJECT_ROOT = PARENT_ROOT
+
+CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
+CONFIG = {}
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, 'r') as f:
+        CONFIG = json.load(f)
+
+PORT = CONFIG.get("cdd_port", 8086)
+IS_META = CONFIG.get("is_meta_agentic_dev", False)
 
 # Try to find the agentic core directory relative to PROJECT_ROOT
 CORE_DIR_NAME = os.path.basename(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 CORE_ABS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 CORE_REL_PATH = os.path.relpath(CORE_ABS_PATH, PROJECT_ROOT)
 
-DOMAINS = [
-    {
+DOMAINS = []
+
+if not IS_META:
+    DOMAINS.append({
         "label": "Application",
         "features_rel": "features",
         "features_abs": os.path.join(PROJECT_ROOT, "features"),
         "test_mode": "auto", # Can be project-specific
         "test_label": "App Tests",
-    },
-    {
-        "label": "Agentic Core",
-        "features_rel": os.path.join(CORE_REL_PATH, "features"),
-        "features_abs": os.path.join(CORE_ABS_PATH, "features"),
-        "test_mode": "devops_aggregate",
-        "tools_dir": os.path.join(CORE_ABS_PATH, "tools"),
-        "test_label": "Core Tests",
-    },
-]
+    })
+
+DOMAINS.append({
+    "label": "Agentic Core",
+    "features_rel": os.path.join(CORE_REL_PATH, "features"),
+    "features_abs": os.path.join(CORE_ABS_PATH, "features"),
+    "test_mode": "devops_aggregate",
+    "tools_dir": os.path.join(CORE_ABS_PATH, "tools"),
+    "test_label": "Core Tests",
+})
 
 COMPLETE_CAP = 10
 
