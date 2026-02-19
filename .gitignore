@@ -21,6 +21,7 @@ tools/software_map/dependency_graph.json
 tests/*/tests.json
 tools/*/test_status.json
 tools/test_status.json
+tools/critic/.cache/
 
 # Temp
 tmp/

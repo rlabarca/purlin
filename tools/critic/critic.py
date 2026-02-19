@@ -37,12 +37,18 @@ TOOLS_ROOT = CONFIG.get('tools_root', 'tools')
 FEATURES_DIR = os.path.join(PROJECT_ROOT, 'features')
 TESTS_DIR = os.path.join(PROJECT_ROOT, 'tests')
 LLM_ENABLED = CONFIG.get('critic_llm_enabled', False)
+LLM_MODEL = CONFIG.get('critic_llm_model', 'claude-sonnet-4-20250514')
 
 # ---------------------------------------------------------------------------
 # Import sibling modules
 # ---------------------------------------------------------------------------
 sys.path.insert(0, SCRIPT_DIR)
-from traceability import run_traceability, extract_keywords  # noqa: E402
+from traceability import (  # noqa: E402
+    run_traceability,
+    extract_keywords,
+    discover_test_files,
+    extract_test_functions,
+)
 from policy_check import (  # noqa: E402
     run_policy_check,
     get_feature_prerequisites,
@@ -443,10 +449,13 @@ def check_builder_decisions(impl_notes):
     }
 
 
-def check_logic_drift():
+def check_logic_drift(scenarios=None, traceability_result=None,
+                      feature_stem=None):
     """Run logic drift check (LLM-based, Phase 3).
 
     Returns WARN-skip when LLM is disabled (default).
+    When enabled, assembles scenario-test pairs from traceability data
+    and delegates to run_logic_drift for LLM analysis.
     """
     if not LLM_ENABLED or run_logic_drift is None:
         return {
@@ -455,12 +464,39 @@ def check_logic_drift():
             'detail': 'Logic drift check skipped (LLM disabled).',
         }
 
-    # Phase 3 will replace this with actual LLM calls
-    return {
-        'status': 'WARN',
-        'pairs': [],
-        'detail': 'Logic drift engine not yet implemented.',
-    }
+    # Build scenario title -> body lookup
+    scenario_bodies = {}
+    for s in (scenarios or []):
+        scenario_bodies[s['title']] = s.get('body', '')
+
+    # Discover test files and build function name -> body lookup
+    test_files = discover_test_files(PROJECT_ROOT, feature_stem, TOOLS_ROOT)
+    all_functions = []
+    for tf in test_files:
+        all_functions.extend(extract_test_functions(tf))
+    func_lookup = {f['name']: f for f in all_functions}
+
+    # Assemble pairs from traceability matched data
+    matched = (traceability_result or {}).get('matched', [])
+    pairs = []
+    for m in matched:
+        scenario_title = m['scenario']
+        scenario_body = scenario_bodies.get(scenario_title, '')
+        test_funcs = []
+        for test_name in m.get('tests', []):
+            func = func_lookup.get(test_name)
+            if func:
+                test_funcs.append({'name': test_name, 'body': func['body']})
+        if test_funcs and scenario_body:
+            pairs.append({
+                'scenario_title': scenario_title,
+                'scenario_body': scenario_body,
+                'test_functions': test_funcs,
+            })
+
+    return run_logic_drift(
+        pairs, PROJECT_ROOT, feature_stem, TOOLS_ROOT, LLM_MODEL,
+    )
 
 
 def run_implementation_gate(content, feature_stem, filename):
@@ -492,7 +528,8 @@ def run_implementation_gate(content, feature_stem, filename):
         'policy_adherence': policy_result,
         'structural_completeness': check_structural_completeness(feature_stem),
         'builder_decisions': check_builder_decisions(impl_notes),
-        'logic_drift': check_logic_drift(),
+        'logic_drift': check_logic_drift(scenarios, traceability_result,
+                                         feature_stem),
     }
 
     # Overall status = worst of individual checks

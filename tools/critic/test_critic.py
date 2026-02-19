@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch, MagicMock
 
 # Ensure we can import sibling modules
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +50,7 @@ from critic import (
     generate_critic_json,
     generate_critic_report,
 )
+import logic_drift
 
 
 # ===================================================================
@@ -549,6 +551,154 @@ class TestLogicDriftDisabled(unittest.TestCase):
         result = check_logic_drift()
         self.assertEqual(result['status'], 'WARN')
         self.assertIn('skipped', result['detail'].lower())
+
+
+class TestLogicDriftEngine(unittest.TestCase):
+    """Tests for the logic drift engine (run_logic_drift)."""
+
+    def setUp(self):
+        self.cache_dir = tempfile.mkdtemp()
+        self._orig_cache = logic_drift.CACHE_DIR
+        logic_drift.CACHE_DIR = self.cache_dir
+        self.pairs = [{
+            'scenario_title': 'Test Scenario',
+            'scenario_body': 'Given X\nWhen Y\nThen Z',
+            'test_functions': [{
+                'name': 'test_scenario',
+                'body': 'def test_scenario():\n    assert True',
+            }],
+        }]
+
+    def tearDown(self):
+        logic_drift.CACHE_DIR = self._orig_cache
+        shutil.rmtree(self.cache_dir, ignore_errors=True)
+
+    @patch('logic_drift.HAS_ANTHROPIC', True)
+    @patch('logic_drift.anthropic')
+    def test_aligned_verdict(self, mock_anthropic_mod):
+        mock_client = MagicMock()
+        mock_anthropic_mod.Anthropic.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(
+            text='{"verdict": "ALIGNED", "reasoning": "Test matches scenario"}'
+        )]
+        mock_client.messages.create.return_value = mock_response
+
+        result = logic_drift.run_logic_drift(
+            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+        )
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(len(result['pairs']), 1)
+        self.assertEqual(result['pairs'][0]['verdict'], 'ALIGNED')
+        self.assertEqual(result['pairs'][0]['scenario'], 'Test Scenario')
+        self.assertEqual(result['pairs'][0]['test'], 'test_scenario')
+        mock_client.messages.create.assert_called_once()
+
+    @patch('logic_drift.HAS_ANTHROPIC', True)
+    @patch('logic_drift.anthropic')
+    def test_divergent_verdict(self, mock_anthropic_mod):
+        mock_client = MagicMock()
+        mock_anthropic_mod.Anthropic.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(
+            text='{"verdict": "DIVERGENT", "reasoning": "Test is unrelated"}'
+        )]
+        mock_client.messages.create.return_value = mock_response
+
+        result = logic_drift.run_logic_drift(
+            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+        )
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['pairs'][0]['verdict'], 'DIVERGENT')
+
+    @patch('logic_drift.HAS_ANTHROPIC', True)
+    @patch('logic_drift.anthropic')
+    def test_cache_hit_no_api_call(self, mock_anthropic_mod):
+        mock_client = MagicMock()
+        mock_anthropic_mod.Anthropic.return_value = mock_client
+
+        # Pre-populate cache
+        scenario_body = self.pairs[0]['scenario_body']
+        test_body = self.pairs[0]['test_functions'][0]['body']
+        key = logic_drift._cache_key(scenario_body, test_body)
+        os.makedirs(self.cache_dir, exist_ok=True)
+        cache_file = os.path.join(self.cache_dir, f'{key}.json')
+        with open(cache_file, 'w') as f:
+            json.dump({
+                'verdict': 'ALIGNED',
+                'reasoning': 'Cached result',
+            }, f)
+
+        result = logic_drift.run_logic_drift(
+            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+        )
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['pairs'][0]['verdict'], 'ALIGNED')
+        self.assertEqual(result['pairs'][0]['reasoning'], 'Cached result')
+        # API should NOT have been called
+        mock_client.messages.create.assert_not_called()
+
+    @patch('logic_drift.HAS_ANTHROPIC', False)
+    def test_no_anthropic_graceful_skip(self):
+        result = logic_drift.run_logic_drift(
+            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+        )
+        self.assertEqual(result['status'], 'WARN')
+        self.assertIn('not installed', result['detail'])
+        self.assertEqual(result['pairs'], [])
+
+
+class TestCheckLogicDriftEnabled(unittest.TestCase):
+    """Integration test: check_logic_drift when LLM is enabled."""
+
+    @patch('critic.discover_test_files')
+    @patch('critic.extract_test_functions')
+    @patch('critic.run_logic_drift')
+    def test_enabled_calls_run_logic_drift(self, mock_drift,
+                                           mock_extract, mock_discover):
+        import critic
+        orig_enabled = critic.LLM_ENABLED
+        critic.LLM_ENABLED = True
+        try:
+            mock_discover.return_value = ['/some/test.py']
+            mock_extract.return_value = [{
+                'name': 'test_foo',
+                'body': 'def test_foo(): pass',
+            }]
+            mock_drift.return_value = {
+                'status': 'PASS',
+                'pairs': [{
+                    'scenario': 'Foo',
+                    'test': 'test_foo',
+                    'verdict': 'ALIGNED',
+                    'reasoning': 'OK',
+                }],
+                'detail': '1/1 pairs ALIGNED',
+            }
+
+            scenarios = [{
+                'title': 'Foo',
+                'is_manual': False,
+                'body': 'Given X\nWhen Y\nThen Z',
+            }]
+            traceability = {
+                'matched': [{
+                    'scenario': 'Foo',
+                    'tests': ['test_foo'],
+                    'via': 'keyword',
+                }],
+            }
+
+            result = check_logic_drift(scenarios, traceability, 'test_feature')
+            self.assertEqual(result['status'], 'PASS')
+            mock_drift.assert_called_once()
+            # Verify the pairs structure passed to run_logic_drift
+            call_pairs = mock_drift.call_args[0][0]
+            self.assertEqual(len(call_pairs), 1)
+            self.assertEqual(call_pairs[0]['scenario_title'], 'Foo')
+            self.assertEqual(call_pairs[0]['test_functions'][0]['name'], 'test_foo')
+        finally:
+            critic.LLM_ENABLED = orig_enabled
 
 
 # ===================================================================
