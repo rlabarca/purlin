@@ -1,2 +1,2 @@
 #!/bin/bash
-claude --print-system-prompt-file ".agentic_devops/ARCHITECT_INSTRUCTIONS.md" "$@"
+claude --append-system-prompt-file ".agentic_devops/ARCHITECT_INSTRUCTIONS.md"
