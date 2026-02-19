@@ -218,5 +218,68 @@ class TestFeatureStatusJSON(unittest.TestCase):
         self.assertEqual(json_str, json_str2)
 
 
+class TestHandlerRouting(unittest.TestCase):
+    """Tests that the HTTP handler routes /status.json to JSON and all else to HTML."""
+
+    @patch('serve.generate_feature_status_json')
+    @patch('serve.FEATURE_STATUS_PATH', '/dev/null')
+    def test_status_json_route_returns_json(self, mock_gen):
+        mock_gen.return_value = {"domains": {}, "generated_at": "2026-01-01T00:00:00Z"}
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/status.json'
+        handler.requestline = 'GET /status.json HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        handler.do_GET()
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == "Content-Type"]
+        self.assertEqual(content_types, ["application/json"])
+        body = handler.wfile.getvalue()
+        data = json.loads(body)
+        self.assertIn("domains", data)
+
+    @patch('serve.write_feature_status_json')
+    @patch('serve.generate_html')
+    def test_root_route_returns_html(self, mock_html, mock_write):
+        mock_html.return_value = "<html>test</html>"
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/'
+        handler.requestline = 'GET / HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        handler.do_GET()
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == "Content-type"]
+        self.assertEqual(content_types, ["text/html"])
+
+
 if __name__ == '__main__':
     unittest.main()

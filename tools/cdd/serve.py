@@ -354,11 +354,24 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        write_feature_status_json()
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(generate_html().encode('utf-8'))
+        if self.path == '/status.json':
+            data = generate_feature_status_json()
+            # Also write to disk as secondary artifact
+            with open(FEATURE_STATUS_PATH, 'w') as f:
+                json.dump(data, f, indent=2, sort_keys=True)
+                f.write('\n')
+            payload = json.dumps(data, indent=2, sort_keys=True).encode('utf-8')
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        else:
+            write_feature_status_json()
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(generate_html().encode('utf-8'))
 
     def log_message(self, format, *args):
         pass  # Suppress request logging noise
