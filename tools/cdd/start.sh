@@ -11,8 +11,11 @@ elif [ -d "$DIR/../../../.venv" ]; then
 fi
 
 # Extract port from config.json if it exists, otherwise default to 8086
-# Path is ../../ because we are in tools/cdd and config is in root/.agentic_devops
+# Standalone: ../../.agentic_devops  |  Submodule: ../../../.agentic_devops
 CONFIG_FILE="$DIR/../../.agentic_devops/config.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    CONFIG_FILE="$DIR/../../../.agentic_devops/config.json"
+fi
 PORT=8086
 
 if [ -f "$CONFIG_FILE" ]; then
