@@ -1,44 +1,22 @@
 {
   "cycles": [],
-  "domains": {
-    "agentic": {
-      "features": [
-        {
-          "category": "DevOps Tools",
-          "file": "features/cdd_status_monitor.md",
-          "label": "Tool: CDD Monitor",
-          "prerequisites": []
-        },
-        {
-          "category": "DevOps Tools",
-          "file": "features/software_map_generator.md",
-          "label": "Tool: Software Map",
-          "prerequisites": []
-        }
-      ]
+  "features": [
+    {
+      "category": "DevOps Tools",
+      "file": "features/cdd_status_monitor.md",
+      "label": "Tool: CDD Monitor",
+      "prerequisites": []
     },
-    "application": {
-      "features": [
-        {
-          "category": "DevOps Tools",
-          "file": "features/cdd_status_monitor.md",
-          "label": "Tool: CDD Monitor",
-          "prerequisites": []
-        },
-        {
-          "category": "DevOps Tools",
-          "file": "features/software_map_generator.md",
-          "label": "Tool: Software Map",
-          "prerequisites": []
-        }
-      ]
+    {
+      "category": "DevOps Tools",
+      "file": "features/software_map_generator.md",
+      "label": "Tool: Software Map",
+      "prerequisites": []
     }
-  },
-  "generated_at": "2026-02-19T03:39:34Z",
+  ],
+  "generated_at": "2026-02-19T04:01:26Z",
   "orphans": [
     "cdd_status_monitor.md",
-    "cdd_status_monitor.md",
-    "software_map_generator.md",
     "software_map_generator.md"
   ]
 }

@@ -4,96 +4,430 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Software Map Viewer</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.6/marked.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; color: #333; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .tab { padding: 10px 20px; cursor: pointer; background: #eee; border-radius: 4px; font-weight: bold; }
-        .tab.active { background: #01579b; color: white; }
-        .graph-container { overflow: auto; min-height: 500px; display: none; }
-        .graph-container.active { display: block; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Menlo','Monaco','Consolas', monospace;
+            background: #14191F; color: #B0B0B0;
+            font-size: 12px; overflow: hidden;
+            height: 100vh; display: flex; flex-direction: column;
+        }
+        .header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 8px 12px; background: #1A2028;
+            border-bottom: 1px solid #2A2F36; flex-shrink: 0;
+        }
+        .header h1 { font-size: 14px; color: #FFF; font-weight: 600; white-space: nowrap; }
+        .search-box {
+            margin-left: auto; display: flex; align-items: center; gap: 6px;
+        }
+        #search {
+            background: #14191F; border: 1px solid #2A2F36; border-radius: 3px;
+            color: #B0B0B0; padding: 4px 8px; font-size: 11px; width: 200px;
+            font-family: inherit; outline: none;
+        }
+        #search:focus { border-color: #0288d1; }
+        #search::placeholder { color: #555; }
+        .search-hint { color: #555; font-size: 10px; }
+        #cy { flex: 1; background: #14191F; }
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-content {
+            background: #1A2028; border: 1px solid #2A2F36;
+            border-radius: 6px; width: 700px; max-width: 90vw;
+            max-height: 80vh; display: flex; flex-direction: column;
+            position: relative;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border-bottom: 1px solid #2A2F36; flex-shrink: 0;
+        }
+        .modal-header h2 { font-size: 13px; color: #FFF; }
+        .modal-close {
+            background: none; border: 1px solid #444; color: #888;
+            cursor: pointer; font-size: 14px; width: 24px; height: 24px;
+            border-radius: 3px; display: flex; align-items: center;
+            justify-content: center; line-height: 1;
+        }
+        .modal-close:hover { background: #333; color: #FFF; border-color: #666; }
+        .modal-body {
+            padding: 14px; overflow-y: auto; flex: 1;
+            line-height: 1.6; color: #CCC;
+        }
+        .modal-body h1, .modal-body h2, .modal-body h3 { color: #FFF; margin: 12px 0 6px; }
+        .modal-body h1 { font-size: 16px; }
+        .modal-body h2 { font-size: 14px; }
+        .modal-body h3 { font-size: 12px; }
+        .modal-body p { margin: 6px 0; }
+        .modal-body ul, .modal-body ol { margin: 6px 0 6px 20px; }
+        .modal-body li { margin: 2px 0; }
+        .modal-body code {
+            background: #14191F; padding: 1px 4px; border-radius: 2px;
+            font-size: 11px; color: #4FC3F7;
+        }
+        .modal-body pre {
+            background: #14191F; padding: 8px; border-radius: 3px;
+            overflow-x: auto; margin: 6px 0;
+        }
+        .modal-body pre code { padding: 0; background: none; }
+        .modal-body blockquote {
+            border-left: 3px solid #0288d1; padding-left: 10px;
+            color: #888; margin: 6px 0;
+        }
+        .legend {
+            position: fixed; bottom: 10px; right: 10px;
+            background: #1A2028; border: 1px solid #2A2F36;
+            border-radius: 4px; padding: 8px 10px; font-size: 10px; z-index: 100;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+        .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Software Map Viewer</h1>
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('app')">Application</div>
-            <div class="tab" onclick="showTab('agentic')">Agentic Core</div>
+    <div class="header">
+        <h1>Software Map</h1>
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Filter nodes..." />
+            <span class="search-hint">by label or filename</span>
         </div>
-        
-        <div id="app-graph" class="graph-container active">
-            <div class="mermaid" id="app-mermaid"></div>
-        </div>
-        
-        <div id="agentic-graph" class="graph-container">
-            <div class="mermaid" id="agentic-mermaid"></div>
+    </div>
+    <div id="cy"></div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Feature</h2>
+                <button class="modal-close" id="modal-close" title="Close">X</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
         </div>
     </div>
 
+    <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#4FC3F7"></div> Feature node</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#FF7043"></div> Highlighted neighbor</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#333"></div> De-emphasized</div>
+    </div>
+
     <script>
-        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        // -- State --
+        let cy = null;
+        let graphData = null;
+        let isInitialLoad = true;
+        let refreshTimer = null;
 
-        async function loadGraphs() {
+        // Category color palette
+        const CATEGORY_COLORS = {
+            'DevOps Tools': '#0288d1',
+            'Auth': '#7B1FA2',
+            'Core': '#2E7D32',
+            'UI': '#7B1FA2',
+            'Hardware': '#2E7D32',
+            'Release': '#E65100',
+            'Process': '#558B2F',
+        };
+        const DEFAULT_NODE_COLOR = '#01579b';
+
+        // -- Initialization --
+        async function init() {
+            await loadGraph();
+            startAutoRefresh();
+        }
+
+        async function loadGraph() {
             try {
-                // Load config to determine mode
-                let isMeta = false;
-                try {
-                    const configResp = await fetch('config.json');
-                    if (configResp.ok) {
-                        const config = await configResp.json();
-                        isMeta = config.is_meta_agentic_dev === true;
-                    }
-                } catch (e) {
-                    console.warn("Could not load config.json", e);
-                }
-
-                if (isMeta) {
-                    // Meta-mode: Hide tabs and show Agentic Core only
-                    document.querySelector('.tabs').style.display = 'none';
-                    showTab('agentic');
-                } else {
-                    // Normal mode: Show Application by default
-                    showTab('app');
-                }
-
-                // Load Graphs (paths are now relative to this file)
-                const appResp = await fetch('feature_graph_app.mmd');
-                if (appResp.ok) {
-                    const appMmd = await appResp.text();
-                    document.getElementById('app-mermaid').innerHTML = appMmd;
-                }
-
-                const agenticResp = await fetch('feature_graph_agentic.mmd');
-                if (agenticResp.ok) {
-                    const agenticMmd = await agenticResp.text();
-                    document.getElementById('agentic-mermaid').innerHTML = agenticMmd;
-                }
-
-                await mermaid.run();
+                const resp = await fetch('dependency_graph.json?t=' + Date.now());
+                if (!resp.ok) return;
+                graphData = await resp.json();
+                renderGraph();
             } catch (e) {
-                console.error("Failed to load Mermaid graphs", e);
+                console.error('Failed to load dependency graph:', e);
             }
         }
 
-        function showTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.graph-container').forEach(c => c.classList.remove('active'));
-            
-            if (tab === 'app') {
-                const tabEl = document.querySelector('.tab:nth-child(1)');
-                if (tabEl) tabEl.classList.add('active');
-                document.getElementById('app-graph').classList.add('active');
+        function renderGraph() {
+            if (!graphData || !graphData.features) return;
+
+            const elements = buildCytoscapeElements(graphData.features);
+
+            if (cy) {
+                // Preserve viewport state before destroying
+                const zoom = cy.zoom();
+                const pan = cy.pan();
+                cy.destroy();
+                cy = createCytoscape(elements);
+                if (!isInitialLoad) {
+                    cy.zoom(zoom);
+                    cy.pan(pan);
+                } else {
+                    cy.fit(undefined, 40);
+                    isInitialLoad = false;
+                }
             } else {
-                const tabEl = document.querySelector('.tab:nth-child(2)');
-                if (tabEl) tabEl.classList.add('active');
-                document.getElementById('agentic-graph').classList.add('active');
+                cy = createCytoscape(elements);
+                cy.fit(undefined, 40);
+                isInitialLoad = false;
+            }
+
+            applySearchFilter();
+        }
+
+        function buildCytoscapeElements(features) {
+            const nodes = [];
+            const edges = [];
+            const fileToId = {};
+
+            // Build file-to-id map for edge resolution
+            features.forEach(f => {
+                const id = f.file.replace(/[^a-zA-Z0-9]/g, '_');
+                fileToId[f.file] = id;
+                // Also map just the filename for prerequisite matching
+                const basename = f.file.split('/').pop();
+                fileToId[basename] = id;
+            });
+
+            features.forEach(f => {
+                const id = fileToId[f.file];
+                const color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
+                nodes.push({
+                    data: {
+                        id: id,
+                        label: f.label,
+                        file: f.file,
+                        category: f.category,
+                        prerequisites: f.prerequisites || [],
+                        color: color,
+                    }
+                });
+
+                (f.prerequisites || []).forEach(prereq => {
+                    const sourceId = fileToId[prereq];
+                    if (sourceId) {
+                        edges.push({
+                            data: {
+                                id: 'e_' + sourceId + '_' + id,
+                                source: sourceId,
+                                target: id,
+                            }
+                        });
+                    }
+                });
+            });
+
+            return { nodes, edges };
+        }
+
+        function createCytoscape(elements) {
+            const instance = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [...elements.nodes, ...elements.edges],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(label)',
+                            'background-color': 'data(color)',
+                            'color': '#CCC',
+                            'font-size': '10px',
+                            'font-family': "'Menlo','Monaco','Consolas', monospace",
+                            'text-valign': 'bottom',
+                            'text-margin-y': 6,
+                            'width': 30,
+                            'height': 30,
+                            'border-width': 2,
+                            'border-color': '#2A2F36',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '120px',
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#444',
+                            'target-arrow-color': '#444',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'arrow-scale': 0.8,
+                        }
+                    },
+                    {
+                        selector: 'node.highlighted',
+                        style: {
+                            'background-color': '#FF7043',
+                            'border-color': '#FF7043',
+                            'border-width': 3,
+                            'color': '#FFF',
+                            'z-index': 10,
+                        }
+                    },
+                    {
+                        selector: 'node.center-hover',
+                        style: {
+                            'background-color': '#FFF',
+                            'border-color': '#4FC3F7',
+                            'border-width': 3,
+                            'color': '#FFF',
+                            'z-index': 11,
+                        }
+                    },
+                    {
+                        selector: 'edge.highlighted',
+                        style: {
+                            'line-color': '#FF7043',
+                            'target-arrow-color': '#FF7043',
+                            'width': 3,
+                            'z-index': 10,
+                        }
+                    },
+                    {
+                        selector: 'node.dimmed',
+                        style: {
+                            'opacity': 0.2,
+                        }
+                    },
+                    {
+                        selector: 'edge.dimmed',
+                        style: {
+                            'opacity': 0.1,
+                        }
+                    },
+                    {
+                        selector: 'node.search-hidden',
+                        style: {
+                            'opacity': 0.1,
+                        }
+                    },
+                    {
+                        selector: 'edge.search-hidden',
+                        style: {
+                            'opacity': 0.05,
+                        }
+                    },
+                ],
+                layout: {
+                    name: 'dagre',
+                    rankDir: 'TB',
+                    nodeSep: 60,
+                    rankSep: 80,
+                    padding: 40,
+                },
+                wheelSensitivity: 0.3,
+                minZoom: 0.1,
+                maxZoom: 5,
+            });
+
+            // -- Hover highlighting --
+            instance.on('mouseover', 'node', function(evt) {
+                const node = evt.target;
+                const neighborhood = node.neighborhood().add(node);
+
+                instance.elements().addClass('dimmed');
+                neighborhood.removeClass('dimmed');
+
+                node.addClass('center-hover');
+                neighborhood.nodes().not(node).addClass('highlighted');
+                neighborhood.edges().addClass('highlighted');
+            });
+
+            instance.on('mouseout', 'node', function() {
+                instance.elements().removeClass('dimmed highlighted center-hover');
+            });
+
+            // -- Click for detail modal --
+            instance.on('tap', 'node', function(evt) {
+                const file = evt.target.data('file');
+                const label = evt.target.data('label');
+                if (file) openModal(file, label);
+            });
+
+            return instance;
+        }
+
+        // -- Search/Filter --
+        document.getElementById('search').addEventListener('input', function() {
+            applySearchFilter();
+        });
+
+        function applySearchFilter() {
+            if (!cy) return;
+            const query = document.getElementById('search').value.trim().toLowerCase();
+
+            if (!query) {
+                cy.elements().removeClass('search-hidden');
+                return;
+            }
+
+            cy.nodes().forEach(node => {
+                const label = (node.data('label') || '').toLowerCase();
+                const file = (node.data('file') || '').toLowerCase();
+                if (label.includes(query) || file.includes(query)) {
+                    node.removeClass('search-hidden');
+                } else {
+                    node.addClass('search-hidden');
+                }
+            });
+
+            cy.edges().forEach(edge => {
+                const src = edge.source();
+                const tgt = edge.target();
+                if (src.hasClass('search-hidden') && tgt.hasClass('search-hidden')) {
+                    edge.addClass('search-hidden');
+                } else {
+                    edge.removeClass('search-hidden');
+                }
+            });
+        }
+
+        // -- Feature Detail Modal --
+        async function openModal(filePath, label) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = label || filePath;
+            body.innerHTML = '<p style="color:#666">Loading...</p>';
+            overlay.classList.add('visible');
+
+            try {
+                const resp = await fetch('/feature?file=' + encodeURIComponent(filePath));
+                if (!resp.ok) throw new Error('Failed to load feature file');
+                const md = await resp.text();
+                body.innerHTML = marked.parse(md);
+            } catch (e) {
+                body.innerHTML = '<p style="color:#FF4500">Could not load feature content.</p>';
             }
         }
 
-        loadGraphs();
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('visible');
+        }
+
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // -- Auto-refresh (preserves zoom/pan) --
+        function startAutoRefresh() {
+            refreshTimer = setInterval(async () => {
+                await loadGraph();
+            }, 5000);
+        }
+
+        // -- Start --
+        init();
     </script>
 </body>
 </html>

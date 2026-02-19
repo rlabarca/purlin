@@ -24,43 +24,10 @@ if os.path.exists(CONFIG_PATH):
         CONFIG = json.load(f)
 
 PORT = CONFIG.get("cdd_port", 8086)
-IS_META = CONFIG.get("is_meta_agentic_dev", False)
 
-# Try to find the agentic core directory relative to PROJECT_ROOT
-CORE_DIR_NAME = os.path.basename(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-CORE_ABS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-CORE_REL_PATH = os.path.relpath(CORE_ABS_PATH, PROJECT_ROOT)
-
-DOMAINS = []
-
-if IS_META:
-    # In meta mode, both domains resolve to the same features/ directory.
-    # Show both columns so the UI always has the required two-column layout.
-    DOMAINS.append({
-        "label": "Application",
-        "features_rel": os.path.join(CORE_REL_PATH, "features"),
-        "features_abs": os.path.join(CORE_ABS_PATH, "features"),
-        "test_mode": "devops_aggregate",
-        "tools_dir": os.path.join(CORE_ABS_PATH, "tools"),
-        "test_label": "App Tests",
-    })
-else:
-    DOMAINS.append({
-        "label": "Application",
-        "features_rel": "features",
-        "features_abs": os.path.join(PROJECT_ROOT, "features"),
-        "test_mode": "auto",
-        "test_label": "App Tests",
-    })
-
-DOMAINS.append({
-    "label": "Agentic Core",
-    "features_rel": os.path.join(CORE_REL_PATH, "features"),
-    "features_abs": os.path.join(CORE_ABS_PATH, "features"),
-    "test_mode": "devops_aggregate",
-    "tools_dir": os.path.join(CORE_ABS_PATH, "tools"),
-    "test_label": "Core Tests",
-})
+FEATURES_REL = "features"
+FEATURES_ABS = os.path.join(PROJECT_ROOT, "features")
+TOOLS_DIR = os.path.join(PROJECT_ROOT, "tools")
 
 COMPLETE_CAP = 10
 FEATURE_STATUS_PATH = os.path.join(os.path.dirname(__file__), "feature_status.json")
@@ -96,7 +63,7 @@ def extract_label(filepath):
 
 
 def get_feature_status(features_rel, features_abs):
-    """Gathers the status of all features for a given domain directory."""
+    """Gathers the status of all features for the project's features directory."""
     if not os.path.isdir(features_abs):
         return [], [], []
 
@@ -118,7 +85,6 @@ def get_feature_status(features_rel, features_abs):
         complete_ts = int(complete_ts_str) if complete_ts_str else 0
         test_ts = int(test_ts_str) if test_ts_str else 0
 
-
         status = "TODO"
         if complete_ts > test_ts:
             if file_mod_ts <= complete_ts:
@@ -136,19 +102,6 @@ def get_feature_status(features_rel, features_abs):
 
     complete.sort(key=lambda x: x[1], reverse=True)
     return complete, sorted(testing), sorted(todo)
-
-
-def get_project_test_status(project_root):
-    """Placeholder for project-specific test status discovery."""
-    # This can be expanded to look for common test summary files (PIO, pytest, etc.)
-    summary_path = os.path.join(project_root, ".pio/testing/last_summary.json")
-    if os.path.exists(summary_path):
-        with open(summary_path, 'r') as f:
-            content = f.read()
-            if '"error_nums": 0' in content and '"failure_nums": 0' in content:
-                return "PASS", "Systems Nominal"
-            return "FAIL", "Logic Broken"
-    return "UNKNOWN", "No Test History"
 
 
 def get_devops_aggregated_test_status(tools_dir):
@@ -182,52 +135,24 @@ def get_devops_aggregated_test_status(tools_dir):
     return "PASS", "All tools nominal"
 
 
-def get_domain_test_status(domain):
-    """Dispatches to the correct test status reader based on domain config."""
-    if domain.get("test_mode") == "devops_aggregate":
-        return get_devops_aggregated_test_status(domain["tools_dir"])
-    return get_project_test_status(PROJECT_ROOT)
-
-
 def generate_feature_status_json():
-    """Generates the feature_status.json data structure per spec."""
-    domain_key_map = {
-        "Application": "application",
-        "Agentic Core": "agentic",
-    }
-    domains_data = {}
+    """Generates the feature_status.json data structure per spec (flat schema)."""
+    complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
+    test_status, _ = get_devops_aggregated_test_status(TOOLS_DIR)
 
-    for domain in DOMAINS:
-        key = domain_key_map.get(domain["label"], domain["label"].lower())
-        complete_tuples, testing, todo = get_feature_status(
-            domain["features_rel"], domain["features_abs"]
-        )
-        test_status, _ = get_domain_test_status(domain)
-
-        features_rel = domain["features_rel"]
-        features_abs = domain["features_abs"]
-
-        def make_entry(fname, _rel=features_rel, _abs=features_abs):
-            rel_path = os.path.normpath(os.path.join(_rel, fname))
-            label = extract_label(os.path.join(_abs, fname))
-            return {"file": rel_path, "label": label}
-
-        domains_data[key] = {
-            "features": {
-                "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
-                "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
-                "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
-            },
-            "test_status": test_status,
-        }
-
-    # In meta mode, mirror agentic data to application
-    if IS_META and "application" not in domains_data:
-        domains_data["application"] = domains_data.get("agentic", {})
+    def make_entry(fname):
+        rel_path = os.path.normpath(os.path.join(FEATURES_REL, fname))
+        label = extract_label(os.path.join(FEATURES_ABS, fname))
+        return {"file": rel_path, "label": label}
 
     return {
-        "domains": domains_data,
+        "features": {
+            "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
+            "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
+            "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
+        },
         "generated_at": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "test_status": test_status,
     }
 
 
@@ -260,11 +185,12 @@ def _feature_list_html(features, css_class):
     return f'<ul class="fl">{items}</ul>'
 
 
-def _domain_column_html(domain):
-    """Builds the HTML for one domain column."""
-    complete_tuples, testing, todo = get_feature_status(
-        domain["features_rel"], domain["features_abs"]
-    )
+def generate_html():
+    """Generates the full dashboard HTML."""
+    git_status = get_git_status()
+    last_commit = get_last_commit()
+    complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
+    test_status, test_msg = get_devops_aggregated_test_status(TOOLS_DIR)
 
     # COMPLETE capping
     total_complete = len(complete_tuples)
@@ -278,36 +204,10 @@ def _domain_column_html(domain):
         f'<p class="dim">and {overflow} more&hellip;</p>' if overflow > 0 else ""
     )
 
-    test_status, test_msg = get_domain_test_status(domain)
-
-    return f"""
-    <div class="domain-col">
-        <h2>{domain["label"]}</h2>
-        <h3>TODO</h3>
-        {todo_html or '<p class="dim">None pending.</p>'}
-        <h3>TESTING</h3>
-        {testing_html or '<p class="dim">None in testing.</p>'}
-        <h3>COMPLETE</h3>
-        {complete_html or '<p class="dim">None complete.</p>'}
-        {overflow_html}
-        <div class="test-bar">
-            <span class="st-{test_status.lower()}">{test_status}</span>
-            <span class="dim">{domain["test_label"]}: {test_msg}</span>
-        </div>
-    </div>"""
-
-
-def generate_html():
-    """Generates the full dashboard HTML."""
-    git_status = get_git_status()
-    last_commit = get_last_commit()
-
     if not git_status:
         git_html = '<p class="clean">Clean State <span class="dim">(Ready for next task)</span></p>'
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
-
-    domain_columns = ''.join(_domain_column_html(d) for d in DOMAINS)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -328,8 +228,7 @@ body{{
 .dim{{color:#666;font-size:0.9em}}
 h2{{font-size:13px;color:#FFF;margin-bottom:6px;border-bottom:1px solid #2A2F36;padding-bottom:4px}}
 h3{{font-size:11px;color:#888;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px}}
-.domains{{display:flex;gap:16px;margin-bottom:10px}}
-.domain-col{{flex:1;min-width:0;background:#1A2028;border-radius:4px;padding:8px 10px}}
+.features{{background:#1A2028;border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .fl{{list-style:none}}
 .fl li{{display:flex;align-items:center;margin-bottom:1px;line-height:1.5}}
 .sq{{width:7px;height:7px;margin-right:6px;flex-shrink:0;border-radius:1px}}
@@ -351,8 +250,18 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
   <h1>CDD Monitor</h1>
   <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
 </div>
-<div class="domains">
-  {domain_columns}
+<div class="features">
+    <h3>TODO</h3>
+    {todo_html or '<p class="dim">None pending.</p>'}
+    <h3>TESTING</h3>
+    {testing_html or '<p class="dim">None in testing.</p>'}
+    <h3>COMPLETE</h3>
+    {complete_html or '<p class="dim">None complete.</p>'}
+    {overflow_html}
+    <div class="test-bar">
+        <span class="st-{test_status.lower()}">{test_status}</span>
+        <span class="dim">Tests: {test_msg}</span>
+    </div>
 </div>
 <div class="ctx">
   <h2>Workspace</h2>

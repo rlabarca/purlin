@@ -9,7 +9,7 @@ import shutil
 sys.path.insert(0, os.path.dirname(__file__))
 from generate_tree import (
     parse_features, detect_cycles, find_orphans,
-    build_domain_json, generate_mermaid_content
+    build_features_json, generate_mermaid_content
 )
 
 
@@ -114,7 +114,7 @@ class TestDependencyGraphJSON(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_build_domain_json_structure(self):
+    def test_build_features_json_structure(self):
         features = {
             "login": {
                 "filename": "login.md",
@@ -129,20 +129,20 @@ class TestDependencyGraphJSON(unittest.TestCase):
                 "prerequisites": []
             },
         }
-        result = build_domain_json(features, self.test_dir)
-        self.assertIn("features", result)
-        self.assertEqual(len(result["features"]), 2)
+        result = build_features_json(features, self.test_dir)
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 2)
         # Verify sorted by filename
-        self.assertEqual(result["features"][0]["label"], "Base")
-        self.assertEqual(result["features"][1]["label"], "User Login")
+        self.assertEqual(result[0]["label"], "Base")
+        self.assertEqual(result[1]["label"], "User Login")
 
     def test_deterministic_output(self):
         features = {
             "z_feat": {"filename": "z_feat.md", "label": "Z", "category": "Cat", "prerequisites": []},
             "a_feat": {"filename": "a_feat.md", "label": "A", "category": "Cat", "prerequisites": ["z_feat"]},
         }
-        r1 = json.dumps(build_domain_json(features, self.test_dir), sort_keys=True)
-        r2 = json.dumps(build_domain_json(features, self.test_dir), sort_keys=True)
+        r1 = json.dumps(build_features_json(features, self.test_dir), sort_keys=True)
+        r2 = json.dumps(build_features_json(features, self.test_dir), sort_keys=True)
         self.assertEqual(r1, r2)
 
 

@@ -23,7 +23,7 @@ class TestCDD(unittest.TestCase):
             os.makedirs(d)
             with open(os.path.join(d, "test_status.json"), "w") as f:
                 json.dump({"status": "PASS"}, f)
-        
+
         status, msg = get_devops_aggregated_test_status(self.tools_dir)
         self.assertEqual(status, "PASS")
         self.assertIn("All tools nominal", msg)
@@ -34,7 +34,7 @@ class TestCDD(unittest.TestCase):
         os.makedirs(d1)
         with open(os.path.join(d1, "test_status.json"), "w") as f:
             json.dump({"status": "PASS"}, f)
-            
+
         d2 = os.path.join(self.tools_dir, "tool_bad")
         os.makedirs(d2)
         with open(os.path.join(d2, "test_status.json"), "w") as f:
@@ -49,7 +49,7 @@ class TestCDD(unittest.TestCase):
         os.makedirs(d)
         with open(os.path.join(d, "test_status.json"), "w") as f:
             f.write("{ invalid json")
-            
+
         status, msg = get_devops_aggregated_test_status(self.tools_dir)
         self.assertEqual(status, "FAIL")
         self.assertIn("tool_corrupt", msg)
@@ -58,7 +58,7 @@ class TestCDD(unittest.TestCase):
         # Tool dir with NO test_status.json should be ignored
         d = os.path.join(self.tools_dir, "tool_no_tests")
         os.makedirs(d)
-        
+
         status, msg = get_devops_aggregated_test_status(self.tools_dir)
         self.assertEqual(status, "UNKNOWN")
 
@@ -71,7 +71,7 @@ class TestCDD(unittest.TestCase):
             fname = f"feat_{i:02d}.md"
             with open(os.path.join(features_abs, fname), "w") as f:
                 f.write("# Test")
-        
+
         # Mock run_command: return high timestamp for Complete, empty for Ready
         # (complete_ts > test_ts and file_mod_ts <= complete_ts)
         def mock_git(cmd):
@@ -79,7 +79,7 @@ class TestCDD(unittest.TestCase):
                 return "2000000000"
             return ""
         mock_run.side_effect = mock_git
-        
+
         complete, testing, todo = get_feature_status("features", features_abs)
         self.assertEqual(len(complete), 15)
         self.assertEqual(len(testing), 0)
@@ -116,18 +116,13 @@ class TestExtractLabel(unittest.TestCase):
 
 class TestFeatureStatusJSON(unittest.TestCase):
 
-    @patch('serve.IS_META', False)
-    @patch('serve.DOMAINS', [
-        {"label": "Application", "features_rel": "features",
-         "features_abs": "/tmp/test_features", "test_mode": "auto"},
-        {"label": "Agentic Core", "features_rel": "core/features",
-         "features_abs": "/tmp/test_features", "test_mode": "devops_aggregate",
-         "tools_dir": "/tmp/test_tools"},
-    ])
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TOOLS_DIR', '/tmp/test_tools')
     @patch('serve.get_feature_status')
-    @patch('serve.get_domain_test_status')
+    @patch('serve.get_devops_aggregated_test_status')
     @patch('serve.extract_label')
-    def test_json_structure_both_domains(self, mock_label, mock_test, mock_features):
+    def test_json_structure_flat(self, mock_label, mock_test, mock_features):
         mock_features.return_value = ([("feat_a.md", 100)], ["feat_b.md"], ["feat_c.md"])
         mock_test.return_value = ("PASS", "All good")
         mock_label.return_value = "Test Label"
@@ -135,49 +130,24 @@ class TestFeatureStatusJSON(unittest.TestCase):
         data = generate_feature_status_json()
 
         self.assertIn("generated_at", data)
-        self.assertIn("domains", data)
-        self.assertIn("application", data["domains"])
-        self.assertIn("agentic", data["domains"])
+        self.assertIn("features", data)
+        self.assertIn("test_status", data)
+        self.assertNotIn("domains", data)
 
-        for domain_key in ["application", "agentic"]:
-            domain = data["domains"][domain_key]
-            self.assertEqual(domain["test_status"], "PASS")
-            self.assertIn("features", domain)
-            self.assertEqual(len(domain["features"]["complete"]), 1)
-            self.assertEqual(len(domain["features"]["testing"]), 1)
-            self.assertEqual(len(domain["features"]["todo"]), 1)
-            # Each entry must have file and label keys
-            for entry in domain["features"]["todo"]:
-                self.assertIn("file", entry)
-                self.assertIn("label", entry)
+        self.assertEqual(data["test_status"], "PASS")
+        self.assertEqual(len(data["features"]["complete"]), 1)
+        self.assertEqual(len(data["features"]["testing"]), 1)
+        self.assertEqual(len(data["features"]["todo"]), 1)
+        # Each entry must have file and label keys
+        for entry in data["features"]["todo"]:
+            self.assertIn("file", entry)
+            self.assertIn("label", entry)
 
-    @patch('serve.IS_META', True)
-    @patch('serve.DOMAINS', [
-        {"label": "Agentic Core", "features_rel": "./features",
-         "features_abs": "/tmp/test_features", "test_mode": "devops_aggregate",
-         "tools_dir": "/tmp/test_tools"},
-    ])
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TOOLS_DIR', '/tmp/test_tools')
     @patch('serve.get_feature_status')
-    @patch('serve.get_domain_test_status')
-    @patch('serve.extract_label')
-    def test_meta_mode_mirrors_domains(self, mock_label, mock_test, mock_features):
-        mock_features.return_value = ([], [], ["feat.md"])
-        mock_test.return_value = ("UNKNOWN", "No tests")
-        mock_label.return_value = "Label"
-
-        data = generate_feature_status_json()
-
-        self.assertIn("application", data["domains"])
-        self.assertIn("agentic", data["domains"])
-        self.assertEqual(data["domains"]["application"], data["domains"]["agentic"])
-
-    @patch('serve.IS_META', False)
-    @patch('serve.DOMAINS', [
-        {"label": "Application", "features_rel": "features",
-         "features_abs": "/tmp/test_features", "test_mode": "auto"},
-    ])
-    @patch('serve.get_feature_status')
-    @patch('serve.get_domain_test_status')
+    @patch('serve.get_devops_aggregated_test_status')
     @patch('serve.extract_label')
     def test_arrays_sorted_by_file(self, mock_label, mock_test, mock_features):
         # Return features in non-alphabetical order
@@ -190,21 +160,18 @@ class TestFeatureStatusJSON(unittest.TestCase):
         mock_label.return_value = "Label"
 
         data = generate_feature_status_json()
-        domain = data["domains"]["application"]
 
         for status_key in ["complete", "testing", "todo"]:
-            items = domain["features"][status_key]
+            items = data["features"][status_key]
             files = [item["file"] for item in items]
             self.assertEqual(files, sorted(files),
                              f"{status_key} array not sorted by file path")
 
-    @patch('serve.IS_META', False)
-    @patch('serve.DOMAINS', [
-        {"label": "Application", "features_rel": "features",
-         "features_abs": "/tmp/test_features", "test_mode": "auto"},
-    ])
+    @patch('serve.FEATURES_REL', 'features')
+    @patch('serve.FEATURES_ABS', '/tmp/test_features')
+    @patch('serve.TOOLS_DIR', '/tmp/test_tools')
     @patch('serve.get_feature_status')
-    @patch('serve.get_domain_test_status')
+    @patch('serve.get_devops_aggregated_test_status')
     @patch('serve.extract_label')
     def test_json_keys_sorted(self, mock_label, mock_test, mock_features):
         mock_features.return_value = ([], [], ["feat.md"])
@@ -224,7 +191,7 @@ class TestHandlerRouting(unittest.TestCase):
     @patch('serve.generate_feature_status_json')
     @patch('serve.FEATURE_STATUS_PATH', '/dev/null')
     def test_status_json_route_returns_json(self, mock_gen):
-        mock_gen.return_value = {"domains": {}, "generated_at": "2026-01-01T00:00:00Z"}
+        mock_gen.return_value = {"features": {}, "generated_at": "2026-01-01T00:00:00Z", "test_status": "UNKNOWN"}
         from serve import Handler
         import io
 
@@ -250,7 +217,8 @@ class TestHandlerRouting(unittest.TestCase):
         self.assertEqual(content_types, ["application/json"])
         body = handler.wfile.getvalue()
         data = json.loads(body)
-        self.assertIn("domains", data)
+        self.assertIn("features", data)
+        self.assertNotIn("domains", data)
 
     @patch('serve.write_feature_status_json')
     @patch('serve.generate_html')
