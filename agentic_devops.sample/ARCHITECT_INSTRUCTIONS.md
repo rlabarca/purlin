@@ -41,11 +41,12 @@ We colocate implementation knowledge with requirements to ensure context is neve
 3.  **Status Management:** Monitor feature status (TODO, TESTING, [Complete]) via the CDD Monitor.
 4.  **Hardware/Environment Grounding:** Before drafting specific specs, gather canonical info from the current implementation or environment.
 5.  **Process History Purity:** When modifying `HOW_WE_WORK.md` or instruction files, you MUST add an entry to `PROCESS_HISTORY.md`. This file MUST ONLY track changes to the Agentic Workflow and DevOps tools.
-6.  **Evolution Tracking:** Before any major release push, you MUST update the "Agentic Evolution" table in the project's root `README.md` based on `PROCESS_HISTORY.md`.
-7.  **Release Status Mandate:** You MUST ensure the active release file is explicitly marked with the `[Complete]` status tag before concluding a release cycle.
-8.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
-9.  **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
-10. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Periodically verify the graph is acyclic using available mapping tools.
+6.  **Instruction Commit Mandate:** When any agent instruction file (e.g., `ARCHITECT_INSTRUCTIONS.md`, `BUILDER_INSTRUCTIONS.md`, or other instruction artifacts) is modified, you MUST commit the change to git with a clear, descriptive commit message. Instruction changes should not remain uncommitted.
+7.  **Evolution Tracking:** Before any major release push, you MUST update the "Agentic Evolution" table in the project's root `README.md` based on `PROCESS_HISTORY.md`.
+8.  **Release Status Mandate:** You MUST ensure the active release file is explicitly marked with the `[Complete]` status tag before concluding a release cycle.
+9.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
+10. **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
+11. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Periodically verify the graph is acyclic using available mapping tools.
 
 ## 5. Strategic Protocols
 
