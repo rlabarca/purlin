@@ -43,6 +43,9 @@ Generates a visual and machine-readable representation of the project's feature 
 ### 2.4 Interactive View
 *   **Scope:** The web view is for human consumption only. Agents must use `dependency_graph.json`.
 *   **Graph Display:** The dependency graph MUST be rendered as an interactive diagram with feature nodes and directed edges representing prerequisite links.
+*   **Category Grouping:** Feature nodes MUST be visually grouped by their `Category` metadata (as defined in each feature file's `> Category:` line). Each group MUST be clearly delineated (e.g., via labeled bounding boxes or distinct spatial clusters) so that the category structure is immediately apparent.
+*   **Node Labels:** Each feature node MUST display both its friendly name (the `Label` from the feature file metadata) and its filename. Both pieces of information must be visible without requiring hover or click interaction.
+*   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
 *   **Zoom-to-Fit on Load:** On initial page load, the graph MUST be automatically zoomed and centered to fit the viewable page area. On auto-refresh cycles, the current zoom level and pan position MUST be preserved.
 *   **Search/Filter:** A text input MUST be provided that filters visible graph nodes by label or filename. Nodes that do not match the filter should be visually de-emphasized or hidden.
 *   **Feature Detail Modal:** Clicking a feature node MUST open a scrollable modal window that renders the feature file's markdown content. The modal MUST have a close button (X) in the top-right corner. Clicking outside the modal MUST also close it.
@@ -78,6 +81,9 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
     Given the software map server is running
     When the User opens the web UI in a browser
     Then the dependency graph is rendered with nodes and edges
+    And feature nodes are visually grouped by their Category metadata
+    And each node displays its Label and its filename
+    And no legend overlay is displayed
     And the graph is zoomed to fit the viewable page area
     And a search input is visible for filtering nodes
 
