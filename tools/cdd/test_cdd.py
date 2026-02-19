@@ -71,9 +71,13 @@ class TestCDD(unittest.TestCase):
             with open(os.path.join(features_abs, fname), "w") as f:
                 f.write("# Test")
         
-        # Mock run_command to return a timestamp that makes it COMPLETE
+        # Mock run_command: return high timestamp for Complete, empty for Ready
         # (complete_ts > test_ts and file_mod_ts <= complete_ts)
-        mock_run.side_effect = lambda cmd: "2000000000" if "git log" in cmd else ""
+        def mock_git(cmd):
+            if "Complete" in cmd:
+                return "2000000000"
+            return ""
+        mock_run.side_effect = mock_git
         
         complete, testing, todo = get_feature_status("features", features_abs)
         self.assertEqual(len(complete), 15)

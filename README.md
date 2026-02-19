@@ -53,14 +53,6 @@ Instead of separate documentation or global logs, implementation discoveries, ha
 flowchart TD
 
 
-    subgraph Agent_Instructions [" "]
-        title_Agent_Instructions["AGENT INSTRUCTIONS"]
-        agent_architect_instructions["Agent: Architect Instructions<br/><small>agent_architect_instructions.md</small>"]
-        title_Agent_Instructions ~~~ agent_architect_instructions
-        agent_builder_instructions["Agent: Builder Instructions<br/><small>agent_builder_instructions.md</small>"]
-        title_Agent_Instructions ~~~ agent_builder_instructions
-    end
-
     subgraph DevOps_Tools [" "]
         title_DevOps_Tools["DEVOPS TOOLS"]
         cdd_status_monitor["Tool: CDD Monitor<br/><small>cdd_status_monitor.md</small>"]
@@ -69,23 +61,9 @@ flowchart TD
         title_DevOps_Tools ~~~ software_map_generator
     end
 
-    subgraph Process [" "]
-        title_Process["PROCESS"]
-        arch_agentic_workflow["Arch: Agentic Workflow<br/><small>arch_agentic_workflow.md</small>"]
-        title_Process ~~~ arch_agentic_workflow
-        proc_history_management["Proc: History Management<br/><small>proc_history_management.md</small>"]
-        title_Process ~~~ proc_history_management
-        proc_release_protocol["Proc: Release Protocol<br/><small>proc_release_protocol.md</small>"]
-        title_Process ~~~ proc_release_protocol
-    end
-
     %% Relationships
-    arch_agentic_workflow --> agent_architect_instructions
-    arch_agentic_workflow --> agent_builder_instructions
-    arch_agentic_workflow --> cdd_status_monitor
-    arch_agentic_workflow --> proc_history_management
-    arch_agentic_workflow --> proc_release_protocol
-    arch_agentic_workflow --> software_map_generator
+    HOW_WE_WORK["HOW_WE_WORK?"] -.-> cdd_status_monitor
+    HOW_WE_WORK["HOW_WE_WORK?"] -.-> software_map_generator
 
     %% Styling Definitions
     classDef default fill:#e1f5fe,stroke:#01579b,stroke-width:1px,color:black;
@@ -96,12 +74,7 @@ flowchart TD
     classDef subgraphTitle fill:none,stroke:none,color:#111,font-size:32px,font-weight:bold;
 
     %% Style Applications
-    class title_Agent_Instructions subgraphTitle;
     class title_DevOps_Tools subgraphTitle;
-    class title_Process subgraphTitle;
-    class arch_agentic_workflow process;
-    class proc_history_management process;
-    class proc_release_protocol process;
 ```
 <!-- MERMAID_END -->
 

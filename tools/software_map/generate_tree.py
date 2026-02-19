@@ -2,7 +2,9 @@
 import os
 import re
 import sys
+import json
 from collections import defaultdict
+from datetime import datetime, timezone
 
 # Robust ROOT_DIR discovery
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
@@ -17,8 +19,10 @@ if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
 ROOT_DIR = PROJECT_ROOT # Using ROOT_DIR alias for consistency with rest of script
 CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 
-MMD_FILE_APP = os.path.join(CORE_DIR, "tools/software_map/feature_graph_app.mmd")
-MMD_FILE_AGENTIC = os.path.join(CORE_DIR, "tools/software_map/feature_graph_agentic.mmd")
+TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
+MMD_FILE_APP = os.path.join(TOOL_DIR, "feature_graph_app.mmd")
+MMD_FILE_AGENTIC = os.path.join(TOOL_DIR, "feature_graph_agentic.mmd")
+DEPENDENCY_GRAPH_FILE = os.path.join(TOOL_DIR, "dependency_graph.json")
 FEATURES_DIR_APP = os.path.join(ROOT_DIR, "features")
 FEATURES_DIR_AGENTIC = os.path.join(CORE_DIR, "features")
 README_FILE = os.path.join(ROOT_DIR, "README.md")
@@ -156,6 +160,96 @@ def generate_text_tree(features):
         
     return "\n".join(output)
 
+def detect_cycles(features):
+    """DFS-based cycle detection. Returns list of cycle descriptions."""
+    cycles = []
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {node_id: WHITE for node_id in features}
+    path = []
+
+    def dfs(node_id):
+        color[node_id] = GRAY
+        path.append(node_id)
+        for prereq_id in sorted(features[node_id]["prerequisites"]):
+            if prereq_id not in features:
+                continue
+            if color[prereq_id] == GRAY:
+                cycle_start = path.index(prereq_id)
+                cycle_nodes = path[cycle_start:] + [prereq_id]
+                cycle_files = [features[n]["filename"] for n in cycle_nodes if n in features]
+                cycles.append(" -> ".join(cycle_files))
+            elif color[prereq_id] == WHITE:
+                dfs(prereq_id)
+        path.pop()
+        color[node_id] = BLACK
+
+    for node_id in sorted(features.keys()):
+        if color[node_id] == WHITE:
+            dfs(node_id)
+    return cycles
+
+
+def find_orphans(features):
+    """Find features with no prerequisite links (root nodes)."""
+    return sorted([
+        features[node_id]["filename"]
+        for node_id, data in features.items()
+        if not data["prerequisites"]
+    ])
+
+
+def build_domain_json(features, features_dir):
+    """Build the JSON-serializable domain entry for dependency_graph.json."""
+    feature_list = []
+    for node_id in sorted(features.keys()):
+        data = features[node_id]
+        prereq_files = sorted([
+            features[p]["filename"] if p in features else p + ".md"
+            for p in data["prerequisites"]
+        ])
+        feature_list.append({
+            "file": os.path.relpath(
+                os.path.join(features_dir, data["filename"]),
+                ROOT_DIR
+            ),
+            "label": data["label"],
+            "category": data["category"],
+            "prerequisites": prereq_files
+        })
+    return {"features": feature_list}
+
+
+def generate_dependency_graph(app_features, agentic_features):
+    """Generate the canonical dependency_graph.json file."""
+    all_features = {}
+    all_features.update(app_features)
+    all_features.update(agentic_features)
+
+    all_cycles = detect_cycles(app_features) + detect_cycles(agentic_features)
+    all_orphans = find_orphans(app_features) + find_orphans(agentic_features)
+
+    graph = {
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "domains": {
+            "application": build_domain_json(app_features, FEATURES_DIR_APP),
+            "agentic": build_domain_json(agentic_features, FEATURES_DIR_AGENTIC)
+        },
+        "cycles": sorted(all_cycles),
+        "orphans": sorted(all_orphans)
+    }
+
+    with open(DEPENDENCY_GRAPH_FILE, 'w', encoding='utf-8') as f:
+        json.dump(graph, f, indent=2, sort_keys=True)
+    print(f"Updated {DEPENDENCY_GRAPH_FILE}")
+
+    if all_cycles:
+        print(f"\n*** WARNING: {len(all_cycles)} CYCLE(S) DETECTED ***")
+        for c in all_cycles:
+            print(f"  CYCLE: {c}")
+
+    return graph
+
+
 def update_domain(features_dir, mmd_file, domain_name):
     features = parse_features(features_dir)
     mmd_content = generate_mermaid_content(features)
@@ -195,5 +289,9 @@ def update_readme(mmd_content):
                 print("Updated README.md with Mermaid graph.")
 
 if __name__ == "__main__":
+    app_features = parse_features(FEATURES_DIR_APP)
+    agentic_features = parse_features(FEATURES_DIR_AGENTIC)
+
     update_domain(FEATURES_DIR_APP, MMD_FILE_APP, "Application")
     update_domain(FEATURES_DIR_AGENTIC, MMD_FILE_AGENTIC, "Agentic Core")
+    generate_dependency_graph(app_features, agentic_features)

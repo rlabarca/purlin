@@ -11,18 +11,19 @@ elif [ -d "$DIR/../../../.venv" ]; then
 fi
 
 # Extract port from config.json if it exists, otherwise default to 8087
-# Path is ../../ because we are in tools/software_map and config is in root/.agentic_devops
 CONFIG_FILE="$DIR/../../.agentic_devops/config.json"
 PORT=8087
 
 if [ -f "$CONFIG_FILE" ]; then
-    # Simple grep/sed extraction for "map_port": 1234
     PORT_FROM_CONFIG=$(grep '"map_port"' "$CONFIG_FILE" | sed -E 's/.*"map_port": *([0-9]+).*/\1/')
     if [ ! -z "$PORT_FROM_CONFIG" ]; then
         PORT=$PORT_FROM_CONFIG
     fi
 fi
 
-nohup $PYTHON_EXE $DIR/serve.py > $DIR/software_map.log 2>&1 &
-echo $! > $DIR/software_map.pid
-echo "Software Map Viewer started on port $PORT (PID: $(cat $DIR/software_map.pid))"
+# Generate outputs before starting (serve.py also regenerates on startup)
+$PYTHON_EXE "$DIR/generate_tree.py"
+
+nohup $PYTHON_EXE "$DIR/serve.py" > "$DIR/software_map.log" 2>&1 &
+echo $! > "$DIR/software_map.pid"
+echo "Software Map Viewer started on port $PORT (PID: $(cat "$DIR/software_map.pid"))"

@@ -75,3 +75,7 @@ Generates a visual and machine-readable representation of the project's feature 
 ## 4. Implementation Notes
 *   **Acyclic Mandate:** The tool is the primary enforcer of the acyclic graph rule defined in the workflow.
 *   **Agent Interface:** `dependency_graph.json` is the single machine-readable contract. All agent tooling (Context Clear Protocol, Dependency Integrity checks, Release Protocol) MUST read this file.
+*   **Cycle Detection:** Uses DFS with 3-color marking (WHITE/GRAY/BLACK). External prerequisites (not in the features directory) are skipped without triggering false positives.
+*   **File Watch Mode:** `serve.py` polls `features/` directories every 2 seconds using `os.scandir` mtime snapshots. No external dependencies required (no `watchdog`).
+*   **Deterministic JSON:** `dependency_graph.json` uses `sort_keys=True` on `json.dump` and all arrays are pre-sorted by filename/path before serialization.
+*   **Meta Mode:** When `is_meta_agentic_dev: true`, both Application and Agentic domains resolve to the same `features/` directory. This is expected - the core framework IS the project.

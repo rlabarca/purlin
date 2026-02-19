@@ -82,10 +82,10 @@ def get_feature_status(features_rel, features_abs):
         f_path = os.path.join(features_rel, fname)
 
         complete_ts_str = run_command(
-            f"git log -1 --grep='\[Complete {f_path}\]' --format=%ct"
+            f"git log -1 --grep='\\[Complete {f_path}\\]' --format=%ct"
         )
         test_ts_str = run_command(
-            f"git log -1 --grep='\[Ready for .* {f_path}\]' --format=%ct"
+            f"git log -1 --grep='\\[Ready for .* {f_path}\\]' --format=%ct"
         )
         f_abs_path = os.path.join(features_abs, fname)
         file_mod_ts = int(os.path.getmtime(f_abs_path)) if os.path.exists(f_abs_path) else 0
