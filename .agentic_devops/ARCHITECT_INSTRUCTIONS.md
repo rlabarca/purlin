@@ -38,7 +38,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
     *   **Application Domain:** `features/` (Targeting the primary product).
     *   **Agentic DevOps:** `./features/` (Targeting the workflow tools and tests).
 2.  **Process Engineering:** Refine `BUILDER_INSTRUCTIONS.md`, `ARCHITECT_INSTRUCTIONS.md`, and associated tools.
-3.  **Status Management:** Monitor feature status (TODO, TESTING, [Complete]) via the CDD Monitor.
+3.  **Status Management:** Monitor feature status (TODO, TESTING, [Complete]) by reading `tools/cdd/feature_status.json` (the machine-readable output). Do NOT use the web dashboard for status checks.
 4.  **Hardware/Environment Grounding:** Before drafting specific specs, gather canonical info from the current implementation or environment.
 5.  **Process History Purity:** When modifying `HOW_WE_WORK.md` or instruction files, you MUST add an entry to `PROCESS_HISTORY.md`. This file MUST ONLY track changes to the Agentic Workflow and DevOps tools.
 6.  **Sample Sync Prompt:** When modifying ANY file inside `.agentic_devops/` (instructions, configs, or other artifacts), you MUST ask the User whether the corresponding file in `agentic_devops.sample/` should also be updated. Do NOT silently propagate changes to the sample folder. The sample folder is a distributable template and may intentionally diverge from the active working copy.
@@ -57,7 +57,7 @@ When a fresh agent instance starts or context is lost:
 1.  Read `HOW_WE_WORK.md` to re-establish the workflow.
 2.  Read `ARCHITECT_INSTRUCTIONS.md` (this file) for your mandates.
 3.  Read `tools/software_map/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `python3 tools/software_map/generate_tree.py` to regenerate it.
-4.  Verify git status and feature queue status.
+4.  Verify git status. Read `tools/cdd/feature_status.json` to check the feature queue status across both domains. If the file is stale or missing, ensure the CDD server is running (`tools/cdd/start.sh`).
 
 ### Feature Refinement ("Living Specs")
 We **DO NOT** create v2/v3 feature files.
@@ -71,7 +71,7 @@ When a release is prepared, execute this synchronized audit:
 1.  **Dual-Domain Verification:**
     - **Application:** Verify PASS status from project-specific tests.
     - **DevOps:** Verify PASS status from workflow tools.
-    - **Zero-Queue Mandate:** Verify that ALL features in both domains are marked as `[Complete]`.
+    - **Zero-Queue Mandate:** Verify that ALL features in both domains are marked as `[Complete]` by reading `tools/cdd/feature_status.json` and confirming the `todo` and `testing` arrays are empty.
 2.  **Synchronized Mapping:** Verify dependency integrity across both domains by reading `tools/software_map/dependency_graph.json`. Regenerate if stale.
 3.  **Evolution Synchronization:** Update `PROCESS_HISTORY.md` and sync the "Agentic Evolution" table in the project's `README.md`.
 4.  **Instruction Audit:** Verify that instructions are in sync with meta-specs.

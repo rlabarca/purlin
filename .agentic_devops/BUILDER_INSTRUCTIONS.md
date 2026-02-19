@@ -44,4 +44,4 @@ Your mandate is to translate specifications into high-quality code and **commit 
 ## 4. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
-*   **Status Reset:** Any edit to a feature file resets it to `[TODO]`. You must re-verify and create a new status commit to clear it.
+*   **Status Reset:** Any edit to a feature file resets it to `[TODO]`. You must re-verify and create a new status commit to clear it. Confirm status by reading `tools/cdd/feature_status.json`. Do NOT use the web dashboard for status checks.

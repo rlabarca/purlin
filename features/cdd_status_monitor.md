@@ -5,7 +5,7 @@
 > Prerequisite: HOW_WE_WORK.md
 
 ## 1. Overview
-The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files across both the Application and Agentic (Workflow) domains.
+The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files across both the Application and Agentic (Workflow) domains. Provides both a web dashboard for human review and a canonical JSON output for agent consumption.
 
 ## 2. Requirements
 
@@ -18,13 +18,44 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
 *   **COMPLETE List Capping:** The "COMPLETE" section for each domain should be limited to the most recent items.
 *   **Status Indicators:** Use distinct color coding for TODO, TESTING, and COMPLETE states.
+*   **Scope:** The web dashboard is for human consumption only. Agents must use `feature_status.json`.
 
 ### 2.3 Verification Signals
 *   **Application Tests:** Monitor the primary project's test summary.
-*   **Agentic Tests (Standardized Protocol):** 
+*   **Agentic Tests (Standardized Protocol):**
     *   The monitor must scan all subdirectories in `tools/` for a file named `test_status.json`.
-    *   **Aggregation:** If ANY `test_status.json` reports a failure, the "Agentic Test Status" must show **FAIL**. 
+    *   **Aggregation:** If ANY `test_status.json` reports a failure, the "Agentic Test Status" must show **FAIL**.
     *   **Success:** Only shows **PASS** if all existing status files report success.
+
+### 2.4 Machine-Readable Output (Agent Interface)
+*   **Canonical File:** The monitor MUST produce a `feature_status.json` file at `tools/cdd/feature_status.json`.
+*   **Schema:** The JSON file MUST contain the following structure:
+    ```json
+    {
+      "generated_at": "<ISO 8601 timestamp>",
+      "domains": {
+        "application": {
+          "test_status": "PASS | FAIL | UNKNOWN",
+          "features": {
+            "todo": [{"file": "<relative path>", "label": "<label>"}],
+            "testing": [{"file": "<relative path>", "label": "<label>"}],
+            "complete": [{"file": "<relative path>", "label": "<label>"}]
+          }
+        },
+        "agentic": {
+          "test_status": "PASS | FAIL | UNKNOWN",
+          "features": {
+            "todo": [...],
+            "testing": [...],
+            "complete": [...]
+          }
+        }
+      }
+    }
+    ```
+*   **Regeneration:** The JSON file MUST be regenerated on every web dashboard refresh cycle (i.e., at the same cadence the HTML is re-rendered).
+*   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
+*   **Agent Contract:** This file is the ONLY interface agents should use to query feature status. Agents MUST NOT scrape the web dashboard.
 
 ## 3. Scenarios
 
@@ -33,6 +64,19 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     When the CDD monitor refreshes
     Then the feature appears in the COMPLETE section of the Agentic column
     And it does NOT appear in the Application column
+    And feature_status.json reflects the updated status
+
+### Scenario: Agent Reads Feature Status
+    Given feature_status.json exists at tools/cdd/feature_status.json
+    When an agent needs to check feature queue status
+    Then the agent reads feature_status.json directly
+    And the agent does NOT use the web dashboard
+
+### Scenario: Zero-Queue Verification
+    Given a release is being prepared
+    When the Architect checks the Zero-Queue Mandate
+    Then the Architect reads feature_status.json
+    And verifies that the "todo" and "testing" arrays are empty in both domains
 
 ## 4. Implementation Notes
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
@@ -40,3 +84,4 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.
 *   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND `file_mod_ts <= complete_ts`. Any file edit after the completion commit resets status to `TODO` (the "Status Reset" protocol).
 *   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.
+*   **Agent Interface:** `feature_status.json` is the single machine-readable contract. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST read this file.
