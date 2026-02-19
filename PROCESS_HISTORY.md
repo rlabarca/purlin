@@ -2,6 +2,16 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] QA Agent: Interactive Verification Workflow
+- **Problem:** The QA process required the human tester to manually edit `.md` files, run scripts, and understand the discovery recording format. Too cumbersome for practical use.
+- **Solution: Interactive-First QA Agent:**
+    - Rewrote `instructions/QA_BASE.md` to make the QA agent fully interactive. The human tester only answers PASS/FAIL and describes what they see. The agent handles all file operations, critic execution, discovery recording, and git commits.
+    - Added Startup Protocol (Section 3): agent automatically runs the critic tool, checks CDD status, identifies TESTING features, and begins walking the user through scenarios.
+    - Added Scenario-by-Scenario Walkthrough (Section 5): agent presents each Given/When/Then step with concrete instructions, asks PASS/FAIL, and records discoveries on behalf of the user.
+    - Added Session Conclusion (Section 6): agent summarizes results and routes feedback.
+- **New Script:** `tools/critic/run.sh` -- executable convenience wrapper for the critic tool.
+- **Impact:** QA persona instructions only (no code changes). The human tester never interacts with feature files directly.
+
 ## [2026-02-19] v3.0.0 Critic Quality Gate System + QA Persona
 - **Problem:** Four failure modes in the Architect-Builder async workflow: underspecification, invisible autonomy, no automated traceability, and user testing gaps.
 - **Solution: Critic Quality Gate System:**

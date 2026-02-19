@@ -208,7 +208,7 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
     Then it contains a clear summary table, builder decision audit, and traceability gaps
 
 ## 4. Implementation Notes
-*   **Tool Location:** `tools/critic/` directory containing `critic.py` (main engine), `traceability.py`, `policy_check.py`, `logic_drift.py`, and `test_critic.py`.
+*   **Tool Location:** `tools/critic/` directory containing `critic.py` (main engine), `traceability.py`, `policy_check.py`, `logic_drift.py`, `test_critic.py`, and `run.sh` (executable convenience wrapper).
 *   **Test Output:** Test results go to `tests/critic_tool/tests.json`.
 *   **LLM Cache:** Stored in `tools/critic/.cache/` as JSON files keyed by hash pairs. This directory should be gitignored.
 *   **No External Dependencies:** The deterministic components (Spec Gate, traceability, policy check) MUST NOT require any external packages beyond Python 3.9+ standard library. The LLM component requires the `anthropic` Python package only when enabled.
