@@ -23,7 +23,7 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 *   **Consult the Architecture:** Read the relevant `features/arch_*.md` (Application or Agentic).
 *   **Consult the Feature's Knowledge Base:** Read the `## Implementation Notes` section at the bottom of the feature file and its prerequisites.
 *   **Check for Dependencies:** Read `tools/software_map/dependency_graph.json` to verify prerequisites and their status before proceeding. Do NOT use the web UI for dependency checks.
-*   **Verify Current Status:** Read `tools/cdd/feature_status.json` and confirm the target feature is in the expected state (typically `todo`). Do NOT use the web dashboard.
+*   **Verify Current Status:** Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature status. Confirm the target feature is in the expected state (typically `todo`). Do NOT scrape the web dashboard or guess ports.
 
 ### 1. Acknowledge and Plan
 *   State which feature file you are implementing.
@@ -50,7 +50,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   If the feature requires manual/human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**)
     *   If all verification is automated and passing: `[Complete features/FILENAME.md]` (transitions to **COMPLETE**)
 *   **B. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG"`
-*   **C. Verify Transition:** Read `tools/cdd/feature_status.json` and confirm the feature now appears in the expected state (`testing` or `complete`). Do NOT use the web dashboard. If the status did not update as expected, investigate and correct before moving on.
+*   **C. Verify Transition:** Run `curl -s http://localhost:<cdd_port>/status.json` (port from `.agentic_devops/config.json`) and confirm the feature now appears in the expected state (`testing` or `complete`). Do NOT use the web dashboard. If the status did not update as expected, investigate and correct before moving on.
 
 ## 4. Agentic Team Orchestration
 1.  **Orchestration Mandate:** You are encouraged to act as a "Lead Developer." When faced with a complex task, you SHOULD delegate sub-tasks to specialized sub-agents to ensure maximum accuracy and efficiency.

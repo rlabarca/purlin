@@ -18,7 +18,7 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
 *   **COMPLETE List Capping:** The "COMPLETE" section for each domain should be limited to the most recent items.
 *   **Status Indicators:** Use distinct color coding for TODO, TESTING, and COMPLETE states.
-*   **Scope:** The web dashboard is for human consumption only. Agents must use `feature_status.json`.
+*   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
 
 ### 2.3 Verification Signals
 *   **Application Tests:** Monitor the primary project's test summary.
@@ -28,8 +28,9 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     *   **Success:** Only shows **PASS** if all existing status files report success.
 
 ### 2.4 Machine-Readable Output (Agent Interface)
-*   **Canonical File:** The monitor MUST produce a `feature_status.json` file at `tools/cdd/feature_status.json`.
-*   **Schema:** The JSON file MUST contain the following structure:
+*   **API Endpoint:** The server MUST expose a `/status.json` route that returns the feature status JSON directly with `Content-Type: application/json`. This is the **primary** agent interface.
+*   **Canonical File:** The monitor MUST also produce a `feature_status.json` file at `tools/cdd/feature_status.json` as a secondary artifact, regenerated on every request.
+*   **Schema:** Both the API response and the file MUST contain the following structure:
     ```json
     {
       "generated_at": "<ISO 8601 timestamp>",
@@ -53,9 +54,9 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
       }
     }
     ```
-*   **Regeneration:** The JSON file MUST be regenerated on every web dashboard refresh cycle (i.e., at the same cadence the HTML is re-rendered).
+*   **Regeneration:** The JSON MUST be freshly computed on every `/status.json` request. The file on disk is also regenerated on dashboard and API requests.
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
-*   **Agent Contract:** This file is the ONLY interface agents should use to query feature status. Agents MUST NOT scrape the web dashboard.
+*   **Agent Contract:** Agents MUST query status via `curl http://localhost:<port>/status.json` where `<port>` is read from `.agentic_devops/config.json` (`cdd_port`, default `8086`). Agents MUST NOT scrape the web dashboard or guess ports.
 
 ## 3. Scenarios
 
@@ -66,16 +67,18 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     And it does NOT appear in the Application column
     And feature_status.json reflects the updated status
 
-### Scenario: Agent Reads Feature Status
-    Given feature_status.json exists at tools/cdd/feature_status.json
+### Scenario: Agent Reads Feature Status via API
+    Given the CDD server is running
     When an agent needs to check feature queue status
-    Then the agent reads feature_status.json directly
-    And the agent does NOT use the web dashboard
+    Then the agent reads cdd_port from .agentic_devops/config.json
+    And the agent calls GET /status.json on that port
+    And the agent receives a valid JSON response
+    And the agent does NOT scrape the web dashboard or guess ports
 
 ### Scenario: Zero-Queue Verification
     Given a release is being prepared
     When the Architect checks the Zero-Queue Mandate
-    Then the Architect reads feature_status.json
+    Then the Architect calls GET /status.json on the configured CDD port
     And verifies that the "todo" and "testing" arrays are empty in both domains
 
 ## 4. Implementation Notes
@@ -84,4 +87,4 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.
 *   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND `file_mod_ts <= complete_ts`. Any file edit after the completion commit resets status to `TODO` (the "Status Reset" protocol).
 *   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.
-*   **Agent Interface:** `feature_status.json` is the single machine-readable contract. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST read this file.
+*   **Agent Interface:** The `/status.json` API endpoint is the primary machine-readable contract. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST use `curl http://localhost:<cdd_port>/status.json`. The disk file `feature_status.json` is a secondary artifact. Agents MUST read the port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and MUST NOT hardcode or guess port numbers.
