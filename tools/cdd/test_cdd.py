@@ -4,7 +4,8 @@ import os
 import json
 import tempfile
 import shutil
-from serve import get_devops_aggregated_test_status, get_feature_status, COMPLETE_CAP
+from serve import (get_devops_aggregated_test_status, get_feature_status,
+                    COMPLETE_CAP, extract_label, generate_feature_status_json)
 
 class TestCDD(unittest.TestCase):
     def setUp(self):
@@ -83,6 +84,139 @@ class TestCDD(unittest.TestCase):
         self.assertEqual(len(complete), 15)
         self.assertEqual(len(testing), 0)
         self.assertEqual(len(todo), 0)
+
+class TestExtractLabel(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_valid_label(self):
+        path = os.path.join(self.test_dir, "test.md")
+        with open(path, 'w') as f:
+            f.write('# Feature: Test\n\n> Label: "My Label"\n> Category: "Test"\n')
+        self.assertEqual(extract_label(path), "My Label")
+
+    def test_label_with_colon(self):
+        path = os.path.join(self.test_dir, "test.md")
+        with open(path, 'w') as f:
+            f.write('> Label: "Tool: CDD Monitor"\n')
+        self.assertEqual(extract_label(path), "Tool: CDD Monitor")
+
+    def test_missing_label_fallback(self):
+        path = os.path.join(self.test_dir, "my_feature.md")
+        with open(path, 'w') as f:
+            f.write('# No label here\n')
+        self.assertEqual(extract_label(path), "my_feature")
+
+    def test_nonexistent_file_fallback(self):
+        self.assertEqual(extract_label("/nonexistent/foo.md"), "foo")
+
+
+class TestFeatureStatusJSON(unittest.TestCase):
+
+    @patch('serve.IS_META', False)
+    @patch('serve.DOMAINS', [
+        {"label": "Application", "features_rel": "features",
+         "features_abs": "/tmp/test_features", "test_mode": "auto"},
+        {"label": "Agentic Core", "features_rel": "core/features",
+         "features_abs": "/tmp/test_features", "test_mode": "devops_aggregate",
+         "tools_dir": "/tmp/test_tools"},
+    ])
+    @patch('serve.get_feature_status')
+    @patch('serve.get_domain_test_status')
+    @patch('serve.extract_label')
+    def test_json_structure_both_domains(self, mock_label, mock_test, mock_features):
+        mock_features.return_value = ([("feat_a.md", 100)], ["feat_b.md"], ["feat_c.md"])
+        mock_test.return_value = ("PASS", "All good")
+        mock_label.return_value = "Test Label"
+
+        data = generate_feature_status_json()
+
+        self.assertIn("generated_at", data)
+        self.assertIn("domains", data)
+        self.assertIn("application", data["domains"])
+        self.assertIn("agentic", data["domains"])
+
+        for domain_key in ["application", "agentic"]:
+            domain = data["domains"][domain_key]
+            self.assertEqual(domain["test_status"], "PASS")
+            self.assertIn("features", domain)
+            self.assertEqual(len(domain["features"]["complete"]), 1)
+            self.assertEqual(len(domain["features"]["testing"]), 1)
+            self.assertEqual(len(domain["features"]["todo"]), 1)
+            # Each entry must have file and label keys
+            for entry in domain["features"]["todo"]:
+                self.assertIn("file", entry)
+                self.assertIn("label", entry)
+
+    @patch('serve.IS_META', True)
+    @patch('serve.DOMAINS', [
+        {"label": "Agentic Core", "features_rel": "./features",
+         "features_abs": "/tmp/test_features", "test_mode": "devops_aggregate",
+         "tools_dir": "/tmp/test_tools"},
+    ])
+    @patch('serve.get_feature_status')
+    @patch('serve.get_domain_test_status')
+    @patch('serve.extract_label')
+    def test_meta_mode_mirrors_domains(self, mock_label, mock_test, mock_features):
+        mock_features.return_value = ([], [], ["feat.md"])
+        mock_test.return_value = ("UNKNOWN", "No tests")
+        mock_label.return_value = "Label"
+
+        data = generate_feature_status_json()
+
+        self.assertIn("application", data["domains"])
+        self.assertIn("agentic", data["domains"])
+        self.assertEqual(data["domains"]["application"], data["domains"]["agentic"])
+
+    @patch('serve.IS_META', False)
+    @patch('serve.DOMAINS', [
+        {"label": "Application", "features_rel": "features",
+         "features_abs": "/tmp/test_features", "test_mode": "auto"},
+    ])
+    @patch('serve.get_feature_status')
+    @patch('serve.get_domain_test_status')
+    @patch('serve.extract_label')
+    def test_arrays_sorted_by_file(self, mock_label, mock_test, mock_features):
+        # Return features in non-alphabetical order
+        mock_features.return_value = (
+            [("z_feat.md", 300), ("a_feat.md", 100), ("m_feat.md", 200)],
+            ["z_test.md", "a_test.md"],
+            ["z_todo.md", "a_todo.md"],
+        )
+        mock_test.return_value = ("PASS", "OK")
+        mock_label.return_value = "Label"
+
+        data = generate_feature_status_json()
+        domain = data["domains"]["application"]
+
+        for status_key in ["complete", "testing", "todo"]:
+            items = domain["features"][status_key]
+            files = [item["file"] for item in items]
+            self.assertEqual(files, sorted(files),
+                             f"{status_key} array not sorted by file path")
+
+    @patch('serve.IS_META', False)
+    @patch('serve.DOMAINS', [
+        {"label": "Application", "features_rel": "features",
+         "features_abs": "/tmp/test_features", "test_mode": "auto"},
+    ])
+    @patch('serve.get_feature_status')
+    @patch('serve.get_domain_test_status')
+    @patch('serve.extract_label')
+    def test_json_keys_sorted(self, mock_label, mock_test, mock_features):
+        mock_features.return_value = ([], [], ["feat.md"])
+        mock_test.return_value = ("PASS", "OK")
+        mock_label.return_value = "Label"
+
+        data = generate_feature_status_json()
+        json_str = json.dumps(data, sort_keys=True)
+        reparsed = json.loads(json_str)
+        json_str2 = json.dumps(reparsed, sort_keys=True)
+        self.assertEqual(json_str, json_str2)
+
 
 if __name__ == '__main__':
     unittest.main()

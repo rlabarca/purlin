@@ -3,7 +3,7 @@ import json
 import socketserver
 import subprocess
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 PORT = 8086
 # When running as part of the core engine, we need to know where the host project is.
@@ -52,6 +52,7 @@ DOMAINS.append({
 })
 
 COMPLETE_CAP = 10
+FEATURE_STATUS_PATH = os.path.join(os.path.dirname(__file__), "feature_status.json")
 
 
 def run_command(command):
@@ -68,6 +69,19 @@ def run_command(command):
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return ""
+
+
+def extract_label(filepath):
+    """Extracts the Label from a feature file's frontmatter."""
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('> Label:'):
+                    return line[len('> Label:'):].strip().strip('"')
+    except (IOError, OSError):
+        pass
+    return os.path.splitext(os.path.basename(filepath))[0]
 
 
 def get_feature_status(features_rel, features_abs):
@@ -162,6 +176,56 @@ def get_domain_test_status(domain):
     if domain.get("test_mode") == "devops_aggregate":
         return get_devops_aggregated_test_status(domain["tools_dir"])
     return get_project_test_status(PROJECT_ROOT)
+
+
+def generate_feature_status_json():
+    """Generates the feature_status.json data structure per spec."""
+    domain_key_map = {
+        "Application": "application",
+        "Agentic Core": "agentic",
+    }
+    domains_data = {}
+
+    for domain in DOMAINS:
+        key = domain_key_map.get(domain["label"], domain["label"].lower())
+        complete_tuples, testing, todo = get_feature_status(
+            domain["features_rel"], domain["features_abs"]
+        )
+        test_status, _ = get_domain_test_status(domain)
+
+        features_rel = domain["features_rel"]
+        features_abs = domain["features_abs"]
+
+        def make_entry(fname, _rel=features_rel, _abs=features_abs):
+            rel_path = os.path.normpath(os.path.join(_rel, fname))
+            label = extract_label(os.path.join(_abs, fname))
+            return {"file": rel_path, "label": label}
+
+        domains_data[key] = {
+            "features": {
+                "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
+                "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
+                "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
+            },
+            "test_status": test_status,
+        }
+
+    # In meta mode, mirror agentic data to application
+    if IS_META and "application" not in domains_data:
+        domains_data["application"] = domains_data.get("agentic", {})
+
+    return {
+        "domains": domains_data,
+        "generated_at": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+    }
+
+
+def write_feature_status_json():
+    """Writes feature_status.json to disk."""
+    data = generate_feature_status_json()
+    with open(FEATURE_STATUS_PATH, 'w') as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+        f.write('\n')
 
 
 def get_git_status():
@@ -290,6 +354,7 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
+        write_feature_status_json()
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
