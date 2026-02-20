@@ -123,12 +123,11 @@ def get_feature_test_status(feature_stem, tests_dir):
         return "FAIL"
 
 
-def get_feature_qa_status(feature_stem, tests_dir):
-    """Looks up tests/<feature_stem>/critic.json and returns QA status or None.
+def get_feature_role_status(feature_stem, tests_dir):
+    """Reads role_status from tests/<feature_stem>/critic.json.
 
-    Returns "CLEAN" or "HAS_OPEN_ITEMS", or None (when no critic.json exists).
-    Reads the user_testing.status field from critic.json.
-    Malformed JSON is treated as None (omitted).
+    Returns dict with 'architect', 'builder', 'qa' keys, or None
+    if no critic.json exists or it lacks role_status.
     """
     critic_path = os.path.join(tests_dir, feature_stem, "critic.json")
     if not os.path.isfile(critic_path):
@@ -136,7 +135,7 @@ def get_feature_qa_status(feature_stem, tests_dir):
     try:
         with open(critic_path, 'r') as f:
             data = json.load(f)
-        return data.get("user_testing", {}).get("status")
+        return data.get("role_status")
     except (json.JSONDecodeError, IOError, OSError):
         return None
 
@@ -154,8 +153,16 @@ def aggregate_test_statuses(statuses):
     return "PASS"
 
 
-def generate_feature_status_json():
-    """Generates the feature_status.json data structure per spec (flat schema)."""
+# ===================================================================
+# Internal Feature Status (old lifecycle format, for Critic consumption)
+# ===================================================================
+
+def generate_internal_feature_status():
+    """Generates the internal feature_status.json (old lifecycle-based format).
+
+    This is consumed by the Critic for lifecycle-state-dependent computations.
+    NOT part of the public API contract.
+    """
     complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
 
     all_test_statuses = []
@@ -169,15 +176,15 @@ def generate_feature_status_json():
         if ts is not None:
             entry["test_status"] = ts
             all_test_statuses.append(ts)
-        qa = get_feature_qa_status(stem, TESTS_DIR)
-        if qa is not None:
-            entry["qa_status"] = qa
         return entry
 
     features = {
-        "complete": sorted([make_entry(n) for n, _ in complete_tuples], key=lambda x: x["file"]),
-        "testing": sorted([make_entry(n) for n in testing], key=lambda x: x["file"]),
-        "todo": sorted([make_entry(n) for n in todo], key=lambda x: x["file"]),
+        "complete": sorted([make_entry(n) for n, _ in complete_tuples],
+                           key=lambda x: x["file"]),
+        "testing": sorted([make_entry(n) for n in testing],
+                          key=lambda x: x["file"]),
+        "todo": sorted([make_entry(n) for n in todo],
+                       key=lambda x: x["file"]),
     }
 
     return {
@@ -187,13 +194,66 @@ def generate_feature_status_json():
     }
 
 
-def write_feature_status_json():
-    """Writes feature_status.json to disk."""
-    data = generate_feature_status_json()
+def write_internal_feature_status():
+    """Writes internal feature_status.json to disk."""
+    data = generate_internal_feature_status()
     with open(FEATURE_STATUS_PATH, 'w') as f:
         json.dump(data, f, indent=2, sort_keys=True)
         f.write('\n')
 
+
+# ===================================================================
+# Public API: /status.json (flat schema with role fields)
+# ===================================================================
+
+def generate_api_status_json():
+    """Generates the public /status.json response (flat array with role fields).
+
+    Per spec Section 2.4:
+    - Flat features array (no todo/testing/complete sub-arrays)
+    - Per-feature: file, label, architect, builder, qa from role_status
+    - No test_status or qa_status fields
+    - No top-level test_status
+    - Sorted by file path
+    """
+    if not os.path.isdir(FEATURES_ABS):
+        return {
+            "features": [],
+            "generated_at": datetime.now(timezone.utc).strftime(
+                '%Y-%m-%dT%H:%M:%SZ'),
+        }
+
+    feature_files = sorted(
+        f for f in os.listdir(FEATURES_ABS) if f.endswith('.md'))
+
+    features = []
+    for fname in feature_files:
+        rel_path = os.path.normpath(os.path.join(FEATURES_REL, fname))
+        label = extract_label(os.path.join(FEATURES_ABS, fname))
+        entry = {"file": rel_path, "label": label}
+
+        stem = os.path.splitext(fname)[0]
+        role_status = get_feature_role_status(stem, TESTS_DIR)
+        if role_status:
+            if 'architect' in role_status:
+                entry["architect"] = role_status["architect"]
+            if 'builder' in role_status:
+                entry["builder"] = role_status["builder"]
+            if 'qa' in role_status:
+                entry["qa"] = role_status["qa"]
+
+        features.append(entry)
+
+    return {
+        "features": sorted(features, key=lambda x: x["file"]),
+        "generated_at": datetime.now(timezone.utc).strftime(
+            '%Y-%m-%dT%H:%M:%SZ'),
+    }
+
+
+# ===================================================================
+# Web Dashboard (role-based columns, Active/Complete grouping)
+# ===================================================================
 
 def get_git_status():
     """Gets the current git status."""
@@ -205,72 +265,94 @@ def get_last_commit():
     return run_command("git log -1 --format='%h %s (%cr)'")
 
 
-def _badge_html(status, label=None):
-    """Returns a colored badge span, or empty string if status is None."""
+# Badge CSS class mapping for role statuses
+ROLE_BADGE_CSS = {
+    "DONE": "st-done",
+    "CLEAN": "st-done",
+    "TODO": "st-todo",
+    "FAIL": "st-fail",
+    "INFEASIBLE": "st-fail",
+    "BLOCKED": "st-blocked",
+    "DISPUTED": "st-disputed",
+    "N/A": "st-na",
+}
+
+# Urgency order for Active section sorting (lower = more urgent)
+URGENCY_ORDER = {
+    "FAIL": 0, "INFEASIBLE": 0,
+    "TODO": 1, "DISPUTED": 1,
+    "BLOCKED": 2,
+    "DONE": 3, "CLEAN": 3, "N/A": 3,
+}
+
+
+def _role_badge_html(status):
+    """Returns a colored badge span for a role status, or '--' if None."""
     if status is None:
-        return ""
-    css_map = {
-        "PASS": "st-pass", "WARN": "st-warn", "FAIL": "st-fail",
-        "CLEAN": "st-pass", "HAS_OPEN_ITEMS": "st-warn",
-    }
-    css = css_map.get(status, "st-fail")
-    text = label or status
-    return f'<span class="{css}">{text}</span>'
+        return '<span class="st-na">--</span>'
+    css = ROLE_BADGE_CSS.get(status, "st-na")
+    return f'<span class="{css}">{status}</span>'
 
 
-def _feature_table_html(features, css_class):
-    """Renders a table of features with Test and QA badge columns."""
-    if not features:
-        return ""
-    rows = ""
-    for name in features:
-        stem = os.path.splitext(name)[0]
-        ts = get_feature_test_status(stem, TESTS_DIR)
-        qa = get_feature_qa_status(stem, TESTS_DIR)
-        rows += (
-            f'<tr>'
-            f'<td><span class="sq {css_class}"></span>{name}</td>'
-            f'<td class="badge-cell">{_badge_html(ts)}</td>'
-            f'<td class="badge-cell">{_badge_html(qa)}</td>'
-            f'</tr>'
-        )
-    return (
-        f'<table class="ft">'
-        f'<thead><tr><th>Feature</th><th>Tests</th><th>QA</th></tr></thead>'
-        f'<tbody>{rows}</tbody>'
-        f'</table>'
-    )
+def _feature_urgency(entry):
+    """Compute urgency score for sorting Active features.
+
+    Lower score = more urgent. Red states first, then yellow/orange, then rest.
+    """
+    scores = []
+    for role in ('architect', 'builder', 'qa'):
+        val = entry.get(role)
+        if val is not None:
+            scores.append(URGENCY_ORDER.get(val, 3))
+    return min(scores) if scores else 3
+
+
+def _is_feature_complete(entry):
+    """Check if all roles are fully satisfied."""
+    arch = entry.get('architect')
+    builder = entry.get('builder')
+    qa = entry.get('qa')
+
+    # If no critic.json exists (no role fields), not complete
+    if arch is None and builder is None and qa is None:
+        return False
+
+    arch_ok = arch in ('DONE', None)
+    builder_ok = builder in ('DONE', None)
+    qa_ok = qa in ('CLEAN', 'N/A', None)
+
+    return arch_ok and builder_ok and qa_ok
 
 
 def generate_html():
-    """Generates the full dashboard HTML."""
+    """Generates the full dashboard HTML with role-based columns."""
     git_status = get_git_status()
     last_commit = get_last_commit()
-    complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
 
-    # Aggregate per-feature test statuses for the top-level badge
-    all_test_statuses = []
-    all_fnames = [n for n, _ in complete_tuples] + testing + todo
-    for fname in all_fnames:
-        stem = os.path.splitext(fname)[0]
-        ts = get_feature_test_status(stem, TESTS_DIR)
-        if ts is not None:
-            all_test_statuses.append(ts)
-    test_status = aggregate_test_statuses(all_test_statuses)
-    test_msg = (
-        "All features nominal" if test_status == "PASS"
-        else "No test reports found" if test_status == "UNKNOWN"
-        else f"{sum(1 for s in all_test_statuses if s == 'FAIL')} feature(s) failing"
-    )
+    # Get API data for dashboard
+    api_data = generate_api_status_json()
+    all_features = api_data["features"]
 
-    # COMPLETE capping
-    total_complete = len(complete_tuples)
-    visible_complete = [name for name, _ in complete_tuples[:COMPLETE_CAP]]
+    # Split into Active vs Complete
+    active_features = []
+    complete_features = []
+    for entry in all_features:
+        if _is_feature_complete(entry):
+            complete_features.append(entry)
+        else:
+            active_features.append(entry)
+
+    # Sort Active by urgency (red first, then yellow/orange, then alphabetical)
+    active_features.sort(key=lambda e: (_feature_urgency(e), e["file"]))
+
+    # Cap Complete at COMPLETE_CAP
+    total_complete = len(complete_features)
+    visible_complete = complete_features[:COMPLETE_CAP]
     overflow = total_complete - COMPLETE_CAP
 
-    todo_html = _feature_table_html(todo, "todo")
-    testing_html = _feature_table_html(testing, "testing")
-    complete_html = _feature_table_html(visible_complete, "complete")
+    # Build Active table
+    active_html = _role_table_html(active_features) if active_features else ""
+    complete_html = _role_table_html(visible_complete) if visible_complete else ""
     overflow_html = (
         f'<p class="dim">and {overflow} more&hellip;</p>' if overflow > 0 else ""
     )
@@ -304,20 +386,17 @@ h3{{font-size:11px;color:#888;margin:8px 0 2px;text-transform:uppercase;letter-s
 .ft th{{text-align:left;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid #2A2F36}}
 .ft td{{padding:2px 6px;line-height:1.5}}
 .ft tr:hover{{background:#1E2630}}
-.badge-cell{{text-align:center;width:60px}}
-.sq{{width:7px;height:7px;margin-right:6px;flex-shrink:0;border-radius:1px}}
-.sq.complete{{background:#32CD32}}
-.sq.testing{{background:#4A90E2}}
-.sq.todo{{background:#FFD700}}
-.test-bar{{margin-top:8px;padding-top:6px;border-top:1px solid #2A2F36}}
-.st-pass{{color:#32CD32;font-weight:bold}}
-.st-fail{{color:#FF4500;font-weight:bold}}
-.st-warn{{color:#FFA500;font-weight:bold}}
-.st-unknown{{color:#666;font-weight:bold}}
+.badge-cell{{text-align:center;width:70px}}
 .ctx{{background:#1A2028;border-radius:4px;padding:8px 10px}}
 .clean{{color:#32CD32}}
 .wip{{color:#FFD700;margin-bottom:2px}}
 pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
+.st-done{{color:#32CD32;font-weight:bold}}
+.st-todo{{color:#FFD700;font-weight:bold}}
+.st-fail{{color:#FF4500;font-weight:bold}}
+.st-blocked{{color:#888;font-weight:bold}}
+.st-disputed{{color:#FFA500;font-weight:bold}}
+.st-na{{color:#444;font-weight:bold}}
 </style>
 </head>
 <body>
@@ -326,17 +405,11 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
   <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
 </div>
 <div class="features">
-    <h3>TODO</h3>
-    {todo_html or '<p class="dim">None pending.</p>'}
-    <h3>TESTING</h3>
-    {testing_html or '<p class="dim">None in testing.</p>'}
-    <h3>COMPLETE</h3>
+    <h3>Active</h3>
+    {active_html or '<p class="dim">No active features.</p>'}
+    <h3>Complete</h3>
     {complete_html or '<p class="dim">None complete.</p>'}
     {overflow_html}
-    <div class="test-bar">
-        <span class="st-{test_status.lower()}">{test_status}</span>
-        <span class="dim">Tests: {test_msg}</span>
-    </div>
 </div>
 <div class="ctx">
   <h2>Workspace</h2>
@@ -347,22 +420,52 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
 </html>"""
 
 
+def _role_table_html(features):
+    """Renders a table of features with Architect, Builder, QA role columns."""
+    if not features:
+        return ""
+    rows = ""
+    for entry in features:
+        fname = entry["file"]
+        arch = _role_badge_html(entry.get("architect"))
+        builder = _role_badge_html(entry.get("builder"))
+        qa = _role_badge_html(entry.get("qa"))
+        rows += (
+            f'<tr>'
+            f'<td>{fname}</td>'
+            f'<td class="badge-cell">{arch}</td>'
+            f'<td class="badge-cell">{builder}</td>'
+            f'<td class="badge-cell">{qa}</td>'
+            f'</tr>'
+        )
+    return (
+        f'<table class="ft">'
+        f'<thead><tr><th>Feature</th><th>Architect</th>'
+        f'<th>Builder</th><th>QA</th></tr></thead>'
+        f'<tbody>{rows}</tbody>'
+        f'</table>'
+    )
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/status.json':
-            data = generate_feature_status_json()
-            # Also write to disk as secondary artifact
-            with open(FEATURE_STATUS_PATH, 'w') as f:
-                json.dump(data, f, indent=2, sort_keys=True)
-                f.write('\n')
-            payload = json.dumps(data, indent=2, sort_keys=True).encode('utf-8')
+            # Public API: flat array with role fields
+            api_data = generate_api_status_json()
+
+            # Also write internal feature_status.json (old format)
+            write_internal_feature_status()
+
+            payload = json.dumps(api_data, indent=2, sort_keys=True).encode(
+                'utf-8')
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
         else:
-            write_feature_status_json()
+            # Dashboard request: also regenerate internal file
+            write_internal_feature_status()
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
