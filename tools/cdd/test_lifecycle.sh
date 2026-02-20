@@ -203,6 +203,9 @@ fi
 # Stage 4: COMPLETE
 # ============================================================
 
+# Ensure [Complete] commit timestamp is strictly after [Ready for Verification]
+sleep 1
+
 git commit --allow-empty -m "status(lifecycle): [Complete features/_test_lifecycle_temp.md]" --quiet
 
 refresh

@@ -498,5 +498,6 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` only for QA TODO condition (a) -- TESTING state with manual scenarios. All other QA statuses (FAIL, DISPUTED, TODO from b/c, CLEAN, N/A) are lifecycle-independent. If `feature_status.json` doesn't exist on disk, TESTING-based TODO detection is skipped.
 *   **QA CLEAN/N/A Signal:** QA CLEAN requires `tests/<feature>/tests.json` to exist with `status: "PASS"`. QA N/A means no tests.json exists. This makes QA status reflect actual test coverage: features with passing tests show CLEAN, features with no tests show N/A. Features with 0 manual scenarios but passing automated tests are CLEAN (not N/A).
 *   **Critic Report Readability scenario removed:** SPEC_DISPUTE resolved -- manual readability scenario removed since CRITIC_REPORT.md is agent-facing. Verified 2026-02-20.
+*   **[CLARIFICATION]** QA CLEAN computation restructured: pre-computes `testing_with_manual` flag then uses flat elif chain. This ensures TESTING + 0 manual scenarios falls through to CLEAN (not N/A), and TODO lifecycle with passing tests returns CLEAN (lifecycle-independent). Matches spec Sections 2.11 QA CLEAN/N/A definitions. (Severity: INFO)
 
 ## User Testing Discoveries
