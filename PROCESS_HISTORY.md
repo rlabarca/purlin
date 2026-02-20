@@ -2,6 +2,13 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Builder Status: Lifecycle-Aware TODO Detection
+- **Problem:** When the Architect modifies a feature spec, the CDD lifecycle correctly resets the feature to TODO. But the Critic's Builder role_status still computes DONE because: (1) existing tests still pass (structural completeness PASS), (2) keyword-based traceability produces false-positive matches for new scenarios with similar names, (3) the Builder status computation ignores lifecycle state entirely. Result: the Builder's startup shows Builder=DONE and proposes zero work for a feature with real spec changes.
+- **Root Cause:** Builder status was computed purely from test/traceability/tag signals. The CDD lifecycle "Status Reset" (file edit after status commit resets to TODO) was invisible to Builder role_status.
+- **Solution:** Added lifecycle state as a Builder status input in Section 2.11 of `critic_tool.md`. If a feature is in TODO lifecycle state, Builder is TODO regardless of traceability or test status. Added a corresponding HIGH-priority Builder action item ("Review and implement spec changes for <feature>") in Section 2.10. Added scenario "Builder Action Items from Lifecycle Reset."
+- **Files Modified:** `features/critic_tool.md` (Sections 2.10, 2.11, new scenario).
+- **Impact:** Critic spec reset to TODO. Builder must implement lifecycle-aware Builder status and action item generation in `tools/critic/critic.py`.
+
 ## [2026-02-19] Architect Delegation Prompt Scope Reduction
 - **Problem:** The Architect's work plan included delegation prompts for Builder/QA spec and implementation work. This was redundant -- each agent's startup protocol already self-discovers action items from project artifacts (Critic report, feature specs, CDD status). The delegation prompts added noise and implied the Builder/QA couldn't derive their own priorities.
 - **Solution:** Narrowed Section 5.2 item 4 in `ARCHITECT_BASE.md`. Delegation prompts are now restricted to git check-in of Builder-owned uncommitted files only. Spec and implementation work is NOT delegated -- agents discover it through their startup protocols.

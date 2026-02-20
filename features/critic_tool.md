@@ -134,6 +134,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Architect** | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | "Acknowledge Builder decision in critic_tool: [tag title]" |
 | **Architect** | Spec Gate WARN (no manual scenarios, empty impl notes) | "Improve spec: scenario_classification -- only Automated" |
 | **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
+| **Builder** | Feature in TODO lifecycle state (spec modified after last status commit) | "Review and implement spec changes for critic_tool" |
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
@@ -143,10 +144,11 @@ The Critic MUST generate imperative action items for each role based on the anal
 **Priority Levels:**
 *   **CRITICAL** -- `[INFEASIBLE]` tags (feature halted, Architect must revise spec).
 *   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs.
+*   **HIGH** -- Feature in TODO lifecycle state (spec modified, implementation review needed).
 *   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting re-verification.
 *   **LOW** -- Gate WARNs, informational items.
 
-**CDD Feature Status Dependency:** QA action items that depend on CDD feature status (TESTING state) require `tools/cdd/feature_status.json` to exist on disk. If unavailable, the Critic skips status-dependent QA items with a note in the report.
+**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `tools/cdd/feature_status.json` to exist on disk. If unavailable, the Critic skips lifecycle-dependent items with a note in the report.
 
 ### 2.11 Role Status Computation
 The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
@@ -156,13 +158,15 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 *   `DONE`: No HIGH or CRITICAL Architect action items.
 
 **Builder Status:**
-*   `DONE`: structural_completeness PASS (tests.json exists with PASS), no open BUGs, no FAIL-level traceability issues.
-*   `TODO`: Has Builder action items to address (needs implementation, traceability gaps, etc.).
+*   `DONE`: structural_completeness PASS (tests.json exists with PASS), no open BUGs, no FAIL-level traceability issues, AND feature is NOT in TODO lifecycle state.
+*   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit, implementation review needed), OR has other Builder action items to address (traceability gaps, etc.).
 *   `FAIL`: tests.json exists with status FAIL.
 *   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes (Builder halted, escalated to Architect).
 *   `BLOCKED`: Active SPEC_DISPUTE exists for this feature (scenarios suspended, Builder cannot implement).
 
 **Builder Precedence (highest wins):** INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
+
+**Builder Lifecycle State Dependency:** Builder status computation requires `tools/cdd/feature_status.json` to determine the feature's lifecycle state. If the feature is in TODO lifecycle state, Builder is TODO regardless of traceability or test status -- the spec has changed and the implementation must be reviewed. If `feature_status.json` is unavailable, lifecycle-based TODO detection is skipped with a note in the report.
 
 **QA Status:**
 *   `CLEAN`: user_testing.status is CLEAN AND feature is in COMPLETE lifecycle state. A feature in TESTING state is never CLEAN -- it is awaiting QA verification.
@@ -295,6 +299,15 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     When the Critic tool generates action items
     Then a Builder action item is created with priority MEDIUM
     And the description identifies the unmatched scenario title
+
+#### Scenario: Builder Action Items from Lifecycle Reset
+    Given a feature was previously in TESTING or COMPLETE lifecycle state
+    And the feature spec is modified (file edit after status commit)
+    And the feature lifecycle resets to TODO per feature_status.json
+    When the Critic tool generates action items
+    Then a Builder action item is created with priority HIGH
+    And the description says "Review and implement spec changes for <feature_name>"
+    And role_status.builder is TODO
 
 #### Scenario: QA Action Items from TESTING Status
     Given a feature is in TESTING state per CDD feature_status.json
