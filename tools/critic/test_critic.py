@@ -2388,8 +2388,11 @@ Overview.
 class TestRoleStatusQANA(unittest.TestCase):
     """Scenario: Role Status QA N/A"""
 
-    def test_todo_lifecycle_makes_qa_na(self):
+    def test_no_tests_makes_qa_na(self):
         result = _make_base_result()
+        result['implementation_gate']['checks']['structural_completeness'] = {
+            'status': 'FAIL', 'detail': 'Missing tests.json.',
+        }
         cdd_status = {
             'features': {
                 'todo': [{'file': 'features/test.md'}],
@@ -2399,10 +2402,21 @@ class TestRoleStatusQANA(unittest.TestCase):
         status = compute_role_status(result, cdd_status)
         self.assertEqual(status['qa'], 'N/A')
 
-    def test_no_cdd_status_makes_qa_na(self):
+    def test_todo_lifecycle_with_passing_tests_makes_qa_clean(self):
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/test.md'}],
+                'testing': [], 'complete': [],
+            },
+        }
+        status = compute_role_status(result, cdd_status)
+        self.assertEqual(status['qa'], 'CLEAN')
+
+    def test_no_cdd_status_with_passing_tests_makes_qa_clean(self):
         result = _make_base_result()
         status = compute_role_status(result, cdd_status=None)
-        self.assertEqual(status['qa'], 'N/A')
+        self.assertEqual(status['qa'], 'CLEAN')
 
 
 class TestRoleStatusInCriticJson(unittest.TestCase):
@@ -2822,7 +2836,7 @@ Reqs.
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_testing_no_manual_makes_qa_na(self):
+    def test_testing_no_manual_makes_qa_clean(self):
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
@@ -2836,7 +2850,7 @@ Reqs.
                 },
             }
             status = compute_role_status(result, cdd_status)
-            self.assertEqual(status['qa'], 'N/A')
+            self.assertEqual(status['qa'], 'CLEAN')
         finally:
             critic.FEATURES_DIR = orig_features
 

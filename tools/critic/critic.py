@@ -1078,6 +1078,19 @@ def compute_role_status(feature_result, cdd_status=None):
         ut_section = get_user_testing_section(content)
         has_spec_updated_qa = 'SPEC_UPDATED' in ut_section
 
+    # Pre-compute: is this a TESTING feature with manual scenarios?
+    testing_with_manual = False
+    if lifecycle_state == 'testing':
+        try:
+            content = read_feature_file(
+                os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+            scenarios = parse_scenarios(content)
+            manual_count = sum(
+                1 for s in scenarios if s.get('is_manual', False))
+            testing_with_manual = manual_count > 0
+        except (IOError, OSError):
+            testing_with_manual = True  # safe default: assume manual exist
+
     # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
     if has_open_bugs_qa:
         qa_status = 'FAIL'
@@ -1089,21 +1102,11 @@ def compute_role_status(feature_result, cdd_status=None):
     elif user_testing['status'] == 'HAS_OPEN_ITEMS':
         # TODO condition (c): other OPEN items -- lifecycle-independent
         qa_status = 'TODO'
-    elif lifecycle_state == 'testing':
+    elif testing_with_manual:
         # TODO condition (a): TESTING with manual scenarios
-        try:
-            content = read_feature_file(
-                os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
-            scenarios = parse_scenarios(content)
-            manual_count = sum(
-                1 for s in scenarios if s.get('is_manual', False))
-        except (IOError, OSError):
-            manual_count = 1  # safe default: assume manual scenarios exist
-        if manual_count > 0:
-            qa_status = 'TODO'
-        else:
-            qa_status = 'N/A'
-    elif lifecycle_state == 'complete' and user_testing['status'] == 'CLEAN':
+        qa_status = 'TODO'
+    elif user_testing['status'] == 'CLEAN' and struct_status == 'PASS':
+        # CLEAN is lifecycle-independent: passing tests + no open items = CLEAN
         qa_status = 'CLEAN'
     else:
         qa_status = 'N/A'

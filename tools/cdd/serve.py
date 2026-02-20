@@ -542,6 +542,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"CDD Monitor serving at http://localhost:{PORT}")
-        httpd.serve_forever()
+    if len(sys.argv) > 1 and sys.argv[1] == "--cli-status":
+        # CLI mode: output API JSON to stdout, regenerate internal file
+        write_internal_feature_status()
+        api_data = generate_api_status_json()
+        json.dump(api_data, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write('\n')
+    else:
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            print(f"CDD Monitor serving at http://localhost:{PORT}")
+            httpd.serve_forever()
