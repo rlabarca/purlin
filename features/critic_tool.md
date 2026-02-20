@@ -165,15 +165,15 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 **Builder Precedence (highest wins):** INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 
 **QA Status:**
-*   `CLEAN`: user_testing.status is CLEAN and feature has been verified (is or was in TESTING/COMPLETE lifecycle state).
-*   `TODO`: Feature in TESTING lifecycle state with SPEC_UPDATED items awaiting re-verification, or no verification done yet.
+*   `CLEAN`: user_testing.status is CLEAN AND feature is in COMPLETE lifecycle state. A feature in TESTING state is never CLEAN -- it is awaiting QA verification.
+*   `TODO`: Feature in TESTING lifecycle state with no OPEN BUGs or SPEC_DISPUTEs (awaiting initial verification or re-verification of SPEC_UPDATED items).
 *   `FAIL`: Has OPEN BUGs in User Testing Discoveries.
 *   `DISPUTED`: Has OPEN SPEC_DISPUTEs in User Testing Discoveries (no BUGs).
 *   `N/A`: Feature not yet in TESTING or COMPLETE lifecycle state (not ready for QA).
 
 **QA Precedence (highest wins):** FAIL > DISPUTED > TODO > CLEAN > N/A.
 
-**Lifecycle State Dependency:** QA status computation requires `tools/cdd/feature_status.json` to determine the feature's lifecycle state (TODO/TESTING/COMPLETE). If unavailable, QA status defaults to `N/A` with a note in the report.
+**Lifecycle State Dependency:** QA status computation requires `tools/cdd/feature_status.json` to determine the feature's lifecycle state (TODO/TESTING/COMPLETE). If unavailable, QA status defaults to `N/A` with a note in the report. TESTING maps to QA=TODO (awaiting verification); only COMPLETE maps to QA=CLEAN (verified, no open items).
 
 ### 2.12 Untracked File Audit
 The Critic MUST detect untracked files in the working directory and generate Architect action items for triage.
@@ -369,6 +369,13 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     And the feature is in COMPLETE lifecycle state per feature_status.json
     When the Critic tool computes role_status
     Then role_status.qa is CLEAN
+
+#### Scenario: Role Status QA TODO for TESTING Feature
+    Given a feature has user_testing.status CLEAN
+    And the feature is in TESTING lifecycle state per feature_status.json
+    When the Critic tool computes role_status
+    Then role_status.qa is TODO
+    And role_status.qa is NOT CLEAN
 
 #### Scenario: Role Status QA FAIL
     Given a feature has OPEN BUGs in User Testing Discoveries
