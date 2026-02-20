@@ -55,6 +55,8 @@ from critic import (
     generate_critic_report,
     _policy_exempt_implementation_gate,
     audit_untracked_files,
+    compute_role_status,
+    parse_builder_decisions,
 )
 import logic_drift
 
@@ -1424,7 +1426,8 @@ class TestActionItemsBuilder(unittest.TestCase):
         self.assertEqual(builder_items[0]['priority'], 'HIGH')
         self.assertIn('Fix failing tests', builder_items[0]['description'])
 
-    def test_unacknowledged_deviation_generates_high_item(self):
+    def test_unacknowledged_deviation_generates_high_architect_item(self):
+        """Unacknowledged DEVIATION routes to Architect per spec Section 2.10."""
         result = {
             'feature_file': 'features/test.md',
             'spec_gate': {'status': 'PASS', 'checks': {}},
@@ -1437,18 +1440,21 @@ class TestActionItemsBuilder(unittest.TestCase):
                     'builder_decisions': {
                         'status': 'FAIL',
                         'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
-                                    'DEVIATION': 1, 'DISCOVERY': 0},
+                                    'DEVIATION': 1, 'DISCOVERY': 0,
+                                    'INFEASIBLE': 0},
                         'detail': 'Has DEVIATION.',
                     },
                     'logic_drift': {'status': 'PASS', 'pairs': [], 'detail': 'OK'},
                 },
             },
             'user_testing': {'status': 'CLEAN', 'bugs': 0,
-                             'discoveries': 0, 'intent_drifts': 0},
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
         }
         items = generate_action_items(result)
-        builder_items = items['builder']
-        deviation_items = [i for i in builder_items if 'DEVIATION' in i['description']]
+        arch_items = items['architect']
+        deviation_items = [i for i in arch_items
+                           if 'DEVIATION' in i['description']]
         self.assertTrue(len(deviation_items) > 0)
         self.assertEqual(deviation_items[0]['priority'], 'HIGH')
 
@@ -1845,6 +1851,536 @@ class TestUntrackedFilesInAggregateReport(unittest.TestCase):
         }]
         report = generate_critic_report(results, untracked_items=[])
         self.assertNotIn('#### Untracked Files', report)
+
+
+# ===================================================================
+# Spec Dispute in User Testing Audit Tests
+# ===================================================================
+
+class TestSpecDisputeCounted(unittest.TestCase):
+    """Scenario: Spec Dispute Counted in User Testing Audit"""
+
+    def test_open_spec_dispute_counted(self):
+        content = """\
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) User disagrees with expected behavior
+"""
+        result = run_user_testing_audit(content)
+        self.assertEqual(result['status'], 'HAS_OPEN_ITEMS')
+        self.assertEqual(result['spec_disputes'], 1)
+
+    def test_spec_disputes_field_present_when_clean(self):
+        content = """\
+## User Testing Discoveries
+"""
+        result = run_user_testing_audit(content)
+        self.assertEqual(result['status'], 'CLEAN')
+        self.assertIn('spec_disputes', result)
+        self.assertEqual(result['spec_disputes'], 0)
+
+    def test_no_section_includes_spec_disputes(self):
+        content = '# Feature\n\n## Overview\n'
+        result = run_user_testing_audit(content)
+        self.assertIn('spec_disputes', result)
+        self.assertEqual(result['spec_disputes'], 0)
+
+    def test_multiple_spec_disputes(self):
+        content = """\
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) First dispute
+- [SPEC_DISPUTE] (OPEN) Second dispute
+- [BUG] (OPEN) A bug too
+"""
+        result = run_user_testing_audit(content)
+        self.assertEqual(result['spec_disputes'], 2)
+        self.assertEqual(result['bugs'], 1)
+
+
+# ===================================================================
+# INFEASIBLE Tag Detection Tests
+# ===================================================================
+
+class TestInfeasibleTagDetection(unittest.TestCase):
+    """Scenario: Architect Action Items from Infeasible Feature"""
+
+    def test_infeasible_parsed_in_decisions(self):
+        notes = '* **[INFEASIBLE]** Cannot implement due to X (Severity: CRITICAL)'
+        decisions = parse_builder_decisions(notes)
+        self.assertEqual(len(decisions['INFEASIBLE']), 1)
+
+    def test_infeasible_causes_fail_status(self):
+        notes = '* [INFEASIBLE] Cannot implement.'
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertGreater(result['summary']['INFEASIBLE'], 0)
+
+    def test_infeasible_generates_critical_architect_item(self):
+        result = _make_base_result()
+        result['implementation_gate']['checks']['builder_decisions'] = {
+            'status': 'FAIL',
+            'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                        'DEVIATION': 0, 'DISCOVERY': 0, 'INFEASIBLE': 1},
+            'detail': 'Has INFEASIBLE.',
+        }
+        items = generate_action_items(result)
+        arch_items = items['architect']
+        infeasible_items = [i for i in arch_items
+                            if i['priority'] == 'CRITICAL']
+        self.assertTrue(len(infeasible_items) > 0)
+        self.assertIn('infeasible', infeasible_items[0]['category'])
+
+
+# ===================================================================
+# Spec Dispute Action Item Tests
+# ===================================================================
+
+class TestSpecDisputeActionItems(unittest.TestCase):
+    """Scenario: Architect Action Items from Spec Dispute"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: Disputed Feature
+
+> Label: "Tool: Disputed"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) User disagrees with Auto Test expected behavior
+"""
+        with open(os.path.join(self.features_dir, 'disputed.md'), 'w') as f:
+            f.write(feature_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_open_spec_dispute_generates_high_architect_item(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/disputed.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+            arch_items = items['architect']
+            dispute_items = [i for i in arch_items
+                             if 'disputed scenario' in i['description'].lower()
+                             or 'SPEC_DISPUTE' in i['description']]
+            self.assertTrue(len(dispute_items) > 0)
+            self.assertEqual(dispute_items[0]['priority'], 'HIGH')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+# ===================================================================
+# Role Status Computation Tests (Section 2.11)
+# ===================================================================
+
+def _make_base_result(**overrides):
+    """Create a baseline feature result for role status testing."""
+    result = {
+        'feature_file': 'features/test.md',
+        'spec_gate': {
+            'status': 'PASS',
+            'checks': {
+                'section_completeness': {'status': 'PASS', 'detail': 'OK'},
+                'scenario_classification': {'status': 'PASS', 'detail': 'OK'},
+                'policy_anchoring': {'status': 'PASS', 'detail': 'OK'},
+                'prerequisite_integrity': {'status': 'PASS', 'detail': 'OK'},
+                'gherkin_quality': {'status': 'PASS', 'detail': 'OK'},
+            },
+        },
+        'implementation_gate': {
+            'status': 'PASS',
+            'checks': {
+                'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                 'detail': 'OK'},
+                'policy_adherence': {'status': 'PASS', 'violations': [],
+                                     'detail': 'OK'},
+                'structural_completeness': {'status': 'PASS', 'detail': 'OK'},
+                'builder_decisions': {
+                    'status': 'PASS',
+                    'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                'DEVIATION': 0, 'DISCOVERY': 0,
+                                'INFEASIBLE': 0},
+                    'detail': 'OK',
+                },
+                'logic_drift': {'status': 'PASS', 'pairs': [],
+                                'detail': 'OK'},
+            },
+        },
+        'user_testing': {
+            'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+            'intent_drifts': 0, 'spec_disputes': 0,
+        },
+        'action_items': {
+            'architect': [],
+            'builder': [],
+            'qa': [],
+        },
+    }
+    result.update(overrides)
+    return result
+
+
+class TestRoleStatusArchitectTODO(unittest.TestCase):
+    """Scenario: Role Status Architect TODO"""
+
+    def test_spec_fail_makes_architect_todo(self):
+        result = _make_base_result()
+        result['spec_gate']['status'] = 'FAIL'
+        result['spec_gate']['checks']['section_completeness'] = {
+            'status': 'FAIL', 'detail': 'Missing Requirements.',
+        }
+        result['action_items']['architect'] = [{
+            'priority': 'HIGH',
+            'category': 'spec_gate',
+            'feature': 'test',
+            'description': 'Fix spec gap.',
+        }]
+        status = compute_role_status(result)
+        self.assertEqual(status['architect'], 'TODO')
+
+
+class TestRoleStatusArchitectDONE(unittest.TestCase):
+    """Scenario: Role Status Architect DONE"""
+
+    def test_no_high_items_makes_architect_done(self):
+        result = _make_base_result()
+        status = compute_role_status(result)
+        self.assertEqual(status['architect'], 'DONE')
+
+    def test_low_items_still_done(self):
+        result = _make_base_result()
+        result['action_items']['architect'] = [{
+            'priority': 'LOW',
+            'category': 'spec_gate',
+            'feature': 'test',
+            'description': 'Improve spec.',
+        }]
+        status = compute_role_status(result)
+        self.assertEqual(status['architect'], 'DONE')
+
+
+class TestRoleStatusBuilderDONE(unittest.TestCase):
+    """Scenario: Role Status Builder DONE"""
+
+    def test_structural_pass_no_bugs_makes_done(self):
+        result = _make_base_result()
+        status = compute_role_status(result)
+        self.assertEqual(status['builder'], 'DONE')
+
+
+class TestRoleStatusBuilderFAIL(unittest.TestCase):
+    """Scenario: Role Status Builder FAIL"""
+
+    def test_structural_fail_makes_builder_fail(self):
+        result = _make_base_result()
+        result['implementation_gate']['checks']['structural_completeness'] = {
+            'status': 'FAIL', 'detail': 'Missing tests.json.',
+        }
+        result['action_items']['builder'] = [{
+            'priority': 'HIGH',
+            'category': 'structural_completeness',
+            'feature': 'test',
+            'description': 'Fix failing tests.',
+        }]
+        status = compute_role_status(result)
+        self.assertEqual(status['builder'], 'FAIL')
+
+
+class TestRoleStatusBuilderINFEASIBLE(unittest.TestCase):
+    """Scenario: Role Status Builder INFEASIBLE"""
+
+    def test_infeasible_tag_makes_infeasible(self):
+        result = _make_base_result()
+        result['implementation_gate']['checks']['builder_decisions'] = {
+            'status': 'FAIL',
+            'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                        'DEVIATION': 0, 'DISCOVERY': 0, 'INFEASIBLE': 1},
+            'detail': 'Has INFEASIBLE.',
+        }
+        status = compute_role_status(result)
+        self.assertEqual(status['builder'], 'INFEASIBLE')
+
+    def test_infeasible_takes_precedence_over_fail(self):
+        result = _make_base_result()
+        result['implementation_gate']['checks']['builder_decisions'] = {
+            'status': 'FAIL',
+            'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                        'DEVIATION': 0, 'DISCOVERY': 0, 'INFEASIBLE': 1},
+            'detail': 'Has INFEASIBLE.',
+        }
+        result['implementation_gate']['checks']['structural_completeness'] = {
+            'status': 'FAIL', 'detail': 'tests.json FAIL.',
+        }
+        status = compute_role_status(result)
+        self.assertEqual(status['builder'], 'INFEASIBLE')
+
+
+class TestRoleStatusBuilderBLOCKED(unittest.TestCase):
+    """Scenario: Role Status Builder BLOCKED"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Blocked Feature
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) User disagrees with behavior
+"""
+        with open(os.path.join(self.features_dir, 'blocked.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_open_spec_dispute_blocks_builder(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/blocked.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            status = compute_role_status(result)
+            self.assertEqual(status['builder'], 'BLOCKED')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQACLEAN(unittest.TestCase):
+    """Scenario: Role Status QA CLEAN"""
+
+    def test_clean_testing_in_complete_state(self):
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'complete': [{'file': 'features/test.md'}],
+                'testing': [], 'todo': [],
+            },
+        }
+        status = compute_role_status(result, cdd_status)
+        self.assertEqual(status['qa'], 'CLEAN')
+
+
+class TestRoleStatusQAFAIL(unittest.TestCase):
+    """Scenario: Role Status QA FAIL"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Buggy Feature
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+- [BUG] (OPEN) Something is broken
+"""
+        with open(os.path.join(self.features_dir, 'buggy.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_open_bugs_makes_qa_fail(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/buggy.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/buggy.md'}],
+                    'complete': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'FAIL')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQADISPUTED(unittest.TestCase):
+    """Scenario: Role Status QA DISPUTED"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Disputed Feature
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) Scenario expected wrong behavior
+"""
+        with open(os.path.join(self.features_dir, 'disputed_qa.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_open_spec_dispute_makes_qa_disputed(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/disputed_qa.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/disputed_qa.md'}],
+                    'complete': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'DISPUTED')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQANA(unittest.TestCase):
+    """Scenario: Role Status QA N/A"""
+
+    def test_todo_lifecycle_makes_qa_na(self):
+        result = _make_base_result()
+        cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/test.md'}],
+                'testing': [], 'complete': [],
+            },
+        }
+        status = compute_role_status(result, cdd_status)
+        self.assertEqual(status['qa'], 'N/A')
+
+    def test_no_cdd_status_makes_qa_na(self):
+        result = _make_base_result()
+        status = compute_role_status(result, cdd_status=None)
+        self.assertEqual(status['qa'], 'N/A')
+
+
+class TestRoleStatusInCriticJson(unittest.TestCase):
+    """Scenario: Role Status in Critic JSON Output"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        self.feature_path = os.path.join(self.features_dir, 'test_feature.md')
+        with open(self.feature_path, 'w') as f:
+            f.write(COMPLETE_FEATURE)
+        with open(os.path.join(self.features_dir,
+                               'arch_critic_policy.md'), 'w') as f:
+            f.write('# Policy\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_critic_json_has_role_status(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.TESTS_DIR = os.path.join(self.root, 'tests')
+        critic.PROJECT_ROOT = self.root
+        try:
+            data = generate_critic_json(self.feature_path)
+            self.assertIn('role_status', data)
+            rs = data['role_status']
+            self.assertIn('architect', rs)
+            self.assertIn('builder', rs)
+            self.assertIn('qa', rs)
+            # Verify valid enum values
+            self.assertIn(rs['architect'], ('DONE', 'TODO'))
+            self.assertIn(rs['builder'],
+                          ('DONE', 'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'))
+            self.assertIn(rs['qa'],
+                          ('CLEAN', 'TODO', 'FAIL', 'DISPUTED', 'N/A'))
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+
+
+class TestRoleStatusBuilderTODO(unittest.TestCase):
+    """Scenario: Role Status Builder TODO with traceability gaps"""
+
+    def test_traceability_gap_makes_builder_todo(self):
+        result = _make_base_result()
+        result['action_items']['builder'] = [{
+            'priority': 'MEDIUM',
+            'category': 'traceability',
+            'feature': 'test',
+            'description': 'Write tests for test.',
+        }]
+        status = compute_role_status(result)
+        self.assertEqual(status['builder'], 'TODO')
 
 
 # ===================================================================

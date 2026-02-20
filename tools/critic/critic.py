@@ -449,9 +449,11 @@ def parse_builder_decisions(impl_notes):
         'AUTONOMOUS': [],
         'DEVIATION': [],
         'DISCOVERY': [],
+        'INFEASIBLE': [],
     }
 
-    pattern = re.compile(r'\[(CLARIFICATION|AUTONOMOUS|DEVIATION|DISCOVERY)\]')
+    pattern = re.compile(
+        r'\[(CLARIFICATION|AUTONOMOUS|DEVIATION|DISCOVERY|INFEASIBLE)\]')
     for line in impl_notes.split('\n'):
         match = pattern.search(line)
         if match:
@@ -467,15 +469,16 @@ def check_builder_decisions(impl_notes):
 
     summary = {tag: len(entries) for tag, entries in decisions.items()}
 
+    has_infeasible = summary.get('INFEASIBLE', 0) > 0
     has_deviation = summary.get('DEVIATION', 0) > 0
     has_discovery = summary.get('DISCOVERY', 0) > 0
     has_autonomous = summary.get('AUTONOMOUS', 0) > 0
 
-    if has_deviation or has_discovery:
+    if has_infeasible or has_deviation or has_discovery:
         return {
             'status': 'FAIL',
             'summary': summary,
-            'detail': 'Has DEVIATION or unresolved DISCOVERY entries.',
+            'detail': 'Has INFEASIBLE, DEVIATION, or unresolved DISCOVERY entries.',
         }
 
     if has_autonomous:
@@ -602,7 +605,8 @@ def run_implementation_gate(content, feature_stem, filename):
 def run_user_testing_audit(content):
     """Parse User Testing Discoveries section and count entries.
 
-    Returns dict with 'status', 'bugs', 'discoveries', 'intent_drifts'.
+    Returns dict with 'status', 'bugs', 'discoveries', 'intent_drifts',
+    'spec_disputes'.
     """
     section_text = get_user_testing_section(content)
 
@@ -612,12 +616,14 @@ def run_user_testing_audit(content):
             'bugs': 0,
             'discoveries': 0,
             'intent_drifts': 0,
+            'spec_disputes': 0,
         }
 
     # Count by type
     bugs = len(re.findall(r'\[BUG\]', section_text))
     discoveries = len(re.findall(r'\[DISCOVERY\]', section_text))
     intent_drifts = len(re.findall(r'\[INTENT_DRIFT\]', section_text))
+    spec_disputes = len(re.findall(r'\[SPEC_DISPUTE\]', section_text))
 
     # Check for OPEN or SPEC_UPDATED items
     open_count = len(re.findall(r'\bOPEN\b', section_text))
@@ -633,6 +639,7 @@ def run_user_testing_audit(content):
         'bugs': bugs,
         'discoveries': discoveries,
         'intent_drifts': intent_drifts,
+        'spec_disputes': spec_disputes,
     }
 
 
@@ -705,7 +712,33 @@ def generate_action_items(feature_result, cdd_status=None):
                     ),
                 })
 
-    # OPEN DISCOVERY/INTENT_DRIFT in User Testing -> HIGH Architect
+    # [INFEASIBLE] tag in Implementation Notes -> CRITICAL Architect
+    bd = impl_gate['checks'].get('builder_decisions', {})
+    bd_summary = bd.get('summary', {})
+    if bd_summary.get('INFEASIBLE', 0) > 0:
+        architect_items.append({
+            'priority': 'CRITICAL',
+            'category': 'infeasible',
+            'feature': feature_name,
+            'description': (
+                f'Revise infeasible spec for {feature_name}: '
+                f'Builder halted -- spec cannot be implemented as written'
+            ),
+        })
+
+    # Unacknowledged DEVIATION/DISCOVERY -> HIGH Architect
+    if bd_summary.get('DEVIATION', 0) > 0 or bd_summary.get('DISCOVERY', 0) > 0:
+        architect_items.append({
+            'priority': 'HIGH',
+            'category': 'builder_decisions',
+            'feature': feature_name,
+            'description': (
+                f'Acknowledge Builder decision in {feature_name}: '
+                f'unresolved DEVIATION/DISCOVERY'
+            ),
+        })
+
+    # OPEN DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE in User Testing -> HIGH Architect
     if user_testing['status'] == 'HAS_OPEN_ITEMS':
         content = read_feature_file(
             os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
@@ -719,6 +752,16 @@ def generate_action_items(feature_result, cdd_status=None):
                     'category': 'user_testing',
                     'feature': feature_name,
                     'description': f'Update spec for {feature_name}: {stripped}',
+                })
+            if '[SPEC_DISPUTE]' in stripped and 'OPEN' in stripped:
+                architect_items.append({
+                    'priority': 'HIGH',
+                    'category': 'user_testing',
+                    'feature': feature_name,
+                    'description': (
+                        f'Review disputed scenario in {feature_name}: '
+                        f'{stripped}'
+                    ),
                 })
 
     # --- Builder items ---
@@ -761,20 +804,6 @@ def generate_action_items(feature_result, cdd_status=None):
                     'feature': feature_name,
                     'description': f'Fix bug in {feature_name}: {stripped}',
                 })
-
-    # Unacknowledged DEVIATION/DISCOVERY -> HIGH Builder
-    bd = impl_gate['checks'].get('builder_decisions', {})
-    bd_summary = bd.get('summary', {})
-    if bd_summary.get('DEVIATION', 0) > 0 or bd_summary.get('DISCOVERY', 0) > 0:
-        builder_items.append({
-            'priority': 'HIGH',
-            'category': 'builder_decisions',
-            'feature': feature_name,
-            'description': (
-                f'Get Architect acknowledgment for unresolved '
-                f'DEVIATION/DISCOVERY in {feature_name}'
-            ),
-        })
 
     # --- QA items ---
     # Features in TESTING status (from CDD) -> MEDIUM
@@ -880,6 +909,162 @@ def audit_untracked_files(project_root=None):
 
 
 # ===================================================================
+# Role Status Computation (Section 2.11)
+# ===================================================================
+
+def _get_feature_lifecycle_state(feature_file, cdd_status):
+    """Determine lifecycle state (todo/testing/complete) from CDD status.
+
+    Returns 'todo', 'testing', 'complete', or None if unknown.
+    """
+    if cdd_status is None:
+        return None
+
+    features_data = cdd_status.get('features', {})
+    basename = os.path.basename(feature_file)
+
+    for state in ('complete', 'testing', 'todo'):
+        entries = features_data.get(state, [])
+        for entry in entries:
+            entry_file = entry.get('file', '')
+            if os.path.basename(entry_file) == basename:
+                return state
+
+    return None
+
+
+def compute_role_status(feature_result, cdd_status=None):
+    """Compute role_status for a feature based on analysis results.
+
+    Returns dict with 'architect', 'builder', 'qa' status strings.
+
+    Architect: TODO | DONE
+    Builder: DONE | TODO | FAIL | INFEASIBLE | BLOCKED
+      Precedence: INFEASIBLE > BLOCKED > FAIL > TODO > DONE
+    QA: CLEAN | TODO | FAIL | DISPUTED | N/A
+      Precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+    """
+    spec_gate = feature_result['spec_gate']
+    impl_gate = feature_result['implementation_gate']
+    user_testing = feature_result['user_testing']
+    action_items = feature_result.get('action_items', {})
+    feature_file = feature_result['feature_file']
+
+    # --- Architect status ---
+    arch_items = action_items.get('architect', [])
+    has_high_or_critical_arch = any(
+        item['priority'] in ('HIGH', 'CRITICAL') for item in arch_items
+    )
+    architect_status = 'TODO' if has_high_or_critical_arch else 'DONE'
+
+    # --- Builder status ---
+    # Check for INFEASIBLE tag
+    bd = impl_gate['checks'].get('builder_decisions', {})
+    bd_summary = bd.get('summary', {})
+    has_infeasible = bd_summary.get('INFEASIBLE', 0) > 0
+
+    # Check for SPEC_DISPUTE (Builder becomes BLOCKED)
+    has_spec_dispute = user_testing.get('spec_disputes', 0) > 0
+    # Only count OPEN spec disputes
+    open_spec_disputes = False
+    if has_spec_dispute:
+        content = read_feature_file(
+            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+        ut_section = get_user_testing_section(content)
+        for line in ut_section.split('\n'):
+            if '[SPEC_DISPUTE]' in line and 'OPEN' in line:
+                open_spec_disputes = True
+                break
+
+    # Check structural completeness
+    struct = impl_gate['checks'].get('structural_completeness', {})
+    struct_status = struct.get('status', 'FAIL')
+
+    # Check for open BUGs
+    has_open_bugs = False
+    if user_testing.get('bugs', 0) > 0:
+        content = read_feature_file(
+            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+        ut_section = get_user_testing_section(content)
+        for line in ut_section.split('\n'):
+            if '[BUG]' in line and 'OPEN' in line:
+                has_open_bugs = True
+                break
+
+    # Check traceability
+    trace = impl_gate['checks'].get('traceability', {})
+    has_trace_fail = trace.get('status') == 'FAIL'
+
+    # Apply precedence: INFEASIBLE > BLOCKED > FAIL > TODO > DONE
+    if has_infeasible:
+        builder_status = 'INFEASIBLE'
+    elif open_spec_disputes:
+        builder_status = 'BLOCKED'
+    elif struct_status == 'FAIL' or struct_status == 'WARN':
+        # tests.json FAIL -> FAIL status
+        # tests.json WARN means status is FAIL (exists but not PASS)
+        if struct_status == 'FAIL':
+            builder_status = 'FAIL'
+        else:
+            builder_status = 'TODO'
+    elif has_open_bugs or has_trace_fail:
+        builder_status = 'FAIL' if has_open_bugs else 'TODO'
+    elif struct_status == 'PASS' and not has_open_bugs:
+        # Check if there are any Builder action items
+        builder_items = action_items.get('builder', [])
+        builder_status = 'TODO' if builder_items else 'DONE'
+    else:
+        builder_status = 'TODO'
+
+    # --- QA status ---
+    lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
+
+    if lifecycle_state is None:
+        # No CDD status available; default to N/A
+        qa_status = 'N/A'
+    elif lifecycle_state == 'todo':
+        # Not yet in TESTING or COMPLETE
+        qa_status = 'N/A'
+    else:
+        # Feature is in TESTING or COMPLETE
+        # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+        has_open_bugs_qa = False
+        has_open_disputes_qa = False
+        if user_testing.get('bugs', 0) > 0:
+            content = read_feature_file(
+                os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+            ut_section = get_user_testing_section(content)
+            for line in ut_section.split('\n'):
+                if '[BUG]' in line and 'OPEN' in line:
+                    has_open_bugs_qa = True
+                    break
+
+        if user_testing.get('spec_disputes', 0) > 0:
+            content = read_feature_file(
+                os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+            ut_section = get_user_testing_section(content)
+            for line in ut_section.split('\n'):
+                if '[SPEC_DISPUTE]' in line and 'OPEN' in line:
+                    has_open_disputes_qa = True
+                    break
+
+        if has_open_bugs_qa:
+            qa_status = 'FAIL'
+        elif has_open_disputes_qa:
+            qa_status = 'DISPUTED'
+        elif user_testing['status'] == 'HAS_OPEN_ITEMS':
+            qa_status = 'TODO'
+        else:
+            qa_status = 'CLEAN'
+
+    return {
+        'architect': architect_status,
+        'builder': builder_status,
+        'qa': qa_status,
+    }
+
+
+# ===================================================================
 # Output generation
 # ===================================================================
 
@@ -938,6 +1123,9 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Generate action items
     result['action_items'] = generate_action_items(result, cdd_status)
+
+    # Compute role status (depends on action_items being populated)
+    result['role_status'] = compute_role_status(result, cdd_status)
 
     return result
 
@@ -1028,7 +1216,7 @@ def generate_critic_report(results, untracked_items=None):
     for r in sorted(results, key=lambda x: x['feature_file']):
         bd = r['implementation_gate']['checks'].get('builder_decisions', {})
         summary = bd.get('summary', {})
-        for tag in ('AUTONOMOUS', 'DEVIATION', 'DISCOVERY'):
+        for tag in ('INFEASIBLE', 'AUTONOMOUS', 'DEVIATION', 'DISCOVERY'):
             if summary.get(tag, 0) > 0:
                 if not has_decisions:
                     has_decisions = True
@@ -1086,6 +1274,8 @@ def generate_critic_report(results, untracked_items=None):
                 parts.append(f'{ut["discoveries"]} DISCOVERY(ies)')
             if ut['intent_drifts']:
                 parts.append(f'{ut["intent_drifts"]} INTENT_DRIFT(s)')
+            if ut.get('spec_disputes', 0):
+                parts.append(f'{ut["spec_disputes"]} SPEC_DISPUTE(s)')
             lines.append(
                 f'- **{r["feature_file"]}**: {", ".join(parts)}'
             )
