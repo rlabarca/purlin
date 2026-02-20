@@ -17,22 +17,33 @@ import sys
 from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
-# Path setup -- resolve project root and config
+# Path setup -- resolve project root and config (Sections 2.11, 2.13)
 # ---------------------------------------------------------------------------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
 
-# Config climbing: try ../../.agentic_devops then ../../../.agentic_devops
+# 1. Check AGENTIC_PROJECT_ROOT env var (authoritative when set by launchers)
+_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+if _env_root and os.path.isdir(_env_root):
+    PROJECT_ROOT = _env_root
+else:
+    # 2. Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+    for depth in ('../../../', '../../'):
+        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
+        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+            PROJECT_ROOT = candidate
+            break
+
+# Config loading with resilience (Section 2.13)
 CONFIG = {}
-for depth in ('../../', '../../../'):
-    cfg_path = os.path.abspath(
-        os.path.join(SCRIPT_DIR, depth, '.agentic_devops/config.json')
-    )
-    if os.path.exists(cfg_path):
-        with open(cfg_path, 'r') as f:
+_cfg_path = os.path.join(PROJECT_ROOT, '.agentic_devops/config.json')
+if os.path.exists(_cfg_path):
+    try:
+        with open(_cfg_path, 'r') as f:
             CONFIG = json.load(f)
-        PROJECT_ROOT = os.path.abspath(os.path.join(cfg_path, '../../'))
-        break
+    except (json.JSONDecodeError, IOError, OSError):
+        print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
+              file=sys.stderr)
 
 TOOLS_ROOT = CONFIG.get('tools_root', 'tools')
 FEATURES_DIR = os.path.join(PROJECT_ROOT, 'features')
@@ -653,7 +664,7 @@ def _read_cdd_feature_status():
     Returns dict or None if file doesn't exist or is malformed.
     """
     status_path = os.path.join(
-        PROJECT_ROOT, TOOLS_ROOT, 'cdd', 'feature_status.json')
+        PROJECT_ROOT, '.agentic_devops', 'cache', 'feature_status.json')
     if not os.path.isfile(status_path):
         return None
     try:

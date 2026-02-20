@@ -41,7 +41,12 @@ setup_sandbox() {
     cp "$SUBMODULE_SRC/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/bootstrap.sh"
     cp "$SUBMODULE_SRC/tools/sync_upstream.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
     cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/agentic-dev/tools/cdd/start.sh"
+    cp "$SUBMODULE_SRC/tools/cdd/serve.py" "$PROJECT/agentic-dev/tools/cdd/serve.py"
     cp "$SUBMODULE_SRC/tools/software_map/start.sh" "$PROJECT/agentic-dev/tools/software_map/start.sh"
+    cp "$SUBMODULE_SRC/tools/software_map/serve.py" "$PROJECT/agentic-dev/tools/software_map/serve.py"
+    cp "$SUBMODULE_SRC/tools/software_map/generate_tree.py" "$PROJECT/agentic-dev/tools/software_map/generate_tree.py"
+    cp "$SUBMODULE_SRC/tools/critic/critic.py" "$PROJECT/agentic-dev/tools/critic/critic.py"
+    cp "$SUBMODULE_SRC/tools/critic/run.sh" "$PROJECT/agentic-dev/tools/critic/run.sh"
     chmod +x "$PROJECT/agentic-dev/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
 
     BOOTSTRAP="$PROJECT/agentic-dev/tools/bootstrap.sh"
@@ -208,10 +213,11 @@ if [ -f "$PROJECT/.gitignore" ]; then
     else
         log_fail ".gitignore missing recommended ignores"
     fi
-    if grep -q '\.agentic_devops' "$PROJECT/.gitignore"; then
-        log_fail ".gitignore contains .agentic_devops (MUST NOT)"
+    # Check that .agentic_devops itself is not ignored (subdirs like runtime/cache are OK)
+    if grep -qE '^\\.agentic_devops/?$' "$PROJECT/.gitignore"; then
+        log_fail ".gitignore ignores .agentic_devops directory (MUST NOT)"
     else
-        log_pass ".gitignore does not ignore .agentic_devops"
+        log_pass ".gitignore does not ignore .agentic_devops directory"
     fi
 else
     log_fail ".gitignore not created"
@@ -320,6 +326,193 @@ if [ -n "$ANCESTOR_SHA" ]; then
     fi
 else
     echo "  SKIP: Only one commit in history"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+# Section 2.10: Config JSON Validity After Bootstrap
+###############################################################################
+echo ""
+echo "[Scenario] Config JSON Validity After Bootstrap"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+if python3 -c "import json; json.load(open('$PROJECT/.agentic_devops/config.json'))" 2>/dev/null; then
+    log_pass "config.json is valid JSON after bootstrap"
+else
+    log_fail "config.json is NOT valid JSON after bootstrap"
+fi
+
+# Verify original keys preserved
+if python3 -c "
+import json
+c = json.load(open('$PROJECT/.agentic_devops/config.json'))
+assert 'tools_root' in c, 'missing tools_root'
+assert 'cdd_port' in c, 'missing cdd_port'
+" 2>/dev/null; then
+    log_pass "config.json preserves original keys"
+else
+    log_fail "config.json missing original keys"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+# Section 2.11: Launcher Scripts Export AGENTIC_PROJECT_ROOT
+###############################################################################
+echo ""
+echo "[Scenario] Launcher Scripts Export AGENTIC_PROJECT_ROOT"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+for LAUNCHER in run_claude_architect.sh run_claude_builder.sh run_claude_qa.sh; do
+    if grep -q 'export AGENTIC_PROJECT_ROOT=' "$PROJECT/$LAUNCHER"; then
+        log_pass "$LAUNCHER exports AGENTIC_PROJECT_ROOT"
+    else
+        log_fail "$LAUNCHER does NOT export AGENTIC_PROJECT_ROOT"
+    fi
+done
+
+cleanup_sandbox
+
+###############################################################################
+# Section 2.11: Python Tool Uses AGENTIC_PROJECT_ROOT
+###############################################################################
+echo ""
+echo "[Scenario] Python Tool Uses AGENTIC_PROJECT_ROOT"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+# Create a features dir and minimal feature file so critic can run
+mkdir -p "$PROJECT/features"
+cat > "$PROJECT/features/test_feature.md" << 'FEAT_EOF'
+# Feature: Test Feature
+> Label: "Test"
+> Category: "Test"
+
+## 1. Overview
+Test.
+
+## 2. Requirements
+Test.
+
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: Test
+    Given test
+    When test
+    Then test
+
+## 4. Implementation Notes
+None.
+FEAT_EOF
+
+# Set AGENTIC_PROJECT_ROOT to the consumer project and invoke critic
+mkdir -p "$PROJECT/tests"
+AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" "$PROJECT/features/test_feature.md" > /dev/null 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_pass "critic.py runs with AGENTIC_PROJECT_ROOT set"
+else
+    log_fail "critic.py failed with AGENTIC_PROJECT_ROOT set (exit $EXIT_CODE)"
+fi
+
+# Verify it used the consumer project root (critic.json written to consumer's tests/)
+if [ -f "$PROJECT/tests/test_feature/critic.json" ]; then
+    log_pass "critic.json written to consumer project tests/"
+else
+    log_fail "critic.json NOT written to consumer project tests/"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+# Section 2.13: Python Tool Survives Malformed Config
+###############################################################################
+echo ""
+echo "[Scenario] Python Tool Survives Malformed Config"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+# Corrupt the config.json
+echo "{ this is not valid json" > "$PROJECT/.agentic_devops/config.json"
+
+mkdir -p "$PROJECT/features"
+mkdir -p "$PROJECT/tests"
+
+# Attempt to run critic with malformed config — should not crash
+AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>/dev/null
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_pass "critic.py survives malformed config.json"
+else
+    log_fail "critic.py crashed with malformed config.json (exit $EXIT_CODE)"
+fi
+
+# Verify warning is printed to stderr
+STDERR_OUTPUT=$(AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>&1 1>/dev/null || true)
+if echo "$STDERR_OUTPUT" | grep -qi "warning"; then
+    log_pass "Warning printed to stderr for malformed config"
+else
+    log_fail "No warning printed to stderr for malformed config"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+# Section 2.12: Generated Artifacts Written Outside Submodule
+###############################################################################
+echo ""
+echo "[Scenario] Generated Artifacts Written Outside Submodule"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+mkdir -p "$PROJECT/features"
+cat > "$PROJECT/features/test_feature.md" << 'FEAT_EOF'
+# Feature: Test Feature
+> Label: "Test"
+> Category: "Test"
+
+## 1. Overview
+Test.
+
+## 2. Requirements
+Test.
+
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: Test
+    Given test
+    When test
+    Then test
+
+## 4. Implementation Notes
+None.
+FEAT_EOF
+
+# Run generate_tree.py (produces .mmd and dependency_graph.json)
+AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/software_map/generate_tree.py" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.agentic_devops/cache/dependency_graph.json" ]; then
+    log_pass "dependency_graph.json written to .agentic_devops/cache/"
+else
+    log_fail "dependency_graph.json NOT in .agentic_devops/cache/"
+fi
+
+if [ -f "$PROJECT/.agentic_devops/cache/feature_graph.mmd" ]; then
+    log_pass "feature_graph.mmd written to .agentic_devops/cache/"
+else
+    log_fail "feature_graph.mmd NOT in .agentic_devops/cache/"
+fi
+
+# Verify NO artifacts in the submodule's tools/ directory
+if [ -f "$PROJECT/agentic-dev/tools/software_map/dependency_graph.json" ]; then
+    log_fail "dependency_graph.json found inside submodule tools/ (should not be)"
+else
+    log_pass "No dependency_graph.json inside submodule tools/"
 fi
 
 cleanup_sandbox

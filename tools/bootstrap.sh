@@ -32,11 +32,18 @@ fi
 echo "Copying agentic_devops.sample/ -> .agentic_devops/ ..."
 cp -R "$SAMPLE_DIR" "$PROJECT_ROOT/.agentic_devops"
 
-# Patch tools_root in the copied config.json
+# Patch tools_root in the copied config.json (Section 2.10: JSON-safe sed)
 TOOLS_ROOT_VALUE="$SUBMODULE_NAME/tools"
-sed -i.bak "s|\"tools_root\":.*|\"tools_root\": \"$TOOLS_ROOT_VALUE\"|" \
+sed -i.bak "s|\"tools_root\": \"[^\"]*\"|\"tools_root\": \"$TOOLS_ROOT_VALUE\"|" \
     "$PROJECT_ROOT/.agentic_devops/config.json"
 rm -f "$PROJECT_ROOT/.agentic_devops/config.json.bak"
+
+# Validate JSON after patching (Section 2.10)
+if ! python3 -c "import json; json.load(open('$PROJECT_ROOT/.agentic_devops/config.json'))"; then
+    echo "ERROR: config.json is invalid JSON after patching tools_root."
+    echo "  File: $PROJECT_ROOT/.agentic_devops/config.json"
+    exit 1
+fi
 
 ###############################################################################
 # 4. Upstream SHA Marker
@@ -53,6 +60,7 @@ FRAMEWORK_VAR="\$SCRIPT_DIR/$SUBMODULE_NAME"
 cat > "$PROJECT_ROOT/run_claude_architect.sh" << 'LAUNCHER_EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
 cat >> "$PROJECT_ROOT/run_claude_architect.sh" << LAUNCHER_EOF
@@ -92,6 +100,7 @@ chmod +x "$PROJECT_ROOT/run_claude_architect.sh"
 cat > "$PROJECT_ROOT/run_claude_builder.sh" << 'LAUNCHER_EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
 cat >> "$PROJECT_ROOT/run_claude_builder.sh" << LAUNCHER_EOF
@@ -131,6 +140,7 @@ chmod +x "$PROJECT_ROOT/run_claude_builder.sh"
 cat > "$PROJECT_ROOT/run_claude_qa.sh" << 'LAUNCHER_EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
 cat >> "$PROJECT_ROOT/run_claude_qa.sh" << LAUNCHER_EOF
@@ -216,6 +226,8 @@ RECOMMENDED_IGNORES=(
     "# Agentic Tool Logs & Artifacts"
     "*.log"
     "*.pid"
+    ".agentic_devops/runtime/"
+    ".agentic_devops/cache/"
 )
 
 if [ ! -f "$GITIGNORE" ]; then

@@ -3,25 +3,34 @@ import json
 import socketserver
 import subprocess
 import os
+import sys
 from datetime import datetime, timezone
 
-PORT = 8086
-# When running as part of the core engine, we need to know where the host project is.
-# Default to assuming we are in a subdirectory of the core engine, which is in the project root.
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# If we are embedded in another project, the root might be further up
-if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
-    # Try one level up (standard embedded structure)
-    PARENT_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, "../"))
-    if os.path.exists(os.path.join(PARENT_ROOT, ".agentic_devops")):
-        PROJECT_ROOT = PARENT_ROOT
+# Project root detection (Section 2.11)
+_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+if _env_root and os.path.isdir(_env_root):
+    PROJECT_ROOT = _env_root
+else:
+    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+    for depth in ('../../../', '../../'):
+        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
+        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+            PROJECT_ROOT = candidate
+            break
 
+# Config loading with resilience (Section 2.13)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
 CONFIG = {}
 if os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, 'r') as f:
-        CONFIG = json.load(f)
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            CONFIG = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
+              file=sys.stderr)
 
 PORT = CONFIG.get("cdd_port", 8086)
 
@@ -30,7 +39,10 @@ FEATURES_ABS = os.path.join(PROJECT_ROOT, "features")
 TESTS_DIR = os.path.join(PROJECT_ROOT, "tests")
 
 COMPLETE_CAP = 10
-FEATURE_STATUS_PATH = os.path.join(os.path.dirname(__file__), "feature_status.json")
+# Artifact isolation (Section 2.12): write to .agentic_devops/cache/
+CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
 
 
 def run_command(command):

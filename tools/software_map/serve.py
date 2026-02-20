@@ -8,22 +8,32 @@ import subprocess
 import sys
 import urllib.parse
 
-# When running as part of the core engine, we need to know where the host project is.
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+SCRIPT_DIR_MAP = os.path.dirname(os.path.abspath(__file__))
 
-# If we are embedded in another project, the root might be further up
-if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
-    # Try one level up (standard embedded structure)
-    PARENT_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, "../"))
-    if os.path.exists(os.path.join(PARENT_ROOT, ".agentic_devops")):
-        PROJECT_ROOT = PARENT_ROOT
+# Project root detection (Section 2.11)
+_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+if _env_root and os.path.isdir(_env_root):
+    PROJECT_ROOT = _env_root
+else:
+    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR_MAP, '../../'))
+    for depth in ('../../../', '../../'):
+        candidate = os.path.abspath(os.path.join(SCRIPT_DIR_MAP, depth))
+        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+            PROJECT_ROOT = candidate
+            break
 
+# Config loading with resilience (Section 2.13)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
 PORT = 8087
 if os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, 'r') as f:
-        config = json.load(f)
-        PORT = config.get("map_port", 8087)
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+            PORT = config.get("map_port", 8087)
+    except (json.JSONDecodeError, IOError, OSError):
+        print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
+              file=sys.stderr)
 
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 GENERATE_SCRIPT = os.path.join(DIRECTORY, "generate_tree.py")
@@ -89,6 +99,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 except:
                     pass
             self.wfile.write(json.dumps(config_data).encode('utf-8'))
+        elif self.path.startswith('/dependency_graph.json'):
+            # Serve from cache directory (Section 2.12)
+            cache_path = os.path.join(
+                PROJECT_ROOT, '.agentic_devops', 'cache', 'dependency_graph.json')
+            if os.path.isfile(cache_path):
+                with open(cache_path, 'rb') as f:
+                    payload = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            else:
+                self.send_error(404, "dependency_graph.json not found")
         elif self.path.startswith('/feature?'):
             self._serve_feature_content()
         else:

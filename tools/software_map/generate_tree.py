@@ -6,21 +6,28 @@ import json
 from collections import defaultdict
 from datetime import datetime, timezone
 
-# Robust ROOT_DIR discovery
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+SCRIPT_DIR_GEN = os.path.dirname(os.path.abspath(__file__))
 
-# If we are embedded in another project, the root might be further up
-if not os.path.exists(os.path.join(PROJECT_ROOT, ".agentic_devops")):
-    # Try one level up (standard embedded structure)
-    PARENT_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, "../"))
-    if os.path.exists(os.path.join(PARENT_ROOT, ".agentic_devops")):
-        PROJECT_ROOT = PARENT_ROOT
+# Project root detection (Section 2.11)
+_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+if _env_root and os.path.isdir(_env_root):
+    PROJECT_ROOT = _env_root
+else:
+    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR_GEN, '../../'))
+    for depth in ('../../../', '../../'):
+        candidate = os.path.abspath(os.path.join(SCRIPT_DIR_GEN, depth))
+        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+            PROJECT_ROOT = candidate
+            break
 
 ROOT_DIR = PROJECT_ROOT  # Using ROOT_DIR alias for consistency with rest of script
 
-TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
-MMD_FILE = os.path.join(TOOL_DIR, "feature_graph.mmd")
-DEPENDENCY_GRAPH_FILE = os.path.join(TOOL_DIR, "dependency_graph.json")
+# Artifact isolation (Section 2.12): write outputs to .agentic_devops/cache/
+CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+MMD_FILE = os.path.join(CACHE_DIR, "feature_graph.mmd")
+DEPENDENCY_GRAPH_FILE = os.path.join(CACHE_DIR, "dependency_graph.json")
 FEATURES_DIR = os.path.join(ROOT_DIR, "features")
 README_FILE = os.path.join(ROOT_DIR, "README.md")
 

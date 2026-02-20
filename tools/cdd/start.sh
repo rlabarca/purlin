@@ -10,11 +10,18 @@ elif [ -d "$DIR/../../../.venv" ]; then
      PYTHON_EXE="$DIR/../../../.venv/bin/python3"
 fi
 
-# Extract port from config.json if it exists, otherwise default to 8086
-# Standalone: ../../.agentic_devops  |  Submodule: ../../../.agentic_devops
-CONFIG_FILE="$DIR/../../.agentic_devops/config.json"
-if [ ! -f "$CONFIG_FILE" ]; then
+# Project root and config discovery (Section 2.11)
+if [ -n "${AGENTIC_PROJECT_ROOT:-}" ] && [ -d "$AGENTIC_PROJECT_ROOT/.agentic_devops" ]; then
+    PROJECT_ROOT="$AGENTIC_PROJECT_ROOT"
+    CONFIG_FILE="$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json"
+else
+    # Climbing fallback: try submodule path (further) first, then standalone (nearer)
     CONFIG_FILE="$DIR/../../../.agentic_devops/config.json"
+    PROJECT_ROOT="$(cd "$DIR/../../.." 2>/dev/null && pwd)"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        CONFIG_FILE="$DIR/../../.agentic_devops/config.json"
+        PROJECT_ROOT="$(cd "$DIR/../.." 2>/dev/null && pwd)"
+    fi
 fi
 PORT=8086
 
@@ -26,6 +33,10 @@ if [ -f "$CONFIG_FILE" ]; then
     fi
 fi
 
-nohup $PYTHON_EXE $DIR/serve.py > $DIR/cdd.log 2>&1 &
-echo $! > $DIR/cdd.pid
-echo "CDD Monitor started on port $PORT (PID: $(cat $DIR/cdd.pid))"
+# Artifact isolation (Section 2.12): logs/pids to .agentic_devops/runtime/
+RUNTIME_DIR="$PROJECT_ROOT/.agentic_devops/runtime"
+mkdir -p "$RUNTIME_DIR"
+
+nohup $PYTHON_EXE $DIR/serve.py > "$RUNTIME_DIR/cdd.log" 2>&1 &
+echo $! > "$RUNTIME_DIR/cdd.pid"
+echo "CDD Monitor started on port $PORT (PID: $(cat "$RUNTIME_DIR/cdd.pid"))"
