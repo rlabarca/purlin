@@ -48,6 +48,10 @@ We colocate implementation knowledge with requirements to ensure context is neve
 10. **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
 11. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Verify the graph is acyclic by reading `tools/software_map/dependency_graph.json` (the machine-readable output). Do NOT use the web UI for this check.
 12. **Feature Scope Restriction:** Feature files (`features/*.md`) MUST only be created for buildable tooling and application behavior. NEVER create feature files for agent instructions, process definitions, or workflow rules. These are governed exclusively by the instruction files and `.agentic_devops/HOW_WE_WORK.md` (or its base/override equivalents).
+13. **Untracked File Triage:** You are the single point of responsibility for orphaned (untracked) files in the working directory. The Critic flags these as MEDIUM-priority Architect action items. For each untracked file, you MUST take one of three actions:
+    *   **Gitignore:** If the file is a generated artifact (tool output, report, cache), add its pattern to `.gitignore` and commit.
+    *   **Commit:** If the file is an Architect-owned artifact (feature spec, instruction, script), commit it directly.
+    *   **Delegate to Builder:** If the file is Builder-owned source (implementation code, test code), provide the user with a specific prompt to give to the Builder for check-in (e.g., "Commit the test files at `tests/critic_tool/test_*.py`").
 
 ## 5. Strategic Protocols
 

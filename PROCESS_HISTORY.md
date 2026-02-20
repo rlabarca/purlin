@@ -2,6 +2,19 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Untracked File Triage Protocol
+- **Problem:** Generated artifacts (critic.json, CRITIC_REPORT.md, tests.json) and uncommitted source files accumulate as untracked files in the working directory. No clear ownership or process existed for deciding whether to commit or gitignore them. Multiple agents (Architect, Builder, tool scripts) all produce files.
+- **Solution:** The Architect is the single triage point for all untracked files.
+- **Critic Changes** (`features/critic_tool.md`):
+    - New Section 2.12 (Untracked File Audit): Critic runs `git status --porcelain`, detects untracked files, generates MEDIUM-priority Architect action items for each.
+    - Added untracked file row to action item generation table (Section 2.10).
+    - Added 2 new automated scenarios (detection, aggregate report).
+- **Architect Instruction Changes** (`instructions/ARCHITECT_BASE.md`):
+    - New responsibility 13 (Untracked File Triage): Architect must gitignore generated artifacts, commit Architect-owned files, or delegate Builder-owned files with a specific prompt for the user.
+- **Gitignore Updates** (`.gitignore`):
+    - Added `tests/*/critic.json` and `CRITIC_REPORT.md` (previously orphaned generated artifacts).
+- **Impact:** Critic spec reset to TODO. Builder must implement the untracked file audit.
+
 ## [2026-02-19] CDD Role-Based Status Redesign + Critic role_status
 - **Problem:** CDD showed a single-dimensional lifecycle (TODO/TESTING/COMPLETE) with Tests and QA columns. This told you WHAT was wrong but not WHO needed to act. A feature showing "HAS_OPEN_ITEMS" could mean the Builder needs to fix a bug, the Architect needs to revise a disputed spec, or QA needs to re-verify. Escalation states (SPEC_DISPUTE, INFEASIBLE) were tracked by the Critic but invisible on the CDD dashboard.
 - **Design Principle:** Critic computes everything, CDD just reads and displays it.

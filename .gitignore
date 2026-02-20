@@ -19,6 +19,8 @@ tools/feature_graph_*.mmd
 tools/cdd/feature_status.json
 tools/software_map/dependency_graph.json
 tests/*/tests.json
+tests/*/critic.json
+CRITIC_REPORT.md
 tools/*/test_status.json
 tools/test_status.json
 tools/critic/.cache/

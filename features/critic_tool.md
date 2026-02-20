@@ -133,6 +133,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Architect** | `[INFEASIBLE]` tag in Implementation Notes | "Revise infeasible spec for submodule_sync: [rationale]" |
 | **Architect** | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | "Acknowledge Builder decision in critic_tool: [tag title]" |
 | **Architect** | Spec Gate WARN (no manual scenarios, empty impl notes) | "Improve spec: scenario_classification -- only Automated" |
+| **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
@@ -173,6 +174,18 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 **QA Precedence (highest wins):** FAIL > DISPUTED > TODO > CLEAN > N/A.
 
 **Lifecycle State Dependency:** QA status computation requires `tools/cdd/feature_status.json` to determine the feature's lifecycle state (TODO/TESTING/COMPLETE). If unavailable, QA status defaults to `N/A` with a note in the report.
+
+### 2.12 Untracked File Audit
+The Critic MUST detect untracked files in the working directory and generate Architect action items for triage.
+
+*   **Detection:** Run `git status --porcelain` and collect all untracked entries (lines starting with `??`).
+*   **Filtering:** Exclude files and directories already covered by `.gitignore` patterns (git handles this automatically). Also exclude the `.agentic_devops/` directory and any files inside `.claude/`.
+*   **Action Item Generation:** For each untracked file (or untracked directory, reported as a single entry), generate an Architect action item:
+    *   Priority: **MEDIUM**.
+    *   Category: `untracked_file`.
+    *   Description: `"Triage untracked file: <path> (commit, gitignore, or delegate to Builder)"`.
+*   **Aggregate Report:** Untracked files are listed in a dedicated `### Untracked Files` subsection of the Architect action items in `CRITIC_REPORT.md`.
+*   **No Per-Feature Association:** Untracked file items are project-level, not tied to a specific feature. They appear in the aggregate report only (not in per-feature `critic.json` files).
 
 ## 3. Scenarios
 
@@ -377,6 +390,18 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
     When the per-feature critic.json is written
     Then it contains a role_status object with architect, builder, and qa fields
     And the values conform to the defined status enums
+
+#### Scenario: Untracked File Detection
+    Given untracked files exist in the working directory (not covered by .gitignore)
+    When the Critic tool runs the untracked file audit
+    Then an Architect action item is created for each untracked file or directory
+    And each item has priority MEDIUM and category untracked_file
+
+#### Scenario: Untracked Files in Aggregate Report
+    Given the Critic tool detects untracked files
+    When CRITIC_REPORT.md is generated
+    Then the Architect action items section includes an "Untracked Files" subsection
+    And each untracked path is listed with a triage instruction
 
 #### Scenario: Spec Gate Policy File Reduced Evaluation
     Given a feature file is an architectural policy (arch_*.md)
