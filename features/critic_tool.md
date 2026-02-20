@@ -434,5 +434,7 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **Test Output:** Test results go to `tests/critic_tool/tests.json`.
 *   **LLM Cache:** Stored in `tools/critic/.cache/` as JSON files keyed by hash pairs. This directory should be gitignored.
 *   **No External Dependencies:** The deterministic components (Spec Gate, traceability, policy check) MUST NOT require any external packages beyond Python 3.9+ standard library. The LLM component requires the `anthropic` Python package only when enabled.
+*   **[CLARIFICATION]** DEVIATION/DISCOVERY action items route to Architect (not Builder), as the spec says these require Architect acknowledgment. Builder's role is to get that acknowledgment, but the Critic generates the item for the Architect to act on. (Severity: INFO)
+*   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` for QA status computation. If CDD is not running and `feature_status.json` doesn't exist on disk, QA status defaults to `N/A`.
 
 ## User Testing Discoveries
