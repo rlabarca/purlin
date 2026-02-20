@@ -123,12 +123,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 *   **Deterministic JSON:** `dependency_graph.json` uses `sort_keys=True` on `json.dump` and all arrays are pre-sorted by filename/path before serialization.
 *   **Label Wrapping:** SVG label generator uses word-wrap logic (`wrapText()`) to split long labels into multiple lines within the node box. Each label line is rendered as a `<tspan>` element. Node height is dynamically computed based on the number of wrapped lines (base 44px + 18px per extra line). Max ~22 chars per line at font-size 14 in monospace.
 *   **Reactive Update Testing:** The "Reactive Update on Feature Change" scenario requires the running server (`serve.py`) and is classified as Manual. File-watch regeneration is verified during Human Verification.
+*   **Label wrapping in node boxes:** DISCOVERY resolved -- long labels now wrap via `wrapText()` SVG logic instead of clipping. Verified 2026-02-20.
 
 ## User Testing Discoveries
-
-### [DISCOVERY] Long feature labels are clipped instead of wrapping in node boxes (Discovered: 2026-02-19)
-- **Scenario:** NONE
-- **Observed Behavior:** Feature names that exceed the width of their containing node box are clipped on either side, making the full label unreadable.
-- **Expected Behavior:** Long labels should wrap within their node boxes so the full text remains visible.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
