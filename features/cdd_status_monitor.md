@@ -322,3 +322,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Expected Behavior:** Not specified -- no scenario covers server startup reliability after a stop.
 - **Action Required:** Architect
 - **Status:** SPEC_UPDATED
+
+### [BUG] Run Critic button missing from dashboard (Discovered: 2026-02-20)
+- **Scenario:** Run Critic Button
+- **Observed Behavior:** The CDD web dashboard does not have a "Run Critic" button in the top-right area next to the last-updated timestamp. The button is entirely absent from the UI.
+- **Expected Behavior:** Per the "Run Critic Button" manual scenario, a "Run Critic" button should be visible in the top-right area. Clicking it should run the Critic, enter a loading state, then refresh the dashboard with updated role status columns.
+- **Action Required:** Builder
+- **Status:** OPEN
