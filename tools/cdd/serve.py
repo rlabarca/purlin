@@ -62,6 +62,46 @@ def extract_label(filepath):
     return os.path.splitext(os.path.basename(filepath))[0]
 
 
+def strip_discoveries_section(content):
+    """Strip the '## User Testing Discoveries' section and everything below.
+
+    Returns the spec content above that section for comparison purposes.
+    """
+    marker = '## User Testing Discoveries'
+    idx = content.find(marker)
+    if idx == -1:
+        return content
+    return content[:idx]
+
+
+def spec_content_unchanged(f_path, commit_hash):
+    """Check if spec content (above Discoveries section) is unchanged since commit.
+
+    Retrieves file content at the given commit hash via git show, strips the
+    User Testing Discoveries section from both versions, and compares.
+    Returns True if spec content is identical (only Discoveries changed).
+    """
+    try:
+        committed_content = run_command(
+            f"git show {commit_hash}:{f_path}"
+        )
+        if not committed_content:
+            return False
+    except Exception:
+        return False
+
+    try:
+        abs_path = os.path.join(PROJECT_ROOT, f_path)
+        with open(abs_path, 'r') as f:
+            current_content = f.read()
+    except (IOError, OSError):
+        return False
+
+    committed_spec = strip_discoveries_section(committed_content)
+    current_spec = strip_discoveries_section(current_content)
+    return committed_spec == current_spec
+
+
 def get_feature_status(features_rel, features_abs):
     """Gathers the status of all features for the project's features directory."""
     if not os.path.isdir(features_abs):
@@ -89,9 +129,23 @@ def get_feature_status(features_rel, features_abs):
         if complete_ts > test_ts:
             if file_mod_ts <= complete_ts:
                 status = "COMPLETE"
+            else:
+                # File modified after status commit — check if only Discoveries changed
+                commit_hash = run_command(
+                    f"git log -1 --grep='\\[Complete {f_path}\\]' --format=%H"
+                )
+                if commit_hash and spec_content_unchanged(f_path, commit_hash):
+                    status = "COMPLETE"
         elif test_ts > 0:
             if file_mod_ts <= test_ts:
                 status = "TESTING"
+            else:
+                # File modified after status commit — check if only Discoveries changed
+                commit_hash = run_command(
+                    f"git log -1 --grep='\\[Ready for .* {f_path}\\]' --format=%H"
+                )
+                if commit_hash and spec_content_unchanged(f_path, commit_hash):
+                    status = "TESTING"
 
         if status == "COMPLETE":
             complete.append((fname, complete_ts))

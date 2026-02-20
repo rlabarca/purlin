@@ -22,6 +22,8 @@ from serve import (
     generate_api_status_json,
     _is_feature_complete,
     _feature_urgency,
+    strip_discoveries_section,
+    spec_content_unchanged,
 )
 
 
@@ -435,6 +437,197 @@ class TestZeroQueueVerification(unittest.TestCase):
         ]
         all_complete = all(_is_feature_complete(f) for f in features)
         self.assertFalse(all_complete)
+
+
+# ===================================================================
+# Discovery-Aware Lifecycle Preservation Tests
+# ===================================================================
+
+class TestStripDiscoveriesSection(unittest.TestCase):
+    """Unit test for strip_discoveries_section helper."""
+
+    def test_strips_discoveries_section(self):
+        content = (
+            "# Feature\n\n## 2. Requirements\nReqs.\n\n"
+            "## User Testing Discoveries\n- Bug found\n"
+        )
+        result = strip_discoveries_section(content)
+        self.assertNotIn("User Testing Discoveries", result)
+        self.assertIn("Requirements", result)
+
+    def test_no_discoveries_section_returns_full(self):
+        content = "# Feature\n\n## 2. Requirements\nReqs.\n"
+        result = strip_discoveries_section(content)
+        self.assertEqual(result, content)
+
+
+class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
+    """Scenario: Lifecycle Preserved When Only Discoveries Section Changes
+
+    When a feature file is modified after the status commit, but the
+    modification is limited to the User Testing Discoveries section,
+    the feature remains in its lifecycle state (COMPLETE or TESTING).
+    """
+
+    @patch('serve.run_command')
+    def test_complete_preserved_when_only_discoveries_change(self, mock_run):
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            spec_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## User Testing Discoveries\n"
+            )
+            # Write the feature file with a new discovery added
+            modified_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## User Testing Discoveries\n"
+                "- [BUG] Something found (OPEN)\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+
+            # Set file mtime to future (after status commit)
+            os.utime(fpath, (3000000000, 3000000000))
+
+            def mock_git(cmd):
+                if "Complete" in cmd and "%ct" in cmd:
+                    return "2000000000"  # status commit timestamp
+                if "Complete" in cmd and "%H" in cmd:
+                    return "abc123"  # commit hash
+                if "Ready for" in cmd:
+                    return ""
+                if "git show abc123:" in cmd:
+                    return spec_content  # content at status commit
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs)
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_testing_preserved_when_only_discoveries_change(self, mock_run):
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            spec_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## User Testing Discoveries\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## User Testing Discoveries\n"
+                "- [DISCOVERY] New finding (OPEN)\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+
+            os.utime(fpath, (3000000000, 3000000000))
+
+            def mock_git(cmd):
+                if "Complete" in cmd:
+                    return ""
+                if "Ready for" in cmd and "%ct" in cmd:
+                    return "2000000000"
+                if "Ready for" in cmd and "%H" in cmd:
+                    return "def456"
+                if "git show def456:" in cmd:
+                    return spec_content
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs)
+                self.assertEqual(len(testing), 1)
+                self.assertEqual(testing[0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+
+class TestLifecycleResetOnSpecChange(unittest.TestCase):
+    """Scenario: Lifecycle Reset When Spec Content Changes
+
+    When a feature file is modified after the status commit, and the
+    modification includes changes above the User Testing Discoveries
+    section, the feature is reset to TODO.
+    """
+
+    @patch('serve.run_command')
+    def test_resets_to_todo_when_spec_changes(self, mock_run):
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nOriginal overview.\n\n"
+                "## User Testing Discoveries\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "## 1. Overview\nModified overview with new requirements.\n\n"
+                "## User Testing Discoveries\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+
+            os.utime(fpath, (3000000000, 3000000000))
+
+            def mock_git(cmd):
+                if "Complete" in cmd and "%ct" in cmd:
+                    return "2000000000"
+                if "Complete" in cmd and "%H" in cmd:
+                    return "abc123"
+                if "Ready for" in cmd:
+                    return ""
+                if "git show abc123:" in cmd:
+                    return committed_content
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs)
+                self.assertEqual(len(todo), 1)
+                self.assertEqual(todo[0], "test.md")
+                self.assertEqual(len(complete), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
 
 
 # ===================================================================
