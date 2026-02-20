@@ -74,6 +74,13 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
 *   **Agent Contract:** Agents MUST query status via `tools/cdd/status.sh`, which outputs the same JSON schema to stdout without requiring the web server. Agents MUST NOT scrape the web dashboard, use HTTP endpoints, or guess ports.
 
+### 2.5 Role Status Integration
+*   **Critic JSON Discovery:** For each feature `features/<name>.md`, the monitor checks for `tests/<name>/critic.json` on disk.
+*   **Per-Feature Role Status:** If `critic.json` exists, the monitor reads the `role_status` object and exposes its `architect`, `builder`, and `qa` fields on the per-feature API entry. If no `critic.json` exists, all role fields are omitted (dashboard shows `??` in each column).
+*   **No Direct Computation:** CDD does NOT compute role status itself. It reads pre-computed values from the Critic's `role_status` output.
+*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2. Blank cells when no `critic.json` exists.
+*   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
+
 ### 2.6 CLI Status Tool (Agent Interface)
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
@@ -83,12 +90,17 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
 
-### 2.5 Role Status Integration
-*   **Critic JSON Discovery:** For each feature `features/<name>.md`, the monitor checks for `tests/<name>/critic.json` on disk.
-*   **Per-Feature Role Status:** If `critic.json` exists, the monitor reads the `role_status` object and exposes its `architect`, `builder`, and `qa` fields on the per-feature API entry. If no `critic.json` exists, all role fields are omitted (dashboard shows `??` in each column).
-*   **No Direct Computation:** CDD does NOT compute role status itself. It reads pre-computed values from the Critic's `role_status` output.
-*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2. Blank cells when no `critic.json` exists.
-*   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
+### 2.7 Lifecycle Integration Test
+An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/critic/run.sh` correctly report feature lifecycle state and role status columns through the complete feature lifecycle (TODO -> TESTING -> COMPLETE -> spec edit -> TODO reset). This test eliminates the need for manual QA verification of lifecycle and role status logic.
+
+*   **Test Script:** `tools/cdd/test_lifecycle.sh` (Bash). Executable (`chmod +x`).
+*   **Dependency:** Requires `tools/cdd/status.sh` (Section 2.6) to be implemented first. The test invokes `status.sh` at each lifecycle stage.
+*   **Temporary Feature:** The test creates a well-formed temporary feature file (e.g., `features/_test_lifecycle_temp.md`) containing all required sections (Overview, Requirements, Scenarios), both Automated and Manual scenario subsections, a `> Prerequisite:` link to an existing feature, and properly structured Gherkin. The feature MUST pass the Critic Spec Gate (architect=DONE).
+*   **Temporary Tests:** The test creates a minimal passing test result at `tests/_test_lifecycle_temp/tests.json` with `{"status": "PASS"}`.
+*   **Git Commits:** The test creates real git commits (feature creation, implementation, status tag commits, spec edits) to exercise the lifecycle state machine. Each commit SHA is recorded for rollback.
+*   **Verification Method:** At each lifecycle stage, the test runs `tools/critic/run.sh` to regenerate `critic.json` files, then runs `tools/cdd/status.sh` and parses the JSON output to assert expected role status values for the temporary feature. Assertions use `python3 -c` or `jq` to extract and compare JSON fields.
+*   **Cleanup Guarantee:** The test MUST use `trap` to ensure cleanup runs on exit (success, failure, or signal). Cleanup sequence: (1) `git reset --hard <pre-test-sha>` to revert all temporary commits, (2) remove any untracked temporary files (`features/_test_lifecycle_temp.md`, `tests/_test_lifecycle_temp/`), (3) run `tools/critic/run.sh` to restore clean critic.json state. After cleanup, `git log` and `git status` MUST show no trace of the test.
+*   **Test Results:** On success, output `[Scenario] <title>` lines for each passing stage (Bash test file convention) and write `tests/cdd_status_monitor/tests.json` with `{"status": "PASS"}`. On any assertion failure, report the failing stage and expected vs actual values, then proceed to cleanup.
 
 ## 3. Scenarios
 
@@ -164,6 +176,59 @@ These scenarios are validated by the Builder's automated test suite.
     Then the tool uses AGENTIC_PROJECT_ROOT for all path resolution
     And it scans features/ relative to that root
 
+#### Scenario: Lifecycle Integration -- TODO with No Tests
+    Given a temporary feature file is created and committed
+    And the feature has both Automated and Manual scenario subsections
+    And no tests or status commits exist for the feature
+    When tools/critic/run.sh is run
+    And tools/cdd/status.sh is run
+    Then the feature lifecycle is TODO
+    And role_status.builder is TODO
+    And role_status.qa is N/A
+
+#### Scenario: Lifecycle Integration -- TODO with Passing Tests
+    Given the temporary feature exists
+    And tests are created and pass (tests.json with status PASS)
+    And an implementation commit is made (no status tag)
+    When tools/critic/run.sh is run
+    And tools/cdd/status.sh is run
+    Then the feature lifecycle is TODO
+    And role_status.builder is TODO
+    And role_status.qa is CLEAN
+
+#### Scenario: Lifecycle Integration -- TESTING
+    Given the temporary feature has passing tests
+    And a status commit "[Ready for Verification features/<temp>.md]" is made
+    When tools/critic/run.sh is run
+    And tools/cdd/status.sh is run
+    Then the feature lifecycle is TESTING
+    And role_status.builder is DONE
+    And role_status.qa is TODO
+
+#### Scenario: Lifecycle Integration -- COMPLETE
+    Given the temporary feature has passing tests
+    And a status commit "[Complete features/<temp>.md]" is made
+    When tools/critic/run.sh is run
+    And tools/cdd/status.sh is run
+    Then the feature lifecycle is COMPLETE
+    And role_status.builder is DONE
+    And role_status.qa is CLEAN
+
+#### Scenario: Lifecycle Integration -- Spec Edit Resets to TODO
+    Given the temporary feature is in COMPLETE lifecycle state
+    When the feature file spec content is modified (above User Testing Discoveries)
+    And tools/cdd/status.sh is run
+    Then the feature lifecycle is reset to TODO
+    And role_status.builder is TODO
+
+#### Scenario: Lifecycle Integration -- Cleanup
+    Given the lifecycle integration test has run (pass or fail)
+    When cleanup executes
+    Then no temporary feature files remain in features/
+    And no temporary test artifacts remain in tests/
+    And all temporary git commits are reverted
+    And git log shows no trace of the temporary feature
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
@@ -195,7 +260,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the headings are clearly distinguished from the feature table rows beneath them
 
 ## 4. Implementation Notes
-*   **Test Scope:** Automated tests MUST only cover the `/status.json` API endpoint and the underlying status logic. The web dashboard HTML rendering and visual layout MUST NOT be tested through automated tests. The Builder MUST NOT start the CDD server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/cdd/start.sh`) and visually verify the dashboard.
+*   **Test Scope:** Automated tests cover the `/status.json` API endpoint, the `status.sh` CLI tool, the underlying status logic, AND the full lifecycle integration test (Section 2.7). The lifecycle integration test eliminates the need for manual QA verification of lifecycle state transitions and role status column values -- these are fully verified by automation. Manual scenarios are reserved exclusively for web dashboard visual/UI verification. The Builder MUST NOT start the CDD server during automated tests.
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
 *   **Test Isolation:** The test aggregator scans `tests/<feature_name>/tests.json` (resolved relative to `PROJECT_ROOT`) and treats malformed JSON as FAIL.
 *   **Name Convention:** Feature-to-test mapping uses the feature file's stem: `features/<name>.md` maps to `tests/<name>/tests.json`. The `<name>` must match exactly (case-sensitive).
