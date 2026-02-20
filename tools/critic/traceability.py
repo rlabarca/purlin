@@ -38,15 +38,21 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
       1. tests/<feature_stem>/ directory
       2. Tool directories under tools_root matching the feature
 
+    Discovers both test_*.py (Python) and test_*.sh (Bash) files.
+
     Returns list of absolute file paths.
     """
     test_files = []
+
+    def _is_test_file(fname):
+        return fname.startswith('test') and (
+            fname.endswith('.py') or fname.endswith('.sh'))
 
     # Primary: tests/<feature_stem>/
     tests_dir = os.path.join(project_root, 'tests', feature_stem)
     if os.path.isdir(tests_dir):
         for fname in os.listdir(tests_dir):
-            if fname.endswith('.py') and fname.startswith('test'):
+            if _is_test_file(fname):
                 test_files.append(os.path.join(tests_dir, fname))
 
     # Secondary: scan tool directories for test files
@@ -57,7 +63,7 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
             if not os.path.isdir(tool_dir):
                 continue
             for fname in os.listdir(tool_dir):
-                if fname.endswith('.py') and fname.startswith('test'):
+                if _is_test_file(fname):
                     fpath = os.path.join(tool_dir, fname)
                     if fpath not in test_files:
                         test_files.append(fpath)
@@ -96,6 +102,58 @@ def extract_test_functions(filepath):
         functions.append({'name': name, 'body': body})
 
     return functions
+
+
+def extract_bash_test_scenarios(filepath):
+    """Extract test scenario entries from a Bash test file.
+
+    Parses lines matching echo "[Scenario] <title>" as entry points.
+    Each entry = marker line + surrounding context up to next marker or EOF.
+
+    Returns list of dicts: [{"name": "<title>", "body": "..."}]
+    """
+    try:
+        with open(filepath, 'r') as f:
+            content = f.read()
+    except (IOError, OSError):
+        return []
+
+    entries = []
+    lines = content.split('\n')
+    marker_pattern = re.compile(r'''echo\s+['"]?\[Scenario\]\s*(.+?)['"]?\s*$''')
+
+    # Find all marker positions
+    markers = []
+    for i, line in enumerate(lines):
+        match = marker_pattern.search(line.strip())
+        if match:
+            markers.append((i, match.group(1).strip()))
+
+    for idx, (line_num, title) in enumerate(markers):
+        # Context runs from marker to next marker or EOF
+        if idx + 1 < len(markers):
+            end_line = markers[idx + 1][0]
+        else:
+            end_line = len(lines)
+        body = '\n'.join(lines[line_num:end_line])
+        entries.append({'name': title, 'body': body})
+
+    return entries
+
+
+def extract_test_entries(filepath):
+    """Dispatch test entry extraction based on file type.
+
+    .py files -> extract_test_functions (Python)
+    .sh files -> extract_bash_test_scenarios (Bash)
+
+    Returns list of dicts: [{"name": str, "body": str}]
+    """
+    if filepath.endswith('.py'):
+        return extract_test_functions(filepath)
+    elif filepath.endswith('.sh'):
+        return extract_bash_test_scenarios(filepath)
+    return []
 
 
 def match_scenario_to_tests(scenario_keywords, test_functions):
@@ -154,11 +212,11 @@ def run_traceability(scenarios, project_root, feature_stem,
     """
     overrides = parse_traceability_overrides(impl_notes)
 
-    # Discover test files and extract functions
+    # Discover test files and extract entries (Python functions or Bash scenarios)
     test_files = discover_test_files(project_root, feature_stem, tools_root)
     all_test_functions = []
     for tf in test_files:
-        all_test_functions.extend(extract_test_functions(tf))
+        all_test_functions.extend(extract_test_entries(tf))
 
     automated = [s for s in scenarios if not s.get('is_manual', False)]
     if not automated:
