@@ -458,3 +458,10 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` for QA status computation. If CDD is not running and `feature_status.json` doesn't exist on disk, QA status defaults to `N/A`.
 
 ## User Testing Discoveries
+
+### [SPEC_DISPUTE] Manual scenario for Critic Report readability is invalid (Discovered: 2026-02-19)
+- **Scenario:** Critic Report Readability
+- **Observed Behavior:** The scenario asks a human to manually verify that CRITIC_REPORT.md is "readable and well-structured."
+- **Expected Behavior:** CRITIC_REPORT.md is an agent-facing artifact (Section 2.9: "The Critic is agent-facing; CDD is human-facing"). Human readability verification is not appropriate for an agent-consumed output. This scenario should be removed or converted to an automated structural check.
+- **Action Required:** Architect
+- **Status:** OPEN
