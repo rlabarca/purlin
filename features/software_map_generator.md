@@ -109,6 +109,17 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
     Then the node's direct prerequisites and direct dependents are highlighted
     And non-adjacent nodes are visually de-emphasized
 
+#### Scenario: Server Start/Stop Lifecycle
+    Given the Software Map server is not running
+    When the User runs tools/software_map/start.sh
+    Then the server starts on the configured port on the first invocation
+    And a PID file is written to .agentic_devops/runtime/software_map.pid
+    When the User runs tools/software_map/stop.sh
+    Then the server process is terminated
+    And the PID file is removed
+    When the User runs tools/software_map/start.sh again
+    Then the server starts successfully on the first invocation without requiring a second run
+
 #### Scenario: Zoom Persistence on Refresh
     Given the User has zoomed or panned the graph
     When the dashboard auto-refreshes
@@ -124,16 +135,17 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 *   **Label Wrapping:** SVG label generator uses word-wrap logic (`wrapText()`) to split long labels into multiple lines within the node box. Each label line is rendered as a `<tspan>` element. Node height is dynamically computed based on the number of wrapped lines (base 44px + 18px per extra line). Max ~22 chars per line at font-size 14 in monospace.
 *   **Reactive Update Testing:** The "Reactive Update on Feature Change" scenario requires the running server (`serve.py`) and is classified as Manual. File-watch regeneration is verified during Human Verification.
 *   **Reactive Refresh Resilience:** Fixed two issues that could cause stale category data on reactive refresh: (1) In `generate_tree.py`, `generate_dependency_graph()` now runs BEFORE `update_outputs()` (Mermaid/README), so the critical JSON output is written even if README update fails. (2) In `serve.py`, the file watcher snapshot is only updated on successful generation — failed generations trigger retry on the next poll cycle.
+*   **Start/Stop PID Path Consistency:** `start.sh` writes PID files to `.agentic_devops/runtime/`. `stop.sh` MUST read from the same runtime directory using the same project root detection logic. A path mismatch between start and stop causes orphaned server processes and port conflicts on subsequent starts.
 *   **Label wrapping in node boxes:** DISCOVERY resolved -- long labels now wrap via `wrapText()` SVG logic instead of clipping. Verified 2026-02-20.
 
 ## User Testing Discoveries
 
 ### [DISCOVERY] start.sh requires double invocation to start server (Discovered: 2026-02-20)
-- **Scenario:** NONE
-- **Observed Behavior:** After stopping the Software Map server, running `tools/software_map/start.sh` does not reliably start the server on the first invocation. A second run of the script is required to actually start the server. The same behavior is observed with the CDD start script.
-- **Expected Behavior:** Not specified -- no scenario covers server startup reliability after a stop.
-- **Action Required:** Architect
-- **Status:** OPEN
+- **Scenario:** Server Start/Stop Lifecycle
+- **Observed Behavior:** After stopping the Software Map server, running `tools/software_map/start.sh` does not reliably start the server on the first invocation. A second run of the script is required to actually start the server. Root cause: `stop.sh` reads PID from the old `$DIR/` path while `start.sh` writes PID to `.agentic_devops/runtime/`, causing stop to be a no-op and the port to remain occupied.
+- **Expected Behavior:** Server starts on first invocation after a stop. PID paths must be consistent between start.sh and stop.sh.
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED
 
 ### [BUG] Category grouping not updated on reactive refresh (Discovered: 2026-02-20)
 - **Scenario:** Reactive Update on Feature Change

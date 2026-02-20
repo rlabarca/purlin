@@ -277,6 +277,17 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the "ACTIVE" and "COMPLETE" section headings have an underline separator
     And the headings are clearly distinguished from the feature table rows beneath them
 
+#### Scenario: Server Start/Stop Lifecycle
+    Given the CDD server is not running
+    When the User runs tools/cdd/start.sh
+    Then the server starts on the configured port on the first invocation
+    And a PID file is written to .agentic_devops/runtime/cdd.pid
+    When the User runs tools/cdd/stop.sh
+    Then the server process is terminated
+    And the PID file is removed
+    When the User runs tools/cdd/start.sh again
+    Then the server starts successfully on the first invocation without requiring a second run
+
 #### Scenario: Run Critic Button
     Given the CDD server is running
     And the User opens the web dashboard
@@ -300,6 +311,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **Section Heading Underline:** Section headings ("ACTIVE", "COMPLETE") require a visible underline separator to distinguish them from feature rows. Verified 2026-02-19.
 *   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
 *   **CLI Mode:** `serve.py --cli-status` outputs API JSON to stdout and regenerates `feature_status.json`. `status.sh` is a shell wrapper that detects project root and calls this mode.
+*   **Start/Stop PID Path Consistency:** `start.sh` writes PID files to `.agentic_devops/runtime/`. `stop.sh` MUST read from the same runtime directory using the same project root detection logic. A path mismatch between start and stop causes orphaned server processes and port conflicts on subsequent starts.
 *   **Lifecycle Test Timing:** `test_lifecycle.sh` uses `sleep 1` between status tag commits (Ready for Verification -> Complete, Complete -> spec edit) to ensure git commit timestamps differ by at least 1 second, avoiding `int()` truncation equality in the lifecycle comparison logic.
 
 ## User Testing Discoveries
@@ -309,4 +321,4 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** After stopping the CDD server, running `tools/cdd/start.sh` does not reliably start the server on the first invocation. A second run of the script is required to actually start the server. The same behavior is observed with the Software Map start script.
 - **Expected Behavior:** Not specified -- no scenario covers server startup reliability after a stop.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
