@@ -1068,8 +1068,8 @@ def compute_role_status(feature_result, cdd_status=None):
             builder_status = 'FAIL'
         else:
             builder_status = 'TODO'
-    elif has_open_bugs or has_trace_fail:
-        builder_status = 'FAIL' if has_open_bugs else 'TODO'
+    elif has_trace_fail:
+        builder_status = 'TODO'
     elif lifecycle_is_todo:
         # Spec modified after last status commit -- implementation review needed
         builder_status = 'TODO'

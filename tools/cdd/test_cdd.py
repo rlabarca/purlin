@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import os
 import json
+import subprocess
 import sys
 import tempfile
 import shutil
@@ -703,6 +704,72 @@ class TestHandlerRouting(unittest.TestCase):
         handler.send_response.assert_called_with(200)
         content_types = [v for k, v in headers_sent if k == "Content-type"]
         self.assertEqual(content_types, ["text/html"])
+
+
+class TestRunCriticEndpoint(unittest.TestCase):
+    """Scenario: Run Critic Endpoint"""
+
+    @patch('serve.subprocess.run')
+    def test_run_critic_returns_json_ok(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0)
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/run-critic'
+        handler.requestline = 'POST /run-critic HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        handler.do_POST()
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == "Content-Type"]
+        self.assertEqual(content_types, ["application/json"])
+        body = handler.wfile.getvalue()
+        data = json.loads(body)
+        self.assertEqual(data["status"], "ok")
+
+    @patch('serve.subprocess.run',
+           side_effect=subprocess.CalledProcessError(1, 'bash'))
+    def test_run_critic_returns_error_on_failure(self, mock_run):
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/run-critic'
+        handler.requestline = 'POST /run-critic HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        handler.do_POST()
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == "Content-Type"]
+        self.assertEqual(content_types, ["application/json"])
+        body = handler.wfile.getvalue()
+        data = json.loads(body)
+        self.assertEqual(data["status"], "error")
 
 
 # ===================================================================

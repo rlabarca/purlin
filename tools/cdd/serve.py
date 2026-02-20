@@ -442,8 +442,17 @@ body{{
   font-family:'Menlo','Monaco','Consolas',monospace;
   font-size:12px;padding:8px 12px;
 }}
-.hdr{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}}
+.hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
 .hdr h1{{font-size:14px;color:#FFF;font-weight:600}}
+.hdr-right{{display:flex;align-items:center;gap:8px}}
+.btn-critic{{
+  background:#2A2F36;color:#B0B0B0;border:1px solid #3A3F46;
+  border-radius:3px;padding:2px 8px;font-family:inherit;font-size:11px;
+  cursor:pointer;line-height:1.5;
+}}
+.btn-critic:hover{{background:#3A3F46;color:#FFF}}
+.btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
+.btn-critic-err{{color:#FF4500;font-size:10px;margin-right:4px}}
 .dim{{color:#666;font-size:0.9em}}
 h2{{font-size:13px;color:#FFF;margin-bottom:6px;border-bottom:1px solid #2A2F36;padding-bottom:4px}}
 h3{{font-size:11px;color:#888;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2A2F36;padding-bottom:3px}}
@@ -468,7 +477,11 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
 <body>
 <div class="hdr">
   <h1>CDD Monitor</h1>
-  <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+  <div class="hdr-right">
+    <span id="critic-err" class="btn-critic-err"></span>
+    <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
+    <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+  </div>
 </div>
 <div class="features">
     <h3>Active</h3>
@@ -482,6 +495,20 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
   {git_html}
   <p class="dim" style="margin-top:4px">{last_commit}</p>
 </div>
+<script>
+function runCritic(){{
+  var btn=document.getElementById('btn-critic');
+  var err=document.getElementById('critic-err');
+  btn.disabled=true;btn.textContent='Running\u2026';err.textContent='';
+  fetch('/run-critic',{{method:'POST'}})
+    .then(function(r){{return r.json();}})
+    .then(function(d){{
+      if(d.status==='ok'){{location.reload();}}
+      else{{err.textContent='Critic run failed';btn.disabled=false;btn.textContent='Run Critic';}}
+    }})
+    .catch(function(){{err.textContent='Critic run failed';btn.disabled=false;btn.textContent='Run Critic';}});
+}}
+</script>
 </body>
 </html>"""
 
@@ -536,6 +563,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-type", "text/html")
             self.end_headers()
             self.wfile.write(generate_html().encode('utf-8'))
+
+    def do_POST(self):
+        if self.path == '/run-critic':
+            try:
+                critic_script = os.path.join(
+                    PROJECT_ROOT,
+                    CONFIG.get('tools_root', 'tools'),
+                    'critic', 'run.sh')
+                subprocess.run(
+                    ['bash', critic_script],
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=120,
+                )
+                payload = json.dumps({"status": "ok"}).encode('utf-8')
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+                    OSError) as exc:
+                payload = json.dumps({
+                    "status": "error",
+                    "detail": str(exc),
+                }).encode('utf-8')
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     def log_message(self, format, *args):
         pass  # Suppress request logging noise
