@@ -93,15 +93,6 @@ def get_feature_status(features_rel, features_abs):
             if file_mod_ts <= test_ts:
                 status = "TESTING"
 
-        if status == "COMPLETE" and CONFIG.get("critic_gate_blocking", False):
-            stem = os.path.splitext(fname)[0]
-            cs = get_feature_critic_status(stem, TESTS_DIR)
-            if cs == "FAIL":
-                if test_ts > 0 and file_mod_ts <= test_ts:
-                    status = "TESTING"
-                else:
-                    status = "TODO"
-
         if status == "COMPLETE":
             complete.append((fname, complete_ts))
         elif status == "TESTING":
@@ -132,12 +123,12 @@ def get_feature_test_status(feature_stem, tests_dir):
         return "FAIL"
 
 
-def get_feature_critic_status(feature_stem, tests_dir):
-    """Looks up tests/<feature_stem>/critic.json and returns status or None.
+def get_feature_qa_status(feature_stem, tests_dir):
+    """Looks up tests/<feature_stem>/critic.json and returns QA status or None.
 
-    Returns "PASS", "WARN", "FAIL", or None (when no critic.json exists).
-    Derives status from the worse of spec_gate.status and implementation_gate.status.
-    Malformed JSON is treated as FAIL.
+    Returns "CLEAN" or "HAS_OPEN_ITEMS", or None (when no critic.json exists).
+    Reads the user_testing.status field from critic.json.
+    Malformed JSON is treated as None (omitted).
     """
     critic_path = os.path.join(tests_dir, feature_stem, "critic.json")
     if not os.path.isfile(critic_path):
@@ -145,13 +136,9 @@ def get_feature_critic_status(feature_stem, tests_dir):
     try:
         with open(critic_path, 'r') as f:
             data = json.load(f)
-        spec_status = data.get("spec_gate", {}).get("status", "FAIL")
-        impl_status = data.get("implementation_gate", {}).get("status", "FAIL")
-        severity = {"PASS": 0, "WARN": 1, "FAIL": 2}
-        worse = max(spec_status, impl_status, key=lambda s: severity.get(s, 2))
-        return worse
+        return data.get("user_testing", {}).get("status")
     except (json.JSONDecodeError, IOError, OSError):
-        return "FAIL"
+        return None
 
 
 def aggregate_test_statuses(statuses):
@@ -172,7 +159,6 @@ def generate_feature_status_json():
     complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
 
     all_test_statuses = []
-    all_critic_statuses = []
 
     def make_entry(fname):
         rel_path = os.path.normpath(os.path.join(FEATURES_REL, fname))
@@ -183,10 +169,9 @@ def generate_feature_status_json():
         if ts is not None:
             entry["test_status"] = ts
             all_test_statuses.append(ts)
-        cs = get_feature_critic_status(stem, TESTS_DIR)
-        if cs is not None:
-            entry["critic_status"] = cs
-            all_critic_statuses.append(cs)
+        qa = get_feature_qa_status(stem, TESTS_DIR)
+        if qa is not None:
+            entry["qa_status"] = qa
         return entry
 
     features = {
@@ -196,7 +181,6 @@ def generate_feature_status_json():
     }
 
     return {
-        "critic_status": aggregate_test_statuses(all_critic_statuses),
         "features": features,
         "generated_at": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         "test_status": aggregate_test_statuses(all_test_statuses),
@@ -225,31 +209,34 @@ def _badge_html(status, label=None):
     """Returns a colored badge span, or empty string if status is None."""
     if status is None:
         return ""
-    css_map = {"PASS": "st-pass", "WARN": "st-warn", "FAIL": "st-fail"}
+    css_map = {
+        "PASS": "st-pass", "WARN": "st-warn", "FAIL": "st-fail",
+        "CLEAN": "st-pass", "HAS_OPEN_ITEMS": "st-warn",
+    }
     css = css_map.get(status, "st-fail")
     text = label or status
     return f'<span class="{css}">{text}</span>'
 
 
 def _feature_table_html(features, css_class):
-    """Renders a table of features with Test and Critic badge columns."""
+    """Renders a table of features with Test and QA badge columns."""
     if not features:
         return ""
     rows = ""
     for name in features:
         stem = os.path.splitext(name)[0]
         ts = get_feature_test_status(stem, TESTS_DIR)
-        cs = get_feature_critic_status(stem, TESTS_DIR)
+        qa = get_feature_qa_status(stem, TESTS_DIR)
         rows += (
             f'<tr>'
             f'<td><span class="sq {css_class}"></span>{name}</td>'
             f'<td class="badge-cell">{_badge_html(ts)}</td>'
-            f'<td class="badge-cell">{_badge_html(cs)}</td>'
+            f'<td class="badge-cell">{_badge_html(qa)}</td>'
             f'</tr>'
         )
     return (
         f'<table class="ft">'
-        f'<thead><tr><th>Feature</th><th>Tests</th><th>Critic</th></tr></thead>'
+        f'<thead><tr><th>Feature</th><th>Tests</th><th>QA</th></tr></thead>'
         f'<tbody>{rows}</tbody>'
         f'</table>'
     )
@@ -263,27 +250,17 @@ def generate_html():
 
     # Aggregate per-feature test statuses for the top-level badge
     all_test_statuses = []
-    all_critic_statuses = []
     all_fnames = [n for n, _ in complete_tuples] + testing + todo
     for fname in all_fnames:
         stem = os.path.splitext(fname)[0]
         ts = get_feature_test_status(stem, TESTS_DIR)
         if ts is not None:
             all_test_statuses.append(ts)
-        cs = get_feature_critic_status(stem, TESTS_DIR)
-        if cs is not None:
-            all_critic_statuses.append(cs)
     test_status = aggregate_test_statuses(all_test_statuses)
     test_msg = (
         "All features nominal" if test_status == "PASS"
         else "No test reports found" if test_status == "UNKNOWN"
         else f"{sum(1 for s in all_test_statuses if s == 'FAIL')} feature(s) failing"
-    )
-    critic_status = aggregate_test_statuses(all_critic_statuses)
-    critic_msg = (
-        "All features nominal" if critic_status == "PASS"
-        else "No critic reports found" if critic_status == "UNKNOWN"
-        else f"{sum(1 for s in all_critic_statuses if s == 'FAIL')} feature(s) failing"
     )
 
     # COMPLETE capping
@@ -359,10 +336,6 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
     <div class="test-bar">
         <span class="st-{test_status.lower()}">{test_status}</span>
         <span class="dim">Tests: {test_msg}</span>
-    </div>
-    <div class="test-bar">
-        <span class="st-{critic_status.lower()}">{critic_status}</span>
-        <span class="dim">Critic: {critic_msg}</span>
     </div>
 </div>
 <div class="ctx">
