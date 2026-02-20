@@ -12,6 +12,7 @@ Usage:
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -826,6 +827,59 @@ def generate_action_items(feature_result, cdd_status=None):
 
 
 # ===================================================================
+# Untracked File Audit (Section 2.12)
+# ===================================================================
+
+def audit_untracked_files(project_root=None):
+    """Detect untracked files and generate Architect action items.
+
+    Runs ``git status --porcelain`` and collects untracked entries (``??``).
+    Excludes ``.agentic_devops/`` and ``.claude/`` directories.
+
+    Returns:
+        list of action item dicts with priority MEDIUM and category
+        ``untracked_file``.
+    """
+    root = project_root or PROJECT_ROOT
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain'],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return []
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return []
+
+    items = []
+    for line in result.stdout.strip().split('\n'):
+        if not line.startswith('??'):
+            continue
+        path = line[3:].strip()
+        if not path:
+            continue
+        # Exclude .agentic_devops/ and .claude/ directories
+        if path.startswith('.agentic_devops/') or path == '.agentic_devops/':
+            continue
+        if path.startswith('.claude/') or path == '.claude/':
+            continue
+        items.append({
+            'priority': 'MEDIUM',
+            'category': 'untracked_file',
+            'feature': 'project',
+            'description': (
+                f'Triage untracked file: {path} '
+                f'(commit, gitignore, or delegate to Builder)'
+            ),
+        })
+
+    return items
+
+
+# ===================================================================
 # Output generation
 # ===================================================================
 
@@ -904,11 +958,12 @@ def write_critic_json(feature_path, cdd_status=None):
     return data
 
 
-def generate_critic_report(results):
+def generate_critic_report(results, untracked_items=None):
     """Generate CRITIC_REPORT.md from a list of per-feature results.
 
     Args:
         results: list of critic.json data dicts
+        untracked_items: optional list of untracked file action items
 
     Returns:
         str: markdown report content
@@ -936,7 +991,7 @@ def generate_critic_report(results):
     # Action Items by Role
     lines.append('## Action Items by Role')
     lines.append('')
-    priority_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
+    priority_order = {'CRITICAL': -1, 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
     for role in ('Architect', 'Builder', 'QA'):
         role_key = role.lower()
         lines.append(f'### {role}')
@@ -954,6 +1009,16 @@ def generate_critic_report(results):
                 )
         else:
             lines.append('No action items.')
+        # Untracked Files subsection under Architect
+        if role == 'Architect' and untracked_items:
+            lines.append('')
+            lines.append('#### Untracked Files')
+            lines.append('')
+            for item in untracked_items:
+                lines.append(
+                    f'- **[{item["priority"]}]**: '
+                    f'{item["description"]}'
+                )
         lines.append('')
 
     # Builder Decision Audit
@@ -1086,8 +1151,11 @@ def main():
             ig = data['implementation_gate']['status']
             print(f'  {fname}: Spec={sg} Impl={ig}')
 
+        # Audit untracked files (project-level, not per-feature)
+        untracked_items = audit_untracked_files()
+
         # Generate aggregate report
-        report = generate_critic_report(results)
+        report = generate_critic_report(results, untracked_items=untracked_items)
         report_path = os.path.join(PROJECT_ROOT, 'CRITIC_REPORT.md')
         with open(report_path, 'w') as f:
             f.write(report)

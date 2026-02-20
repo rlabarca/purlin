@@ -54,6 +54,7 @@ from critic import (
     generate_critic_json,
     generate_critic_report,
     _policy_exempt_implementation_gate,
+    audit_untracked_files,
 )
 import logic_drift
 
@@ -1702,6 +1703,148 @@ class TestActionItemsInAggregateReport(unittest.TestCase):
         high_pos = report.index('[HIGH]')
         low_pos = report.index('[LOW]')
         self.assertLess(high_pos, low_pos, 'HIGH items should appear before LOW items')
+
+
+# ===================================================================
+# Untracked File Audit Tests
+# ===================================================================
+
+class TestUntrackedFileDetection(unittest.TestCase):
+    """Scenario: Untracked File Detection"""
+
+    @patch('critic.subprocess.run')
+    def test_detects_untracked_files(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='?? newfile.py\n?? docs/readme.txt\n',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(len(items), 2)
+        for item in items:
+            self.assertEqual(item['priority'], 'MEDIUM')
+            self.assertEqual(item['category'], 'untracked_file')
+        self.assertIn('newfile.py', items[0]['description'])
+        self.assertIn('docs/readme.txt', items[1]['description'])
+
+    @patch('critic.subprocess.run')
+    def test_excludes_agentic_devops(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='?? .agentic_devops/config.json\n?? real_file.py\n',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(len(items), 1)
+        self.assertIn('real_file.py', items[0]['description'])
+
+    @patch('critic.subprocess.run')
+    def test_excludes_claude_dir(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='?? .claude/settings.json\n?? keep_me.txt\n',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(len(items), 1)
+        self.assertIn('keep_me.txt', items[0]['description'])
+
+    @patch('critic.subprocess.run')
+    def test_ignores_tracked_files(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=' M modified.py\nA  staged.py\n?? untracked.py\n',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(len(items), 1)
+        self.assertIn('untracked.py', items[0]['description'])
+
+    @patch('critic.subprocess.run')
+    def test_empty_output(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(items, [])
+
+    @patch('critic.subprocess.run')
+    def test_git_failure_returns_empty(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=128, stdout='')
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(items, [])
+
+    @patch('critic.subprocess.run')
+    def test_action_item_description_format(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='?? some/path.py\n',
+        )
+        items = audit_untracked_files('/fake/root')
+        self.assertEqual(len(items), 1)
+        self.assertIn('Triage untracked file:', items[0]['description'])
+        self.assertIn('commit, gitignore, or delegate to Builder',
+                       items[0]['description'])
+
+
+class TestUntrackedFilesInAggregateReport(unittest.TestCase):
+    """Scenario: Untracked Files in Aggregate Report"""
+
+    def test_report_includes_untracked_subsection(self):
+        results = [{
+            'feature_file': 'features/test.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                    },
+                    'policy_adherence': {'status': 'PASS', 'violations': []},
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                },
+            },
+            'user_testing': {
+                'status': 'CLEAN',
+                'bugs': 0, 'discoveries': 0, 'intent_drifts': 0,
+            },
+        }]
+        untracked = [{
+            'priority': 'MEDIUM',
+            'category': 'untracked_file',
+            'feature': 'project',
+            'description': 'Triage untracked file: orphan.py '
+                           '(commit, gitignore, or delegate to Builder)',
+        }]
+        report = generate_critic_report(results, untracked_items=untracked)
+        self.assertIn('#### Untracked Files', report)
+        self.assertIn('orphan.py', report)
+        self.assertIn('Triage untracked file', report)
+
+    def test_report_no_untracked_no_subsection(self):
+        results = [{
+            'feature_file': 'features/test.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                    },
+                    'policy_adherence': {'status': 'PASS', 'violations': []},
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                },
+            },
+            'user_testing': {
+                'status': 'CLEAN',
+                'bugs': 0, 'discoveries': 0, 'intent_drifts': 0,
+            },
+        }]
+        report = generate_critic_report(results, untracked_items=[])
+        self.assertNotIn('#### Untracked Files', report)
 
 
 # ===================================================================
