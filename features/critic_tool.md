@@ -97,6 +97,11 @@ For each feature file, produce `tests/<feature_name>/critic.json`:
         "architect": [{"priority": "HIGH | MEDIUM | LOW", "category": "<source_category>", "feature": "<feature_name>", "description": "<imperative action>"}],
         "builder": [],
         "qa": []
+    },
+    "role_status": {
+        "architect": "DONE | TODO",
+        "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
+        "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A"
     }
 }
 ```
@@ -113,9 +118,9 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
 ### 2.9 CDD Integration (Decoupled)
 The Critic is agent-facing; CDD is human-facing. CDD does NOT run the Critic.
 
-*   **QA Status Only:** CDD MAY read the `user_testing.status` field from on-disk `tests/<feature_name>/critic.json` files to display a QA column on the dashboard. CDD does NOT read or display spec_gate or implementation_gate status.
+*   **Role Status Contract:** CDD reads the `role_status` object from on-disk `tests/<feature_name>/critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT read or display spec_gate or implementation_gate status directly.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on Critic results.
-*   **No critic_status in Status JSON:** The CDD `/status.json` endpoint does NOT include `critic_status` fields (neither top-level nor per-feature). Per-feature entries MAY include a `qa_status` field (`CLEAN` or `HAS_OPEN_ITEMS`) when a `critic.json` file exists on disk.
+*   **No Legacy Fields:** The CDD `/status.json` endpoint does NOT include `critic_status`, `test_status`, or `qa_status` fields. Per-feature entries expose `architect`, `builder`, and `qa` fields read from `role_status` when a `critic.json` file exists on disk.
 
 ### 2.10 Role-Specific Action Item Generation
 The Critic MUST generate imperative action items for each role based on the analysis results. Action items are derived as follows:
@@ -141,6 +146,33 @@ The Critic MUST generate imperative action items for each role based on the anal
 *   **LOW** -- Gate WARNs, informational items.
 
 **CDD Feature Status Dependency:** QA action items that depend on CDD feature status (TESTING state) require `tools/cdd/feature_status.json` to exist on disk. If unavailable, the Critic skips status-dependent QA items with a note in the report.
+
+### 2.11 Role Status Computation
+The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
+
+**Architect Status:**
+*   `TODO`: Any HIGH or CRITICAL priority Architect action items exist (Spec Gate FAIL, open SPEC_DISPUTE, INFEASIBLE tag, open DISCOVERY/INTENT_DRIFT, unacknowledged DEVIATION).
+*   `DONE`: No HIGH or CRITICAL Architect action items.
+
+**Builder Status:**
+*   `DONE`: structural_completeness PASS (tests.json exists with PASS), no open BUGs, no FAIL-level traceability issues.
+*   `TODO`: Has Builder action items to address (needs implementation, traceability gaps, etc.).
+*   `FAIL`: tests.json exists with status FAIL.
+*   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes (Builder halted, escalated to Architect).
+*   `BLOCKED`: Active SPEC_DISPUTE exists for this feature (scenarios suspended, Builder cannot implement).
+
+**Builder Precedence (highest wins):** INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
+
+**QA Status:**
+*   `CLEAN`: user_testing.status is CLEAN and feature has been verified (is or was in TESTING/COMPLETE lifecycle state).
+*   `TODO`: Feature in TESTING lifecycle state with SPEC_UPDATED items awaiting re-verification, or no verification done yet.
+*   `FAIL`: Has OPEN BUGs in User Testing Discoveries.
+*   `DISPUTED`: Has OPEN SPEC_DISPUTEs in User Testing Discoveries (no BUGs).
+*   `N/A`: Feature not yet in TESTING or COMPLETE lifecycle state (not ready for QA).
+
+**QA Precedence (highest wins):** FAIL > DISPUTED > TODO > CLEAN > N/A.
+
+**Lifecycle State Dependency:** QA status computation requires `tools/cdd/feature_status.json` to determine the feature's lifecycle state (TODO/TESTING/COMPLETE). If unavailable, QA status defaults to `N/A` with a note in the report.
 
 ## 3. Scenarios
 
@@ -286,6 +318,66 @@ The Critic MUST generate imperative action items for each role based on the anal
     Then user_testing.status is HAS_OPEN_ITEMS
     And user_testing.spec_disputes is 1
 
+#### Scenario: Role Status Architect TODO
+    Given a feature has a Spec Gate FAIL (missing Requirements section)
+    When the Critic tool computes role_status
+    Then role_status.architect is TODO
+
+#### Scenario: Role Status Architect DONE
+    Given a feature has no HIGH or CRITICAL Architect action items
+    When the Critic tool computes role_status
+    Then role_status.architect is DONE
+
+#### Scenario: Role Status Builder DONE
+    Given a feature has structural_completeness PASS and no open BUGs
+    When the Critic tool computes role_status
+    Then role_status.builder is DONE
+
+#### Scenario: Role Status Builder FAIL
+    Given a feature has tests.json with status FAIL
+    When the Critic tool computes role_status
+    Then role_status.builder is FAIL
+
+#### Scenario: Role Status Builder INFEASIBLE
+    Given a feature has an [INFEASIBLE] tag in Implementation Notes
+    And tests.json exists with status FAIL
+    When the Critic tool computes role_status
+    Then role_status.builder is INFEASIBLE
+    And INFEASIBLE takes precedence over FAIL
+
+#### Scenario: Role Status Builder BLOCKED
+    Given a feature has an OPEN SPEC_DISPUTE in User Testing Discoveries
+    And no [INFEASIBLE] tag exists
+    When the Critic tool computes role_status
+    Then role_status.builder is BLOCKED
+
+#### Scenario: Role Status QA CLEAN
+    Given a feature has user_testing.status CLEAN
+    And the feature is in COMPLETE lifecycle state per feature_status.json
+    When the Critic tool computes role_status
+    Then role_status.qa is CLEAN
+
+#### Scenario: Role Status QA FAIL
+    Given a feature has OPEN BUGs in User Testing Discoveries
+    When the Critic tool computes role_status
+    Then role_status.qa is FAIL
+
+#### Scenario: Role Status QA DISPUTED
+    Given a feature has OPEN SPEC_DISPUTEs but no OPEN BUGs
+    When the Critic tool computes role_status
+    Then role_status.qa is DISPUTED
+
+#### Scenario: Role Status QA N/A
+    Given a feature is in TODO lifecycle state (not yet in TESTING or COMPLETE)
+    When the Critic tool computes role_status
+    Then role_status.qa is N/A
+
+#### Scenario: Role Status in Critic JSON Output
+    Given the Critic tool completes analysis of a feature
+    When the per-feature critic.json is written
+    Then it contains a role_status object with architect, builder, and qa fields
+    And the values conform to the defined status enums
+
 #### Scenario: Spec Gate Policy File Reduced Evaluation
     Given a feature file is an architectural policy (arch_*.md)
     When the Critic tool runs the Spec Gate
@@ -300,12 +392,12 @@ The Critic MUST generate imperative action items for each role based on the anal
 
 ### Manual Scenarios (Human Verification Required)
 
-#### Scenario: CDD Dashboard QA Column
+#### Scenario: CDD Dashboard Role Columns
     Given the CDD server is running
-    And critic.json files exist for features
+    And critic.json files exist for features with role_status computed
     When the User opens the web dashboard
-    Then each feature entry shows a QA column with CLEAN or HAS_OPEN_ITEMS
-    And features without critic.json show a blank QA cell
+    Then each feature entry shows Architect, Builder, and QA columns with role status badges
+    And features without critic.json show "--" in all role columns
 
 #### Scenario: Critic Report Readability
     Given CRITIC_REPORT.md has been generated

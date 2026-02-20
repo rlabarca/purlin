@@ -61,7 +61,7 @@ Every agent (Architect, Builder, QA) MUST run the Critic at session start. The C
 The Critic MUST generate imperative action items categorized by role (Architect, Builder, QA). Action items are derived from existing analysis gates (spec gate, implementation gate, user testing audit) and are prioritized by severity. Each action item identifies the target feature and the specific gap to address.
 
 ### 2.8 CDD Decoupling
-The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (feature status, test results, QA status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD MAY read the `user_testing.status` field from on-disk `critic.json` files to display a QA column.
+The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
 ## 3. Configuration
 
@@ -76,11 +76,11 @@ The following keys in `.agentic_devops/config.json` govern Critic behavior:
 ## 4. Output Contract
 The Critic tool MUST produce:
 
-*   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, and `user_testing` sections.
+*   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, and `role_status` sections.
 *   **Aggregate:** `CRITIC_REPORT.md` at the project root summarizing all features.
 
 ## Implementation Notes
 *   This policy governs buildable tooling constraints (the Critic tool itself), not process rules. It is valid under the Feature Scope Restriction mandate.
 *   The `critic_gate_blocking` flag is deprecated as a no-op. The coordination engine model replaces blocking gates with advisory action items per role. The config key is retained for backward compatibility with existing `.agentic_devops/config.json` files.
 *   FORBIDDEN patterns are optional. Not all architectural policies need to define them.
-*   The CDD decoupling (Invariant 2.8) means the CDD dashboard no longer shows a "Critic" column. Instead, CDD shows a "QA" column derived from `user_testing.status` in on-disk `critic.json` files.
+*   The CDD decoupling (Invariant 2.8) means the CDD dashboard shows role-based columns (Architect, Builder, QA) derived from `role_status` in on-disk `critic.json` files. CDD does not compute these statuses; it reads pre-computed values from the Critic's output.

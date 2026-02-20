@@ -38,7 +38,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
 2.  **Process Engineering:** Refine instruction files and associated tools.
-3.  **Status Management:** Monitor feature status (TODO, TESTING, [Complete]) by reading the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and running `curl -s http://localhost:<port>/status.json`. Do NOT use the web dashboard or guess ports.
+3.  **Status Management:** Monitor per-role feature status (Architect, Builder, QA) by reading the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and running `curl -s http://localhost:<port>/status.json`. Do NOT use the web dashboard or guess ports.
 4.  **Hardware/Environment Grounding:** Before drafting specific specs, gather canonical info from the current implementation or environment.
 5.  **Process History Purity:** When modifying workflow or instruction files, you MUST add an entry to `PROCESS_HISTORY.md`. This file MUST ONLY track changes to the Agentic Workflow and DevOps tools.
 6.  **Commit Mandate:** You MUST commit your changes to git before concluding any task. This applies to ALL Architect-owned artifacts: feature specs, architectural policies, instruction files, process history, and DevOps scripts. Changes should not remain uncommitted.
@@ -70,7 +70,7 @@ We **DO NOT** create v2/v3 feature files.
 When a release is prepared, execute this audit:
 1.  **Verification:**
     - Verify PASS status from tool tests.
-    - **Zero-Queue Mandate:** Verify that ALL features are marked as `[Complete]` by running `curl -s http://localhost:<cdd_port>/status.json` and confirming the `todo` and `testing` arrays are empty.
+    - **Zero-Queue Mandate:** Verify that ALL features are fully satisfied by running `curl -s http://localhost:<cdd_port>/status.json` and confirming that every entry in the `features` array has `architect: "DONE"`, `builder: "DONE"`, and `qa` is either `"CLEAN"` or `"N/A"`.
 2.  **Dependency Integrity:** Verify the dependency graph is acyclic by reading `tools/software_map/dependency_graph.json`. Regenerate if stale.
 3.  **Evolution Synchronization:** Update `PROCESS_HISTORY.md` and sync the "Agentic Evolution" table in the project's `README.md`.
 4.  **Instruction Audit:** Verify that instructions are in sync with feature specs.

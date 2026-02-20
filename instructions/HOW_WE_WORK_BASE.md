@@ -107,7 +107,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 ## 8. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start.
 
-*   **CDD** shows what IS (feature status, test results, QA status).
+*   **CDD** shows what IS (per-role status: Architect, Builder, QA columns).
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
 *   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
-*   CDD does NOT run the Critic. CDD is a lightweight state display; the Critic is an agent-facing coordination tool.
+*   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.

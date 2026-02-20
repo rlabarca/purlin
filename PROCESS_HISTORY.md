@@ -2,6 +2,29 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] CDD Role-Based Status Redesign + Critic role_status
+- **Problem:** CDD showed a single-dimensional lifecycle (TODO/TESTING/COMPLETE) with Tests and QA columns. This told you WHAT was wrong but not WHO needed to act. A feature showing "HAS_OPEN_ITEMS" could mean the Builder needs to fix a bug, the Architect needs to revise a disputed spec, or QA needs to re-verify. Escalation states (SPEC_DISPUTE, INFEASIBLE) were tracked by the Critic but invisible on the CDD dashboard.
+- **Design Principle:** Critic computes everything, CDD just reads and displays it.
+- **Critic Tool Changes** (`features/critic_tool.md`):
+    - Added `role_status` object to per-feature `critic.json` schema (Section 2.7): `architect` (DONE/TODO), `builder` (DONE/TODO/FAIL/INFEASIBLE/BLOCKED), `qa` (CLEAN/TODO/FAIL/DISPUTED/N/A).
+    - New Section 2.11 (Role Status Computation) with precedence rules for each role.
+    - Added 12 new automated scenarios for role_status computation and output.
+- **CDD Spec Changes** (`features/cdd_status_monitor.md`):
+    - Dashboard redesigned: three lifecycle sections (TODO/TESTING/COMPLETE) replaced with two groups (Active/Complete).
+    - Table columns changed: Feature | Tests | QA replaced with Feature | Architect | Builder | QA.
+    - New badge/color mapping for all role status values.
+    - Active section sorted by urgency (red states first).
+    - **Breaking API change:** `/status.json` now returns flat `features` array with role fields. No more `todo`/`testing`/`complete` sub-arrays. No more `test_status` or `qa_status` fields.
+    - Internal `feature_status.json` retains old format for Critic consumption (not part of public API).
+    - Replaced QA Status scenarios with Role Status equivalents. Updated Zero-Queue, dashboard, and column scenarios.
+- **Policy Changes** (`features/arch_critic_policy.md`):
+    - Section 2.8 (CDD Decoupling) updated: CDD reads `role_status` (not just `user_testing.status`).
+    - Section 4 (Output Contract) updated to include `role_status` in per-feature output.
+- **Instruction Changes:**
+    - `instructions/ARCHITECT_BASE.md`: Zero-Queue Mandate updated -- verifies all features have `architect: DONE`, `builder: DONE`, `qa: CLEAN|N/A` instead of checking empty arrays.
+    - `instructions/HOW_WE_WORK_BASE.md`: Section 8 updated to describe CDD's role-based columns.
+- **Impact:** Both feature specs reset to TODO. Builder must implement: Critic `role_status` computation, CDD role-based dashboard, new `/status.json` schema, `feature_status.json` format split.
+
 ## [2026-02-19] Escalation Protocols: SPEC_DISPUTE and INFEASIBLE
 - **Problem:** Two feedback loops lacked clean protocols: (1) During QA testing, the user disagrees with a scenario's expected behavior (the spec is wrong, not the code). (2) During implementation, the Builder discovers a feature is infeasible as specified. Both cases require escalation back to the Architect, but existing discovery types and decision tags didn't capture these semantics.
 - **QA: New Discovery Type `[SPEC_DISPUTE]`:**
