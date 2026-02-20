@@ -2,6 +2,12 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Builder Startup: Spec-Level Gap Analysis
+- **Problem:** The Builder's startup protocol relied entirely on the Critic report for action items. When the Critic implementation itself is stale (e.g., the Critic tool spec is in TODO state), the Critic cannot accurately report its own gaps. Additionally, the Critic's keyword-based traceability produces false-positive matches for rewritten scenarios, masking real implementation gaps. This caused the Builder to miss major implementation work (role_status computation, CDD redesign) and propose incorrect work plans.
+- **Solution:** Added step 2.1.5 (Spec-Level Gap Analysis) to the Builder's startup protocol. For each feature in TODO or TESTING state, the Builder reads the full feature spec and compares Requirements/Scenarios against current implementation code, independent of the Critic report. Updated step 2.2 to include spec-level gaps alongside Critic items in the proposed work plan.
+- **Files Modified:** `instructions/BUILDER_BASE.md` (Sections 2.1 and 2.2).
+- **Impact:** No spec changes. Builder startup behavior only.
+
 ## [2026-02-19] Untracked File Triage Protocol
 - **Problem:** Generated artifacts (critic.json, CRITIC_REPORT.md, tests.json) and uncommitted source files accumulate as untracked files in the working directory. No clear ownership or process existed for deciding whether to commit or gitignore them. Multiple agents (Architect, Builder, tool scripts) all produce files.
 - **Solution:** The Architect is the single triage point for all untracked files.

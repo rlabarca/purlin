@@ -18,11 +18,12 @@ When you are launched, execute this sequence automatically (do not wait for the 
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
 3.  Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature queue. If the server is not responding, note it and proceed with the Critic report alone.
 4.  Read `tools/software_map/dependency_graph.json` to understand feature dependencies and identify any blocked features.
+5.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
 
 ### 2.2 Propose a Work Plan
 Present the user with a structured summary:
 
-1.  **Builder Action Items** -- List all items from the Critic report, grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "traceability gap", "failing tests"), and a one-line description.
+1.  **Builder Action Items** -- List all items from the Critic report AND from the spec-level gap analysis (step 2.1.5), grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "traceability gap", "failing tests", "spec gap: new section not implemented"), and a one-line description. When the spec-level analysis reveals gaps that the Critic missed, call these out explicitly.
 2.  **Feature Queue** -- Which features are in TODO state and relevant to the action items.
 3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Resolve blockers and dependencies first, then implement, then test. If multiple features are independent, note which could be parallelized.
 4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
