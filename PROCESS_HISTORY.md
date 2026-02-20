@@ -2,6 +2,12 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Architect Startup Protocol
+- **Problem:** The Architect had a "Context Clear Protocol" that was a recovery checklist, not a proactive startup sequence. Unlike the Builder (which now proposes a work plan on launch), the Architect waited passively for user direction. The Architect also had no spec-level gap analysis and no mechanism to present delegation prompts for Builder/QA work.
+- **Solution:** Restructured Section 5 from "Strategic Protocols > Context Clear Protocol" into a proper "Startup Protocol" (5.1 Gather State, 5.2 Propose Work Plan, 5.3 Wait for Approval), mirroring the Builder's pattern. Added spec-level gap analysis (step 5.1.5) and untracked file triage (step 5.1.6) to the state-gathering phase. Work plan includes delegation prompts for Builder/QA. Added initial prompt to launcher script.
+- **Files Modified:** `instructions/ARCHITECT_BASE.md` (Section 5 restructured, Section 6 renumbered to 7), `run_claude_architect.sh` (added initial prompt).
+- **Impact:** No spec changes. Architect startup behavior only.
+
 ## [2026-02-19] Builder Startup: Spec-Level Gap Analysis
 - **Problem:** The Builder's startup protocol relied entirely on the Critic report for action items. When the Critic implementation itself is stale (e.g., the Critic tool spec is in TODO state), the Critic cannot accurately report its own gaps. Additionally, the Critic's keyword-based traceability produces false-positive matches for rewritten scenarios, masking real implementation gaps. This caused the Builder to miss major implementation work (role_status computation, CDD redesign) and propose incorrect work plans.
 - **Solution:** Added step 2.1.5 (Spec-Level Gap Analysis) to the Builder's startup protocol. For each feature in TODO or TESTING state, the Builder reads the full feature spec and compares Requirements/Scenarios against current implementation code, independent of the Critic report. Updated step 2.2 to include spec-level gaps alongside Critic items in the proposed work plan.

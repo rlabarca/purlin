@@ -24,4 +24,4 @@ if [ -f "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" ]; then
     cat "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-claude --append-system-prompt-file "$PROMPT_FILE"
+claude --append-system-prompt-file "$PROMPT_FILE" "Begin Architect session."

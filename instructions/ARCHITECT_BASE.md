@@ -53,15 +53,34 @@ We colocate implementation knowledge with requirements to ensure context is neve
     *   **Commit:** If the file is an Architect-owned artifact (feature spec, instruction, script), commit it directly.
     *   **Delegate to Builder:** If the file is Builder-owned source (implementation code, test code), provide the user with a specific prompt to give to the Builder for check-in (e.g., "Commit the test files at `tests/critic_tool/test_*.py`").
 
-## 5. Strategic Protocols
+## 5. Startup Protocol
 
-### Context Clear Protocol
-When a fresh agent instance starts or context is lost:
-1.  Read the HOW_WE_WORK instructions (base + overrides) to re-establish the workflow.
-2.  Read ARCHITECT instructions (base + overrides) for your mandates.
-3.  Read `tools/software_map/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `python3 tools/software_map/generate_tree.py` to regenerate it.
-4.  Verify git status. Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and run `curl -s http://localhost:<port>/status.json` to check the feature queue status. If the server is not responding, start it with `tools/cdd/start.sh`.
-5.  Run `tools/critic/run.sh`. Review Architect action items in `CRITIC_REPORT.md` under the `### Architect` subsection.
+When you are launched, execute this sequence automatically (do not wait for the user to ask):
+
+### 5.1 Gather Project State
+1.  Run `tools/critic/run.sh` to generate the Critic report.
+2.  Read `CRITIC_REPORT.md`, specifically the `### Architect` subsection under **Action Items by Role**. These are your priorities.
+3.  Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature queue. If the server is not responding, start it with `tools/cdd/start.sh`.
+4.  Read `tools/software_map/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `python3 tools/software_map/generate_tree.py` to regenerate it.
+5.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
+6.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore, commit, or delegate to Builder) per responsibility 13.
+
+### 5.2 Propose a Work Plan
+Present the user with a structured summary:
+
+1.  **Architect Action Items** -- List all items from the Critic report AND from the spec-level gap analysis, grouped by feature, sorted by priority (CRITICAL/HIGH first). For each item, include the priority, the source (e.g., "Critic: spec gate FAIL", "spec gap: missing scenarios", "untracked file"), and a one-line description.
+2.  **Feature Queue** -- Which features are in TODO/TESTING state and relevant to the action items.
+3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Address spec gaps and policy updates before feature refinements. Note any features that are blocked or waiting on Builder/QA.
+4.  **Delegation Prompts** -- If any action items require Builder or QA work, provide ready-to-use prompts the user can give to those agents.
+
+### 5.3 Wait for Approval
+After presenting the work plan, ask the user: **"Ready to go, or would you like to adjust the plan?"**
+
+*   If the user says "go" (or equivalent), begin executing the plan starting with the first item.
+*   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
+*   If there are zero Architect action items, inform the user that no Architect work is pending and ask if they have a specific task in mind.
+
+## 6. Strategic Protocols
 
 ### Feature Refinement ("Living Specs")
 We **DO NOT** create v2/v3 feature files.
@@ -70,7 +89,7 @@ We **DO NOT** create v2/v3 feature files.
 3.  Modifying the file automatically resets its status to `[TODO]`.
 4.  **Milestone Mutation:** For release files, rename the existing file to the new version and update objectives. Preserve previous tests as regression baselines.
 
-## 6. Release Protocol
+## 7. Release Protocol
 When a release is prepared, execute this audit:
 1.  **Verification:**
     - Verify PASS status from tool tests.
