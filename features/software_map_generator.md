@@ -120,3 +120,12 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 *   **File Watch Mode:** `serve.py` polls `features/` directory every 2 seconds using `os.scandir` mtime snapshots. No external dependencies required (no `watchdog`).
 *   **Deterministic JSON:** `dependency_graph.json` uses `sort_keys=True` on `json.dump` and all arrays are pre-sorted by filename/path before serialization.
 *   **Reactive Update Testing:** The "Reactive Update on Feature Change" scenario requires the running server (`serve.py`) and is classified as Manual. File-watch regeneration is verified during Human Verification.
+
+## User Testing Discoveries
+
+### [DISCOVERY] Long feature labels are clipped instead of wrapping in node boxes (Discovered: 2026-02-19)
+- **Scenario:** NONE
+- **Observed Behavior:** Feature names that exceed the width of their containing node box are clipped on either side, making the full label unreadable.
+- **Expected Behavior:** Long labels should wrap within their node boxes so the full text remains visible.
+- **Action Required:** Architect
+- **Status:** OPEN
