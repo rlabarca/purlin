@@ -1,7 +1,7 @@
 # Architectural Policy: Critic Coordination Engine
 
 > Label: "Policy: Critic Coordination Engine"
-> Category: "Quality Assurance"
+> Category: "Coordination & Lifecycle"
 
 ## 1. Purpose
 This policy defines the invariants and constraints governing the Critic -- the project coordination engine that validates specification-implementation quality AND generates role-specific action items for each agent. The Critic is the single source of truth for what each agent should work on next.

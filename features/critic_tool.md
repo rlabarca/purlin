@@ -1,7 +1,7 @@
 # Feature: Critic Quality Gate Tool
 
 > Label: "Tool: Critic"
-> Category: "Quality Assurance"
+> Category: "Coordination & Lifecycle"
 > Prerequisite: features/arch_critic_policy.md
 
 ## 1. Overview
