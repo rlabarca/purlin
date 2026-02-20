@@ -112,14 +112,50 @@
         let isInitialLoad = true;
         let refreshTimer = null;
 
-        // -- SVG Label Generator (dual-size typography) --
+        // -- SVG Label Generator (dual-size typography with word wrapping) --
+        const SVG_WIDTH = 200;
+        const LABEL_FONT_SIZE = 14;
+        const LABEL_LINE_HEIGHT = 18;
+        const FILENAME_FONT_SIZE = 9;
+        const FILENAME_LINE_HEIGHT = 14;
+        // Monospace at font-size 14: ~8.4px per char; usable width ~190px
+        const CHARS_PER_LINE = 22;
+
+        function wrapText(text, maxChars) {
+            const words = text.split(/\s+/);
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if (!currentLine) {
+                    currentLine = word;
+                } else if ((currentLine + ' ' + word).length <= maxChars) {
+                    currentLine += ' ' + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        }
+
         function createNodeLabelSVG(name, filename) {
             const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="44">' +
-                '<text x="100" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="#E8E8E8" font-family="Menlo,Monaco,Consolas,monospace">' + esc(name) + '</text>' +
-                '<text x="100" y="36" text-anchor="middle" font-size="9" fill="#888" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
+            const nameLines = wrapText(name, CHARS_PER_LINE);
+            const nameBlockHeight = nameLines.length * LABEL_LINE_HEIGHT;
+            const totalHeight = nameBlockHeight + FILENAME_LINE_HEIGHT + 8;
+
+            let tspans = '';
+            nameLines.forEach((line, i) => {
+                const y = LABEL_LINE_HEIGHT * (i + 1);
+                tspans += '<tspan x="' + (SVG_WIDTH / 2) + '" dy="' + (i === 0 ? 0 : LABEL_LINE_HEIGHT) + '">' + esc(line) + '</tspan>';
+            });
+
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + SVG_WIDTH + '" height="' + totalHeight + '">' +
+                '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="#E8E8E8" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
+                '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="#888" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
                 '</svg>';
-            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            return { url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), height: totalHeight };
         }
 
         // Category color palette
@@ -211,7 +247,7 @@
                 const color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
                 const catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = f.file.split('/').pop();
-                const svgLabel = createNodeLabelSVG(f.label, filename);
+                const svgResult = createNodeLabelSVG(f.label, filename);
                 nodes.push({
                     data: {
                         id: id,
@@ -222,7 +258,8 @@
                         prerequisites: f.prerequisites || [],
                         color: color,
                         parent: catId,
-                        svgLabel: svgLabel,
+                        svgLabel: svgResult.url,
+                        nodeHeight: svgResult.height + 12,
                     }
                 });
 
@@ -254,7 +291,7 @@
                             'label': '',
                             'shape': 'round-rectangle',
                             'width': 220,
-                            'height': 56,
+                            'height': 'data(nodeHeight)',
                             'background-color': 'data(color)',
                             'background-opacity': 0.15,
                             'background-image': 'data(svgLabel)',
