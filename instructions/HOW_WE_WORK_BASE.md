@@ -75,6 +75,13 @@ When used as a git submodule (e.g., at `agentic-dev/`):
 3. Tools resolve their paths via `tools_root` in `.agentic_devops/config.json`.
 4. Upstream updates are pulled via `cd agentic-dev && git pull origin main && cd ..` and audited with `agentic-dev/tools/sync_upstream.sh`.
 
+### Submodule Immutability Mandate
+**Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `agentic-dev/`). The submodule is a read-only dependency. Specifically:
+*   **NEVER** edit files in `<submodule>/instructions/`, `<submodule>/tools/`, `<submodule>/features/`, or any other path inside the submodule.
+*   **NEVER** commit changes to the submodule from a consumer project. The submodule is only modified from its own repository.
+*   All project-specific customizations go in the consumer project's own files: `.agentic_devops/` overrides, `features/`, and root-level launcher scripts.
+*   If an agent needs to change framework behavior, it MUST do so via the override layer (`.agentic_devops/*_OVERRIDES.md`), never by editing base files.
+
 ### Path Resolution Conventions
 In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
 
