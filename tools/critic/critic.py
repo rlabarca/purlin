@@ -1037,47 +1037,64 @@ def compute_role_status(feature_result, cdd_status=None):
         builder_status = 'TODO'
 
     # --- QA status ---
-    if lifecycle_state is None:
-        # No CDD status available; default to N/A
-        qa_status = 'N/A'
-    elif lifecycle_state == 'todo':
-        # Not yet in TESTING or COMPLETE
-        qa_status = 'N/A'
-    else:
-        # Feature is in TESTING or COMPLETE
-        # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
-        has_open_bugs_qa = False
-        has_open_disputes_qa = False
-        if user_testing.get('bugs', 0) > 0:
+    # Lifecycle-independent checks first: FAIL, DISPUTED, TODO (b/c)
+    has_open_bugs_qa = False
+    has_open_disputes_qa = False
+    has_spec_updated_qa = False
+
+    if user_testing.get('bugs', 0) > 0:
+        content = read_feature_file(
+            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+        ut_section = get_user_testing_section(content)
+        for line in ut_section.split('\n'):
+            if '[BUG]' in line and 'OPEN' in line:
+                has_open_bugs_qa = True
+                break
+
+    if user_testing.get('spec_disputes', 0) > 0:
+        content = read_feature_file(
+            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+        ut_section = get_user_testing_section(content)
+        for line in ut_section.split('\n'):
+            if '[SPEC_DISPUTE]' in line and 'OPEN' in line:
+                has_open_disputes_qa = True
+                break
+
+    if user_testing['status'] == 'HAS_OPEN_ITEMS':
+        content = read_feature_file(
+            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
+        ut_section = get_user_testing_section(content)
+        has_spec_updated_qa = 'SPEC_UPDATED' in ut_section
+
+    # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+    if has_open_bugs_qa:
+        qa_status = 'FAIL'
+    elif has_open_disputes_qa:
+        qa_status = 'DISPUTED'
+    elif has_spec_updated_qa:
+        # TODO condition (b): SPEC_UPDATED items -- lifecycle-independent
+        qa_status = 'TODO'
+    elif user_testing['status'] == 'HAS_OPEN_ITEMS':
+        # TODO condition (c): other OPEN items -- lifecycle-independent
+        qa_status = 'TODO'
+    elif lifecycle_state == 'testing':
+        # TODO condition (a): TESTING with manual scenarios
+        try:
             content = read_feature_file(
                 os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
-            ut_section = get_user_testing_section(content)
-            for line in ut_section.split('\n'):
-                if '[BUG]' in line and 'OPEN' in line:
-                    has_open_bugs_qa = True
-                    break
-
-        if user_testing.get('spec_disputes', 0) > 0:
-            content = read_feature_file(
-                os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
-            ut_section = get_user_testing_section(content)
-            for line in ut_section.split('\n'):
-                if '[SPEC_DISPUTE]' in line and 'OPEN' in line:
-                    has_open_disputes_qa = True
-                    break
-
-        if has_open_bugs_qa:
-            qa_status = 'FAIL'
-        elif has_open_disputes_qa:
-            qa_status = 'DISPUTED'
-        elif user_testing['status'] == 'HAS_OPEN_ITEMS':
+            scenarios = parse_scenarios(content)
+            manual_count = sum(
+                1 for s in scenarios if s.get('is_manual', False))
+        except (IOError, OSError):
+            manual_count = 1  # safe default: assume manual scenarios exist
+        if manual_count > 0:
             qa_status = 'TODO'
-        elif lifecycle_state == 'complete':
-            # Only COMPLETE features can be CLEAN
-            qa_status = 'CLEAN'
         else:
-            # TESTING state -- awaiting QA verification
-            qa_status = 'TODO'
+            qa_status = 'N/A'
+    elif lifecycle_state == 'complete' and user_testing['status'] == 'CLEAN':
+        qa_status = 'CLEAN'
+    else:
+        qa_status = 'N/A'
 
     return {
         'architect': architect_status,

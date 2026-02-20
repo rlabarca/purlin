@@ -495,6 +495,7 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **No External Dependencies:** The deterministic components (Spec Gate, traceability, policy check) MUST NOT require any external packages beyond Python 3.9+ standard library. The LLM component requires the `anthropic` Python package only when enabled.
 *   **[CLARIFICATION]** DEVIATION/DISCOVERY action items route to Architect (not Builder), as the spec says these require Architect acknowledgment. Builder's role is to get that acknowledgment, but the Critic generates the item for the Architect to act on. (Severity: INFO)
 *   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` for QA status computation. If CDD is not running and `feature_status.json` doesn't exist on disk, QA status defaults to `N/A`.
+*   **[CLARIFICATION]** QA status computation evaluates lifecycle-independent statuses (FAIL, DISPUTED, TODO from conditions b/c) BEFORE checking lifecycle state. A feature in TODO lifecycle state with OPEN BUGs, SPEC_DISPUTEs, or SPEC_UPDATED items will correctly reflect QA engagement rather than defaulting to N/A. QA TODO condition (a) for TESTING state additionally checks manual scenario count — features with 0 manual scenarios get N/A since QA has nothing to verify. (Severity: INFO)
 
 ## User Testing Discoveries
 

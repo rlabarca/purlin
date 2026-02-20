@@ -2477,19 +2477,65 @@ class TestRoleStatusQATODOForTestingFeature(unittest.TestCase):
 
     A feature in TESTING state with CLEAN user testing should have
     role_status.qa = TODO (not CLEAN), because QA hasn't verified yet.
+    Requires at least one manual scenario.
     """
 
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Feature with manual scenarios
+        content = """\
+# Feature: Test
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
     def test_testing_state_clean_user_testing_makes_qa_todo(self):
-        result = _make_base_result()
-        cdd_status = {
-            'features': {
-                'testing': [{'file': 'features/test.md'}],
-                'complete': [], 'todo': [],
-            },
-        }
-        status = compute_role_status(result, cdd_status)
-        self.assertEqual(status['qa'], 'TODO')
-        self.assertNotEqual(status['qa'], 'CLEAN')
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/test.md'}],
+                    'complete': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+            self.assertNotEqual(status['qa'], 'CLEAN')
+        finally:
+            critic.FEATURES_DIR = orig_features
 
     def test_complete_state_clean_user_testing_makes_qa_clean(self):
         result = _make_base_result()
@@ -2501,6 +2547,217 @@ class TestRoleStatusQATODOForTestingFeature(unittest.TestCase):
         }
         status = compute_role_status(result, cdd_status)
         self.assertEqual(status['qa'], 'CLEAN')
+
+
+class TestRoleStatusQADISPUTEDInNonTestingLifecycle(unittest.TestCase):
+    """Scenario: Role Status QA DISPUTED in Non-TESTING Lifecycle
+
+    DISPUTED is lifecycle-independent. A feature in TODO lifecycle state
+    with OPEN SPEC_DISPUTEs should have QA = DISPUTED (not N/A).
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Disputed
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+- [SPEC_DISPUTE] (OPEN) User disagrees with behavior
+"""
+        with open(os.path.join(self.features_dir, 'disputed_todo.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_disputed_overrides_na_in_todo_lifecycle(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/disputed_todo.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            cdd_status = {
+                'features': {
+                    'todo': [{'file': 'features/disputed_todo.md'}],
+                    'testing': [], 'complete': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'DISPUTED')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQATODOForSpecUpdatedItems(unittest.TestCase):
+    """Scenario: Role Status QA TODO for SPEC_UPDATED Items
+
+    SPEC_UPDATED items trigger QA TODO regardless of lifecycle state.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Spec Updated
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [DISCOVERY] Something found (Discovered: 2026-01-01)
+- **Status:** SPEC_UPDATED
+"""
+        with open(os.path.join(self.features_dir, 'spec_updated.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_spec_updated_makes_qa_todo_in_todo_lifecycle(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/spec_updated.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'todo': [{'file': 'features/spec_updated.md'}],
+                    'testing': [], 'complete': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQATODOForHasOpenItems(unittest.TestCase):
+    """Scenario: Role Status QA TODO for HAS_OPEN_ITEMS
+
+    HAS_OPEN_ITEMS with OPEN discoveries (not BUGs/SPEC_DISPUTEs)
+    triggers QA TODO regardless of lifecycle state.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Open Items
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [DISCOVERY] New behavior found (Discovered: 2026-01-01)
+- **Status:** OPEN
+"""
+        with open(os.path.join(self.features_dir, 'open_items.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_has_open_items_makes_qa_todo_in_todo_lifecycle(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/open_items.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'todo': [{'file': 'features/open_items.md'}],
+                    'testing': [], 'complete': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestRoleStatusQANAForTestingNoManualScenarios(unittest.TestCase):
+    """Scenario: Role Status QA N/A for TESTING Feature with No Manual Scenarios
+
+    A feature in TESTING state with 0 manual scenarios and CLEAN user
+    testing should have QA = N/A (nothing for QA to verify).
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Feature with NO manual scenarios
+        content = """\
+# Feature: Auto Only
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'auto_only.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_testing_no_manual_makes_qa_na(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/auto_only.md'
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/auto_only.md'}],
+                    'complete': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'N/A')
+        finally:
+            critic.FEATURES_DIR = orig_features
 
 
 # ===================================================================
