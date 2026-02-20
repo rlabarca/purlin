@@ -2545,11 +2545,12 @@ class TestBuilderActionItemsFromLifecycleReset(unittest.TestCase):
         self.assertEqual(len(lifecycle_items), 0)
 
 
-class TestBuilderActionItemsFromSpecUpdatedDiscovery(unittest.TestCase):
-    """Scenario: Builder Action Items from SPEC_UPDATED Discovery
+class TestSpecUpdatedDoesNotGenerateBuilderItems(unittest.TestCase):
+    """Scenario: SPEC_UPDATED Discovery Does Not Generate Builder Action Items
 
-    A SPEC_UPDATED discovery with 'Action Required: Builder' generates
-    a MEDIUM Builder action item and sets role_status.builder to TODO.
+    SPEC_UPDATED discoveries do NOT generate Builder action items regardless
+    of the 'Action Required' field. Builder signaling comes from the feature
+    lifecycle state (TODO), not from discovery routing.
     """
 
     def setUp(self):
@@ -2577,51 +2578,13 @@ Overview.
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_spec_updated_builder_routing_generates_builder_item(self):
+    def test_spec_updated_does_not_generate_builder_item(self):
+        """SPEC_UPDATED discoveries never generate Builder action items."""
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
         try:
             result = _make_base_result()
-            result['user_testing'] = {
-                'status': 'HAS_OPEN_ITEMS',
-                'bugs': 0, 'discoveries': 1,
-                'intent_drifts': 0, 'spec_disputes': 0,
-            }
-            items = generate_action_items(result, cdd_status=None)
-            builder_items = [
-                i for i in items['builder']
-                if 'Implement fix' in i['description']
-            ]
-            self.assertEqual(len(builder_items), 1)
-            self.assertEqual(builder_items[0]['priority'], 'MEDIUM')
-            self.assertIn('[DISCOVERY]', builder_items[0]['description'])
-        finally:
-            critic.FEATURES_DIR = orig_features
-
-    def test_spec_updated_without_builder_action_no_builder_item(self):
-        """SPEC_UPDATED without 'Builder' in Action Required -> no Builder item."""
-        import critic
-        orig_features = critic.FEATURES_DIR
-        # Write a feature with Action Required: Architect (not Builder)
-        content = """\
-# Feature: Test2
-
-## 1. Overview
-Overview.
-
-## User Testing Discoveries
-
-### [DISCOVERY] Spec unclear (Discovered: 2026-02-20)
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
-"""
-        with open(os.path.join(self.features_dir, 'test2.md'), 'w') as f:
-            f.write(content)
-        critic.FEATURES_DIR = self.features_dir
-        try:
-            result = _make_base_result()
-            result['feature_file'] = 'features/test2.md'
             result['user_testing'] = {
                 'status': 'HAS_OPEN_ITEMS',
                 'bugs': 0, 'discoveries': 1,
@@ -2636,8 +2599,9 @@ Overview.
         finally:
             critic.FEATURES_DIR = orig_features
 
-    def test_spec_updated_builder_routing_makes_builder_todo(self):
-        """role_status.builder should be TODO when SPEC_UPDATED routes to Builder."""
+    def test_spec_updated_builder_done_when_no_lifecycle_todo(self):
+        """role_status.builder should be DONE when SPEC_UPDATED exists but
+        feature is not in TODO lifecycle (Builder signaling is lifecycle-based)."""
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
@@ -2648,16 +2612,17 @@ Overview.
                 'bugs': 0, 'discoveries': 1,
                 'intent_drifts': 0, 'spec_disputes': 0,
             }
-            # Generate action items first (compute_role_status needs them)
-            result['action_items'] = generate_action_items(result, cdd_status=None)
             cdd_status = {
                 'features': {
                     'complete': [{'file': 'features/test.md'}],
                     'testing': [], 'todo': [],
                 },
             }
+            # Generate action items (no Builder items from SPEC_UPDATED)
+            result['action_items'] = generate_action_items(
+                result, cdd_status=cdd_status)
             status = compute_role_status(result, cdd_status)
-            self.assertEqual(status['builder'], 'TODO')
+            self.assertEqual(status['builder'], 'DONE')
         finally:
             critic.FEATURES_DIR = orig_features
 
@@ -2821,10 +2786,11 @@ Overview.
             critic.FEATURES_DIR = orig_features
 
 
-class TestRoleStatusQATODOForSpecUpdatedItems(unittest.TestCase):
-    """Scenario: Role Status QA TODO for SPEC_UPDATED Items
+class TestRoleStatusQATODOForSpecUpdatedItemsInTesting(unittest.TestCase):
+    """Scenario: Role Status QA TODO for SPEC_UPDATED Items in TESTING
 
-    SPEC_UPDATED items trigger QA TODO regardless of lifecycle state.
+    SPEC_UPDATED items trigger QA TODO only when feature is in TESTING
+    lifecycle state. In TODO lifecycle, QA is CLEAN (Builder hasn't committed).
     """
 
     def setUp(self):
@@ -2848,7 +2814,32 @@ Overview.
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_spec_updated_makes_qa_todo_in_todo_lifecycle(self):
+    def test_spec_updated_makes_qa_todo_in_testing_lifecycle(self):
+        """QA=TODO when SPEC_UPDATED + TESTING lifecycle."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/spec_updated.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/spec_updated.md'}],
+                    'todo': [], 'complete': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_spec_updated_makes_qa_clean_in_todo_lifecycle(self):
+        """QA=CLEAN when SPEC_UPDATED + TODO lifecycle (Builder not done yet)."""
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
@@ -2867,16 +2858,17 @@ Overview.
                 },
             }
             status = compute_role_status(result, cdd_status)
-            self.assertEqual(status['qa'], 'TODO')
+            self.assertEqual(status['qa'], 'CLEAN')
         finally:
             critic.FEATURES_DIR = orig_features
 
 
-class TestRoleStatusQATODOForHasOpenItems(unittest.TestCase):
-    """Scenario: Role Status QA TODO for HAS_OPEN_ITEMS
+class TestRoleStatusQACLEANDespiteOpenDiscoveriesRoutingToArchitect(
+        unittest.TestCase):
+    """Scenario: Role Status QA CLEAN Despite OPEN Discoveries Routing to Architect
 
-    HAS_OPEN_ITEMS with OPEN discoveries (not BUGs/SPEC_DISPUTEs)
-    triggers QA TODO regardless of lifecycle state.
+    OPEN discoveries (DISCOVERYs, INTENT_DRIFTs) route to Architect, not QA.
+    QA has no actionable work, so QA=CLEAN when tests pass.
     """
 
     def setUp(self):
@@ -2900,7 +2892,8 @@ Overview.
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_has_open_items_makes_qa_todo_in_todo_lifecycle(self):
+    def test_open_discovery_routing_to_architect_gives_qa_clean(self):
+        """OPEN discoveries route to Architect. QA=CLEAN when tests pass."""
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
@@ -2918,17 +2911,21 @@ Overview.
                     'testing': [], 'complete': [],
                 },
             }
+            # Generate action items first (architect gets OPEN DISCOVERY item)
+            result['action_items'] = generate_action_items(
+                result, cdd_status=cdd_status)
             status = compute_role_status(result, cdd_status)
-            self.assertEqual(status['qa'], 'TODO')
+            self.assertEqual(status['qa'], 'CLEAN')
+            self.assertEqual(status['architect'], 'TODO')
         finally:
             critic.FEATURES_DIR = orig_features
 
 
-class TestRoleStatusQANAForTestingNoManualScenarios(unittest.TestCase):
-    """Scenario: Role Status QA N/A for TESTING Feature with No Manual Scenarios
+class TestRoleStatusQACLEANForTestingNoManualScenarios(unittest.TestCase):
+    """Scenario: Role Status QA CLEAN for Feature with Passing Tests and No Manual Scenarios
 
-    A feature in TESTING state with 0 manual scenarios and CLEAN user
-    testing should have QA = N/A (nothing for QA to verify).
+    A feature in TESTING state with 0 manual scenarios and passing tests
+    should have QA = CLEAN (no manual verification needed, tests pass).
     """
 
     def setUp(self):

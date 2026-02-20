@@ -834,18 +834,21 @@ def generate_action_items(feature_result, cdd_status=None):
             })
 
     # --- Builder items ---
-    # Feature in TODO lifecycle state -> HIGH (spec modified, needs review)
+    # Compute lifecycle state once (shared by Builder + QA item generation)
+    lifecycle_state = None
     if cdd_status is not None:
         lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
-        if lifecycle_state == 'todo':
-            builder_items.append({
-                'priority': 'HIGH',
-                'category': 'lifecycle_reset',
-                'feature': feature_name,
-                'description': (
-                    f'Review and implement spec changes for {feature_name}'
-                ),
-            })
+
+    # Feature in TODO lifecycle state -> HIGH (spec modified, needs review)
+    if lifecycle_state == 'todo':
+        builder_items.append({
+            'priority': 'HIGH',
+            'category': 'lifecycle_reset',
+            'feature': feature_name,
+            'description': (
+                f'Review and implement spec changes for {feature_name}'
+            ),
+        })
 
     # Structural completeness FAIL -> HIGH
     struct = impl_gate['checks'].get('structural_completeness', {})
@@ -882,18 +885,10 @@ def generate_action_items(feature_result, cdd_status=None):
                 'description': f'Fix bug in {feature_name}: {entry["heading"]}',
             })
 
-    # SPEC_UPDATED discoveries with Builder action routing -> MEDIUM Builder
-    for entry in ut_entries:
-        if entry['status'] == 'SPEC_UPDATED' \
-                and 'builder' in entry.get('action_required', '').lower():
-            builder_items.append({
-                'priority': 'MEDIUM',
-                'category': 'user_testing',
-                'feature': feature_name,
-                'description': (
-                    f'Implement fix for {feature_name}: {entry["heading"]}'
-                ),
-            })
+    # NOTE: SPEC_UPDATED discoveries do NOT generate Builder action items.
+    # Builder signaling comes from the feature lifecycle: spec edits reset
+    # the feature to TODO, giving the Builder a lifecycle-based TODO item.
+    # See spec Section 2.10 "SPEC_UPDATED Lifecycle Routing".
 
     # --- QA items ---
     # Features in TESTING status (from CDD) -> MEDIUM
@@ -922,17 +917,21 @@ def generate_action_items(feature_result, cdd_status=None):
                     })
                 break
 
-    # SPEC_UPDATED discoveries -> MEDIUM QA
-    for entry in ut_entries:
-        if entry['status'] == 'SPEC_UPDATED':
-            qa_items.append({
-                'priority': 'MEDIUM',
-                'category': 'user_testing',
-                'feature': feature_name,
-                'description': (
-                    f'Re-verify {feature_name}: {entry["heading"]}'
-                ),
-            })
+    # SPEC_UPDATED discoveries -> MEDIUM QA (only when feature is in TESTING)
+    # Per spec Section 2.10: QA re-verification items are only generated when
+    # the feature is in TESTING lifecycle state. This prevents QA=TODO while
+    # the Builder is still implementing (feature in TODO lifecycle).
+    if lifecycle_state == 'testing':
+        for entry in ut_entries:
+            if entry['status'] == 'SPEC_UPDATED':
+                qa_items.append({
+                    'priority': 'MEDIUM',
+                    'category': 'user_testing',
+                    'feature': feature_name,
+                    'description': (
+                        f'Re-verify {feature_name}: {entry["heading"]}'
+                    ),
+                })
 
     return {
         'architect': architect_items,
@@ -1124,21 +1123,21 @@ def compute_role_status(feature_result, cdd_status=None):
         testing_with_manual = manual_count > 0
 
     # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+    # Per spec Section 2.11 "QA Actionability Principle": QA=TODO only when
+    # QA has work to do RIGHT NOW. OPEN items routing to other roles are not
+    # QA-actionable.
     if has_open_bugs_qa:
         qa_status = 'FAIL'
     elif has_open_disputes_qa:
         qa_status = 'DISPUTED'
-    elif has_spec_updated_qa:
-        # TODO condition (b): SPEC_UPDATED items -- lifecycle-independent
-        qa_status = 'TODO'
-    elif user_testing['status'] == 'HAS_OPEN_ITEMS':
-        # TODO condition (c): other OPEN items -- lifecycle-independent
+    elif has_spec_updated_qa and lifecycle_state == 'testing':
+        # TODO condition (b): SPEC_UPDATED items in TESTING lifecycle only
         qa_status = 'TODO'
     elif testing_with_manual:
         # TODO condition (a): TESTING with manual scenarios
         qa_status = 'TODO'
-    elif user_testing['status'] == 'CLEAN' and struct_status == 'PASS':
-        # CLEAN is lifecycle-independent: passing tests + no open items = CLEAN
+    elif struct_status == 'PASS':
+        # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
         qa_status = 'CLEAN'
     else:
         qa_status = 'N/A'
