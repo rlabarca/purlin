@@ -75,6 +75,13 @@ When used as a git submodule (e.g., at `agentic-dev/`):
 3. Tools resolve their paths via `tools_root` in `.agentic_devops/config.json`.
 4. Upstream updates are pulled via `git submodule update` and audited with `agentic-dev/tools/sync_upstream.sh`.
 
+### Path Resolution Conventions
+In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
+
+*   **`features/` directory:** Always refers to `<project_root>/features/` -- the **consumer project's** feature specs. In a submodule setup, this is NOT the framework submodule's own `features/` directory. The framework's features are internal to the submodule and are not scanned by consumer project tools.
+*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.agentic_devops/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"agentic-dev/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
+*   **`AGENTIC_PROJECT_ROOT`:** The generated launcher scripts export this environment variable as the authoritative project root. All Python and shell tools check this variable first, falling back to directory-climbing detection only when it is not set.
+
 ## 7. User Testing Protocol
 
 ### 7.1 Discovery Section Convention

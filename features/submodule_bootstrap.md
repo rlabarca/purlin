@@ -55,6 +55,55 @@ Initializes a consumer project that has added `agentic-dev-core` as a git submod
 *   **Required Behavior:** If the standalone path does not exist, the scripts MUST try the submodule path at `$DIR/../../../.agentic_devops/config.json` (one level higher, for when tools are at `<project_root>/agentic-dev/tools/cdd/`).
 *   **Fallback:** If neither config file is found, the scripts MUST use their existing default port values.
 
+### 2.10 Config Patching JSON Safety
+*   **Comma Preservation:** The `sed` command used to patch `tools_root` in `config.json` (Section 2.3) MUST only replace the value portion of the `"tools_root"` key. It MUST NOT strip trailing commas, closing braces, or any other JSON structural characters. The correct regex replaces only the quoted value between `"tools_root": "` and the next `"`, preserving everything after.
+*   **JSON Validation:** After patching `config.json`, the bootstrap script MUST validate that the resulting file is valid JSON by running `python3 -c "import json; json.load(open('<path>'))"` (or equivalent). If validation fails, the script MUST print a descriptive error and exit with a non-zero status code.
+*   **Test Coverage:** The bootstrap test (`tools/test_bootstrap.sh`) MUST include a JSON validity assertion on the patched `config.json`. A `grep` for the expected `tools_root` value is necessary but NOT sufficient -- the test MUST also verify JSON parseability.
+
+### 2.11 Project Root Environment Variable
+*   **Launcher Export:** All generated launcher scripts (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) MUST export `AGENTIC_PROJECT_ROOT` set to the absolute path of the consumer project root (i.e., `$SCRIPT_DIR`). This variable is the authoritative project root for all tools invoked during the session.
+*   **Python Tool Detection:** All Python tools (`tools/critic/critic.py`, `tools/cdd/serve.py`, `tools/software_map/serve.py`, `tools/software_map/generate_tree.py`) MUST check the `AGENTIC_PROJECT_ROOT` environment variable first. If set and the path exists, use it as the project root without climbing. If not set, fall back to directory-climbing detection.
+*   **Climbing Priority Reversal:** When using the directory-climbing fallback (no `AGENTIC_PROJECT_ROOT`), Python tools MUST try the FURTHER path first (`../../../.agentic_devops/config.json` -- the submodule layout where `tools/` is 3 levels deep) before the nearer path (`../../.agentic_devops/config.json` -- standalone layout). This prevents the submodule's own `.agentic_devops/` from shadowing the consumer project's config.
+*   **Shell Tool Detection:** Shell-based tool scripts (`tools/critic/run.sh`, `tools/cdd/start.sh`, `tools/software_map/start.sh`) MUST check `AGENTIC_PROJECT_ROOT` before falling back to relative path climbing. When set, they MUST derive config paths from `$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json`.
+
+### 2.12 Generated Artifact Isolation
+*   **Problem:** Tools currently write log files, PID files, and data caches inside the `tools/` directory tree. When `tools/` lives inside a git submodule, these artifacts dirty the submodule's git state and may cause `git submodule update` conflicts.
+*   **Runtime Directory:** Log files and PID files MUST be written to `<project_root>/.agentic_devops/runtime/` instead of alongside the tool scripts:
+    - `tools/cdd/cdd.log` -> `.agentic_devops/runtime/cdd.log`
+    - `tools/cdd/cdd.pid` -> `.agentic_devops/runtime/cdd.pid`
+    - `tools/software_map/software_map.log` -> `.agentic_devops/runtime/software_map.log`
+    - `tools/software_map/software_map.pid` -> `.agentic_devops/runtime/software_map.pid`
+*   **Cache Directory:** Generated data files MUST be written to `<project_root>/.agentic_devops/cache/` instead of alongside the tool scripts:
+    - `tools/cdd/feature_status.json` -> `.agentic_devops/cache/feature_status.json`
+    - `tools/software_map/feature_graph.mmd` -> `.agentic_devops/cache/feature_graph.mmd`
+    - `tools/software_map/dependency_graph.json` -> `.agentic_devops/cache/dependency_graph.json`
+    - `tools/critic/.cache/*.json` -> `.agentic_devops/cache/critic/*.json`
+*   **Directory Auto-Creation:** Tools MUST create `runtime/` and `cache/` (and any needed subdirectories) under `.agentic_devops/` if they do not exist.
+*   **Gitignore Update:** The bootstrap script's recommended gitignore entries (Section 2.7) MUST include `.agentic_devops/runtime/` and `.agentic_devops/cache/`.
+
+### 2.13 Python Tool Config Resilience
+*   **Error Handling:** All Python tools that read `.agentic_devops/config.json` MUST wrap `json.load()` in a `try/except` block handling `json.JSONDecodeError`, `IOError`, and `OSError`.
+*   **Fallback Defaults:** On config parse failure, tools MUST fall back to default configuration values (`cdd_port: 8086`, `map_port: 8087`, `tools_root: "tools"`, `critic_llm_enabled: false`) and print a warning to stderr.
+*   **No Crash Invariant:** A malformed or missing `config.json` MUST NOT cause any Python tool to crash with an unhandled exception. Tools MUST remain functional with defaults.
+
+### 2.14 Utility Script Project Root Detection
+*   **Scope:** `tools/cleanup_orphaned_features.py` and any future utility scripts MUST use the same project root detection as other Python tools (Section 2.11: `AGENTIC_PROJECT_ROOT` env var first, then climbing fallback).
+*   **No Hardcoded CWD Paths:** Utility scripts MUST NOT use hardcoded relative directory paths (e.g., `dirs_to_check = ["features"]` relative to CWD). They MUST resolve `features/` relative to the detected project root.
+
+### 2.15 Submodule Simulation Test Infrastructure
+*   **Test Harness:** The bootstrap test script (`tools/test_bootstrap.sh`) MUST construct a temporary sandbox that simulates the consumer-project-with-submodule directory layout. The sandbox MUST include:
+    - A temporary directory acting as the consumer project root.
+    - A git-initialized consumer project (for `git` commands to work).
+    - A clone of the current repository placed inside the consumer project at a submodule-like path (e.g., `my-project/agentic-dev/`).
+    - Any uncommitted tool/script changes overlaid onto the clone so tests exercise the latest code.
+*   **Submodule-Specific Test Scenarios:** The test harness MUST exercise scenarios that are unique to the submodule environment:
+    - Config patching produces valid JSON (Section 2.10).
+    - Python tools resolve the consumer project root, not the submodule root, via both `AGENTIC_PROJECT_ROOT` and climbing fallback (Section 2.11).
+    - Generated artifacts are written to `.agentic_devops/runtime/` and `.agentic_devops/cache/`, not inside the submodule `tools/` directory (Section 2.12).
+    - Python tools survive a malformed `config.json` without crashing (Section 2.13).
+*   **Sandbox Cleanup:** The test harness MUST clean up all temporary directories on exit (via `trap` or equivalent), even on test failure.
+*   **Dual-Layout Coverage:** Where feasible, tests SHOULD run the same assertions in both standalone layout (tools at `<root>/tools/`) and submodule layout (tools at `<root>/agentic-dev/tools/`) to catch layout-dependent regressions.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -112,9 +161,70 @@ Initializes a consumer project that has added `agentic-dev-core` as a git submod
     Then it discovers the config at the standard path
     And starts the server on port 9086
 
+#### Scenario: Config JSON Validity After Bootstrap
+    Given agentic-dev-core is added as a submodule at "agentic-dev/"
+    And no .agentic_devops/ directory exists at the project root
+    When the user runs "agentic-dev/tools/bootstrap.sh"
+    Then .agentic_devops/config.json is valid JSON (parseable by python3 json.load)
+    And all original key-value pairs from the sample config are preserved
+    And the only change is the "tools_root" value
+
+#### Scenario: Launcher Scripts Export Project Root
+    Given bootstrap has been run successfully
+    When any generated launcher script (run_claude_architect.sh, run_claude_builder.sh, run_claude_qa.sh) is inspected
+    Then the script contains an export of AGENTIC_PROJECT_ROOT
+    And its value is set to the absolute path of the project root ($SCRIPT_DIR)
+
+#### Scenario: Python Tool Uses AGENTIC_PROJECT_ROOT
+    Given AGENTIC_PROJECT_ROOT is set to a valid project root
+    And the project root contains .agentic_devops/config.json
+    When a Python tool (critic.py, serve.py, generate_tree.py) resolves its project root
+    Then it uses $AGENTIC_PROJECT_ROOT as the project root
+    And it reads config from $AGENTIC_PROJECT_ROOT/.agentic_devops/config.json
+
+#### Scenario: Python Tool Climbing Prefers Submodule Layout
+    Given AGENTIC_PROJECT_ROOT is not set
+    And the tool is located at <project_root>/agentic-dev/tools/<tool>/
+    And both <project_root>/.agentic_devops/config.json and <project_root>/agentic-dev/.agentic_devops/config.json exist
+    When the Python tool uses climbing fallback to find config
+    Then it discovers <project_root>/.agentic_devops/config.json (submodule/further path)
+    And it does NOT use <project_root>/agentic-dev/.agentic_devops/config.json (standalone/nearer path)
+
+#### Scenario: Generated Artifacts Written Outside Submodule
+    Given the project uses agentic-dev-core as a submodule at "agentic-dev/"
+    When CDD Monitor, Software Map, or Critic tools produce runtime artifacts
+    Then log files and PID files are written to <project_root>/.agentic_devops/runtime/
+    And data caches are written to <project_root>/.agentic_devops/cache/
+    And no generated files are written inside the agentic-dev/ submodule directory
+
+#### Scenario: Python Tool Survives Malformed Config
+    Given .agentic_devops/config.json contains invalid JSON (e.g., missing comma, truncated)
+    When a Python tool (critic.py, serve.py, generate_tree.py) starts
+    Then it falls back to default configuration values
+    And it prints a warning to stderr
+    And it does not crash with an unhandled exception
+
+#### Scenario: Cleanup Script Uses Project Root Detection
+    Given the project uses agentic-dev-core as a submodule at "agentic-dev/"
+    And AGENTIC_PROJECT_ROOT is set to the project root
+    When cleanup_orphaned_features.py is run
+    Then it scans <project_root>/features/ (not CWD/features/)
+    And it does not scan the framework's own features/ directory
+
+#### Scenario: Submodule Simulation Test Sandbox
+    Given the test harness creates a temporary consumer project
+    And clones the framework repository as a submodule at "agentic-dev/"
+    And overlays latest uncommitted scripts onto the clone
+    When the test suite runs bootstrap and tool scenarios
+    Then all path resolution uses the consumer project root (not the submodule root)
+    And the sandbox is cleaned up on exit even if tests fail
+
 ## 4. Implementation Notes
 *   **Shell Compatibility:** Use `#!/bin/bash` with POSIX-compatible patterns where possible. Avoid bashisms that would fail on older systems.
 *   **Temp File Cleanup:** Launcher scripts MUST use `trap "rm -f '$PROMPT_FILE'" EXIT` to ensure cleanup even on error.
-*   **Config Patching:** Use `sed` or a simple JSON-aware approach to set `tools_root` in the copied config.json. Do not require `jq` as a dependency.
+*   **Config Patching (sed safety):** The sed regex for `tools_root` must be precise: replace only the value between quotes, not the entire line. Use a pattern like `s|"tools_root": "[^"]*"|"tools_root": "NEW_VALUE"|` which matches the shortest quoted string and preserves trailing commas. Do not require `jq` as a dependency. Always validate the result with `python3 json.load()`.
 *   **Idempotent Gitignore:** When appending recommended ignores, check each line before adding to avoid duplicates.
-*   **Start Script Climbing:** The config discovery logic in start scripts uses a simple two-step fallback: try `$DIR/../../.agentic_devops/config.json` first (standalone), then `$DIR/../../../.agentic_devops/config.json` (submodule). This mirrors the existing Python scripts' climbing logic.
+*   **Start Script Climbing:** When `AGENTIC_PROJECT_ROOT` is not set, shell start scripts use a two-step fallback. Note the order was reversed from the original implementation: try submodule path (`$DIR/../../../.agentic_devops/config.json`) first, then standalone path (`$DIR/../../.agentic_devops/config.json`). When `AGENTIC_PROJECT_ROOT` IS set, scripts use `$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json` directly.
+*   **Python Climbing Priority:** The climbing order in Python tools was a source of bugs. The standalone path (`../../`) is nearer and matches first, but in submodule mode this resolves to the submodule's own `.agentic_devops/`, not the consumer project's. The fix is: (1) always prefer `AGENTIC_PROJECT_ROOT` if set, (2) when climbing, try the further path (`../../../`) before the nearer path (`../../`).
+*   **Artifact Isolation:** The `.agentic_devops/runtime/` and `.agentic_devops/cache/` directories are gitignored. Tools must `os.makedirs(..., exist_ok=True)` before writing. Existing code that reads `feature_status.json` or `dependency_graph.json` from `tools/` subdirectories must be updated to read from the cache directory. The Critic reads `feature_status.json` via `_read_cdd_feature_status()` -- this path must change.
+*   **Config Resilience Pattern:** All Python tools should use a shared helper or consistent pattern: `try: CONFIG = json.load(f) except (json.JSONDecodeError, IOError, OSError): print("Warning: ...", file=sys.stderr); CONFIG = {}`. Then use `.get()` with defaults for all config values.

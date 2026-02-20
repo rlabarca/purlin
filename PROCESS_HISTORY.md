@@ -2,6 +2,25 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-20] Submodule Compatibility: Safety Requirements and Agent Guardrails
+- **Problem:** Seven issues identified that would break agentic-dev-core when used as a git submodule in consumer projects. Root causes: (1) bootstrap.sh `sed` regex strips trailing commas from JSON, corrupting config.json; (2) Python tools' directory-climbing finds the submodule's own `.agentic_devops/` before the consumer project's config; (3) generated artifacts (logs, PIDs, caches) written inside `tools/`, dirtying the submodule git state; (4) no `try/except` on `json.load()` in any Python tool; (5) ambiguous `tools/` and `features/` path references in instructions; (6) `cleanup_orphaned_features.py` uses hardcoded CWD-relative paths.
+- **Solution (Spec Changes -- `features/submodule_bootstrap.md`):**
+    - **Section 2.10 (Config Patching JSON Safety):** sed regex must only replace the value portion, preserving commas. JSON validation step after patching. Test must verify parseability, not just grep.
+    - **Section 2.11 (Project Root Environment Variable):** Launcher scripts export `AGENTIC_PROJECT_ROOT`. All Python and shell tools check this env var first. Climbing fallback reversed: try further path (submodule layout) before nearer path (standalone layout).
+    - **Section 2.12 (Generated Artifact Isolation):** Logs/PIDs to `.agentic_devops/runtime/`, caches to `.agentic_devops/cache/`. Bootstrap gitignore updated.
+    - **Section 2.13 (Python Tool Config Resilience):** All `json.load()` calls wrapped in try/except with fallback defaults. No unhandled crashes.
+    - **Section 2.14 (Utility Script Project Root Detection):** cleanup_orphaned_features.py uses same root detection as other tools.
+    - **Section 2.15 (Submodule Simulation Test Infrastructure):** Test harness must create a simulated submodule environment for automated testing of all path resolution, artifact isolation, and config resilience scenarios.
+    - **10 new automated scenarios** covering JSON validity, env var export, climbing priority, artifact isolation, config resilience, cleanup script, and test sandbox.
+- **Instruction Changes (`instructions/HOW_WE_WORK_BASE.md`):**
+    - Added "Path Resolution Conventions" subsection to Section 6 (Layered Instruction Architecture). Clarifies that `features/` = consumer project's, `tools/` resolves via `tools_root`, and `AGENTIC_PROJECT_ROOT` is the authoritative root.
+- **Override Changes (`.agentic_devops/`):**
+    - `HOW_WE_WORK_OVERRIDES.md`: Added "Submodule Compatibility Mandate" with 5-point checklist for all agents.
+    - `BUILDER_OVERRIDES.md`: Added "Submodule Safety Checklist (Pre-Commit Gate)" with 6-point verification for every code change.
+    - `ARCHITECT_OVERRIDES.md`: Added "Submodule Compatibility Review" for spec-level verification.
+    - `QA_OVERRIDES.md`: Added "Submodule Environment Verification" requiring dual-mode testing (standalone + submodule).
+- **Impact:** Feature spec reset to TODO. Builder must implement: sed fix, AGENTIC_PROJECT_ROOT in launchers and all Python/shell tools, artifact path relocation, config try/except, cleanup script fix, and submodule simulation test harness.
+
 ## [2026-02-20] QA Agent: Completion Authority for Manually Verified Features
 - **Problem:** After QA verified all manual scenarios as passing with zero discoveries, features remained in TESTING state with QA=TODO. The Builder was responsible for making `[Complete]` status commits, but QA had already done the verification. This created an unnecessary handoff: QA reports clean -> user asks Builder to mark complete -> Builder makes empty commit. Meanwhile, the CDD dashboard showed stale TODO status.
 - **Solution:** Split completion authority based on manual scenario presence:
