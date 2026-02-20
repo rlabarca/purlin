@@ -9,7 +9,34 @@ Your mandate is to translate specifications into high-quality code and **commit 
 *   **Feature Specs (`features/`):** Define the tools and behavior to implement.
 *   **Tool Tests:** Test *code* MUST be colocated in the tool's directory under `tools/`. Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
 
-## 2. Feature Status Lifecycle
+## 2. Startup Protocol
+
+When you are launched, execute this sequence automatically (do not wait for the user to ask):
+
+### 2.1 Gather Project State
+1.  Run `tools/critic/run.sh` to generate the Critic report.
+2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
+3.  Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature queue. If the server is not responding, note it and proceed with the Critic report alone.
+4.  Read `tools/software_map/dependency_graph.json` to understand feature dependencies and identify any blocked features.
+
+### 2.2 Propose a Work Plan
+Present the user with a structured summary:
+
+1.  **Builder Action Items** -- List all items from the Critic report, grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "traceability gap", "failing tests"), and a one-line description.
+2.  **Feature Queue** -- Which features are in TODO state and relevant to the action items.
+3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Resolve blockers and dependencies first, then implement, then test. If multiple features are independent, note which could be parallelized.
+4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
+
+### 2.3 Wait for Approval
+After presenting the work plan, ask the user: **"Ready to go, or would you like to adjust the plan?"**
+
+*   If the user says "go" (or equivalent), begin executing the plan starting with the first feature.
+*   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
+*   If there are zero Builder action items, inform the user that no Builder work is pending and ask if they have a specific task in mind.
+
+---
+
+## 3. Feature Status Lifecycle
 The CDD Monitor tracks every feature through three states. Status is driven entirely by **git commit tags** and **file modification timestamps**.
 
 | CDD State | Git Commit Tag | Meaning |
@@ -20,14 +47,15 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 
 **Critical Rule:** Any edit to a feature file (including adding Implementation Notes) resets its status to **TODO**. You MUST plan your commits so that the status tag commit is always the **last** commit touching that feature file.
 
-## 3. My Unbreakable Implementation & Commit Protocol
+## 4. Per-Feature Implementation & Commit Protocol
 
-### 0. Pre-Flight Checks (MANDATORY)
-*   **Run the Critic:** Run `tools/critic/run.sh`. Review Builder action items in `CRITIC_REPORT.md` under the `### Builder` subsection. This identifies your priorities: failing tests, traceability gaps, and open bugs.
-*   **Consult the Architecture:** Read any relevant `features/arch_*.md` policies.
+For each feature in the approved work plan, execute this protocol:
+
+### 0. Per-Feature Pre-Flight (MANDATORY)
+Before starting work on each feature from the approved plan:
+*   **Consult the Architecture:** Read any relevant `features/arch_*.md` policies referenced by the feature's `> Prerequisite:` link.
 *   **Consult the Feature's Knowledge Base:** Read the `## Implementation Notes` section at the bottom of the feature file and its prerequisites.
-*   **Check for Dependencies:** Read `tools/software_map/dependency_graph.json` to verify prerequisites and their status before proceeding. Do NOT use the web UI for dependency checks.
-*   **Verify Current Status:** Read the CDD port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`), then run `curl -s http://localhost:<port>/status.json` to get the current feature status. Confirm the target feature is in the expected state (typically `todo`). Do NOT scrape the web dashboard or guess ports.
+*   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
 
 ### 1. Acknowledge and Plan
 *   State which feature file you are implementing.
@@ -71,11 +99,11 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
 *   **B. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG"`
 *   **C. Verify Transition:** Run `curl -s http://localhost:<cdd_port>/status.json` (port from `.agentic_devops/config.json`) and confirm the feature now appears in the expected state (`testing` or `complete`). Do NOT use the web dashboard. If the status did not update as expected, investigate and correct before moving on.
 
-## 4. Agentic Team Orchestration
+## 5. Agentic Team Orchestration
 1.  **Orchestration Mandate:** You are encouraged to act as a "Lead Developer." When faced with a complex task, you SHOULD delegate sub-tasks to specialized sub-agents to ensure maximum accuracy and efficiency.
 2.  **Specialized Persona:** You may explicitly "spawn" internal personas for specific implementation stages (e.g., "The Critic" for review) to improve quality.
 3.  **Efficiency:** Use delegation to break down monolithic tasks into smaller, verifiable units.
 
-## 5. Build & Environment Protocols
+## 6. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.

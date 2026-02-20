@@ -2,6 +2,15 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Builder Self-Directing Startup Protocol
+- **Problem:** The Builder required an elaborate handoff prompt from the Architect describing what to implement. This contradicted the "specs are the source of truth" philosophy -- if the specs and Critic report are complete, the Builder should derive its own work plan.
+- **Solution:** Added Section 2 (Startup Protocol) to `BUILDER_BASE.md`:
+    - **2.1 Gather Project State:** Builder automatically runs the Critic, reads action items, checks CDD status, and reads the dependency graph.
+    - **2.2 Propose a Work Plan:** Builder presents a structured summary to the user: action items grouped by feature, feature queue state, recommended execution order, and estimated scope.
+    - **2.3 Wait for Approval:** Builder asks the user "Ready to go, or would you like to adjust the plan?" before starting work.
+- **Structural Changes:** Renumbered sections (Feature Status Lifecycle -> 3, Implementation Protocol -> 4, Team Orchestration -> 5, Build Protocols -> 6). Pre-Flight Checks streamlined to per-feature context gathering (architecture and implementation notes), since the Critic run moved to the session-level startup.
+- **Impact:** The Architect no longer needs to compose implementation prompts. The user launches the Builder and says "go."
+
 ## [2026-02-19] Critic as Project Coordination Engine
 - **Problem:** The Critic was a pass/fail badge on the CDD dashboard, but agents need a single source of truth for project health and role-specific priorities. The CDD dashboard showing `CRITIC: FAIL` on features was confusing -- CDD should show objective state, not coordination signals.
 - **Architectural Shift:** Critic redefined from "quality gate" to "project coordination engine." CDD shows what IS (feature status, test results, QA status). Critic shows what SHOULD BE DONE (role-specific action items).
