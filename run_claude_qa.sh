@@ -26,4 +26,6 @@ if [ -f "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" ]; then
     cat "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-claude --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
+claude \
+    --allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit" \
+    --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
