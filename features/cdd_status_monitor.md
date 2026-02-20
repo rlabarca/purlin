@@ -166,3 +166,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Expected Behavior:** Use "??" to clearly indicate "not yet generated" state. Keep "N/A" for "not applicable / not needed." The badge table in Section 2.2 and all scenario references to "--" should be updated to "??". This distinction makes the Builder's intent unambiguous: "??" = critic data missing, "N/A" = QA verification not required.
 - **Action Required:** Architect
 - **Status:** OPEN
+
+### [DISCOVERY] Section headings "ACTIVE" and "COMPLETE" lack visual distinction (Discovered: 2026-02-19)
+- **Scenario:** NONE
+- **Observed Behavior:** The "ACTIVE" and "COMPLETE" section headings blend into the dashboard without clear visual separation from the feature rows below them.
+- **Expected Behavior:** Section headings should have an underline (or similar separator) to clearly distinguish them from the table content beneath.
+- **Action Required:** Architect
+- **Status:** OPEN
