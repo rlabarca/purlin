@@ -33,6 +33,13 @@ The framework separates **framework rules** (base layer) from **project-specific
 
 At launch, the launcher scripts concatenate base + override files into a single agent prompt. This allows upstream framework updates without merge conflicts in project-specific configuration.
 
+### 5. Automated Test Status
+Automated test results are not a separate dashboard column. They are embedded in the existing role status model:
+*   **Builder `DONE`** = spec is complete and automated tests passed. **Builder `FAIL`** = automated tests failed.
+*   **QA `CLEAN`** = automated tests exist and passed. **QA `N/A`** = no automated test coverage exists.
+
+There is no separate "test status" indicator. Builder status reflects test *health*; QA status reflects test *coverage*.
+
 ## Setup & Configuration
 
 ### Option A: Using as a Submodule (Recommended for Projects)
