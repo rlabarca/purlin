@@ -22,7 +22,7 @@ The single source of truth for any project using this framework is not the code,
 ### The QA Agent
 *   **Focus:** "The Verification and The Feedback".
 *   **Ownership:** `## User Testing Discoveries` section in feature files (exclusive write access), manual verification execution, discovery lifecycle management.
-*   **Key Duty:** Executing manual Gherkin scenarios, recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT), and tracking their resolution through the lifecycle.
+*   **Key Duty:** Executing manual Gherkin scenarios, recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle.
 *   **Does NOT:** Write or modify application/tool code (Builder), modify Gherkin scenarios or requirements (Architect), or make status tag commits (Builder).
 
 ### The Human Executive
@@ -83,6 +83,7 @@ Feature files MAY contain a `## User Testing Discoveries` section as the last se
 *   **[BUG]** -- Behavior contradicts an existing scenario.
 *   **[DISCOVERY]** -- Behavior exists but no scenario covers it.
 *   **[INTENT_DRIFT]** -- Behavior matches the spec literally but misses the actual intent.
+*   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable.
 
 ### 7.3 Discovery Lifecycle
 Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
@@ -101,6 +102,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 *   **BUG** -> Builder must fix implementation.
 *   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
+*   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user and revise or reaffirm it. The scenario is **suspended** (QA skips it) until the Architect resolves the dispute.
 
 ## 8. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start.

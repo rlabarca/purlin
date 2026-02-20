@@ -32,8 +32,9 @@ The Builder MUST classify every non-trivial implementation decision using struct
 | `[AUTONOMOUS]` | WARN | Spec was silent on this topic. Builder made a judgment call to fill the gap. |
 | `[DEVIATION]` | HIGH | Intentionally diverged from what the spec says. Requires Architect acknowledgment. |
 | `[DISCOVERY]` | HIGH | Found an unstated requirement during implementation. Requires Architect acknowledgment. |
+| `[INFEASIBLE]` | CRITICAL | Feature cannot be implemented as specified. Builder has halted work. Requires Architect to revise the spec. |
 
-**Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Builder action items in the Critic report.
+**Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
 
 ### 2.4 User Testing Feedback Loop
 The QA Agent records findings during manual verification using three discovery types:
@@ -43,8 +44,9 @@ The QA Agent records findings during manual verification using three discovery t
 | `[BUG]` | Behavior contradicts an existing scenario. |
 | `[DISCOVERY]` | Behavior exists but no scenario covers it. |
 | `[INTENT_DRIFT]` | Behavior matches the spec literally but misses the actual intent. |
+| `[SPEC_DISPUTE]` | User disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. |
 
-**Constraint:** Discoveries follow a lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. OPEN discoveries generate role-specific action items in the Critic report (BUGs route to Builder, DISCOVERYs and INTENT_DRIFTs route to Architect).
+**Constraint:** Discoveries follow a lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. OPEN discoveries generate role-specific action items in the Critic report (BUGs route to Builder; DISCOVERYs, INTENT_DRIFTs, and SPEC_DISPUTEs route to Architect). A SPEC_DISPUTE **suspends** the disputed scenario -- QA skips it until the Architect resolves the dispute.
 
 ### 2.5 Policy Adherence
 Architectural policy files (`arch_*.md`) MAY define `FORBIDDEN:` patterns -- literal strings or regex patterns that MUST NOT appear in the implementation code of features anchored to that policy.

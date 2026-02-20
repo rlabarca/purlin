@@ -2,6 +2,27 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-19] Escalation Protocols: SPEC_DISPUTE and INFEASIBLE
+- **Problem:** Two feedback loops lacked clean protocols: (1) During QA testing, the user disagrees with a scenario's expected behavior (the spec is wrong, not the code). (2) During implementation, the Builder discovers a feature is infeasible as specified. Both cases require escalation back to the Architect, but existing discovery types and decision tags didn't capture these semantics.
+- **QA: New Discovery Type `[SPEC_DISPUTE]`:**
+    - User rejects a scenario's expected behavior during testing.
+    - QA records it in User Testing Discoveries with the user's rationale.
+    - The disputed scenario is **suspended** -- QA skips it in future sessions until the Architect resolves the dispute.
+    - Routes to Architect (like DISCOVERY and INTENT_DRIFT).
+    - Generates HIGH-priority Architect action item in Critic report.
+- **Builder: New Decision Tag `[INFEASIBLE]` (Severity: CRITICAL):**
+    - Feature cannot be implemented as specified (technical constraints, contradictory requirements, dependency issues).
+    - Builder records the tag with detailed rationale in Implementation Notes, then **halts work** and skips to the next feature.
+    - Generates CRITICAL-priority Architect action item in Critic report (highest priority).
+    - Architect must revise the spec before Builder can resume.
+- **Files Modified:**
+    - `instructions/HOW_WE_WORK_BASE.md`: Added SPEC_DISPUTE to discovery types (7.2), feedback routing (7.5), and QA role description (Section 2).
+    - `instructions/QA_BASE.md`: Added SPEC_DISPUTE to discovery types (4.1), recording protocol (4.2), scenario walkthrough (5.2), feedback routing (Section 7). Added scenario suspension protocol.
+    - `instructions/BUILDER_BASE.md`: Added INFEASIBLE to decision categories (4.2b) with halt-and-skip rule.
+    - `features/arch_critic_policy.md`: Added INFEASIBLE to Builder Decision Transparency (2.3), SPEC_DISPUTE to User Testing Feedback Loop (2.4).
+    - `features/critic_tool.md`: Added SPEC_DISPUTE/INFEASIBLE to action item table (2.10), added CRITICAL priority level, updated user testing audit (2.6), extended JSON schema with spec_disputes count, added 3 new automated scenarios.
+- **Impact:** Feature specs reset to TODO. Builder must implement: SPEC_DISPUTE parsing in user testing audit, INFEASIBLE parsing in builder decisions, CRITICAL priority in action item generation.
+
 ## [2026-02-19] Builder Self-Directing Startup Protocol
 - **Problem:** The Builder required an elaborate handoff prompt from the Architect describing what to implement. This contradicted the "specs are the source of truth" philosophy -- if the specs and Critic report are complete, the Builder should derive its own work plan.
 - **Solution:** Added Section 2 (Startup Protocol) to `BUILDER_BASE.md`:

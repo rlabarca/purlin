@@ -75,12 +75,14 @@ When making non-trivial implementation decisions, you MUST classify and document
 *   **`[AUTONOMOUS]`** (Severity: WARN) -- Spec was silent on this topic. You made a judgment call to fill the gap.
 *   **`[DEVIATION]`** (Severity: HIGH) -- Intentionally diverged from what the spec says. Requires Architect acknowledgment before COMPLETE.
 *   **`[DISCOVERY]`** (Severity: HIGH) -- Found an unstated requirement during implementation. Requires Architect acknowledgment before COMPLETE.
+*   **`[INFEASIBLE]`** (Severity: CRITICAL) -- The feature cannot be implemented as specified due to technical constraints, contradictory requirements, or dependency issues. Requires Architect to revise the spec before work can continue.
 
 **Format:** `**[TAG]** <description> (Severity: <level>)`
 
 **Rules:**
 *   `[CLARIFICATION]` and `[AUTONOMOUS]` are informational. They do not block completion but are audited by the Critic tool.
 *   `[DEVIATION]` and `[DISCOVERY]` MUST be acknowledged by the Architect (via spec update or explicit approval) before the feature can transition to `[Complete]`.
+*   `[INFEASIBLE]` **halts work on the feature.** Record the tag with a detailed rationale in Implementation Notes, commit the note, then **skip to the next feature** in the work plan. The Architect must revise the spec before the Builder can resume. Do NOT attempt workarounds or partial implementations.
 *   When in doubt between CLARIFICATION and AUTONOMOUS, use AUTONOMOUS. Transparency is preferred over underreporting.
 
 ### 3. Verify Locally

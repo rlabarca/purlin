@@ -44,18 +44,21 @@ Start walking the user through the first TESTING feature's manual scenarios (see
 ## 4. Discovery Protocol
 
 ### 4.1 Discovery Types
-When the user reports a failure, classify it through conversation:
+When the user reports a failure or disagreement, classify it through conversation:
 
 *   **[BUG]** -- Behavior contradicts an existing scenario. The spec is right, the implementation is wrong.
 *   **[DISCOVERY]** -- Behavior exists but no scenario covers it. The spec is incomplete.
 *   **[INTENT_DRIFT]** -- Behavior matches the spec literally but the spec misses the actual intent.
+*   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. Use this when the user says something like "I don't think it should work this way" or "this scenario doesn't make sense."
 
 ### 4.2 Recording
-When the user reports a FAIL, ask them to describe what they observed. Then YOU:
-1.  Classify the finding (BUG/DISCOVERY/INTENT_DRIFT) -- confirm the classification with the user.
+When the user reports a FAIL or disputes a scenario, ask them to describe what they observed or why they disagree. Then YOU:
+1.  Classify the finding (BUG/DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE) -- confirm the classification with the user.
 2.  Write the structured entry to the feature file's `## User Testing Discoveries` section.
 3.  Git commit: `git commit -m "qa(scope): [TYPE] - <brief>"`.
-4.  Inform the user the discovery has been recorded and move to the next scenario.
+4.  Inform the user the discovery has been recorded.
+5.  **If SPEC_DISPUTE:** The disputed scenario is now **suspended**. Skip it in the current session and in future sessions until the Architect resolves the dispute. Move to the next scenario.
+6.  **Otherwise:** Move to the next scenario.
 
 ### 4.3 Recording Format
 ```
@@ -98,9 +101,10 @@ For each Manual Scenario in the feature file:
     *   For "Given" steps: describe the precondition and how to set it up (e.g., "Make sure the CDD server is running at http://localhost:9086").
     *   For "When" steps: tell the user the exact action to perform (e.g., "Open http://localhost:9086 in your browser").
     *   For "Then" steps: tell the user what to look for (e.g., "You should see a feature list with TODO, TESTING, and COMPLETE sections with distinct colors").
-3.  **Ask: PASS or FAIL?**
+3.  **Ask: PASS, FAIL, or DISPUTE?** (Explain that DISPUTE means the user disagrees with the scenario's expected behavior itself, not just the implementation.)
 4.  **If PASS:** Record it internally, move to the next scenario.
 5.  **If FAIL:** Ask the user to describe what they observed. Then record the discovery (Section 4.2).
+6.  **If DISPUTE:** Ask the user why they disagree with the expected behavior. Record a `[SPEC_DISPUTE]` discovery (Section 4.2). The scenario is suspended.
 
 ### 5.3 Exploratory Testing Prompt
 After all manual scenarios for a feature are complete, ask the user:
@@ -126,3 +130,4 @@ When all TESTING features have been verified:
 *   **BUG** -> Builder must fix implementation.
 *   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
+*   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user. Scenario is suspended until resolved.

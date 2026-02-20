@@ -32,7 +32,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 | Traceability | All automated scenarios have matching tests | >80% scenario coverage | <80% scenario coverage |
 | Policy adherence | No FORBIDDEN pattern violations | N/A | Any FORBIDDEN violation detected |
 | Structural completeness | `tests/<feature>/tests.json` exists with `"status": "PASS"` | Exists with `"status": "FAIL"` | Missing `tests.json` |
-| Builder decisions | All entries are INFO/CLARIFICATION | Has AUTONOMOUS entries | Has DEVIATION or unresolved DISCOVERY |
+| Builder decisions | All entries are INFO/CLARIFICATION | Has AUTONOMOUS entries | Has DEVIATION, unresolved DISCOVERY, or INFEASIBLE |
 | Logic drift (LLM) | All pairs ALIGNED | Some PARTIAL | Any DIVERGENT |
 
 ### 2.3 Traceability Engine
@@ -57,7 +57,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 
 ### 2.6 User Testing Audit
 *   **Discovery Scanning:** Parse the `## User Testing Discoveries` section of each feature file.
-*   **Status Tracking:** Count entries by type (BUG, DISCOVERY, INTENT_DRIFT) and status (OPEN, SPEC_UPDATED, RESOLVED).
+*   **Status Tracking:** Count entries by type (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) and status (OPEN, SPEC_UPDATED, RESOLVED).
 *   **Clean Status:** A feature with no OPEN or SPEC_UPDATED entries has `user_testing.status: "CLEAN"`. Otherwise `"HAS_OPEN_ITEMS"`.
 
 ### 2.7 Per-Feature Output
@@ -90,7 +90,8 @@ For each feature file, produce `tests/<feature_name>/critic.json`:
         "status": "CLEAN | HAS_OPEN_ITEMS",
         "bugs": 0,
         "discoveries": 0,
-        "intent_drifts": 0
+        "intent_drifts": 0,
+        "spec_disputes": 0
     },
     "action_items": {
         "architect": [{"priority": "HIGH | MEDIUM | LOW", "category": "<source_category>", "feature": "<feature_name>", "description": "<imperative action>"}],
@@ -123,6 +124,9 @@ The Critic MUST generate imperative action items for each role based on the anal
 |------|--------|-------------|
 | **Architect** | Spec Gate FAIL (missing sections, broken prereqs) | "Fix spec gap: section_completeness -- missing Requirements" |
 | **Architect** | OPEN DISCOVERY/INTENT_DRIFT in User Testing | "Update spec for cdd_status_monitor: [discovery title]" |
+| **Architect** | OPEN SPEC_DISPUTE in User Testing | "Review disputed scenario in critic_tool: [dispute title]" |
+| **Architect** | `[INFEASIBLE]` tag in Implementation Notes | "Revise infeasible spec for submodule_sync: [rationale]" |
+| **Architect** | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | "Acknowledge Builder decision in critic_tool: [tag title]" |
 | **Architect** | Spec Gate WARN (no manual scenarios, empty impl notes) | "Improve spec: scenario_classification -- only Automated" |
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
@@ -131,7 +135,8 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **QA** | SPEC_UPDATED discoveries | "Re-verify critic_tool: [item title]" |
 
 **Priority Levels:**
-*   **HIGH** -- Gate FAIL, OPEN BUGs, unacknowledged DEVIATIONs/DISCOVERYs.
+*   **CRITICAL** -- `[INFEASIBLE]` tags (feature halted, Architect must revise spec).
+*   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs.
 *   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting re-verification.
 *   **LOW** -- Gate WARNs, informational items.
 
@@ -262,6 +267,24 @@ The Critic MUST generate imperative action items for each role based on the anal
     When CRITIC_REPORT.md is generated
     Then it contains an "Action Items by Role" section
     And each role subsection lists items sorted by priority
+
+#### Scenario: Architect Action Items from Spec Dispute
+    Given a feature has an OPEN SPEC_DISPUTE in User Testing Discoveries
+    When the Critic tool generates action items
+    Then an Architect action item is created with priority HIGH
+    And the description references the disputed scenario and the user's rationale
+
+#### Scenario: Architect Action Items from Infeasible Feature
+    Given a feature has an [INFEASIBLE] tag in Implementation Notes
+    When the Critic tool generates action items
+    Then an Architect action item is created with priority CRITICAL
+    And the description references the infeasibility rationale
+
+#### Scenario: Spec Dispute Counted in User Testing Audit
+    Given a feature file has a User Testing Discoveries section with 1 SPEC_DISPUTE (OPEN)
+    When the Critic tool runs the user testing audit
+    Then user_testing.status is HAS_OPEN_ITEMS
+    And user_testing.spec_disputes is 1
 
 #### Scenario: Spec Gate Policy File Reduced Evaluation
     Given a feature file is an architectural policy (arch_*.md)
