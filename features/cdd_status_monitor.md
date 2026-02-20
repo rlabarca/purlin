@@ -165,12 +165,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **Agent Interface:** The `/status.json` API endpoint is the primary machine-readable contract. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST use `curl http://localhost:<cdd_port>/status.json`. The disk file `feature_status.json` is a secondary artifact. Agents MUST read the port from `.agentic_devops/config.json` (`cdd_port` key, default `8086`) and MUST NOT hardcode or guess port numbers.
 *   **Path Normalization:** `os.path.relpath` may resolve to `.`, making `features_rel` = `./features`. The `f_path` used for git grep MUST be normalized with `os.path.normpath()` to strip the `./` prefix, otherwise status commit patterns like `[Complete features/file.md]` won't match `./features/file.md`.
 *   **Section Heading Underline:** Section headings ("ACTIVE", "COMPLETE") require a visible underline separator to distinguish them from feature rows. Verified 2026-02-19.
+*   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
 
 ## User Testing Discoveries
-
-### [SPEC_DISPUTE] Missing critic.json badge should be "??" not "--" (Discovered: 2026-02-19)
-- **Scenario:** Web Dashboard Display / Role Columns on Dashboard
-- **Observed Behavior:** The spec defines "--" as the badge when no critic.json exists. This is visually ambiguous and easily confused with a rendering gap or empty cell.
-- **Expected Behavior:** Use "??" to clearly indicate "not yet generated" state. Keep "N/A" for "not applicable / not needed." The badge table in Section 2.2 and all scenario references to "--" should be updated to "??". This distinction makes the Builder's intent unambiguous: "??" = critic data missing, "N/A" = QA verification not required.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
