@@ -505,3 +505,9 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 
 ## User Testing Discoveries
 
+### [DISCOVERY] SPEC_UPDATED discoveries with Builder action don't generate Builder action items or TODO status (Discovered: 2026-02-20)
+- **Scenario:** NONE
+- **Observed Behavior:** When a feature has a SPEC_UPDATED discovery with "Action Required: Builder" (e.g., cdd_status_monitor's start.sh issue), the Critic does not generate a Builder action item and computes role_status.builder as DONE. The QA "Re-verify" action item is generated, but the prerequisite Builder work item is missing. This means the CDD dashboard shows Builder=DONE when the Builder clearly has unfinished work.
+- **Expected Behavior:** SPEC_UPDATED discoveries that route to Builder should generate a Builder action item (e.g., "Implement fix for <feature>: [discovery title]") and set role_status.builder to TODO. The Section 2.10 action items table currently only defines Builder items for OPEN BUGs, not SPEC_UPDATED discoveries.
+- **Action Required:** Architect (spec gap — needs new action item rule in Section 2.10 and corresponding Builder TODO condition)
+- **Status:** OPEN
