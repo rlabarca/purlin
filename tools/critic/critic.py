@@ -177,12 +177,15 @@ def parse_discovery_entries(section_text):
     """Parse structured discovery entries from User Testing Discoveries text.
 
     Each entry starts with a ### heading containing [TYPE] and has a Status line.
-    Returns list of dicts: {'type': str, 'title': str, 'status': str, 'heading': str}
+    Also parses the optional "Action Required" field for routing.
+    Returns list of dicts: {'type': str, 'title': str, 'status': str,
+                            'heading': str, 'action_required': str}
     """
     entries = []
     current_type = None
     current_title = None
     current_status = None
+    current_action = ''
 
     for line in section_text.split('\n'):
         heading_match = re.match(
@@ -195,10 +198,12 @@ def parse_discovery_entries(section_text):
                     'title': current_title,
                     'status': current_status or 'OPEN',
                     'heading': f'[{current_type}] {current_title}',
+                    'action_required': current_action,
                 })
             current_type = heading_match.group(1)
             current_title = heading_match.group(2).strip()
             current_status = None
+            current_action = ''
             continue
 
         status_match = re.match(
@@ -206,12 +211,18 @@ def parse_discovery_entries(section_text):
         if status_match and current_type is not None:
             current_status = status_match.group(1)
 
+        action_match = re.match(
+            r'^-\s+\*\*Action Required:\*\*\s+(.+)', line.strip())
+        if action_match and current_type is not None:
+            current_action = action_match.group(1).strip()
+
     if current_type is not None:
         entries.append({
             'type': current_type,
             'title': current_title,
             'status': current_status or 'OPEN',
             'heading': f'[{current_type}] {current_title}',
+            'action_required': current_action,
         })
 
     return entries
@@ -869,6 +880,19 @@ def generate_action_items(feature_result, cdd_status=None):
                 'category': 'user_testing',
                 'feature': feature_name,
                 'description': f'Fix bug in {feature_name}: {entry["heading"]}',
+            })
+
+    # SPEC_UPDATED discoveries with Builder action routing -> MEDIUM Builder
+    for entry in ut_entries:
+        if entry['status'] == 'SPEC_UPDATED' \
+                and 'builder' in entry.get('action_required', '').lower():
+            builder_items.append({
+                'priority': 'MEDIUM',
+                'category': 'user_testing',
+                'feature': feature_name,
+                'description': (
+                    f'Implement fix for {feature_name}: {entry["heading"]}'
+                ),
             })
 
     # --- QA items ---

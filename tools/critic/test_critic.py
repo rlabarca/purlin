@@ -2545,6 +2545,123 @@ class TestBuilderActionItemsFromLifecycleReset(unittest.TestCase):
         self.assertEqual(len(lifecycle_items), 0)
 
 
+class TestBuilderActionItemsFromSpecUpdatedDiscovery(unittest.TestCase):
+    """Scenario: Builder Action Items from SPEC_UPDATED Discovery
+
+    A SPEC_UPDATED discovery with 'Action Required: Builder' generates
+    a MEDIUM Builder action item and sets role_status.builder to TODO.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Test
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [DISCOVERY] start.sh port binding issue (Discovered: 2026-02-20)
+- **Scenario:** Server Start/Stop Lifecycle
+- **Observed Behavior:** Port stays in TIME_WAIT after stop.
+- **Expected Behavior:** Server starts on first invocation after stop.
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED
+"""
+        with open(os.path.join(self.features_dir, 'test.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_spec_updated_builder_routing_generates_builder_item(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result, cdd_status=None)
+            builder_items = [
+                i for i in items['builder']
+                if 'Implement fix' in i['description']
+            ]
+            self.assertEqual(len(builder_items), 1)
+            self.assertEqual(builder_items[0]['priority'], 'MEDIUM')
+            self.assertIn('[DISCOVERY]', builder_items[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_spec_updated_without_builder_action_no_builder_item(self):
+        """SPEC_UPDATED without 'Builder' in Action Required -> no Builder item."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        # Write a feature with Action Required: Architect (not Builder)
+        content = """\
+# Feature: Test2
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [DISCOVERY] Spec unclear (Discovered: 2026-02-20)
+- **Action Required:** Architect
+- **Status:** SPEC_UPDATED
+"""
+        with open(os.path.join(self.features_dir, 'test2.md'), 'w') as f:
+            f.write(content)
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/test2.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result, cdd_status=None)
+            builder_items = [
+                i for i in items['builder']
+                if 'Implement fix' in i['description']
+            ]
+            self.assertEqual(len(builder_items), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_spec_updated_builder_routing_makes_builder_todo(self):
+        """role_status.builder should be TODO when SPEC_UPDATED routes to Builder."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            # Generate action items first (compute_role_status needs them)
+            result['action_items'] = generate_action_items(result, cdd_status=None)
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/test.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['builder'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
 class TestRoleStatusBuilderLifecycleTODO(unittest.TestCase):
     """Scenario: Builder Action Items from Lifecycle Reset (role_status)
 
