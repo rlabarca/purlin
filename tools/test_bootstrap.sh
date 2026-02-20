@@ -150,6 +150,36 @@ fi
 
 cleanup_sandbox
 
+# --- Scenario: QA Launcher Script Concatenation Order ---
+echo ""
+echo "[Scenario] QA Launcher Script Concatenation Order"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+QA_CONTENT=$(cat "$PROJECT/run_claude_qa.sh")
+if echo "$QA_CONTENT" | grep -q 'HOW_WE_WORK_BASE.md.*>.*PROMPT_FILE'; then
+    log_pass "QA: HOW_WE_WORK_BASE.md written first"
+else
+    log_fail "QA: HOW_WE_WORK_BASE.md not first"
+fi
+if echo "$QA_CONTENT" | grep -q 'QA_BASE.md.*>>.*PROMPT_FILE'; then
+    log_pass "QA: QA_BASE.md appended second"
+else
+    log_fail "QA: QA_BASE.md not appended"
+fi
+if echo "$QA_CONTENT" | grep -q 'HOW_WE_WORK_OVERRIDES.md'; then
+    log_pass "QA: HOW_WE_WORK_OVERRIDES.md referenced"
+else
+    log_fail "QA: HOW_WE_WORK_OVERRIDES.md not referenced"
+fi
+if echo "$QA_CONTENT" | grep -q 'QA_OVERRIDES.md'; then
+    log_pass "QA: QA_OVERRIDES.md referenced"
+else
+    log_fail "QA: QA_OVERRIDES.md not referenced"
+fi
+
+cleanup_sandbox
+
 # --- Scenario: Gitignore warning ---
 echo ""
 echo "[Scenario] Gitignore Warning"

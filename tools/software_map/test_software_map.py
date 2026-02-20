@@ -9,7 +9,7 @@ import shutil
 sys.path.insert(0, os.path.dirname(__file__))
 from generate_tree import (
     parse_features, detect_cycles, find_orphans,
-    build_features_json, generate_mermaid_content
+    build_features_json, generate_mermaid_content,
 )
 
 
@@ -114,7 +114,8 @@ class TestDependencyGraphJSON(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_build_features_json_structure(self):
+    def test_update_feature_graph_with_prerequisites(self):
+        """Update the feature graph: add a feature with prerequisites and verify output."""
         features = {
             "login": {
                 "filename": "login.md",
@@ -135,6 +136,48 @@ class TestDependencyGraphJSON(unittest.TestCase):
         # Verify sorted by filename
         self.assertEqual(result[0]["label"], "Base")
         self.assertEqual(result[1]["label"], "User Login")
+
+    def test_agent_reads_dependency_graph_schema(self):
+        """Agent reads dependency_graph.json and validates its schema."""
+        features = {
+            "core": {
+                "id": "core",
+                "filename": "core.md",
+                "label": "Core",
+                "category": "Foundation",
+                "prerequisites": []
+            },
+            "auth": {
+                "id": "auth",
+                "filename": "auth.md",
+                "label": "Auth",
+                "category": "Security",
+                "prerequisites": ["core"]
+            },
+        }
+        graph = {
+            "generated_at": "2026-01-01T00:00:00Z",
+            "features": build_features_json(features, self.test_dir),
+            "cycles": detect_cycles(features),
+            "orphans": find_orphans(features),
+        }
+        # Validate top-level schema keys
+        self.assertIn("generated_at", graph)
+        self.assertIn("features", graph)
+        self.assertIn("cycles", graph)
+        self.assertIn("orphans", graph)
+        # Validate features array entries
+        self.assertIsInstance(graph["features"], list)
+        self.assertTrue(len(graph["features"]) > 0)
+        for entry in graph["features"]:
+            self.assertIn("file", entry)
+            self.assertIn("label", entry)
+            self.assertIn("category", entry)
+            self.assertIn("prerequisites", entry)
+        # Validate cycles is a list (no cycles in this graph)
+        self.assertEqual(graph["cycles"], [])
+        # Validate orphans includes the root node
+        self.assertIn("core.md", graph["orphans"])
 
     def test_deterministic_output(self):
         features = {

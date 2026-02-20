@@ -55,18 +55,20 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
             if _is_test_file(fname):
                 test_files.append(os.path.join(tests_dir, fname))
 
-    # Secondary: scan tool directories for test files
+    # Secondary: scan tools root and tool subdirectories for test files
     tools_abs = os.path.join(project_root, tools_root)
     if os.path.isdir(tools_abs):
         for entry in os.listdir(tools_abs):
-            tool_dir = os.path.join(tools_abs, entry)
-            if not os.path.isdir(tool_dir):
-                continue
-            for fname in os.listdir(tool_dir):
-                if _is_test_file(fname):
-                    fpath = os.path.join(tool_dir, fname)
-                    if fpath not in test_files:
-                        test_files.append(fpath)
+            entry_path = os.path.join(tools_abs, entry)
+            if os.path.isdir(entry_path):
+                for fname in os.listdir(entry_path):
+                    if _is_test_file(fname):
+                        fpath = os.path.join(entry_path, fname)
+                        if fpath not in test_files:
+                            test_files.append(fpath)
+            elif _is_test_file(entry):
+                if entry_path not in test_files:
+                    test_files.append(entry_path)
 
     return test_files
 
