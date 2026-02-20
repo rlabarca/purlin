@@ -46,7 +46,7 @@ The QA Agent records findings during manual verification using three discovery t
 | `[INTENT_DRIFT]` | Behavior matches the spec literally but misses the actual intent. |
 | `[SPEC_DISPUTE]` | User disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. |
 
-**Constraint:** Discoveries follow a lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. OPEN discoveries generate role-specific action items in the Critic report (BUGs route to Builder; DISCOVERYs, INTENT_DRIFTs, and SPEC_DISPUTEs route to Architect). A SPEC_DISPUTE **suspends** the disputed scenario -- QA skips it until the Architect resolves the dispute.
+**Constraint:** Discoveries follow a lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. OPEN discoveries generate role-specific action items in the Critic report (BUGs route to Builder; DISCOVERYs, INTENT_DRIFTs, and SPEC_DISPUTEs route to Architect). SPEC_UPDATED discoveries that require Builder implementation generate Builder action items alongside the QA re-verification item. A SPEC_DISPUTE **suspends** the disputed scenario -- QA skips it until the Architect resolves the dispute.
 
 ### 2.5 Policy Adherence
 Architectural policy files (`arch_*.md`) MAY define `FORBIDDEN:` patterns -- literal strings or regex patterns that MUST NOT appear in the implementation code of features anchored to that policy.

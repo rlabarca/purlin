@@ -138,16 +138,19 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
+| **Builder** | SPEC_UPDATED discoveries with Builder action routing | "Implement fix for cdd_status_monitor: [discovery title]" |
 | **QA** | Features in TESTING status with manual scenarios (from CDD feature_status.json) | "Verify cdd_status_monitor: 3 manual scenario(s)" |
 | **QA** | SPEC_UPDATED discoveries | "Re-verify critic_tool: [item title]" |
 
 **QA Action Item Filtering:** QA verification items (from TESTING status) are only generated when the feature has at least one manual scenario. Features with 0 manual scenarios do not generate QA verification action items.
 
+**SPEC_UPDATED Builder Routing:** A SPEC_UPDATED discovery generates a Builder action item when its `Action Required` field contains "Builder" (case-insensitive substring match). This covers discoveries where the Architect has updated the spec and the Builder must now implement the fix before QA can re-verify. The QA "Re-verify" action item is still generated alongside the Builder item -- the Builder fix is a prerequisite for meaningful re-verification.
+
 **Priority Levels:**
 *   **CRITICAL** -- `[INFEASIBLE]` tags (feature halted, Architect must revise spec).
 *   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs.
 *   **HIGH** -- Feature in TODO lifecycle state (spec modified, implementation review needed).
-*   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting re-verification.
+*   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting re-verification or Builder fix.
 *   **LOW** -- Gate WARNs, informational items.
 
 **CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. If unavailable, the Critic skips lifecycle-dependent items with a note in the report.
@@ -161,7 +164,7 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 
 **Builder Status:**
 *   `DONE`: structural_completeness PASS (tests.json exists with PASS), no open BUGs, no FAIL-level traceability issues, AND feature is NOT in TODO lifecycle state.
-*   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit, implementation review needed), OR has other Builder action items to address (traceability gaps, etc.).
+*   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit, implementation review needed), OR has other Builder action items to address (traceability gaps, SPEC_UPDATED discoveries routed to Builder, etc.).
 *   `FAIL`: tests.json exists with status FAIL.
 *   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes (Builder halted, escalated to Architect).
 *   `BLOCKED`: Active SPEC_DISPUTE exists for this feature (scenarios suspended, Builder cannot implement).
@@ -311,6 +314,14 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     When the Critic tool generates action items
     Then a Builder action item is created with priority HIGH
     And the description says "Review and implement spec changes for <feature_name>"
+    And role_status.builder is TODO
+
+#### Scenario: Builder Action Items from SPEC_UPDATED Discovery
+    Given a feature has a SPEC_UPDATED discovery in User Testing Discoveries
+    And the discovery has "Action Required: Builder"
+    When the Critic tool generates action items
+    Then a Builder action item is created with priority MEDIUM
+    And the description says "Implement fix for <feature_name>: [discovery title]"
     And role_status.builder is TODO
 
 #### Scenario: QA Action Items from TESTING Status
@@ -509,5 +520,5 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 - **Scenario:** NONE
 - **Observed Behavior:** When a feature has a SPEC_UPDATED discovery with "Action Required: Builder" (e.g., cdd_status_monitor's start.sh issue), the Critic does not generate a Builder action item and computes role_status.builder as DONE. The QA "Re-verify" action item is generated, but the prerequisite Builder work item is missing. This means the CDD dashboard shows Builder=DONE when the Builder clearly has unfinished work.
 - **Expected Behavior:** SPEC_UPDATED discoveries that route to Builder should generate a Builder action item (e.g., "Implement fix for <feature>: [discovery title]") and set role_status.builder to TODO. The Section 2.10 action items table currently only defines Builder items for OPEN BUGs, not SPEC_UPDATED discoveries.
-- **Action Required:** Architect (spec gap — needs new action item rule in Section 2.10 and corresponding Builder TODO condition)
-- **Status:** OPEN
+- **Action Required:** Builder (implement SPEC_UPDATED-to-Builder action item generation in critic.py)
+- **Status:** SPEC_UPDATED
