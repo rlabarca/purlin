@@ -496,12 +496,6 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **[CLARIFICATION]** DEVIATION/DISCOVERY action items route to Architect (not Builder), as the spec says these require Architect acknowledgment. Builder's role is to get that acknowledgment, but the Critic generates the item for the Architect to act on. (Severity: INFO)
 *   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` for QA status computation. If CDD is not running and `feature_status.json` doesn't exist on disk, QA status defaults to `N/A`.
 *   **[CLARIFICATION]** QA status computation evaluates lifecycle-independent statuses (FAIL, DISPUTED, TODO from conditions b/c) BEFORE checking lifecycle state. A feature in TODO lifecycle state with OPEN BUGs, SPEC_DISPUTEs, or SPEC_UPDATED items will correctly reflect QA engagement rather than defaulting to N/A. QA TODO condition (a) for TESTING state additionally checks manual scenario count — features with 0 manual scenarios get N/A since QA has nothing to verify. (Severity: INFO)
+*   **Critic Report Readability scenario removed:** SPEC_DISPUTE resolved -- manual readability scenario removed since CRITIC_REPORT.md is agent-facing. Verified 2026-02-20.
 
 ## User Testing Discoveries
-
-### [SPEC_DISPUTE] Manual scenario for Critic Report readability is invalid (Discovered: 2026-02-19)
-- **Scenario:** Critic Report Readability
-- **Observed Behavior:** The scenario asks a human to manually verify that CRITIC_REPORT.md is "readable and well-structured."
-- **Expected Behavior:** CRITIC_REPORT.md is an agent-facing artifact (Section 2.9: "The Critic is agent-facing; CDD is human-facing"). Human readability verification is not appropriate for an agent-consumed output. This scenario should be removed or converted to an automated structural check.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
