@@ -522,6 +522,13 @@ def generate_html():
     active_summary = _badge_summary_html(active_badges)
     complete_summary = _badge_summary_html(complete_badges)
 
+    # Workspace collapsed summary
+    if not git_status:
+        workspace_summary = '<span class="st-done">Clean State</span>'
+    else:
+        file_count = len(git_status.strip().splitlines())
+        workspace_summary = f'<span class="st-todo">{file_count} file{"s" if file_count != 1 else ""} changed</span>'
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -563,11 +570,16 @@ body{{
   font-size:12px;display:flex;flex-direction:column;
 }}
 .hdr{{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:6px 12px;background:var(--purlin-surface);
+  background:var(--purlin-surface);
   border-bottom:1px solid var(--purlin-border);flex-shrink:0;
+  padding:6px 12px;
 }}
-.hdr-left{{display:flex;align-items:center;gap:10px}}
+.hdr-row1{{display:flex;justify-content:space-between;align-items:center}}
+.hdr-row2{{display:flex;justify-content:space-between;align-items:center;margin-top:4px}}
+.hdr-row1-left{{display:flex;align-items:center;gap:10px}}
+.hdr-row1-right{{display:flex;align-items:center;gap:8px}}
+.hdr-row2-left{{display:flex;align-items:center}}
+.hdr-row2-right{{display:flex;align-items:center}}
 .hdr-title-block{{display:flex;flex-direction:column}}
 .hdr h1{{
   font-family:var(--font-display);font-size:14px;font-weight:200;
@@ -578,7 +590,6 @@ body{{
   font-family:var(--font-body);font-size:14px;font-weight:500;
   color:var(--purlin-primary);line-height:1.2;
 }}
-.hdr-right{{display:flex;align-items:center;gap:8px}}
 .hdr-logo{{height:24px;width:auto;flex-shrink:0}}
 .hdr-logo .logo-sketch{{stroke:var(--purlin-dim);fill:none}}
 .hdr-logo .logo-fill{{fill:var(--purlin-primary)}}
@@ -719,36 +730,44 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 </head>
 <body>
 <div class="hdr">
-  <div class="hdr-left">
-    <svg class="hdr-logo" viewBox="140 100 720 420" xmlns="http://www.w3.org/2000/svg">
-      <g class="logo-sketch" stroke-width="2">
-        <line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/>
-        <line x1="500" y1="145" x2="170" y2="409"/>
-        <line x1="500" y1="145" x2="830" y2="409"/>
-        <line x1="400" y1="210" x2="400" y2="255"/>
-        <line x1="600" y1="210" x2="600" y2="255"/>
-      </g>
-      <polyline class="logo-fill" points="400,280 500,390 600,280" fill="none" stroke="currentColor" stroke-width="14" stroke-linejoin="miter" style="fill:none;stroke:var(--purlin-primary)"/>
-      <path class="logo-fill" d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd"/>
-    </svg>
-    <div class="hdr-title-block">
-      <h1>Purlin CDD Dashboard</h1>
-      <span class="project-name">{PROJECT_NAME}</span>
+  <div class="hdr-row1">
+    <div class="hdr-row1-left">
+      <svg class="hdr-logo" viewBox="140 100 720 420" xmlns="http://www.w3.org/2000/svg">
+        <g class="logo-sketch" stroke-width="2">
+          <line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/>
+          <line x1="500" y1="145" x2="170" y2="409"/>
+          <line x1="500" y1="145" x2="830" y2="409"/>
+          <line x1="400" y1="210" x2="400" y2="255"/>
+          <line x1="600" y1="210" x2="600" y2="255"/>
+        </g>
+        <polyline class="logo-fill" points="400,280 500,390 600,280" fill="none" stroke="currentColor" stroke-width="14" stroke-linejoin="miter" style="fill:none;stroke:var(--purlin-primary)"/>
+        <path class="logo-fill" d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd"/>
+      </svg>
+      <div class="hdr-title-block">
+        <h1>Purlin CDD Dashboard</h1>
+        <span class="project-name">{PROJECT_NAME}</span>
+      </div>
     </div>
-    <div class="view-toggle">
-      <button class="view-btn active" id="btn-status" onclick="switchView('status')">Status</button>
-      <button class="view-btn" id="btn-map" onclick="switchView('map')">SW Map</button>
+    <div class="hdr-row1-right">
+      <span id="last-refreshed" style="font-family:'Menlo','Monaco','Consolas',monospace;color:var(--purlin-dim);font-size:11px">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+      <span id="critic-err" class="btn-critic-err"></span>
+      <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="theme-icon-sun" style="display:none">&#9788;</span>
+        <span id="theme-icon-moon">&#9790;</span>
+      </button>
     </div>
   </div>
-  <div class="hdr-right">
-    <input type="text" id="search-input" placeholder="Filter..." />
-    <span id="last-refreshed" style="font-family:'Menlo','Monaco','Consolas',monospace;color:var(--purlin-dim);font-size:11px">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
-    <span id="critic-err" class="btn-critic-err"></span>
-    <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-      <span id="theme-icon-sun" style="display:none">&#9788;</span>
-      <span id="theme-icon-moon">&#9790;</span>
-    </button>
+  <div class="hdr-row2">
+    <div class="hdr-row2-left">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-status" onclick="switchView('status')">Status</button>
+        <button class="view-btn" id="btn-map" onclick="switchView('map')">SW Map</button>
+      </div>
+    </div>
+    <div class="hdr-row2-right">
+      <input type="text" id="search-input" placeholder="Filter..." />
+    </div>
   </div>
 </div>
 <div class="content-area">
@@ -775,11 +794,11 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     </div>
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
-        <span class="chevron expanded" id="workspace-section-chevron">&#9654;</span>
+        <span class="chevron" id="workspace-section-chevron">&#9654;</span>
         <h3>Workspace</h3>
-        <span class="section-badge" id="workspace-section-badge" style="display:none"></span>
+        <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
-      <div class="section-body" id="workspace-section">
+      <div class="section-body collapsed" id="workspace-section">
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
       </div>
