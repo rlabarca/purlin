@@ -232,9 +232,9 @@ These scenarios are validated by the Builder's automated test suite.
     And the response includes a Content-Type of application/json
 
 #### Scenario: Change Scope in API Response
-    Given a feature has a status commit with [Scope: targeted:Web Dashboard Display]
+    Given a feature has a status commit with [Scope: targeted:Web Dashboard Auto-Refresh]
     When an agent calls GET /status.json
-    Then the feature entry includes change_scope with value "targeted:Web Dashboard Display"
+    Then the feature entry includes change_scope with value "targeted:Web Dashboard Auto-Refresh"
 
 #### Scenario: Change Scope Omitted When No Scope Declared
     Given a feature has a status commit with no [Scope: ...] trailer

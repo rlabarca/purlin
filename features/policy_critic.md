@@ -68,9 +68,16 @@ The Builder declares the **impact scope** of each change at status-commit time u
 | Scope | Meaning | QA Action |
 |-------|---------|-----------|
 | `full` | Behavioral change, new scenarios, API change | Test all manual scenarios |
-| `targeted:Scenario A,Scenario B` | Only specific scenarios affected | Test only named scenarios |
+| `targeted:<exact names>` | Only specific scenarios/screens affected | Test only named items (see naming contract below) |
 | `cosmetic` | Non-functional (formatting, logging, internal refactor) | Skip QA entirely |
 | `dependency-only` | Change propagated by a prerequisite update | Test scenarios touching the changed dependency surface |
+
+**Naming Contract for `targeted:` Scopes:**
+*   Values MUST be a comma-separated list of exact verification item names from the feature spec. No free-form labels.
+*   **Manual Scenarios:** Use the exact title from `#### Scenario: <Name>` (e.g., `targeted:Web Dashboard Auto-Refresh`).
+*   **Visual Spec Screens:** Use the prefix `Visual:` followed by the exact screen name from `### Screen: <Name>` (e.g., `targeted:Visual:CDD Web Dashboard`).
+*   **Mixed:** Comma-separate manual and visual targets (e.g., `targeted:Web Dashboard Auto-Refresh,Visual:CDD Web Dashboard`).
+*   The Critic MUST validate that every name in a `targeted:` scope matches an existing `#### Scenario:` title or `### Screen:` title in the feature spec. Unresolvable names produce a WARNING in the Critic report.
 
 **Constraints:**
 *   Default when omitted: `full` (backward-compatible, safe).

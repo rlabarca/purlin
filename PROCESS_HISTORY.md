@@ -2,6 +2,20 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Targeted Scope Naming Contract: Enforce Exact Scenario/Screen Names
+
+- **Scope:** Policy spec update + CDD scenario fix.
+- **Problem:** The `targeted:` scope type in status commits allowed free-form labels (e.g., `targeted:Web Dashboard Display`, `targeted:Interactive Web View`). These labels did not match any actual manual scenario or visual spec screen name, making it impossible for the QA agent to programmatically determine which verification items to test.
+- **Solution:** Added a **Naming Contract** to `policy_critic.md` Section 2.8 requiring:
+    - Manual scenarios: exact title from `#### Scenario: <Name>` (e.g., `targeted:Web Dashboard Auto-Refresh`).
+    - Visual spec screens: `Visual:` prefix + exact screen name from `### Screen: <Name>` (e.g., `targeted:Visual:CDD Web Dashboard`).
+    - Mixed targets: comma-separated (e.g., `targeted:Web Dashboard Auto-Refresh,Visual:CDD Web Dashboard`).
+    - Critic MUST validate names and emit WARNING for unresolvable targets.
+- **Changes:**
+    - `features/policy_critic.md`: Added naming contract subsection in Section 2.8; updated scope types table example.
+    - `features/cdd_status_monitor.md`: Fixed "Change Scope in API Response" scenario to use a valid scenario name (`Web Dashboard Auto-Refresh`) instead of the invalid `Web Dashboard Display`.
+- **Delegation:** Builder must re-issue status commits for `cdd_status_monitor` and `software_map_generator` with corrected scope values. Builder must also implement Critic validation of `targeted:` scope names against feature spec items.
+
 ## [2026-02-21] Implementation Notes Companion Files: Extract to Reduce Feature File Size
 
 - **Scope:** New feature spec + tool changes + instruction updates + migration of 7 existing feature files.
