@@ -975,6 +975,19 @@ def generate_action_items(feature_result, cdd_status=None):
                 'description': f'Fix bug in {feature_name}: {entry["heading"]}',
             })
 
+    # Cross-validation warnings (invalid targeted scope names) -> MEDIUM Builder
+    regression_scope_b = feature_result.get('regression_scope', {})
+    cv_warnings = regression_scope_b.get('cross_validation_warnings', [])
+    for warning in cv_warnings:
+        builder_items.append({
+            'priority': 'MEDIUM',
+            'category': 'scope_validation',
+            'feature': feature_name,
+            'description': (
+                f'Fix scope declaration for {feature_name}: {warning}'
+            ),
+        })
+
     # NOTE: SPEC_UPDATED discoveries do NOT generate Builder action items.
     # Builder signaling comes from the feature lifecycle: spec edits reset
     # the feature to TODO, giving the Builder a lifecycle-based TODO item.

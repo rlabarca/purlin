@@ -3356,6 +3356,58 @@ class TestRegressionScopeCrossValidationWarning(unittest.TestCase):
         self.assertIn('tools/cdd/server.py', warning)
 
 
+class TestBuilderActionItemsFromInvalidTargetedScopeNames(unittest.TestCase):
+    """Scenario: Builder Action Items from Invalid Targeted Scope Names
+
+    When a targeted scope references a scenario name that doesn't exist
+    in the feature spec, a MEDIUM Builder action item with category
+    scope_validation is generated.
+    """
+
+    def test_invalid_scope_name_generates_builder_action_item(self):
+        result = _make_base_result()
+        result['regression_scope'] = {
+            'declared': 'targeted:Nonexistent Scenario',
+            'scenarios': [],
+            'visual_items': 0,
+            'cross_validation_warnings': [
+                "Targeted scope name 'Nonexistent Scenario' does not match "
+                "any #### Scenario: title in the feature spec"
+            ],
+        }
+        items = generate_action_items(result, cdd_status=None)
+        scope_items = [
+            i for i in items['builder'] if i['category'] == 'scope_validation'
+        ]
+        self.assertEqual(len(scope_items), 1)
+        self.assertEqual(scope_items[0]['priority'], 'MEDIUM')
+        self.assertIn('Nonexistent Scenario', scope_items[0]['description'])
+        self.assertIn('Fix scope declaration', scope_items[0]['description'])
+
+    def test_no_warnings_no_scope_validation_items(self):
+        result = _make_base_result()
+        result['regression_scope'] = {
+            'declared': 'targeted:Valid Scenario',
+            'scenarios': ['Valid Scenario'],
+            'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        items = generate_action_items(result, cdd_status=None)
+        scope_items = [
+            i for i in items['builder'] if i['category'] == 'scope_validation'
+        ]
+        self.assertEqual(len(scope_items), 0)
+
+    def test_no_regression_scope_key_no_scope_validation_items(self):
+        result = _make_base_result()
+        # No regression_scope key at all (default case)
+        items = generate_action_items(result, cdd_status=None)
+        scope_items = [
+            i for i in items['builder'] if i['category'] == 'scope_validation'
+        ]
+        self.assertEqual(len(scope_items), 0)
+
+
 # ===================================================================
 # Visual Specification Tests (Section 2.13)
 # ===================================================================
