@@ -127,7 +127,7 @@ In a submodule setup, the project tree contains two `features/` directories and 
 ## 7. User Testing Protocol
 
 ### 7.1 Discovery Section Convention
-Feature files MAY contain a `## User Testing Discoveries` section as the last section before the end of the file. This section is a **live queue** of open verification findings owned exclusively by the QA Agent.
+Feature files MAY contain a `## User Testing Discoveries` section as the last section before the end of the file. This section is a **live queue** of open verification findings. **Any agent** (Architect, Builder, or QA) MAY record a new OPEN discovery when they encounter a bug or unexpected behavior during their work. The QA Agent owns the **lifecycle management** of the section: verification, resolution confirmation, and pruning of RESOLVED entries.
 
 ### 7.2 Discovery Types
 *   **[BUG]** -- Behavior contradicts an existing scenario.
@@ -138,7 +138,7 @@ Feature files MAY contain a `## User Testing Discoveries` section as the last se
 ### 7.3 Discovery Lifecycle
 Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
-*   **OPEN:** QA records the finding.
+*   **OPEN:** Any agent records the finding.
 *   **SPEC_UPDATED:** Architect updates Gherkin scenarios to address it.
 *   **RESOLVED:** Builder re-implements, QA re-verifies and confirms fix.
 *   **PRUNED:** QA removes entry from Discoveries, adds one-liner to Implementation Notes. Git history preserves full record.
@@ -150,7 +150,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
 ### 7.5 Feedback Routing
 
-**QA-to-Architect/Builder (from User Testing Discoveries):**
+**From User Testing Discoveries (any agent may record, routed by type):**
 *   **BUG** -> Builder must fix implementation.
 *   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.

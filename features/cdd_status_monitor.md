@@ -380,7 +380,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **[CLARIFICATION]** Title font-size kept at 14px (CDD) / 14px (Software Map) despite design spec guideline of 32-40px. The compact monitoring dashboard layout requires a smaller title. The weight (200), letter-spacing (0.12em), text-transform (uppercase), and font-family (var(--font-display)) match the spec. (Severity: INFO)
 *   **[CLARIFICATION]** h3 sub-labels kept at 11px (CDD) rather than the 14px section header guideline. These "Active"/"Complete" dividers function as captions/sub-labels (design spec: 10px), not full section headers. (Severity: INFO)
 *   **Header right-group order fix (2026-02-21):** BUG resolved — DOM order in `.hdr-right` was [toggle][critic][timestamp], rendering visually reversed from spec Section 2.9. Fixed to [timestamp][critic-err][critic][toggle] so left-to-right reads: timestamp, Run Critic button, theme toggle (rightmost). Added inline monospace font-family to timestamp `<span>` for explicit width stability.
-*   **[BUG] Discovery-aware lifecycle false match (2026-02-21):** The `strip_discoveries()` function in `serve.py` uses `text.find('## User Testing Discoveries')` to locate the section boundary, but this matches the first occurrence of the literal string -- which in this feature file appears inside a backtick-quoted reference in Section 2.1 (char 866), not the actual section header (char 34638). This causes the lifecycle comparison to truncate at the wrong position, making spec edits invisible and preventing lifecycle reset to TODO. The Builder MUST fix `strip_discoveries()` to match only a line-start section header (e.g., regex `^## User Testing Discoveries` with `re.MULTILINE`) rather than a naive substring search.
+*   **Discovery-aware lifecycle false match (2026-02-21):** See `[BUG] strip_discoveries false match` in User Testing Discoveries below. The `strip_discoveries()` function in `serve.py` uses `text.find()` which matches a backtick-quoted reference in Section 2.1 before the actual section header. Builder must fix with a regex line-start match.
 
 ## Visual Specification
 
@@ -404,3 +404,11 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Only feature status data updates; table headers and section headings remain stable
 
 ## User Testing Discoveries
+
+### [BUG] strip_discoveries false match on backtick-quoted section header
+- **Status:** OPEN
+- **Found by:** Architect (during spec editing -- lifecycle did not reset to TODO after spec change)
+- **Description:** The `strip_discoveries()` function in `serve.py` uses `text.find('## User Testing Discoveries')` to locate the section boundary for the discovery-aware lifecycle comparison. This matches the first occurrence of the literal string in the file -- which in this feature file appears inside a backtick-quoted reference in Section 2.1 (char 866), not the actual section header (char 34638). The lifecycle comparison truncates at the wrong position, making all spec edits above char 866 invisible and preventing lifecycle reset to TODO.
+- **Expected:** Spec edits to Section 2.9 (Header Layout) and Visual Specification should reset the feature lifecycle from COMPLETE to TODO.
+- **Actual:** Feature remains in COMPLETE lifecycle, Builder role_status stays DONE, hiding the work.
+- **Fix:** Replace `text.find('## User Testing Discoveries')` with a regex line-start match (e.g., `re.search(r'^## User Testing Discoveries', text, re.MULTILINE)`) in `serve.py`.

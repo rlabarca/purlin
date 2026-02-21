@@ -37,7 +37,7 @@ The Builder MUST classify every non-trivial implementation decision using struct
 **Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
 
 ### 2.4 User Testing Feedback Loop
-The QA Agent records findings during manual verification using three discovery types:
+Any agent may record findings in the `## User Testing Discoveries` section when they encounter bugs or unexpected behavior. The QA Agent owns lifecycle management (verification, resolution, pruning). Discovery types:
 
 | Type | Meaning |
 |------|---------|

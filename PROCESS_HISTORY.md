@@ -2,6 +2,21 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Universal Discovery Recording: Any Agent May Report Bugs
+
+- **Scope:** Process change to User Testing Protocol -- any agent can now record OPEN discoveries.
+- **Problem:** The User Testing Discoveries section had "exclusive write access" for the QA Agent. When the Architect or Builder discovered a bug during their work, they had no way to record it in the structured format that the Critic recognizes. This meant the CDD dashboard could not reflect known bugs unless QA happened to find them during a verification pass.
+- **Solution:** Changed ownership model from "QA-exclusive" to "any agent records, QA manages lifecycle":
+    - Any agent (Architect, Builder, QA) MAY record a new OPEN discovery when they encounter a bug or unexpected behavior.
+    - The QA Agent retains ownership of lifecycle management: verification, resolution confirmation, and pruning of RESOLVED entries.
+    - Discovery entries now include a `Found by:` field identifying the recording agent.
+- **Changes:**
+    - **HOW_WE_WORK_BASE.md Section 7.1:** Changed "owned exclusively by the QA Agent" to "any agent may record, QA owns lifecycle management."
+    - **HOW_WE_WORK_BASE.md Section 7.3:** Changed "QA records the finding" to "Any agent records the finding."
+    - **HOW_WE_WORK_BASE.md Section 7.5:** Changed routing header from "QA-to-Architect/Builder" to role-agnostic "From User Testing Discoveries."
+    - **policy_critic.md Section 2.4:** Broadened "QA Agent records findings" to "any agent may record findings."
+- **Impact:** Process change only. No tool code changes required -- the Critic already parses discoveries by type/status regardless of who wrote them. QA_BASE.md requires no changes (QA still writes discoveries during verification; this change adds capability to other roles without removing QA's).
+
 ## [2026-02-21] Screenshot-Assisted Visual Verification for QA Agent
 
 - **Scope:** QA workflow enhancement -- QA agent can now analyze user-provided screenshots to auto-verify visual checklist items.
