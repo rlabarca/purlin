@@ -41,6 +41,7 @@ PROJECT_NAME = CONFIG.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 FEATURES_REL = "features"
 FEATURES_ABS = os.path.join(PROJECT_ROOT, "features")
+FEATURES_DIR = FEATURES_ABS  # alias used by /feature endpoint
 TESTS_DIR = os.path.join(PROJECT_ROOT, "tests")
 
 COMPLETE_CAP = 10
@@ -453,7 +454,9 @@ def _is_feature_complete(entry):
 
 
 def generate_html():
-    """Generates the full dashboard HTML with role-based columns."""
+    """Generates the full dashboard HTML with role-based columns,
+    view toggle (Status/SW Map), search, collapsible sections,
+    feature detail modal, and Cytoscape.js graph view."""
     git_status = get_git_status()
     last_commit = get_last_commit()
 
@@ -490,206 +493,846 @@ def generate_html():
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
+    # Count badges for collapsed summary
+    active_count = len(active_features)
+    complete_count = len(complete_features)
+
+    # Compute summary badges for collapsed sections
+    def _section_summary_badges(features_list):
+        counts = {}
+        for e in features_list:
+            for role in ('architect', 'builder', 'qa'):
+                val = e.get(role)
+                if val:
+                    counts[val] = counts.get(val, 0) + 1
+        if not counts:
+            counts['??'] = len(features_list)
+        return counts
+
+    active_badges = _section_summary_badges(active_features)
+    complete_badges = _section_summary_badges(complete_features)
+
+    def _badge_summary_html(counts):
+        parts = []
+        for status, count in sorted(counts.items()):
+            css = ROLE_BADGE_CSS.get(status, "st-na")
+            parts.append(f'<span class="{css}">{count} {status}</span>')
+        return ' '.join(parts)
+
+    active_summary = _badge_summary_html(active_badges)
+    complete_summary = _badge_summary_html(complete_badges)
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Purlin CDD Monitor</title>
-<script>(function(){{var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@200;800;900&display=swap" rel="stylesheet">
+<title>Purlin CDD Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.6/marked.min.js"></script>
 <style>
-:root{{
-  --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
-  --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
-  --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
-  --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
-  --purlin-dim:#8B9DB0;
-  --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
-  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
-}}
-[data-theme='light']{{
-  --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
-  --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
-  --purlin-status-good:#059669;--purlin-status-todo:#D97706;
-  --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
-  --purlin-dim:#94A3B8;
-  --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
-  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
-}}
 *{{box-sizing:border-box;margin:0;padding:0}}
+html,body{{height:100%;overflow:hidden}}
 body{{
-  background:var(--purlin-bg);color:var(--purlin-muted);
-  font-family:var(--font-body);font-size:12px;padding:8px 12px;
+  background:var(--purlin-bg,#14191F);color:var(--purlin-text,#B0B0B0);
+  font-family:'Menlo','Monaco','Consolas',monospace;
+  font-size:12px;display:flex;flex-direction:column;
 }}
-.hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
-.hdr-left{{display:flex;align-items:center;gap:8px}}
-.hdr-title-block{{display:flex;flex-direction:column}}
-.project-name{{font-family:var(--font-body);font-weight:500;font-size:14px;color:var(--purlin-primary);line-height:1.2}}
-.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:200;letter-spacing:0.12em;text-transform:uppercase;color:var(--purlin-primary)}}
+.hdr{{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 12px;background:var(--purlin-surface,#1A2028);
+  border-bottom:1px solid var(--purlin-border,#2A2F36);flex-shrink:0;
+}}
+.hdr-left{{display:flex;align-items:center;gap:10px}}
+.hdr h1{{font-size:14px;color:var(--purlin-heading,#FFF);font-weight:600;white-space:nowrap}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
-.logo-svg{{height:24px;width:auto}}
-.logo-fill{{fill:var(--purlin-primary)}}
-.logo-accent{{stroke:var(--purlin-primary)}}
-.logo-sketch{{stroke:var(--purlin-muted)}}
-.btn-theme{{
-  background:none;border:none;cursor:pointer;padding:2px;
-  color:var(--purlin-muted);display:flex;align-items:center;
+.view-toggle{{display:flex;gap:2px}}
+.view-btn{{
+  background:var(--purlin-btn-bg,#2A2F36);color:var(--purlin-text,#B0B0B0);
+  border:1px solid var(--purlin-border,#3A3F46);
+  border-radius:3px;padding:2px 10px;font-family:inherit;font-size:11px;
+  cursor:pointer;line-height:1.5;
 }}
-.btn-theme:hover{{color:var(--purlin-primary)}}
-.btn-theme svg{{width:16px;height:16px}}
-#icon-moon{{display:none}}
-[data-theme='light'] #icon-sun{{display:none}}
-[data-theme='light'] #icon-moon{{display:block}}
+.view-btn:hover{{background:var(--purlin-btn-hover,#3A3F46);color:var(--purlin-heading,#FFF)}}
+.view-btn.active{{
+  background:var(--purlin-accent,#0288d1);color:#FFF;
+  border-color:var(--purlin-accent,#0288d1);
+}}
 .btn-critic{{
-  background:var(--purlin-tag-fill);color:var(--purlin-muted);
-  border:1px solid var(--purlin-tag-outline);
+  background:var(--purlin-btn-bg,#2A2F36);color:var(--purlin-text,#B0B0B0);
+  border:1px solid var(--purlin-border,#3A3F46);
   border-radius:3px;padding:2px 8px;font-family:inherit;font-size:11px;
   cursor:pointer;line-height:1.5;
 }}
-.btn-critic:hover{{background:var(--purlin-tag-outline);color:var(--purlin-primary)}}
+.btn-critic:hover{{background:var(--purlin-btn-hover,#3A3F46);color:var(--purlin-heading,#FFF)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
-.btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.dim{{color:var(--purlin-muted);font-size:0.9em;opacity:.7}}
-h2{{font-family:var(--font-body);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px}}
-h3{{font-family:var(--font-body);font-size:11px;color:var(--purlin-muted);margin:8px 0 2px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;border-bottom:1px solid var(--purlin-border);padding-bottom:3px}}
-.features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
+.btn-critic-err{{color:#FF4500;font-size:10px;margin-right:4px}}
+#search-input{{
+  background:var(--purlin-bg,#14191F);border:1px solid var(--purlin-border,#2A2F36);
+  border-radius:3px;color:var(--purlin-text,#B0B0B0);padding:3px 8px;
+  font-size:11px;width:180px;font-family:inherit;outline:none;
+}}
+#search-input:focus{{border-color:var(--purlin-accent,#0288d1)}}
+#search-input::placeholder{{color:var(--purlin-dim,#555)}}
+.dim{{color:var(--purlin-dim,#666);font-size:0.9em}}
+.content-area{{flex:1;overflow:hidden;display:flex;flex-direction:column}}
+.view-panel{{display:none;flex:1;overflow:hidden;flex-direction:column}}
+.view-panel.active{{display:flex}}
+#status-view{{overflow-y:auto;padding:8px 12px}}
+#map-view{{flex:1;position:relative}}
+#cy{{width:100%;height:100%;background:var(--purlin-bg,#14191F)}}
+h2{{font-size:13px;color:var(--purlin-heading,#FFF);margin-bottom:6px;border-bottom:1px solid var(--purlin-border,#2A2F36);padding-bottom:4px}}
+.section-hdr{{
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  padding:4px 0;user-select:none;
+}}
+.section-hdr h3{{
+  font-size:11px;color:var(--purlin-dim,#888);margin:0;
+  text-transform:uppercase;letter-spacing:.5px;flex:1;
+  border-bottom:1px solid var(--purlin-border,#2A2F36);padding-bottom:3px;
+}}
+.chevron{{
+  font-size:10px;color:var(--purlin-dim,#888);transition:transform 0.15s;
+  display:inline-block;width:12px;text-align:center;flex-shrink:0;
+}}
+.chevron.expanded{{transform:rotate(90deg)}}
+.section-badge{{font-size:10px;margin-left:4px;flex-shrink:0}}
+.section-body{{overflow:hidden;transition:max-height 0.2s ease}}
+.section-body.collapsed{{max-height:0 !important;overflow:hidden}}
+.features{{background:var(--purlin-surface,#1A2028);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
-.ft th{{text-align:left;color:var(--purlin-muted);font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
-.ft td{{padding:2px 6px;line-height:1.5;font-family:'Menlo','Monaco','Consolas',monospace;font-size:12px}}
-.ft tr:hover{{background:var(--purlin-tag-fill)}}
+.ft th{{text-align:left;color:var(--purlin-dim,#888);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid var(--purlin-border,#2A2F36)}}
+.ft td{{padding:2px 6px;line-height:1.5}}
+.ft tr:hover{{background:var(--purlin-row-hover,#1E2630)}}
 .badge-cell{{text-align:center;width:70px}}
-.ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
-.clean{{color:var(--purlin-status-good)}}
-.wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
-pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px;font-family:'Menlo','Monaco','Consolas',monospace}}
-.st-done{{color:var(--purlin-status-good);font-weight:bold}}
-.st-todo{{color:var(--purlin-status-todo);font-weight:bold}}
-.st-fail{{color:var(--purlin-status-error);font-weight:bold}}
-.st-blocked{{color:var(--purlin-muted);font-weight:bold}}
-.st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
-.st-na{{color:var(--purlin-dim);font-weight:bold}}
+.feature-link{{color:var(--purlin-accent,#4FC3F7);cursor:pointer;text-decoration:none}}
+.feature-link:hover{{text-decoration:underline}}
+.ctx{{background:var(--purlin-surface,#1A2028);border-radius:4px;padding:8px 10px}}
+.clean{{color:#32CD32}}
+.wip{{color:#FFD700;margin-bottom:2px}}
+pre{{background:var(--purlin-bg,#14191F);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
+.st-done{{color:#32CD32;font-weight:bold}}
+.st-todo{{color:#FFD700;font-weight:bold}}
+.st-fail{{color:#FF4500;font-weight:bold}}
+.st-blocked{{color:#888;font-weight:bold}}
+.st-disputed{{color:#FFA500;font-weight:bold}}
+.st-na{{color:#444;font-weight:bold}}
+/* Feature Detail Modal */
+.modal-overlay{{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.7);z-index:1000;
+  justify-content:center;align-items:center;
+}}
+.modal-overlay.visible{{display:flex}}
+.modal-content{{
+  background:var(--purlin-surface,#1A2028);border:1px solid var(--purlin-border,#2A2F36);
+  border-radius:6px;width:700px;max-width:90vw;
+  max-height:80vh;display:flex;flex-direction:column;
+  position:relative;
+}}
+.modal-header{{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;border-bottom:1px solid var(--purlin-border,#2A2F36);flex-shrink:0;
+}}
+.modal-header h2{{font-size:13px;color:var(--purlin-heading,#FFF);margin:0;border:0;padding:0}}
+.modal-close{{
+  background:none;border:1px solid #444;color:#888;
+  cursor:pointer;font-size:14px;width:24px;height:24px;
+  border-radius:3px;display:flex;align-items:center;
+  justify-content:center;line-height:1;
+}}
+.modal-close:hover{{background:#333;color:#FFF;border-color:#666}}
+.modal-tabs{{
+  display:flex;gap:0;border-bottom:1px solid var(--purlin-border,#2A2F36);
+  padding:0 14px;flex-shrink:0;
+}}
+.modal-tab{{
+  padding:6px 12px;font-size:11px;color:var(--purlin-dim,#888);
+  cursor:pointer;border-bottom:2px solid transparent;
+  font-family:inherit;background:none;border-top:0;border-left:0;border-right:0;
+}}
+.modal-tab:hover{{color:var(--purlin-heading,#FFF)}}
+.modal-tab.active{{color:var(--purlin-accent,#4FC3F7);border-bottom-color:var(--purlin-accent,#0288d1)}}
+.modal-body{{
+  padding:14px;overflow-y:auto;flex:1;
+  line-height:1.6;color:#CCC;
+}}
+.modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-heading,#FFF);margin:12px 0 6px}}
+.modal-body h1{{font-size:16px}}
+.modal-body h2{{font-size:14px;border:0;padding:0}}
+.modal-body h3{{font-size:12px}}
+.modal-body p{{margin:6px 0}}
+.modal-body ul,.modal-body ol{{margin:6px 0 6px 20px}}
+.modal-body li{{margin:2px 0}}
+.modal-body code{{
+  background:var(--purlin-bg,#14191F);padding:1px 4px;border-radius:2px;
+  font-size:11px;color:#4FC3F7;
+}}
+.modal-body pre{{background:var(--purlin-bg,#14191F);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
+.modal-body pre code{{padding:0;background:none}}
+.modal-body blockquote{{border-left:3px solid var(--purlin-accent,#0288d1);padding-left:10px;color:#888;margin:6px 0}}
 </style>
 </head>
 <body>
 <div class="hdr">
   <div class="hdr-left">
-    <svg class="logo-svg" viewBox="140 100 720 360" xmlns="http://www.w3.org/2000/svg">
-      <g class="logo-sketch" stroke-width="2" fill="none" opacity="0.5">
-        <line x1="500" y1="120" x2="500" y2="390" stroke-dasharray="8,8"/>
-        <line x1="500" y1="145" x2="170" y2="409"/>
-        <line x1="500" y1="145" x2="830" y2="409"/>
-        <line x1="400" y1="210" x2="400" y2="255"/>
-        <line x1="600" y1="210" x2="600" y2="255"/>
-      </g>
-      <polyline points="400,280 500,390 600,280" fill="none" class="logo-accent" stroke-width="14" stroke-linejoin="miter"/>
-      <path d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd" class="logo-fill"/>
-    </svg>
-    <div class="hdr-title-block"><h1>Purlin CDD Monitor</h1><span class="project-name">{PROJECT_NAME}</span></div>
+    <h1>Purlin CDD Dashboard</h1>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-status" onclick="switchView('status')">Status</button>
+      <button class="view-btn" id="btn-map" onclick="switchView('map')">SW Map</button>
+    </div>
   </div>
   <div class="hdr-right">
-    <span class="dim" id="timestamp" style="font-family:'Menlo','Monaco','Consolas',monospace">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+    <input type="text" id="search-input" placeholder="Filter..." />
     <span id="critic-err" class="btn-critic-err"></span>
     <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
-    <button id="btn-theme" class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
-      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
+    <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
   </div>
 </div>
-<div class="ctx">
-  <h2>Workspace</h2>
-  <div id="workspace-content">{git_html}<p class="dim" style="margin-top:4px">{last_commit}</p></div>
+<div class="content-area">
+  <!-- Status View -->
+  <div class="view-panel active" id="status-view">
+    <div class="features">
+      <div class="section-hdr" onclick="toggleSection('active-section')">
+        <span class="chevron expanded" id="active-section-chevron">&#9654;</span>
+        <h3>Active ({active_count})</h3>
+        <span class="section-badge" id="active-section-badge" style="display:none">{active_summary}</span>
+      </div>
+      <div class="section-body" id="active-section">
+        {active_html or '<p class="dim">No active features.</p>'}
+      </div>
+      <div class="section-hdr" onclick="toggleSection('complete-section')">
+        <span class="chevron" id="complete-section-chevron">&#9654;</span>
+        <h3>Complete ({complete_count})</h3>
+        <span class="section-badge" id="complete-section-badge">{complete_summary}</span>
+      </div>
+      <div class="section-body collapsed" id="complete-section">
+        {complete_html or '<p class="dim">None complete.</p>'}
+        {overflow_html}
+      </div>
+    </div>
+    <div class="ctx">
+      <div class="section-hdr" onclick="toggleSection('workspace-section')">
+        <span class="chevron expanded" id="workspace-section-chevron">&#9654;</span>
+        <h3>Workspace</h3>
+        <span class="section-badge" id="workspace-section-badge" style="display:none"></span>
+      </div>
+      <div class="section-body" id="workspace-section">
+        {git_html}
+        <p class="dim" style="margin-top:4px">{last_commit}</p>
+      </div>
+    </div>
+  </div>
+  <!-- SW Map View -->
+  <div class="view-panel" id="map-view">
+    <div id="cy"></div>
+  </div>
 </div>
-<div class="features">
-    <h3>Active</h3>
-    <div id="active-content">{active_html or '<p class="dim">No active features.</p>'}</div>
-    <h3>Complete</h3>
-    <div id="complete-content">{complete_html or '<p class="dim">None complete.</p>'}
-    {overflow_html}</div>
+
+<!-- Feature Detail Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title">Feature</h2>
+      <button class="modal-close" id="modal-close" title="Close">X</button>
+    </div>
+    <div class="modal-tabs" id="modal-tabs" style="display:none">
+      <button class="modal-tab active" data-tab="spec" onclick="switchModalTab('spec')">Specification</button>
+      <button class="modal-tab" data-tab="impl" onclick="switchModalTab('impl')">Implementation Notes</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
 </div>
+
 <script>
-function toggleTheme(){{
-  var html=document.documentElement;
-  var current=html.getAttribute('data-theme');
-  if(current==='light'){{html.removeAttribute('data-theme');localStorage.setItem('purlin-theme','dark');}}
-  else{{html.setAttribute('data-theme','light');localStorage.setItem('purlin-theme','light');}}
+// ============================
+// State
+// ============================
+var currentView = 'status';
+var cy = null;
+var graphData = null;
+var isInitialLoad = true;
+var mapRefreshTimer = null;
+var statusRefreshTimer = null;
+var modalCache = {{}};
+
+// ============================
+// View Toggle + Hash Routing
+// ============================
+function switchView(view) {{
+  currentView = view;
+  document.getElementById('status-view').classList.toggle('active', view === 'status');
+  document.getElementById('map-view').classList.toggle('active', view === 'map');
+  document.getElementById('btn-status').classList.toggle('active', view === 'status');
+  document.getElementById('btn-map').classList.toggle('active', view === 'map');
+  window.location.hash = '#' + view;
+
+  if (view === 'map') {{
+    startMapRefresh();
+    if (!graphData) loadGraph();
+    else if (cy) cy.resize();
+  }} else {{
+    stopMapRefresh();
+  }}
+
+  applySearchFilter();
 }}
-var BADGE_CSS={{'DONE':'st-done','CLEAN':'st-done','TODO':'st-todo','FAIL':'st-fail','INFEASIBLE':'st-fail','BLOCKED':'st-blocked','DISPUTED':'st-disputed','N/A':'st-na'}};
-var URGENCY={{'FAIL':0,'INFEASIBLE':0,'TODO':1,'DISPUTED':1,'BLOCKED':2,'DONE':3,'CLEAN':3,'N/A':3}};
-function roleBadge(s){{if(s==null)return'<span class="st-na">??</span>';var c=BADGE_CSS[s]||'st-na';return'<span class="'+c+'">'+s+'</span>';}}
-function isComplete(e){{var a=e.architect,b=e.builder,q=e.qa;if(a==null&&b==null&&q==null)return false;return(a==='DONE'||a==null)&&(b==='DONE'||b==null)&&(q==='CLEAN'||q==='N/A'||q==null);}}
-function getUrgency(e){{var s=[];['architect','builder','qa'].forEach(function(r){{var v=e[r];if(v!=null)s.push(URGENCY[v]!=null?URGENCY[v]:3);}});return s.length?Math.min.apply(null,s):3;}}
-function buildTable(features){{
-  if(!features.length)return'';
-  var rows='';
-  features.forEach(function(e){{
-    rows+='<tr><td>'+e.file+'</td><td class="badge-cell">'+roleBadge(e.architect)+'</td><td class="badge-cell">'+roleBadge(e.builder)+'</td><td class="badge-cell">'+roleBadge(e.qa)+'</td></tr>';
-  }});
-  return'<table class="ft"><thead><tr><th>Feature</th><th>Architect</th><th>Builder</th><th>QA</th></tr></thead><tbody>'+rows+'</tbody></table>';
+
+function initFromHash() {{
+  var hash = window.location.hash.replace('#', '');
+  if (hash === 'map') switchView('map');
+  else switchView('status');
 }}
-function refreshWorkspace(){{
-  fetch('/workspace.json').then(function(r){{return r.json();}}).then(function(w){{
-    var el=document.getElementById('workspace-content');
-    if(!el)return;
-    var h='';
-    if(w.clean){{h='<p class="clean">Clean State <span class="dim">(Ready for next task)</span></p>';}}
-    else{{h='<p class="wip">Work in Progress:</p><pre>'+w.files.join('\\n')+'</pre>';}}
-    if(w.last_commit)h+='<p class="dim" style="margin-top:4px">'+w.last_commit+'</p>';
-    el.innerHTML=h;
-  }}).catch(function(){{}});
-}}
-function refreshData(){{
-  fetch('/status.json').then(function(r){{return r.json();}}).then(function(data){{
-    var active=[],complete=[];
-    data.features.forEach(function(e){{if(isComplete(e))complete.push(e);else active.push(e);}});
-    active.sort(function(a,b){{var ua=getUrgency(a),ub=getUrgency(b);if(ua!==ub)return ua-ub;return a.file<b.file?-1:a.file>b.file?1:0;}});
-    var CAP={COMPLETE_CAP},visible=complete.slice(0,CAP),overflow=complete.length-CAP;
-    var ae=document.getElementById('active-content');
-    var ce=document.getElementById('complete-content');
-    ae.innerHTML=active.length?buildTable(active):'<p class="dim">No active features.</p>';
-    var ch=visible.length?buildTable(visible):'<p class="dim">None complete.</p>';
-    if(overflow>0)ch+='<p class="dim">and '+overflow+' more&hellip;</p>';
-    ce.innerHTML=ch;
-    var ts=document.getElementById('timestamp');
-    if(ts){{var d=new Date();ts.textContent=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');}}
-  }}).catch(function(){{}});
-  refreshWorkspace();
-}}
-setInterval(refreshData,5000);
-function runCritic(){{
-  var btn=document.getElementById('btn-critic');
-  var err=document.getElementById('critic-err');
-  btn.disabled=true;btn.textContent='Running\u2026';err.textContent='';
-  fetch('/run-critic',{{method:'POST'}})
-    .then(function(r){{return r.json();}})
-    .then(function(d){{
-      btn.disabled=false;btn.textContent='Run Critic';
-      if(d.status==='ok'){{refreshData();}}
-      else{{err.textContent='Critic run failed';}}
+
+window.addEventListener('hashchange', function() {{
+  var hash = window.location.hash.replace('#', '');
+  if (hash === 'map' && currentView !== 'map') switchView('map');
+  else if (hash !== 'map' && currentView !== 'status') switchView('status');
+}});
+
+// ============================
+// Status View Auto-Refresh
+// ============================
+function refreshStatus() {{
+  fetch('/?_t=' + Date.now())
+    .then(function(r) {{ return r.text(); }})
+    .then(function(html) {{
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+      var newStatusView = doc.getElementById('status-view');
+      if (newStatusView) {{
+        var current = document.getElementById('status-view');
+        // Preserve collapsed state
+        var collapsedSections = [];
+        current.querySelectorAll('.section-body.collapsed').forEach(function(el) {{
+          collapsedSections.push(el.id);
+        }});
+        current.innerHTML = newStatusView.innerHTML;
+        // Restore collapsed state
+        collapsedSections.forEach(function(id) {{
+          var el = document.getElementById(id);
+          if (el) {{
+            el.classList.add('collapsed');
+            var chevron = document.getElementById(id + '-chevron');
+            if (chevron) chevron.classList.remove('expanded');
+            var badge = document.getElementById(id + '-badge');
+            if (badge) badge.style.display = '';
+          }}
+        }});
+        // Re-apply search filter
+        applySearchFilter();
+      }}
     }})
-    .catch(function(){{err.textContent='Critic run failed';btn.disabled=false;btn.textContent='Run Critic';}});
+    .catch(function() {{}});
 }}
+
+statusRefreshTimer = setInterval(refreshStatus, 5000);
+
+// ============================
+// Collapsible Sections
+// ============================
+function toggleSection(sectionId) {{
+  var body = document.getElementById(sectionId);
+  var chevron = document.getElementById(sectionId + '-chevron');
+  var badge = document.getElementById(sectionId + '-badge');
+  if (!body) return;
+  var isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {{
+    body.classList.remove('collapsed');
+    if (chevron) chevron.classList.add('expanded');
+    if (badge) badge.style.display = 'none';
+  }} else {{
+    body.classList.add('collapsed');
+    if (chevron) chevron.classList.remove('expanded');
+    if (badge) badge.style.display = '';
+  }}
+}}
+
+// ============================
+// Run Critic
+// ============================
+function runCritic() {{
+  var btn = document.getElementById('btn-critic');
+  var err = document.getElementById('critic-err');
+  btn.disabled = true; btn.textContent = 'Running\u2026'; err.textContent = '';
+  fetch('/run-critic', {{method: 'POST'}})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      if (d.status === 'ok') {{ refreshStatus(); btn.disabled = false; btn.textContent = 'Run Critic'; }}
+      else {{ err.textContent = 'Critic run failed'; btn.disabled = false; btn.textContent = 'Run Critic'; }}
+    }})
+    .catch(function() {{ err.textContent = 'Critic run failed'; btn.disabled = false; btn.textContent = 'Run Critic'; }});
+}}
+
+// ============================
+// Search/Filter
+// ============================
+document.getElementById('search-input').addEventListener('input', function() {{
+  applySearchFilter();
+}});
+
+function applySearchFilter() {{
+  var query = document.getElementById('search-input').value.trim().toLowerCase();
+
+  // Status view: filter table rows
+  if (currentView === 'status') {{
+    var rows = document.querySelectorAll('#status-view .ft tbody tr');
+    rows.forEach(function(row) {{
+      var text = row.textContent.toLowerCase();
+      row.style.display = (!query || text.includes(query)) ? '' : 'none';
+    }});
+  }}
+
+  // SW Map view: filter graph nodes
+  if (currentView === 'map' && cy) {{
+    if (!query) {{
+      cy.elements().removeClass('search-hidden');
+      return;
+    }}
+    cy.nodes().forEach(function(node) {{
+      var name = (node.data('friendlyName') || node.data('label') || '').toLowerCase();
+      var file = (node.data('file') || '').toLowerCase();
+      var filename = (node.data('filename') || '').toLowerCase();
+      if (name.includes(query) || file.includes(query) || filename.includes(query)) {{
+        node.removeClass('search-hidden');
+      }} else {{
+        node.addClass('search-hidden');
+      }}
+    }});
+    cy.edges().forEach(function(edge) {{
+      var src = edge.source();
+      var tgt = edge.target();
+      if (src.hasClass('search-hidden') && tgt.hasClass('search-hidden')) {{
+        edge.addClass('search-hidden');
+      }} else {{
+        edge.removeClass('search-hidden');
+      }}
+    }});
+  }}
+}}
+
+// ============================
+// Feature Detail Modal
+// ============================
+function openModal(filePath, label) {{
+  var overlay = document.getElementById('modal-overlay');
+  var title = document.getElementById('modal-title');
+  var body = document.getElementById('modal-body');
+  var tabs = document.getElementById('modal-tabs');
+
+  title.textContent = label || filePath;
+  body.innerHTML = '<p style="color:#666">Loading...</p>';
+  overlay.classList.add('visible');
+
+  // Reset tab state
+  var currentModal = {{ file: filePath, specContent: null, implContent: null, hasImpl: false }};
+  window._currentModal = currentModal;
+
+  // Check if impl.md exists (derive path: features/foo.md -> features/foo.impl.md)
+  var implPath = filePath.replace(/\\.md$/, '.impl.md');
+
+  // Load spec
+  var specPromise = modalCache[filePath]
+    ? Promise.resolve(modalCache[filePath])
+    : fetch('/feature?file=' + encodeURIComponent(filePath))
+        .then(function(r) {{ if (!r.ok) throw new Error('Failed'); return r.text(); }})
+        .then(function(md) {{ modalCache[filePath] = md; return md; }});
+
+  // Try loading impl
+  var implPromise = modalCache[implPath]
+    ? Promise.resolve(modalCache[implPath])
+    : fetch('/impl-notes?file=' + encodeURIComponent(implPath))
+        .then(function(r) {{ if (!r.ok) return null; return r.text(); }})
+        .then(function(md) {{ if (md) modalCache[implPath] = md; return md; }})
+        .catch(function() {{ return null; }});
+
+  Promise.all([specPromise, implPromise]).then(function(results) {{
+    currentModal.specContent = results[0];
+    currentModal.implContent = results[1];
+    currentModal.hasImpl = !!results[1];
+
+    if (currentModal.hasImpl) {{
+      tabs.style.display = '';
+      // Reset tabs to spec
+      tabs.querySelectorAll('.modal-tab').forEach(function(t) {{
+        t.classList.toggle('active', t.getAttribute('data-tab') === 'spec');
+      }});
+    }} else {{
+      tabs.style.display = 'none';
+    }}
+
+    body.innerHTML = marked.parse(currentModal.specContent || '');
+  }}).catch(function() {{
+    body.innerHTML = '<p style="color:#FF4500">Could not load feature content.</p>';
+  }});
+}}
+
+function switchModalTab(tab) {{
+  var tabs = document.getElementById('modal-tabs');
+  var body = document.getElementById('modal-body');
+  var m = window._currentModal;
+  if (!m) return;
+
+  tabs.querySelectorAll('.modal-tab').forEach(function(t) {{
+    t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+  }});
+
+  if (tab === 'impl' && m.implContent) {{
+    body.innerHTML = marked.parse(m.implContent);
+  }} else if (m.specContent) {{
+    body.innerHTML = marked.parse(m.specContent);
+  }}
+}}
+
+function closeModal() {{
+  document.getElementById('modal-overlay').classList.remove('visible');
+}}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) closeModal();
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape') closeModal();
+}});
+
+// ============================
+// Cytoscape.js SW Map View
+// ============================
+var SVG_WIDTH = 200;
+var LABEL_FONT_SIZE = 14;
+var LABEL_LINE_HEIGHT = 18;
+var FILENAME_FONT_SIZE = 9;
+var FILENAME_LINE_HEIGHT = 14;
+var CHARS_PER_LINE = 22;
+
+var CATEGORY_COLORS = {{
+  'DevOps Tools': '#0288d1',
+  'Auth': '#7B1FA2',
+  'Core': '#2E7D32',
+  'UI': '#7B1FA2',
+  'Hardware': '#2E7D32',
+  'Release': '#E65100',
+  'Process': '#558B2F',
+}};
+var DEFAULT_NODE_COLOR = '#01579b';
+
+function wrapText(text, maxChars) {{
+  var words = text.split(/\\s+/);
+  var lines = [];
+  var currentLine = '';
+  for (var i = 0; i < words.length; i++) {{
+    var word = words[i];
+    if (!currentLine) {{
+      currentLine = word;
+    }} else if ((currentLine + ' ' + word).length <= maxChars) {{
+      currentLine += ' ' + word;
+    }} else {{
+      lines.push(currentLine);
+      currentLine = word;
+    }}
+  }}
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}}
+
+function createNodeLabelSVG(name, filename) {{
+  var esc = function(s) {{ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }};
+  var nameLines = wrapText(name, CHARS_PER_LINE);
+  var nameBlockHeight = nameLines.length * LABEL_LINE_HEIGHT;
+  var totalHeight = nameBlockHeight + FILENAME_LINE_HEIGHT + 8;
+
+  var tspans = '';
+  nameLines.forEach(function(line, i) {{
+    tspans += '<tspan x="' + (SVG_WIDTH / 2) + '" dy="' + (i === 0 ? 0 : LABEL_LINE_HEIGHT) + '">' + esc(line) + '</tspan>';
+  }});
+
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + SVG_WIDTH + '" height="' + totalHeight + '">' +
+    '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="#E8E8E8" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
+    '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="#888" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
+    '</svg>';
+  return {{ url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), height: totalHeight }};
+}}
+
+function buildCytoscapeElements(features) {{
+  var nodes = [];
+  var edges = [];
+  var fileToId = {{}};
+  var categories = new Set();
+
+  features.forEach(function(f) {{
+    var id = f.file.replace(/[^a-zA-Z0-9]/g, '_');
+    fileToId[f.file] = id;
+    var basename = f.file.split('/').pop();
+    fileToId[basename] = id;
+    categories.add(f.category);
+  }});
+
+  categories.forEach(function(cat) {{
+    var catId = 'cat_' + cat.replace(/[^a-zA-Z0-9]/g, '_');
+    nodes.push({{
+      data: {{ id: catId, label: cat, isCategory: true }}
+    }});
+  }});
+
+  features.forEach(function(f) {{
+    var id = fileToId[f.file];
+    var color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
+    var catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
+    var filename = f.file.split('/').pop();
+    var svgResult = createNodeLabelSVG(f.label, filename);
+    nodes.push({{
+      data: {{
+        id: id,
+        friendlyName: f.label,
+        filename: filename,
+        file: f.file,
+        category: f.category,
+        prerequisites: f.prerequisites || [],
+        color: color,
+        parent: catId,
+        svgLabel: svgResult.url,
+        nodeHeight: svgResult.height + 12,
+      }}
+    }});
+
+    (f.prerequisites || []).forEach(function(prereq) {{
+      var sourceId = fileToId[prereq];
+      if (sourceId) {{
+        edges.push({{
+          data: {{
+            id: 'e_' + sourceId + '_' + id,
+            source: sourceId,
+            target: id,
+          }}
+        }});
+      }}
+    }});
+  }});
+
+  return {{ nodes: nodes, edges: edges }};
+}}
+
+function createCytoscape(elements) {{
+  var instance = cytoscape({{
+    container: document.getElementById('cy'),
+    elements: elements.nodes.concat(elements.edges),
+    style: [
+      {{
+        selector: 'node[!isCategory]',
+        style: {{
+          'label': '',
+          'shape': 'round-rectangle',
+          'width': 220,
+          'height': 'data(nodeHeight)',
+          'background-color': 'data(color)',
+          'background-opacity': 0.15,
+          'background-image': 'data(svgLabel)',
+          'background-fit': 'contain',
+          'border-width': 2,
+          'border-color': 'data(color)',
+          'border-opacity': 0.6,
+        }}
+      }},
+      {{
+        selector: '$node > node',
+        style: {{
+          'label': 'data(label)',
+          'background-color': '#1A2028',
+          'background-opacity': 0.8,
+          'border-width': 1,
+          'border-color': '#2A2F36',
+          'border-style': 'dashed',
+          'color': '#666',
+          'font-size': '12px',
+          'font-weight': 'bold',
+          'text-valign': 'top',
+          'text-halign': 'center',
+          'text-margin-y': -8,
+          'padding': '24px',
+          'shape': 'round-rectangle',
+        }}
+      }},
+      {{
+        selector: 'edge',
+        style: {{
+          'width': 2,
+          'line-color': '#444',
+          'target-arrow-color': '#444',
+          'target-arrow-shape': 'triangle',
+          'curve-style': 'bezier',
+          'arrow-scale': 0.8,
+        }}
+      }},
+      {{
+        selector: 'node.highlighted',
+        style: {{
+          'border-color': '#FF7043',
+          'border-width': 3,
+          'border-opacity': 1,
+          'background-opacity': 0.3,
+          'z-index': 10,
+        }}
+      }},
+      {{
+        selector: 'node.center-hover',
+        style: {{
+          'border-color': '#4FC3F7',
+          'border-width': 3,
+          'border-opacity': 1,
+          'background-opacity': 0.35,
+          'z-index': 11,
+        }}
+      }},
+      {{
+        selector: 'edge.highlighted',
+        style: {{
+          'line-color': '#FF7043',
+          'target-arrow-color': '#FF7043',
+          'width': 3,
+          'z-index': 10,
+        }}
+      }},
+      {{
+        selector: 'node.dimmed',
+        style: {{ 'opacity': 0.2 }}
+      }},
+      {{
+        selector: 'edge.dimmed',
+        style: {{ 'opacity': 0.1 }}
+      }},
+      {{
+        selector: 'node.search-hidden',
+        style: {{ 'opacity': 0.1 }}
+      }},
+      {{
+        selector: 'edge.search-hidden',
+        style: {{ 'opacity': 0.05 }}
+      }},
+    ],
+    layout: {{
+      name: 'dagre',
+      rankDir: 'TB',
+      nodeSep: 80,
+      rankSep: 100,
+      padding: 50,
+    }},
+    wheelSensitivity: 0.3,
+    minZoom: 0.1,
+    maxZoom: 5,
+  }});
+
+  // Hover highlighting (feature nodes only, not category parents)
+  instance.on('mouseover', 'node[!isCategory]', function(evt) {{
+    var node = evt.target;
+    var neighborhood = node.neighborhood().add(node);
+    instance.elements().addClass('dimmed');
+    instance.nodes('$node > node').removeClass('dimmed');
+    neighborhood.removeClass('dimmed');
+    node.addClass('center-hover');
+    neighborhood.nodes().not(node).filter('[!isCategory]').addClass('highlighted');
+    neighborhood.edges().addClass('highlighted');
+  }});
+
+  instance.on('mouseout', 'node[!isCategory]', function() {{
+    instance.elements().removeClass('dimmed highlighted center-hover');
+  }});
+
+  // Click for detail modal
+  instance.on('tap', 'node[!isCategory]', function(evt) {{
+    var file = evt.target.data('file');
+    var label = evt.target.data('friendlyName');
+    if (file) openModal(file, label);
+  }});
+
+  return instance;
+}}
+
+function renderGraph() {{
+  if (!graphData || !graphData.features) return;
+  var elements = buildCytoscapeElements(graphData.features);
+
+  if (cy) {{
+    var zoom = cy.zoom();
+    var pan = cy.pan();
+    cy.destroy();
+    cy = createCytoscape(elements);
+    if (!isInitialLoad) {{
+      cy.zoom(zoom);
+      cy.pan(pan);
+    }} else {{
+      cy.fit(undefined, 40);
+      isInitialLoad = false;
+    }}
+  }} else {{
+    cy = createCytoscape(elements);
+    cy.fit(undefined, 40);
+    isInitialLoad = false;
+  }}
+
+  applySearchFilter();
+}}
+
+function loadGraph() {{
+  return fetch('/dependency_graph.json?t=' + Date.now())
+    .then(function(resp) {{
+      if (!resp.ok) return;
+      return resp.json();
+    }})
+    .then(function(data) {{
+      if (data) {{
+        graphData = data;
+        renderGraph();
+      }}
+    }})
+    .catch(function(e) {{
+      console.error('Failed to load dependency graph:', e);
+    }});
+}}
+
+function startMapRefresh() {{
+  if (mapRefreshTimer) return;
+  mapRefreshTimer = setInterval(function() {{
+    if (currentView === 'map') loadGraph();
+  }}, 5000);
+}}
+
+function stopMapRefresh() {{
+  if (mapRefreshTimer) {{
+    clearInterval(mapRefreshTimer);
+    mapRefreshTimer = null;
+  }}
+}}
+
+// ============================
+// Initialize
+// ============================
+initFromHash();
 </script>
 </body>
 </html>"""
 
 
 def _role_table_html(features):
-    """Renders a table of features with Architect, Builder, QA role columns."""
+    """Renders a table of features with Architect, Builder, QA role columns.
+    Feature names are clickable to open the detail modal."""
     if not features:
         return ""
     rows = ""
     for entry in features:
         fname = entry["file"]
+        label = entry.get("label", fname)
         arch = _role_badge_html(entry.get("architect"))
         builder = _role_badge_html(entry.get("builder"))
         qa = _role_badge_html(entry.get("qa"))
+        escaped_fname = fname.replace("'", "\\'")
+        escaped_label = label.replace("'", "\\'")
         rows += (
             f'<tr>'
-            f'<td>{fname}</td>'
+            f'<td><a class="feature-link" onclick="openModal(\'{escaped_fname}\','
+            f'\'{escaped_label}\')">{fname}</a></td>'
             f'<td class="badge-cell">{arch}</td>'
             f'<td class="badge-cell">{builder}</td>'
             f'<td class="badge-cell">{qa}</td>'
@@ -809,11 +1452,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         params = urllib.parse.parse_qs(parsed.query)
         file_param = params.get('file', [''])[0]
 
-        # Resolve to absolute path
         abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, file_param))
-
-        # Security: ensure path is within the features directory
-        allowed_dir = os.path.normpath(FEATURES_ABS)
+        allowed_dir = os.path.normpath(FEATURES_DIR)
         if not abs_path.startswith(allowed_dir):
             self.send_error(403, "Access denied")
             return
@@ -835,28 +1475,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, "Error reading file")
 
     def _serve_impl_notes(self):
-        """Serve the companion .impl.md file for a feature."""
+        """Serve the raw markdown content of an implementation notes file."""
         parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
         file_param = params.get('file', [''])[0]
 
-        # Derive companion filename: features/foo.md -> features/foo.impl.md
-        if file_param.endswith('.md'):
-            impl_path = file_param[:-3] + '.impl.md'
-        else:
-            self.send_error(400, "Invalid file parameter")
-            return
-
-        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, impl_path))
-
-        # Security: ensure path is within the features directory
-        allowed_dir = os.path.normpath(FEATURES_ABS)
+        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, file_param))
+        allowed_dir = os.path.normpath(FEATURES_DIR)
         if not abs_path.startswith(allowed_dir):
             self.send_error(403, "Access denied")
             return
 
         if not os.path.isfile(abs_path):
-            self.send_error(404, "No companion impl.md file found")
+            self.send_error(404, "Implementation notes not found")
             return
 
         try:
@@ -954,5 +1585,5 @@ if __name__ == "__main__":
 
         socketserver.TCPServer.allow_reuse_address = True
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            print(f"CDD Monitor serving at http://localhost:{PORT}")
+            print(f"CDD Dashboard serving at http://localhost:{PORT}")
             httpd.serve_forever()
