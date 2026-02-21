@@ -93,7 +93,13 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   Top-left of every tool header, approximately 24px height, adjacent to tool title.
 *   Logo uses CSS classes for theme-responsive fill colors.
 
-### 2.6 FORBIDDEN Patterns
+### 2.6 Project Name Display
+*   **Source:** The `project_name` key in `.agentic_devops/config.json`. If the key is absent or empty, the project name line is not rendered.
+*   **Position:** Displayed on a second line below the tool title in the page header left group, left-justified. The left edge of the project name text MUST align horizontally with the left edge of the "P" in the PURLIN title above it (i.e., the project name sits directly under the title text, not under the logo).
+*   **Font:** `var(--font-body)` (Inter), weight 500 (Medium), same size as body text (14px). No text-transform.
+*   **Color:** `var(--purlin-primary)` -- the same token used for the logo triangle main fill (`.logo-fill`). This ensures the project name color matches the logo and switches correctly between Blueprint (dark) and Architect (light) themes.
+
+### 2.7 FORBIDDEN Patterns
 *   Hardcoded hex colors in tool CSS (MUST use `var(--purlin-*)` custom properties).
 *   Inline style color values that bypass the token system.
 

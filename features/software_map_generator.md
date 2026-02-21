@@ -59,6 +59,7 @@ Generates a visual and machine-readable representation of the project's feature 
 ### 2.5 Branding & Theme
 *   **Logo:** The Purlin logo (`assets/purlin-logo.svg`) MUST be displayed inline in the top-left of the page header, adjacent to the title text. The logo uses CSS classes for theme-responsive fill colors (~24px height).
 *   **Title:** The page title MUST read "Purlin Software Map" (replacing any previous title).
+*   **Project Name:** The active project name MUST be displayed on a second line below the title, per `design_visual_standards.md` Section 2.6. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`. Omitted if `project_name` is absent from config.
 *   **Theme Toggle:** A sun/moon icon toggle MUST appear in the top-right header area. Clicking the toggle switches between Blueprint (dark, default) and Architect (light) themes.
 *   **CSS Tokens:** All CSS colors MUST use `var(--purlin-*)` custom properties. No hardcoded hex colors in CSS.
 *   **Cytoscape.js Theme Integration:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme. On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
@@ -161,6 +162,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 ### Screen: Software Map Viewer
 - **Reference:** N/A
 - [ ] Purlin logo visible in top-left corner beside "Purlin Software Map" title
+- [ ] Active project name displayed on a second line below the title, left-aligned with the "P" in PURLIN
+- [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
+- [ ] Project name color switches correctly between dark and light themes
+- [ ] Project name is absent when `project_name` is not set in config
 - [ ] Sun/moon theme toggle in top-right
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch

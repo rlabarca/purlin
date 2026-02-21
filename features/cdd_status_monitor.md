@@ -123,7 +123,9 @@ The page header is a single horizontal bar with two groups, vertically centered:
 
 **Left group** (left-justified, in this order left-to-right):
 1.  Purlin logo mark (`assets/purlin-logo.svg`, inline SVG, ~24px height, CSS classes for theme-responsive fills)
-2.  Title text: "Purlin CDD Monitor"
+2.  Title and project name block (stacked vertically):
+    *   **Line 1:** Title text: "Purlin CDD Monitor"
+    *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`. Omitted if `project_name` is absent from config.
 
 **Right group** (right-justified, in this order from the right edge inward):
 1.  Theme toggle (sun/moon icon) -- rightmost element
@@ -386,6 +388,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Section headings ("ACTIVE", "COMPLETE") have a visible underline separator (e.g., a bottom border or horizontal rule)
 - [ ] Section headings are clearly distinguished from the feature table rows beneath them
 - [ ] Header left group: Purlin logo mark then "PURLIN CDD MONITOR" title, left-justified
+- [ ] Active project name displayed on a second line below the title, left-aligned with the "P" in PURLIN
+- [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
+- [ ] Project name color switches correctly between dark and light themes
+- [ ] Project name is absent when `project_name` is not set in config
 - [ ] Header right group (from right edge inward): sun/moon toggle, Run Critic button, last-refreshed timestamp
 - [ ] Last-refreshed timestamp uses monospace font (no width shift when digits change)
 - [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
