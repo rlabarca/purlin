@@ -78,7 +78,9 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     2.  **Provider Dropdown:** Lists keys from `llm_providers`. Changing the provider repopulates the model dropdown with that provider's models.
     3.  **Model Dropdown:** Lists models from the selected provider. Active selection matches config value.
     4.  **Effort Dropdown:** Options: `low`, `medium`, `high`. Visible only when the selected model has `capabilities.effort: true`.
-    5.  **Bypass Checkbox:** Labeled "Bypass". Visible only when the selected model has `capabilities.permissions: true`.
+    5.  **Ask Permission Checkbox:** Labeled "Ask Permission". Visible only when the selected model has `capabilities.permissions: true`. Checked = `bypass_permissions: false` (agent will ask before using tools). Unchecked = `bypass_permissions: true` (agent skips permission prompts). The checkbox label describes the user-facing behavior (asking permission), not the internal config key.
+*   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Provider, Model, Effort, Ask Permission) are identical across all three rows. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
+*   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited. This follows the same stability principle as the feature status tables (Section 2.3 of `cdd_status_monitor.md`).
 *   **Detect Providers Button:** Placed at the bottom of the Agents section body (inside the collapsible, below agent rows). Styled as a secondary button matching the `btn-critic` pattern. Calls `POST /detect-providers`. Displays a confirmation dialog listing detected providers and model counts. "Apply" merges detected providers into `llm_providers` in config (additive -- never removes existing entries).
 *   **Styling:** All controls follow existing dashboard patterns:
     *   `<select>`: `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size.
@@ -150,7 +152,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Given the dashboard is loaded with valid config.json
     When the user expands the Agents section
     Then three rows are displayed for Architect, Builder, and QA
-    And each row shows the configured provider, model, effort, and bypass state
+    And each row shows the configured provider, model, effort, and ask-permission state
 
 #### Scenario: Capability-Aware Control Visibility
     Given an agent is configured with a model that has capabilities.effort false
@@ -197,6 +199,30 @@ These scenarios require the running CDD Dashboard server and human interaction t
     When the page is reloaded
     Then the Agents section is still expanded
     And the expanded/collapsed state is read from localStorage
+
+
+## Visual Specification
+
+### Screen: CDD Dashboard -- Agents Section
+- **Reference:** N/A
+- [ ] Agents section heading ("AGENTS") has a visible underline separator matching Active/Complete/Workspace headings
+- [ ] Agents section is visually separated from Workspace with the same spacing and border treatment as between feature sections and Workspace
+- [ ] Agents section has a chevron indicator (right=collapsed, down=expanded)
+- [ ] Collapsed state shows grouped model badge (e.g., "3x Sonnet 4.6" or "1x Opus 4.6 | 2x Sonnet 4.6")
+- [ ] Agent name labels are Inter 500, 12px, uppercase, using `var(--purlin-primary)` color
+- [ ] Provider dropdowns are left-edge aligned across all three agent rows
+- [ ] Model dropdowns are left-edge aligned across all three agent rows
+- [ ] Effort dropdowns are left-edge aligned across all three agent rows
+- [ ] All dropdowns in the same column have identical widths across rows
+- [ ] When a control is hidden (capability-gated), its column space is preserved so adjacent controls do not shift
+- [ ] Permission checkbox is labeled "Ask Permission" (not "Bypass")
+- [ ] "Ask Permission" checkbox is checked when the agent asks before using tools (bypass_permissions=false)
+- [ ] Dropdown styling matches existing dashboard selects: `var(--purlin-bg)` bg, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px
+- [ ] Checkbox uses `accent-color: var(--purlin-accent)`
+- [ ] On 5-second auto-refresh, the Agents section does not flicker or visibly re-render
+- [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
+- [ ] Detect Providers button matches `btn-critic` styling pattern
+- [ ] Section collapse/expand state persists across page reloads via localStorage
 
 
 ## Implementation Notes
