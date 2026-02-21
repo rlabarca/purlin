@@ -20,7 +20,7 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
 
 #### 2.2.1 Dashboard Shell
 
-*   **Header:** A two-row header bar (per Section 2.9) is always visible. Row 1 contains the logo, title, timestamp, Run Critic button, and theme toggle. Row 2 contains the view mode toggle buttons and the search box.
+*   **Header:** A two-row header bar (per Section 2.9) is always visible. Row 1 contains the logo, title, timestamp, and theme toggle. Row 2 contains the view mode toggle buttons, Run Critic button, and the search box. A subtle border separates the two rows.
 *   **Content Area:** Below the header, the content area renders either the Status view or the SW Map view.
 *   **URL Hash Routing:** The URL hash MUST reflect the active view at all times. Switching to the Status view sets the hash to `#status`. Switching to the SW Map view sets the hash to `#map`. On page load, the dashboard MUST read the current URL hash and activate the corresponding view (`#map` activates SW Map; any other value or no hash defaults to Status). Browser back/forward navigation MUST switch views via the `hashchange` event.
 
@@ -47,6 +47,7 @@ The Status view is the default view (`/#status`).
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
     *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean State" or a brief status indicator.
     *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default, displaying their summary badge/status indicator.
+    *   **State Persistence:** Section expanded/collapsed states MUST be persisted to `localStorage` (key: `purlin-section-states`). On page load, saved states are restored, overriding the defaults above. This ensures the user's preferred section layout survives page reloads and browser restarts. Each toggle updates the stored state immediately.
 *   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
 *   **Active Section Sorting:** Features sorted by urgency: any red state (FAIL, INFEASIBLE) first, then any yellow/orange state (TODO, DISPUTED), then alphabetical.
 *   **Feature Click:** Clicking a feature name in the status table opens the shared feature detail modal (Section 2.2.4).
@@ -140,7 +141,7 @@ The Status view is the default view (`/#status`).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
 
 ### 2.7 Manual Critic Trigger (Dashboard)
-*   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is on the right side of the header's first row (Row 1), between the timestamp and the theme toggle.
+*   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is on the right side of the header's second row (Row 2), immediately to the left of the search input.
 *   **Visual Design:** The button should be compact, styled consistently with the dashboard theme (dark/high-contrast). It should not dominate the layout.
 *   **Behavior on Click:**
     1.  The button becomes disabled and shows a loading/spinner state to indicate the Critic is running.
@@ -176,19 +177,21 @@ The page header is a two-row bar:
         *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). Resolved from `project_name` in config, falling back to the project root directory name. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`.
 *   **Right side** (right-justified, in this order from the right edge inward):
     1.  Theme toggle (sun/moon icon) -- rightmost element
-    2.  "Run Critic" button
-    3.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
+    2.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
 
 Row 1 uses CSS flexbox (`justify-content: space-between`) to position its left and right sides.
+
+**Row Separator:** A subtle 1px border (`var(--purlin-border)`) separates Row 1 from Row 2, providing visual distinction between the branding/utility row and the navigation/tools row. Implemented as a top border on Row 2 with small top padding.
 
 **Row 2** (sub-header, directly below Row 1):
 
 *   **Left side** (left-justified):
     1.  View mode toggle buttons ("Status" / "SW Map"). These buttons MUST be left-aligned below the logo/title block.
-*   **Right side** (right-justified):
-    1.  Search/filter text input.
+*   **Right side** (right-justified, in this order from the right edge inward):
+    1.  Search/filter text input -- rightmost element
+    2.  "Run Critic" button (and its error indicator) -- immediately left of the search input
 
-Row 2 uses CSS flexbox (`justify-content: space-between`) to position its left and right sides. This layout saves horizontal space by stacking the navigation and search controls below the branding and utility controls instead of cramming everything into a single row.
+Row 2 uses CSS flexbox (`justify-content: space-between`) to position its left and right sides. The right side uses a flex container with gap for consistent spacing between the Critic button and search input.
 
 #### Title
 *   The dashboard title MUST read "Purlin CDD Dashboard".
@@ -448,6 +451,15 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the Active section expands showing all feature rows
     And the chevron changes from right to down
 
+#### Scenario: Section State Persists Across Reloads
+    Given the User is viewing the Status view
+    And the Active section is expanded and the Complete section is collapsed (defaults)
+    When the User collapses the Active section and expands the Complete section
+    And the User reloads the page
+    Then the Active section is still collapsed
+    And the Complete section is still expanded
+    And the saved states override the default expand/collapse behavior
+
 #### Scenario: Web Dashboard Auto-Refresh
     Given the User is viewing the web dashboard
     When a feature status changes (e.g., a status commit is made)
@@ -468,8 +480,8 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 #### Scenario: Run Critic Button
     Given the CDD server is running
     And the User opens the web dashboard
-    When the User locates the top-right area next to the last-updated timestamp
-    Then a "Run Critic" button is visible
+    When the User locates the header's second row (Row 2)
+    Then a "Run Critic" button is visible to the left of the search input
     When the User clicks the "Run Critic" button
     Then the button enters a disabled/loading state
     And after the Critic finishes, the dashboard refreshes with updated role status columns
@@ -487,8 +499,9 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
 - [ ] Project name color switches correctly between dark and light themes
 - [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
-- [ ] Header Row 1 left side: Logo + Title + project name; right side: timestamp, Run Critic button, theme toggle
-- [ ] Header Row 2 left side: "Status" / "SW Map" toggle buttons below the logo; right side: search input
+- [ ] Header Row 1 left side: Logo + Title + project name; right side: timestamp, theme toggle
+- [ ] Header Row 2 left side: "Status" / "SW Map" toggle buttons below the logo; right side: Run Critic button, search input
+- [ ] A subtle 1px border separates Row 1 from Row 2
 - [ ] View mode toggle buttons are left-justified below the logo/title block (Row 2)
 - [ ] Active view button is visually distinguished from inactive
 - [ ] Search/filter text input is right-justified in Row 2
@@ -506,6 +519,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
 - [ ] Collapsed sections show a summary badge (DONE/??/TODO/most-severe)
 - [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
+- [ ] Section collapse/expand states persist across page reloads via localStorage
 - [ ] Workspace section shows "Clean State" or status summary in its collapsed form
 - [ ] URL hash reads `#status` when Status view is active and `#map` when SW Map view is active
 - [ ] Switching views updates the URL hash immediately
