@@ -42,7 +42,10 @@ FAILED=0
 cleanup() {
     echo ""
     echo "--- Cleanup ---"
-    git reset --hard "$PRE_TEST_SHA" >/dev/null 2>&1 || true
+    # Mixed reset: undo test commits but preserve the working tree.
+    # Unlike --hard, this does NOT destroy uncommitted code changes.
+    git reset "$PRE_TEST_SHA" >/dev/null 2>&1 || true
+    # Remove temp files from working tree (untracked after reset)
     rm -rf "$TEMP_FEATURE" "$TEMP_TESTS_DIR"
     # Restore critic.json state for real features
     bash tools/critic/run.sh >/dev/null 2>&1 || true
