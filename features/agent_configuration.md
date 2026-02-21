@@ -92,7 +92,7 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 
 ## 3. Scenarios
 
-### 3.1 Config-Driven Agent Launch
+### Automated Scenarios
 
 ```gherkin
 Scenario: Launcher reads agent config from config.json
@@ -113,11 +113,7 @@ Scenario: Launcher handles unsupported provider
   When the Builder launcher script is executed
   Then it prints an error message listing supported providers
   And exits with a non-zero status code
-```
 
-### 3.2 Provider Detection
-
-```gherkin
 Scenario: Claude probe detects installed CLI
   Given the claude CLI is installed and on PATH
   When tools/providers/claude.sh is executed
@@ -142,7 +138,8 @@ Scenario: Aggregator collects all providers
   And each entry contains provider, available, and models fields
 ```
 
-### 3.3 Dashboard Agents Section
+### Manual Scenarios (Human Verification Required)
+These scenarios require the running CDD Dashboard server and human interaction to verify.
 
 ```gherkin
 Scenario: Agents section displays current config
