@@ -1600,19 +1600,23 @@ var agentsConfig = null;
 var agentsSaveTimer = null;
 
 function initAgentsSection() {{
+  // Synchronous restore from cache after innerHTML replacement clears the DOM
+  if (agentsConfig && !document.getElementById('agent-provider-architect')) {{
+    renderAgentsRows(agentsConfig);
+    updateAgentsBadge(agentsConfig);
+  }}
+  // Async fetch for config updates
   fetch('/config.json')
     .then(function(r) {{ return r.json(); }})
     .then(function(cfg) {{
-      if (agentsConfig && JSON.stringify(cfg.agents) === JSON.stringify(agentsConfig.agents) &&
-          JSON.stringify(cfg.llm_providers) === JSON.stringify(agentsConfig.llm_providers)) {{
-        // Config unchanged — skip re-render to avoid flicker
-        return;
-      }}
-      var needsFullRender = !agentsConfig || !document.getElementById('agent-provider-architect');
+      var domExists = !!document.getElementById('agent-provider-architect');
+      var configChanged = !agentsConfig ||
+          JSON.stringify(cfg.agents) !== JSON.stringify(agentsConfig.agents) ||
+          JSON.stringify(cfg.llm_providers) !== JSON.stringify(agentsConfig.llm_providers);
       agentsConfig = cfg;
-      if (needsFullRender) {{
+      if (!domExists) {{
         renderAgentsRows(cfg);
-      }} else {{
+      }} else if (configChanged) {{
         diffUpdateAgentRows(cfg);
       }}
       updateAgentsBadge(cfg);

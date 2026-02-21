@@ -204,7 +204,17 @@ class TestFlickerFreeRefresh(unittest.TestCase):
         html = serve.generate_html()
         # initAgentsSection should compare JSON before deciding to render
         self.assertIn('JSON.stringify(cfg.agents)', html)
-        self.assertIn('needsFullRender', html)
+        self.assertIn('configChanged', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_init_agents_section_restores_from_cache(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # initAgentsSection should synchronously restore from agentsConfig cache
+        # when DOM is empty (after innerHTML replacement)
+        self.assertIn("agentsConfig && !document.getElementById('agent-provider-architect')", html)
 
 
 class TestConfigAgentsEndpoint(unittest.TestCase):
