@@ -562,6 +562,25 @@ def generate_html():
             f'</span>'
         )
 
+    # Agents section collapsed badge
+    def _agents_badge(config):
+        providers = config.get('llm_providers', {})
+        agents = config.get('agents', {})
+        roles = ['architect', 'builder', 'qa']
+        labels = []
+        for role in roles:
+            acfg = agents.get(role, {})
+            prov = acfg.get('provider', '')
+            mid = acfg.get('model', '')
+            models = (providers.get(prov) or {}).get('models', [])
+            lbl = next((m.get('label', mid) for m in models if m.get('id') == mid), mid or '?')
+            labels.append(lbl)
+        if labels and len(set(labels)) == 1 and labels[0] not in ('', '?'):
+            return f'{len(roles)}x {labels[0]}'
+        return 'Mixed models'
+
+    agents_badge = _agents_badge(CONFIG)
+
     # Compute summary badges for collapsed sections
     def _section_summary_badges(features_list):
         counts = {}
@@ -685,6 +704,12 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
+.agent-row{{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-row:last-child{{border-bottom:none}}
+.agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-accent);text-transform:uppercase;min-width:64px;flex-shrink:0}}
+.agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer}}
+.agent-sel:focus{{border-color:var(--purlin-accent)}}
+.agent-bypass-lbl{{font-size:11px;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
 #search-input{{
   background:var(--purlin-bg);border:1px solid var(--purlin-border);
   border-radius:3px;color:var(--purlin-muted);padding:3px 8px;
@@ -867,6 +892,18 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
       </div>
+      <div class="section-hdr" onclick="toggleSection('agents-section')">
+        <span class="chevron" id="agents-section-chevron">&#9654;</span>
+        <h3>Agents</h3>
+        <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
+      </div>
+      <div class="section-body collapsed" id="agents-section">
+        <div id="agents-rows" style="margin-bottom:8px"></div>
+        <div>
+          <button class="btn-critic" id="btn-detect-providers" onclick="detectProviders()">Detect Providers</button>
+          <span id="detect-providers-err" style="margin-left:8px;font-size:11px;color:var(--purlin-status-error)"></span>
+        </div>
+      </div>
     </div>
   </div>
   <!-- SW Map View -->
@@ -1001,6 +1038,8 @@ function refreshStatus() {{
         applySectionStates();
         // Re-apply search filter
         applySearchFilter();
+        // Re-populate agents section (dynamic JS content cleared by innerHTML replace)
+        initAgentsSection();
       }}
       updateTimestamp();
     }})
@@ -1021,7 +1060,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1030,7 +1069,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1528,9 +1567,234 @@ function stopMapRefresh() {{
 }}
 
 // ============================
+// Agents Section
+// ============================
+var agentsConfig = null;
+var agentsSaveTimer = null;
+
+function initAgentsSection() {{
+  fetch('/config.json')
+    .then(function(r) {{ return r.json(); }})
+    .then(function(cfg) {{
+      agentsConfig = cfg;
+      renderAgentsRows(cfg);
+      updateAgentsBadge(cfg);
+    }})
+    .catch(function() {{}});
+}}
+
+function renderAgentsRows(cfg) {{
+  var container = document.getElementById('agents-rows');
+  if (!container) return;
+  var providers = cfg.llm_providers || {{}};
+  var agents = cfg.agents || {{}};
+  var roles = ['architect', 'builder', 'qa'];
+  var html = '';
+  roles.forEach(function(role) {{
+    html += buildAgentRowHtml(role, agents[role] || {{}}, providers);
+  }});
+  container.innerHTML = html;
+  roles.forEach(function(role) {{
+    var provSel = document.getElementById('agent-provider-' + role);
+    var modSel = document.getElementById('agent-model-' + role);
+    var effSel = document.getElementById('agent-effort-' + role);
+    var bypassChk = document.getElementById('agent-bypass-' + role);
+    if (provSel) provSel.addEventListener('change', function() {{
+      populateModelDropdown(role, provSel.value, providers, '');
+      syncCapabilityControls(role, providers);
+      scheduleAgentSave();
+    }});
+    if (modSel) modSel.addEventListener('change', function() {{
+      syncCapabilityControls(role, providers);
+      scheduleAgentSave();
+    }});
+    if (effSel) effSel.addEventListener('change', scheduleAgentSave);
+    if (bypassChk) bypassChk.addEventListener('change', scheduleAgentSave);
+    syncCapabilityControls(role, providers);
+  }});
+}}
+
+function buildAgentRowHtml(role, agentCfg, providers) {{
+  var currentProvider = agentCfg.provider || '';
+  var currentModel = agentCfg.model || '';
+  var currentEffort = agentCfg.effort || 'high';
+  var currentBypass = agentCfg.bypass_permissions === true;
+  var provOptions = Object.keys(providers).map(function(k) {{
+    return '<option value="' + k + '"' + (k === currentProvider ? ' selected' : '') + '>' + k + '</option>';
+  }}).join('');
+  if (!provOptions) provOptions = '<option value="">—</option>';
+  var providerModels = (providers[currentProvider] || {{}}).models || [];
+  var modOptions = providerModels.map(function(m) {{
+    return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
+  }}).join('');
+  if (!modOptions) modOptions = '<option value="' + currentModel + '" selected>' + currentModel + '</option>';
+  var effortOptions = ['low', 'medium', 'high'].map(function(e) {{
+    return '<option value="' + e + '"' + (e === currentEffort ? ' selected' : '') + '>' + e + '</option>';
+  }}).join('');
+  return '<div class="agent-row">' +
+    '<span class="agent-lbl">' + role.toUpperCase() + '</span>' +
+    '<select id="agent-provider-' + role + '" class="agent-sel">' + provOptions + '</select>' +
+    '<select id="agent-model-' + role + '" class="agent-sel">' + modOptions + '</select>' +
+    '<select id="agent-effort-' + role + '" class="agent-sel" style="display:none">' + effortOptions + '</select>' +
+    '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="display:none">' +
+      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (currentBypass ? ' checked' : '') + '> Bypass' +
+    '</label>' +
+  '</div>';
+}}
+
+function populateModelDropdown(role, providerKey, providers, selectedModel) {{
+  var modSel = document.getElementById('agent-model-' + role);
+  if (!modSel) return;
+  var models = (providers[providerKey] || {{}}).models || [];
+  modSel.innerHTML = models.map(function(m) {{
+    return '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.label + '</option>';
+  }}).join('');
+}}
+
+function syncCapabilityControls(role, providers) {{
+  var provSel = document.getElementById('agent-provider-' + role);
+  var modSel = document.getElementById('agent-model-' + role);
+  if (!provSel || !modSel) return;
+  var models = (providers[provSel.value] || {{}}).models || [];
+  var modelObj = null;
+  for (var i = 0; i < models.length; i++) {{
+    if (models[i].id === modSel.value) {{ modelObj = models[i]; break; }}
+  }}
+  var caps = (modelObj || {{}}).capabilities || {{}};
+  var effSel = document.getElementById('agent-effort-' + role);
+  var bypassLbl = document.getElementById('agent-bypass-lbl-' + role);
+  if (effSel) effSel.style.display = caps.effort ? '' : 'none';
+  if (bypassLbl) bypassLbl.style.display = caps.permissions ? '' : 'none';
+}}
+
+function updateAgentsBadge(cfg) {{
+  var badge = document.getElementById('agents-section-badge');
+  if (!badge) return;
+  var providers = cfg.llm_providers || {{}};
+  var agents = cfg.agents || {{}};
+  var roles = ['architect', 'builder', 'qa'];
+  var labels = roles.map(function(role) {{
+    var acfg = agents[role] || {{}};
+    var models = (providers[acfg.provider || ''] || {{}}).models || [];
+    var mid = acfg.model || '';
+    for (var i = 0; i < models.length; i++) {{
+      if (models[i].id === mid) return models[i].label;
+    }}
+    return mid || '?';
+  }});
+  var allSame = labels.length > 0 && labels.every(function(l) {{ return l === labels[0]; }});
+  badge.textContent = (allSame && labels[0] && labels[0] !== '?') ? roles.length + 'x ' + labels[0] : 'Mixed models';
+}}
+
+function scheduleAgentSave() {{
+  if (agentsSaveTimer) clearTimeout(agentsSaveTimer);
+  agentsSaveTimer = setTimeout(saveAgentConfig, 600);
+}}
+
+function saveAgentConfig() {{
+  var roles = ['architect', 'builder', 'qa'];
+  var agentsPayload = {{}};
+  roles.forEach(function(role) {{
+    var provSel = document.getElementById('agent-provider-' + role);
+    var modSel = document.getElementById('agent-model-' + role);
+    var effSel = document.getElementById('agent-effort-' + role);
+    var bypassChk = document.getElementById('agent-bypass-' + role);
+    if (!provSel) return;
+    agentsPayload[role] = {{
+      provider: provSel.value,
+      model: modSel ? modSel.value : '',
+      effort: effSel ? effSel.value : 'high',
+      bypass_permissions: bypassChk ? bypassChk.checked : false
+    }};
+  }});
+  fetch('/config/agents', {{
+    method: 'POST',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify(agentsPayload)
+  }})
+  .then(function(r) {{ return r.json(); }})
+  .then(function(d) {{
+    if (agentsConfig && d.agents) {{
+      agentsConfig.agents = d.agents;
+      updateAgentsBadge(agentsConfig);
+    }}
+  }})
+  .catch(function() {{}});
+}}
+
+function detectProviders() {{
+  var btn = document.getElementById('btn-detect-providers');
+  var errEl = document.getElementById('detect-providers-err');
+  btn.disabled = true; btn.textContent = 'Detecting\u2026'; errEl.textContent = '';
+  fetch('/detect-providers', {{method: 'POST'}})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      btn.disabled = false; btn.textContent = 'Detect Providers';
+      if (!Array.isArray(data)) {{ errEl.textContent = 'Invalid response'; return; }}
+      showDetectProvidersDialog(data);
+    }})
+    .catch(function() {{
+      btn.disabled = false; btn.textContent = 'Detect Providers';
+      errEl.textContent = 'Detection failed';
+    }});
+}}
+
+function showDetectProvidersDialog(providers) {{
+  var existing = document.getElementById('detect-dialog-overlay');
+  if (existing) existing.remove();
+  var lines = providers.map(function(p) {{
+    var avail = p.available ? '\u2713 available' : '\u2717 unavailable';
+    var n = p.models ? p.models.length : 0;
+    return p.provider + ': ' + avail + ' (' + n + ' model' + (n !== 1 ? 's' : '') + ')';
+  }}).join('\n');
+  var overlay = document.createElement('div');
+  overlay.id = 'detect-dialog-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center';
+  var dialog = document.createElement('div');
+  dialog.style.cssText = 'background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:6px;padding:20px;min-width:280px;max-width:400px';
+  dialog.innerHTML = '<h3 style="margin:0 0 12px;font-size:13px;color:var(--purlin-primary)">Detected Providers</h3>' +
+    '<pre style="margin:0 0 16px;font-size:11px;color:var(--purlin-muted);white-space:pre-wrap">' + lines + '</pre>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+      '<button class="btn-critic" id="detect-cancel-btn">Cancel</button>' +
+      '<button class="btn-critic" id="detect-apply-btn" style="color:var(--purlin-accent)">Apply</button>' +
+    '</div>';
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  document.getElementById('detect-cancel-btn').onclick = function() {{ overlay.remove(); }};
+  document.getElementById('detect-apply-btn').onclick = function() {{
+    var mergedProviders = {{}};
+    if (agentsConfig && agentsConfig.llm_providers) Object.assign(mergedProviders, agentsConfig.llm_providers);
+    providers.forEach(function(p) {{
+      if (!mergedProviders[p.provider]) mergedProviders[p.provider] = {{models: p.models || []}};
+    }});
+    fetch('/config/agents', {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{
+        agents: (agentsConfig && agentsConfig.agents) || {{}},
+        llm_providers: mergedProviders
+      }})
+    }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      overlay.remove();
+      if (agentsConfig) {{
+        if (d.agents) agentsConfig.agents = d.agents;
+        if (d.llm_providers) agentsConfig.llm_providers = d.llm_providers;
+        renderAgentsRows(agentsConfig);
+        updateAgentsBadge(agentsConfig);
+      }}
+    }})
+    .catch(function() {{ overlay.remove(); }});
+  }};
+  overlay.onclick = function(e) {{ if (e.target === overlay) overlay.remove(); }};
+}}
+
+// ============================
 // Initialize
 // ============================
 applySectionStates();
+initAgentsSection();
 initFromHash();
 </script>
 </body>
@@ -1768,9 +2032,123 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
+        elif self.path == '/config/agents':
+            self._handle_config_agents()
+        elif self.path == '/detect-providers':
+            self._handle_detect_providers()
         else:
             self.send_response(404)
             self.end_headers()
+
+    def _send_json(self, status, data):
+        payload = json.dumps(data).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _handle_config_agents(self):
+        """POST /config/agents — update agents (and optionally llm_providers) in config.json."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        agents_data = body.get('agents', body) if isinstance(body, dict) else body
+        providers_override = body.get('llm_providers') if isinstance(body, dict) else None
+
+        if not isinstance(agents_data, dict):
+            self._send_json(400, {'error': 'agents must be an object'})
+            return
+
+        # Load current config
+        current = {}
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, 'r') as f:
+                    current = json.load(f)
+            except (json.JSONDecodeError, IOError, OSError):
+                pass
+
+        # Effective providers for validation
+        if providers_override is not None:
+            # Merge: existing first, then new additions
+            effective_providers = dict(current.get('llm_providers', {}))
+            for k, v in providers_override.items():
+                if k not in effective_providers:
+                    effective_providers[k] = v
+        else:
+            effective_providers = current.get('llm_providers', {})
+
+        all_model_ids = {
+            m['id']
+            for p in effective_providers.values()
+            for m in p.get('models', [])
+        }
+        valid_efforts = {'low', 'medium', 'high'}
+        errors = []
+        for role, cfg in agents_data.items():
+            if not isinstance(cfg, dict):
+                errors.append(f'{role}: must be an object')
+                continue
+            effort = cfg.get('effort', 'high')
+            if effort not in valid_efforts:
+                errors.append(f'{role}: invalid effort "{effort}"')
+            model = cfg.get('model', '')
+            if model and model not in all_model_ids:
+                errors.append(f'{role}: unknown model "{model}"')
+
+        if errors:
+            self._send_json(400, {'error': '; '.join(errors)})
+            return
+
+        # Atomic write
+        current['agents'] = agents_data
+        if providers_override is not None:
+            merged = dict(current.get('llm_providers', {}))
+            for k, v in providers_override.items():
+                if k not in merged:
+                    merged[k] = v
+            current['llm_providers'] = merged
+
+        tmp = CONFIG_PATH + '.tmp'
+        try:
+            with open(tmp, 'w') as f:
+                json.dump(current, f, indent=4)
+            os.replace(tmp, CONFIG_PATH)
+        except Exception as e:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            self._send_json(500, {'error': str(e)})
+            return
+
+        response = {'agents': current['agents']}
+        if 'llm_providers' in current:
+            response['llm_providers'] = current['llm_providers']
+        self._send_json(200, response)
+
+    def _handle_detect_providers(self):
+        """POST /detect-providers — run detect-providers.sh and return JSON array."""
+        try:
+            tools_root = CONFIG.get('tools_root', 'tools')
+            script = os.path.join(PROJECT_ROOT, tools_root, 'detect-providers.sh')
+            result = subprocess.run(
+                ['bash', script],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            try:
+                providers = json.loads(result.stdout)
+            except (json.JSONDecodeError, ValueError):
+                providers = []
+            self._send_json(200, providers)
+        except Exception as e:
+            self._send_json(500, {'error': str(e)})
 
     def log_message(self, format, *args):
         pass  # Suppress request logging noise
