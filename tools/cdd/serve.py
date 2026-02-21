@@ -475,51 +475,100 @@ def generate_html():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CDD Monitor</title>
+<title>Purlin CDD Monitor</title>
+<script>(function(){{var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
 <meta http-equiv="refresh" content="5">
 <style>
+:root{{
+  --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
+  --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
+  --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
+  --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
+  --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+}}
+[data-theme='light']{{
+  --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
+  --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
+  --purlin-status-good:#059669;--purlin-status-todo:#D97706;
+  --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
+  --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+}}
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{
-  background:#14191F;color:#B0B0B0;
-  font-family:'Menlo','Monaco','Consolas',monospace;
-  font-size:12px;padding:8px 12px;
+  background:var(--purlin-bg);color:var(--purlin-muted);
+  font-family:'Inter',sans-serif;font-size:12px;padding:8px 12px;
 }}
 .hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
-.hdr h1{{font-size:14px;color:#FFF;font-weight:600}}
+.hdr-left{{display:flex;align-items:center;gap:8px}}
+.hdr h1{{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;color:var(--purlin-primary)}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
+.logo-svg{{height:24px;width:auto}}
+.logo-fill{{fill:var(--purlin-primary)}}
+.logo-accent{{stroke:var(--purlin-primary)}}
+.logo-sketch{{stroke:var(--purlin-muted)}}
+.btn-theme{{
+  background:none;border:none;cursor:pointer;padding:2px;
+  color:var(--purlin-muted);display:flex;align-items:center;
+}}
+.btn-theme:hover{{color:var(--purlin-primary)}}
+.btn-theme svg{{width:16px;height:16px}}
+#icon-moon{{display:none}}
+[data-theme='light'] #icon-sun{{display:none}}
+[data-theme='light'] #icon-moon{{display:block}}
 .btn-critic{{
-  background:#2A2F36;color:#B0B0B0;border:1px solid #3A3F46;
+  background:var(--purlin-tag-fill);color:var(--purlin-muted);
+  border:1px solid var(--purlin-tag-outline);
   border-radius:3px;padding:2px 8px;font-family:inherit;font-size:11px;
   cursor:pointer;line-height:1.5;
 }}
-.btn-critic:hover{{background:#3A3F46;color:#FFF}}
+.btn-critic:hover{{background:var(--purlin-tag-outline);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
-.btn-critic-err{{color:#FF4500;font-size:10px;margin-right:4px}}
-.dim{{color:#666;font-size:0.9em}}
-h2{{font-size:13px;color:#FFF;margin-bottom:6px;border-bottom:1px solid #2A2F36;padding-bottom:4px}}
-h3{{font-size:11px;color:#888;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2A2F36;padding-bottom:3px}}
-.features{{background:#1A2028;border-radius:4px;padding:8px 10px;margin-bottom:10px}}
+.btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
+.dim{{color:var(--purlin-muted);font-size:0.9em;opacity:.7}}
+h2{{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px}}
+h3{{font-size:11px;color:var(--purlin-muted);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px;font-weight:500;border-bottom:1px solid var(--purlin-border);padding-bottom:3px}}
+.features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
-.ft th{{text-align:left;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid #2A2F36}}
-.ft td{{padding:2px 6px;line-height:1.5}}
-.ft tr:hover{{background:#1E2630}}
+.ft th{{text-align:left;color:var(--purlin-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
+.ft td{{padding:2px 6px;line-height:1.5;font-family:'Menlo','Monaco','Consolas',monospace;font-size:12px}}
+.ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
-.ctx{{background:#1A2028;border-radius:4px;padding:8px 10px}}
-.clean{{color:#32CD32}}
-.wip{{color:#FFD700;margin-bottom:2px}}
-pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
-.st-done{{color:#32CD32;font-weight:bold}}
-.st-todo{{color:#FFD700;font-weight:bold}}
-.st-fail{{color:#FF4500;font-weight:bold}}
-.st-blocked{{color:#888;font-weight:bold}}
-.st-disputed{{color:#FFA500;font-weight:bold}}
-.st-na{{color:#444;font-weight:bold}}
+.ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px}}
+.clean{{color:var(--purlin-status-good)}}
+.wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
+pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px;font-family:'Menlo','Monaco','Consolas',monospace}}
+.st-done{{color:var(--purlin-status-good);font-weight:bold}}
+.st-todo{{color:var(--purlin-status-todo);font-weight:bold}}
+.st-fail{{color:var(--purlin-status-error);font-weight:bold}}
+.st-blocked{{color:var(--purlin-muted);font-weight:bold}}
+.st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
+.st-na{{color:var(--purlin-border);font-weight:bold}}
 </style>
 </head>
 <body>
 <div class="hdr">
-  <h1>CDD Monitor</h1>
+  <div class="hdr-left">
+    <svg class="logo-svg" viewBox="140 100 720 360" xmlns="http://www.w3.org/2000/svg">
+      <g class="logo-sketch" stroke-width="2" fill="none" opacity="0.5">
+        <line x1="500" y1="120" x2="500" y2="390" stroke-dasharray="8,8"/>
+        <line x1="500" y1="145" x2="170" y2="409"/>
+        <line x1="500" y1="145" x2="830" y2="409"/>
+        <line x1="400" y1="210" x2="400" y2="255"/>
+        <line x1="600" y1="210" x2="600" y2="255"/>
+      </g>
+      <polyline points="400,280 500,390 600,280" fill="none" class="logo-accent" stroke-width="14" stroke-linejoin="miter"/>
+      <path d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd" class="logo-fill"/>
+    </svg>
+    <h1>Purlin CDD Monitor</h1>
+  </div>
   <div class="hdr-right">
+    <button id="btn-theme" class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
     <span id="critic-err" class="btn-critic-err"></span>
     <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
     <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
@@ -538,6 +587,12 @@ pre{{background:#14191F;padding:6px;border-radius:3px;white-space:pre-wrap;word-
   <p class="dim" style="margin-top:4px">{last_commit}</p>
 </div>
 <script>
+function toggleTheme(){{
+  var html=document.documentElement;
+  var current=html.getAttribute('data-theme');
+  if(current==='light'){{html.removeAttribute('data-theme');localStorage.setItem('purlin-theme','dark');}}
+  else{{html.setAttribute('data-theme','light');localStorage.setItem('purlin-theme','light');}}
+}}
 function runCritic(){{
   var btn=document.getElementById('btn-critic');
   var err=document.getElementById('critic-err');
