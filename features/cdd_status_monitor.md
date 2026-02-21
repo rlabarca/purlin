@@ -402,3 +402,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Expected:** Spec edits to Section 2.9 (Header Layout) and Visual Specification should reset the feature lifecycle from COMPLETE to TODO.
 - **Actual:** Feature remains in COMPLETE lifecycle, Builder role_status stays DONE, hiding the work.
 - **Fix:** Replace `text.find('## User Testing Discoveries')` with a regex line-start match (e.g., `re.search(r'^## User Testing Discoveries', text, re.MULTILINE)`) in `serve.py`.
+
+### [DISCOVERY] "??" badge text has insufficient contrast in both themes (Discovered: 2026-02-21)
+- **Scenario:** Web Dashboard Display (visual specification)
+- **Observed Behavior:** The "??" badges for features without critic.json are nearly invisible against the background in both dark (Blueprint) and light (Architect) themes. The dim/blank color token does not provide enough contrast for readability.
+- **Expected Behavior:** "??" text should be clearly readable in both themes, even if styled as secondary/dim.
+- **Action Required:** Architect (re-specify the dim/blank color token in design_visual_standards.md to ensure sufficient contrast)
+- **Status:** OPEN

@@ -169,5 +169,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 
 ## User Testing Discoveries
 
-
+### [DISCOVERY] Search bar placeholder text has insufficient contrast in both themes (Discovered: 2026-02-21)
+- **Scenario:** Interactive Web View (visual specification)
+- **Observed Behavior:** The "Filter nodes..." placeholder text in the search input is nearly invisible against the input background in both dark (Blueprint) and light (Architect) themes. The placeholder color does not provide enough contrast for readability.
+- **Expected Behavior:** Placeholder text should be clearly readable in both themes, even if styled as secondary/hint text.
+- **Action Required:** Architect (re-specify placeholder text color or input styling in design_visual_standards.md to ensure sufficient contrast)
+- **Status:** OPEN
 
