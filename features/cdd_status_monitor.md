@@ -396,3 +396,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Only feature status data updates; table headers and section headings remain stable
 
 ## User Testing Discoveries
+
+### [BUG] Header right group element order is reversed (Discovered: 2026-02-21)
+- **Scenario:** Web Dashboard Display
+- **Observed Behavior:** The right group displays as [☀/☾] [Run Critic] [timestamp] (left to right) — toggle is leftmost, timestamp is rightmost.
+- **Expected Behavior:** Per Section 2.9, from the right edge inward: theme toggle (rightmost), Run Critic button, timestamp (leftmost of right group). Left to right should read: [timestamp] [Run Critic] [☀/☾].
+- **Action Required:** Builder
+- **Status:** OPEN
