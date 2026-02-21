@@ -2,10 +2,25 @@
 
 > **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the Purlin framework. Project-specific workflow additions are defined in the **override layer** at `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
 
-## 1. Core Philosophy: "Code is Disposable"
+## 1. Core Philosophy: Continuous Design-Driven (CDD)
+
+Purlin is **Continuously Design-Driven**: designs evolve in sync with code, never ahead of it and never behind it. Specifications are living documents that are refined as implementation reveals new constraints, discoveries, and insights. The design is never "done" -- it is continuously updated to reflect the current truth of the system.
+
+When code teaches us something new, we update the design first. When requirements shift, the design shifts first, and changes cascade to code. The CDD Monitor exists to make this continuous sync visible and measurable.
+
+This philosophy rests on two principles:
+
+### 1.1 "Code is Disposable"
 The single source of truth for any project using this framework is not the code, but the **Specifications** and **Architectural Policies** stored in the project's `features/` directory.
 *   If the application code is lost, it must be reproducible from the specs.
 *   We never fix bugs in code first; we fix the specification that allowed the bug.
+
+### 1.2 "Design Evolves with Code"
+Specifications are not static blueprints written once and handed off. They are continuously refined through the implementation lifecycle:
+*   Builder discoveries feed back into specs via Implementation Notes and the INFEASIBLE escalation.
+*   QA discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) trigger spec revisions before code fixes.
+*   Anchor node changes cascade to all dependent features, triggering re-validation across the entire domain.
+*   The Feature Lifecycle (TODO -> TESTING -> COMPLETE) tracks the sync state between design and implementation at all times.
 
 ## 2. Roles and Responsibilities
 
@@ -147,7 +162,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 ## 8. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start.
 
-*   **CDD** shows what IS (per-role status: Architect, Builder, QA columns).
+*   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA columns).
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
 *   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.

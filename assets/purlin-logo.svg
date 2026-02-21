@@ -42,6 +42,6 @@
 
   <!-- 3. TYPOGRAPHY -->
   <text x="500" y="550" text-anchor="middle" style="font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 76px; letter-spacing: 0.12em" fill="#E2E8F0">PURLIN</text>
-  <text x="500" y="595" text-anchor="middle" style="font-family: 'Inter', sans-serif; font-weight: 500; font-size: 16px; letter-spacing: 0.4em" fill="#94A3B8">AGENTIC DEVELOPMENT FRAMEWORK</text>
+  <text x="500" y="595" text-anchor="middle" style="font-family: 'Inter', sans-serif; font-weight: 500; font-size: 16px; letter-spacing: 0.4em" fill="#94A3B8">CONTINUOUS DESIGN-DRIVEN DEVELOPMENT</text>
 
 </svg>

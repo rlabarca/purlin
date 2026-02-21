@@ -10,7 +10,7 @@ Defines the visual language for all Purlin-branded web tools (CDD Monitor, Softw
 
 ### 2.1 Brand Identity
 *   **Name:** Purlin
-*   **Tagline:** Agentic Development Framework
+*   **Tagline:** Continuous Design-Driven Development Framework
 *   **Logo:** `assets/purlin-logo.svg` -- standalone SVG with dark-theme defaults. When embedded inline in tools, uses CSS classes for theme-responsive fills.
 
 ### 2.2 Color Token System
@@ -72,7 +72,7 @@ Both `--font-display` and `--font-body` MUST be defined in both theme blocks (`:
 
 | Element | Font | Weight | Size | Letter-Spacing | Transform |
 |---------|------|--------|------|----------------|-----------|
-| Tool wordmark / page title | Montserrat | 900 (Black) | 32-40px | `-0.025em` (tight) | None |
+| Tool wordmark / page title | Montserrat | 900 (Black) | 32-40px | `0.12em` (wide) | `uppercase` |
 | Section headers | Inter | 700 (Bold) | 14px | `0.1em` (wide) | `uppercase` |
 | Captions / sub-labels | Inter | 700 (Bold) | 10px | `0.1em` (wide) | `uppercase` |
 | Body text | Inter | 400 (Regular) | 14px | normal | None |
@@ -80,7 +80,7 @@ Both `--font-display` and `--font-body` MUST be defined in both theme blocks (`:
 | Tag text | Inter | 700 (Bold) | 12px | normal | None |
 | Monospace data | Menlo stack | 400 | 12px | normal | None |
 
-The wide letter-spacing on uppercase section headers and captions is a defining characteristic of the Purlin visual language.
+The wide letter-spacing on uppercase elements is a defining characteristic of the Purlin visual language. Tool wordmarks and page titles MUST match the SVG logo treatment (`assets/purlin-logo.svg`): Montserrat Black 900, wide tracking `0.12em`, uppercase. This creates an airy, architectural feel despite the heavy weight.
 
 ### 2.4 Theme Switching
 *   **Default:** Dark (Blueprint).

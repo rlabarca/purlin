@@ -2,11 +2,13 @@
 
 ![Purlin Logo](assets/purlin-logo.svg)
 
-**Agentic Development Framework**
+**Continuous Design-Driven Development Framework**
 
 ## Overview
 
-Purlin is a spec-driven development framework built on four goals:
+Purlin is a **Continuous Design-Driven (CDD)** development framework. Designs evolve in sync with code -- never ahead of it, never behind it. Specifications are living documents that are continuously refined as implementation reveals new constraints and insights.
+
+The framework is built on four goals:
 
 1. **Coordinate specialized agents** following a spec/test-driven framework for deterministic outcomes.
 2. **Specifications and tests are the backbone** -- code is disposable. If specs are rigorous enough, any compliant agent can rebuild the entire system from scratch.
@@ -17,10 +19,11 @@ By colocating technical implementation knowledge with behavioral specifications 
 
 ## Core Concepts
 
-### 1. Spec-Driven Development
-The project's state is defined 100% by specification files:
-*   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** Defining the constraints of the system -- technical architecture, design standards, and governance policies.
-*   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) coupled with Implementation Notes (Tribal Knowledge).
+### 1. Continuous Design-Driven (CDD)
+The project's state is defined 100% by specification files, and those specifications evolve continuously with the code:
+*   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** Define the constraints of the system -- technical architecture, design standards, and governance policies. Changes cascade to all dependent features.
+*   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) coupled with Implementation Notes (Tribal Knowledge). Refined through every implementation cycle -- not written once and handed off.
+*   **Code is disposable; design is durable.** If all source code were deleted, the specs must be sufficient to rebuild. When code reveals new truths, the design is updated first.
 
 ### 2. Role Separation
 The framework defines three distinct agent roles:

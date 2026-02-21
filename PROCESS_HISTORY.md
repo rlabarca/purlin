@@ -1,6 +1,16 @@
 # Purlin Process History (Core Framework)
 
-This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
+This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
+
+## [2026-02-21] Continuous Design-Driven (CDD) Elevated to Core Tenet
+
+- **Scope:** Elevated "Continuous Design-Driven" from a tool name (CDD Monitor) to the framework's core philosophy.
+- **Rationale:** The CDD acronym already described the framework's fundamental approach -- designs evolve in sync with code -- but it was buried in the CDD Status Monitor feature description. Promoting it to a named tenet makes the philosophy explicit and discoverable.
+- **Changes:**
+    - **HOW_WE_WORK_BASE.md:** Renamed Section 1 from "Core Philosophy: Code is Disposable" to "Core Philosophy: Continuous Design-Driven (CDD)". Added two sub-principles: "Code is Disposable" (1.1, preserved) and "Design Evolves with Code" (1.2, new). Updated Section 8 CDD reference to include full name.
+    - **README.md:** Updated tagline from "Agentic Development Framework" to "Continuous Design-Driven Development Framework". Added CDD framing to Overview. Renamed Core Concept "Spec-Driven Development" to "Continuous Design-Driven (CDD)" with evolutionary language.
+    - **PROCESS_HISTORY.md:** Updated header description. This entry added.
+- **Impact:** Philosophy-level change only. No structural, code, or behavioral changes. All existing specs, tools, and workflows remain valid.
 
 ## [2026-02-20] Purlin Rebranding
 
