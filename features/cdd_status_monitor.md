@@ -20,8 +20,9 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
 
 #### 2.2.1 Dashboard Shell
 
-*   **Header:** A single horizontal header bar (per Section 2.9) is always visible. It contains the logo, title, search box, timestamp, Run Critic button, and theme toggle.
-*   **Content Area:** Below the header, the content area renders the Status view.
+*   **Header:** A two-row header bar (per Section 2.9) is always visible. Row 1 contains the logo, title, timestamp, Run Critic button, and theme toggle. Row 2 contains the view mode toggle buttons and the search box.
+*   **Content Area:** Below the header, the content area renders either the Status view or the SW Map view.
+*   **URL Hash Routing:** The URL hash MUST reflect the active view at all times. Switching to the Status view sets the hash to `#status`. Switching to the SW Map view sets the hash to `#map`. On page load, the dashboard MUST read the current URL hash and activate the corresponding view (`#map` activates SW Map; any other value or no hash defaults to Status). Browser back/forward navigation MUST switch views via the `hashchange` event.
 
 #### 2.2.2 Status View
 The Status view is the default view (`/#status`).
@@ -45,7 +46,7 @@ The Status view is the default view (`/#status`).
         - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
     *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean State" or a brief status indicator.
-    *   **Default State:** Active and Workspace sections are expanded by default. Complete section is collapsed by default.
+    *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default, displaying their summary badge/status indicator.
 *   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
 *   **Active Section Sorting:** Features sorted by urgency: any red state (FAIL, INFEASIBLE) first, then any yellow/orange state (TODO, DISPUTED), then alphabetical.
 *   **Feature Click:** Clicking a feature name in the status table opens the shared feature detail modal (Section 2.2.4).
@@ -67,7 +68,7 @@ The Status view is the default view (`/#status`).
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint or the CLI tool.
 
 #### 2.2.3 Search/Filter
-*   **Position:** A search text input appears in the header right group, to the left of the timestamp.
+*   **Position:** A search text input appears on the right side of the header's second row (Row 2), right-justified.
 *   **Behavior:** Filters Active and Complete table rows by feature name (case-insensitive substring match). Sections with no matching rows are hidden.
 *   **Placeholder:** Uses `var(--purlin-dim)` color token for readable contrast in both themes.
 
@@ -134,7 +135,7 @@ The Status view is the default view (`/#status`).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
 
 ### 2.7 Manual Critic Trigger (Dashboard)
-*   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is in the right group of the page header, between the timestamp and the theme toggle.
+*   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is on the right side of the header's first row (Row 1), between the timestamp and the theme toggle.
 *   **Visual Design:** The button should be compact, styled consistently with the dashboard theme (dark/high-contrast). It should not dominate the layout.
 *   **Behavior on Click:**
     1.  The button becomes disabled and shows a loading/spinner state to indicate the Critic is running.
@@ -159,21 +160,30 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 ### 2.9 Branding & Theme
 
 #### Header Layout
-The page header is a single horizontal bar with two groups, vertically centered:
+The page header is a two-row bar:
 
-**Left group** (left-justified, in this order left-to-right):
-1.  Purlin logo mark (`assets/purlin-logo.svg`, inline SVG, ~24px height, CSS classes for theme-responsive fills)
-2.  Title and project name block (stacked vertically):
-    *   **Line 1:** Title text: "Purlin CDD Dashboard"
-    *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). Resolved from `project_name` in config, falling back to the project root directory name. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`.
+**Row 1** (primary header):
 
-**Right group** (right-justified, in this order from the right edge inward):
-1.  Theme toggle (sun/moon icon) -- rightmost element
-2.  "Run Critic" button
-3.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
-4.  Search/filter text input
+*   **Left side** (left-justified, in this order left-to-right):
+    1.  Purlin logo mark (`assets/purlin-logo.svg`, inline SVG, ~24px height, CSS classes for theme-responsive fills)
+    2.  Title and project name block (stacked vertically):
+        *   **Line 1:** Title text: "Purlin CDD Dashboard"
+        *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). Resolved from `project_name` in config, falling back to the project root directory name. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`.
+*   **Right side** (right-justified, in this order from the right edge inward):
+    1.  Theme toggle (sun/moon icon) -- rightmost element
+    2.  "Run Critic" button
+    3.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
 
-The two groups MUST be laid out with CSS flexbox (`justify-content: space-between`). The right group items are ordered via `flex-direction: row` with the search input first, timestamp second, Run Critic button third, and theme toggle last in DOM order -- or equivalently, the right group uses `flex-direction: row-reverse` with theme toggle first, Run Critic second, timestamp third, search input fourth in DOM order. The visual result MUST match: search input on the left side of the right group, theme toggle on the far right.
+Row 1 uses CSS flexbox (`justify-content: space-between`) to position its left and right sides.
+
+**Row 2** (sub-header, directly below Row 1):
+
+*   **Left side** (left-justified):
+    1.  View mode toggle buttons ("Status" / "SW Map"). These buttons MUST be left-aligned below the logo/title block.
+*   **Right side** (right-justified):
+    1.  Search/filter text input.
+
+Row 2 uses CSS flexbox (`justify-content: space-between`) to position its left and right sides. This layout saves horizontal space by stacking the navigation and search controls below the branding and utility controls instead of cramming everything into a single row.
 
 #### Title
 *   The dashboard title MUST read "Purlin CDD Dashboard".
@@ -452,11 +462,12 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
 - [ ] Project name color switches correctly between dark and light themes
 - [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
-- [ ] View mode toggle buttons ("Status" / "SW Map") visible in header left group after title block
+- [ ] Header Row 1 left side: Logo + Title + project name; right side: timestamp, Run Critic button, theme toggle
+- [ ] Header Row 2 left side: "Status" / "SW Map" toggle buttons below the logo; right side: search input
+- [ ] View mode toggle buttons are left-justified below the logo/title block (Row 2)
 - [ ] Active view button is visually distinguished from inactive
-- [ ] Search/filter text input visible in header right group
+- [ ] Search/filter text input is right-justified in Row 2
 - [ ] Search input placeholder text uses `--purlin-dim` color token for readable contrast in both themes
-- [ ] Header right group (from right edge inward): sun/moon toggle, Run Critic button, last-refreshed timestamp, search box
 - [ ] Last-refreshed timestamp uses monospace font (no width shift when digits change)
 - [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
 - [ ] Theme persists across page refreshes (auto-refresh every 5s does not reset theme)
@@ -469,7 +480,11 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Section headings are clearly distinguished from the content beneath them
 - [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
 - [ ] Collapsed sections show a summary badge (DONE/??/TODO/most-severe)
-- [ ] Active and Workspace sections expanded by default; Complete section collapsed by default
+- [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
+- [ ] Workspace section shows "Clean State" or status summary in its collapsed form
+- [ ] URL hash reads `#status` when Status view is active and `#map` when SW Map view is active
+- [ ] Switching views updates the URL hash immediately
+- [ ] Loading the page with `#map` in the URL activates the SW Map view
 - [ ] Active and Complete tables have matching column widths
 - [ ] Status column headers (Architect, Builder, QA) are centered
 - [ ] Feature column header is left-justified
