@@ -3,37 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Software Map Viewer</title>
+    <title>Purlin Software Map</title>
+    <script>(function(){var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@15.0.6/marked.min.js"></script>
     <style>
+        :root {
+            --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
+            --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
+            --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
+            --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
+            --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+        }
+        [data-theme='light'] {
+            --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
+            --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
+            --purlin-status-good:#059669;--purlin-status-todo:#D97706;
+            --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
+            --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Menlo','Monaco','Consolas', monospace;
-            background: #14191F; color: #B0B0B0;
+            font-family: 'Inter', sans-serif;
+            background: var(--purlin-bg); color: var(--purlin-muted);
             font-size: 12px; overflow: hidden;
             height: 100vh; display: flex; flex-direction: column;
         }
         .header {
             display: flex; align-items: center; gap: 12px;
-            padding: 8px 12px; background: #1A2028;
-            border-bottom: 1px solid #2A2F36; flex-shrink: 0;
+            padding: 8px 12px; background: var(--purlin-surface);
+            border-bottom: 1px solid var(--purlin-border); flex-shrink: 0;
         }
-        .header h1 { font-size: 14px; color: #FFF; font-weight: 600; white-space: nowrap; }
-        .search-box {
-            margin-left: auto; display: flex; align-items: center; gap: 6px;
+        .header-left { display: flex; align-items: center; gap: 8px; }
+        .header h1 { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: var(--purlin-primary); white-space: nowrap; }
+        .logo-svg { height: 24px; width: auto; }
+        .logo-fill { fill: var(--purlin-primary); }
+        .logo-accent { stroke: var(--purlin-primary); }
+        .logo-sketch { stroke: var(--purlin-muted); }
+        .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .btn-theme {
+            background: none; border: none; cursor: pointer; padding: 2px;
+            color: var(--purlin-muted); display: flex; align-items: center;
         }
+        .btn-theme:hover { color: var(--purlin-primary); }
+        .btn-theme svg { width: 16px; height: 16px; }
+        #icon-moon { display: none; }
+        [data-theme='light'] #icon-sun { display: none; }
+        [data-theme='light'] #icon-moon { display: block; }
         #search {
-            background: #14191F; border: 1px solid #2A2F36; border-radius: 3px;
-            color: #B0B0B0; padding: 4px 8px; font-size: 11px; width: 200px;
+            background: var(--purlin-bg); border: 1px solid var(--purlin-border); border-radius: 3px;
+            color: var(--purlin-muted); padding: 4px 8px; font-size: 11px; width: 200px;
             font-family: inherit; outline: none;
         }
-        #search:focus { border-color: #0288d1; }
-        #search::placeholder { color: #555; }
-        .search-hint { color: #555; font-size: 10px; }
-        #cy { flex: 1; background: #14191F; }
+        #search:focus { border-color: var(--purlin-accent); }
+        #search::placeholder { color: var(--purlin-border); }
+        .search-hint { color: var(--purlin-muted); font-size: 10px; opacity: .7; }
+        #cy { flex: 1; background: var(--purlin-bg); }
         .modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.7); z-index: 1000;
@@ -41,28 +71,28 @@
         }
         .modal-overlay.visible { display: flex; }
         .modal-content {
-            background: #1A2028; border: 1px solid #2A2F36;
+            background: var(--purlin-surface); border: 1px solid var(--purlin-border);
             border-radius: 6px; width: 700px; max-width: 90vw;
             max-height: 80vh; display: flex; flex-direction: column;
             position: relative;
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 14px; border-bottom: 1px solid #2A2F36; flex-shrink: 0;
+            padding: 10px 14px; border-bottom: 1px solid var(--purlin-border); flex-shrink: 0;
         }
-        .modal-header h2 { font-size: 13px; color: #FFF; }
+        .modal-header h2 { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: var(--purlin-primary); }
         .modal-close {
-            background: none; border: 1px solid #444; color: #888;
+            background: none; border: 1px solid var(--purlin-tag-outline); color: var(--purlin-muted);
             cursor: pointer; font-size: 14px; width: 24px; height: 24px;
             border-radius: 3px; display: flex; align-items: center;
             justify-content: center; line-height: 1;
         }
-        .modal-close:hover { background: #333; color: #FFF; border-color: #666; }
+        .modal-close:hover { background: var(--purlin-tag-fill); color: var(--purlin-primary); border-color: var(--purlin-muted); }
         .modal-body {
             padding: 14px; overflow-y: auto; flex: 1;
-            line-height: 1.6; color: #CCC;
+            line-height: 1.6; color: var(--purlin-primary);
         }
-        .modal-body h1, .modal-body h2, .modal-body h3 { color: #FFF; margin: 12px 0 6px; }
+        .modal-body h1, .modal-body h2, .modal-body h3 { color: var(--purlin-primary); margin: 12px 0 6px; font-family: 'Montserrat', sans-serif; }
         .modal-body h1 { font-size: 16px; }
         .modal-body h2 { font-size: 14px; }
         .modal-body h3 { font-size: 12px; }
@@ -70,26 +100,45 @@
         .modal-body ul, .modal-body ol { margin: 6px 0 6px 20px; }
         .modal-body li { margin: 2px 0; }
         .modal-body code {
-            background: #14191F; padding: 1px 4px; border-radius: 2px;
-            font-size: 11px; color: #4FC3F7;
+            background: var(--purlin-bg); padding: 1px 4px; border-radius: 2px;
+            font-size: 11px; color: var(--purlin-accent);
+            font-family: 'Menlo','Monaco','Consolas',monospace;
         }
         .modal-body pre {
-            background: #14191F; padding: 8px; border-radius: 3px;
+            background: var(--purlin-bg); padding: 8px; border-radius: 3px;
             overflow-x: auto; margin: 6px 0;
+            font-family: 'Menlo','Monaco','Consolas',monospace;
         }
         .modal-body pre code { padding: 0; background: none; }
         .modal-body blockquote {
-            border-left: 3px solid #0288d1; padding-left: 10px;
-            color: #888; margin: 6px 0;
+            border-left: 3px solid var(--purlin-accent); padding-left: 10px;
+            color: var(--purlin-muted); margin: 6px 0;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Software Map</h1>
-        <div class="search-box">
+        <div class="header-left">
+            <svg class="logo-svg" viewBox="140 100 720 360" xmlns="http://www.w3.org/2000/svg">
+                <g class="logo-sketch" stroke-width="2" fill="none" opacity="0.5">
+                    <line x1="500" y1="120" x2="500" y2="390" stroke-dasharray="8,8"/>
+                    <line x1="500" y1="145" x2="170" y2="409"/>
+                    <line x1="500" y1="145" x2="830" y2="409"/>
+                    <line x1="400" y1="210" x2="400" y2="255"/>
+                    <line x1="600" y1="210" x2="600" y2="255"/>
+                </g>
+                <polyline points="400,280 500,390 600,280" fill="none" class="logo-accent" stroke-width="14" stroke-linejoin="miter"/>
+                <path d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd" class="logo-fill"/>
+            </svg>
+            <h1>Purlin Software Map</h1>
+        </div>
+        <div class="header-right">
             <input type="text" id="search" placeholder="Filter nodes..." />
             <span class="search-hint">by label or filename</span>
+            <button id="btn-theme" class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+                <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
         </div>
     </div>
     <div id="cy"></div>
@@ -106,6 +155,36 @@
 
 
     <script>
+        // -- Theme Colors (read from CSS custom properties) --
+        function getThemeColors() {
+            const s = getComputedStyle(document.documentElement);
+            return {
+                bg: s.getPropertyValue('--purlin-bg').trim(),
+                surface: s.getPropertyValue('--purlin-surface').trim(),
+                primary: s.getPropertyValue('--purlin-primary').trim(),
+                accent: s.getPropertyValue('--purlin-accent').trim(),
+                muted: s.getPropertyValue('--purlin-muted').trim(),
+                border: s.getPropertyValue('--purlin-border').trim(),
+                tagFill: s.getPropertyValue('--purlin-tag-fill').trim(),
+                tagOutline: s.getPropertyValue('--purlin-tag-outline').trim(),
+                statusWarning: s.getPropertyValue('--purlin-status-warning').trim(),
+            };
+        }
+
+        function toggleTheme() {
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme');
+            if (current === 'light') {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('purlin-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('purlin-theme', 'light');
+            }
+            // Regenerate graph with new theme colors
+            if (graphData) renderGraph();
+        }
+
         // -- State --
         let cy = null;
         let graphData = null;
@@ -139,11 +218,13 @@
             return lines;
         }
 
-        function createNodeLabelSVG(name, filename) {
+        function createNodeLabelSVG(name, filename, colors) {
             const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const nameLines = wrapText(name, CHARS_PER_LINE);
             const nameBlockHeight = nameLines.length * LABEL_LINE_HEIGHT;
             const totalHeight = nameBlockHeight + FILENAME_LINE_HEIGHT + 8;
+            const labelColor = colors.primary;
+            const filenameColor = colors.muted;
 
             let tspans = '';
             nameLines.forEach((line, i) => {
@@ -152,8 +233,8 @@
             });
 
             const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + SVG_WIDTH + '" height="' + totalHeight + '">' +
-                '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="#E8E8E8" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
-                '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="#888" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
+                '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="' + labelColor + '" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
+                '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="' + filenameColor + '" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
                 '</svg>';
             return { url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), height: totalHeight };
         }
@@ -190,14 +271,15 @@
         function renderGraph() {
             if (!graphData || !graphData.features) return;
 
-            const elements = buildCytoscapeElements(graphData.features);
+            const colors = getThemeColors();
+            const elements = buildCytoscapeElements(graphData.features, colors);
 
             if (cy) {
                 // Preserve viewport state before destroying
                 const zoom = cy.zoom();
                 const pan = cy.pan();
                 cy.destroy();
-                cy = createCytoscape(elements);
+                cy = createCytoscape(elements, colors);
                 if (!isInitialLoad) {
                     cy.zoom(zoom);
                     cy.pan(pan);
@@ -206,7 +288,7 @@
                     isInitialLoad = false;
                 }
             } else {
-                cy = createCytoscape(elements);
+                cy = createCytoscape(elements, colors);
                 cy.fit(undefined, 40);
                 isInitialLoad = false;
             }
@@ -214,7 +296,7 @@
             applySearchFilter();
         }
 
-        function buildCytoscapeElements(features) {
+        function buildCytoscapeElements(features, colors) {
             const nodes = [];
             const edges = [];
             const fileToId = {};
@@ -247,7 +329,7 @@
                 const color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
                 const catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
                 const filename = f.file.split('/').pop();
-                const svgResult = createNodeLabelSVG(f.label, filename);
+                const svgResult = createNodeLabelSVG(f.label, filename, colors);
                 nodes.push({
                     data: {
                         id: id,
@@ -280,7 +362,7 @@
             return { nodes, edges };
         }
 
-        function createCytoscape(elements) {
+        function createCytoscape(elements, colors) {
             const instance = cytoscape({
                 container: document.getElementById('cy'),
                 elements: [...elements.nodes, ...elements.edges],
@@ -305,12 +387,12 @@
                         selector: '$node > node',
                         style: {
                             'label': 'data(label)',
-                            'background-color': '#1A2028',
+                            'background-color': colors.surface,
                             'background-opacity': 0.8,
                             'border-width': 1,
-                            'border-color': '#2A2F36',
+                            'border-color': colors.border,
                             'border-style': 'dashed',
-                            'color': '#666',
+                            'color': colors.muted,
                             'font-size': '12px',
                             'font-weight': 'bold',
                             'text-valign': 'top',
@@ -324,8 +406,8 @@
                         selector: 'edge',
                         style: {
                             'width': 2,
-                            'line-color': '#444',
-                            'target-arrow-color': '#444',
+                            'line-color': colors.tagOutline,
+                            'target-arrow-color': colors.tagOutline,
                             'target-arrow-shape': 'triangle',
                             'curve-style': 'bezier',
                             'arrow-scale': 0.8,
@@ -334,7 +416,7 @@
                     {
                         selector: 'node.highlighted',
                         style: {
-                            'border-color': '#FF7043',
+                            'border-color': colors.statusWarning,
                             'border-width': 3,
                             'border-opacity': 1,
                             'background-opacity': 0.3,
@@ -344,7 +426,7 @@
                     {
                         selector: 'node.center-hover',
                         style: {
-                            'border-color': '#4FC3F7',
+                            'border-color': colors.accent,
                             'border-width': 3,
                             'border-opacity': 1,
                             'background-opacity': 0.35,
@@ -354,8 +436,8 @@
                     {
                         selector: 'edge.highlighted',
                         style: {
-                            'line-color': '#FF7043',
-                            'target-arrow-color': '#FF7043',
+                            'line-color': colors.statusWarning,
+                            'target-arrow-color': colors.statusWarning,
                             'width': 3,
                             'z-index': 10,
                         }
@@ -469,7 +551,7 @@
             const body = document.getElementById('modal-body');
 
             title.textContent = label || filePath;
-            body.innerHTML = '<p style="color:#666">Loading...</p>';
+            body.innerHTML = '<p style="color:var(--purlin-muted)">Loading...</p>';
             overlay.classList.add('visible');
 
             try {
@@ -478,7 +560,7 @@
                 const md = await resp.text();
                 body.innerHTML = marked.parse(md);
             } catch (e) {
-                body.innerHTML = '<p style="color:#FF4500">Could not load feature content.</p>';
+                body.innerHTML = '<p style="color:var(--purlin-status-error)">Could not load feature content.</p>';
             }
         }
 
