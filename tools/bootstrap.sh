@@ -60,125 +60,142 @@ echo "$CURRENT_SHA" > "$PROJECT_ROOT/.agentic_devops/.upstream_sha"
 ###############################################################################
 FRAMEWORK_VAR="\$SCRIPT_DIR/$SUBMODULE_NAME"
 
-# --- Architect Launcher ---
-cat > "$PROJECT_ROOT/run_claude_architect.sh" << 'LAUNCHER_EOF'
+# Helper: generate a config-driven launcher script.
+# Usage: generate_launcher <output_file> <role> <instruction_file> <overrides_file> <session_message>
+generate_launcher() {
+    local OUTPUT_FILE="$1"
+    local ROLE="$2"
+    local INSTRUCTION_FILE="$3"
+    local OVERRIDES_FILE="$4"
+    local SESSION_MSG="$5"
+
+    # Part 1: Shebang, SCRIPT_DIR, AGENTIC_PROJECT_ROOT (literal)
+    cat > "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
-cat >> "$PROJECT_ROOT/run_claude_architect.sh" << LAUNCHER_EOF
+    # Part 2: CORE_DIR with submodule path (expanded)
+    cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
 CORE_DIR="$FRAMEWORK_VAR"
 LAUNCHER_EOF
 
-cat >> "$PROJECT_ROOT/run_claude_architect.sh" << 'LAUNCHER_EOF'
+    # Part 3: Prompt assembly (literal)
+    cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
 
 # Fall back to local instructions/ if not a submodule consumer
-if [ ! -d "$CORE_DIR/instructions" ]; then
-    CORE_DIR="$SCRIPT_DIR"
+if [ ! -d "\$CORE_DIR/instructions" ]; then
+    CORE_DIR="\$SCRIPT_DIR"
 fi
 
-PROMPT_FILE=$(mktemp)
-trap "rm -f '$PROMPT_FILE'" EXIT
+PROMPT_FILE=\$(mktemp)
+trap "rm -f '\$PROMPT_FILE'" EXIT
 
-cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
-printf "\n\n" >> "$PROMPT_FILE"
-cat "$CORE_DIR/instructions/ARCHITECT_BASE.md" >> "$PROMPT_FILE"
+cat "\$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "\$PROMPT_FILE"
+printf "\n\n" >> "\$PROMPT_FILE"
+cat "\$CORE_DIR/instructions/${INSTRUCTION_FILE}" >> "\$PROMPT_FILE"
 
-if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
+if [ -f "\$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
+    printf "\n\n" >> "\$PROMPT_FILE"
+    cat "\$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "\$PROMPT_FILE"
 fi
 
-if [ -f "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" >> "$PROMPT_FILE"
+if [ -f "\$SCRIPT_DIR/.agentic_devops/${OVERRIDES_FILE}" ]; then
+    printf "\n\n" >> "\$PROMPT_FILE"
+    cat "\$SCRIPT_DIR/.agentic_devops/${OVERRIDES_FILE}" >> "\$PROMPT_FILE"
 fi
-
-claude --append-system-prompt-file "$PROMPT_FILE"
 LAUNCHER_EOF
 
-chmod +x "$PROJECT_ROOT/run_claude_architect.sh"
+    # Part 4: Config reading and provider dispatch (literal)
+    cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
-# --- Builder Launcher ---
-cat > "$PROJECT_ROOT/run_claude_builder.sh" << 'LAUNCHER_EOF'
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
+# --- Read agent config from config.json ---
+CONFIG_FILE="$SCRIPT_DIR/.agentic_devops/config.json"
 LAUNCHER_EOF
 
-cat >> "$PROJECT_ROOT/run_claude_builder.sh" << LAUNCHER_EOF
-CORE_DIR="$FRAMEWORK_VAR"
+    # Part 4b: Role name (expanded)
+    cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
+AGENT_ROLE="${ROLE}"
 LAUNCHER_EOF
 
-cat >> "$PROJECT_ROOT/run_claude_builder.sh" << 'LAUNCHER_EOF'
+    # Part 4c: Config parsing and provider dispatch (literal)
+    cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
-# Fall back to local instructions/ if not a submodule consumer
-if [ ! -d "$CORE_DIR/instructions" ]; then
-    CORE_DIR="$SCRIPT_DIR"
+AGENT_PROVIDER="claude"
+AGENT_MODEL=""
+AGENT_EFFORT=""
+AGENT_BYPASS="false"
+
+if [ -f "$CONFIG_FILE" ]; then
+    eval "$(python3 -c "
+import json
+try:
+    c = json.load(open('$CONFIG_FILE'))
+    a = c.get('agents', {}).get('$AGENT_ROLE', {})
+    print(f'AGENT_PROVIDER=\"{a.get(\"provider\", \"claude\")}\"')
+    print(f'AGENT_MODEL=\"{a.get(\"model\", \"\")}\"')
+    print(f'AGENT_EFFORT=\"{a.get(\"effort\", \"\")}\"')
+    bp = 'true' if a.get('bypass_permissions', False) else 'false'
+    print(f'AGENT_BYPASS=\"{bp}\"')
+except: pass
+" 2>/dev/null)"
 fi
 
-PROMPT_FILE=$(mktemp)
-trap "rm -f '$PROMPT_FILE'" EXIT
-
-cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
-printf "\n\n" >> "$PROMPT_FILE"
-cat "$CORE_DIR/instructions/BUILDER_BASE.md" >> "$PROMPT_FILE"
-
-if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
-fi
-
-if [ -f "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" >> "$PROMPT_FILE"
-fi
-
-claude --append-system-prompt-file "$PROMPT_FILE" --dangerously-skip-permissions
+# --- Provider dispatch ---
+case "$AGENT_PROVIDER" in
+  claude)
+    CLI_ARGS=()
+    [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
+    [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
 LAUNCHER_EOF
 
-chmod +x "$PROJECT_ROOT/run_claude_builder.sh"
+    # Part 4d: Role-specific permission handling (expanded for role)
+    if [ "$ROLE" = "builder" ]; then
+        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+    if [ "$AGENT_BYPASS" = "true" ]; then
+        CLI_ARGS+=(--dangerously-skip-permissions)
+    fi
+LAUNCHER_EOF
+    elif [ "$ROLE" = "qa" ]; then
+        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+    if [ "$AGENT_BYPASS" = "true" ]; then
+        CLI_ARGS+=(--dangerously-skip-permissions)
+    else
+        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
+    fi
+LAUNCHER_EOF
+    else
+        # architect (default)
+        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+    if [ "$AGENT_BYPASS" = "true" ]; then
+        CLI_ARGS+=(--dangerously-skip-permissions)
+    else
+        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
+    fi
+LAUNCHER_EOF
+    fi
 
-# --- QA Launcher ---
-cat > "$PROJECT_ROOT/run_claude_qa.sh" << 'LAUNCHER_EOF'
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
+    # Part 4e: Claude invocation and unsupported provider fallback (expanded for session msg)
+    cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
+    claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
+    ;;
+  *)
+    echo "ERROR: Provider '\$AGENT_PROVIDER' is not yet supported for agent invocation."
+    echo "Supported providers: claude"
+    echo "Provider '\$AGENT_PROVIDER' models are available for detection and configuration."
+    echo "Launcher support requires a provider-specific invocation module."
+    exit 1
+    ;;
+esac
 LAUNCHER_EOF
 
-cat >> "$PROJECT_ROOT/run_claude_qa.sh" << LAUNCHER_EOF
-CORE_DIR="$FRAMEWORK_VAR"
-LAUNCHER_EOF
+    chmod +x "$OUTPUT_FILE"
+}
 
-cat >> "$PROJECT_ROOT/run_claude_qa.sh" << 'LAUNCHER_EOF'
-
-# Fall back to local instructions/ if not a submodule consumer
-if [ ! -d "$CORE_DIR/instructions" ]; then
-    CORE_DIR="$SCRIPT_DIR"
-fi
-
-PROMPT_FILE=$(mktemp)
-trap "rm -f '$PROMPT_FILE'" EXIT
-
-cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
-printf "\n\n" >> "$PROMPT_FILE"
-cat "$CORE_DIR/instructions/QA_BASE.md" >> "$PROMPT_FILE"
-
-if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
-fi
-
-if [ -f "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" ]; then
-    printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/QA_OVERRIDES.md" >> "$PROMPT_FILE"
-fi
-
-claude --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
-LAUNCHER_EOF
-
-chmod +x "$PROJECT_ROOT/run_claude_qa.sh"
+generate_launcher "$PROJECT_ROOT/run_claude_architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
+generate_launcher "$PROJECT_ROOT/run_claude_builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
+generate_launcher "$PROJECT_ROOT/run_claude_qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
 
 ###############################################################################
 # 6. Project Scaffolding

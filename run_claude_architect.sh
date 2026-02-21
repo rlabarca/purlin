@@ -26,6 +26,48 @@ if [ -f "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" ]; then
     cat "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-claude \
-    --allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" \
-    --append-system-prompt-file "$PROMPT_FILE" "Begin Architect session."
+# --- Read agent config from config.json ---
+CONFIG_FILE="$SCRIPT_DIR/.agentic_devops/config.json"
+AGENT_ROLE="architect"
+
+AGENT_PROVIDER="claude"
+AGENT_MODEL=""
+AGENT_EFFORT=""
+AGENT_BYPASS="false"
+
+if [ -f "$CONFIG_FILE" ]; then
+    eval "$(python3 -c "
+import json
+try:
+    c = json.load(open('$CONFIG_FILE'))
+    a = c.get('agents', {}).get('$AGENT_ROLE', {})
+    print(f'AGENT_PROVIDER=\"{a.get(\"provider\", \"claude\")}\"')
+    print(f'AGENT_MODEL=\"{a.get(\"model\", \"\")}\"')
+    print(f'AGENT_EFFORT=\"{a.get(\"effort\", \"\")}\"')
+    bp = 'true' if a.get('bypass_permissions', False) else 'false'
+    print(f'AGENT_BYPASS=\"{bp}\"')
+except: pass
+" 2>/dev/null)"
+fi
+
+# --- Provider dispatch ---
+case "$AGENT_PROVIDER" in
+  claude)
+    CLI_ARGS=()
+    [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
+    [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
+    if [ "$AGENT_BYPASS" = "true" ]; then
+        CLI_ARGS+=(--dangerously-skip-permissions)
+    else
+        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
+    fi
+    claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Architect session."
+    ;;
+  *)
+    echo "ERROR: Provider '$AGENT_PROVIDER' is not yet supported for agent invocation."
+    echo "Supported providers: claude"
+    echo "Provider '$AGENT_PROVIDER' models are available for detection and configuration."
+    echo "Launcher support requires a provider-specific invocation module."
+    exit 1
+    ;;
+esac

@@ -2,6 +2,26 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Provider-Agnostic Agent Configuration
+
+- **Scope:** New feature -- config-driven agent parameters with provider-agnostic architecture. Launcher scripts, probe scripts, bootstrap, feature spec.
+- **Problem:** Agent launch parameters (model, effort, permissions) were hardcoded in launcher scripts. No way to change them without editing shell scripts. No path to support non-Claude providers.
+- **Solution:** Introduced **provider-agnostic agent configuration** via `config.json`:
+    - `llm_providers` section defines available providers and their models with per-model capability declarations.
+    - `agents` section assigns provider/model/effort/permissions per role.
+    - Launcher scripts read config at startup and dispatch by provider.
+    - Provider probe scripts (`tools/providers/*.sh`) auto-detect available providers.
+    - Aggregator script (`tools/detect-providers.sh`) collects all probe results.
+- **Changes:**
+    - **features/agent_configuration.md:** New feature spec covering config schema, probe scripts, dashboard Agents section, API endpoints, launcher behavior, and bootstrap generation.
+    - **config.json / sample config.json:** Added `llm_providers` and `agents` sections.
+    - **tools/providers/claude.sh:** New probe script for Claude CLI detection.
+    - **tools/providers/gemini.sh:** New probe script for Gemini CLI/API detection.
+    - **tools/detect-providers.sh:** New aggregator script.
+    - **run_claude_architect.sh, run_claude_builder.sh, run_claude_qa.sh:** Rewritten to read config, dispatch by provider, and build CLI args dynamically.
+    - **tools/bootstrap.sh:** Section 5 refactored to use `generate_launcher` helper function that produces config-driven launchers with role-specific tool restrictions.
+- **Impact:** Launchers now respect config.json settings. Dashboard Agents section and API endpoints are spec'd for Builder implementation.
+
 ## [2026-02-21] Phased Delivery Protocol
 
 - **Scope:** New cross-role coordination protocol -- persistent delivery plan artifact, instruction-level changes across all three agent roles, CDD dashboard integration.
