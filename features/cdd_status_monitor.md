@@ -42,6 +42,10 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 | ?? | Dim (`--purlin-dim`) | Any (no critic.json -- not yet generated) |
 
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
+*   **Workspace Section:** The dashboard MUST display a Workspace section between the page header and the feature table. Contents:
+    *   **Git Status:** Either "Clean State (Ready for next task)" when no uncommitted changes exist, or "Work in Progress" followed by the list of modified/staged files.
+    *   **Last Commit:** The most recent git commit summary (hash, message, relative timestamp).
+    *   **Dynamic:** The Workspace section is dynamic data. It MUST update on each data refresh cycle (same cadence as the feature table). It MUST NOT require a full page reload to reflect git state changes.
 
 ### 2.3 Verification Signals
 *   **Role Status Source:** The CDD monitor reads role status from pre-computed `tests/<name>/critic.json` files produced by the Critic tool. CDD does NOT compute role status itself.
@@ -148,13 +152,21 @@ The two groups MUST be laid out with CSS flexbox (`justify-content: space-betwee
 Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat ExtraLight 200, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. The last-refreshed timestamp MUST use the monospace font stack (`'Menlo', 'Monaco', 'Consolas', monospace`) so that digit changes do not cause width fluctuation. CDN loads: Montserrat weights 200,800,900; Inter weights 400,500,700.
 
 ### 2.10 Visual Stability on Refresh
-The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visible flicker, layout shift, or font re-rendering on any static element.
+The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visible flicker, layout shift, or font re-rendering on any static element. The page loads once; all subsequent updates are incremental DOM mutations via JavaScript.
 
-*   **In-Place Data Refresh:** The dashboard MUST use JavaScript `fetch()` to retrieve updated status data and replace only the changed DOM content. It MUST NOT use `<meta http-equiv="refresh">` or `window.location.reload()`. The page loads once; all subsequent updates are incremental DOM mutations.
-*   **Static Elements:** The page header (left group: logo + title; right group: timestamp, Run Critic button, theme toggle) MUST render once on initial page load and never be re-created or replaced during data refresh cycles. Only the timestamp text value updates.
-*   **Font Stability:** Google Fonts CDN `<link>` tags load once on initial page load. Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
-*   **Table Update:** When feature status data changes, only the table body content updates. The table headers (Feature, Architect, Builder, QA) and section headings (ACTIVE, COMPLETE) remain stable. Rows that did not change SHOULD NOT be re-rendered.
+*   **Refresh Mechanism:** The dashboard MUST use JavaScript `fetch()` to retrieve updated data and apply incremental DOM mutations. It MUST NOT use `<meta http-equiv="refresh">` or `window.location.reload()`.
+*   **Dynamic Elements (updated every refresh cycle):**
+    *   Feature table rows (Active and Complete sections).
+    *   Last-refreshed timestamp (text content only).
+    *   Workspace section (git status and last commit).
+*   **Static Elements (rendered once on initial page load, never re-created or replaced):**
+    *   Page header structure (logo, title, project name).
+    *   Theme toggle and Run Critic button.
+    *   Section headings ("ACTIVE", "COMPLETE") and table column headers.
+    *   Google Fonts CDN `<link>` tags.
+*   **Font Stability:** Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
+*   **Minimal Re-Rendering:** Rows that did not change SHOULD NOT be re-rendered.
 
 ## 3. Scenarios
 
@@ -360,6 +372,10 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
 - [ ] Scroll position is preserved across auto-refresh cycles
 - [ ] Only feature status data updates; table headers and section headings remain stable
+- [ ] Workspace section visible between page header and feature table
+- [ ] Workspace shows "Clean State" or "Work in Progress" with file list
+- [ ] Workspace shows last commit summary (hash, message, relative timestamp)
+- [ ] Workspace updates on each 5-second refresh cycle without full page reload
 - [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
 - [ ] Table has columns: Feature, Architect, Builder, QA
 - [ ] Badges use correct color mapping: DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange, ??=dim
@@ -368,19 +384,3 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
 
 ## User Testing Discoveries
-
-### [BUG] strip_discoveries false match on backtick-quoted section header
-- **Status:** RESOLVED
-- **Found by:** Architect (during spec editing -- lifecycle did not reset to TODO after spec change)
-- **Description:** The `strip_discoveries()` function in `serve.py` uses `text.find('## User Testing Discoveries')` to locate the section boundary for the discovery-aware lifecycle comparison. This matches the first occurrence of the literal string in the file -- which in this feature file appears inside a backtick-quoted reference in Section 2.1 (char 866), not the actual section header (char 34638). The lifecycle comparison truncates at the wrong position, making all spec edits above char 866 invisible and preventing lifecycle reset to TODO.
-- **Expected:** Spec edits to Section 2.9 (Header Layout) and Visual Specification should reset the feature lifecycle from COMPLETE to TODO.
-- **Actual:** Feature remains in COMPLETE lifecycle, Builder role_status stays DONE, hiding the work.
-- **Fix:** Replace `text.find('## User Testing Discoveries')` with a regex line-start match (e.g., `re.search(r'^## User Testing Discoveries', text, re.MULTILINE)`) in `serve.py`.
-
-### [DISCOVERY] "??" badge text has insufficient contrast in both themes (Discovered: 2026-02-21)
-- **Scenario:** Web Dashboard Display (visual specification)
-- **Observed Behavior:** The "??" badges for features without critic.json are nearly invisible against the background in both dark (Blueprint) and light (Architect) themes. The dim/blank color token does not provide enough contrast for readability.
-- **Expected Behavior:** "??" text should be clearly readable in both themes, even if styled as secondary/dim.
-- **Action Required:** Architect (re-specify the dim/blank color token in design_visual_standards.md to ensure sufficient contrast)
-- **Resolution:** Added `--purlin-dim` token to `design_visual_standards.md` (Blueprint: `#8B9DB0`, Architect: `#94A3B8`). Updated badge color mapping and visual spec to reference the token. Builder implemented: added `--purlin-dim` to both theme blocks in serve.py CSS, updated `.st-na` to use `var(--purlin-dim)`.
-- **Status:** RESOLVED
