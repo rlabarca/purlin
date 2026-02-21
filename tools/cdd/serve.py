@@ -528,97 +528,139 @@ def generate_html():
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Purlin CDD Dashboard</title>
+<script>
+(function(){{var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@200;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.6/marked.min.js"></script>
 <style>
+:root{{
+  --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
+  --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
+  --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
+  --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
+  --purlin-dim:#8B9DB0;--purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
+}}
+[data-theme='light']{{
+  --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
+  --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
+  --purlin-status-good:#059669;--purlin-status-todo:#D97706;
+  --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
+  --purlin-dim:#94A3B8;--purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
+}}
 *{{box-sizing:border-box;margin:0;padding:0}}
 html,body{{height:100%;overflow:hidden}}
 body{{
-  background:var(--purlin-bg,#14191F);color:var(--purlin-text,#B0B0B0);
+  background:var(--purlin-bg);color:var(--purlin-muted);
   font-family:'Menlo','Monaco','Consolas',monospace;
   font-size:12px;display:flex;flex-direction:column;
 }}
 .hdr{{
   display:flex;justify-content:space-between;align-items:center;
-  padding:6px 12px;background:var(--purlin-surface,#1A2028);
-  border-bottom:1px solid var(--purlin-border,#2A2F36);flex-shrink:0;
+  padding:6px 12px;background:var(--purlin-surface);
+  border-bottom:1px solid var(--purlin-border);flex-shrink:0;
 }}
 .hdr-left{{display:flex;align-items:center;gap:10px}}
-.hdr h1{{font-size:14px;color:var(--purlin-heading,#FFF);font-weight:600;white-space:nowrap}}
+.hdr-title-block{{display:flex;flex-direction:column}}
+.hdr h1{{
+  font-family:var(--font-display);font-size:14px;font-weight:200;
+  color:var(--purlin-primary);white-space:nowrap;
+  letter-spacing:0.12em;text-transform:uppercase;
+}}
+.project-name{{
+  font-family:var(--font-body);font-size:14px;font-weight:500;
+  color:var(--purlin-primary);line-height:1.2;
+}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
+.hdr-logo{{height:24px;width:auto;flex-shrink:0}}
+.hdr-logo .logo-sketch{{stroke:var(--purlin-dim);fill:none}}
+.hdr-logo .logo-fill{{fill:var(--purlin-primary)}}
+.theme-toggle{{
+  background:none;border:1px solid var(--purlin-border);
+  color:var(--purlin-muted);border-radius:3px;padding:2px 6px;
+  cursor:pointer;font-size:14px;line-height:1;
+}}
+.theme-toggle:hover{{color:var(--purlin-primary);border-color:var(--purlin-muted)}}
 .view-toggle{{display:flex;gap:2px}}
 .view-btn{{
-  background:var(--purlin-btn-bg,#2A2F36);color:var(--purlin-text,#B0B0B0);
-  border:1px solid var(--purlin-border,#3A3F46);
-  border-radius:3px;padding:2px 10px;font-family:inherit;font-size:11px;
-  cursor:pointer;line-height:1.5;
+  background:var(--purlin-surface);color:var(--purlin-muted);
+  border:1px solid var(--purlin-border);
+  border-radius:3px;padding:2px 10px;font-family:var(--font-body);font-size:11px;
+  cursor:pointer;line-height:1.5;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
 }}
-.view-btn:hover{{background:var(--purlin-btn-hover,#3A3F46);color:var(--purlin-heading,#FFF)}}
+.view-btn:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .view-btn.active{{
-  background:var(--purlin-accent,#0288d1);color:#FFF;
-  border-color:var(--purlin-accent,#0288d1);
+  background:var(--purlin-accent);color:#FFF;
+  border-color:var(--purlin-accent);
 }}
 .btn-critic{{
-  background:var(--purlin-btn-bg,#2A2F36);color:var(--purlin-text,#B0B0B0);
-  border:1px solid var(--purlin-border,#3A3F46);
-  border-radius:3px;padding:2px 8px;font-family:inherit;font-size:11px;
+  background:var(--purlin-surface);color:var(--purlin-muted);
+  border:1px solid var(--purlin-border);
+  border-radius:3px;padding:2px 8px;font-family:var(--font-body);font-size:11px;
   cursor:pointer;line-height:1.5;
 }}
-.btn-critic:hover{{background:var(--purlin-btn-hover,#3A3F46);color:var(--purlin-heading,#FFF)}}
+.btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
-.btn-critic-err{{color:#FF4500;font-size:10px;margin-right:4px}}
+.btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
 #search-input{{
-  background:var(--purlin-bg,#14191F);border:1px solid var(--purlin-border,#2A2F36);
-  border-radius:3px;color:var(--purlin-text,#B0B0B0);padding:3px 8px;
+  background:var(--purlin-bg);border:1px solid var(--purlin-border);
+  border-radius:3px;color:var(--purlin-muted);padding:3px 8px;
   font-size:11px;width:180px;font-family:inherit;outline:none;
 }}
-#search-input:focus{{border-color:var(--purlin-accent,#0288d1)}}
-#search-input::placeholder{{color:var(--purlin-dim,#555)}}
-.dim{{color:var(--purlin-dim,#666);font-size:0.9em}}
+#search-input:focus{{border-color:var(--purlin-accent)}}
+#search-input::placeholder{{color:var(--purlin-dim)}}
+.dim{{color:var(--purlin-dim);font-size:0.9em}}
 .content-area{{flex:1;overflow:hidden;display:flex;flex-direction:column}}
 .view-panel{{display:none;flex:1;overflow:hidden;flex-direction:column}}
 .view-panel.active{{display:flex}}
 #status-view{{overflow-y:auto;padding:8px 12px}}
 #map-view{{flex:1;position:relative}}
-#cy{{width:100%;height:100%;background:var(--purlin-bg,#14191F)}}
-h2{{font-size:13px;color:var(--purlin-heading,#FFF);margin-bottom:6px;border-bottom:1px solid var(--purlin-border,#2A2F36);padding-bottom:4px}}
+#cy{{width:100%;height:100%;background:var(--purlin-bg)}}
+h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px;text-transform:uppercase;letter-spacing:0.1em}}
 .section-hdr{{
   display:flex;align-items:center;gap:6px;cursor:pointer;
   padding:4px 0;user-select:none;
 }}
 .section-hdr h3{{
-  font-size:11px;color:var(--purlin-dim,#888);margin:0;
-  text-transform:uppercase;letter-spacing:.5px;flex:1;
-  border-bottom:1px solid var(--purlin-border,#2A2F36);padding-bottom:3px;
+  font-family:var(--font-body);font-size:11px;font-weight:700;
+  color:var(--purlin-dim);margin:0;
+  text-transform:uppercase;letter-spacing:0.1em;flex:1;
+  border-bottom:1px solid var(--purlin-border);padding-bottom:3px;
 }}
 .chevron{{
-  font-size:10px;color:var(--purlin-dim,#888);transition:transform 0.15s;
+  font-size:10px;color:var(--purlin-dim);transition:transform 0.15s;
   display:inline-block;width:12px;text-align:center;flex-shrink:0;
 }}
 .chevron.expanded{{transform:rotate(90deg)}}
 .section-badge{{font-size:10px;margin-left:4px;flex-shrink:0}}
 .section-body{{overflow:hidden;transition:max-height 0.2s ease}}
 .section-body.collapsed{{max-height:0 !important;overflow:hidden}}
-.features{{background:var(--purlin-surface,#1A2028);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
+.features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
-.ft th{{text-align:left;color:var(--purlin-dim,#888);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid var(--purlin-border,#2A2F36)}}
+.ft th{{text-align:left;font-family:var(--font-body);font-weight:700;color:var(--purlin-dim);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
+.ft th.badge-col{{text-align:center}}
 .ft td{{padding:2px 6px;line-height:1.5}}
-.ft tr:hover{{background:var(--purlin-row-hover,#1E2630)}}
+.ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
-.feature-link{{color:var(--purlin-accent,#4FC3F7);cursor:pointer;text-decoration:none}}
+.feature-link{{color:var(--purlin-accent);cursor:pointer;text-decoration:none}}
 .feature-link:hover{{text-decoration:underline}}
-.ctx{{background:var(--purlin-surface,#1A2028);border-radius:4px;padding:8px 10px}}
-.clean{{color:#32CD32}}
-.wip{{color:#FFD700;margin-bottom:2px}}
-pre{{background:var(--purlin-bg,#14191F);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
-.st-done{{color:#32CD32;font-weight:bold}}
-.st-todo{{color:#FFD700;font-weight:bold}}
-.st-fail{{color:#FF4500;font-weight:bold}}
-.st-blocked{{color:#888;font-weight:bold}}
-.st-disputed{{color:#FFA500;font-weight:bold}}
-.st-na{{color:#444;font-weight:bold}}
+.ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px}}
+.clean{{color:var(--purlin-status-good)}}
+.wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
+pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
+.st-done{{color:var(--purlin-status-good);font-weight:bold}}
+.st-todo{{color:var(--purlin-status-todo);font-weight:bold}}
+.st-fail{{color:var(--purlin-status-error);font-weight:bold}}
+.st-blocked{{color:var(--purlin-dim);font-weight:bold}}
+.st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
+.st-na{{color:var(--purlin-dim);font-weight:bold}}
 /* Feature Detail Modal */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
@@ -627,39 +669,39 @@ pre{{background:var(--purlin-bg,#14191F);padding:6px;border-radius:3px;white-spa
 }}
 .modal-overlay.visible{{display:flex}}
 .modal-content{{
-  background:var(--purlin-surface,#1A2028);border:1px solid var(--purlin-border,#2A2F36);
+  background:var(--purlin-surface);border:1px solid var(--purlin-border);
   border-radius:6px;width:700px;max-width:90vw;
   max-height:80vh;display:flex;flex-direction:column;
   position:relative;
 }}
 .modal-header{{
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 14px;border-bottom:1px solid var(--purlin-border,#2A2F36);flex-shrink:0;
+  padding:10px 14px;border-bottom:1px solid var(--purlin-border);flex-shrink:0;
 }}
-.modal-header h2{{font-size:13px;color:var(--purlin-heading,#FFF);margin:0;border:0;padding:0}}
+.modal-header h2{{font-size:13px;color:var(--purlin-primary);margin:0;border:0;padding:0}}
 .modal-close{{
-  background:none;border:1px solid #444;color:#888;
+  background:none;border:1px solid var(--purlin-border);color:var(--purlin-muted);
   cursor:pointer;font-size:14px;width:24px;height:24px;
   border-radius:3px;display:flex;align-items:center;
   justify-content:center;line-height:1;
 }}
-.modal-close:hover{{background:#333;color:#FFF;border-color:#666}}
+.modal-close:hover{{background:var(--purlin-tag-fill);color:var(--purlin-primary);border-color:var(--purlin-muted)}}
 .modal-tabs{{
-  display:flex;gap:0;border-bottom:1px solid var(--purlin-border,#2A2F36);
+  display:flex;gap:0;border-bottom:1px solid var(--purlin-border);
   padding:0 14px;flex-shrink:0;
 }}
 .modal-tab{{
-  padding:6px 12px;font-size:11px;color:var(--purlin-dim,#888);
+  padding:6px 12px;font-size:11px;color:var(--purlin-dim);
   cursor:pointer;border-bottom:2px solid transparent;
   font-family:inherit;background:none;border-top:0;border-left:0;border-right:0;
 }}
-.modal-tab:hover{{color:var(--purlin-heading,#FFF)}}
-.modal-tab.active{{color:var(--purlin-accent,#4FC3F7);border-bottom-color:var(--purlin-accent,#0288d1)}}
+.modal-tab:hover{{color:var(--purlin-primary)}}
+.modal-tab.active{{color:var(--purlin-accent);border-bottom-color:var(--purlin-accent)}}
 .modal-body{{
   padding:14px;overflow-y:auto;flex:1;
-  line-height:1.6;color:#CCC;
+  line-height:1.6;color:var(--purlin-muted);
 }}
-.modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-heading,#FFF);margin:12px 0 6px}}
+.modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-primary);margin:12px 0 6px}}
 .modal-body h1{{font-size:16px}}
 .modal-body h2{{font-size:14px;border:0;padding:0}}
 .modal-body h3{{font-size:12px}}
@@ -667,18 +709,32 @@ pre{{background:var(--purlin-bg,#14191F);padding:6px;border-radius:3px;white-spa
 .modal-body ul,.modal-body ol{{margin:6px 0 6px 20px}}
 .modal-body li{{margin:2px 0}}
 .modal-body code{{
-  background:var(--purlin-bg,#14191F);padding:1px 4px;border-radius:2px;
-  font-size:11px;color:#4FC3F7;
+  background:var(--purlin-bg);padding:1px 4px;border-radius:2px;
+  font-size:11px;color:var(--purlin-accent);
 }}
-.modal-body pre{{background:var(--purlin-bg,#14191F);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
+.modal-body pre{{background:var(--purlin-bg);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
 .modal-body pre code{{padding:0;background:none}}
-.modal-body blockquote{{border-left:3px solid var(--purlin-accent,#0288d1);padding-left:10px;color:#888;margin:6px 0}}
+.modal-body blockquote{{border-left:3px solid var(--purlin-accent);padding-left:10px;color:var(--purlin-dim);margin:6px 0}}
 </style>
 </head>
 <body>
 <div class="hdr">
   <div class="hdr-left">
-    <h1>Purlin CDD Dashboard</h1>
+    <svg class="hdr-logo" viewBox="140 100 720 420" xmlns="http://www.w3.org/2000/svg">
+      <g class="logo-sketch" stroke-width="2">
+        <line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/>
+        <line x1="500" y1="145" x2="170" y2="409"/>
+        <line x1="500" y1="145" x2="830" y2="409"/>
+        <line x1="400" y1="210" x2="400" y2="255"/>
+        <line x1="600" y1="210" x2="600" y2="255"/>
+      </g>
+      <polyline class="logo-fill" points="400,280 500,390 600,280" fill="none" stroke="currentColor" stroke-width="14" stroke-linejoin="miter" style="fill:none;stroke:var(--purlin-primary)"/>
+      <path class="logo-fill" d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd"/>
+    </svg>
+    <div class="hdr-title-block">
+      <h1>Purlin CDD Dashboard</h1>
+      <span class="project-name">{PROJECT_NAME}</span>
+    </div>
     <div class="view-toggle">
       <button class="view-btn active" id="btn-status" onclick="switchView('status')">Status</button>
       <button class="view-btn" id="btn-map" onclick="switchView('map')">SW Map</button>
@@ -686,9 +742,13 @@ pre{{background:var(--purlin-bg,#14191F);padding:6px;border-radius:3px;white-spa
   </div>
   <div class="hdr-right">
     <input type="text" id="search-input" placeholder="Filter..." />
+    <span id="last-refreshed" style="font-family:'Menlo','Monaco','Consolas',monospace;color:var(--purlin-dim);font-size:11px">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
     <span id="critic-err" class="btn-critic-err"></span>
     <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
-    <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <span id="theme-icon-sun" style="display:none">&#9788;</span>
+      <span id="theme-icon-moon">&#9790;</span>
+    </button>
   </div>
 </div>
 <div class="content-area">
@@ -759,6 +819,44 @@ var statusRefreshTimer = null;
 var modalCache = {{}};
 
 // ============================
+// Theme Toggle
+// ============================
+function getThemeColors() {{
+  var s = getComputedStyle(document.documentElement);
+  return {{
+    bg: s.getPropertyValue('--purlin-bg').trim(),
+    surface: s.getPropertyValue('--purlin-surface').trim(),
+    primary: s.getPropertyValue('--purlin-primary').trim(),
+    accent: s.getPropertyValue('--purlin-accent').trim(),
+    muted: s.getPropertyValue('--purlin-muted').trim(),
+    border: s.getPropertyValue('--purlin-border').trim(),
+    dim: s.getPropertyValue('--purlin-dim').trim(),
+  }};
+}}
+
+function updateThemeIcons() {{
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  document.getElementById('theme-icon-sun').style.display = isLight ? '' : 'none';
+  document.getElementById('theme-icon-moon').style.display = isLight ? 'none' : '';
+}}
+
+function toggleTheme() {{
+  var html = document.documentElement;
+  var isLight = html.getAttribute('data-theme') === 'light';
+  if (isLight) {{
+    html.removeAttribute('data-theme');
+    localStorage.setItem('purlin-theme', 'dark');
+  }} else {{
+    html.setAttribute('data-theme', 'light');
+    localStorage.setItem('purlin-theme', 'light');
+  }}
+  updateThemeIcons();
+  if (currentView === 'map' && graphData) renderGraph();
+}}
+
+updateThemeIcons();
+
+// ============================
 // View Toggle + Hash Routing
 // ============================
 function switchView(view) {{
@@ -795,6 +893,16 @@ window.addEventListener('hashchange', function() {{
 // ============================
 // Status View Auto-Refresh
 // ============================
+function updateTimestamp() {{
+  var el = document.getElementById('last-refreshed');
+  if (el) {{
+    var d = new Date();
+    var pad = function(n) {{ return n < 10 ? '0' + n : '' + n; }};
+    el.textContent = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }}
+}}
+
 function refreshStatus() {{
   fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
@@ -824,6 +932,7 @@ function refreshStatus() {{
         // Re-apply search filter
         applySearchFilter();
       }}
+      updateTimestamp();
     }})
     .catch(function() {{}});
 }}
@@ -1038,8 +1147,10 @@ function wrapText(text, maxChars) {{
   return lines;
 }}
 
-function createNodeLabelSVG(name, filename) {{
+function createNodeLabelSVG(name, filename, colors) {{
   var esc = function(s) {{ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }};
+  var labelColor = (colors && colors.primary) || '#E2E8F0';
+  var fileColor = (colors && colors.dim) || '#8B9DB0';
   var nameLines = wrapText(name, CHARS_PER_LINE);
   var nameBlockHeight = nameLines.length * LABEL_LINE_HEIGHT;
   var totalHeight = nameBlockHeight + FILENAME_LINE_HEIGHT + 8;
@@ -1050,13 +1161,13 @@ function createNodeLabelSVG(name, filename) {{
   }});
 
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + SVG_WIDTH + '" height="' + totalHeight + '">' +
-    '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="#E8E8E8" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
-    '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="#888" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
+    '<text x="' + (SVG_WIDTH / 2) + '" y="' + LABEL_LINE_HEIGHT + '" text-anchor="middle" font-size="' + LABEL_FONT_SIZE + '" font-weight="bold" fill="' + labelColor + '" font-family="Menlo,Monaco,Consolas,monospace">' + tspans + '</text>' +
+    '<text x="' + (SVG_WIDTH / 2) + '" y="' + (nameBlockHeight + FILENAME_LINE_HEIGHT + 4) + '" text-anchor="middle" font-size="' + FILENAME_FONT_SIZE + '" fill="' + fileColor + '" font-family="Menlo,Monaco,Consolas,monospace">' + esc(filename) + '</text>' +
     '</svg>';
   return {{ url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), height: totalHeight }};
 }}
 
-function buildCytoscapeElements(features) {{
+function buildCytoscapeElements(features, colors) {{
   var nodes = [];
   var edges = [];
   var fileToId = {{}};
@@ -1082,7 +1193,7 @@ function buildCytoscapeElements(features) {{
     var color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
     var catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
     var filename = f.file.split('/').pop();
-    var svgResult = createNodeLabelSVG(f.label, filename);
+    var svgResult = createNodeLabelSVG(f.label, filename, colors);
     nodes.push({{
       data: {{
         id: id,
@@ -1115,7 +1226,8 @@ function buildCytoscapeElements(features) {{
   return {{ nodes: nodes, edges: edges }};
 }}
 
-function createCytoscape(elements) {{
+function createCytoscape(elements, colors) {{
+  var c = colors || getThemeColors();
   var instance = cytoscape({{
     container: document.getElementById('cy'),
     elements: elements.nodes.concat(elements.edges),
@@ -1140,12 +1252,12 @@ function createCytoscape(elements) {{
         selector: '$node > node',
         style: {{
           'label': 'data(label)',
-          'background-color': '#1A2028',
+          'background-color': c.surface,
           'background-opacity': 0.8,
           'border-width': 1,
-          'border-color': '#2A2F36',
+          'border-color': c.border,
           'border-style': 'dashed',
-          'color': '#666',
+          'color': c.dim,
           'font-size': '12px',
           'font-weight': 'bold',
           'text-valign': 'top',
@@ -1159,8 +1271,8 @@ function createCytoscape(elements) {{
         selector: 'edge',
         style: {{
           'width': 2,
-          'line-color': '#444',
-          'target-arrow-color': '#444',
+          'line-color': c.border,
+          'target-arrow-color': c.border,
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
           'arrow-scale': 0.8,
@@ -1252,13 +1364,14 @@ function createCytoscape(elements) {{
 
 function renderGraph() {{
   if (!graphData || !graphData.features) return;
-  var elements = buildCytoscapeElements(graphData.features);
+  var colors = getThemeColors();
+  var elements = buildCytoscapeElements(graphData.features, colors);
 
   if (cy) {{
     var zoom = cy.zoom();
     var pan = cy.pan();
     cy.destroy();
-    cy = createCytoscape(elements);
+    cy = createCytoscape(elements, colors);
     if (!isInitialLoad) {{
       cy.zoom(zoom);
       cy.pan(pan);
@@ -1267,7 +1380,7 @@ function renderGraph() {{
       isInitialLoad = false;
     }}
   }} else {{
-    cy = createCytoscape(elements);
+    cy = createCytoscape(elements, colors);
     cy.fit(undefined, 40);
     isInitialLoad = false;
   }}
@@ -1340,8 +1453,8 @@ def _role_table_html(features):
         )
     return (
         f'<table class="ft">'
-        f'<thead><tr><th>Feature</th><th>Architect</th>'
-        f'<th>Builder</th><th>QA</th></tr></thead>'
+        f'<thead><tr><th>Feature</th><th class="badge-col">Architect</th>'
+        f'<th class="badge-col">Builder</th><th class="badge-col">QA</th></tr></thead>'
         f'<tbody>{rows}</tbody>'
         f'</table>'
     )
