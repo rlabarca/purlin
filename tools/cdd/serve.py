@@ -1771,7 +1771,7 @@ function showDetectProvidersDialog(providers) {{
     var avail = p.available ? '\u2713 available' : '\u2717 unavailable';
     var n = p.models ? p.models.length : 0;
     return p.provider + ': ' + avail + ' (' + n + ' model' + (n !== 1 ? 's' : '') + ')';
-  }}).join('\n');
+  }}).join('\\n');
   var overlay = document.createElement('div');
   overlay.id = 'detect-dialog-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center';
