@@ -159,6 +159,6 @@ See [software_map_generator.impl.md](software_map_generator.impl.md) for impleme
 - **Observed Behavior:** The "Filter nodes..." placeholder text in the search input is nearly invisible against the input background in both dark (Blueprint) and light (Architect) themes. The placeholder color does not provide enough contrast for readability.
 - **Expected Behavior:** Placeholder text should be clearly readable in both themes, even if styled as secondary/hint text.
 - **Action Required:** Architect (re-specify placeholder text color or input styling in design_visual_standards.md to ensure sufficient contrast)
-- **Resolution:** Added `--purlin-dim` token to `design_visual_standards.md` (Blueprint: `#8B9DB0`, Architect: `#94A3B8`). Updated search/filter requirement and visual spec to reference the token for placeholder text.
-- **Status:** SPEC_UPDATED
+- **Resolution:** Added `--purlin-dim` token to `design_visual_standards.md` (Blueprint: `#8B9DB0`, Architect: `#94A3B8`). Updated search/filter requirement and visual spec to reference the token for placeholder text. Builder implemented: added `--purlin-dim` to both theme blocks in index.html CSS, updated `#search::placeholder` to use `var(--purlin-dim)`.
+- **Status:** RESOLVED
 

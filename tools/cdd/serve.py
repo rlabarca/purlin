@@ -487,6 +487,7 @@ def generate_html():
   --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
   --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
   --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
+  --purlin-dim:#8B9DB0;
   --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
   --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
@@ -495,6 +496,7 @@ def generate_html():
   --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
   --purlin-status-good:#059669;--purlin-status-todo:#D97706;
   --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
+  --purlin-dim:#94A3B8;
   --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
   --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
@@ -549,7 +551,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-fail{{color:var(--purlin-status-error);font-weight:bold}}
 .st-blocked{{color:var(--purlin-muted);font-weight:bold}}
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
-.st-na{{color:var(--purlin-border);font-weight:bold}}
+.st-na{{color:var(--purlin-dim);font-weight:bold}}
 </style>
 </head>
 <body>
