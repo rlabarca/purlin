@@ -168,11 +168,5 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 
 ## User Testing Discoveries
 
-### [SPEC_DISPUTE] "dark color scheme" check is misleading given dual-theme support (Discovered: 2026-02-21)
-- **Scenario:** Interactive Web View
-- **Observed Behavior:** Dashboard correctly defaults to dark (Blueprint) theme, with a toggle to switch to light (Architect) theme. Both themes work.
-- **Expected Behavior:** Scenario step "And the overall UI uses a dark color scheme" implies dark-only, which contradicts Section 2.5 that specifies both themes with a toggle.
-- **Action Required:** Architect — revise the scenario step to reflect dual-theme support (e.g., "And the overall UI defaults to a dark color scheme with a theme toggle available").
-- **Status:** SPEC_UPDATED
 
 
