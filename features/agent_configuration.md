@@ -65,8 +65,14 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 ### 2.5 Dashboard Agents Section
 
 *   **Location:** A new collapsible section below the Workspace section in the Status view.
+*   **Visual Separation:** The Agents section MUST be visually separated from the Workspace section above it with the same treatment used between all other sections (section heading with underline separator via `border-bottom` on `h3`, consistent with Active/Complete/Workspace separation). Each section in the Status view -- Active, Complete, Workspace, Agents -- MUST have its own visible boundary so that sections are never visually merged.
 *   **Default State:** Collapsed by default.
-*   **Collapsed Badge:** When collapsed, displays a summary: the common model label if all agents use the same model (e.g., `"3x Sonnet 4.6"`), or `"Mixed models"` if they differ.
+*   **State Persistence:** The Agents section expanded/collapsed state MUST be persisted to the same `localStorage` key used by all other sections (`purlin-section-states`). On page load, the saved state is restored, overriding the collapsed default. Each toggle updates the stored state immediately. This is the same mechanism described in `cdd_status_monitor.md` Section 2.2.2.
+*   **Collapsed Badge:** When collapsed, the section heading displays a summary of the configured models, grouped by count and label. Format: `"<count>x <label>"` segments joined by `" | "`. Examples:
+    *   All same model: `"3x Sonnet 4.6"`
+    *   Two groups: `"1x Opus 4.6 | 2x Sonnet 4.6"`
+    *   All different: `"1x Opus 4.6 | 1x Sonnet 4.6 | 1x Haiku 4.5"`
+    *   The segments are ordered by count descending, then alphabetically by label.
 *   **Section Body:** Three rows, one per agent (Architect, Builder, QA). Each row contains:
     1.  **Agent Name:** Inter 500, 12px, uppercase, `var(--purlin-primary)` color.
     2.  **Provider Dropdown:** Lists keys from `llm_providers`. Changing the provider repopulates the model dropdown with that provider's models.
@@ -170,15 +176,27 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Then a confirmation dialog shows detected providers and model counts
     And clicking "Apply" merges new providers into llm_providers in config.json
 
-#### Scenario: Collapsed Badge Shows Model Summary
+#### Scenario: Collapsed Badge Shows Uniform Model Summary
     Given all three agents are configured with the same model "claude-sonnet-4-6"
     When the Agents section is collapsed
     Then the badge displays "3x Sonnet 4.6"
 
-#### Scenario: Collapsed Badge Shows Mixed Indicator
-    Given agents use different models
+#### Scenario: Collapsed Badge Shows Grouped Model Summary
+    Given the Architect uses "claude-opus-4-6" and Builder and QA use "claude-sonnet-4-6"
     When the Agents section is collapsed
-    Then the badge displays "Mixed models"
+    Then the badge displays "2x Sonnet 4.6 | 1x Opus 4.6"
+
+#### Scenario: Agents Section is Visually Separated from Workspace
+    Given the dashboard is loaded with valid config.json
+    When the Status view is displayed
+    Then the Agents section heading has a visible underline separator
+    And the Agents section is visually distinct from the Workspace section above it
+
+#### Scenario: Agents Section State Persists Across Reloads
+    Given the user expands the Agents section
+    When the page is reloaded
+    Then the Agents section is still expanded
+    And the expanded/collapsed state is read from localStorage
 
 
 ## Implementation Notes
