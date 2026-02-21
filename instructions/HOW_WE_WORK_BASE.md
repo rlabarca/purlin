@@ -209,3 +209,6 @@ The section is placed between `## Implementation Notes` and `## User Testing Dis
 *   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).
 *   Local file paths are relative to the project root.
 *   There is no mandatory storage location -- projects choose what fits their workflow.
+
+### 9.5 Verification Methods
+Visual checklist items are verified by the QA Agent during the visual verification pass (QA_BASE Section 5.4). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.

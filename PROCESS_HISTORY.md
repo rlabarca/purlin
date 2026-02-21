@@ -2,6 +2,16 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Screenshot-Assisted Visual Verification for QA Agent
+
+- **Scope:** QA workflow enhancement -- QA agent can now analyze user-provided screenshots to auto-verify visual checklist items.
+- **Rationale:** Visual spec verification was fully manual: the QA agent presented the entire checklist and asked for a single PASS/FAIL. Many checklist items describe static, visible properties (layout, element presence, typography, color) that an agent can verify from a screenshot, since Claude Code is multimodal. This change lets the QA agent auto-verify what it can and only ask the user to confirm the remainder, reducing manual effort.
+- **Changes:**
+    - **QA_BASE.md Section 5.4:** Rewritten from a 4-step process into 6 subsections (5.4.1-5.4.6). New flow: present checklist, offer screenshot input, analyze screenshots (classify items as screenshot-verifiable vs. not), present consolidated results (auto-verified + manual confirmation list), manual fallback for users who decline screenshots, and batching optimization with screenshot support.
+    - **HOW_WE_WORK_BASE.md Section 9.5:** New "Verification Methods" subsection documenting that visual checklist items MAY be verified via screenshot-assisted analysis. Informs all roles about the capability without changing any workflow.
+- **What does NOT change:** Feature file format, Critic tool behavior, CDD monitor, Architect ownership of visual specs, discovery recording protocol, QA overrides.
+- **Impact:** QA workflow change only. No code, spec, or tool changes required. The QA agent gains an optional capability; the existing manual fallback is preserved.
+
 ## [2026-02-21] Builder Bug Fix Resolution Mandate
 
 - **Scope:** Process addition to BUILDER_BASE.md -- Builder must update BUG discovery status after fixing.
