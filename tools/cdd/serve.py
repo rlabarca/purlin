@@ -566,13 +566,13 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <h1>Purlin CDD Monitor</h1>
   </div>
   <div class="hdr-right">
+    <span class="dim" id="timestamp" style="font-family:'Menlo','Monaco','Consolas',monospace">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+    <span id="critic-err" class="btn-critic-err"></span>
+    <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
     <button id="btn-theme" class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
       <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
-    <span id="critic-err" class="btn-critic-err"></span>
-    <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
-    <span class="dim" id="timestamp">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
   </div>
 </div>
 <div class="features">
