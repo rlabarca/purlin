@@ -640,11 +640,11 @@ body{{
   padding:6px 12px;
 }}
 .hdr-row1{{display:flex;justify-content:space-between;align-items:center}}
-.hdr-row2{{display:flex;justify-content:space-between;align-items:center;margin-top:4px}}
+.hdr-row2{{display:flex;justify-content:space-between;align-items:center;margin-top:0;border-top:1px solid var(--purlin-border);padding-top:4px}}
 .hdr-row1-left{{display:flex;align-items:center;gap:10px}}
 .hdr-row1-right{{display:flex;align-items:center;gap:8px}}
 .hdr-row2-left{{display:flex;align-items:center}}
-.hdr-row2-right{{display:flex;align-items:center}}
+.hdr-row2-right{{display:flex;align-items:center;gap:6px}}
 .hdr-title-block{{display:flex;flex-direction:column}}
 .hdr h1{{
   font-family:var(--font-display);font-size:14px;font-weight:200;
@@ -815,8 +815,6 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     </div>
     <div class="hdr-row1-right">
       <span id="last-refreshed" style="font-family:'Menlo','Monaco','Consolas',monospace;color:var(--purlin-dim);font-size:11px">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
-      <span id="critic-err" class="btn-critic-err"></span>
-      <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
         <span id="theme-icon-sun" style="display:none">&#9788;</span>
         <span id="theme-icon-moon">&#9790;</span>
@@ -831,6 +829,8 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
     </div>
     <div class="hdr-row2-right">
+      <span id="critic-err" class="btn-critic-err"></span>
+      <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
       <input type="text" id="search-input" placeholder="Filter..." />
     </div>
   </div>
@@ -996,23 +996,9 @@ function refreshStatus() {{
       var newStatusView = doc.getElementById('status-view');
       if (newStatusView) {{
         var current = document.getElementById('status-view');
-        // Preserve collapsed state
-        var collapsedSections = [];
-        current.querySelectorAll('.section-body.collapsed').forEach(function(el) {{
-          collapsedSections.push(el.id);
-        }});
         current.innerHTML = newStatusView.innerHTML;
-        // Restore collapsed state
-        collapsedSections.forEach(function(id) {{
-          var el = document.getElementById(id);
-          if (el) {{
-            el.classList.add('collapsed');
-            var chevron = document.getElementById(id + '-chevron');
-            if (chevron) chevron.classList.remove('expanded');
-            var badge = document.getElementById(id + '-badge');
-            if (badge) badge.style.display = '';
-          }}
-        }});
+        // Restore section states from localStorage
+        applySectionStates();
         // Re-apply search filter
         applySearchFilter();
       }}
@@ -1024,8 +1010,45 @@ function refreshStatus() {{
 statusRefreshTimer = setInterval(refreshStatus, 5000);
 
 // ============================
-// Collapsible Sections
+// Collapsible Sections with localStorage persistence
 // ============================
+function getSectionStates() {{
+  try {{
+    var raw = localStorage.getItem('purlin-section-states');
+    return raw ? JSON.parse(raw) : {{}};
+  }} catch(e) {{ return {{}}; }}
+}}
+
+function saveSectionStates() {{
+  var states = {{}};
+  ['active-section', 'complete-section', 'workspace-section'].forEach(function(id) {{
+    var el = document.getElementById(id);
+    if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
+  }});
+  localStorage.setItem('purlin-section-states', JSON.stringify(states));
+}}
+
+function applySectionStates() {{
+  var states = getSectionStates();
+  ['active-section', 'complete-section', 'workspace-section'].forEach(function(id) {{
+    var saved = states[id];
+    if (!saved) return;
+    var body = document.getElementById(id);
+    var chevron = document.getElementById(id + '-chevron');
+    var badge = document.getElementById(id + '-badge');
+    if (!body) return;
+    if (saved === 'collapsed') {{
+      body.classList.add('collapsed');
+      if (chevron) chevron.classList.remove('expanded');
+      if (badge) badge.style.display = '';
+    }} else {{
+      body.classList.remove('collapsed');
+      if (chevron) chevron.classList.add('expanded');
+      if (badge) badge.style.display = 'none';
+    }}
+  }});
+}}
+
 function toggleSection(sectionId) {{
   var body = document.getElementById(sectionId);
   var chevron = document.getElementById(sectionId + '-chevron');
@@ -1041,6 +1064,7 @@ function toggleSection(sectionId) {{
     if (chevron) chevron.classList.remove('expanded');
     if (badge) badge.style.display = '';
   }}
+  saveSectionStates();
 }}
 
 // ============================
@@ -1506,6 +1530,7 @@ function stopMapRefresh() {{
 // ============================
 // Initialize
 // ============================
+applySectionStates();
 initFromHash();
 </script>
 </body>
