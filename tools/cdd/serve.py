@@ -582,29 +582,39 @@ def generate_html():
     agents_badge = _agents_badge(CONFIG)
 
     # Compute summary badges for collapsed sections
-    def _section_summary_badges(features_list):
-        counts = {}
+    def _section_summary_badge(features_list):
+        """Return a single priority badge per spec 2.2.2:
+        DONE if all roles satisfied, ?? if empty,
+        TODO if any TODO with no FAIL/WARN, most-severe otherwise.
+        Priority: FAIL > INFEASIBLE > DISPUTED > TODO > DONE > ??
+        """
+        if not features_list:
+            return '<span class="st-na">??</span>'
+        severity = {
+            'FAIL': 6, 'INFEASIBLE': 5, 'DISPUTED': 4,
+            'TODO': 3, 'BLOCKED': 2, 'DONE': 1, 'CLEAN': 1, 'N/A': 0,
+        }
+        all_statuses = []
         for e in features_list:
             for role in ('architect', 'builder', 'qa'):
                 val = e.get(role)
                 if val:
-                    counts[val] = counts.get(val, 0) + 1
-        if not counts:
-            counts['??'] = len(features_list)
-        return counts
+                    all_statuses.append(val)
+        if not all_statuses:
+            return '<span class="st-na">??</span>'
+        # DONE only if every feature has all three roles fully satisfied
+        def _satisfied(e):
+            return (e.get('architect') in ('DONE',) and
+                    e.get('builder') in ('DONE',) and
+                    e.get('qa') in ('CLEAN', 'N/A'))
+        if all(_satisfied(e) for e in features_list):
+            return '<span class="st-done">DONE</span>'
+        top = max(all_statuses, key=lambda s: severity.get(s, 0))
+        css = ROLE_BADGE_CSS.get(top, 'st-na')
+        return f'<span class="{css}">{top}</span>'
 
-    active_badges = _section_summary_badges(active_features)
-    complete_badges = _section_summary_badges(complete_features)
-
-    def _badge_summary_html(counts):
-        parts = []
-        for status, count in sorted(counts.items()):
-            css = ROLE_BADGE_CSS.get(status, "st-na")
-            parts.append(f'<span class="{css}">{count} {status}</span>')
-        return ' '.join(parts)
-
-    active_summary = _badge_summary_html(active_badges)
-    complete_summary = _badge_summary_html(complete_badges)
+    active_summary = _section_summary_badge(active_features)
+    complete_summary = _section_summary_badge(complete_features)
 
     # Workspace collapsed summary
     if not git_status:
@@ -1138,6 +1148,21 @@ function applySearchFilter() {{
     rows.forEach(function(row) {{
       var text = row.textContent.toLowerCase();
       row.style.display = (!query || text.includes(query)) ? '' : 'none';
+    }});
+
+    // Per spec 2.2.3: hide entire section when no rows match
+    ['active-section', 'complete-section'].forEach(function(sectionId) {{
+      var body = document.getElementById(sectionId);
+      if (!body) return;
+      var hdr = body.previousElementSibling;
+      if (!hdr || !hdr.classList.contains('section-hdr')) return;
+      var sectionRows = body.querySelectorAll('.ft tbody tr');
+      if (sectionRows.length === 0) return;
+      var allHidden = query && Array.from(sectionRows).every(function(r) {{
+        return r.style.display === 'none';
+      }});
+      hdr.style.display = allHidden ? 'none' : '';
+      body.style.display = allHidden ? 'none' : '';
     }});
   }}
 

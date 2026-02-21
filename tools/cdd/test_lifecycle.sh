@@ -116,7 +116,7 @@ cat > "$TEMP_FEATURE" << 'FEATURE'
 
 > Label: "Test: Lifecycle Fixture"
 > Category: "Testing"
-> Prerequisite: features/arch_critic_policy.md
+> Prerequisite: features/policy_critic.md
 
 ## 1. Overview
 Temporary feature used exclusively by the CDD lifecycle integration test.
