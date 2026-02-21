@@ -127,4 +127,18 @@ These scenarios require the running CDD Dashboard server and human interaction t
 
 
 ## Implementation Notes
-Dashboard-specific implementation knowledge will be recorded here as development proceeds.
+
+### Agent Row Grid Layout
+Uses CSS Grid (`grid-template-columns: 64px 100px 140px 80px auto`) for consistent column alignment across all three agent rows. Hidden capability-gated controls use `visibility: hidden` (not `display: none`) to preserve column space and prevent layout shift.
+
+### Ask Permission Checkbox Semantics
+The checkbox is labeled "Ask Permission" (user-facing behavior) and its checked state is the inverse of `bypass_permissions` in config.json. Checked = agent asks before using tools (`bypass_permissions: false`). Unchecked = agent skips permission prompts (`bypass_permissions: true`).
+
+### Flicker-Free Refresh
+On 5-second auto-refresh, `initAgentsSection()` compares incoming config JSON against the cached `agentsConfig` before deciding whether to re-render. If config is unchanged, rendering is skipped entirely. If changed, `diffUpdateAgentRows()` updates only the controls whose values differ, avoiding full innerHTML replacement.
+
+### Badge Grouping
+Both the server-side Python badge (used for initial HTML) and client-side JS badge (used after config changes) use the same algorithm: group model labels by count, sort by count descending then alphabetically, format as `"<count>x <label>"` segments joined by `" | "`.
+
+### Pre-existing _send_json Bug Fix
+Fixed a pre-existing bug where `_send_json()` was called without the required `status` argument on the `/status.json` and `/workspace.json` GET routes. The function signature requires `(self, status, data)` but these two call sites were passing only `data`.

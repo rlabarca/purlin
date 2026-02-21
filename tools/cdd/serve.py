@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import urllib.parse
+from collections import Counter
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -575,9 +576,10 @@ def generate_html():
             models = (providers.get(prov) or {}).get('models', [])
             lbl = next((m.get('label', mid) for m in models if m.get('id') == mid), mid or '?')
             labels.append(lbl)
-        if labels and len(set(labels)) == 1 and labels[0] not in ('', '?'):
-            return f'{len(roles)}x {labels[0]}'
-        return 'Mixed models'
+        # Group by label, sort by count descending then alphabetically
+        counts = Counter(labels)
+        segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+        return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
     agents_badge = _agents_badge(CONFIG)
 
@@ -714,10 +716,10 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.agent-row{{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-row{{display:grid;grid-template-columns:64px 100px 140px 80px auto;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-row:last-child{{border-bottom:none}}
-.agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-accent);text-transform:uppercase;min-width:64px;flex-shrink:0}}
-.agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer}}
+.agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-primary);text-transform:uppercase}}
+.agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer;width:100%}}
 .agent-sel:focus{{border-color:var(--purlin-accent)}}
 .agent-bypass-lbl{{font-size:11px;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
 #search-input{{
@@ -1601,8 +1603,18 @@ function initAgentsSection() {{
   fetch('/config.json')
     .then(function(r) {{ return r.json(); }})
     .then(function(cfg) {{
+      if (agentsConfig && JSON.stringify(cfg.agents) === JSON.stringify(agentsConfig.agents) &&
+          JSON.stringify(cfg.llm_providers) === JSON.stringify(agentsConfig.llm_providers)) {{
+        // Config unchanged — skip re-render to avoid flicker
+        return;
+      }}
+      var needsFullRender = !agentsConfig || !document.getElementById('agent-provider-architect');
       agentsConfig = cfg;
-      renderAgentsRows(cfg);
+      if (needsFullRender) {{
+        renderAgentsRows(cfg);
+      }} else {{
+        diffUpdateAgentRows(cfg);
+      }}
       updateAgentsBadge(cfg);
     }})
     .catch(function() {{}});
@@ -1639,11 +1651,35 @@ function renderAgentsRows(cfg) {{
   }});
 }}
 
+function diffUpdateAgentRows(cfg) {{
+  var providers = cfg.llm_providers || {{}};
+  var agents = cfg.agents || {{}};
+  var roles = ['architect', 'builder', 'qa'];
+  roles.forEach(function(role) {{
+    var acfg = agents[role] || {{}};
+    var provSel = document.getElementById('agent-provider-' + role);
+    var modSel = document.getElementById('agent-model-' + role);
+    var effSel = document.getElementById('agent-effort-' + role);
+    var bypassChk = document.getElementById('agent-bypass-' + role);
+    if (!provSel) return;
+    var newProv = acfg.provider || '';
+    if (provSel.value !== newProv) {{
+      provSel.value = newProv;
+      populateModelDropdown(role, newProv, providers, acfg.model || '');
+    }}
+    if (modSel && modSel.value !== (acfg.model || '')) modSel.value = acfg.model || '';
+    if (effSel && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
+    var askPerm = acfg.bypass_permissions !== true;
+    if (bypassChk && bypassChk.checked !== askPerm) bypassChk.checked = askPerm;
+    syncCapabilityControls(role, providers);
+  }});
+}}
+
 function buildAgentRowHtml(role, agentCfg, providers) {{
   var currentProvider = agentCfg.provider || '';
   var currentModel = agentCfg.model || '';
   var currentEffort = agentCfg.effort || 'high';
-  var currentBypass = agentCfg.bypass_permissions === true;
+  var askPermission = agentCfg.bypass_permissions !== true;
   var provOptions = Object.keys(providers).map(function(k) {{
     return '<option value="' + k + '"' + (k === currentProvider ? ' selected' : '') + '>' + k + '</option>';
   }}).join('');
@@ -1660,9 +1696,9 @@ function buildAgentRowHtml(role, agentCfg, providers) {{
     '<span class="agent-lbl">' + role.toUpperCase() + '</span>' +
     '<select id="agent-provider-' + role + '" class="agent-sel">' + provOptions + '</select>' +
     '<select id="agent-model-' + role + '" class="agent-sel">' + modOptions + '</select>' +
-    '<select id="agent-effort-' + role + '" class="agent-sel" style="display:none">' + effortOptions + '</select>' +
-    '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="display:none">' +
-      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (currentBypass ? ' checked' : '') + '> Bypass' +
+    '<select id="agent-effort-' + role + '" class="agent-sel" style="visibility:hidden">' + effortOptions + '</select>' +
+    '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (askPermission ? ' checked' : '') + '> Ask Permission' +
     '</label>' +
   '</div>';
 }}
@@ -1688,8 +1724,8 @@ function syncCapabilityControls(role, providers) {{
   var caps = (modelObj || {{}}).capabilities || {{}};
   var effSel = document.getElementById('agent-effort-' + role);
   var bypassLbl = document.getElementById('agent-bypass-lbl-' + role);
-  if (effSel) effSel.style.display = caps.effort ? '' : 'none';
-  if (bypassLbl) bypassLbl.style.display = caps.permissions ? '' : 'none';
+  if (effSel) effSel.style.visibility = caps.effort ? 'visible' : 'hidden';
+  if (bypassLbl) bypassLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
 }}
 
 function updateAgentsBadge(cfg) {{
@@ -1707,8 +1743,12 @@ function updateAgentsBadge(cfg) {{
     }}
     return mid || '?';
   }});
-  var allSame = labels.length > 0 && labels.every(function(l) {{ return l === labels[0]; }});
-  badge.textContent = (allSame && labels[0] && labels[0] !== '?') ? roles.length + 'x ' + labels[0] : 'Mixed models';
+  // Group by label, count, sort by count desc then alphabetically
+  var counts = {{}};
+  labels.forEach(function(l) {{ counts[l] = (counts[l] || 0) + 1; }});
+  var segments = Object.keys(counts).map(function(l) {{ return {{label: l, count: counts[l]}}; }});
+  segments.sort(function(a, b) {{ return b.count - a.count || a.label.localeCompare(b.label); }});
+  badge.textContent = segments.map(function(s) {{ return s.count + 'x ' + s.label; }}).join(' | ');
 }}
 
 function scheduleAgentSave() {{
@@ -1729,7 +1769,7 @@ function saveAgentConfig() {{
       provider: provSel.value,
       model: modSel ? modSel.value : '',
       effort: effSel ? effSel.value : 'high',
-      bypass_permissions: bypassChk ? bypassChk.checked : false
+      bypass_permissions: bypassChk ? !bypassChk.checked : false
     }};
   }});
   fetch('/config/agents', {{
@@ -1926,10 +1966,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Also write internal feature_status.json (old format)
             write_internal_feature_status()
 
-            self._send_json(api_data)
+            self._send_json(200, api_data)
         elif self.path == '/workspace.json':
             # Dynamic workspace data for client-side refresh
-            self._send_json(generate_workspace_json())
+            self._send_json(200, generate_workspace_json())
         elif self.path == '/dependency_graph.json' or self.path.startswith(
                 '/dependency_graph.json?'):
             # Serve dependency graph from cache directory (Section 2.12)

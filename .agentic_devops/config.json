@@ -10,17 +10,46 @@
                 {
                     "id": "claude-opus-4-6",
                     "label": "Opus 4.6",
-                    "capabilities": { "effort": true, "permissions": true }
+                    "capabilities": {
+                        "effort": true,
+                        "permissions": true
+                    }
                 },
                 {
                     "id": "claude-sonnet-4-6",
                     "label": "Sonnet 4.6",
-                    "capabilities": { "effort": true, "permissions": true }
+                    "capabilities": {
+                        "effort": true,
+                        "permissions": true
+                    }
                 },
                 {
                     "id": "claude-haiku-4-5-20251001",
                     "label": "Haiku 4.5",
-                    "capabilities": { "effort": true, "permissions": true }
+                    "capabilities": {
+                        "effort": true,
+                        "permissions": true
+                    }
+                }
+            ]
+        },
+        "gemini": {
+            "models": [
+                {
+                    "id": "gemini-2.5-pro",
+                    "label": "Gemini 2.5 Pro",
+                    "capabilities": {
+                        "effort": false,
+                        "permissions": false
+                    }
+                },
+                {
+                    "id": "gemini-2.5-flash",
+                    "label": "Gemini 2.5 Flash",
+                    "capabilities": {
+                        "effort": false,
+                        "permissions": false
+                    }
                 }
             ]
         }
@@ -34,7 +63,7 @@
         },
         "builder": {
             "provider": "claude",
-            "model": "claude-sonnet-4-6",
+            "model": "claude-opus-4-6",
             "effort": "high",
             "bypass_permissions": true
         },
