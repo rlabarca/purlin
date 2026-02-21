@@ -126,6 +126,15 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets the `data-theme` attribute on `<html>` before first paint. This prevents theme flash on the 5-second auto-refresh cycle.
 *   **Typography:** Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, tight tracking `-0.025em`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
 
+### 2.10 Visual Stability on Refresh
+The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visible flicker, layout shift, or font re-rendering on any static element.
+
+*   **In-Place Data Refresh:** The dashboard MUST use JavaScript `fetch()` to retrieve updated status data and replace only the changed DOM content. It MUST NOT use `<meta http-equiv="refresh">` or `window.location.reload()`. The page loads once; all subsequent updates are incremental DOM mutations.
+*   **Static Elements:** The page header (logo, title, theme toggle, Run Critic button, timestamp area) MUST render once on initial page load and never be re-created or replaced during data refresh cycles. Only the timestamp text value updates.
+*   **Font Stability:** Google Fonts CDN `<link>` tags load once on initial page load. Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
+*   **Table Update:** When feature status data changes, only the table body content updates. The table headers (Feature, Architect, Builder, QA) and section headings (ACTIVE, COMPLETE) remain stable. Rows that did not change SHOULD NOT be re-rendered.
+*   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -292,6 +301,9 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Given the User is viewing the web dashboard
     When a feature status changes (e.g., a status commit is made)
     Then the dashboard reflects the updated status within 5 seconds
+    And the page header (logo, title, toggle, button) does not flicker or re-render
+    And fonts do not re-load or cause layout shift
+    And the scroll position is preserved
 
 #### Scenario: Role Columns on Dashboard
     Given the CDD server is running
@@ -327,7 +339,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
 *   **Test Isolation:** The test aggregator scans `tests/<feature_name>/tests.json` (resolved relative to `PROJECT_ROOT`) and treats malformed JSON as FAIL.
 *   **Name Convention:** Feature-to-test mapping uses the feature file's stem: `features/<name>.md` maps to `tests/<name>/tests.json`. The `<name>` must match exactly (case-sensitive).
-*   **Server-Side Rendering:** The HTML is generated dynamically per request (no static `index.html`). Auto-refreshes every 5 seconds via `<meta http-equiv="refresh">`.
+*   **Server-Side Rendering + Client-Side Refresh:** The initial HTML page is generated server-side on first request (no static `index.html`). After initial load, the page uses a JavaScript `setInterval` (5 seconds) to `fetch('/status.json')` and update only the table body DOM. The page does NOT use `<meta http-equiv="refresh">` -- this avoids full-page reloads that cause font re-rendering, layout shift, and scroll resets.
 *   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND either `file_mod_ts <= complete_ts` OR the only changes since the status commit are in the `## User Testing Discoveries` section (discovery-aware lifecycle preservation). To check: retrieve the file content at the status commit hash via `git show <hash>:<path>`, strip the `## User Testing Discoveries` section and everything below from both versions, and compare. If the spec content above discoveries is identical, preserve the lifecycle state. Otherwise reset to `TODO`.
 *   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.
 *   **Agent Interface:** `tools/cdd/status.sh` is the primary agent interface. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST use `tools/cdd/status.sh` for status queries. The `/status.json` web endpoint provides the same data for human tooling or when the server is running. Agents MUST NOT use HTTP endpoints, scrape the web dashboard, or guess port numbers.
@@ -354,5 +366,9 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
 - [ ] Theme persists across page refreshes (auto-refresh every 5s does not reset theme)
 - [ ] All UI colors use the Purlin design tokens (no hardcoded hex)
+- [ ] On 5-second auto-refresh, the page header (logo, title, toggle, button) remains completely static with no flicker
+- [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
+- [ ] Scroll position is preserved across auto-refresh cycles
+- [ ] Only feature status data updates; table headers and section headings remain stable
 
 ## User Testing Discoveries
