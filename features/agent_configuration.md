@@ -94,94 +94,90 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 
 ### Automated Scenarios
 
-```gherkin
-Scenario: Launcher reads agent config from config.json
-  Given config.json contains agents.architect with provider "claude" and model "claude-sonnet-4-6"
-  And agents.architect has effort "high" and bypass_permissions false
-  When the Architect launcher script is executed
-  Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
-  And it passes --allowedTools with the Architect role restrictions
+#### Scenario: Launcher Reads Agent Config from Config JSON
+    Given config.json contains agents.architect with provider "claude" and model "claude-sonnet-4-6"
+    And agents.architect has effort "high" and bypass_permissions false
+    When the Architect launcher script is executed
+    Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
+    And it passes --allowedTools with the Architect role restrictions
 
-Scenario: Launcher falls back when config is missing
-  Given config.json does not contain an agents section
-  When the Architect launcher script is executed
-  Then it invokes the claude CLI with current hardcoded defaults
-  And the Architect role restrictions are applied
+#### Scenario: Launcher Falls Back When Config is Missing
+    Given config.json does not contain an agents section
+    When the Architect launcher script is executed
+    Then it invokes the claude CLI with current hardcoded defaults
+    And the Architect role restrictions are applied
 
-Scenario: Launcher handles unsupported provider
-  Given config.json contains agents.builder with provider "gemini"
-  When the Builder launcher script is executed
-  Then it prints an error message listing supported providers
-  And exits with a non-zero status code
+#### Scenario: Launcher Handles Unsupported Provider
+    Given config.json contains agents.builder with provider "gemini"
+    When the Builder launcher script is executed
+    Then it prints an error message listing supported providers
+    And exits with a non-zero status code
 
-Scenario: Claude probe detects installed CLI
-  Given the claude CLI is installed and on PATH
-  When tools/providers/claude.sh is executed
-  Then it outputs JSON with available true
-  And the models array contains Claude model entries with capabilities
+#### Scenario: Claude Probe Detects Installed CLI
+    Given the claude CLI is installed and on PATH
+    When tools/providers/claude.sh is executed
+    Then it outputs JSON with available true
+    And the models array contains Claude model entries with capabilities
 
-Scenario: Gemini probe detects API key
-  Given the GOOGLE_API_KEY environment variable is set
-  When tools/providers/gemini.sh is executed
-  Then it outputs JSON with available true
-  And the models array contains Gemini model entries
+#### Scenario: Gemini Probe Detects API Key
+    Given the GOOGLE_API_KEY environment variable is set
+    When tools/providers/gemini.sh is executed
+    Then it outputs JSON with available true
+    And the models array contains Gemini model entries
 
-Scenario: Probe handles missing provider gracefully
-  Given the claude CLI is not installed
-  When tools/providers/claude.sh is executed
-  Then it outputs JSON with available false
-  And exit code is 0
+#### Scenario: Probe Handles Missing Provider Gracefully
+    Given the claude CLI is not installed
+    When tools/providers/claude.sh is executed
+    Then it outputs JSON with available false
+    And exit code is 0
 
-Scenario: Aggregator collects all providers
-  When tools/detect-providers.sh is executed
-  Then it outputs a JSON array with one entry per probe script in tools/providers/
-  And each entry contains provider, available, and models fields
-```
+#### Scenario: Aggregator Collects All Providers
+    When tools/detect-providers.sh is executed
+    Then it outputs a JSON array with one entry per probe script in tools/providers/
+    And each entry contains provider, available, and models fields
 
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
-```gherkin
-Scenario: Agents section displays current config
-  Given the dashboard is loaded with valid config.json
-  When the user expands the Agents section
-  Then three rows are displayed for Architect, Builder, and QA
-  And each row shows the configured provider, model, effort, and bypass state
+#### Scenario: Agents Section Displays Current Config
+    Given the dashboard is loaded with valid config.json
+    When the user expands the Agents section
+    Then three rows are displayed for Architect, Builder, and QA
+    And each row shows the configured provider, model, effort, and bypass state
 
-Scenario: Capability-aware control visibility
-  Given an agent is configured with a model that has capabilities.effort false
-  When the user views that agent's row
-  Then the effort dropdown is hidden
-  And the bypass checkbox is hidden if capabilities.permissions is also false
+#### Scenario: Capability-Aware Control Visibility
+    Given an agent is configured with a model that has capabilities.effort false
+    When the user views that agent's row
+    Then the effort dropdown is hidden
+    And the bypass checkbox is hidden if capabilities.permissions is also false
 
-Scenario: Provider change repopulates models
-  Given an agent row has provider "claude" selected
-  When the user changes the provider dropdown to "gemini"
-  Then the model dropdown repopulates with Gemini models
-  And effort/bypass controls update based on the first Gemini model's capabilities
+#### Scenario: Provider Change Repopulates Models
+    Given an agent row has provider "claude" selected
+    When the user changes the provider dropdown to "gemini"
+    Then the model dropdown repopulates with Gemini models
+    And effort/bypass controls update based on the first Gemini model's capabilities
 
-Scenario: Config changes persist via API
-  Given the user changes the Builder model to "claude-opus-4-6"
-  When the change is debounced and sent to POST /config/agents
-  Then config.json is updated with the new model for builder
-  And relaunching the Builder uses the new model
+#### Scenario: Config Changes Persist via API
+    Given the user changes the Builder model to "claude-opus-4-6"
+    When the change is debounced and sent to POST /config/agents
+    Then config.json is updated with the new model for builder
+    And relaunching the Builder uses the new model
 
-Scenario: Detect Providers workflow
-  Given the user clicks "Detect Providers" in the Agents section
-  When the server runs tools/detect-providers.sh
-  Then a confirmation dialog shows detected providers and model counts
-  And clicking "Apply" merges new providers into llm_providers in config.json
+#### Scenario: Detect Providers Workflow
+    Given the user clicks "Detect Providers" in the Agents section
+    When the server runs tools/detect-providers.sh
+    Then a confirmation dialog shows detected providers and model counts
+    And clicking "Apply" merges new providers into llm_providers in config.json
 
-Scenario: Collapsed badge shows model summary
-  Given all three agents are configured with the same model "claude-sonnet-4-6"
-  When the Agents section is collapsed
-  Then the badge displays "3x Sonnet 4.6"
+#### Scenario: Collapsed Badge Shows Model Summary
+    Given all three agents are configured with the same model "claude-sonnet-4-6"
+    When the Agents section is collapsed
+    Then the badge displays "3x Sonnet 4.6"
 
-Scenario: Collapsed badge shows mixed indicator
-  Given agents use different models
-  When the Agents section is collapsed
-  Then the badge displays "Mixed models"
-```
+#### Scenario: Collapsed Badge Shows Mixed Indicator
+    Given agents use different models
+    When the Agents section is collapsed
+    Then the badge displays "Mixed models"
 
 
 ## Implementation Notes
