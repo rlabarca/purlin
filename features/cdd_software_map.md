@@ -1,0 +1,138 @@
+# Feature: CDD Software Map View
+
+> Label: "Tool: CDD Software Map"
+> Category: "CDD Dashboard"
+> Prerequisite: features/cdd_status_monitor.md
+> Prerequisite: features/design_visual_standards.md
+
+
+## 1. Overview
+The Software Map view within the CDD Dashboard renders an interactive dependency graph of all feature files. It provides visual exploration of the project's feature relationships, category groupings, and prerequisite chains. This feature absorbs all visualization and generation requirements from the retired `software_map_generator.md`.
+
+The SW Map view is activated via the view mode toggle in the dashboard shell (defined in `cdd_status_monitor.md` Section 2.2.1). The dashboard shell owns the unified header, search box, theme system, and feature detail modal; this feature owns the graph rendering, generation, and reactive update logic.
+
+## 2. Requirements
+
+### 2.1 Graph Generation
+*   **Tree Generation:** Recursively parses `> Prerequisite:` links in all feature files in `features/`.
+*   **Cycle Detection:** Must identify and flag circular dependencies.
+*   **Mermaid Export:** Generates Mermaid diagrams for documentation and reference. Mermaid files are written to `.agentic_devops/cache/feature_graph.mmd`.
+
+### 2.2 Reactive Generation
+*   **File Watch Mode:** When the CDD Dashboard server is running, the tool MUST watch `features/` for file changes (create, modify, delete).
+*   **Auto-Regenerate:** When a change is detected, the tool MUST automatically re-run the graph generation, updating both the Mermaid exports and `dependency_graph.json`.
+*   **Manual Trigger:** Running the graph generation via CLI (`tools/cdd/status.sh --graph`) MUST always regenerate all outputs regardless of whether changes were detected.
+*   **Poll Interval:** File watch uses `os.scandir` mtime polling at 2-second intervals. No external dependencies required (no `watchdog`).
+
+### 2.3 Interactive Graph View
+*   **Scope:** The graph view is for human consumption only. Agents must use `dependency_graph.json` via `tools/cdd/status.sh --graph`.
+*   **Graph Display:** The dependency graph MUST be rendered as an interactive diagram with feature nodes and directed edges representing prerequisite links. Uses Cytoscape.js for rendering.
+*   **Category Grouping:** Feature nodes MUST be visually grouped by their `Category` metadata (as defined in each feature file's `> Category:` line). Each group MUST be clearly delineated (e.g., via labeled bounding boxes or distinct spatial clusters) so that the category structure is immediately apparent.
+*   **Node Labels:** Each feature node MUST display both its friendly name (the `Label` from the feature file metadata) and its filename. Both pieces of information must be visible without requiring hover or click interaction.
+*   **Label Typography:** The friendly name (Label) MUST be rendered in larger, bolder text than the filename. This establishes a clear visual hierarchy where the human-readable name is the primary identifier and the filename is secondary.
+*   **Label Non-Overlap:** Node labels (both friendly name and filename) MUST NOT visually overlap with labels of neighboring nodes or with each other. The layout engine must provide sufficient spacing, padding, or collision avoidance to ensure all text remains fully legible at the default zoom-to-fit level.
+*   **Label Wrapping:** Long labels MUST wrap within their containing node box rather than being clipped. The full text of both the friendly name and filename MUST remain visible at the default zoom-to-fit level.
+*   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
+*   **Zoom-to-Fit on Load:** On initial page load (or when switching to the SW Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. On auto-refresh cycles, the current zoom level and pan position MUST be preserved.
+*   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
+
+### 2.4 Cytoscape.js Theme Integration
+*   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme.
+*   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
+*   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
+
+### 2.5 Machine-Readable Output
+*   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.agentic_devops/cache/dependency_graph.json`.
+*   **Schema:**
+    ```json
+    {
+      "generated_at": "<ISO 8601 timestamp>",
+      "features": [
+        {
+          "file": "<relative path to feature file>",
+          "label": "<Label from metadata>",
+          "category": "<Category from metadata>",
+          "prerequisites": ["<relative path>", "..."]
+        }
+      ],
+      "cycles": ["<description of any detected cycles>"],
+      "orphans": ["<files with no prerequisite links>"]
+    }
+    ```
+*   **Deterministic Output:** Given the same set of feature files, the JSON output MUST be identical (sorted keys, sorted arrays by file path).
+*   **Agent Contract:** This file is the ONLY interface agents should use to query the dependency graph. Agents MUST NOT scrape the web UI or parse Mermaid files. CLI access is via `tools/cdd/status.sh --graph`.
+*   **API Endpoint:** The dependency graph is served via the `/dependency_graph.json` endpoint defined in `cdd_status_monitor.md` Section 2.4.
+
+## 3. Scenarios
+
+### Automated Scenarios
+These scenarios are validated by the Builder's automated test suite.
+
+#### Scenario: Update Feature Graph
+    Given a new feature file is added with prerequisites
+    When the graph generation is run
+    Then dependency_graph.json is regenerated with the new feature
+    And the Mermaid export files are regenerated
+
+#### Scenario: Agent Reads Dependency Graph
+    Given dependency_graph.json exists at .agentic_devops/cache/dependency_graph.json
+    When an agent needs to query the dependency graph
+    Then the agent reads dependency_graph.json directly
+    And the agent does NOT use the web UI or parse Mermaid files
+
+#### Scenario: Dependency Graph Excludes Companion Files
+    Given a features directory with critic_tool.md and critic_tool.impl.md
+    When the graph generation is run
+    Then only critic_tool.md appears as a node
+    And critic_tool.impl.md is not included
+
+### Manual Scenarios (Human Verification Required)
+These scenarios MUST NOT be validated through automated tests. The Builder must instruct the User to start the CDD Dashboard server (`tools/cdd/start.sh`) and verify the web UI visually.
+
+#### Scenario: Reactive Update on Feature Change
+    Given the CDD Dashboard server is running
+    And the SW Map view is active
+    When a feature file is created, modified, or deleted
+    Then the tool automatically regenerates the Mermaid exports
+    And the tool automatically regenerates dependency_graph.json
+
+#### Scenario: Feature Detail Modal via Graph Node
+    Given the User is viewing the SW Map view
+    When the User clicks a feature node
+    Then the shared feature detail modal opens showing the rendered markdown content
+    And the modal has an X button in the top-right corner
+    When the User clicks the X button or clicks outside the modal or presses Escape
+    Then the modal closes
+
+#### Scenario: Hover Highlighting
+    Given the User is viewing the SW Map view
+    When the User hovers over a feature node
+    Then the node's direct prerequisites and direct dependents are highlighted
+    And non-adjacent nodes are visually de-emphasized
+
+#### Scenario: Zoom Persistence on Refresh
+    Given the User has zoomed or panned the graph in the SW Map view
+    When the dashboard auto-refreshes
+    Then the current zoom level and pan position are preserved
+
+## 4. Implementation Notes
+See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
+
+## Visual Specification
+
+### Screen: CDD Dashboard -- SW Map View
+- **Reference:** N/A
+- [ ] Dependency graph rendered with feature nodes and directed edges
+- [ ] Feature nodes visually grouped by Category metadata with clear delineation
+- [ ] Each node displays both Label (friendly name) and filename
+- [ ] Label rendered in larger, bolder text than the filename
+- [ ] No node labels overlap with neighboring labels
+- [ ] Long labels wrap within node boxes without clipping (all text visible at default zoom)
+- [ ] No legend overlay displayed
+- [ ] Graph is zoomed and centered to fit the viewable page area on initial load
+- [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
+- [ ] SVG node labels update text colors on theme switch
+- [ ] Theme persists across auto-refresh cycles
+- [ ] Search/filter input (in dashboard header) filters graph nodes by label or filename
+
+## User Testing Discoveries

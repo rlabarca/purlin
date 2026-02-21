@@ -5,6 +5,9 @@ import socketserver
 import subprocess
 import os
 import sys
+import threading
+import time
+import urllib.parse
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +47,8 @@ COMPLETE_CAP = 10
 CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
+DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
+POLL_INTERVAL = 2  # seconds for file watcher polling
 
 
 def run_command(command):
@@ -582,6 +587,57 @@ def _role_table_html(features):
     )
 
 
+# ===================================================================
+# File Watcher for Reactive Graph Generation (cdd_software_map)
+# ===================================================================
+
+def _get_features_snapshot(directory):
+    """Get a dict of {filename: mtime} for all .md files in a directory."""
+    snapshot = {}
+    if not os.path.exists(directory):
+        return snapshot
+    for entry in os.scandir(directory):
+        if entry.is_file() and entry.name.endswith(".md"):
+            snapshot[entry.name] = entry.stat().st_mtime
+    return snapshot
+
+
+def _run_graph_generation():
+    """Run graph generation via the graph module.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        from graph import run_full_generation
+        run_full_generation()
+        print(f"[watcher] Regenerated graph at {time.strftime('%H:%M:%S')}")
+        return True
+    except Exception as e:
+        print(f"[watcher] Graph generation failed: {e}")
+        return False
+
+
+def _file_watcher():
+    """Poll features directory for changes and regenerate graph on modification."""
+    snapshot = _get_features_snapshot(FEATURES_ABS)
+
+    while True:
+        time.sleep(POLL_INTERVAL)
+        new_snapshot = _get_features_snapshot(FEATURES_ABS)
+        if new_snapshot != snapshot:
+            print("[watcher] Change detected, regenerating...")
+            if _run_graph_generation():
+                snapshot = new_snapshot
+            # On failure, keep old snapshot so watcher retries next cycle
+
+
+def start_file_watcher():
+    """Start the file watcher in a background daemon thread."""
+    watcher_thread = threading.Thread(target=_file_watcher, daemon=True)
+    watcher_thread.start()
+    print(f"[watcher] File watcher active (polling every {POLL_INTERVAL}s)")
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/status.json':
@@ -598,6 +654,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
+        elif self.path == '/dependency_graph.json' or self.path.startswith(
+                '/dependency_graph.json?'):
+            # Serve dependency graph from cache directory (Section 2.12)
+            if os.path.isfile(DEPENDENCY_GRAPH_PATH):
+                with open(DEPENDENCY_GRAPH_PATH, 'rb') as f:
+                    payload = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            else:
+                self.send_error(404, "dependency_graph.json not found")
+        elif self.path.startswith('/feature?'):
+            self._serve_feature_content()
+        elif self.path.startswith('/impl-notes?'):
+            self._serve_impl_notes()
+        elif self.path == '/config.json':
+            self._serve_config_json()
         else:
             # Dashboard request: also regenerate internal file
             write_internal_feature_status()
@@ -605,6 +680,90 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-type", "text/html")
             self.end_headers()
             self.wfile.write(generate_html().encode('utf-8'))
+
+    def _serve_feature_content(self):
+        """Serve the raw markdown content of a feature file."""
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        file_param = params.get('file', [''])[0]
+
+        # Resolve to absolute path
+        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, file_param))
+
+        # Security: ensure path is within the features directory
+        allowed_dir = os.path.normpath(FEATURES_ABS)
+        if not abs_path.startswith(allowed_dir):
+            self.send_error(403, "Access denied")
+            return
+
+        if not os.path.isfile(abs_path):
+            self.send_error(404, "Feature file not found")
+            return
+
+        try:
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            payload = content.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        except Exception:
+            self.send_error(500, "Error reading file")
+
+    def _serve_impl_notes(self):
+        """Serve the companion .impl.md file for a feature."""
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        file_param = params.get('file', [''])[0]
+
+        # Derive companion filename: features/foo.md -> features/foo.impl.md
+        if file_param.endswith('.md'):
+            impl_path = file_param[:-3] + '.impl.md'
+        else:
+            self.send_error(400, "Invalid file parameter")
+            return
+
+        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, impl_path))
+
+        # Security: ensure path is within the features directory
+        allowed_dir = os.path.normpath(FEATURES_ABS)
+        if not abs_path.startswith(allowed_dir):
+            self.send_error(403, "Access denied")
+            return
+
+        if not os.path.isfile(abs_path):
+            self.send_error(404, "No companion impl.md file found")
+            return
+
+        try:
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            payload = content.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        except Exception:
+            self.send_error(500, "Error reading file")
+
+    def _serve_config_json(self):
+        """Serve the project config.json with resolved project name."""
+        config_data = {}
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, 'r') as f:
+                    config_data = json.load(f)
+            except (json.JSONDecodeError, IOError, OSError):
+                pass
+        payload = json.dumps(config_data).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def do_POST(self):
         if self.path == '/run-critic':
@@ -649,7 +808,28 @@ if __name__ == "__main__":
         api_data = generate_api_status_json()
         json.dump(api_data, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write('\n')
+    elif len(sys.argv) > 1 and sys.argv[1] == "--cli-graph":
+        # CLI graph mode: regenerate and output dependency_graph.json to stdout
+        from graph import run_full_generation
+        graph = run_full_generation()
+        if graph:
+            json.dump(graph, sys.stdout, indent=2, sort_keys=True)
+            sys.stdout.write('\n')
+        else:
+            print("Error: graph generation failed", file=sys.stderr)
+            sys.exit(1)
     else:
+        # Server mode: run initial graph generation, start file watcher, serve
+        print("Running initial graph generation...")
+        try:
+            from graph import run_full_generation
+            run_full_generation()
+        except Exception as e:
+            print(f"Warning: Initial graph generation failed: {e}",
+                  file=sys.stderr)
+
+        start_file_watcher()
+
         socketserver.TCPServer.allow_reuse_address = True
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
             print(f"CDD Monitor serving at http://localhost:{PORT}")
