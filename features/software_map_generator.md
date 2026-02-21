@@ -180,5 +180,5 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - **Observed Behavior:** After stopping the Software Map server, running `tools/software_map/start.sh` requires multiple invocations before the server starts successfully. Likely a port TIME_WAIT issue — the same class of bug that was previously fixed for the CDD Monitor (`allow_reuse_address = True`).
 - **Expected Behavior:** Per the Server Start/Stop Lifecycle scenario, the server starts successfully on the first invocation without requiring a second run.
 - **Action Required:** Builder — apply the same `allow_reuse_address = True` fix and startup verification logic that was applied to the CDD Monitor's `serve.py` and `start.sh`.
-- **Status:** OPEN
+- **Status:** RESOLVED
 

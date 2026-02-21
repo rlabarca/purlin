@@ -66,7 +66,8 @@ Before starting work on each feature from the approved plan:
 *   Write the code and unit tests.
 *   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST add a concise entry to the `## Implementation Notes` section at the bottom of the **feature file itself**.
 *   **Anchor Node Escalation:** If a discovery affects a global constraint, you MUST update the relevant anchor node file (`arch_*.md`, `design_*.md`, or `policy_*.md`). This ensures the project's constraints remain accurate. Do NOT create separate log files.
-*   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
+*   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's `## User Testing Discoveries` section, you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. This clears the Builder action item from the Critic and allows the CDD dashboard to show your column as `DONE` once the status commit is made. QA will re-verify and prune the entry during their verification pass.
+*   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes, discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
 
 ### 2b. Builder Decision Protocol (MANDATORY)
 When making non-trivial implementation decisions, you MUST classify and document them in the `## Implementation Notes` section using structured tags.

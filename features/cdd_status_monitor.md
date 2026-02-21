@@ -403,4 +403,4 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** The right group displays as [☀/☾] [Run Critic] [timestamp] (left to right) — toggle is leftmost, timestamp is rightmost.
 - **Expected Behavior:** Per Section 2.9, from the right edge inward: theme toggle (rightmost), Run Critic button, timestamp (leftmost of right group). Left to right should read: [timestamp] [Run Critic] [☀/☾].
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED

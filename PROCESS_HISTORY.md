@@ -2,6 +2,14 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Builder Bug Fix Resolution Mandate
+
+- **Scope:** Process addition to BUILDER_BASE.md -- Builder must update BUG discovery status after fixing.
+- **Rationale:** When the Builder fixes an OPEN [BUG] in User Testing Discoveries, nobody was updating the entry's status from OPEN to RESOLVED. This caused the Critic to keep generating Builder action items and the CDD dashboard to show Builder as TODO even after the fix was committed. The lifecycle gap meant the dashboard never reflected that Builder work was complete, blocking QA from seeing their column as TODO.
+- **Changes:**
+    - **BUILDER_BASE.md:** Added "Bug Fix Resolution" bullet to Section 4, Step 2 (Implement and Document). Builder MUST update BUG entry status from OPEN to RESOLVED as part of the implementation commit.
+- **Impact:** Process clarification only. No tool code changes. Closes a lifecycle gap between Builder fix commits and Critic role_status computation.
+
 ## [2026-02-21] Continuous Design-Driven (CDD) Elevated to Core Tenet
 
 - **Scope:** Elevated "Continuous Design-Driven" from a tool name (CDD Monitor) to the framework's core philosophy.
