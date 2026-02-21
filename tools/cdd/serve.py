@@ -504,7 +504,7 @@ body{{
 }}
 .hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
 .hdr-left{{display:flex;align-items:center;gap:8px}}
-.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:900;letter-spacing:-0.025em;color:var(--purlin-primary)}}
+.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:var(--purlin-primary)}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
 .logo-svg{{height:24px;width:auto}}
 .logo-fill{{fill:var(--purlin-primary)}}
