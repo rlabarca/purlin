@@ -16,7 +16,7 @@ The CDD Dashboard exposes agent runtime configuration (provider, model, effort, 
 ### 2.1 Dashboard Agents Section
 
 *   **Location:** A new collapsible section below the Workspace section in the Status view.
-*   **Visual Separation:** The Agents section MUST be visually separated from the Workspace section above it with the same treatment used between all other sections (section heading with underline separator via `border-bottom` on `h3`, consistent with Active/Complete/Workspace separation). Each section in the Status view -- Active, Complete, Workspace, Agents -- MUST have its own visible boundary so that sections are never visually merged.
+*   **Visual Separation:** The Agents section MUST be visually separated from the Workspace section above it with a vertical gap matching the spacing used between the Active/Complete feature sections and the Workspace section. This gap MUST be rendered as margin or padding between the two section containers -- not solely by the section heading underline -- so that a visible empty space exists between the bottom of the Workspace box and the top of the Agents section heading. Each section in the Status view -- Active, Complete, Workspace, Agents -- MUST have its own visible boundary so that sections are never visually merged.
 *   **Default State:** Collapsed by default.
 *   **State Persistence:** The Agents section expanded/collapsed state MUST be persisted to the same `localStorage` key used by all other sections (`purlin-section-states`). On page load, the saved state is restored, overriding the collapsed default. Each toggle updates the stored state immediately. This is the same mechanism described in `cdd_status_monitor.md` Section 2.2.2.
 *   **Collapsed Badge:** When collapsed, the section heading displays a summary of the configured models, grouped by count and label. Format: `"<count>x <label>"` segments joined by `" | "`. Examples:
@@ -32,7 +32,7 @@ The CDD Dashboard exposes agent runtime configuration (provider, model, effort, 
     5.  **Ask Permission Checkbox:** Labeled "Ask Permission". Visible only when the selected model has `capabilities.permissions: true`. Checked = `bypass_permissions: false` (agent will ask before using tools). Unchecked = `bypass_permissions: true` (agent skips permission prompts). The checkbox label describes the user-facing behavior (asking permission), not the internal config key.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Provider, Model, Effort, Ask Permission) are identical across all three rows. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited. This follows the same stability principle as the feature status tables (Section 2.3 of `cdd_status_monitor.md`).
-*   **Detect Providers Button:** Placed at the bottom of the Agents section body (inside the collapsible, below agent rows). Styled as a secondary button matching the `btn-critic` pattern. Calls `POST /detect-providers`. Displays a confirmation dialog listing detected providers and model counts. "Apply" merges detected providers into `llm_providers` in config (additive -- never removes existing entries).
+*   **Detect Providers Button:** Placed at the bottom-right of the Agents section body (inside the collapsible, below agent rows), right-aligned within the section container. Styled as a secondary button matching the `btn-critic` pattern. Calls `POST /detect-providers`. Displays a confirmation dialog listing detected providers and model counts. "Apply" merges detected providers into `llm_providers` in config (additive -- never removes existing entries).
 *   **Styling:** All controls follow existing dashboard patterns:
     *   `<select>`: `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size.
     *   Checkbox: Native with `accent-color: var(--purlin-accent)`.
@@ -107,7 +107,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
 ### Screen: CDD Dashboard -- Agents Section
 - **Reference:** N/A
 - [ ] Agents section heading ("AGENTS") has a visible underline separator matching Active/Complete/Workspace headings
-- [ ] Agents section is visually separated from Workspace with the same spacing and border treatment as between feature sections and Workspace
+- [ ] A visible vertical gap separates the bottom of the Workspace box from the top of the Agents section, matching the gap between Active/Complete sections and Workspace
 - [ ] Agents section has a chevron indicator (right=collapsed, down=expanded)
 - [ ] Collapsed state shows grouped model badge (e.g., "3x Sonnet 4.6" or "1x Opus 4.6 | 2x Sonnet 4.6")
 - [ ] Agent name labels are Inter 500, 12px, uppercase, using `var(--purlin-primary)` color
@@ -122,6 +122,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Checkbox uses `accent-color: var(--purlin-accent)`
 - [ ] On 5-second auto-refresh, the Agents section does not flicker or visibly re-render
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
+- [ ] Detect Providers button is right-aligned within the Agents section container
 - [ ] Detect Providers button matches `btn-critic` styling pattern
 - [ ] Section collapse/expand state persists across page reloads via localStorage
 
