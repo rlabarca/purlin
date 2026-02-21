@@ -94,7 +94,7 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
 
 ### 2.7 Manual Critic Trigger (Dashboard)
-*   **Button Location:** The web dashboard MUST render a "Run Critic" button in the top-right corner of the page, adjacent to the last-updated timestamp.
+*   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is in the right group of the page header, between the timestamp and the theme toggle.
 *   **Visual Design:** The button should be compact, styled consistently with the dashboard theme (dark/high-contrast). It should not dominate the layout.
 *   **Behavior on Click:**
     1.  The button becomes disabled and shows a loading/spinner state to indicate the Critic is running.
@@ -117,20 +117,39 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **Test Results:** On success, output `[Scenario] <title>` lines for each passing stage (Bash test file convention) and write `tests/cdd_status_monitor/tests.json` with `{"status": "PASS"}`. On any assertion failure, report the failing stage and expected vs actual values, then proceed to cleanup.
 
 ### 2.9 Branding & Theme
-*   **Logo:** The Purlin logo (`assets/purlin-logo.svg`) MUST be displayed inline in the top-left of the page header, adjacent to the title text. The logo uses CSS classes for theme-responsive fill colors (~24px height).
-*   **Title:** The dashboard title MUST read "Purlin CDD Monitor" (replacing any previous title).
-*   **Theme Toggle:** A sun/moon icon toggle MUST appear in the top-right header area, before the Run Critic button. Clicking the toggle switches between Blueprint (dark, default) and Architect (light) themes.
+
+#### Header Layout
+The page header is a single horizontal bar with two groups, vertically centered:
+
+**Left group** (left-justified, in this order left-to-right):
+1.  Purlin logo mark (`assets/purlin-logo.svg`, inline SVG, ~24px height, CSS classes for theme-responsive fills)
+2.  Title text: "Purlin CDD Monitor"
+
+**Right group** (right-justified, in this order from the right edge inward):
+1.  Theme toggle (sun/moon icon) -- rightmost element
+2.  "Run Critic" button
+3.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
+
+The two groups MUST be laid out with CSS flexbox (`justify-content: space-between`). The right group items are ordered via `flex-direction: row` with the timestamp first, Run Critic button second, and theme toggle last in DOM order -- or equivalently, the right group uses `flex-direction: row-reverse` with theme toggle first, Run Critic second, timestamp third in DOM order. The visual result MUST match: timestamp on the left side of the right group, theme toggle on the far right.
+
+#### Title
+*   The dashboard title MUST read "Purlin CDD Monitor".
+
+#### Theme
 *   **CSS Tokens:** All colors in the dashboard MUST use `var(--purlin-*)` custom properties defined in `features/design_visual_standards.md`. No hardcoded hex colors.
 *   **Default Theme:** Dark (Blueprint).
 *   **Persistence:** Theme choice stored in `localStorage` key `purlin-theme`, value `light` or `dark`.
 *   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets the `data-theme` attribute on `<html>` before first paint. This prevents theme flash on the 5-second auto-refresh cycle.
-*   **Typography:** Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
+*   **Theme Toggle:** Clicking the sun/moon icon switches between Blueprint (dark, default) and Architect (light) themes.
+
+#### Typography
+Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. The last-refreshed timestamp MUST use the monospace font stack (`'Menlo', 'Monaco', 'Consolas', monospace`) so that digit changes do not cause width fluctuation. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
 
 ### 2.10 Visual Stability on Refresh
 The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visible flicker, layout shift, or font re-rendering on any static element.
 
 *   **In-Place Data Refresh:** The dashboard MUST use JavaScript `fetch()` to retrieve updated status data and replace only the changed DOM content. It MUST NOT use `<meta http-equiv="refresh">` or `window.location.reload()`. The page loads once; all subsequent updates are incremental DOM mutations.
-*   **Static Elements:** The page header (logo, title, theme toggle, Run Critic button, timestamp area) MUST render once on initial page load and never be re-created or replaced during data refresh cycles. Only the timestamp text value updates.
+*   **Static Elements:** The page header (left group: logo + title; right group: timestamp, Run Critic button, theme toggle) MUST render once on initial page load and never be re-created or replaced during data refresh cycles. Only the timestamp text value updates.
 *   **Font Stability:** Google Fonts CDN `<link>` tags load once on initial page load. Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **Table Update:** When feature status data changes, only the table body content updates. The table headers (Feature, Architect, Builder, QA) and section headings (ACTIVE, COMPLETE) remain stable. Rows that did not change SHOULD NOT be re-rendered.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
@@ -365,12 +384,13 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Reference:** N/A
 - [ ] Section headings ("ACTIVE", "COMPLETE") have a visible underline separator (e.g., a bottom border or horizontal rule)
 - [ ] Section headings are clearly distinguished from the feature table rows beneath them
-- [ ] Purlin logo visible in top-left corner, adjacent to "Purlin CDD Monitor" title
-- [ ] Sun/moon theme toggle icon visible in top-right header area
+- [ ] Header left group: Purlin logo mark then "PURLIN CDD MONITOR" title, left-justified
+- [ ] Header right group (from right edge inward): sun/moon toggle, Run Critic button, last-refreshed timestamp
+- [ ] Last-refreshed timestamp uses monospace font (no width shift when digits change)
 - [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
 - [ ] Theme persists across page refreshes (auto-refresh every 5s does not reset theme)
 - [ ] All UI colors use the Purlin design tokens (no hardcoded hex)
-- [ ] On 5-second auto-refresh, the page header (logo, title, toggle, button) remains completely static with no flicker
+- [ ] On 5-second auto-refresh, the page header remains completely static with no flicker
 - [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
 - [ ] Scroll position is preserved across auto-refresh cycles
 - [ ] Only feature status data updates; table headers and section headings remain stable
