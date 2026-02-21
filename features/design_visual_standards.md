@@ -66,13 +66,13 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 
 Both `--font-display` and `--font-body` MUST be defined in both theme blocks (`:root` and `[data-theme='light']`).
 
-**CDN Loading:** Tools MUST load Montserrat (weights 800, 900) and Inter (weights 400, 500, 700) via Google Fonts CDN `<link>` tags.
+**CDN Loading:** Tools MUST load Montserrat (weights 200, 800, 900) and Inter (weights 400, 500, 700) via Google Fonts CDN `<link>` tags.
 
 **Usage Patterns:**
 
 | Element | Font | Weight | Size | Letter-Spacing | Transform |
 |---------|------|--------|------|----------------|-----------|
-| Tool wordmark / page title | Montserrat | 900 (Black) | 32-40px | `0.12em` (wide) | `uppercase` |
+| Tool wordmark / page title | Montserrat | 200 (ExtraLight) | 32-40px | `0.12em` (wide) | `uppercase` |
 | Section headers | Inter | 700 (Bold) | 14px | `0.1em` (wide) | `uppercase` |
 | Captions / sub-labels | Inter | 700 (Bold) | 10px | `0.1em` (wide) | `uppercase` |
 | Body text | Inter | 400 (Regular) | 14px | normal | None |
@@ -80,7 +80,7 @@ Both `--font-display` and `--font-body` MUST be defined in both theme blocks (`:
 | Tag text | Inter | 700 (Bold) | 12px | normal | None |
 | Monospace data | Menlo stack | 400 | 12px | normal | None |
 
-The wide letter-spacing on uppercase elements is a defining characteristic of the Purlin visual language. Tool wordmarks and page titles MUST match the SVG logo treatment (`assets/purlin-logo.svg`): Montserrat Black 900, wide tracking `0.12em`, uppercase. This creates an airy, architectural feel despite the heavy weight.
+The wide letter-spacing on uppercase elements is a defining characteristic of the Purlin visual language. Tool wordmarks and page titles MUST match the SVG logo treatment (`assets/purlin-logo.svg`): Montserrat ExtraLight 200, wide tracking `0.12em`, uppercase. The thin strokes with generous spacing create an architectural, blueprint-like feel.
 
 ### 2.4 Theme Switching
 *   **Default:** Dark (Blueprint).

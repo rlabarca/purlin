@@ -66,7 +66,7 @@ Generates a visual and machine-readable representation of the project's feature 
 *   **Default Theme:** Dark (Blueprint).
 *   **Persistence:** `localStorage` key `purlin-theme`, value `light` or `dark`.
 *   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets `data-theme` on `<html>` before first paint.
-*   **Typography:** Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Code/data retains monospace. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
+*   **Typography:** Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat ExtraLight 200, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Code/data retains monospace. CDN loads: Montserrat weights 200,800,900; Inter weights 400,500,700.
 
 ## 3. Scenarios
 

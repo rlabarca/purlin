@@ -143,7 +143,7 @@ The two groups MUST be laid out with CSS flexbox (`justify-content: space-betwee
 *   **Theme Toggle:** Clicking the sun/moon icon switches between Blueprint (dark, default) and Architect (light) themes.
 
 #### Typography
-Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. The last-refreshed timestamp MUST use the monospace font stack (`'Menlo', 'Monaco', 'Consolas', monospace`) so that digit changes do not cause width fluctuation. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
+Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat ExtraLight 200, wide tracking `0.12em`, `uppercase`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. The last-refreshed timestamp MUST use the monospace font stack (`'Menlo', 'Monaco', 'Consolas', monospace`) so that digit changes do not cause width fluctuation. CDN loads: Montserrat weights 200,800,900; Inter weights 400,500,700.
 
 ### 2.10 Visual Stability on Refresh
 The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visible flicker, layout shift, or font re-rendering on any static element.
