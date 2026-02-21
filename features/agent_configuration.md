@@ -132,6 +132,7 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     And exit code is 0
 
 #### Scenario: Aggregator Collects All Providers
+    Given probe scripts exist in tools/providers/
     When tools/detect-providers.sh is executed
     Then it outputs a JSON array with one entry per probe script in tools/providers/
     And each entry contains provider, available, and models fields
