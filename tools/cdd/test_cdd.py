@@ -785,11 +785,11 @@ class TestGetChangeScope(unittest.TestCase):
         def mock_git(cmd):
             if "Complete" in cmd:
                 return ("2000000000 [Complete features/test.md] "
-                        "[Scope: targeted:Web Dashboard Display]")
+                        "[Scope: targeted:Web Dashboard Auto-Refresh]")
             return ""
         mock_run.side_effect = mock_git
         scope = get_change_scope("features/test.md")
-        self.assertEqual(scope, "targeted:Web Dashboard Display")
+        self.assertEqual(scope, "targeted:Web Dashboard Auto-Refresh")
 
     @patch('serve.run_command')
     def test_extracts_full_scope(self, mock_run):
@@ -850,7 +850,7 @@ class TestApiStatusJsonChangeScope(unittest.TestCase):
 
     @patch('serve.get_change_scope')
     def test_includes_change_scope_when_present(self, mock_scope):
-        mock_scope.return_value = "targeted:Web Dashboard Display"
+        mock_scope.return_value = "targeted:Web Dashboard Auto-Refresh"
         test_dir = tempfile.mkdtemp()
         try:
             features_dir = os.path.join(test_dir, "features")
@@ -871,7 +871,7 @@ class TestApiStatusJsonChangeScope(unittest.TestCase):
                 entry = data["features"][0]
                 self.assertEqual(
                     entry["change_scope"],
-                    "targeted:Web Dashboard Display")
+                    "targeted:Web Dashboard Auto-Refresh")
             finally:
                 serve.FEATURES_ABS = orig_abs
                 serve.TESTS_DIR = orig_tests
