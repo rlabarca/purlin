@@ -165,7 +165,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - [ ] Active project name displayed on a second line below the title, left-aligned with the "P" in PURLIN
 - [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
 - [ ] Project name color switches correctly between dark and light themes
-- [ ] Project name is absent when `project_name` is not set in config
+- [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
 - [ ] Sun/moon theme toggle in top-right
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch
