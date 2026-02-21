@@ -99,8 +99,22 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
 *   **A. Determine Status Tag:**
     *   If the feature has manual scenarios requiring human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**). The QA Agent will mark `[Complete]` after clean verification.
     *   If all verification is automated (no manual scenarios) and passing: `[Complete features/FILENAME.md]` (transitions to **COMPLETE**)
-*   **B. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG"`
-*   **C. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). If the status did not update as expected, investigate and correct before moving on.
+*   **B. Declare Change Scope:** Append a `[Scope: ...]` trailer to the status commit message to declare the impact scope of your change. This tells the Critic how to scope QA verification.
+
+    | Scope | When to Use |
+    |-------|-------------|
+    | `full` | Behavioral change, new scenarios, API change. **Default when omitted.** |
+    | `targeted:Scenario A,Scenario B` | Only specific manual scenarios are affected by the change. |
+    | `cosmetic` | Non-functional change (formatting, logging, internal refactor with no behavioral impact). |
+    | `dependency-only` | Change propagated by a prerequisite update (no direct code changes to this feature). |
+
+    **Guidance:** When in doubt, use `full`. A broader scope is always safe; a narrower scope risks missing regressions.
+
+*   **C. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
+    *   Example: `git commit --allow-empty -m "status(cdd): [Ready for Verification features/cdd_status_monitor.md] [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]"`
+    *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
+    *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
+*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). If the status did not update as expected, investigate and correct before moving on.
 
 ## 5. Shutdown Protocol
 

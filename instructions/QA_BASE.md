@@ -39,13 +39,19 @@ Run `tools/critic/run.sh` to generate critic reports for all features. This prod
 Run `tools/cdd/status.sh` to get the current feature status as JSON.
 
 ### 3.3 Identify Verification Targets
-Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. Present the user with a summary:
+Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. For each TESTING feature, read the `regression_scope` block from the feature's `tests/<feature_name>/critic.json` to determine the scoped verification mode. Present the user with a summary:
 *   How many features are in TESTING state (from CDD status).
-*   QA action items from the Critic report: features to verify, manual scenario counts, and SPEC_UPDATED discoveries to re-verify.
+*   **Per-feature scope summary:**
+    *   `full` -- "Feature X: N manual scenario(s), M visual checklist item(s) (full verification)"
+    *   `targeted:A,B` -- "Feature X: 2 targeted scenario(s) [Scenario A, Scenario B]"
+    *   `cosmetic` -- "Feature X: QA skip (cosmetic change) -- 0 scenarios queued"
+    *   `dependency-only` -- "Feature X: N scenario(s) touching changed dependency surface"
+*   QA action items from the Critic report: features to verify, scoped scenario counts, visual verification items, and SPEC_UPDATED discoveries to re-verify.
 *   Any existing OPEN discoveries that need re-verification.
+*   Count of features with `## Visual Specification` sections (shown separately from functional scenarios).
 
 ### 3.4 Begin Interactive Verification
-Start walking the user through the first TESTING feature's manual scenarios (see Section 5).
+Start walking the user through the first TESTING feature using the appropriate verification mode (see Section 5).
 
 ## 4. Discovery Protocol
 
@@ -92,13 +98,24 @@ When an entry reaches RESOLVED status:
 
 ## 5. Interactive Verification Workflow
 
-For each feature in TESTING state, execute this loop:
+For each feature in TESTING state, execute this loop. The verification mode is determined by the `regression_scope` in the feature's `critic.json`.
+
+### 5.0 Scoped Verification Modes
+Before starting a feature, check its regression scope:
+
+*   **`full`** (or missing/default) -- Verify all manual scenarios and all visual checklist items. This is the standard behavior.
+*   **`targeted:Scenario A,Scenario B`** -- Verify ONLY the named scenarios. Skip all other manual scenarios and skip visual verification unless a visual screen is explicitly named in the target list.
+*   **`cosmetic`** -- Skip the feature entirely. Inform the user: "Feature X: QA skip (cosmetic change). No scenarios queued." Move to the next feature.
+*   **`dependency-only`** -- Verify only scenarios that reference the changed prerequisite's surface area. The Critic pre-computes this set in the `regression_scope.scenarios` list.
+
+If the Critic emitted a cross-validation WARNING (e.g., `cosmetic` scope but files touched by manual scenarios were modified), present the warning to the user and ask whether to proceed with the declared scope or escalate to `full`.
 
 ### 5.1 Feature Introduction
 Present the user with:
 *   Feature name and label.
 *   Critic report summary for this feature (spec gate status, implementation gate status, any warnings).
-*   Number of manual scenarios to verify.
+*   **Verification scope:** the regression scope mode and which scenarios are queued.
+*   Number of manual scenarios to verify (after scope filtering).
 
 ### 5.2 Scenario-by-Scenario Walkthrough
 For each Manual Scenario in the feature file:
@@ -119,9 +136,20 @@ After all manual scenarios for a feature are complete, ask the user:
 
 If yes, record it as a `[DISCOVERY]` entry.
 
-### 5.4 Feature Summary
-After all scenarios for a feature are verified:
-1.  Present a summary: scenarios passed / total, discoveries recorded (if any).
+### 5.4 Visual Verification Pass
+If the feature has a `## Visual Specification` section AND the regression scope includes visual verification (`full` or explicitly targeted), execute the visual verification pass after functional scenarios:
+
+1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references.
+2.  **For each screen:**
+    a.  Present the design reference first. If it is a Figma URL, tell the user to open it. If it is a local file path, provide the path for the user to view.
+    b.  Walk through each checklist item, asking the user to confirm PASS or FAIL for each visual criterion.
+    c.  Record PASS/FAIL per checklist item.
+3.  **If any visual item fails:** Record a `[BUG]` or `[DISCOVERY]` entry (depending on whether a scenario covers the behavior) with a "visual" context note in the discovery entry.
+4.  **Batching optimization:** When multiple features have visual specs in the same session, you MAY offer to batch all visual checks together: "3 functional scenarios across 2 features completed. Ready for visual verification: 12 checklist items across 3 screens. Would you like to do visual checks now, or feature-by-feature?"
+
+### 5.5 Feature Summary
+After all scenarios (functional and visual) for a feature are verified:
+1.  Present a summary: functional scenarios passed / total, visual checklist items passed / total (if applicable), discoveries recorded (if any).
 2.  Ensure all changes for this feature are committed to git.
 3.  **If all manual scenarios passed with zero discoveries:** Mark the feature as complete with a status commit: `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md]"`. This transitions the feature from TESTING to COMPLETE.
 4.  **If discoveries were recorded:** Do NOT mark as complete. The feature remains in TESTING until all discoveries are resolved and re-verified.

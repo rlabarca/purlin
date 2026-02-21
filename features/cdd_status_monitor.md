@@ -59,7 +59,8 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
           "label": "<label>",
           "architect": "DONE | TODO",
           "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
-          "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A"
+          "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A",
+          "change_scope": "full | targeted:... | cosmetic | dependency-only"
         }
       ]
     }
@@ -68,8 +69,9 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     *   No top-level `test_status` field.
     *   No per-feature `test_status` or `qa_status` fields (replaced by role columns).
     *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
+    *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
     *   Array sorted by file path (deterministic).
-*   **Internal Artifact (`feature_status.json`):** The monitor MUST also produce a `feature_status.json` file at `.agentic_devops/cache/feature_status.json`, regenerated on every request (web) or CLI invocation. This file retains the **old** lifecycle-based format with `todo`/`testing`/`complete` arrays and `test_status` fields. This is an internal implementation detail consumed by the Critic for lifecycle-state-dependent computations (e.g., QA TODO detection). It is NOT part of the public API contract.
+*   **Internal Artifact (`feature_status.json`):** The monitor MUST also produce a `feature_status.json` file at `.agentic_devops/cache/feature_status.json`, regenerated on every request (web) or CLI invocation. This file retains the **old** lifecycle-based format with `todo`/`testing`/`complete` arrays and `test_status` fields, plus a `change_scope` field per feature (extracted from the most recent status commit's `[Scope: ...]` trailer, omitted when absent). This is an internal implementation detail consumed by the Critic for lifecycle-state-dependent computations (e.g., QA TODO detection, regression scope). It is NOT part of the public API contract.
 *   **Regeneration:** Both outputs MUST be freshly computed on every `/status.json` request. The disk file is also regenerated on dashboard requests.
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
 *   **Agent Contract:** Agents MUST query status via `tools/cdd/status.sh`, which outputs the same JSON schema to stdout without requiring the web server. Agents MUST NOT scrape the web dashboard, use HTTP endpoints, or guess ports.
@@ -187,6 +189,16 @@ These scenarios are validated by the Builder's automated test suite.
     Then the server executes tools/critic/run.sh (or equivalent logic) server-side
     And returns a JSON response with a success or error status
     And the response includes a Content-Type of application/json
+
+#### Scenario: Change Scope in API Response
+    Given a feature has a status commit with [Scope: targeted:Web Dashboard Display]
+    When an agent calls GET /status.json
+    Then the feature entry includes change_scope with value "targeted:Web Dashboard Display"
+
+#### Scenario: Change Scope Omitted When No Scope Declared
+    Given a feature has a status commit with no [Scope: ...] trailer
+    When an agent calls GET /status.json
+    Then the feature entry does not include a change_scope field
 
 #### Scenario: CLI Status Tool Project Root Detection
     Given AGENTIC_PROJECT_ROOT is set to a valid project root

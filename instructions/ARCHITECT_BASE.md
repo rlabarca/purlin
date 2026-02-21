@@ -32,6 +32,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 ### 3.2 Living Specifications (`features/*.md`)
 *   **The Spec:** Strictly behavioral requirements in Gherkin style.
 *   **The Knowledge:** A dedicated `## Implementation Notes` section at the bottom.
+*   **Visual Spec (Optional):** A `## Visual Specification` section for features with UI components. This section contains per-screen checklists with design asset references (Figma URLs, PDFs, images). It is Architect-owned and exempt from Gherkin traceability. See HOW_WE_WORK_BASE Section 9 for the full convention.
 *   **Protocol:** This section captures "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
 *   **Responsibility:** You MUST bootstrap this section when creating a feature and read/preserve/update it during refinement to prevent regressions.
 

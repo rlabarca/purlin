@@ -140,3 +140,37 @@ Automated test results are NOT reported as a separate column. They are surfaced 
 *   **QA column:** `CLEAN` requires `tests/<feature>/tests.json` to exist with `status: "PASS"` (automated tests exist and passed). `N/A` means no `tests.json` exists (no automated test coverage).
 
 In short: Builder `DONE` implies automated tests passed. QA `CLEAN` vs `N/A` signals whether automated test coverage exists at all. There is no separate "test status" indicator -- automated test health is embedded in the role status model.
+
+## 9. Visual Specification Convention
+
+### 9.1 Purpose
+Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
+
+### 9.2 Section Format
+The section is placed between `## Implementation Notes` and `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
+
+```markdown
+## Visual Specification
+
+### Screen: <Screen Name>
+- **Reference:** [Figma](<url>) | `docs/mockups/<file>` | N/A
+- [ ] <Visual acceptance criterion 1>
+- [ ] <Visual acceptance criterion 2>
+```
+
+**Key properties:**
+*   **Optional** -- only present when the feature has a visual/UI component.
+*   **Per-screen subsections** -- one feature can have multiple screens, each as a `### Screen:` subsection.
+*   **Design asset references** -- Figma URLs, local PDF/image paths, or "N/A" when no reference exists.
+*   **Checklist format** -- not Gherkin. Subjective visual checks are better as checkboxes than Given/When/Then.
+*   **Separate from functional scenarios** -- QA can batch all visual checks across features instead of interleaving with functional verification.
+
+### 9.3 Ownership and Traceability
+*   The `## Visual Specification` section is **Architect-owned** (like the rest of the spec). QA does NOT modify it.
+*   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
+*   The Critic detects visual spec sections and generates separate QA action items for visual verification.
+
+### 9.4 Design Asset Storage
+*   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).
+*   Local file paths are relative to the project root.
+*   There is no mandatory storage location -- projects choose what fits their workflow.

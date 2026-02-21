@@ -60,7 +60,35 @@ Every agent (Architect, Builder, QA) MUST run the Critic at session start. The C
 ### 2.7 Role-Specific Action Items
 The Critic MUST generate imperative action items categorized by role (Architect, Builder, QA). Action items are derived from existing analysis gates (spec gate, implementation gate, user testing audit) and are prioritized by severity. Each action item identifies the target feature and the specific gap to address.
 
-### 2.8 CDD Decoupling
+### 2.8 Regression Scoping
+The Builder declares the **impact scope** of each change at status-commit time using a `[Scope: ...]` trailer. The Critic reads this scope, cross-validates it against the dependency graph, and generates **scoped QA action items** instead of blanket "test everything" items.
+
+**Scope Types:**
+
+| Scope | Meaning | QA Action |
+|-------|---------|-----------|
+| `full` | Behavioral change, new scenarios, API change | Test all manual scenarios |
+| `targeted:Scenario A,Scenario B` | Only specific scenarios affected | Test only named scenarios |
+| `cosmetic` | Non-functional (formatting, logging, internal refactor) | Skip QA entirely |
+| `dependency-only` | Change propagated by a prerequisite update | Test scenarios touching the changed dependency surface |
+
+**Constraints:**
+*   Default when omitted: `full` (backward-compatible, safe).
+*   The Critic MUST cross-validate scope claims: if a `cosmetic` scope commit modifies files referenced by manual scenarios, the Critic emits a WARNING in the report.
+*   The Critic MUST compute a `regression_set` for each TESTING feature: the filtered list of manual scenarios (and visual checklist items) that QA should verify based on the declared scope.
+
+### 2.9 Visual Specification Convention
+Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references (Figma URLs, PDFs, images).
+
+**Constraints:**
+*   The section is **optional** -- only present when the feature has a visual/UI component.
+*   The section is **Architect-owned** (like the rest of the spec), not QA-owned.
+*   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
+*   The Critic MUST detect `## Visual Specification` sections and count visual checklist items per feature.
+*   The Critic MUST generate separate QA action items for visual verification, distinct from functional scenario verification.
+*   Regression scoping applies to visual specifications: a `cosmetic` scope skips visual QA, a `targeted` scope skips visual unless explicitly targeted, and a `full` scope includes visual verification.
+
+### 2.10 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
 ## 3. Configuration
@@ -83,4 +111,4 @@ The Critic tool MUST produce:
 *   This policy governs buildable tooling constraints (the Critic tool itself), not process rules. It is valid under the Feature Scope Restriction mandate.
 *   The `critic_gate_blocking` flag is deprecated as a no-op. The coordination engine model replaces blocking gates with advisory action items per role. The config key is retained for backward compatibility with existing `.agentic_devops/config.json` files.
 *   FORBIDDEN patterns are optional. Not all architectural policies need to define them.
-*   The CDD decoupling (Invariant 2.8) means the CDD dashboard shows role-based columns (Architect, Builder, QA) derived from `role_status` in on-disk `critic.json` files. CDD does not compute these statuses; it reads pre-computed values from the Critic's output.
+*   The CDD decoupling (Invariant 2.10) means the CDD dashboard shows role-based columns (Architect, Builder, QA) derived from `role_status` in on-disk `critic.json` files. CDD does not compute these statuses; it reads pre-computed values from the Critic's output.

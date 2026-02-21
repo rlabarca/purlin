@@ -2,6 +2,35 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-20] QA Process Optimization: Regression Scoping + Visual Verification
+
+- **Problem 1 (No regression scoping):** QA tests ALL manual scenarios for every TESTING feature, even when only a small change was made. There is no way to skip QA for low-risk changes or target specific scenarios, making the QA process inefficient.
+- **Problem 2 (Visual tests scattered):** Visual/UI checks are mixed into manual Gherkin scenarios across feature files with no way to reference design assets (Figma, PDFs, images) or consolidate visual verification into a dedicated pass.
+- **Solution (Optimization 1 -- Smart Regression Scoping):**
+    - Builder declares impact scope at status-commit time via `[Scope: ...]` trailer (full, targeted, cosmetic, dependency-only).
+    - Critic reads scope, cross-validates against dependency graph, and generates scoped QA action items.
+    - Cross-validation: cosmetic scope with files touching manual scenarios emits WARNING.
+    - New `regression_scope` block in per-feature `critic.json`.
+    - QA startup reads scope and presents filtered verification targets.
+- **Solution (Optimization 2 -- Visual Specification Convention):**
+    - New `## Visual Specification` section in feature files (optional, Architect-owned).
+    - Per-screen checklist format with design asset references (Figma URLs, local paths).
+    - Exempt from Gherkin traceability.
+    - Critic detects visual specs and generates separate visual QA action items.
+    - QA executes a dedicated Visual Verification Pass after functional scenarios.
+    - Visual checks can be batched across features for efficiency.
+- **How they interact:** Regression scoping filters WHICH features/scenarios QA verifies. Visual specification defines HOW visual checks are structured. Scope applies to visual too (cosmetic skips both, targeted skips visual unless explicitly targeted, full includes visual).
+- **Files Modified:**
+    - `features/arch_critic_policy.md` (new Invariants 2.8 Regression Scoping, 2.9 Visual Specification Convention; renumbered CDD Decoupling to 2.10).
+    - `instructions/HOW_WE_WORK_BASE.md` (new Section 9: Visual Specification Convention).
+    - `instructions/BUILDER_BASE.md` (Section 4: added [Scope: ...] commit convention with scope types table, examples, and guidance).
+    - `instructions/QA_BASE.md` (Section 3.3: scoped verification targets; Section 5.0: scoped verification modes; Section 5.4: Visual Verification Pass; Section 5.5: updated Feature Summary).
+    - `instructions/ARCHITECT_BASE.md` (Section 3.2: added visual spec ownership note).
+    - `features/critic_tool.md` (new Sections 2.12 Regression Scope Computation, 2.13 Visual Specification Detection; renumbered Untracked File Audit to 2.14; 11 new automated scenarios).
+    - `features/cdd_status_monitor.md` (added change_scope to /status.json and feature_status.json schemas; 2 new automated scenarios).
+    - `PROCESS_HISTORY.md`.
+- **Impact:** Feature specs (`critic_tool.md`, `cdd_status_monitor.md`, `arch_critic_policy.md`) reset to TODO. Builder must implement: `extract_change_scope()` in CDD, `compute_regression_set()` and `has_visual_spec()` in Critic, scoped QA action items, `regression_scope` and `visual_spec` blocks in critic.json, `change_scope` field in status JSON output.
+
 ## [2026-02-20] Python Environment Isolation for Submodule Consumers
 
 - **Problem:** 2 of 7 shell scripts (`cdd/start.sh`, `software_map/start.sh`) had ad-hoc venv detection while the other 5 (`critic/run.sh`, `cdd/status.sh`, `bootstrap.sh`, `cdd/test_lifecycle.sh`, `cdd/stop.sh`) used bare `python3`. If a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK for LLM-based logic drift), only the server scripts find it. The remaining scripts silently use system Python, creating a split-brain execution environment.

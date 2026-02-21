@@ -187,7 +187,50 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 
 **Lifecycle State Dependency:** QA TODO conditions (a) and (b) both use `.agentic_devops/cache/feature_status.json` to determine the feature's lifecycle state (TESTING). If unavailable, TESTING-based TODO detection is skipped for both conditions. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent.
 
-### 2.12 Untracked File Audit
+### 2.12 Regression Scope Computation
+The Critic MUST compute a regression set for each TESTING feature based on the Builder's declared change scope. The scope is extracted from the most recent status commit message for the feature.
+
+*   **Scope Extraction:** Parse `[Scope: <type>]` from the status commit message. If absent, default to `full`.
+*   **Regression Set Computation (`compute_regression_set`):**
+    *   `full` (or missing) -- All manual scenarios AND all visual checklist items.
+    *   `targeted:Scenario A,Scenario B` -- Only the named scenarios. Visual verification is skipped unless a visual screen name is explicitly listed.
+    *   `cosmetic` -- Empty set (QA skip). No scenarios or visual items queued.
+    *   `dependency-only` -- Scenarios referencing the changed prerequisite's surface area. Determined by cross-referencing the feature's prerequisite links with the dependency graph.
+*   **Cross-Validation:** If the declared scope is `cosmetic` but the status commit modifies files that are referenced by manual scenarios (detected via git diff of the commit), the Critic MUST emit a WARNING in the report and in the feature's `critic.json`.
+*   **Scoped QA Action Items:** The Critic MUST modify QA action item generation to use the regression set:
+    *   `full` -- `"Verify X: N manual scenario(s), M visual item(s)"`
+    *   `targeted` -- `"Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"`
+    *   `cosmetic` -- `"QA skip (cosmetic change) -- 0 scenarios queued"`
+    *   `dependency-only` -- `"Verify X: N scenario(s) touching changed dependency surface"`
+*   **Per-Feature Output:** Include a `regression_scope` block in `tests/<feature_name>/critic.json`:
+    ```json
+    "regression_scope": {
+        "declared": "full | targeted:... | cosmetic | dependency-only",
+        "scenarios": ["Scenario A", "Scenario B"],
+        "visual_items": 0,
+        "cross_validation_warnings": []
+    }
+    ```
+
+### 2.13 Visual Specification Detection
+The Critic MUST detect and report `## Visual Specification` sections in feature files.
+
+*   **Detection (`has_visual_spec`):** Check for the presence of a `## Visual Specification` heading in the feature file content.
+*   **Item Counting:** Count checklist items (lines matching `- [ ]` or `- [x]`) within the visual specification section. Count `### Screen:` subsections.
+*   **QA Action Items:** Generate separate QA action items for visual verification: `"Visual verify X: N checklist item(s) across M screen(s)"`. These are distinct from functional scenario verification items.
+*   **Per-Feature Output:** Include a `visual_spec` block in `tests/<feature_name>/critic.json`:
+    ```json
+    "visual_spec": {
+        "present": true,
+        "screens": 2,
+        "items": 8
+    }
+    ```
+    When no visual spec exists: `"visual_spec": {"present": false, "screens": 0, "items": 0}`.
+*   **Traceability Exemption:** Visual checklist items are NOT subject to Gherkin traceability checks. They do not generate traceability gaps.
+*   **Scope Interaction:** Visual verification items are included in regression scope computation. A `cosmetic` scope skips visual items. A `targeted` scope skips visual unless explicitly targeted. A `full` scope includes all visual items.
+
+### 2.14 Untracked File Audit
 The Critic MUST detect untracked files in the working directory and generate Architect action items for triage.
 
 *   **Detection:** Run `git status --porcelain` and collect all untracked entries (lines starting with `??`).
@@ -498,6 +541,87 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     When CRITIC_REPORT.md is generated
     Then the Architect action items section includes an "Untracked Files" subsection
     And each untracked path is listed with a triage instruction
+
+#### Scenario: Regression Scope Full Default
+    Given a feature is in TESTING state
+    And the most recent status commit has no [Scope: ...] trailer
+    When the Critic computes the regression set
+    Then the regression_scope.declared is "full"
+    And the regression set includes all manual scenarios
+    And the regression set includes all visual checklist items
+
+#### Scenario: Regression Scope Targeted
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]
+    When the Critic computes the regression set
+    Then the regression_scope.declared is "targeted:Web Dashboard Display,Role Columns on Dashboard"
+    And the regression_scope.scenarios contains exactly "Web Dashboard Display" and "Role Columns on Dashboard"
+    And visual verification is skipped
+
+#### Scenario: Regression Scope Cosmetic
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: cosmetic]
+    When the Critic computes the regression set
+    Then the regression_scope.declared is "cosmetic"
+    And the regression set is empty (0 scenarios, 0 visual items)
+    And the QA action item reads "QA skip (cosmetic change)"
+
+#### Scenario: Regression Scope Dependency Only
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: dependency-only]
+    And the feature has a prerequisite to arch_critic_policy.md
+    When the Critic computes the regression set
+    Then the regression_scope.declared is "dependency-only"
+    And the regression set includes only scenarios referencing the prerequisite surface
+
+#### Scenario: Regression Scope Cross-Validation Warning
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: cosmetic]
+    And the status commit modifies files referenced by manual scenarios
+    When the Critic computes the regression set
+    Then a cross-validation WARNING is emitted
+    And the warning appears in regression_scope.cross_validation_warnings
+    And the warning appears in CRITIC_REPORT.md
+
+#### Scenario: Regression Scope in Critic JSON Output
+    Given the Critic tool completes analysis of a TESTING feature
+    When the per-feature critic.json is written
+    Then it contains a regression_scope object with declared, scenarios, visual_items, and cross_validation_warnings fields
+
+#### Scenario: Visual Specification Detected
+    Given a feature file contains a "## Visual Specification" section
+    And the section has 2 screens with 8 total checklist items
+    When the Critic tool runs analysis
+    Then visual_spec.present is true
+    And visual_spec.screens is 2
+    And visual_spec.items is 8
+
+#### Scenario: Visual Specification Not Present
+    Given a feature file does not contain a "## Visual Specification" section
+    When the Critic tool runs analysis
+    Then visual_spec.present is false
+    And visual_spec.screens is 0
+    And visual_spec.items is 0
+
+#### Scenario: Visual Specification QA Action Item
+    Given a feature is in TESTING state with a visual specification (3 screens, 12 items)
+    And the regression scope is full
+    When the Critic generates QA action items
+    Then a separate visual QA action item is created: "Visual verify X: 12 checklist item(s) across 3 screen(s)"
+    And the visual item is distinct from the functional scenario verification item
+
+#### Scenario: Visual Specification Exempt from Traceability
+    Given a feature file contains a "## Visual Specification" section with checklist items
+    When the Critic tool runs the Implementation Gate traceability check
+    Then visual checklist items are not counted as unmatched scenarios
+    And visual items do not affect the traceability coverage percentage
+
+#### Scenario: Scoped QA Action Item for Targeted Scope
+    Given a feature is in TESTING state with 5 manual scenarios
+    And the regression scope is targeted:Scenario A,Scenario B
+    When the Critic generates QA action items
+    Then the QA action item reads "Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"
+    And scenarios not in the target list are not included in the action item
 
 #### Scenario: Spec Gate Policy File Reduced Evaluation
     Given a feature file is an architectural policy (arch_*.md)
