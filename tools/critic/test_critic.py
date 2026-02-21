@@ -3186,8 +3186,60 @@ class TestRegressionScopeTargeted(unittest.TestCase):
         self.assertEqual(
             sorted(result['scenarios']),
             ['Role Columns on Dashboard', 'Web Dashboard Display'])
-        # Visual skipped for targeted
+        # Visual skipped for targeted (no Visual: prefix)
         self.assertEqual(result['visual_items'], 0)
+        self.assertEqual(result['cross_validation_warnings'], [])
+
+    @patch('critic._extract_scope_from_commit',
+           return_value='targeted:Nonexistent Scenario')
+    def test_targeted_unresolvable_name_warns(self, _mock):
+        result = compute_regression_set(
+            'features/targeted.md', self.content)
+        self.assertEqual(len(result['cross_validation_warnings']), 1)
+        self.assertIn('Nonexistent Scenario',
+                      result['cross_validation_warnings'][0])
+        self.assertIn('#### Scenario:',
+                      result['cross_validation_warnings'][0])
+
+    @patch('critic._extract_scope_from_commit',
+           return_value='targeted:Web Dashboard Display,Bad Name')
+    def test_targeted_mixed_valid_and_invalid_names(self, _mock):
+        result = compute_regression_set(
+            'features/targeted.md', self.content)
+        self.assertEqual(result['scenarios'], ['Web Dashboard Display',
+                                               'Bad Name'])
+        self.assertEqual(len(result['cross_validation_warnings']), 1)
+        self.assertIn('Bad Name', result['cross_validation_warnings'][0])
+
+    @patch('critic._extract_scope_from_commit',
+           return_value='targeted:Visual:Page')
+    def test_targeted_visual_screen_resolved(self, _mock):
+        result = compute_regression_set(
+            'features/targeted.md', self.content)
+        self.assertEqual(result['scenarios'], [])
+        self.assertEqual(result['visual_items'], 1)
+        self.assertEqual(result['cross_validation_warnings'], [])
+
+    @patch('critic._extract_scope_from_commit',
+           return_value='targeted:Visual:Nonexistent Screen')
+    def test_targeted_visual_unresolvable_warns(self, _mock):
+        result = compute_regression_set(
+            'features/targeted.md', self.content)
+        self.assertEqual(result['visual_items'], 0)
+        self.assertEqual(len(result['cross_validation_warnings']), 1)
+        self.assertIn('Visual:Nonexistent Screen',
+                      result['cross_validation_warnings'][0])
+        self.assertIn('### Screen:',
+                      result['cross_validation_warnings'][0])
+
+    @patch('critic._extract_scope_from_commit',
+           return_value='targeted:Web Dashboard Display,Visual:Page')
+    def test_targeted_mixed_scenario_and_visual(self, _mock):
+        result = compute_regression_set(
+            'features/targeted.md', self.content)
+        self.assertEqual(result['scenarios'], ['Web Dashboard Display'])
+        self.assertEqual(result['visual_items'], 1)
+        self.assertEqual(result['cross_validation_warnings'], [])
 
 
 class TestRegressionScopeCosmetic(unittest.TestCase):

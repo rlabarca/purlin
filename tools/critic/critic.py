@@ -256,20 +256,26 @@ def parse_discovery_entries(section_text):
 def parse_visual_spec(content):
     """Detect and parse a Visual Specification section.
 
-    Returns dict: {'present': bool, 'screens': int, 'items': int}
+    Returns dict: {'present': bool, 'screens': int, 'items': int,
+                   'screen_names': [str]}
     """
     match = re.search(
         r'^##\s+Visual\s+Specification\s*$(.*?)(?=^##\s|\Z)',
         content, re.MULTILINE | re.DOTALL
     )
     if not match:
-        return {'present': False, 'screens': 0, 'items': 0}
+        return {'present': False, 'screens': 0, 'items': 0,
+                'screen_names': []}
 
     section_text = match.group(1)
-    screens = len(re.findall(r'^###\s+Screen:', section_text, re.MULTILINE))
+    screen_matches = re.findall(
+        r'^###\s+Screen:\s*(.+)', section_text, re.MULTILINE
+    )
+    screen_names = [s.strip() for s in screen_matches]
     items = len(re.findall(r'^-\s+\[[ x]\]', section_text, re.MULTILINE))
 
-    return {'present': True, 'screens': screens, 'items': items}
+    return {'present': True, 'screens': len(screen_names), 'items': items,
+            'screen_names': screen_names}
 
 
 def is_policy_file(filename):
@@ -1246,10 +1252,32 @@ def compute_regression_set(feature_file, content, cdd_status=None,
         targeted_names = [
             n.strip() for n in declared[len('targeted:'):].split(',')
         ]
+        # Validate targeted names against feature spec (policy_critic Section 2.8)
+        all_scenario_titles = {s['title'] for s in scenarios}
+        visual_screen_names = set(visual.get('screen_names', []))
+        has_visual_target = False
+        for name in targeted_names:
+            if name.startswith('Visual:'):
+                screen_name = name[len('Visual:'):].strip()
+                if screen_name not in visual_screen_names:
+                    warnings.append(
+                        f'Targeted scope name "{name}" does not match any '
+                        f'### Screen: title in the feature spec.'
+                    )
+                else:
+                    has_visual_target = True
+            elif name not in all_scenario_titles:
+                warnings.append(
+                    f'Targeted scope name "{name}" does not match any '
+                    f'#### Scenario: title in the feature spec.'
+                )
+        scenario_targets = [n for n in targeted_names
+                            if not n.startswith('Visual:')]
         return {
             'declared': declared,
-            'scenarios': targeted_names,
-            'visual_items': 0,  # visual skipped unless explicitly targeted
+            'scenarios': scenario_targets,
+            'visual_items': (visual['items'] if has_visual_target
+                             else 0),
             'cross_validation_warnings': warnings,
         }
 
