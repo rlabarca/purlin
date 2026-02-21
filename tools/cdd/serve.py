@@ -374,6 +374,20 @@ def get_last_commit():
     return run_command("git log -1 --format='%h %s (%cr)'")
 
 
+def generate_workspace_json():
+    """Generates workspace data for the /workspace.json endpoint.
+
+    Returns git status (clean or list of modified files) and last commit summary.
+    """
+    git_status = get_git_status()
+    last_commit = get_last_commit()
+    return {
+        "clean": not bool(git_status),
+        "files": git_status.splitlines() if git_status else [],
+        "last_commit": last_commit,
+    }
+
+
 # Badge CSS class mapping for role statuses
 ROLE_BADGE_CSS = {
     "DONE": "st-done",
@@ -542,7 +556,7 @@ h3{{font-family:var(--font-body);font-size:11px;color:var(--purlin-muted);margin
 .ft td{{padding:2px 6px;line-height:1.5;font-family:'Menlo','Monaco','Consolas',monospace;font-size:12px}}
 .ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
-.ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px}}
+.ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .clean{{color:var(--purlin-status-good)}}
 .wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
 pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px;font-family:'Menlo','Monaco','Consolas',monospace}}
@@ -580,17 +594,16 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     </button>
   </div>
 </div>
+<div class="ctx">
+  <h2>Workspace</h2>
+  <div id="workspace-content">{git_html}<p class="dim" style="margin-top:4px">{last_commit}</p></div>
+</div>
 <div class="features">
     <h3>Active</h3>
     <div id="active-content">{active_html or '<p class="dim">No active features.</p>'}</div>
     <h3>Complete</h3>
     <div id="complete-content">{complete_html or '<p class="dim">None complete.</p>'}
     {overflow_html}</div>
-</div>
-<div class="ctx">
-  <h2>Workspace</h2>
-  {git_html}
-  <p class="dim" style="margin-top:4px">{last_commit}</p>
 </div>
 <script>
 function toggleTheme(){{
@@ -612,6 +625,17 @@ function buildTable(features){{
   }});
   return'<table class="ft"><thead><tr><th>Feature</th><th>Architect</th><th>Builder</th><th>QA</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }}
+function refreshWorkspace(){{
+  fetch('/workspace.json').then(function(r){{return r.json();}}).then(function(w){{
+    var el=document.getElementById('workspace-content');
+    if(!el)return;
+    var h='';
+    if(w.clean){{h='<p class="clean">Clean State <span class="dim">(Ready for next task)</span></p>';}}
+    else{{h='<p class="wip">Work in Progress:</p><pre>'+w.files.join('\\n')+'</pre>';}}
+    if(w.last_commit)h+='<p class="dim" style="margin-top:4px">'+w.last_commit+'</p>';
+    el.innerHTML=h;
+  }}).catch(function(){{}});
+}}
 function refreshData(){{
   fetch('/status.json').then(function(r){{return r.json();}}).then(function(data){{
     var active=[],complete=[];
@@ -627,6 +651,7 @@ function refreshData(){{
     var ts=document.getElementById('timestamp');
     if(ts){{var d=new Date();ts.textContent=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');}}
   }}).catch(function(){{}});
+  refreshWorkspace();
 }}
 setInterval(refreshData,5000);
 function runCritic(){{
@@ -675,6 +700,14 @@ def _role_table_html(features):
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    def _send_json(self, data):
+        payload = json.dumps(data, indent=2, sort_keys=True).encode('utf-8')
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def do_GET(self):
         if self.path == '/status.json':
             # Public API: flat array with role fields
@@ -683,13 +716,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Also write internal feature_status.json (old format)
             write_internal_feature_status()
 
-            payload = json.dumps(api_data, indent=2, sort_keys=True).encode(
-                'utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
+            self._send_json(api_data)
+        elif self.path == '/workspace.json':
+            # Dynamic workspace data for client-side refresh
+            self._send_json(generate_workspace_json())
         else:
             # Dashboard request: also regenerate internal file
             write_internal_feature_status()
