@@ -904,6 +904,8 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
       </div>
+    </div>
+    <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
         <h3>Agents</h3>
@@ -911,7 +913,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
       <div class="section-body collapsed" id="agents-section">
         <div id="agents-rows" style="margin-bottom:8px"></div>
-        <div>
+        <div style="text-align:right">
           <button class="btn-critic" id="btn-detect-providers" onclick="detectProviders()">Detect Providers</button>
           <span id="detect-providers-err" style="margin-left:8px;font-size:11px;color:var(--purlin-status-error)"></span>
         </div>
