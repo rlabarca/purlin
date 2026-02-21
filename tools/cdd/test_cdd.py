@@ -908,6 +908,45 @@ class TestApiStatusJsonChangeScope(unittest.TestCase):
 
 
 # ===================================================================
+# CLI Graph Output Tests
+# ===================================================================
+
+class TestCLIGraphOutput(unittest.TestCase):
+    """Scenario: CLI Graph Output"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.test_dir, "features")
+        os.makedirs(self.features_dir)
+        # Create feature files with prerequisite links
+        with open(os.path.join(self.features_dir, "arch_base.md"), "w") as f:
+            f.write("# Arch Base\n\n> Label: \"Arch Base\"\n")
+        with open(os.path.join(self.features_dir, "feature_a.md"), "w") as f:
+            f.write("# Feature A\n\n> Label: \"Feature A\"\n> Prerequisite: features/arch_base.md\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_cli_graph_outputs_valid_json(self):
+        """--cli-graph outputs valid JSON with features, cycles, orphans arrays."""
+        from graph import parse_features, generate_dependency_graph
+        features = parse_features(self.features_dir)
+        graph = generate_dependency_graph(features, features_dir=self.features_dir)
+        self.assertIn("features", graph)
+        self.assertIn("cycles", graph)
+        self.assertIn("orphans", graph)
+        self.assertIsInstance(graph["features"], list)
+        self.assertIsInstance(graph["cycles"], list)
+        self.assertIsInstance(graph["orphans"], list)
+        # Verify features are populated
+        self.assertGreater(len(graph["features"]), 0)
+        # Verify JSON serializable
+        json_str = json.dumps(graph, indent=2)
+        reparsed = json.loads(json_str)
+        self.assertEqual(reparsed["features"], graph["features"])
+
+
+# ===================================================================
 # Test runner with output to tests/cdd_status_monitor/tests.json
 # ===================================================================
 
