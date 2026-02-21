@@ -328,5 +328,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **Run Critic Button:** BUG resolved 2026-02-20 — button was missing from dashboard, Builder added it. Verified: displays in top-right, enters loading state on click, refreshes dashboard with updated role columns.
 *   **Port TIME_WAIT fix:** Set `allow_reuse_address = True` on `socketserver.TCPServer` in `serve.py` so the server can rebind to a port in TIME_WAIT state after stop/restart. Also added startup verification to `start.sh` — waits 0.5s and checks if the PID is still alive, reporting an error with log path if the process exited (e.g., bind failure).
 *   **start.sh multi-invocation issue:** DISCOVERY resolved 2026-02-20 — port TIME_WAIT fix and startup verification resolved the need for multiple start.sh invocations after stop. Server now starts reliably on first invocation.
+*   **Change Scope in API (2026-02-21):** Added `get_change_scope()` to `serve.py` — extracts `[Scope: ...]` trailer from the most recent status commit message (Complete or Ready for Verification). Included as `change_scope` field in both `/status.json` API response and internal `feature_status.json`. Omitted when no scope is declared, per spec.
 
 ## User Testing Discoveries

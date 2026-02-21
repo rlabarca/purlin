@@ -1,5 +1,6 @@
 import http.server
 import json
+import re
 import socketserver
 import subprocess
 import os
@@ -219,6 +220,29 @@ def aggregate_test_statuses(statuses):
     return "PASS"
 
 
+def get_change_scope(f_path):
+    """Extract change_scope from the most recent status commit for a feature.
+
+    Parses [Scope: <type>] from the status commit message (Complete or
+    Ready for Verification). Returns the scope string or None if absent.
+    """
+    # Try Complete commit first, then Ready for Verification
+    for pattern in (
+        f"\\[Complete {f_path}\\]",
+        f"\\[Ready for .* {f_path}\\]",
+    ):
+        msg = run_command(
+            f"git log -1 --grep='{pattern}' --format=%s"
+        )
+        if msg:
+            # Extract [Scope: ...] trailer
+            match = re.search(r'\[Scope:\s*([^\]]+)\]', msg)
+            if match:
+                return match.group(1).strip()
+            return None
+    return None
+
+
 # ===================================================================
 # Internal Feature Status (old lifecycle format, for Critic consumption)
 # ===================================================================
@@ -242,6 +266,9 @@ def generate_internal_feature_status():
         if ts is not None:
             entry["test_status"] = ts
             all_test_statuses.append(ts)
+        scope = get_change_scope(rel_path)
+        if scope:
+            entry["change_scope"] = scope
         return entry
 
     features = {
@@ -307,6 +334,10 @@ def generate_api_status_json():
                 entry["builder"] = role_status["builder"]
             if 'qa' in role_status:
                 entry["qa"] = role_status["qa"]
+
+        scope = get_change_scope(rel_path)
+        if scope:
+            entry["change_scope"] = scope
 
         features.append(entry)
 

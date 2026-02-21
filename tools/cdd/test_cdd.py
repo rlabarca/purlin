@@ -17,6 +17,7 @@ from serve import (
     get_feature_role_status,
     aggregate_test_statuses,
     get_feature_status,
+    get_change_scope,
     COMPLETE_CAP,
     extract_label,
     generate_internal_feature_status,
@@ -770,6 +771,126 @@ class TestRunCriticEndpoint(unittest.TestCase):
         body = handler.wfile.getvalue()
         data = json.loads(body)
         self.assertEqual(data["status"], "error")
+
+
+# ===================================================================
+# Change Scope Tests
+# ===================================================================
+
+class TestGetChangeScope(unittest.TestCase):
+    """Scenario: Change Scope in API Response / Change Scope Omitted"""
+
+    @patch('serve.run_command')
+    def test_extracts_targeted_scope(self, mock_run):
+        def mock_git(cmd):
+            if "Complete" in cmd and "%s" in cmd:
+                return ("[Complete features/test.md] "
+                        "[Scope: targeted:Web Dashboard Display]")
+            return ""
+        mock_run.side_effect = mock_git
+        scope = get_change_scope("features/test.md")
+        self.assertEqual(scope, "targeted:Web Dashboard Display")
+
+    @patch('serve.run_command')
+    def test_extracts_full_scope(self, mock_run):
+        def mock_git(cmd):
+            if "Complete" in cmd and "%s" in cmd:
+                return "[Complete features/test.md] [Scope: full]"
+            return ""
+        mock_run.side_effect = mock_git
+        scope = get_change_scope("features/test.md")
+        self.assertEqual(scope, "full")
+
+    @patch('serve.run_command')
+    def test_returns_none_when_no_scope(self, mock_run):
+        def mock_git(cmd):
+            if "Complete" in cmd and "%s" in cmd:
+                return "[Complete features/test.md]"
+            return ""
+        mock_run.side_effect = mock_git
+        scope = get_change_scope("features/test.md")
+        self.assertIsNone(scope)
+
+    @patch('serve.run_command')
+    def test_returns_none_when_no_status_commit(self, mock_run):
+        mock_run.return_value = ""
+        scope = get_change_scope("features/test.md")
+        self.assertIsNone(scope)
+
+    @patch('serve.run_command')
+    def test_extracts_scope_from_ready_for_verification(self, mock_run):
+        def mock_git(cmd):
+            if "Complete" in cmd:
+                return ""
+            if "Ready for" in cmd and "%s" in cmd:
+                return ("[Ready for Verification features/test.md] "
+                        "[Scope: cosmetic]")
+            return ""
+        mock_run.side_effect = mock_git
+        scope = get_change_scope("features/test.md")
+        self.assertEqual(scope, "cosmetic")
+
+
+class TestApiStatusJsonChangeScope(unittest.TestCase):
+    """Scenario: Change Scope in API Response"""
+
+    @patch('serve.get_change_scope')
+    def test_includes_change_scope_when_present(self, mock_scope):
+        mock_scope.return_value = "targeted:Web Dashboard Display"
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "test.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "Test"\n')
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                entry = data["features"][0]
+                self.assertEqual(
+                    entry["change_scope"],
+                    "targeted:Web Dashboard Display")
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.get_change_scope')
+    def test_omits_change_scope_when_absent(self, mock_scope):
+        mock_scope.return_value = None
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "test.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "Test"\n')
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                entry = data["features"][0]
+                self.assertNotIn("change_scope", entry)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
 
 
 # ===================================================================
