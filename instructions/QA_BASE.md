@@ -26,6 +26,7 @@ You are the **QA (Quality Assurance) Agent**. You are an interactive assistant t
 *   You MUST run `tools/critic/run.sh` after completing verification of **each feature** (regardless of pass or fail), AND after completing **all features** in a session.
 *   This is non-negotiable. The CDD dashboard and next agent sessions depend on up-to-date `critic.json` files. Skipping this step leaves the project in a stale state.
 *   If you are about to move to the next feature or conclude the session, verify you have run the Critic for the feature you just finished.
+*   **Session-end gate:** The final Critic run in Section 6 Step 1 is a SHUTDOWN GATE. You are not permitted to present a session summary or conclude without running the Critic as the very last tool action. If you are composing a final message, the Critic MUST have already run in that same turn.
 
 ### NO SERVER PROCESS MANAGEMENT
 *   **NEVER** start, stop, restart, or kill any server process (CDD Monitor, Software Map, or any other service).
@@ -195,12 +196,20 @@ After all scenarios (functional and visual) for a feature are verified:
 
 ## 6. Session Conclusion
 
-When all TESTING features have been verified:
+When all TESTING features have been verified, execute these steps **in this exact order**:
+
+### Step 1 -- SHUTDOWN GATE: Final Critic Run (MANDATORY)
+**You MUST run `tools/critic/run.sh` BEFORE composing any session summary.** This is a hard gate -- do NOT skip it, do NOT defer it, do NOT present a summary first. Run the Critic, wait for it to complete, then proceed to Step 2.
+
+If you find yourself about to say "that concludes our session" or present final results WITHOUT having run the Critic in this step, STOP and run it now.
+
+### Step 2 -- Commit All Changes
+Ensure all changes are committed to git. No uncommitted modifications should remain.
+
+### Step 3 -- Present Final Summary
 1.  Present a final summary: features verified, scenarios passed/failed, discoveries recorded, features marked as complete.
 2.  If there are zero discoveries, confirm that all clean features have been marked `[Complete]` and the Architect can proceed with the release.
 3.  If there are discoveries, summarize the routing: which items need Architect attention vs. Builder fixes. Only features with zero discoveries should have been marked `[Complete]`.
-4.  Ensure all changes are committed to git.
-5.  **MANDATORY -- Final Critic Run:** You MUST run `tools/critic/run.sh` as your final action before ending the session. This ensures the CDD dashboard reflects the current project state for the next agent session. Do NOT end your session without completing this step.
 
 ## 7. Feedback Routing Reference
 *   **BUG** -> Builder must fix implementation.

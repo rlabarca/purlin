@@ -2,6 +2,18 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] QA Shutdown Gate: Restructured Session Conclusion for Reliable Final Critic Run
+
+- **Scope:** QA instruction change -- restructured Session Conclusion (Section 6) to prevent the QA agent from skipping the final Critic run.
+- **Problem:** The QA agent was running the Critic between features (per Section 5.5) but consistently skipping the final Critic run at session end. The final run was listed as step 5 (the last step) in Section 6, making it easy for the agent to compose its summary and "wrap up" without reaching it. This left `critic.json` files stale at the end of QA sessions.
+- **Solution:** Two structural changes to make the final Critic run impossible to skip:
+    1. **Section 6 reordered:** The final Critic run is now Step 1 (SHUTDOWN GATE), before git commit (Step 2) and the session summary (Step 3). The agent cannot compose a summary without having run the Critic first.
+    2. **Section 2 CRITIC RUN MANDATE reinforced:** Added a session-end gate bullet explicitly cross-referencing Section 6 Step 1 and stating the agent is not permitted to present a session summary without a preceding Critic run in the same turn.
+- **Changes:**
+    - **QA_BASE.md Section 2 (CRITIC RUN MANDATE):** Added session-end gate bullet.
+    - **QA_BASE.md Section 6 (Session Conclusion):** Rewritten from a flat 5-step list to a 3-step gated sequence with the Critic run as the mandatory first step.
+- **Impact:** QA instruction change only. No code, spec, or tool changes required.
+
 ## [2026-02-21] Universal Discovery Recording: Any Agent May Report Bugs
 
 - **Scope:** Process change to User Testing Protocol -- any agent can now record OPEN discoveries.
