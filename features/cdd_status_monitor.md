@@ -7,9 +7,7 @@
 
 
 ## 1. Overview
-The CDD Dashboard is the unified web interface for human review of the Continuous Design-Driven project state. It combines two views -- **Status** (feature lifecycle and role status tables) and **SW Map** (interactive dependency graph) -- served from a single port with a shared header, theme system, and search/filter. The dashboard also provides a canonical JSON API and CLI tool for agent consumption.
-
-The SW Map view's graph rendering and generation logic is defined in `features/cdd_software_map.md`. This feature owns the dashboard shell (server, header, view modes, search, URL routing, branding, config/port) and the Status view (feature tables, collapsible sections, badges, workspace, feature detail modal).
+The CDD Dashboard is the web interface for human review of the Continuous Design-Driven project state. It displays feature lifecycle and role status tables, served from a single port with a shared header, theme system, and search/filter. The dashboard also provides a canonical JSON API and CLI tool for agent consumption.
 
 ## 2. Requirements
 
@@ -21,16 +19,9 @@ The SW Map view's graph rendering and generation logic is defined in `features/c
 ### 2.2 UI & Layout
 
 #### 2.2.1 Dashboard Shell
-The dashboard shell is the always-visible chrome shared between the Status and SW Map views.
 
-*   **Unified Header:** A single horizontal header bar (per Section 2.9) is always visible regardless of active view. It contains the logo, title, view mode buttons, search box, timestamp, Run Critic button, and theme toggle.
-*   **View Mode Toggle:** Two toggle buttons ("Status" and "SW Map") appear in the header left group, after the title/project name block. The active view button is visually distinguished (e.g., highlighted or underlined). Clicking a button switches the content area to that view.
-*   **URL Hash Routing:** The dashboard uses URL hash routing for direct view access:
-    - `/#status` (default) -- Status view.
-    - `/#map` -- SW Map view.
-    - Navigating directly to a hash URL loads the corresponding view.
-    - Refresh preserves the current view mode (hash persists in the URL bar).
-*   **Content Area:** Below the header, a single content area renders either the Status view or the SW Map view based on the active mode.
+*   **Header:** A single horizontal header bar (per Section 2.9) is always visible. It contains the logo, title, search box, timestamp, Run Critic button, and theme toggle.
+*   **Content Area:** Below the header, the content area renders the Status view.
 
 #### 2.2.2 Status View
 The Status view is the default view (`/#status`).
@@ -77,14 +68,11 @@ The Status view is the default view (`/#status`).
 
 #### 2.2.3 Search/Filter
 *   **Position:** A search text input appears in the header right group, to the left of the timestamp.
-*   **Status View Behavior:** Filters Active and Complete table rows by feature name (case-insensitive substring match). Sections with no matching rows are hidden.
-*   **SW Map View Behavior:** Filters graph nodes by label or filename. Nodes that do not match are visually de-emphasized or hidden.
+*   **Behavior:** Filters Active and Complete table rows by feature name (case-insensitive substring match). Sections with no matching rows are hidden.
 *   **Placeholder:** Uses `var(--purlin-dim)` color token for readable contrast in both themes.
 
 #### 2.2.4 Feature Detail Modal
-The feature detail modal is shared between both views (Status and SW Map).
-
-*   **Trigger:** Clicking a feature name in the status table or clicking a graph node in the SW Map view opens the modal.
+*   **Trigger:** Clicking a feature name in the status table opens the modal.
 *   **Content:** Renders the feature file's markdown content in a scrollable container.
 *   **Tabbed View:** When a companion `.impl.md` file exists for the feature, the modal shows two tabs: "Specification" and "Implementation Notes". Tab content is lazy-loaded and cached for instant switching.
 *   **Single Tab:** When no companion file exists, the modal shows content without tabs (same as current behavior).
@@ -139,7 +127,7 @@ The feature detail modal is shared between both views (Status and SW Map).
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
 *   **Output:** Writes the same JSON schema as the `/status.json` API endpoint to stdout. The output MUST be valid JSON parseable by `python3 json.load()`.
-*   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first. This replaces the standalone `python3 tools/software_map/generate_tree.py` command.
+*   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first.
 *   **Side Effect:** Regenerates `.agentic_devops/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic).
 *   **Project Root Detection:** Uses `AGENTIC_PROJECT_ROOT` if set, then climbing fallback (per submodule_bootstrap Section 2.11).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
@@ -178,7 +166,6 @@ The page header is a single horizontal bar with two groups, vertically centered:
 2.  Title and project name block (stacked vertically):
     *   **Line 1:** Title text: "Purlin CDD Dashboard"
     *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). Resolved from `project_name` in config, falling back to the project root directory name. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`.
-3.  View mode toggle buttons: "Status" and "SW Map". Styled as compact buttons or tabs. The active view is visually distinguished.
 
 **Right group** (right-justified, in this order from the right edge inward):
 1.  Theme toggle (sun/moon icon) -- rightmost element
@@ -209,9 +196,8 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
     *   Feature table rows (Active and Complete sections).
     *   Last-refreshed timestamp (text content only).
     *   Workspace section (git status and last commit).
-    *   SW Map graph data (when in SW Map view).
 *   **Static Elements (rendered once on initial page load, never re-created or replaced):**
-    *   Page header structure (logo, title, project name, view mode buttons).
+    *   Page header structure (logo, title, project name).
     *   Theme toggle, search input, and Run Critic button.
     *   Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") and table column headers.
     *   Google Fonts CDN `<link>` tags.
@@ -402,27 +388,6 @@ These scenarios are validated by the Builder's automated test suite.
 
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
-
-#### Scenario: View Mode Switching
-    Given the User is viewing the CDD Dashboard
-    When the User clicks the "SW Map" toggle button
-    Then the content area switches to the SW Map view
-    And the URL hash changes to /#map
-    When the User clicks the "Status" toggle button
-    Then the content area switches to the Status view
-    And the URL hash changes to /#status
-
-#### Scenario: Direct URL Access
-    Given the CDD server is running
-    When the User navigates directly to http://localhost:<port>/#map
-    Then the SW Map view is displayed
-    When the User navigates directly to http://localhost:<port>/#status
-    Then the Status view is displayed
-
-#### Scenario: Refresh Preserves View Mode
-    Given the User is viewing the SW Map view (URL shows /#map)
-    When the User refreshes the browser
-    Then the SW Map view is displayed (not reset to Status)
 
 #### Scenario: Search Filters Status View
     Given the User is viewing the Status view
