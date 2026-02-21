@@ -2,6 +2,25 @@
 
 This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
 
+## [2026-02-20] Anchor Node Taxonomy: arch_, design_, policy_ Prefixes
+
+- **Problem:** All dependency graph anchor nodes used the single `arch_*.md` prefix regardless of domain. Visual standards (color palettes, typography, spacing) do not belong under "architectural policy," and governance rules (security baselines, compliance, coordination policies) are semantically distinct from technical constraints. The single prefix made it harder for agents and humans to quickly identify what domain a constraint file governs.
+- **Solution:** Introduced a three-prefix taxonomy for anchor nodes. All three function identically in the dependency system (cascade resets, Critic prerequisite detection). The distinction is semantic:
+    - `arch_*.md` -- Technical constraints (system architecture, data flow, dependency rules, code patterns).
+    - `design_*.md` -- Design constraints (visual language, typography, spacing, interaction patterns, accessibility).
+    - `policy_*.md` -- Governance rules (process policies, security baselines, compliance requirements, coordination rules).
+- **Rename:** `features/arch_critic_policy.md` renamed to `features/policy_critic.md`. All prerequisite links updated.
+- **Files Modified:**
+    - `instructions/HOW_WE_WORK_BASE.md` (new Sections 4.1 Anchor Node Taxonomy, 4.2 Cross-Cutting Standards Pattern).
+    - `instructions/ARCHITECT_BASE.md` (Section 3.1 broadened to three prefixes; Zero Code Mandate and Post-Commit Critic Run updated).
+    - `instructions/BUILDER_BASE.md` (Pre-Flight and Escalation updated from `arch_*` to anchor node terminology).
+    - `features/policy_critic.md` (renamed from `arch_critic_policy.md`; title, FORBIDDEN patterns, impl notes updated).
+    - `features/critic_tool.md` (prerequisite link, all `arch_*`-only patterns broadened to three-prefix, 6 scenarios renamed/updated).
+    - `features/cdd_status_monitor.md`, `features/software_map_generator.md` (prerequisite links updated).
+    - `README.md` (Core Concepts section, Mermaid diagram updated).
+    - `.agentic_devops/ARCHITECT_OVERRIDES.md` (cross-reference path updated).
+- **Builder Impact:** Tool code (`critic.py`, `policy_check.py`, `test_critic.py`, `test_lifecycle.sh`) still uses `arch_*.md` pattern for anchor node detection. Builder must update pattern matching to recognize all three prefixes. This will surface as TODO action items via the Critic report.
+
 ## [2026-02-20] QA Process Optimization: Regression Scoping + Visual Verification
 
 - **Problem 1 (No regression scoping):** QA tests ALL manual scenarios for every TESTING feature, even when only a small change was made. There is no way to skip QA for low-risk changes or target specific scenarios, making the QA process inefficient.
