@@ -251,6 +251,40 @@ if $stage_ok; then
 fi
 
 # ============================================================
+# Stage 6: Theme Toggle LocalStorage Behavior (HTML inspection)
+# ============================================================
+
+html=$("$PYTHON_EXE" -c "
+import sys, os
+sys.path.insert(0, os.path.join(os.environ['AGENTIC_PROJECT_ROOT'], 'tools', 'cdd'))
+from serve import generate_html
+print(generate_html())
+" 2>/dev/null || echo "ERROR_GENERATING_HTML")
+
+has_fouc=$(echo "$html" | grep -c "localStorage.getItem" || true)
+has_toggle=$(echo "$html" | grep -c "toggleTheme" || true)
+has_setitem=$(echo "$html" | grep -c "localStorage.setItem" || true)
+has_datatheme=$(echo "$html" | grep -c "data-theme" || true)
+has_light_css=$(echo "$html" | grep -c "data-theme='light'" || true)
+
+[ "$has_fouc" -gt 0 ] && fouc="YES" || fouc="NO"
+[ "$has_toggle" -gt 0 ] && toggle="YES" || toggle="NO"
+[ "$has_setitem" -gt 0 ] && setitem="YES" || setitem="NO"
+[ "$has_datatheme" -gt 0 ] && datatheme="YES" || datatheme="NO"
+[ "$has_light_css" -gt 0 ] && lightcss="YES" || lightcss="NO"
+
+stage_ok=true
+assert_eq "FOUC_localStorage_read"  "YES" "$fouc"      || stage_ok=false
+assert_eq "toggleTheme_function"    "YES" "$toggle"     || stage_ok=false
+assert_eq "localStorage_setItem"    "YES" "$setitem"    || stage_ok=false
+assert_eq "data-theme_attribute"    "YES" "$datatheme"  || stage_ok=false
+assert_eq "light_theme_CSS"         "YES" "$lightcss"   || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Theme Toggle LocalStorage Behavior'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
 # Write test results
 # ============================================================
 
