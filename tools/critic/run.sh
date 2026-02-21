@@ -20,4 +20,10 @@ fi
 # Source shared Python resolver (python_environment.md §2.2)
 source "$SCRIPT_DIR/../resolve_python.sh"
 
+# Refresh CDD feature_status.json so lifecycle state is current
+CDD_STATUS_SCRIPT="$SCRIPT_DIR/../cdd/status.sh"
+if [ -f "$CDD_STATUS_SCRIPT" ]; then
+    "$CDD_STATUS_SCRIPT" > /dev/null 2>&1 || true
+fi
+
 exec "$PYTHON_EXE" "$SCRIPT_DIR/critic.py" "$@"

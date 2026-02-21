@@ -2,6 +2,18 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Fix Critic Tool Lifecycle Gap: Stale Cache + Scope Validation Surfacing
+
+- **Scope:** Shell wrapper fix + feature spec update for Critic lifecycle freshness and scope validation visibility.
+- **Problem 1 (Stale cache):** `tools/critic/run.sh` invoked `critic.py` without regenerating `feature_status.json` first. After spec edits reset features to TODO, the cached file still showed TESTING/COMPLETE, so the Critic never detected the lifecycle reset. The Builder saw zero action items for features with real spec changes.
+- **Problem 2 (Silent warnings):** `compute_regression_set()` validated `targeted:` scope names and stored warnings in `cross_validation_warnings`, but these warnings were never surfaced as Builder action items or in the Critic report.
+- **Solution (Part A -- stale cache):** Added CDD cache refresh to `tools/critic/run.sh`. Before invoking `critic.py`, the wrapper now calls `tools/cdd/status.sh` to regenerate `feature_status.json`. Guarded with `[ -f ]` for standalone Critic usage and `|| true` for graceful degradation.
+- **Solution (Part B -- scope validation surfacing):** Updated `features/critic_tool.md` to specify that cross-validation warnings from targeted scope name validation MUST be surfaced as MEDIUM-priority Builder action items with category `scope_validation`. Added new action item table row, priority level entry, spec bullet in Section 2.12, and new automated scenario.
+- **Changes:**
+    - `tools/critic/run.sh`: Added CDD status refresh before `critic.py` exec.
+    - `features/critic_tool.md`: Updated Section 2.10 (new Builder action item row, MEDIUM priority entry, CDD freshness guarantee), Section 2.12 (scope name validation action items bullet, targeted scope example updated), new automated scenario "Builder Action Items from Invalid Targeted Scope Names".
+- **Delegation:** Builder must implement scope validation action item generation in `critic.py` `generate_action_items()` and add corresponding test cases in `test_critic.py`.
+
 ## [2026-02-21] Targeted Scope Naming Contract: Enforce Exact Scenario/Screen Names
 
 - **Scope:** Policy spec update + CDD scenario fix.

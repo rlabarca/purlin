@@ -138,6 +138,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
+| **Builder** | Cross-validation warnings in regression scope (invalid targeted scope names) | "Fix scope declaration for critic_tool: Targeted scope name 'Bad Name' does not match any #### Scenario: title" |
 | **QA** | Features in TESTING status with manual scenarios (from CDD feature_status.json) | "Verify cdd_status_monitor: 3 manual scenario(s)" |
 | **QA** | SPEC_UPDATED discoveries (feature in TESTING lifecycle) | "Re-verify critic_tool: [item title]" |
 
@@ -151,10 +152,10 @@ The Critic MUST generate imperative action items for each role based on the anal
 *   **CRITICAL** -- `[INFEASIBLE]` tags (feature halted, Architect must revise spec).
 *   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs.
 *   **HIGH** -- Feature in TODO lifecycle state (spec modified, implementation review needed).
-*   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting QA re-verification.
+*   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting QA re-verification, invalid targeted scope names.
 *   **LOW** -- Gate WARNs, informational items.
 
-**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. If unavailable, the Critic skips lifecycle-dependent items with a note in the report.
+**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. The Critic shell wrapper (`run.sh`) regenerates this file by invoking `tools/cdd/status.sh` before launching `critic.py`, ensuring lifecycle data reflects the current git state. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
 
 ### 2.11 Role Status Computation
 The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
@@ -193,10 +194,11 @@ The Critic MUST compute a regression set for each TESTING feature based on the B
 *   **Scope Extraction:** Parse `[Scope: <type>]` from the status commit message. If absent, default to `full`.
 *   **Regression Set Computation (`compute_regression_set`):**
     *   `full` (or missing) -- All manual scenarios AND all visual checklist items.
-    *   `targeted:Scenario A,Scenario B` -- Only the named scenarios. Visual verification is skipped unless a visual screen name is explicitly listed.
+    *   `targeted:<exact names>` (per `policy_critic.md` Section 2.8 naming contract) -- Only the named scenarios. Visual verification is skipped unless a visual screen name is explicitly listed.
     *   `cosmetic` -- Empty set (QA skip). No scenarios or visual items queued.
     *   `dependency-only` -- Scenarios referencing the changed prerequisite's surface area. Determined by cross-referencing the feature's prerequisite links with the dependency graph.
 *   **Cross-Validation:** If the declared scope is `cosmetic` but the status commit modifies files that are referenced by manual scenarios (detected via git diff of the commit), the Critic MUST emit a WARNING in the report and in the feature's `critic.json`.
+*   **Scope Name Validation Action Items:** Cross-validation warnings from `targeted:` scope name validation (names not matching any `#### Scenario:` or `### Screen:` title per `policy_critic.md` Section 2.8 naming contract) MUST be surfaced as MEDIUM-priority Builder action items with category `scope_validation`. These appear in both the per-feature `critic.json` action items and the aggregate `CRITIC_REPORT.md` under the Builder section.
 *   **Scoped QA Action Items:** The Critic MUST modify QA action item generation to use the regression set:
     *   `full` -- `"Verify X: N manual scenario(s), M visual item(s)"`
     *   `targeted` -- `"Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"`
@@ -622,6 +624,15 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     When the Critic generates QA action items
     Then the QA action item reads "Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"
     And scenarios not in the target list are not included in the action item
+
+#### Scenario: Builder Action Items from Invalid Targeted Scope Names
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: targeted:Nonexistent Scenario]
+    And "Nonexistent Scenario" does not match any #### Scenario: title in the feature spec
+    When the Critic generates action items
+    Then a Builder action item is created with priority MEDIUM and category scope_validation
+    And the description includes the invalid scope name
+    And the action item appears in CRITIC_REPORT.md under the Builder section
 
 #### Scenario: Spec Gate Anchor Node Reduced Evaluation
     Given a feature file is an anchor node (arch_*.md, design_*.md, or policy_*.md)
