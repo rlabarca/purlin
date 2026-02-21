@@ -479,8 +479,7 @@ def generate_html():
 <script>(function(){{var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
-<meta http-equiv="refresh" content="5">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
 <style>
 :root{{
   --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
@@ -488,6 +487,7 @@ def generate_html():
   --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
   --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
   --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
 [data-theme='light']{{
   --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
@@ -495,15 +495,16 @@ def generate_html():
   --purlin-status-good:#059669;--purlin-status-todo:#D97706;
   --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
   --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+  --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{
   background:var(--purlin-bg);color:var(--purlin-muted);
-  font-family:'Inter',sans-serif;font-size:12px;padding:8px 12px;
+  font-family:var(--font-body);font-size:12px;padding:8px 12px;
 }}
 .hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
 .hdr-left{{display:flex;align-items:center;gap:8px}}
-.hdr h1{{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;color:var(--purlin-primary)}}
+.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:900;letter-spacing:-0.025em;color:var(--purlin-primary)}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
 .logo-svg{{height:24px;width:auto}}
 .logo-fill{{fill:var(--purlin-primary)}}
@@ -528,11 +529,11 @@ body{{
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
 .dim{{color:var(--purlin-muted);font-size:0.9em;opacity:.7}}
-h2{{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px}}
-h3{{font-size:11px;color:var(--purlin-muted);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px;font-weight:500;border-bottom:1px solid var(--purlin-border);padding-bottom:3px}}
+h2{{font-family:var(--font-body);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px}}
+h3{{font-family:var(--font-body);font-size:11px;color:var(--purlin-muted);margin:8px 0 2px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;border-bottom:1px solid var(--purlin-border);padding-bottom:3px}}
 .features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
-.ft th{{text-align:left;color:var(--purlin-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
+.ft th{{text-align:left;color:var(--purlin-muted);font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
 .ft td{{padding:2px 6px;line-height:1.5;font-family:'Menlo','Monaco','Consolas',monospace;font-size:12px}}
 .ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
@@ -571,15 +572,15 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     </button>
     <span id="critic-err" class="btn-critic-err"></span>
     <button id="btn-critic" class="btn-critic" onclick="runCritic()">Run Critic</button>
-    <span class="dim">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+    <span class="dim" id="timestamp">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
   </div>
 </div>
 <div class="features">
     <h3>Active</h3>
-    {active_html or '<p class="dim">No active features.</p>'}
+    <div id="active-content">{active_html or '<p class="dim">No active features.</p>'}</div>
     <h3>Complete</h3>
-    {complete_html or '<p class="dim">None complete.</p>'}
-    {overflow_html}
+    <div id="complete-content">{complete_html or '<p class="dim">None complete.</p>'}
+    {overflow_html}</div>
 </div>
 <div class="ctx">
   <h2>Workspace</h2>
@@ -593,6 +594,36 @@ function toggleTheme(){{
   if(current==='light'){{html.removeAttribute('data-theme');localStorage.setItem('purlin-theme','dark');}}
   else{{html.setAttribute('data-theme','light');localStorage.setItem('purlin-theme','light');}}
 }}
+var BADGE_CSS={{'DONE':'st-done','CLEAN':'st-done','TODO':'st-todo','FAIL':'st-fail','INFEASIBLE':'st-fail','BLOCKED':'st-blocked','DISPUTED':'st-disputed','N/A':'st-na'}};
+var URGENCY={{'FAIL':0,'INFEASIBLE':0,'TODO':1,'DISPUTED':1,'BLOCKED':2,'DONE':3,'CLEAN':3,'N/A':3}};
+function roleBadge(s){{if(s==null)return'<span class="st-na">??</span>';var c=BADGE_CSS[s]||'st-na';return'<span class="'+c+'">'+s+'</span>';}}
+function isComplete(e){{var a=e.architect,b=e.builder,q=e.qa;if(a==null&&b==null&&q==null)return false;return(a==='DONE'||a==null)&&(b==='DONE'||b==null)&&(q==='CLEAN'||q==='N/A'||q==null);}}
+function getUrgency(e){{var s=[];['architect','builder','qa'].forEach(function(r){{var v=e[r];if(v!=null)s.push(URGENCY[v]!=null?URGENCY[v]:3);}});return s.length?Math.min.apply(null,s):3;}}
+function buildTable(features){{
+  if(!features.length)return'';
+  var rows='';
+  features.forEach(function(e){{
+    rows+='<tr><td>'+e.file+'</td><td class="badge-cell">'+roleBadge(e.architect)+'</td><td class="badge-cell">'+roleBadge(e.builder)+'</td><td class="badge-cell">'+roleBadge(e.qa)+'</td></tr>';
+  }});
+  return'<table class="ft"><thead><tr><th>Feature</th><th>Architect</th><th>Builder</th><th>QA</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}}
+function refreshData(){{
+  fetch('/status.json').then(function(r){{return r.json();}}).then(function(data){{
+    var active=[],complete=[];
+    data.features.forEach(function(e){{if(isComplete(e))complete.push(e);else active.push(e);}});
+    active.sort(function(a,b){{var ua=getUrgency(a),ub=getUrgency(b);if(ua!==ub)return ua-ub;return a.file<b.file?-1:a.file>b.file?1:0;}});
+    var CAP={COMPLETE_CAP},visible=complete.slice(0,CAP),overflow=complete.length-CAP;
+    var ae=document.getElementById('active-content');
+    var ce=document.getElementById('complete-content');
+    ae.innerHTML=active.length?buildTable(active):'<p class="dim">No active features.</p>';
+    var ch=visible.length?buildTable(visible):'<p class="dim">None complete.</p>';
+    if(overflow>0)ch+='<p class="dim">and '+overflow+' more&hellip;</p>';
+    ce.innerHTML=ch;
+    var ts=document.getElementById('timestamp');
+    if(ts){{var d=new Date();ts.textContent=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');}}
+  }}).catch(function(){{}});
+}}
+setInterval(refreshData,5000);
 function runCritic(){{
   var btn=document.getElementById('btn-critic');
   var err=document.getElementById('critic-err');
@@ -600,8 +631,9 @@ function runCritic(){{
   fetch('/run-critic',{{method:'POST'}})
     .then(function(r){{return r.json();}})
     .then(function(d){{
-      if(d.status==='ok'){{location.reload();}}
-      else{{err.textContent='Critic run failed';btn.disabled=false;btn.textContent='Run Critic';}}
+      btn.disabled=false;btn.textContent='Run Critic';
+      if(d.status==='ok'){{refreshData();}}
+      else{{err.textContent='Critic run failed';}}
     }})
     .catch(function(){{err.textContent='Critic run failed';btn.disabled=false;btn.textContent='Run Critic';}});
 }}

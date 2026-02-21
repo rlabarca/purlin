@@ -7,7 +7,7 @@
     <script>(function(){var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
@@ -19,6 +19,7 @@
             --purlin-status-good:#34D399;--purlin-status-todo:#FCD34D;
             --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
             --purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+            --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
         }
         [data-theme='light'] {
             --purlin-bg:#F5F6F0;--purlin-surface:#FFFFFF;--purlin-primary:#0C2637;
@@ -26,10 +27,11 @@
             --purlin-status-good:#059669;--purlin-status-todo:#D97706;
             --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
             --purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+            --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-body);
             background: var(--purlin-bg); color: var(--purlin-muted);
             font-size: 12px; overflow: hidden;
             height: 100vh; display: flex; flex-direction: column;
@@ -40,7 +42,7 @@
             border-bottom: 1px solid var(--purlin-border); flex-shrink: 0;
         }
         .header-left { display: flex; align-items: center; gap: 8px; }
-        .header h1 { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: var(--purlin-primary); white-space: nowrap; }
+        .header h1 { font-family: var(--font-display); font-size: 14px; font-weight: 900; letter-spacing: -0.025em; color: var(--purlin-primary); white-space: nowrap; }
         .logo-svg { height: 24px; width: auto; }
         .logo-fill { fill: var(--purlin-primary); }
         .logo-accent { stroke: var(--purlin-primary); }
@@ -80,7 +82,7 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 14px; border-bottom: 1px solid var(--purlin-border); flex-shrink: 0;
         }
-        .modal-header h2 { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: var(--purlin-primary); }
+        .modal-header h2 { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--purlin-primary); }
         .modal-close {
             background: none; border: 1px solid var(--purlin-tag-outline); color: var(--purlin-muted);
             cursor: pointer; font-size: 14px; width: 24px; height: 24px;
@@ -92,7 +94,7 @@
             padding: 14px; overflow-y: auto; flex: 1;
             line-height: 1.6; color: var(--purlin-primary);
         }
-        .modal-body h1, .modal-body h2, .modal-body h3 { color: var(--purlin-primary); margin: 12px 0 6px; font-family: 'Montserrat', sans-serif; }
+        .modal-body h1, .modal-body h2, .modal-body h3 { color: var(--purlin-primary); margin: 12px 0 6px; font-family: var(--font-display); }
         .modal-body h1 { font-size: 16px; }
         .modal-body h2 { font-size: 14px; }
         .modal-body h3 { font-size: 12px; }
