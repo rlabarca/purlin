@@ -226,6 +226,55 @@ def aggregate_test_statuses(statuses):
     return "PASS"
 
 
+def get_delivery_phase():
+    """Parse the delivery plan and return the current phase info.
+
+    Reads `.agentic_devops/cache/delivery_plan.md`, counts `### Phase N:`
+    headings, and finds the first PENDING or IN_PROGRESS phase.
+
+    Returns {"current": int, "total": int} or None if no plan exists
+    or all phases are COMPLETE.
+    """
+    plan_path = os.path.join(CACHE_DIR, "delivery_plan.md")
+    if not os.path.isfile(plan_path):
+        return None
+
+    try:
+        with open(plan_path, 'r') as f:
+            content = f.read()
+    except (IOError, OSError):
+        return None
+
+    # Find all phase headings: ### Phase N:
+    phase_pattern = re.compile(r'^### Phase (\d+):', re.MULTILINE)
+    phases = phase_pattern.findall(content)
+    if not phases:
+        return None
+
+    total = len(phases)
+
+    # Find the first phase with Status PENDING or IN_PROGRESS
+    # Status lines appear as: - **Status:** PENDING|IN_PROGRESS|COMPLETE
+    status_pattern = re.compile(
+        r'^### Phase (\d+):.*?(?:^-\s*\*\*Status:\*\*\s*(\w+))',
+        re.MULTILINE | re.DOTALL
+    )
+
+    current = None
+    for match in status_pattern.finditer(content):
+        phase_num = int(match.group(1))
+        status = match.group(2).strip().upper()
+        if status in ('PENDING', 'IN_PROGRESS'):
+            current = phase_num
+            break
+
+    if current is None:
+        # All phases are COMPLETE — omit delivery_phase
+        return None
+
+    return {"current": current, "total": total}
+
+
 def get_change_scope(f_path):
     """Extract change_scope from the most recent status commit for a feature.
 
@@ -359,11 +408,17 @@ def generate_api_status_json():
 
         features.append(entry)
 
-    return {
+    result = {
         "features": sorted(features, key=lambda x: x["file"]),
         "generated_at": datetime.now(timezone.utc).strftime(
             '%Y-%m-%dT%H:%M:%SZ'),
     }
+
+    delivery_phase = get_delivery_phase()
+    if delivery_phase:
+        result["delivery_phase"] = delivery_phase
+
+    return result
 
 
 # ===================================================================
@@ -496,6 +551,16 @@ def generate_html():
     # Count badges for collapsed summary
     active_count = len(active_features)
     complete_count = len(complete_features)
+
+    # Delivery phase annotation for ACTIVE heading
+    delivery_phase = get_delivery_phase()
+    phase_annotation = ""
+    if delivery_phase:
+        phase_annotation = (
+            f' <span class="st-todo" style="font-weight:normal">'
+            f'[PHASE ({delivery_phase["current"]}/{delivery_phase["total"]})]'
+            f'</span>'
+        )
 
     # Compute summary badges for collapsed sections
     def _section_summary_badges(features_list):
@@ -776,7 +841,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="features">
       <div class="section-hdr" onclick="toggleSection('active-section')">
         <span class="chevron expanded" id="active-section-chevron">&#9654;</span>
-        <h3>Active ({active_count})</h3>
+        <h3>Active ({active_count}){phase_annotation}</h3>
         <span class="section-badge" id="active-section-badge" style="display:none">{active_summary}</span>
       </div>
       <div class="section-body" id="active-section">

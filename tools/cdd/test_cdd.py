@@ -18,6 +18,7 @@ from serve import (
     aggregate_test_statuses,
     get_feature_status,
     get_change_scope,
+    get_delivery_phase,
     COMPLETE_CAP,
     extract_label,
     generate_internal_feature_status,
@@ -905,6 +906,183 @@ class TestApiStatusJsonChangeScope(unittest.TestCase):
                 serve.TESTS_DIR = orig_tests
         finally:
             shutil.rmtree(test_dir)
+
+
+# ===================================================================
+# Delivery Phase Tests
+# ===================================================================
+
+class TestDeliveryPhaseInApiResponse(unittest.TestCase):
+    """Scenario: Delivery Phase in API Response"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".agentic_devops", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_includes_delivery_phase_when_plan_exists(self):
+        """Given a delivery plan with Phase 1 COMPLETE, Phase 2 IN_PROGRESS,
+        Phase 3 PENDING, the response includes delivery_phase with current 2
+        and total 3."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "### Phase 1: Foundation\n"
+            "- **Status:** COMPLETE\n"
+            "- Features: feat_a\n\n"
+            "### Phase 2: Core\n"
+            "- **Status:** IN_PROGRESS\n"
+            "- Features: feat_b\n\n"
+            "### Phase 3: Polish\n"
+            "- **Status:** PENDING\n"
+            "- Features: feat_c\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["current"], 2)
+            self.assertEqual(result["total"], 3)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+    def test_delivery_phase_in_full_api_response(self):
+        """Integration: delivery_phase appears in generate_api_status_json."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "### Phase 1: Foundation\n"
+            "- **Status:** COMPLETE\n\n"
+            "### Phase 2: Core\n"
+            "- **Status:** IN_PROGRESS\n\n"
+            "### Phase 3: Polish\n"
+            "- **Status:** PENDING\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        features_dir = os.path.join(self.test_dir, "features")
+        tests_dir = os.path.join(self.test_dir, "tests")
+        os.makedirs(features_dir)
+        os.makedirs(tests_dir)
+
+        with open(os.path.join(features_dir, "test.md"), "w") as f:
+            f.write('# Feature\n\n> Label: "Test"\n')
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        orig_abs = serve.FEATURES_ABS
+        orig_tests = serve.TESTS_DIR
+        serve.CACHE_DIR = self.cache_dir
+        serve.FEATURES_ABS = features_dir
+        serve.TESTS_DIR = tests_dir
+        try:
+            data = generate_api_status_json()
+            self.assertIn("delivery_phase", data)
+            self.assertEqual(data["delivery_phase"]["current"], 2)
+            self.assertEqual(data["delivery_phase"]["total"], 3)
+        finally:
+            serve.CACHE_DIR = orig_cache
+            serve.FEATURES_ABS = orig_abs
+            serve.TESTS_DIR = orig_tests
+
+    def test_first_pending_is_current(self):
+        """When Phase 1 COMPLETE and Phase 2 PENDING, current = 2."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "### Phase 1: Foundation\n"
+            "- **Status:** COMPLETE\n\n"
+            "### Phase 2: Core\n"
+            "- **Status:** PENDING\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["current"], 2)
+            self.assertEqual(result["total"], 2)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+
+class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
+    """Scenario: Delivery Phase Omitted When No Plan"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".agentic_devops", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_no_plan_returns_none(self):
+        """No delivery_plan.md exists -> get_delivery_phase returns None."""
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNone(result)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+    def test_no_plan_omits_from_api(self):
+        """No delivery_plan.md -> delivery_phase not in API response."""
+        features_dir = os.path.join(self.test_dir, "features")
+        tests_dir = os.path.join(self.test_dir, "tests")
+        os.makedirs(features_dir)
+        os.makedirs(tests_dir)
+
+        with open(os.path.join(features_dir, "test.md"), "w") as f:
+            f.write('# Feature\n\n> Label: "Test"\n')
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        orig_abs = serve.FEATURES_ABS
+        orig_tests = serve.TESTS_DIR
+        serve.CACHE_DIR = self.cache_dir
+        serve.FEATURES_ABS = features_dir
+        serve.TESTS_DIR = tests_dir
+        try:
+            data = generate_api_status_json()
+            self.assertNotIn("delivery_phase", data)
+        finally:
+            serve.CACHE_DIR = orig_cache
+            serve.FEATURES_ABS = orig_abs
+            serve.TESTS_DIR = orig_tests
+
+    def test_all_phases_complete_returns_none(self):
+        """All phases COMPLETE -> delivery_phase omitted."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "### Phase 1: Foundation\n"
+            "- **Status:** COMPLETE\n\n"
+            "### Phase 2: Core\n"
+            "- **Status:** COMPLETE\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNone(result)
+        finally:
+            serve.CACHE_DIR = orig_cache
 
 
 # ===================================================================
