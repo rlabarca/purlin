@@ -25,15 +25,17 @@ else:
 
 # Config loading with resilience (Section 2.13)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
-PORT = 8087
+config = {}
 if os.path.exists(CONFIG_PATH):
     try:
         with open(CONFIG_PATH, 'r') as f:
             config = json.load(f)
-            PORT = config.get("map_port", 8087)
     except (json.JSONDecodeError, IOError, OSError):
         print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
               file=sys.stderr)
+
+PORT = config.get("map_port", 8087)
+PROJECT_NAME = config.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 GENERATE_SCRIPT = os.path.join(DIRECTORY, "generate_tree.py")
@@ -105,6 +107,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         config_data = json.load(f)
                 except:
                     pass
+            config_data['_resolved_project_name'] = PROJECT_NAME
             self.wfile.write(json.dumps(config_data).encode('utf-8'))
         elif self.path.startswith('/dependency_graph.json'):
             # Serve from cache directory (Section 2.12)

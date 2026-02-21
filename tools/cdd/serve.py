@@ -34,6 +34,7 @@ if os.path.exists(CONFIG_PATH):
               file=sys.stderr)
 
 PORT = CONFIG.get("cdd_port", 8086)
+PROJECT_NAME = CONFIG.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 FEATURES_REL = "features"
 FEATURES_ABS = os.path.join(PROJECT_ROOT, "features")
@@ -80,11 +81,10 @@ def strip_discoveries_section(content):
 
     Returns the spec content above that section for comparison purposes.
     """
-    marker = '## User Testing Discoveries'
-    idx = content.find(marker)
-    if idx == -1:
+    match = re.search(r'^## User Testing Discoveries', content, re.MULTILINE)
+    if not match:
         return content
-    return content[:idx]
+    return content[:match.start()]
 
 
 def spec_content_unchanged(f_path, commit_hash):
@@ -504,6 +504,8 @@ body{{
 }}
 .hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
 .hdr-left{{display:flex;align-items:center;gap:8px}}
+.hdr-title-block{{display:flex;flex-direction:column}}
+.project-name{{font-family:var(--font-body);font-weight:500;font-size:14px;color:var(--purlin-primary);line-height:1.2}}
 .hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:200;letter-spacing:0.12em;text-transform:uppercase;color:var(--purlin-primary)}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
 .logo-svg{{height:24px;width:auto}}
@@ -563,7 +565,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <polyline points="400,280 500,390 600,280" fill="none" class="logo-accent" stroke-width="14" stroke-linejoin="miter"/>
       <path d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd" class="logo-fill"/>
     </svg>
-    <h1>Purlin CDD Monitor</h1>
+    <div class="hdr-title-block"><h1>Purlin CDD Monitor</h1><span class="project-name">{PROJECT_NAME}</span></div>
   </div>
   <div class="hdr-right">
     <span class="dim" id="timestamp" style="font-family:'Menlo','Monaco','Consolas',monospace">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>

@@ -381,6 +381,8 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 *   **[CLARIFICATION]** h3 sub-labels kept at 11px (CDD) rather than the 14px section header guideline. These "Active"/"Complete" dividers function as captions/sub-labels (design spec: 10px), not full section headers. (Severity: INFO)
 *   **Header right-group order fix (2026-02-21):** BUG resolved — DOM order in `.hdr-right` was [toggle][critic][timestamp], rendering visually reversed from spec Section 2.9. Fixed to [timestamp][critic-err][critic][toggle] so left-to-right reads: timestamp, Run Critic button, theme toggle (rightmost). Added inline monospace font-family to timestamp `<span>` for explicit width stability.
 *   **Discovery-aware lifecycle false match (2026-02-21):** See `[BUG] strip_discoveries false match` in User Testing Discoveries below. The `strip_discoveries()` function in `serve.py` uses `text.find()` which matches a backtick-quoted reference in Section 2.1 before the actual section header. Builder must fix with a regex line-start match.
+*   **Discovery-aware lifecycle bug fix (2026-02-21):** Fixed `strip_discoveries_section()` in `serve.py` — replaced `content.find('## User Testing Discoveries')` with `re.search(r'^## User Testing Discoveries', content, re.MULTILINE)`. The `find()` approach matched a backtick-quoted reference in Section 2.1 prose before the actual section header, causing false lifecycle preservation. The regex anchors to line start, matching only the real section heading.
+*   **Project Name Display (2026-02-21):** Implemented Section 2.9 Line 2 — added project name display below the title in the CDD header. Resolved from `CONFIG.get("project_name", "")` with fallback to `os.path.basename(PROJECT_ROOT)`. Styled with `.hdr-title-block` (flex column) and `.project-name` (Inter Medium 500, 14px, `--purlin-primary`). Server-side rendered in the Python f-string template.
 
 ## Visual Specification
 
@@ -406,7 +408,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 ## User Testing Discoveries
 
 ### [BUG] strip_discoveries false match on backtick-quoted section header
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Found by:** Architect (during spec editing -- lifecycle did not reset to TODO after spec change)
 - **Description:** The `strip_discoveries()` function in `serve.py` uses `text.find('## User Testing Discoveries')` to locate the section boundary for the discovery-aware lifecycle comparison. This matches the first occurrence of the literal string in the file -- which in this feature file appears inside a backtick-quoted reference in Section 2.1 (char 866), not the actual section header (char 34638). The lifecycle comparison truncates at the wrong position, making all spec edits above char 866 invisible and preventing lifecycle reset to TODO.
 - **Expected:** Spec edits to Section 2.9 (Header Layout) and Visual Specification should reset the feature lifecycle from COMPLETE to TODO.

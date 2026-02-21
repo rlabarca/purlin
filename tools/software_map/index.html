@@ -42,6 +42,8 @@
             border-bottom: 1px solid var(--purlin-border); flex-shrink: 0;
         }
         .header-left { display: flex; align-items: center; gap: 8px; }
+        .header-title-block { display: flex; flex-direction: column; }
+        .project-name { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--purlin-primary); line-height: 1.2; }
         .header h1 { font-family: var(--font-display); font-size: 14px; font-weight: 200; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purlin-primary); white-space: nowrap; }
         .logo-svg { height: 24px; width: auto; }
         .logo-fill { fill: var(--purlin-primary); }
@@ -132,7 +134,10 @@
                 <polyline points="400,280 500,390 600,280" fill="none" class="logo-accent" stroke-width="14" stroke-linejoin="miter"/>
                 <path d="M500 160L190 408L190 440L810 440L810 408ZM500 200L262.5 390L737.5 390Z" fill-rule="evenodd" class="logo-fill"/>
             </svg>
-            <h1>Purlin Software Map</h1>
+            <div class="header-title-block">
+                <h1>Purlin Software Map</h1>
+                <span class="project-name" id="project-name"></span>
+            </div>
         </div>
         <div class="header-right">
             <input type="text" id="search" placeholder="Filter nodes..." />
@@ -254,7 +259,19 @@
         const DEFAULT_NODE_COLOR = '#01579b';
 
         // -- Initialization --
+        async function loadProjectName() {
+            try {
+                const resp = await fetch('/config.json');
+                if (!resp.ok) return;
+                const cfg = await resp.json();
+                const name = cfg._resolved_project_name || '';
+                const el = document.getElementById('project-name');
+                if (el && name) el.textContent = name;
+            } catch (e) {}
+        }
+
         async function init() {
+            await loadProjectName();
             await loadGraph();
             startAutoRefresh();
         }
