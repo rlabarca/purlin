@@ -170,6 +170,7 @@ if __name__ == "__main__":
     watcher_thread.start()
     print(f"File watcher active (polling every {POLL_INTERVAL}s)")
 
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print(f"Software Map serving at http://localhost:{PORT}")
         httpd.serve_forever()

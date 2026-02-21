@@ -36,4 +36,14 @@ mkdir -p "$RUNTIME_DIR"
 
 nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/software_map.log" 2>&1 &
 echo $! > "$RUNTIME_DIR/software_map.pid"
-echo "Software Map Viewer started on port $PORT (PID: $(cat "$RUNTIME_DIR/software_map.pid"))"
+SERVER_PID=$(cat "$RUNTIME_DIR/software_map.pid")
+
+# Verify server actually started (detect bind failures)
+sleep 0.5
+if kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "Software Map Viewer started on port $PORT (PID: $SERVER_PID)"
+else
+    echo "ERROR: Software Map failed to start (PID $SERVER_PID exited). Check $RUNTIME_DIR/software_map.log" >&2
+    rm -f "$RUNTIME_DIR/software_map.pid"
+    exit 1
+fi
