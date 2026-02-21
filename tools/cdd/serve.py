@@ -479,7 +479,7 @@ def generate_html():
 <script>(function(){{var t=localStorage.getItem('purlin-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@200;800;900&display=swap" rel="stylesheet">
 <style>
 :root{{
   --purlin-bg:#0B131A;--purlin-surface:#162531;--purlin-primary:#E2E8F0;
@@ -504,7 +504,7 @@ body{{
 }}
 .hdr{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}}
 .hdr-left{{display:flex;align-items:center;gap:8px}}
-.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:var(--purlin-primary)}}
+.hdr h1{{font-family:var(--font-display);font-size:14px;font-weight:200;letter-spacing:0.12em;text-transform:uppercase;color:var(--purlin-primary)}}
 .hdr-right{{display:flex;align-items:center;gap:8px}}
 .logo-svg{{height:24px;width:auto}}
 .logo-fill{{fill:var(--purlin-primary)}}
