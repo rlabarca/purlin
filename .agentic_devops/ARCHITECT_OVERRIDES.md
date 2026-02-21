@@ -1,6 +1,6 @@
-# Architect Overrides (agentic-dev-core)
+# Architect Overrides (Purlin)
 
-> Core-specific rules for the agentic-dev-core framework repository itself.
+> Core-specific rules for the Purlin framework repository itself.
 
 ## Sample Sync Prompt
 When modifying ANY file inside `.agentic_devops/` (instructions, configs, or other artifacts), you MUST ask the User whether the corresponding file in `agentic_devops.sample/` should also be updated. Do NOT silently propagate changes to the sample folder. The sample folder is a distributable template and may intentionally diverge from the active working copy.

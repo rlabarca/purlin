@@ -3,6 +3,7 @@
 > Label: "Tool: CDD Monitor"
 > Category: "DevOps Tools"
 > Prerequisite: features/policy_critic.md
+> Prerequisite: features/design_visual_standards.md
 
 
 ## 1. Overview
@@ -114,6 +115,16 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **Verification Method:** At each lifecycle stage, the test runs `tools/critic/run.sh` to regenerate `critic.json` files, then runs `tools/cdd/status.sh` and parses the JSON output to assert expected role status values for the temporary feature. Assertions use `python3 -c` or `jq` to extract and compare JSON fields.
 *   **Cleanup Guarantee:** The test MUST use `trap` to ensure cleanup runs on exit (success, failure, or signal). Cleanup sequence: (1) `git reset --hard <pre-test-sha>` to revert all temporary commits, (2) remove any untracked temporary files (`features/_test_lifecycle_temp.md`, `tests/_test_lifecycle_temp/`), (3) run `tools/critic/run.sh` to restore clean critic.json state. After cleanup, `git log` and `git status` MUST show no trace of the test.
 *   **Test Results:** On success, output `[Scenario] <title>` lines for each passing stage (Bash test file convention) and write `tests/cdd_status_monitor/tests.json` with `{"status": "PASS"}`. On any assertion failure, report the failing stage and expected vs actual values, then proceed to cleanup.
+
+### 2.9 Branding & Theme
+*   **Logo:** The Purlin logo (`assets/purlin-logo.svg`) MUST be displayed inline in the top-left of the page header, adjacent to the title text. The logo uses CSS classes for theme-responsive fill colors (~24px height).
+*   **Title:** The dashboard title MUST read "Purlin CDD Monitor" (replacing any previous title).
+*   **Theme Toggle:** A sun/moon icon toggle MUST appear in the top-right header area, before the Run Critic button. Clicking the toggle switches between Blueprint (dark, default) and Architect (light) themes.
+*   **CSS Tokens:** All colors in the dashboard MUST use `var(--purlin-*)` custom properties defined in `features/design_visual_standards.md`. No hardcoded hex colors.
+*   **Default Theme:** Dark (Blueprint).
+*   **Persistence:** Theme choice stored in `localStorage` key `purlin-theme`, value `light` or `dark`.
+*   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets the `data-theme` attribute on `<html>` before first paint. This prevents theme flash on the 5-second auto-refresh cycle.
+*   **Typography:** Headings use `'Montserrat', sans-serif` (loaded via Google Fonts CDN, weights 700/900). Body/UI text uses `'Inter', sans-serif` (loaded via CDN, weights 400/500). Data/code text retains monospace (`'Menlo', 'Monaco', 'Consolas', monospace`).
 
 ## 3. Scenarios
 
@@ -259,6 +270,13 @@ These scenarios are validated by the Builder's automated test suite.
     And all temporary git commits are reverted
     And git log shows no trace of the temporary feature
 
+#### Scenario: Theme Toggle LocalStorage Behavior
+    Given the CDD server is running
+    When the theme toggle is activated via the /status.json endpoint or client-side
+    Then the purlin-theme key in localStorage switches between "light" and "dark"
+    And the data-theme attribute on the html element reflects the current theme
+    And the theme persists across page refreshes including auto-refresh cycles
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
@@ -330,5 +348,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Reference:** N/A
 - [ ] Section headings ("ACTIVE", "COMPLETE") have a visible underline separator (e.g., a bottom border or horizontal rule)
 - [ ] Section headings are clearly distinguished from the feature table rows beneath them
+- [ ] Purlin logo visible in top-left corner, adjacent to "Purlin CDD Monitor" title
+- [ ] Sun/moon theme toggle icon visible in top-right header area
+- [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
+- [ ] Theme persists across page refreshes (auto-refresh every 5s does not reset theme)
+- [ ] All UI colors use the Purlin design tokens (no hardcoded hex)
 
 ## User Testing Discoveries

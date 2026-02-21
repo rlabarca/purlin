@@ -1,5 +1,5 @@
 #!/bin/bash
-# bootstrap.sh — Initialize a consumer project for the agentic-dev-core submodule.
+# bootstrap.sh — Initialize a consumer project for the Purlin submodule.
 # Usage: Run from any directory.  The script resolves paths from its own location.
 set -euo pipefail
 
@@ -193,7 +193,7 @@ if [ ! -f "$PROJECT_ROOT/PROCESS_HISTORY.md" ]; then
 # Process History
 
 ## $(date +%Y-%m-%d) — Project Bootstrapped
-- Initialized agentic-dev-core submodule integration.
+- Initialized Purlin submodule integration.
 - Created \`.agentic_devops/\` override directory.
 - Generated launcher scripts.
 EOF
@@ -249,7 +249,7 @@ else
         if ! grep -qF "$LINE" "$GITIGNORE"; then
             if [ "$ADDED" -eq 0 ]; then
                 echo "" >> "$GITIGNORE"
-                echo "# Added by agentic-dev bootstrap" >> "$GITIGNORE"
+                echo "# Added by Purlin bootstrap" >> "$GITIGNORE"
                 ADDED=1
             fi
             echo "$LINE" >> "$GITIGNORE"

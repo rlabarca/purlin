@@ -1,6 +1,23 @@
-# Agentic Process History (Core Framework)
+# Purlin Process History (Core Framework)
 
-This log tracks the evolution of the **Agentic DevOps Core** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
+This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Spec-Driven AI workflows.
+
+## [2026-02-20] Purlin Rebranding
+
+- **Scope:** Full product rebrand from "Agentic DevOps Core" to "Purlin". The internal `.agentic_devops/` directory name is retained for backward compatibility.
+- **Changes:**
+    - **README.md:** Full rewrite with new title, subtitle, four-goal overview, updated repo URL (`https://github.com/rlabarca/purlin/`), submodule examples using `purlin` directory name, logo reference (`assets/purlin-logo.svg`), compatibility note for `.agentic_devops/`, renamed Evolution table.
+    - **Instruction files:** Replaced "Agentic DevOps Core" product name references with "Purlin" in `HOW_WE_WORK_BASE.md`, `ARCHITECT_BASE.md`, `BUILDER_BASE.md`, `QA_BASE.md`. Retained "Agentic Workflow" as a process/methodology term.
+    - **Override files:** Updated product/repo name references in all `.agentic_devops/*_OVERRIDES.md` and `agentic_devops.sample/*_OVERRIDES.md` files.
+    - **Launcher scripts:** Updated `CORE_DIR` from `agentic-dev` to `purlin` in `run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`.
+    - **Bootstrap:** Updated printed text references in `tools/bootstrap.sh`.
+    - **Sample config:** Updated `tools_root` from `agentic-dev/tools` to `purlin/tools` in `agentic_devops.sample/config.json`.
+    - **Feature files:** Updated Overview text in `submodule_bootstrap.md`, `submodule_sync.md`, `python_environment.md`, `policy_critic.md`, `critic_tool.md`.
+    - **New anchor node:** `features/design_visual_standards.md` created as the design system anchor node.
+    - **CDD and Software Map specs:** Updated with `design_visual_standards.md` prerequisite for theming.
+    - **Logo asset:** `assets/purlin-logo.svg` created.
+    - **PROCESS_HISTORY.md:** Header updated, this entry added.
+- **Impact:** Text-only rebrand. No structural, code, or behavioral changes. `.agentic_devops/` directory name unchanged.
 
 ## [2026-02-21] QA Dependency-Only Skip + Visual Spec Convention Enforcement
 

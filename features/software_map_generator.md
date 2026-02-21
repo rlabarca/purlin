@@ -3,6 +3,7 @@
 > Label: "Tool: Software Map"
 > Category: "DevOps Tools"
 > Prerequisite: features/policy_critic.md
+> Prerequisite: features/design_visual_standards.md
 
 ## 1. Overview
 Generates a visual and machine-readable representation of the project's feature dependency graph. Provides both a web UI for human review and a canonical JSON output for agent consumption.
@@ -48,12 +49,24 @@ Generates a visual and machine-readable representation of the project's feature 
 *   **Label Typography:** The friendly name (Label) MUST be rendered in larger, bolder text than the filename. This establishes a clear visual hierarchy where the human-readable name is the primary identifier and the filename is secondary.
 *   **Label Non-Overlap:** Node labels (both friendly name and filename) MUST NOT visually overlap with labels of neighboring nodes or with each other. The layout engine must provide sufficient spacing, padding, or collision avoidance to ensure all text remains fully legible at the default zoom-to-fit level.
 *   **Label Wrapping:** Long labels MUST wrap within their containing node box rather than being clipped. The full text of both the friendly name and filename MUST remain visible at the default zoom-to-fit level.
-*   **Dark Color Scheme:** The software map MUST use a dark color scheme (dark background with light text and edges). All UI elements (graph background, category groups, nodes, modals, search input, controls) MUST be styled consistently with a dark theme.
+*   **Theme-Responsive Color Scheme:** The software map MUST use a theme-responsive color scheme with dark (Blueprint) as default (dark background with light text and edges). All UI elements (graph background, category groups, nodes, modals, search input, controls) MUST be styled consistently with a dark theme.
 *   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
 *   **Zoom-to-Fit on Load:** On initial page load, the graph MUST be automatically zoomed and centered to fit the viewable page area. On auto-refresh cycles, the current zoom level and pan position MUST be preserved.
 *   **Search/Filter:** A text input MUST be provided that filters visible graph nodes by label or filename. Nodes that do not match the filter should be visually de-emphasized or hidden.
 *   **Feature Detail Modal:** Clicking a feature node MUST open a scrollable modal window that renders the feature file's markdown content. The modal MUST have a close button (X) in the top-right corner. Clicking outside the modal MUST also close it.
 *   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
+
+### 2.5 Branding & Theme
+*   **Logo:** The Purlin logo (`assets/purlin-logo.svg`) MUST be displayed inline in the top-left of the page header, adjacent to the title text. The logo uses CSS classes for theme-responsive fill colors (~24px height).
+*   **Title:** The page title MUST read "Purlin Software Map" (replacing any previous title).
+*   **Theme Toggle:** A sun/moon icon toggle MUST appear in the top-right header area. Clicking the toggle switches between Blueprint (dark, default) and Architect (light) themes.
+*   **CSS Tokens:** All CSS colors MUST use `var(--purlin-*)` custom properties. No hardcoded hex colors in CSS.
+*   **Cytoscape.js Theme Integration:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme. On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
+*   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
+*   **Default Theme:** Dark (Blueprint).
+*   **Persistence:** `localStorage` key `purlin-theme`, value `light` or `dark`.
+*   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets `data-theme` on `<html>` before first paint.
+*   **Typography:** Headings use `'Montserrat', sans-serif` (Google Fonts CDN, weights 700/900). Body/UI text uses `'Inter', sans-serif` (CDN, weights 400/500). Code/data retains monospace.
 
 ## 3. Scenarios
 
@@ -139,6 +152,16 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 *   **Label wrapping in node boxes:** DISCOVERY resolved -- long labels now wrap via `wrapText()` SVG logic instead of clipping. Verified 2026-02-20.
 *   **Start/Stop double invocation:** DISCOVERY resolved 2026-02-20 — PID path mismatch between start.sh and stop.sh caused orphaned processes. Builder fixed path consistency. Verified: server starts on first invocation after stop.
 *   **Category grouping on reactive refresh:** BUG resolved 2026-02-20 — category changes weren't reflected on reactive refresh. Builder fixed generation ordering and watcher resilience. Verified: editing Category metadata updates grouping in web UI within seconds.
+
+## Visual Specification
+
+### Screen: Software Map Viewer
+- **Reference:** N/A
+- [ ] Purlin logo visible in top-left corner beside "Purlin Software Map" title
+- [ ] Sun/moon theme toggle in top-right
+- [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
+- [ ] SVG node labels update text colors on theme switch
+- [ ] Theme persists across auto-refresh cycles
 
 ## User Testing Discoveries
 

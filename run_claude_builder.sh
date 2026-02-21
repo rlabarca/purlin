@@ -1,6 +1,6 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CORE_DIR="$SCRIPT_DIR/agentic-dev"
+CORE_DIR="$SCRIPT_DIR/purlin"
 
 # Fall back to local instructions/ if not a submodule consumer
 if [ ! -d "$CORE_DIR/instructions" ]; then

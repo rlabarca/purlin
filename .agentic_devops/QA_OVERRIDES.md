@@ -1,6 +1,6 @@
-# QA Overrides (agentic-dev-core)
+# QA Overrides (Purlin)
 
-> Core-specific rules for the agentic-dev-core framework repository itself.
+> Core-specific rules for the Purlin framework repository itself.
 
 ## Server Interaction Prohibition
 You MUST NOT start or interact with DevOps tool servers (CDD Monitor, Software Map). Servers are for human use only. Use CLI commands for all tool data: `tools/cdd/status.sh` for feature status, `tools/critic/run.sh` for the Critic report.

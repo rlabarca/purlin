@@ -1,12 +1,17 @@
-# Agentic DevOps Core
+# Purlin
 
-**A Deterministic AI-Driven Engineering (DAE) framework.**
+![Purlin Logo](assets/purlin-logo.svg)
 
-DAE is a development methodology where AI agents operate under deterministic, spec-driven constraints rather than probabilistic guesswork. The core thesis: if specifications are rigorous enough, any compliant agent can rebuild the entire system from scratch -- making code truly disposable and specifications the only permanent artifact.
+**Agentic Development Framework**
 
 ## Overview
 
-Agentic DevOps Core is the reference implementation of DAE. It is a project-agnostic workflow engine designed to maximize the effectiveness of LLM-based agents (Architects and Builders) in the software development lifecycle. It operates on the core principle that **"Code is Disposable, but Specifications are Eternal."**
+Purlin is a spec-driven development framework built on four goals:
+
+1. **Coordinate specialized agents** following a spec/test-driven framework for deterministic outcomes.
+2. **Specifications and tests are the backbone** -- code is disposable. If specs are rigorous enough, any compliant agent can rebuild the entire system from scratch.
+3. **Enable real people to bring expertise, amplified through agents** -- replaces meetings and ceremonies with structured, async collaboration.
+4. **Code is more provably correct** with least drift from specifications.
 
 By colocating technical implementation knowledge with behavioral specifications (Gherkin), the framework ensures that system context is never lost and that codebases can be reliably rebuilt or refactored by AI agents with minimal human intervention.
 
@@ -31,6 +36,8 @@ The framework separates **framework rules** (base layer) from **project-specific
 *   **Base Layer** (`instructions/`): Core rules, protocols, and philosophies. Read-only from the consumer's perspective.
 *   **Override Layer** (`.agentic_devops/`): Project-specific customizations, domain context, and workflow additions.
 
+> **Compatibility note:** The `.agentic_devops/` internal directory name is retained for backward compatibility with existing consumer projects and tooling. It functions as the project's override and configuration directory regardless of the framework's product name.
+
 At launch, the launcher scripts concatenate base + override files into a single agent prompt. This allows upstream framework updates without merge conflicts in project-specific configuration.
 
 ### 5. Automated Test Status
@@ -46,13 +53,13 @@ There is no separate "test status" indicator. Builder status reflects test *heal
 
 1.  **Add the submodule:**
     ```bash
-    git submodule add https://github.com/rlabarca/agentic-dev-core agentic-dev
+    git submodule add https://github.com/rlabarca/purlin purlin
     git submodule update --init
     ```
 
 2.  **Run the bootstrap:**
     ```bash
-    ./agentic-dev/tools/bootstrap.sh
+    ./purlin/tools/bootstrap.sh
     ```
     This creates:
     *   `.agentic_devops/` -- override templates and config (MUST be committed to your project)
@@ -93,7 +100,7 @@ All tool scripts auto-detect a `.venv/` at the project root. To set up:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r agentic-dev/requirements-optional.txt   # submodule
+.venv/bin/pip install -r purlin/requirements-optional.txt   # submodule
 # or
 .venv/bin/pip install -r requirements-optional.txt               # standalone
 ```
@@ -109,10 +116,10 @@ This works on macOS, Linux, and Windows via WSL or Git Bash. Native PowerShell i
 ### Updating the Submodule
 
 ```bash
-cd agentic-dev && git pull origin main && cd ..
-git add agentic-dev
-./agentic-dev/tools/sync_upstream.sh   # Audit changes, update sync marker
-git commit -m "chore: update agentic-dev submodule"
+cd purlin && git pull origin main && cd ..
+git add purlin
+./purlin/tools/sync_upstream.sh   # Audit changes, update sync marker
+git commit -m "chore: update purlin submodule"
 ```
 
 The sync script shows a changelog of what changed in `instructions/` and `tools/`, and flags any structural changes that may require override updates.
@@ -143,7 +150,7 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 | Context | CDD Port | Map Port |
 |---------|----------|----------|
-| agentic-dev-core standalone | 9086 | 9087 |
+| purlin standalone | 9086 | 9087 |
 | Consumer project default | 8086 | 8087 |
 
 Consumer projects get 8086/8087 by default (from `agentic_devops.sample/config.json`). Core development uses 9086/9087. No collision when both run simultaneously.
@@ -153,6 +160,12 @@ Consumer projects get 8086/8087 by default (from `agentic_devops.sample/config.j
 ```mermaid
 flowchart TD
 
+
+    subgraph Common_Design_Standards [" "]
+        title_Common_Design_Standards["COMMON DESIGN STANDARDS"]
+        design_visual_standards["Design: Visual Standards<br/><small>design_visual_standards.md</small>"]
+        title_Common_Design_Standards ~~~ design_visual_standards
+    end
 
     subgraph Coordination_&_Lifecycle [" "]
         title_Coordination_&_Lifecycle["COORDINATION & LIFECYCLE"]
@@ -182,9 +195,11 @@ flowchart TD
 
     %% Relationships
     policy_critic --> cdd_status_monitor
+    design_visual_standards --> cdd_status_monitor
     policy_critic --> critic_tool
     submodule_bootstrap --> python_environment
     policy_critic --> software_map_generator
+    design_visual_standards --> software_map_generator
     submodule_bootstrap --> submodule_sync
 
     %% Styling Definitions
@@ -196,13 +211,14 @@ flowchart TD
     classDef subgraphTitle fill:none,stroke:none,color:#111,font-size:32px,font-weight:bold;
 
     %% Style Applications
+    class title_Common_Design_Standards subgraphTitle;
     class title_Coordination_&_Lifecycle subgraphTitle;
     class title_DevOps_Tools subgraphTitle;
     class title_Initialization_&_Update subgraphTitle;
 ```
 <!-- MERMAID_END -->
 
-## Agentic Evolution
+## Purlin Evolution
 
 | Version | Milestone | Workflow Changes |
 | :--- | :--- | :--- |

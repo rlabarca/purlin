@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- 1. THIN ARCHITECTURAL SKETCH LINES -->
+  <g stroke="#94A3B8" stroke-width="2" fill="none">
+    <!-- Center Vertical Guideline (Dashed) -->
+    <line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8" />
+
+    <!-- Outer Parallel Guides -->
+    <line x1="500" y1="145" x2="170" y2="409" />
+    <line x1="500" y1="145" x2="830" y2="409" />
+
+    <!-- Vertical Pins resting on the Outer Rafters -->
+    <line x1="400" y1="210" x2="400" y2="255" />
+    <line x1="600" y1="210" x2="600" y2="255" />
+  </g>
+
+  <!-- 2. THE LOGO - BASE TRIANGLE WITH V BRACES -->
+  <polyline
+    points="400,280 500,390 600,280"
+    fill="none"
+    stroke="#E2E8F0"
+    stroke-width="14"
+    stroke-linejoin="miter"
+  />
+
+  <!-- Main Outer Frame with Vertical Sliced Ends -->
+  <path
+    d="M 500 160
+       L 190 408
+       L 190 440
+       L 810 440
+       L 810 408
+       Z
+       M 500 200
+       L 262.5 390
+       L 737.5 390
+       Z"
+    fill-rule="evenodd"
+    fill="#E2E8F0"
+  />
+
+  <!-- 3. TYPOGRAPHY -->
+  <text x="500" y="550" text-anchor="middle" style="font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 76px; letter-spacing: 0.12em" fill="#E2E8F0">PURLIN</text>
+  <text x="500" y="595" text-anchor="middle" style="font-family: 'Inter', sans-serif; font-weight: 500; font-size: 16px; letter-spacing: 0.4em" fill="#94A3B8">AGENTIC DEVELOPMENT FRAMEWORK</text>
+
+</svg>

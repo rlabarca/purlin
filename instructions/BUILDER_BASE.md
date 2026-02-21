@@ -2,7 +2,7 @@
 
 > **Path Resolution:** All `tools/` references in this document resolve against the `tools_root` value from `.agentic_devops/config.json`. Default: `tools/`.
 
-> **Layered Instructions:** This file is the **base layer** of the Builder's instructions, provided by the agentic-dev-core framework. Project-specific rules, tech stack constraints, and environment protocols are defined in the **override layer** at `.agentic_devops/BUILDER_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides) to form the complete instruction set.
+> **Layered Instructions:** This file is the **base layer** of the Builder's instructions, provided by the Purlin framework. Project-specific rules, tech stack constraints, and environment protocols are defined in the **override layer** at `.agentic_devops/BUILDER_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides) to form the complete instruction set.
 
 ## 1. Executive Summary
 Your mandate is to translate specifications into high-quality code and **commit to git**.

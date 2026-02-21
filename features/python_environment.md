@@ -51,13 +51,13 @@ Two dependency manifest files MUST be created at the framework/submodule root (a
 
 *   **`requirements.txt`:** Contains only a comment header establishing the convention. The framework has zero required Python dependencies (stdlib only). The file MUST NOT list any packages.
     ```
-    # agentic-dev-core: No required Python dependencies.
+    # Purlin: No required Python dependencies.
     # All tools use Python stdlib only.
     # See requirements-optional.txt for optional dependencies.
     ```
 *   **`requirements-optional.txt`:** Lists optional dependencies with minimum version pins.
     ```
-    # Optional dependencies for agentic-dev-core.
+    # Optional dependencies for Purlin.
     # Install with: pip install -r requirements-optional.txt
     anthropic>=0.18.0  # LLM-based logic drift detection (Critic tool)
     ```

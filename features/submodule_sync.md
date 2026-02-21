@@ -5,7 +5,7 @@
 > Prerequisite: features/submodule_bootstrap.md
 
 ## 1. Overview
-After a consumer project updates its agentic-dev submodule (`git submodule update`), this tool audits what changed upstream and updates the sync marker. It provides a human-readable changelog of instruction and tool changes so the project maintainer can assess the impact on their overrides.
+After a consumer project updates its Purlin submodule (`git submodule update`), this tool audits what changed upstream and updates the sync marker. It provides a human-readable changelog of instruction and tool changes so the project maintainer can assess the impact on their overrides.
 
 ## 2. Requirements
 

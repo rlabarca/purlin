@@ -1,6 +1,6 @@
 # How We Work: The Agentic Workflow
 
-> **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the agentic-dev-core framework. Project-specific workflow additions are defined in the **override layer** at `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
+> **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the Purlin framework. Project-specific workflow additions are defined in the **override layer** at `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
 
 ## 1. Core Philosophy: "Code is Disposable"
 The single source of truth for any project using this framework is not the code, but the **Specifications** and **Architectural Policies** stored in the project's `features/` directory.
@@ -73,7 +73,7 @@ We do not maintain a history of release files in the project's features director
 ## 6. Layered Instruction Architecture
 
 ### Overview
-The agentic-dev-core framework uses a two-layer instruction model to separate framework rules from project-specific context:
+The Purlin framework uses a two-layer instruction model to separate framework rules from project-specific context:
 
 *   **Base Layer** (`instructions/` directory in the framework): Contains the framework's core rules, protocols, and philosophies. These are read-only from the consumer project's perspective and are updated by pulling new versions of the framework.
 *   **Override Layer** (`.agentic_devops/` directory in the consumer project): Contains project-specific customizations, domain context, and workflow additions. These are owned and maintained by the consumer project.
@@ -89,14 +89,14 @@ At agent launch time, the launcher scripts (`run_claude_architect.sh`, `run_clau
 This ordering ensures that project-specific rules can refine or extend (but not silently contradict) the framework's base rules.
 
 ### Submodule Consumption Pattern
-When used as a git submodule (e.g., at `agentic-dev/`):
-1. The submodule provides the base layer (`agentic-dev/instructions/`) and all tools (`agentic-dev/tools/`).
-2. The consumer project runs `agentic-dev/tools/bootstrap.sh` to initialize `.agentic_devops/` with override templates.
+When used as a git submodule (e.g., at `purlin/`):
+1. The submodule provides the base layer (`purlin/instructions/`) and all tools (`purlin/tools/`).
+2. The consumer project runs `purlin/tools/bootstrap.sh` to initialize `.agentic_devops/` with override templates.
 3. Tools resolve their paths via `tools_root` in `.agentic_devops/config.json`.
-4. Upstream updates are pulled via `cd agentic-dev && git pull origin main && cd ..` and audited with `agentic-dev/tools/sync_upstream.sh`.
+4. Upstream updates are pulled via `cd purlin && git pull origin main && cd ..` and audited with `purlin/tools/sync_upstream.sh`.
 
 ### Submodule Immutability Mandate
-**Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `agentic-dev/`). The submodule is a read-only dependency. Specifically:
+**Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `purlin/`). The submodule is a read-only dependency. Specifically:
 *   **NEVER** edit files in `<submodule>/instructions/`, `<submodule>/tools/`, `<submodule>/features/`, or any other path inside the submodule.
 *   **NEVER** commit changes to the submodule from a consumer project. The submodule is only modified from its own repository.
 *   All project-specific customizations go in the consumer project's own files: `.agentic_devops/` overrides, `features/`, and root-level launcher scripts.
@@ -106,7 +106,7 @@ When used as a git submodule (e.g., at `agentic-dev/`):
 In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
 
 *   **`features/` directory:** Always refers to `<project_root>/features/` -- the **consumer project's** feature specs. In a submodule setup, this is NOT the framework submodule's own `features/` directory. The framework's features are internal to the submodule and are not scanned by consumer project tools.
-*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.agentic_devops/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"agentic-dev/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
+*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.agentic_devops/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"purlin/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
 *   **`AGENTIC_PROJECT_ROOT`:** All launcher scripts (both standalone and bootstrap-generated) export this environment variable as the authoritative project root. All Python and shell tools check this variable first, falling back to directory-climbing detection only when it is not set.
 
 ## 7. User Testing Protocol
