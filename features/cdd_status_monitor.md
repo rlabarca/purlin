@@ -91,6 +91,10 @@ The Status view is the default view (`/#status`).
     ```json
     {
       "generated_at": "<ISO 8601 timestamp>",
+      "delivery_phase": {
+        "current": 2,
+        "total": 3
+      },
       "features": [
         {
           "file": "features/<name>.md",
@@ -108,6 +112,7 @@ The Status view is the default view (`/#status`).
     *   No per-feature `test_status` or `qa_status` fields (replaced by role columns).
     *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
+    *   `delivery_phase` is present ONLY when `.agentic_devops/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
     *   Array sorted by file path (deterministic).
 *   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.agentic_devops/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
 *   **API Endpoint (`/feature?file=<path>`):** Serves the raw content of the specified feature file. The `file` query parameter is the relative path (e.g., `features/cdd_status_monitor.md`). Returns 200 with `Content-Type: text/plain` on success, 404 if the file does not exist. Path traversal outside the project root MUST be rejected.
@@ -214,6 +219,15 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 *   **Font Stability:** Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
 *   **Minimal Re-Rendering:** Rows that did not change SHOULD NOT be re-rendered.
+
+### 2.11 Delivery Phase Indicator
+
+*   **ACTIVE Header Annotation:** When a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`, the ACTIVE section heading displays the current phase progress: `ACTIVE (<feature_count>) [PHASE (<current>/<total>)]`. Example: `ACTIVE (5) [PHASE (2/3)]`.
+*   **Parsing:** The CDD tool reads the delivery plan file, counts phases by `### Phase N:` headings, and determines the current phase (first phase with Status `PENDING`, or the phase with Status `IN_PROGRESS`). If all phases are `COMPLETE` or no delivery plan exists, the phase annotation is omitted.
+*   **Styling:** The `[PHASE (X/Y)]` text is styled with the same color as a `TODO` badge (yellow: `--purlin-warn`). It appears inline after the feature count, separated by a space.
+*   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [PHASE (2/3)] TODO`.
+*   **Disappears When Complete:** When the delivery plan is deleted (all phases complete) or does not exist, the phase annotation is not rendered. Only the standard `ACTIVE (<count>)` heading appears.
+*   **No Per-Feature Changes:** Individual feature status badges (DONE, TODO, FAIL, etc.) are unchanged. The phase indicator is purely a section-level annotation.
 
 ## 3. Scenarios
 
@@ -396,6 +410,17 @@ These scenarios are validated by the Builder's automated test suite.
     When a GET request is sent to /impl-notes?file=features/policy_critic.md
     Then a 404 status is returned
 
+#### Scenario: Delivery Phase in API Response
+    Given a delivery plan exists at .agentic_devops/cache/delivery_plan.md
+    And the plan has 3 phases with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
+    When an agent calls GET /status.json
+    Then the response includes delivery_phase with current 2 and total 3
+
+#### Scenario: Delivery Phase Omitted When No Plan
+    Given no delivery plan exists at .agentic_devops/cache/delivery_plan.md
+    When an agent calls GET /status.json
+    Then the response does not include a delivery_phase field
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
@@ -498,5 +523,9 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns
 - [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
+- [ ] When a delivery plan is active, ACTIVE header shows [PHASE (X/Y)] annotation after the feature count
+- [ ] Phase annotation uses TODO/yellow color (--purlin-warn)
+- [ ] Phase annotation visible in both expanded and collapsed ACTIVE section states
+- [ ] Phase annotation disappears when no delivery plan exists
 
 ## User Testing Discoveries

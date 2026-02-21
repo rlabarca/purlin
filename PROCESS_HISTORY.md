@@ -2,6 +2,19 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Phased Delivery Protocol
+
+- **Scope:** New cross-role coordination protocol -- persistent delivery plan artifact, instruction-level changes across all three agent roles, CDD dashboard integration.
+- **Problem:** When the Architect introduces large-scale changes (multiple new feature files, major revisions), the Builder agent can exhaust its context window or need complex multi-agent merges that degrade quality. No mechanism existed for the Builder to split work across multiple sessions with QA verification between phases.
+- **Solution:** Introduced the **Phased Delivery Protocol** -- a persistent coordination artifact at `.agentic_devops/cache/delivery_plan.md` that lets the Builder propose splitting work into numbered phases, each producing a testable state. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete. Phasing is always optional and user-approved.
+- **Changes:**
+    - **HOW_WE_WORK_BASE.md:** Added Section 10 (Phased Delivery Protocol) with 7 subsections: Purpose (10.1), Delivery Plan Artifact (10.2), Cross-Session Resumption (10.3), QA Interaction (10.4), Phasing is Optional (10.5), Architect Awareness (10.6), CDD Dashboard Integration (10.7).
+    - **BUILDER_BASE.md:** 5 insertions -- Step 2.1.6 (Delivery Plan Check), Section 2.2.0 (Resuming a Delivery Plan), Section 2.2.1 (Scope Assessment with phasing heuristics), Step 4.E (Phase Completion Check), Step 5.3 (Phase-aware shutdown message).
+    - **QA_BASE.md:** 3 insertions -- Section 3.3.1 (Delivery Plan Context), Step 5.5.3 modified (delivery plan gate before marking Complete), Step 6.3.4 (Phase context in session summary).
+    - **features/cdd_status_monitor.md:** Added Section 2.11 (Delivery Phase Indicator), updated API schema with optional `delivery_phase` field, 2 new automated scenarios (Delivery Phase in API Response, Delivery Phase Omitted When No Plan), 4 new visual spec items for phase annotation.
+- **Commit Convention:** Defined standard commit messages for plan creation, phase completion, amendments, and deletion.
+- **Impact:** `cdd_status_monitor.md` reset to TODO (spec changed). Builder must implement: delivery plan parsing in CDD status tool, `delivery_phase` field in `/status.json` API, phase annotation in dashboard ACTIVE header. No code changes required for Builder/QA instruction changes (agent behavior only).
+
 ## [2026-02-21] Merge Software Map into CDD Dashboard
 
 - **Scope:** Architectural merge -- unified CDD Dashboard with Status and SW Map views on a single port.

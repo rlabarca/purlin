@@ -56,6 +56,14 @@ Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. For 
 *   Any existing OPEN discoveries that need re-verification.
 *   Count of features with `## Visual Specification` sections (shown separately from functional scenarios).
 
+#### 3.3.1 Delivery Plan Context
+Check if a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`. If it exists:
+*   Read the plan and identify the current phase and total phases.
+*   For each TESTING feature, classify it as:
+    *   **Fully delivered** -- the feature appears only in COMPLETE phases (or does not appear in the plan at all). Eligible for `[Complete]` marking.
+    *   **More work coming** -- the feature appears in a PENDING phase. NOT eligible for `[Complete]` marking, even if all currently-delivered scenarios pass.
+*   Present the phase context to the user: "Delivery Plan active: Phase N of M. Features X, Y are fully delivered and eligible for completion. Features A, B have more work coming in Phase N+1 -- will not be marked complete this session."
+
 ### 3.4 Begin Interactive Verification
 Start walking the user through the first TESTING feature using the appropriate verification mode (see Section 5).
 
@@ -189,7 +197,7 @@ When multiple features have visual specs in the same session, you MAY offer to b
 After all scenarios (functional and visual) for a feature are verified:
 1.  Present a summary: functional scenarios passed / total, visual checklist items passed / total (if applicable), discoveries recorded (if any).
 2.  Ensure all changes for this feature are committed to git.
-3.  **If all manual scenarios passed with zero discoveries:** Mark the feature as complete with a status commit: `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md]"`. This transitions the feature from TESTING to COMPLETE.
+3.  **If all manual scenarios passed with zero discoveries:** Check the delivery plan at `.agentic_devops/cache/delivery_plan.md` before marking complete. If the feature appears in any PENDING phase of the delivery plan, do NOT mark it complete -- inform the user: "Feature X passed all current scenarios but has more work coming in Phase N. Deferring [Complete] until all phases are delivered." Otherwise, mark the feature as complete with a status commit: `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md]"`. This transitions the feature from TESTING to COMPLETE.
 4.  **If discoveries were recorded:** Do NOT mark as complete. The feature remains in TESTING until all discoveries are resolved and re-verified.
 5.  **MANDATORY -- Run Critic:** You MUST run `tools/critic/run.sh` before moving on. This applies whether the feature passed (step 3) or had discoveries (step 4). Do NOT skip this step. The CDD dashboard and next agent sessions depend on current `critic.json` files.
 6.  Move to the next TESTING feature, or conclude if all features are done.
@@ -210,6 +218,7 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 1.  Present a final summary: features verified, scenarios passed/failed, discoveries recorded, features marked as complete.
 2.  If there are zero discoveries, confirm that all clean features have been marked `[Complete]` and the Architect can proceed with the release.
 3.  If there are discoveries, summarize the routing: which items need Architect attention vs. Builder fixes. Only features with zero discoveries should have been marked `[Complete]`.
+4.  **Phase context:** If a delivery plan is active, include phase progress in the summary: which features were verified for which phase, which features were deferred due to pending phases, and what remains. Example: "Verified 3 features for Phase 1. Feature X deferred (more work in Phase 2). 2 phases remaining."
 
 ## 7. Feedback Routing Reference
 *   **BUG** -> Builder must fix implementation.
