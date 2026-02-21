@@ -30,6 +30,7 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-status-todo` | `#D97706` | TODO/WIP |
 | `--purlin-status-warning` | `#EA580C` | Warning states |
 | `--purlin-status-error` | `#DC2626` | FAIL/INFEASIBLE |
+| `--purlin-dim` | `#94A3B8` | Dim/placeholder text (sufficient contrast on `--purlin-surface`) |
 | `--purlin-tag-fill` | `#F1F5F9` | Tag backgrounds |
 | `--purlin-tag-outline` | `#CBD5E1` | Tag borders |
 | `--font-display` | `'Montserrat', sans-serif` | Titles, wordmarks |
@@ -49,6 +50,7 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-status-todo` | `#FCD34D` |
 | `--purlin-status-warning` | `#FB923C` |
 | `--purlin-status-error` | `#F87171` |
+| `--purlin-dim` | `#8B9DB0` |
 | `--purlin-tag-fill` | `#1E293B` |
 | `--purlin-tag-outline` | `#334155` |
 | `--font-display` | `'Montserrat', sans-serif` |
@@ -106,6 +108,4 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   Inline style color values that bypass the token system.
 
 ## 3. Implementation Notes
-*   Consumer projects MAY override these standards in their own `design_*.md` anchor node.
-*   The standalone logo SVG (`assets/purlin-logo.svg`) uses dark-theme hex defaults. When embedded inline in tool HTML, the SVG elements use CSS classes that respond to the `data-theme` attribute for theme-responsive colors.
-*   The FOUC prevention script must be placed before any `<link>` stylesheet tags to ensure the correct theme is applied before CSS renders.
+See [design_visual_standards.impl.md](design_visual_standards.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

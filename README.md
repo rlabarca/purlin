@@ -174,6 +174,8 @@ flowchart TD
         title_Coordination_&_Lifecycle["COORDINATION & LIFECYCLE"]
         critic_tool["Tool: Critic<br/><small>critic_tool.md</small>"]
         title_Coordination_&_Lifecycle ~~~ critic_tool
+        impl_notes_companion["Impl Notes Companion<br/><small>impl_notes_companion.md</small>"]
+        title_Coordination_&_Lifecycle ~~~ impl_notes_companion
         policy_critic["Policy: Critic Coordination Engine<br/><small>policy_critic.md</small>"]
         title_Coordination_&_Lifecycle ~~~ policy_critic
     end
@@ -200,6 +202,7 @@ flowchart TD
     policy_critic --> cdd_status_monitor
     design_visual_standards --> cdd_status_monitor
     policy_critic --> critic_tool
+    HOW_WE_WORK_BASE["HOW_WE_WORK_BASE?"] -.-> impl_notes_companion
     submodule_bootstrap --> python_environment
     policy_critic --> software_map_generator
     design_visual_standards --> software_map_generator

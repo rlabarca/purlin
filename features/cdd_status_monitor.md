@@ -39,7 +39,7 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 | BLOCKED | Gray | Builder |
 | DISPUTED | Orange | QA |
 | N/A | Blank/dim | QA |
-| ?? | Blank/dim | Any (no critic.json -- not yet generated) |
+| ?? | Dim (`--purlin-dim`) | Any (no critic.json -- not yet generated) |
 
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
 
@@ -338,33 +338,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the button returns to its enabled state
 
 ## 4. Implementation Notes
-*   **Test Scope:** Automated tests cover the `/status.json` API endpoint, the `status.sh` CLI tool, the underlying status logic, AND the full lifecycle integration test (Section 2.8). The lifecycle integration test eliminates the need for manual QA verification of lifecycle state transitions and role status column values -- these are fully verified by automation. Manual scenarios are reserved exclusively for web dashboard visual/UI verification. The Builder MUST NOT start the CDD server during automated tests.
-*   **Visual Polish:** Use a dark, high-contrast theme suitable for 24/7 monitoring.
-*   **Test Isolation:** The test aggregator scans `tests/<feature_name>/tests.json` (resolved relative to `PROJECT_ROOT`) and treats malformed JSON as FAIL.
-*   **Name Convention:** Feature-to-test mapping uses the feature file's stem: `features/<name>.md` maps to `tests/<name>/tests.json`. The `<name>` must match exactly (case-sensitive).
-*   **Server-Side Rendering + Client-Side Refresh:** The initial HTML page is generated server-side on first request (no static `index.html`). After initial load, the page uses a JavaScript `setInterval` (5 seconds) to `fetch('/status.json')` and update only the table body DOM. The page does NOT use `<meta http-equiv="refresh">` -- this avoids full-page reloads that cause font re-rendering, layout shift, and scroll resets.
-*   **Status Logic:** `COMPLETE` requires `complete_ts > test_ts` AND either `file_mod_ts <= complete_ts` OR the only changes since the status commit are in the `## User Testing Discoveries` section (discovery-aware lifecycle preservation). To check: retrieve the file content at the status commit hash via `git show <hash>:<path>`, strip the `## User Testing Discoveries` section and everything below from both versions, and compare. If the spec content above discoveries is identical, preserve the lifecycle state. Otherwise reset to `TODO`.
-*   **Escape Sequences:** Git grep patterns use `\\[` / `\\]` in f-strings to avoid Python 3.12+ deprecation warnings for invalid escape sequences.
-*   **Agent Interface:** `tools/cdd/status.sh` is the primary agent interface. All agent tooling (Status Management, Context Clear Protocol, Release Protocol Zero-Queue checks) MUST use `tools/cdd/status.sh` for status queries. The `/status.json` web endpoint provides the same data for human tooling or when the server is running. Agents MUST NOT use HTTP endpoints, scrape the web dashboard, or guess port numbers.
-*   **Path Normalization:** `os.path.relpath` may resolve to `.`, making `features_rel` = `./features`. The `f_path` used for git grep MUST be normalized with `os.path.normpath()` to strip the `./` prefix, otherwise status commit patterns like `[Complete features/file.md]` won't match `./features/file.md`.
-*   **Section Heading Underline:** Section headings ("ACTIVE", "COMPLETE") require a visible underline separator to distinguish them from feature rows. Verified 2026-02-19.
-*   **Badge "??" for missing critic.json:** SPEC_DISPUTE resolved -- spec updated from "--" to "??" for missing critic data. Verified 2026-02-20.
-*   **CLI Mode:** `serve.py --cli-status` outputs API JSON to stdout and regenerates `feature_status.json`. `status.sh` is a shell wrapper that detects project root and calls this mode.
-*   **Start/Stop PID Path Consistency:** `start.sh` writes PID files to `.agentic_devops/runtime/`. `stop.sh` MUST read from the same runtime directory using the same project root detection logic. A path mismatch between start and stop causes orphaned server processes and port conflicts on subsequent starts.
-*   **Lifecycle Test Timing:** `test_lifecycle.sh` uses `sleep 1` between status tag commits (Ready for Verification -> Complete, Complete -> spec edit) to ensure git commit timestamps differ by at least 1 second, avoiding `int()` truncation equality in the lifecycle comparison logic.
-*   **Run Critic Button:** BUG resolved 2026-02-20 — button was missing from dashboard, Builder added it. Verified: displays in top-right, enters loading state on click, refreshes dashboard with updated role columns.
-*   **Port TIME_WAIT fix:** Set `allow_reuse_address = True` on `socketserver.TCPServer` in `serve.py` so the server can rebind to a port in TIME_WAIT state after stop/restart. Also added startup verification to `start.sh` — waits 0.5s and checks if the PID is still alive, reporting an error with log path if the process exited (e.g., bind failure).
-*   **start.sh multi-invocation issue:** DISCOVERY resolved 2026-02-20 — port TIME_WAIT fix and startup verification resolved the need for multiple start.sh invocations after stop. Server now starts reliably on first invocation.
-*   **Change Scope in API (2026-02-21):** Added `get_change_scope()` to `serve.py` — extracts `[Scope: ...]` trailer from the most recent status commit message (Complete or Ready for Verification). Included as `change_scope` field in both `/status.json` API response and internal `feature_status.json`. Omitted when no scope is declared, per spec.
-*   **Purlin Branding (2026-02-21):** Implemented Section 2.9 — replaced all hardcoded hex colors with `var(--purlin-*)` CSS custom properties. Added `:root` (Blueprint dark default) and `[data-theme='light']` (Architect light) theme definitions. Inline SVG logo (mark only, no text) in header. Title updated to "Purlin CDD Monitor". Sun/moon theme toggle via CSS visibility + JS `toggleTheme()`. FOUC prevention script in `<head>` reads `purlin-theme` from localStorage before first paint. Google Fonts CDN for Montserrat (headings) and Inter (body). Monospace retained for data table cells and pre blocks.
-*   **Visual Stability on Refresh (2026-02-21):** Implemented Section 2.10 — replaced `<meta http-equiv="refresh" content="5">` with JavaScript `setInterval(refreshData, 5000)` that calls `fetch('/status.json')`. The JS rebuilds only the feature table bodies (Active/Complete), using wrapper `<div>` elements with `id="active-content"` and `id="complete-content"`. The page header (logo, title, theme toggle, Run Critic button) renders once on initial server-side load and is never re-created. The timestamp updates client-side via `Date()`. The Run Critic button now calls `refreshData()` on success instead of `location.reload()`. The JS replicates Python's `_is_feature_complete()` and `_feature_urgency()` logic for Active/Complete splitting and urgency sorting.
-*   **Typography Alignment (2026-02-21):** Aligned CDD and Software Map with `design_visual_standards.md` Section 2.3. Added `--font-display` and `--font-body` CSS custom properties to both `:root` and `[data-theme='light']` blocks. Updated CDN weights to Montserrat 200,800,900 and Inter 400,500,700. Page title uses `var(--font-display)` at weight 200 (ExtraLight) with `letter-spacing:0.12em;text-transform:uppercase` (wide tracking matching SVG logo treatment — thin strokes with generous spacing). Section headers (h2) use `var(--font-body)` at weight 700, uppercase, `letter-spacing:0.1em`. Sub-labels (h3) and table headers use `var(--font-body)` at weight 700, uppercase, `letter-spacing:0.1em`. All hardcoded `'Montserrat'` and `'Inter'` font-family values replaced with CSS custom property references.
-*   **[CLARIFICATION]** Title font-size kept at 14px (CDD) / 14px (Software Map) despite design spec guideline of 32-40px. The compact monitoring dashboard layout requires a smaller title. The weight (200), letter-spacing (0.12em), text-transform (uppercase), and font-family (var(--font-display)) match the spec. (Severity: INFO)
-*   **[CLARIFICATION]** h3 sub-labels kept at 11px (CDD) rather than the 14px section header guideline. These "Active"/"Complete" dividers function as captions/sub-labels (design spec: 10px), not full section headers. (Severity: INFO)
-*   **Header right-group order fix (2026-02-21):** BUG resolved — DOM order in `.hdr-right` was [toggle][critic][timestamp], rendering visually reversed from spec Section 2.9. Fixed to [timestamp][critic-err][critic][toggle] so left-to-right reads: timestamp, Run Critic button, theme toggle (rightmost). Added inline monospace font-family to timestamp `<span>` for explicit width stability.
-*   **Discovery-aware lifecycle false match (2026-02-21):** See `[BUG] strip_discoveries false match` in User Testing Discoveries below. The `strip_discoveries()` function in `serve.py` uses `text.find()` which matches a backtick-quoted reference in Section 2.1 before the actual section header. Builder must fix with a regex line-start match.
-*   **Discovery-aware lifecycle bug fix (2026-02-21):** Fixed `strip_discoveries_section()` in `serve.py` — replaced `content.find('## User Testing Discoveries')` with `re.search(r'^## User Testing Discoveries', content, re.MULTILINE)`. The `find()` approach matched a backtick-quoted reference in Section 2.1 prose before the actual section header, causing false lifecycle preservation. The regex anchors to line start, matching only the real section heading.
-*   **Project Name Display (2026-02-21):** Implemented Section 2.9 Line 2 — added project name display below the title in the CDD header. Resolved from `CONFIG.get("project_name", "")` with fallback to `os.path.basename(PROJECT_ROOT)`. Styled with `.hdr-title-block` (flex column) and `.project-name` (Inter Medium 500, 14px, `--purlin-primary`). Server-side rendered in the Python f-string template.
+See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
 ## Visual Specification
 
@@ -389,7 +363,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
 - [ ] Table has columns: Feature, Architect, Builder, QA
 - [ ] Badges use correct color mapping: DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange, ??=dim
-- [ ] Cells show "??" when no critic.json exists for that feature
+- [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns
 - [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
 
@@ -408,4 +382,5 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** The "??" badges for features without critic.json are nearly invisible against the background in both dark (Blueprint) and light (Architect) themes. The dim/blank color token does not provide enough contrast for readability.
 - **Expected Behavior:** "??" text should be clearly readable in both themes, even if styled as secondary/dim.
 - **Action Required:** Architect (re-specify the dim/blank color token in design_visual_standards.md to ensure sufficient contrast)
-- **Status:** OPEN
+- **Resolution:** Added `--purlin-dim` token to `design_visual_standards.md` (Blueprint: `#8B9DB0`, Architect: `#94A3B8`). Updated badge color mapping and visual spec to reference the token.
+- **Status:** SPEC_UPDATED

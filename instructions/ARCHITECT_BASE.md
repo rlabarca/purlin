@@ -31,7 +31,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 
 ### 3.2 Living Specifications (`features/*.md`)
 *   **The Spec:** Strictly behavioral requirements in Gherkin style.
-*   **The Knowledge:** A dedicated `## Implementation Notes` section at the bottom.
+*   **The Knowledge:** A dedicated `## Implementation Notes` section at the bottom, or a companion file (`<name>.impl.md`) linked from a stub (see HOW_WE_WORK_BASE Section 4.3).
 *   **Visual Spec (Optional):** A `## Visual Specification` section for features with UI components. This section contains per-screen checklists with design asset references (Figma URLs, PDFs, images). It is Architect-owned and exempt from Gherkin traceability. See HOW_WE_WORK_BASE Section 9 for the full convention.
 *   **Visual-First Classification:** When writing features with UI, maximize use of the Visual Specification for static appearance checks. Reserve Manual Scenarios exclusively for interaction and temporal behavior. See HOW_WE_WORK_BASE Section 9.6.
 *   **Protocol:** This section captures "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
@@ -94,7 +94,7 @@ Before concluding your session, after all work is committed to git:
 ### Feature Refinement ("Living Specs")
 We **DO NOT** create v2/v3 feature files.
 1.  Edit the existing `.md` file in-place.
-2.  Preserve the `## Implementation Notes`.
+2.  Preserve the `## Implementation Notes` stub and its companion file (if any).
 3.  Modifying the file automatically resets its status to `[TODO]`.
 4.  Commit the changes, then run `tools/critic/run.sh` to update the Critic report and `critic.json` files (per responsibility 6).
 5.  **Milestone Mutation:** For release files, rename the existing file to the new version and update objectives. Preserve previous tests as regression baselines.

@@ -2,6 +2,29 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Implementation Notes Companion Files: Extract to Reduce Feature File Size
+
+- **Scope:** New feature spec + tool changes + instruction updates + migration of 7 existing feature files.
+- **Problem:** Feature files' Implementation Notes sections consumed up to 27% of file size (worst case: `software_map_generator.md`). When agents scan feature files for requirements and scenarios, they waste context window on implementation notes they don't need for that task.
+- **Solution: Companion files** (`features/<name>.impl.md`):
+    - Implementation Notes extracted to companion files alongside their parent feature spec.
+    - Feature file retains a one-line stub: `See [<name>.impl.md](<name>.impl.md) for implementation knowledge...`
+    - Companion files are NOT feature files: excluded from dependency graph, Spec Gate, Implementation Gate, CDD lifecycle, and orphan detection.
+    - **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO.
+    - Critic resolves companion content via `resolve_impl_notes()` for builder decision parsing and traceability overrides.
+    - Software Map viewer shows tabbed modal (Specification / Implementation Notes) when companion file exists.
+- **Changes:**
+    - **New feature spec:** `features/impl_notes_companion.md` defining the convention.
+    - **Tool exclusion filters (6 scan points):** `tools/critic/critic.py`, `tools/cdd/serve.py` (2 locations), `tools/software_map/generate_tree.py`, `tools/software_map/serve.py`, `tools/cleanup_orphaned_features.py` -- all updated to exclude `*.impl.md` from feature file discovery.
+    - **Critic companion resolution:** New `resolve_impl_notes()` function in `critic.py`. `run_implementation_gate()` updated to accept `feature_path` and resolve companion content. Section completeness check correctly handles stub references.
+    - **Cleanup tool:** Companion awareness added -- orphaned companion files (no parent `.md`) are flagged.
+    - **Software Map serve.py:** New `/impl-notes?file=<path>` endpoint serving companion file content.
+    - **Software Map index.html:** Tabbed modal UI with "Specification" and "Implementation Notes" tabs, lazy-loaded and cached.
+    - **Instruction files:** `HOW_WE_WORK_BASE.md` (new Section 4.3), `ARCHITECT_BASE.md`, `BUILDER_BASE.md`, `QA_BASE.md` all updated to reference companion file convention.
+    - **Test updates:** 5 new test cases in `test_critic.py` covering companion resolution, backward compatibility, exclusion filters, and stub handling.
+    - **Migration:** 7 feature files migrated (critic_tool, submodule_bootstrap, submodule_sync, python_environment, design_visual_standards, cdd_status_monitor, software_map_generator). `policy_critic.md` has no Implementation Notes, not migrated.
+- **Impact:** Feature specs that were migrated retain their current lifecycle status (stub replacement does not change spec content semantics). New `impl_notes_companion.md` spec in TODO state. All 173 critic tests pass.
+
 ## [2026-02-21] Visual vs Functional Test Separation: Minimize Manual Scenarios
 
 - **Scope:** Instruction update + feature spec refinement -- codified classification rule for Visual Specification vs Manual Scenarios; moved static visual checks out of Manual Scenarios into Visual Specification sections.

@@ -52,7 +52,7 @@ Generates a visual and machine-readable representation of the project's feature 
 *   **Theme-Responsive Color Scheme:** The software map MUST use a theme-responsive color scheme with dark (Blueprint) as default (dark background with light text and edges). All UI elements (graph background, category groups, nodes, modals, search input, controls) MUST be styled consistently with a dark theme.
 *   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
 *   **Zoom-to-Fit on Load:** On initial page load, the graph MUST be automatically zoomed and centered to fit the viewable page area. On auto-refresh cycles, the current zoom level and pan position MUST be preserved.
-*   **Search/Filter:** A text input MUST be provided that filters visible graph nodes by label or filename. Nodes that do not match the filter should be visually de-emphasized or hidden.
+*   **Search/Filter:** A text input MUST be provided that filters visible graph nodes by label or filename. Nodes that do not match the filter should be visually de-emphasized or hidden. Placeholder text MUST use `var(--purlin-dim)` to ensure readable contrast in both themes.
 *   **Feature Detail Modal:** Clicking a feature node MUST open a scrollable modal window that renders the feature file's markdown content. The modal MUST have a close button (X) in the top-right corner. Clicking outside the modal MUST also close it.
 *   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
 
@@ -126,23 +126,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
     Then the current zoom level and pan position are preserved
 
 ## 4. Implementation Notes
-*   **Test Scope:** Automated tests MUST only cover graph generation, cycle detection, and `dependency_graph.json` output. The web UI MUST NOT be tested through automated tests. The Builder MUST NOT start the server. After passing automated tests, the Builder should use the `[Ready for Verification]` status tag and instruct the User to start the server (`tools/software_map/start.sh`) and visually verify the web view.
-*   **Acyclic Mandate:** The tool is the primary enforcer of the acyclic graph rule defined in the workflow.
-*   **Agent Interface:** `.agentic_devops/cache/dependency_graph.json` is the single machine-readable contract. All agent tooling (Context Clear Protocol, Dependency Integrity checks, Release Protocol) MUST read this file. The generator writes to this cache location per submodule_bootstrap Section 2.12.
-*   **Cycle Detection:** Uses DFS with 3-color marking (WHITE/GRAY/BLACK). External prerequisites (not in the features directory) are skipped without triggering false positives.
-*   **File Watch Mode:** `serve.py` polls `features/` directory every 2 seconds using `os.scandir` mtime snapshots. No external dependencies required (no `watchdog`).
-*   **Deterministic JSON:** `dependency_graph.json` uses `sort_keys=True` on `json.dump` and all arrays are pre-sorted by filename/path before serialization.
-*   **Label Wrapping:** SVG label generator uses word-wrap logic (`wrapText()`) to split long labels into multiple lines within the node box. Each label line is rendered as a `<tspan>` element. Node height is dynamically computed based on the number of wrapped lines (base 44px + 18px per extra line). Max ~22 chars per line at font-size 14 in monospace.
-*   **Reactive Update Testing:** The "Reactive Update on Feature Change" scenario requires the running server (`serve.py`) and is classified as Manual. File-watch regeneration is verified during Human Verification.
-*   **Reactive Refresh Resilience:** Fixed two issues that could cause stale category data on reactive refresh: (1) In `generate_tree.py`, `generate_dependency_graph()` now runs BEFORE `update_outputs()` (Mermaid/README), so the critical JSON output is written even if README update fails. (2) In `serve.py`, the file watcher snapshot is only updated on successful generation — failed generations trigger retry on the next poll cycle. Builder audit (2026-02-20): full code trace confirms the reactive path is correct — watcher detects mtime changes, subprocess re-parses features (including Category), writes updated JSON, web UI fetches with cache-busting and rebuilds Cytoscape graph with new category groupings. Needs QA re-verification with server running.
-*   **Start/Stop PID Path Consistency:** `start.sh` writes PID files to `.agentic_devops/runtime/`. `stop.sh` MUST read from the same runtime directory using the same project root detection logic. A path mismatch between start and stop causes orphaned server processes and port conflicts on subsequent starts.
-*   **Label wrapping in node boxes:** DISCOVERY resolved -- long labels now wrap via `wrapText()` SVG logic instead of clipping. Verified 2026-02-20.
-*   **Start/Stop double invocation:** DISCOVERY resolved 2026-02-20 — PID path mismatch between start.sh and stop.sh caused orphaned processes. Builder fixed path consistency. Verified: server starts on first invocation after stop.
-*   **Category grouping on reactive refresh:** BUG resolved 2026-02-20 — category changes weren't reflected on reactive refresh. Builder fixed generation ordering and watcher resilience. Verified: editing Category metadata updates grouping in web UI within seconds.
-*   **Purlin Branding (2026-02-21):** Implemented Section 2.5 — replaced all hardcoded CSS hex colors with `var(--purlin-*)` custom properties. Added `:root` (Blueprint dark) and `[data-theme='light']` (Architect light) theme definitions. FOUC prevention script in `<head>`. Google Fonts CDN (Montserrat headings, Inter body). Inline logo SVG mark in header, title "Purlin Software Map". Sun/moon toggle with CSS-driven icon visibility. JS `getThemeColors()` reads computed CSS custom properties for Cytoscape styles. `createNodeLabelSVG()` accepts `colors` parameter for theme-responsive SVG `fill` values. `createCytoscape()` accepts `colors` for category parent bg, borders, edges, hover highlights. On `toggleTheme()`, `renderGraph()` is called which destroys and recreates the Cytoscape instance with new colors (preserving zoom/pan via existing viewport state logic).
-*   **Typography Alignment (2026-02-21):** Aligned with `design_visual_standards.md` Section 2.3. Added `--font-display` and `--font-body` CSS custom properties to both `:root` and `[data-theme='light']` blocks. Updated CDN weights to Montserrat 200,800,900 and Inter 400,500,700. Page title uses `var(--font-display)` at weight 200 (ExtraLight), `letter-spacing:0.12em;text-transform:uppercase` (wide tracking matching SVG logo treatment). Modal header h2 and modal body headings use `var(--font-display)`. Body uses `var(--font-body)`. All hardcoded `'Montserrat'` and `'Inter'` font-family values in CSS replaced with custom property references. Note: SVG node labels still use hardcoded `'Menlo'` monospace — this is correct per spec (monospace for data).
-*   **Port TIME_WAIT fix (2026-02-21):** BUG resolved — set `allow_reuse_address = True` on `socketserver.TCPServer` in `serve.py` so the server can rebind to a port in TIME_WAIT state after stop/restart. Added startup verification to `start.sh` — waits 0.5s and checks if the PID is still alive, reporting an error with log path if the process exited (e.g., bind failure). Same pattern as the CDD Monitor fix.
-*   **Project Name Display (2026-02-21):** Implemented Section 2.5 project name — `serve.py` resolves `PROJECT_NAME` from `config.get("project_name", "")` with fallback to `os.path.basename(PROJECT_ROOT)`. Injected as `_resolved_project_name` in the `/config.json` endpoint response. `index.html` loads it via `loadProjectName()` on init and populates a `<span id="project-name">` below the title. Styled with `.header-title-block` (flex column) and `.project-name` (Inter Medium 500, 14px, `--purlin-primary`). **[CLARIFICATION]** Spec Section 2.5 line "Omitted if project_name is absent from config" contradicts the Visual Specification item "falls back to project directory name otherwise" (added by Architect in commit 65c7cde). Implemented the fallback behavior per the Visual Specification and `design_visual_standards.md` Section 2.6 intent. (Severity: INFO)
+See [software_map_generator.impl.md](software_map_generator.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
 ## Visual Specification
 
@@ -166,6 +150,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - [ ] No legend overlay displayed
 - [ ] Graph is zoomed and centered to fit the viewable page area on initial load
 - [ ] Search/filter text input visible for filtering nodes
+- [ ] Search input placeholder text uses `--purlin-dim` color token for readable contrast in both themes
 
 ## User Testing Discoveries
 
@@ -174,5 +159,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - **Observed Behavior:** The "Filter nodes..." placeholder text in the search input is nearly invisible against the input background in both dark (Blueprint) and light (Architect) themes. The placeholder color does not provide enough contrast for readability.
 - **Expected Behavior:** Placeholder text should be clearly readable in both themes, even if styled as secondary/hint text.
 - **Action Required:** Architect (re-specify placeholder text color or input styling in design_visual_standards.md to ensure sufficient contrast)
-- **Status:** OPEN
+- **Resolution:** Added `--purlin-dim` token to `design_visual_standards.md` (Blueprint: `#8B9DB0`, Architect: `#94A3B8`). Updated search/filter requirement and visual spec to reference the token for placeholder text.
+- **Status:** SPEC_UPDATED
 

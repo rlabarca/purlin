@@ -67,6 +67,4 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
 None. All scenarios for this feature are fully automated.
 
 ## 4. Implementation Notes
-*   **No External Dependencies:** Use only git and standard shell utilities. Do not require `jq`, `python`, or other tools.
-*   **Diff Readability:** Consider using `--stat` for a summary view and `--no-color` for clean terminal output, followed by the full diff.
-*   **Structural Change Detection:** A simple heuristic: grep the diff output for lines that modify markdown headers (`^## `, `^### `) in the `instructions/` directory and flag them as potential override impact points.
+See [submodule_sync.impl.md](submodule_sync.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

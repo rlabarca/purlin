@@ -48,6 +48,8 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 
 **Critical Rule:** Any edit to a feature file (including adding Implementation Notes) resets its status to **TODO**. You MUST plan your commits so that the status tag commit is always the **last** commit touching that feature file.
 
+**Companion File Exemption:** Edits to companion files (`<name>.impl.md`) do NOT reset the parent feature's status. Only edits to the feature spec (`<name>.md`) trigger resets.
+
 ## 4. Per-Feature Implementation & Commit Protocol
 
 For each feature in the approved work plan, execute this protocol:
@@ -55,7 +57,7 @@ For each feature in the approved work plan, execute this protocol:
 ### 0. Per-Feature Pre-Flight (MANDATORY)
 Before starting work on each feature from the approved plan:
 *   **Consult Anchor Nodes:** Read any relevant anchor node files (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`) referenced by the feature's `> Prerequisite:` link.
-*   **Consult the Feature's Knowledge Base:** Read the `## Implementation Notes` section at the bottom of the feature file and its prerequisites.
+*   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists, otherwise read the `## Implementation Notes` section at the bottom of the feature file. Also read prerequisite implementation notes.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
 
 ### 1. Acknowledge and Plan
@@ -64,13 +66,13 @@ Before starting work on each feature from the approved plan:
 
 ### 2. Implement and Document (MANDATORY)
 *   Write the code and unit tests.
-*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST add a concise entry to the `## Implementation Notes` section at the bottom of the **feature file itself**.
+*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST add a concise entry to the companion file (`features/<name>.impl.md`) if it exists, or to the `## Implementation Notes` section at the bottom of the feature file. Create the companion file if the feature uses the companion convention (has a stub in Implementation Notes).
 *   **Anchor Node Escalation:** If a discovery affects a global constraint, you MUST update the relevant anchor node file (`arch_*.md`, `design_*.md`, or `policy_*.md`). This ensures the project's constraints remain accurate. Do NOT create separate log files.
 *   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's `## User Testing Discoveries` section, you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. This clears the Builder action item from the Critic and allows the CDD dashboard to show your column as `DONE` once the status commit is made. QA will re-verify and prune the entry during their verification pass.
 *   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes, discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
 
 ### 2b. Builder Decision Protocol (MANDATORY)
-When making non-trivial implementation decisions, you MUST classify and document them in the `## Implementation Notes` section using structured tags.
+When making non-trivial implementation decisions, you MUST classify and document them in the companion file (`features/<name>.impl.md`) or the `## Implementation Notes` section using structured tags.
 
 **Decision Categories:**
 *   **`[CLARIFICATION]`** (Severity: INFO) -- Interpreted ambiguous spec language. The spec was unclear; you chose a reasonable interpretation.

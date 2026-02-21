@@ -75,6 +75,15 @@ When a project has cross-cutting standards that constrain multiple features (vis
 
 This structure ensures that constraint changes cascade correctly: editing an anchor node file resets all dependent features to `[TODO]`, triggering re-validation across the entire domain. The Critic detects missing prerequisite links, so consumer features that omit the dependency get flagged.
 
+### 4.3 Companion File Convention
+Implementation Notes may be extracted to a separate **companion file** to reduce feature file size and context window usage.
+
+*   **File naming:** `features/<name>.impl.md` alongside `features/<name>.md`.
+*   **Stub format:** When a companion file exists, the feature file's `## Implementation Notes` section is reduced to: `See [<name>.impl.md](<name>.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.`
+*   **Not a feature file:** Companion files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle.
+*   **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO. Only edits to the feature spec (`<name>.md`) trigger resets. This ensures Builder decisions and tribal knowledge updates do not invalidate completed features.
+*   **Backward compatibility:** Features with inline Implementation Notes (no companion file) continue to work unchanged.
+
 ## 5. The Release Protocol
 Releases are synchronization points where the entire project state -- Specs, Architecture, Code, and Process -- is validated and pushed to the remote repository.
 
@@ -182,7 +191,7 @@ In short: Builder `DONE` implies automated tests passed. QA `CLEAN` vs `N/A` sig
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
 
 ### 9.2 Section Format
-The section is placed between `## Implementation Notes` and `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
+The section is placed between `## Implementation Notes` (or its stub -- see Section 4.3) and `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
 
 ```markdown
 ## Visual Specification
