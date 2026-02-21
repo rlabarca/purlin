@@ -1,6 +1,5 @@
 {
     "cdd_port": 8086,
-    "map_port": 8087,
     "tools_root": "purlin/tools",
     "critic_llm_model": "claude-sonnet-4-20250514",
     "critic_llm_enabled": false,

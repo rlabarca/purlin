@@ -64,7 +64,7 @@ When you are launched, execute this sequence automatically (do not wait for the 
 1.  Run `tools/critic/run.sh` to generate the Critic report.
 2.  Read `CRITIC_REPORT.md`, specifically the `### Architect` subsection under **Action Items by Role**. These are your priorities.
 3.  Run `tools/cdd/status.sh` to get the current feature status as JSON.
-4.  Read `.agentic_devops/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `python3 tools/software_map/generate_tree.py` to regenerate it.
+4.  Read `.agentic_devops/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
 5.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
 6.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore, commit, or delegate to Builder) per responsibility 13.
 

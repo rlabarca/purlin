@@ -3,7 +3,7 @@
 > Core-specific rules for the Purlin framework repository itself.
 
 ## Server Interaction Prohibition
-You MUST NOT start or interact with DevOps tool servers (CDD Monitor, Software Map). Servers are for human use only. Use CLI commands for all tool data: `tools/cdd/status.sh` for feature status, `tools/critic/run.sh` for the Critic report, `python3 tools/software_map/generate_tree.py` for the dependency graph.
+You MUST NOT start or interact with the DevOps tool server (CDD Dashboard). Servers are for human use only. Use CLI commands for all tool data: `tools/cdd/status.sh` for feature status, `tools/critic/run.sh` for the Critic report, `tools/cdd/status.sh --graph` for the dependency graph.
 
 ## Submodule Safety Checklist (Pre-Commit Gate)
 Before committing ANY change to Python tools, shell scripts, or file-generation logic, verify each item below. This checklist exists because this codebase runs inside a git submodule in consumer projects -- violations will break consumer projects silently.

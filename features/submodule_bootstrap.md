@@ -50,10 +50,10 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Completion Message:** On success, print a summary listing all files and directories created, and next steps (e.g., "Run `./run_claude_architect.sh` to start the Architect agent").
 
 ### 2.9 Tool Start Script Config Discovery (Submodule-Aware)
-*   **Scope:** `tools/cdd/start.sh` and `tools/software_map/start.sh` MUST be updated to support the submodule directory layout.
-*   **Current Behavior:** Both scripts look for config at `$DIR/../../.agentic_devops/config.json` (the standalone path, where `$DIR` is the tool's directory).
-*   **Required Behavior:** If the standalone path does not exist, the scripts MUST try the submodule path at `$DIR/../../../.agentic_devops/config.json` (one level higher, for when tools are at `<project_root>/agentic-dev/tools/cdd/`).
-*   **Fallback:** If neither config file is found, the scripts MUST use their existing default port values.
+*   **Scope:** `tools/cdd/start.sh` MUST be updated to support the submodule directory layout.
+*   **Current Behavior:** The script looks for config at `$DIR/../../.agentic_devops/config.json` (the standalone path, where `$DIR` is the tool's directory).
+*   **Required Behavior:** If the standalone path does not exist, the script MUST try the submodule path at `$DIR/../../../.agentic_devops/config.json` (one level higher, for when tools are at `<project_root>/agentic-dev/tools/cdd/`).
+*   **Fallback:** If neither config file is found, the script MUST use its existing default port value.
 
 ### 2.10 Config Patching JSON Safety
 *   **Comma Preservation:** The `sed` command used to patch `tools_root` in `config.json` (Section 2.3) MUST only replace the value portion of the `"tools_root"` key. It MUST NOT strip trailing commas, closing braces, or any other JSON structural characters. The correct regex replaces only the quoted value between `"tools_root": "` and the next `"`, preserving everything after.
@@ -62,28 +62,26 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 ### 2.11 Project Root Environment Variable
 *   **Launcher Export:** All generated launcher scripts (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) MUST export `AGENTIC_PROJECT_ROOT` set to the absolute path of the consumer project root (i.e., `$SCRIPT_DIR`). This variable is the authoritative project root for all tools invoked during the session.
-*   **Python Tool Detection:** All Python tools (`tools/critic/critic.py`, `tools/cdd/serve.py`, `tools/software_map/serve.py`, `tools/software_map/generate_tree.py`) MUST check the `AGENTIC_PROJECT_ROOT` environment variable first. If set and the path exists, use it as the project root without climbing. If not set, fall back to directory-climbing detection.
+*   **Python Tool Detection:** All Python tools (`tools/critic/critic.py`, `tools/cdd/serve.py`) MUST check the `AGENTIC_PROJECT_ROOT` environment variable first. If set and the path exists, use it as the project root without climbing. If not set, fall back to directory-climbing detection. Note: Graph generation is now part of the CDD tool (`serve.py`), not a separate `generate_tree.py`.
 *   **Climbing Priority Reversal:** When using the directory-climbing fallback (no `AGENTIC_PROJECT_ROOT`), Python tools MUST try the FURTHER path first (`../../../.agentic_devops/config.json` -- the submodule layout where `tools/` is 3 levels deep) before the nearer path (`../../.agentic_devops/config.json` -- standalone layout). This prevents the submodule's own `.agentic_devops/` from shadowing the consumer project's config.
-*   **Shell Tool Detection:** Shell-based tool scripts (`tools/critic/run.sh`, `tools/cdd/start.sh`, `tools/software_map/start.sh`) MUST check `AGENTIC_PROJECT_ROOT` before falling back to relative path climbing. When set, they MUST derive config paths from `$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json`.
+*   **Shell Tool Detection:** Shell-based tool scripts (`tools/critic/run.sh`, `tools/cdd/start.sh`) MUST check `AGENTIC_PROJECT_ROOT` before falling back to relative path climbing. When set, they MUST derive config paths from `$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json`.
 
 ### 2.12 Generated Artifact Isolation
 *   **Problem:** Tools currently write log files, PID files, and data caches inside the `tools/` directory tree. When `tools/` lives inside a git submodule, these artifacts dirty the submodule's git state and may cause `git submodule update` conflicts.
 *   **Runtime Directory:** Log files and PID files MUST be written to `<project_root>/.agentic_devops/runtime/` instead of alongside the tool scripts:
     - `tools/cdd/cdd.log` -> `.agentic_devops/runtime/cdd.log`
     - `tools/cdd/cdd.pid` -> `.agentic_devops/runtime/cdd.pid`
-    - `tools/software_map/software_map.log` -> `.agentic_devops/runtime/software_map.log`
-    - `tools/software_map/software_map.pid` -> `.agentic_devops/runtime/software_map.pid`
 *   **Cache Directory:** Generated data files MUST be written to `<project_root>/.agentic_devops/cache/` instead of alongside the tool scripts:
     - `tools/cdd/feature_status.json` -> `.agentic_devops/cache/feature_status.json`
-    - `tools/software_map/feature_graph.mmd` -> `.agentic_devops/cache/feature_graph.mmd`
-    - `tools/software_map/dependency_graph.json` -> `.agentic_devops/cache/dependency_graph.json`
+    - `.agentic_devops/cache/feature_graph.mmd` (Mermaid export, produced by CDD graph generation)
+    - `.agentic_devops/cache/dependency_graph.json` (dependency graph, produced by CDD graph generation)
     - `tools/critic/.cache/*.json` -> `.agentic_devops/cache/critic/*.json`
 *   **Directory Auto-Creation:** Tools MUST create `runtime/` and `cache/` (and any needed subdirectories) under `.agentic_devops/` if they do not exist.
 *   **Gitignore Update:** The bootstrap script's recommended gitignore entries (Section 2.7) MUST include `.agentic_devops/runtime/` and `.agentic_devops/cache/`.
 
 ### 2.13 Python Tool Config Resilience
 *   **Error Handling:** All Python tools that read `.agentic_devops/config.json` MUST wrap `json.load()` in a `try/except` block handling `json.JSONDecodeError`, `IOError`, and `OSError`.
-*   **Fallback Defaults:** On config parse failure, tools MUST fall back to default configuration values (`cdd_port: 8086`, `map_port: 8087`, `tools_root: "tools"`, `critic_llm_enabled: false`) and print a warning to stderr.
+*   **Fallback Defaults:** On config parse failure, tools MUST fall back to default configuration values (`cdd_port: 8086`, `tools_root: "tools"`, `critic_llm_enabled: false`) and print a warning to stderr.
 *   **No Crash Invariant:** A malformed or missing `config.json` MUST NOT cause any Python tool to crash with an unhandled exception. Tools MUST remain functional with defaults.
 
 ### 2.14 Utility Script Project Root Detection

@@ -52,8 +52,8 @@ The companion file contains the extracted implementation notes content. The file
 - If `<name>.md` is flagged as orphaned, `<name>.impl.md` MUST also be flagged.
 - If `<name>.impl.md` exists but `<name>.md` does not, it MUST be flagged as orphaned.
 
-### 2.8 Software Map Viewer
-- When a companion `.impl.md` file exists for a feature, the feature detail modal shows tabs: "Specification" and "Implementation Notes".
+### 2.8 CDD Dashboard Feature Modal
+- When a companion `.impl.md` file exists for a feature, the CDD Dashboard feature detail modal shows tabs: "Specification" and "Implementation Notes".
 - When no companion file exists, the modal shows content without tabs (same as current behavior).
 - Tab content is lazy-loaded and cached for instant switching.
 
@@ -91,7 +91,7 @@ And `critic_tool.impl.md` does not appear as a feature
 
 #### Scenario: Dependency Graph Excludes Companion Files
 Given a features directory with `critic_tool.md` and `critic_tool.impl.md`
-When the Software Map generates the dependency graph
+When the CDD Dashboard generates the dependency graph
 Then only `critic_tool.md` appears as a node
 And `critic_tool.impl.md` is not included
 
@@ -102,12 +102,12 @@ Then `old_feature.impl.md` is flagged as orphaned
 
 #### Scenario: Companion File Served via API
 Given a feature `critic_tool.md` with a companion file `critic_tool.impl.md`
-When the Software Map viewer requests `/impl-notes?file=features/critic_tool.md`
+When the CDD Dashboard requests `/impl-notes?file=features/critic_tool.md`
 Then the companion file content is returned with status 200
 
 #### Scenario: No Companion File Returns 404
 Given a feature `policy_critic.md` without a companion file
-When the Software Map viewer requests `/impl-notes?file=features/policy_critic.md`
+When the CDD Dashboard requests `/impl-notes?file=features/policy_critic.md`
 Then a 404 status is returned
 
 ### Manual Scenarios

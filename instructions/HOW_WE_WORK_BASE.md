@@ -50,7 +50,7 @@ Specifications are not static blueprints written once and handed off. They are c
 2.  **Implementation:** Builder reads the feature and implementation notes, writes code/tests, and verifies locally.
 3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed.
 4.  **Completion:** If the feature has no manual scenarios, the Builder marks `[Complete]`. If it has manual scenarios, the QA Agent marks `[Complete]` after clean verification.
-5.  **Synchronization:** Architect updates documentation and generates the Software Map.
+5.  **Synchronization:** Architect updates documentation and regenerates the dependency graph.
 
 ## 4. Knowledge Colocation
 We do not use a global implementation log. Tribal knowledge, technical "gotchas," and lessons learned are stored directly in the `## Implementation Notes` section at the bottom of each feature file.
@@ -175,7 +175,7 @@ The Critic is the project coordination engine. It validates quality AND generate
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
 *   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
-*   **Agent Interface:** Agents access tool data via CLI commands (`tools/cdd/status.sh`, `tools/critic/run.sh`, `tools/software_map/generate_tree.py`), never via HTTP servers. The web servers (CDD dashboard, Software Map viewer) are for human use only. This ensures agents can always access current data without depending on server state.
+*   **Agent Interface:** Agents access tool data via CLI commands (`tools/cdd/status.sh`, `tools/cdd/status.sh --graph`, `tools/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
 
 ### 8.1 Automated Test Status in the CDD Dashboard
 Automated test results are NOT reported as a separate column. They are surfaced through the existing Builder and QA role columns:

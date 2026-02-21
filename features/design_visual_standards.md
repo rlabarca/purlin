@@ -4,7 +4,7 @@
 > Category: "Common Design Standards"
 
 ## 1. Purpose
-Defines the visual language for all Purlin-branded web tools (CDD Monitor, Software Map). This anchor node establishes color tokens, typography, theme switching behavior, and logo placement that all visual tool features MUST adhere to.
+Defines the visual language for all Purlin-branded web tools (CDD Dashboard). This anchor node establishes color tokens, typography, theme switching behavior, and logo placement that all visual tool features MUST adhere to.
 
 ## 2. Invariants
 

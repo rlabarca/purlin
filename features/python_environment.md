@@ -5,9 +5,9 @@
 > Prerequisite: features/submodule_bootstrap.md
 
 ## 1. Overview
-Standardizes how all shell scripts in the framework discover and invoke Python. Today, 2 of 7 scripts (`cdd/start.sh`, `software_map/start.sh`) have ad-hoc venv detection while the other 5 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server scripts find it. The Critic, CDD status, bootstrap, and lifecycle test scripts silently use system Python instead.
+Standardizes how all shell scripts in the framework discover and invoke Python. Today, 1 of 6 scripts (`cdd/start.sh`) has ad-hoc venv detection while the other 5 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server script finds it. The Critic, CDD status, bootstrap, and lifecycle test scripts silently use system Python instead.
 
-This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates all 7 shell scripts to the unified resolution path.
+This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates all 6 shell scripts to the unified resolution path.
 
 ## 2. Requirements
 
@@ -30,7 +30,7 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
 *   **Approximate Size:** ~35 lines. No external dependencies.
 
 ### 2.2 Shell Script Migration
-All shell scripts that invoke Python MUST source the shared helper and use `$PYTHON_EXE` instead of bare `python3`. The following 7 scripts MUST be migrated:
+All shell scripts that invoke Python MUST source the shared helper and use `$PYTHON_EXE` instead of bare `python3`. The following 6 scripts MUST be migrated:
 
 | Script | Current Python Invocation | Migration Action |
 |--------|--------------------------|------------------|
@@ -38,13 +38,12 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 | `tools/cdd/status.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
 | `tools/cdd/stop.sh` | No Python invocation | No migration needed (does not invoke Python) |
-| `tools/software_map/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
 | `tools/bootstrap.sh` | `python3 -c "import json; ..."` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
 
 **Source Path Convention:** Each script MUST compute the path to `resolve_python.sh` relative to its own location. For scripts in `tools/<subtool>/`, the path is `"$SCRIPT_DIR/../resolve_python.sh"`. For scripts directly in `tools/`, the path is `"$SCRIPT_DIR/resolve_python.sh"`.
 
-**Ad-Hoc Block Removal:** `tools/cdd/start.sh` and `tools/software_map/start.sh` MUST remove their existing venv detection blocks (the `if [ -d "$DIR/../../.venv" ]; then ... fi` construct) and replace them entirely with the shared helper.
+**Ad-Hoc Block Removal:** `tools/cdd/start.sh` MUST remove its existing venv detection block (the `if [ -d "$DIR/../../.venv" ]; then ... fi` construct) and replace it entirely with the shared helper.
 
 ### 2.3 Dependency Manifests
 Two dependency manifest files MUST be created at the framework/submodule root (alongside `README.md` and `tools/`):
@@ -136,12 +135,6 @@ Example output:
 
 #### Scenario: CDD start.sh Replaced Ad-Hoc Detection
     Given tools/cdd/start.sh has been migrated
-    When the script is inspected
-    Then it does not contain the pattern 'if [ -d "$DIR/../../.venv" ]'
-    And it sources tools/resolve_python.sh
-
-#### Scenario: Software Map start.sh Replaced Ad-Hoc Detection
-    Given tools/software_map/start.sh has been migrated
     When the script is inspected
     Then it does not contain the pattern 'if [ -d "$DIR/../../.venv" ]'
     And it sources tools/resolve_python.sh

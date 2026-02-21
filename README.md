@@ -146,23 +146,31 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
     *   `config.json` -- Ports, `tools_root`, critic configuration, and other settings.
 *   `agentic_devops.sample/` -- Override templates for new consumer projects.
 *   `features/` -- Meta-specifications for the framework's own tools.
-*   `tools/` -- Python-based DevOps tools (CDD Monitor, Software Map, Critic, Bootstrap, Upstream Sync).
+*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync).
 *   `PROCESS_HISTORY.md` -- Changelog tracking Agentic Workflow and DevOps tool evolution.
 
 ## Port Allocation
 
-| Context | CDD Port | Map Port |
-|---------|----------|----------|
-| purlin standalone | 9086 | 9087 |
-| Consumer project default | 8086 | 8087 |
+| Context | CDD Dashboard Port |
+|---------|--------------------|
+| purlin standalone | 9086 |
+| Consumer project default | 8086 |
 
-Consumer projects get 8086/8087 by default (from `agentic_devops.sample/config.json`). Core development uses 9086/9087. No collision when both run simultaneously.
+Consumer projects get 8086 by default (from `agentic_devops.sample/config.json`). Core development uses 9086.
 
 ## Feature Map
 <!-- MERMAID_START -->
 ```mermaid
 flowchart TD
 
+
+    subgraph CDD_Dashboard [" "]
+        title_CDD_Dashboard["CDD DASHBOARD"]
+        cdd_software_map["Tool: CDD Software Map<br/><small>cdd_software_map.md</small>"]
+        title_CDD_Dashboard ~~~ cdd_software_map
+        cdd_status_monitor["Tool: CDD Monitor<br/><small>cdd_status_monitor.md</small>"]
+        title_CDD_Dashboard ~~~ cdd_status_monitor
+    end
 
     subgraph Common_Design_Standards [" "]
         title_Common_Design_Standards["COMMON DESIGN STANDARDS"]
@@ -180,14 +188,6 @@ flowchart TD
         title_Coordination_&_Lifecycle ~~~ policy_critic
     end
 
-    subgraph DevOps_Tools [" "]
-        title_DevOps_Tools["DEVOPS TOOLS"]
-        cdd_status_monitor["Tool: CDD Monitor<br/><small>cdd_status_monitor.md</small>"]
-        title_DevOps_Tools ~~~ cdd_status_monitor
-        software_map_generator["Tool: Software Map<br/><small>software_map_generator.md</small>"]
-        title_DevOps_Tools ~~~ software_map_generator
-    end
-
     subgraph Initialization_&_Update [" "]
         title_Initialization_&_Update["INITIALIZATION & UPDATE"]
         python_environment["Tool: Python Environment<br/><small>python_environment.md</small>"]
@@ -199,13 +199,13 @@ flowchart TD
     end
 
     %% Relationships
+    cdd_status_monitor --> cdd_software_map
+    design_visual_standards --> cdd_software_map
     policy_critic --> cdd_status_monitor
     design_visual_standards --> cdd_status_monitor
     policy_critic --> critic_tool
     HOW_WE_WORK_BASE["HOW_WE_WORK_BASE?"] -.-> impl_notes_companion
     submodule_bootstrap --> python_environment
-    policy_critic --> software_map_generator
-    design_visual_standards --> software_map_generator
     submodule_bootstrap --> submodule_sync
 
     %% Styling Definitions
@@ -217,9 +217,9 @@ flowchart TD
     classDef subgraphTitle fill:none,stroke:none,color:#111,font-size:32px,font-weight:bold;
 
     %% Style Applications
+    class title_CDD_Dashboard subgraphTitle;
     class title_Common_Design_Standards subgraphTitle;
     class title_Coordination_&_Lifecycle subgraphTitle;
-    class title_DevOps_Tools subgraphTitle;
     class title_Initialization_&_Update subgraphTitle;
 ```
 <!-- MERMAID_END -->

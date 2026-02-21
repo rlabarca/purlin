@@ -2,6 +2,30 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Merge Software Map into CDD Dashboard
+
+- **Scope:** Architectural merge -- unified CDD Dashboard with Status and SW Map views on a single port.
+- **Problem:** The CDD Status Monitor and Software Map Generator were two separate web tools sharing the same feature data, design tokens, theme system, and modal pattern, but running on different ports with independent servers. This split duplicated infrastructure (server, header, theme toggle, branding, search, modal) and forced agents to reference two separate CLI tools for graph and status data.
+- **Solution:** Merged into a single **CDD Dashboard** category with two focused feature files:
+    - `features/cdd_status_monitor.md` -- The dashboard shell (unified header, view mode switching, search, URL routing, CLI, config/port, branding) plus the Status view (feature tables, collapsible sections, badges, workspace).
+    - `features/cdd_software_map.md` -- The SW Map view (Cytoscape.js graph rendering, category grouping, hover highlighting, graph generation, file watcher, Mermaid export). Depends on the dashboard shell via prerequisite link.
+    - Deleted `features/software_map_generator.md` (requirements split between the two new files; git history preserves it).
+    - Deleted `features/software_map_generator.impl.md` (tribal knowledge merged into `cdd_status_monitor.impl.md`).
+- **New dashboard features specified:**
+    - View mode toggle ("Status"/"SW Map") with URL hash routing (`/#status`, `/#map`).
+    - Collapsible Active/Complete/Workspace sections with chevron indicators and collapsed summaries.
+    - Unified search/filter box (filters status rows or graph nodes depending on active view).
+    - Feature detail modal shared between both views (click feature row or graph node).
+    - CLI `--graph` flag on `tools/cdd/status.sh` (replaces standalone `generate_tree.py`).
+    - New API endpoints: `/dependency_graph.json`, `/feature?file=`, `/impl-notes?file=`.
+    - Matched column widths between Active and Complete tables.
+    - Centered status column headers, left-justified Feature column.
+- **Config:** Removed `map_port` from `.agentic_devops/config.json` (9087) and `agentic_devops.sample/config.json` (8087). Single `cdd_port` serves both views.
+- **Files Created:** `features/cdd_software_map.md`.
+- **Files Deleted:** `features/software_map_generator.md`, `features/software_map_generator.impl.md`.
+- **Files Modified:** `features/cdd_status_monitor.md`, `features/cdd_status_monitor.impl.md`, `features/design_visual_standards.md`, `features/impl_notes_companion.md`, `features/submodule_bootstrap.md`, `features/python_environment.md`, `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/QA_BASE.md`, `.agentic_devops/QA_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, `.agentic_devops/config.json`, `agentic_devops.sample/config.json`, `README.md`.
+- **Impact:** `cdd_status_monitor.md` reset to TODO (spec rewritten). `cdd_software_map.md` in TODO (new). `submodule_bootstrap.md`, `python_environment.md`, `impl_notes_companion.md`, `design_visual_standards.md` reset to TODO (spec changed). Builder must implement: unified server, view mode switching, collapsible sections, search/filter, feature detail modal, CLI `--graph` flag, new API endpoints, graph generation integration.
+
 ## [2026-02-21] Fix Critic Tool Lifecycle Gap: Stale Cache + Scope Validation Surfacing
 
 - **Scope:** Shell wrapper fix + feature spec update for Critic lifecycle freshness and scope validation visibility.

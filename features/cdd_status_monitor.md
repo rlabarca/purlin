@@ -1,13 +1,15 @@
 # Feature: CDD Status Monitor
 
 > Label: "Tool: CDD Monitor"
-> Category: "DevOps Tools"
+> Category: "CDD Dashboard"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_visual_standards.md
 
 
 ## 1. Overview
-The Continuous Design-Driven (CDD) Monitor tracks the status of all feature files in `features/`. Provides both a web dashboard for human review and a canonical JSON output for agent consumption.
+The CDD Dashboard is the unified web interface for human review of the Continuous Design-Driven project state. It combines two views -- **Status** (feature lifecycle and role status tables) and **SW Map** (interactive dependency graph) -- served from a single port with a shared header, theme system, and search/filter. The dashboard also provides a canonical JSON API and CLI tool for agent consumption.
+
+The SW Map view's graph rendering and generation logic is defined in `features/cdd_software_map.md`. This feature owns the dashboard shell (server, header, view modes, search, URL routing, branding, config/port) and the Status view (feature tables, collapsible sections, badges, workspace, feature detail modal).
 
 ## 2. Requirements
 
@@ -17,15 +19,45 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Discovery-Aware Lifecycle Preservation:** When a feature file is modified after a status commit, the monitor MUST check whether the modification is limited to the `## User Testing Discoveries` section. If the spec content above that section is identical to the content at the status commit, the lifecycle state is preserved (COMPLETE or TESTING). This prevents QA housekeeping (pruning resolved discoveries) from triggering a false lifecycle reset to TODO.
 
 ### 2.2 UI & Layout
+
+#### 2.2.1 Dashboard Shell
+The dashboard shell is the always-visible chrome shared between the Status and SW Map views.
+
+*   **Unified Header:** A single horizontal header bar (per Section 2.9) is always visible regardless of active view. It contains the logo, title, view mode buttons, search box, timestamp, Run Critic button, and theme toggle.
+*   **View Mode Toggle:** Two toggle buttons ("Status" and "SW Map") appear in the header left group, after the title/project name block. The active view button is visually distinguished (e.g., highlighted or underlined). Clicking a button switches the content area to that view.
+*   **URL Hash Routing:** The dashboard uses URL hash routing for direct view access:
+    - `/#status` (default) -- Status view.
+    - `/#map` -- SW Map view.
+    - Navigating directly to a hash URL loads the corresponding view.
+    - Refresh preserves the current view mode (hash persists in the URL bar).
+*   **Content Area:** Below the header, a single content area renders either the Status view or the SW Map view based on the active mode.
+
+#### 2.2.2 Status View
+The Status view is the default view (`/#status`).
+
 *   **Role-Based Columns:** The dashboard MUST render features in a table with the following columns:
     *   **Feature** -- The feature filename.
     *   **Architect** -- The Architect role status badge.
     *   **Builder** -- The Builder role status badge.
     *   **QA** -- The QA role status badge.
-*   **Two Groups:** Features are displayed in two sections:
+*   **Column Alignment:** Status column headers (Architect, Builder, QA) MUST be centered. The Feature column header MUST be left-justified.
+*   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
     *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A).
     *   **Complete** -- All roles fully satisfied. Capped at 10 most recent entries.
+    *   **Workspace** -- Git status and last commit information.
+*   **Section Collapse/Expand Behavior:**
+    *   Each section heading has a chevron indicator: right-pointing when collapsed, down-pointing when expanded.
+    *   Clicking the section heading toggles between collapsed and expanded.
+    *   **Collapsed Summary (Active/Complete):** When collapsed, the section heading displays a summary badge:
+        - `DONE` (green) if all features in the section have all roles satisfied.
+        - `??` (dim) if the section is empty.
+        - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
+        - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
+    *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean State" or a brief status indicator.
+    *   **Default State:** Active and Workspace sections are expanded by default. Complete section is collapsed by default.
+*   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
 *   **Active Section Sorting:** Features sorted by urgency: any red state (FAIL, INFEASIBLE) first, then any yellow/orange state (TODO, DISPUTED), then alphabetical.
+*   **Feature Click:** Clicking a feature name in the status table opens the shared feature detail modal (Section 2.2.4).
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
 *   **Badge Color Mapping:**
 
@@ -41,19 +73,31 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 | N/A | Blank/dim | QA |
 | ?? | Dim (`--purlin-dim`) | Any (no critic.json -- not yet generated) |
 
-*   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint.
-*   **Workspace Section:** The dashboard MUST display a Workspace section between the page header and the feature table. Contents:
-    *   **Git Status:** Either "Clean State (Ready for next task)" when no uncommitted changes exist, or "Work in Progress" followed by the list of modified/staged files.
-    *   **Last Commit:** The most recent git commit summary (hash, message, relative timestamp).
-    *   **Dynamic:** The Workspace section is dynamic data. It MUST update on each data refresh cycle (same cadence as the feature table). It MUST NOT require a full page reload to reflect git state changes.
+*   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint or the CLI tool.
+
+#### 2.2.3 Search/Filter
+*   **Position:** A search text input appears in the header right group, to the left of the timestamp.
+*   **Status View Behavior:** Filters Active and Complete table rows by feature name (case-insensitive substring match). Sections with no matching rows are hidden.
+*   **SW Map View Behavior:** Filters graph nodes by label or filename. Nodes that do not match are visually de-emphasized or hidden.
+*   **Placeholder:** Uses `var(--purlin-dim)` color token for readable contrast in both themes.
+
+#### 2.2.4 Feature Detail Modal
+The feature detail modal is shared between both views (Status and SW Map).
+
+*   **Trigger:** Clicking a feature name in the status table or clicking a graph node in the SW Map view opens the modal.
+*   **Content:** Renders the feature file's markdown content in a scrollable container.
+*   **Tabbed View:** When a companion `.impl.md` file exists for the feature, the modal shows two tabs: "Specification" and "Implementation Notes". Tab content is lazy-loaded and cached for instant switching.
+*   **Single Tab:** When no companion file exists, the modal shows content without tabs (same as current behavior).
+*   **Close Methods:** The modal MUST close via: (1) X button in the top-right corner, (2) clicking outside the modal, (3) pressing Escape.
+*   **API Endpoints:** Feature content is served via `/feature?file=<path>` and companion content via `/impl-notes?file=<path>` (Section 2.4).
 
 ### 2.3 Verification Signals
 *   **Role Status Source:** The CDD monitor reads role status from pre-computed `tests/<name>/critic.json` files produced by the Critic tool. CDD does NOT compute role status itself.
 *   **Test Status (Internal):** The monitor still resolves `tests/<name>/tests.json` for internal lifecycle logic, but test status is no longer displayed as a separate column on the dashboard or exposed as a standalone field in the API. Test pass/fail state is reflected through the Builder role status (DONE vs FAIL).
-*   **Section Heading Visual Separation:** The dashboard MUST render section headings ("ACTIVE", "COMPLETE") with an underline separator (e.g., a bottom border or `<hr>`) to clearly distinguish them from the feature rows beneath.
+*   **Section Heading Visual Separation:** The dashboard MUST render section headings ("ACTIVE", "COMPLETE", "WORKSPACE") with an underline separator (e.g., a bottom border or `<hr>`) to clearly distinguish them from the content beneath.
 
 ### 2.4 Machine-Readable Output (Agent Interface)
-*   **API Endpoint:** The server MUST expose a `/status.json` route that returns the feature status JSON directly with `Content-Type: application/json`. This is the **primary** agent interface.
+*   **API Endpoint (`/status.json`):** The server MUST expose a `/status.json` route that returns the feature status JSON directly with `Content-Type: application/json`. This is the **primary** agent interface.
 *   **API Schema (`/status.json`):**
     ```json
     {
@@ -76,6 +120,9 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
     *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
     *   Array sorted by file path (deterministic).
+*   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.agentic_devops/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
+*   **API Endpoint (`/feature?file=<path>`):** Serves the raw content of the specified feature file. The `file` query parameter is the relative path (e.g., `features/cdd_status_monitor.md`). Returns 200 with `Content-Type: text/plain` on success, 404 if the file does not exist. Path traversal outside the project root MUST be rejected.
+*   **API Endpoint (`/impl-notes?file=<path>`):** Resolves the companion file for the specified feature file. If `features/<name>.md` is requested, serves `features/<name>.impl.md`. Returns 200 with `Content-Type: text/plain` on success, 404 if no companion file exists.
 *   **Internal Artifact (`feature_status.json`):** The monitor MUST also produce a `feature_status.json` file at `.agentic_devops/cache/feature_status.json`, regenerated on every request (web) or CLI invocation. This file retains the **old** lifecycle-based format with `todo`/`testing`/`complete` arrays and `test_status` fields, plus a `change_scope` field per feature (extracted from the most recent status commit's `[Scope: ...]` trailer, omitted when absent). This is an internal implementation detail consumed by the Critic for lifecycle-state-dependent computations (e.g., QA TODO detection, regression scope). It is NOT part of the public API contract.
 *   **Regeneration:** Both outputs MUST be freshly computed on every `/status.json` request. The disk file is also regenerated on dashboard requests.
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
@@ -85,13 +132,14 @@ The Continuous Design-Driven (CDD) Monitor tracks the status of all feature file
 *   **Critic JSON Discovery:** For each feature `features/<name>.md`, the monitor checks for `tests/<name>/critic.json` on disk.
 *   **Per-Feature Role Status:** If `critic.json` exists, the monitor reads the `role_status` object and exposes its `architect`, `builder`, and `qa` fields on the per-feature API entry. If no `critic.json` exists, all role fields are omitted (dashboard shows `??` in each column).
 *   **No Direct Computation:** CDD does NOT compute role status itself. It reads pre-computed values from the Critic's `role_status` output.
-*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2. Blank cells when no `critic.json` exists.
+*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2.2. Blank cells when no `critic.json` exists.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
 
 ### 2.6 CLI Status Tool (Agent Interface)
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
 *   **Output:** Writes the same JSON schema as the `/status.json` API endpoint to stdout. The output MUST be valid JSON parseable by `python3 json.load()`.
+*   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first. This replaces the standalone `python3 tools/software_map/generate_tree.py` command.
 *   **Side Effect:** Regenerates `.agentic_devops/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic).
 *   **Project Root Detection:** Uses `AGENTIC_PROJECT_ROOT` if set, then climbing fallback (per submodule_bootstrap Section 2.11).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
@@ -128,18 +176,20 @@ The page header is a single horizontal bar with two groups, vertically centered:
 **Left group** (left-justified, in this order left-to-right):
 1.  Purlin logo mark (`assets/purlin-logo.svg`, inline SVG, ~24px height, CSS classes for theme-responsive fills)
 2.  Title and project name block (stacked vertically):
-    *   **Line 1:** Title text: "Purlin CDD Monitor"
+    *   **Line 1:** Title text: "Purlin CDD Dashboard"
     *   **Line 2:** Active project name (per `design_visual_standards.md` Section 2.6). Resolved from `project_name` in config, falling back to the project root directory name. The project name's left edge MUST align with the left edge of the "P" in the title above. Font: `var(--font-body)` Inter Medium 500, 14px, color `var(--purlin-primary)`.
+3.  View mode toggle buttons: "Status" and "SW Map". Styled as compact buttons or tabs. The active view is visually distinguished.
 
 **Right group** (right-justified, in this order from the right edge inward):
 1.  Theme toggle (sun/moon icon) -- rightmost element
 2.  "Run Critic" button
 3.  Last-refreshed timestamp (monospace font to prevent layout shift as digits change)
+4.  Search/filter text input
 
-The two groups MUST be laid out with CSS flexbox (`justify-content: space-between`). The right group items are ordered via `flex-direction: row` with the timestamp first, Run Critic button second, and theme toggle last in DOM order -- or equivalently, the right group uses `flex-direction: row-reverse` with theme toggle first, Run Critic second, timestamp third in DOM order. The visual result MUST match: timestamp on the left side of the right group, theme toggle on the far right.
+The two groups MUST be laid out with CSS flexbox (`justify-content: space-between`). The right group items are ordered via `flex-direction: row` with the search input first, timestamp second, Run Critic button third, and theme toggle last in DOM order -- or equivalently, the right group uses `flex-direction: row-reverse` with theme toggle first, Run Critic second, timestamp third, search input fourth in DOM order. The visual result MUST match: search input on the left side of the right group, theme toggle on the far right.
 
 #### Title
-*   The dashboard title MUST read "Purlin CDD Monitor".
+*   The dashboard title MUST read "Purlin CDD Dashboard".
 
 #### Theme
 *   **CSS Tokens:** All colors in the dashboard MUST use `var(--purlin-*)` custom properties defined in `features/design_visual_standards.md`. No hardcoded hex colors.
@@ -159,10 +209,11 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
     *   Feature table rows (Active and Complete sections).
     *   Last-refreshed timestamp (text content only).
     *   Workspace section (git status and last commit).
+    *   SW Map graph data (when in SW Map view).
 *   **Static Elements (rendered once on initial page load, never re-created or replaced):**
-    *   Page header structure (logo, title, project name).
-    *   Theme toggle and Run Critic button.
-    *   Section headings ("ACTIVE", "COMPLETE") and table column headers.
+    *   Page header structure (logo, title, project name, view mode buttons).
+    *   Theme toggle, search input, and Run Critic button.
+    *   Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") and table column headers.
     *   Google Fonts CDN `<link>` tags.
 *   **Font Stability:** Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
@@ -235,6 +286,12 @@ These scenarios are validated by the Builder's automated test suite.
     Then valid JSON is written to stdout matching the /status.json schema
     And .agentic_devops/cache/feature_status.json is regenerated
     And the tool does not require the CDD web server to be running
+
+#### Scenario: CLI Graph Output
+    Given feature files exist in features/ with prerequisite links
+    When an agent runs tools/cdd/status.sh --graph
+    Then valid JSON is written to stdout matching the dependency_graph.json schema
+    And the output includes features, cycles, and orphans arrays
 
 #### Scenario: Run Critic Endpoint
     Given the CDD server is running
@@ -319,8 +376,77 @@ These scenarios are validated by the Builder's automated test suite.
     And the data-theme attribute on the html element reflects the current theme
     And the theme persists across page refreshes including auto-refresh cycles
 
+#### Scenario: Dependency Graph Endpoint
+    Given the CDD server is running
+    And .agentic_devops/cache/dependency_graph.json exists
+    When a GET request is sent to /dependency_graph.json
+    Then the server returns the dependency graph JSON with Content-Type application/json
+
+#### Scenario: Feature Content Endpoint
+    Given the CDD server is running
+    And features/cdd_status_monitor.md exists
+    When a GET request is sent to /feature?file=features/cdd_status_monitor.md
+    Then the server returns the feature file content with status 200
+
+#### Scenario: Impl Notes Endpoint
+    Given the CDD server is running
+    And features/cdd_status_monitor.impl.md exists
+    When a GET request is sent to /impl-notes?file=features/cdd_status_monitor.md
+    Then the server returns the companion file content with status 200
+
+#### Scenario: Impl Notes Endpoint Returns 404 When No Companion
+    Given the CDD server is running
+    And features/policy_critic.md has no companion file
+    When a GET request is sent to /impl-notes?file=features/policy_critic.md
+    Then a 404 status is returned
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
+
+#### Scenario: View Mode Switching
+    Given the User is viewing the CDD Dashboard
+    When the User clicks the "SW Map" toggle button
+    Then the content area switches to the SW Map view
+    And the URL hash changes to /#map
+    When the User clicks the "Status" toggle button
+    Then the content area switches to the Status view
+    And the URL hash changes to /#status
+
+#### Scenario: Direct URL Access
+    Given the CDD server is running
+    When the User navigates directly to http://localhost:<port>/#map
+    Then the SW Map view is displayed
+    When the User navigates directly to http://localhost:<port>/#status
+    Then the Status view is displayed
+
+#### Scenario: Refresh Preserves View Mode
+    Given the User is viewing the SW Map view (URL shows /#map)
+    When the User refreshes the browser
+    Then the SW Map view is displayed (not reset to Status)
+
+#### Scenario: Search Filters Status View
+    Given the User is viewing the Status view
+    And multiple features are displayed in the Active and Complete sections
+    When the User types a partial feature name in the search box
+    Then only matching features are displayed in both Active and Complete sections
+    And sections with no matching features are hidden
+
+#### Scenario: Feature Click Opens Modal
+    Given the User is viewing the Status view
+    When the User clicks a feature name in the Active or Complete table
+    Then the feature detail modal opens showing the rendered markdown content
+    And the modal has an X button in the top-right corner
+    When the User clicks the X button or clicks outside the modal or presses Escape
+    Then the modal closes
+
+#### Scenario: Section Collapse and Expand
+    Given the User is viewing the Status view
+    When the User clicks the "ACTIVE" section heading
+    Then the Active section collapses showing only the heading with a summary badge
+    And the chevron changes from down to right
+    When the User clicks the "ACTIVE" section heading again
+    Then the Active section expands showing all feature rows
+    And the chevron changes from right to down
 
 #### Scenario: Web Dashboard Auto-Refresh
     Given the User is viewing the web dashboard
@@ -354,16 +480,18 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 
 ## Visual Specification
 
-### Screen: CDD Web Dashboard
+### Screen: CDD Dashboard -- Status View
 - **Reference:** N/A
-- [ ] Section headings ("ACTIVE", "COMPLETE") have a visible underline separator (e.g., a bottom border or horizontal rule)
-- [ ] Section headings are clearly distinguished from the feature table rows beneath them
-- [ ] Header left group: Purlin logo mark then "PURLIN CDD MONITOR" title, left-justified
+- [ ] Dashboard title reads "PURLIN CDD DASHBOARD" in the header left group
 - [ ] Active project name displayed on a second line below the title, left-aligned with the "P" in PURLIN
 - [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)
 - [ ] Project name color switches correctly between dark and light themes
 - [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
-- [ ] Header right group (from right edge inward): sun/moon toggle, Run Critic button, last-refreshed timestamp
+- [ ] View mode toggle buttons ("Status" / "SW Map") visible in header left group after title block
+- [ ] Active view button is visually distinguished from inactive
+- [ ] Search/filter text input visible in header right group
+- [ ] Search input placeholder text uses `--purlin-dim` color token for readable contrast in both themes
+- [ ] Header right group (from right edge inward): sun/moon toggle, Run Critic button, last-refreshed timestamp, search box
 - [ ] Last-refreshed timestamp uses monospace font (no width shift when digits change)
 - [ ] Clicking toggle switches between Blueprint (dark) and Architect (light) themes
 - [ ] Theme persists across page refreshes (auto-refresh every 5s does not reset theme)
@@ -372,7 +500,15 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
 - [ ] Scroll position is preserved across auto-refresh cycles
 - [ ] Only feature status data updates; table headers and section headings remain stable
-- [ ] Workspace section visible between page header and feature table
+- [ ] Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") have a visible underline separator
+- [ ] Section headings are clearly distinguished from the content beneath them
+- [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
+- [ ] Collapsed sections show a summary badge (DONE/??/TODO/most-severe)
+- [ ] Active and Workspace sections expanded by default; Complete section collapsed by default
+- [ ] Active and Complete tables have matching column widths
+- [ ] Status column headers (Architect, Builder, QA) are centered
+- [ ] Feature column header is left-justified
+- [ ] Workspace section visible between Active and Complete sections (or at its collapsible position)
 - [ ] Workspace shows "Clean State" or "Work in Progress" with file list
 - [ ] Workspace shows last commit summary (hash, message, relative timestamp)
 - [ ] Workspace updates on each 5-second refresh cycle without full page reload

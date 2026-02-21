@@ -1,6 +1,5 @@
 {
     "cdd_port": 9086,
-    "map_port": 9087,
     "tools_root": "tools",
     "critic_llm_model": "claude-sonnet-4-20250514",
     "critic_llm_enabled": false,
