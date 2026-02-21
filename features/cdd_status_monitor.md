@@ -310,29 +310,11 @@ These scenarios are validated by the Builder's automated test suite.
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
-#### Scenario: Web Dashboard Display
-    Given the CDD server is running
-    When the User opens the web dashboard in a browser
-    Then features are grouped into Active and Complete sections
-    And the table has columns for Feature, Architect, Builder, and QA
-    And badges use the defined color mapping (DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange)
-    And cells show "??" when no critic.json exists for that feature
-
 #### Scenario: Web Dashboard Auto-Refresh
     Given the User is viewing the web dashboard
     When a feature status changes (e.g., a status commit is made)
     Then the dashboard reflects the updated status within 5 seconds
-    And the page header (logo, title, toggle, button) does not flicker or re-render
-    And fonts do not re-load or cause layout shift
-    And the scroll position is preserved
-
-#### Scenario: Role Columns on Dashboard
-    Given the CDD server is running
-    And critic.json files exist for some features
-    When the User opens the web dashboard
-    Then each feature with a critic.json shows role status badges in the Architect, Builder, and QA columns
-    And features without critic.json show "??" in all role columns
-    And the Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
+    And the refresh is incremental (no full page reload)
 
 #### Scenario: Server Start/Stop Lifecycle
     Given the CDD server is not running
@@ -404,6 +386,12 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Fonts do not visibly re-load or cause layout shift on auto-refresh
 - [ ] Scroll position is preserved across auto-refresh cycles
 - [ ] Only feature status data updates; table headers and section headings remain stable
+- [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
+- [ ] Table has columns: Feature, Architect, Builder, QA
+- [ ] Badges use correct color mapping: DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange, ??=dim
+- [ ] Cells show "??" when no critic.json exists for that feature
+- [ ] Each feature with a critic.json shows role status badges in the correct columns
+- [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
 
 ## User Testing Discoveries
 

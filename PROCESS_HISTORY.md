@@ -2,6 +2,19 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Visual vs Functional Test Separation: Minimize Manual Scenarios
+
+- **Scope:** Instruction update + feature spec refinement -- codified classification rule for Visual Specification vs Manual Scenarios; moved static visual checks out of Manual Scenarios into Visual Specification sections.
+- **Problem:** Several Manual Scenarios in `cdd_status_monitor.md` and `software_map_generator.md` were purely visual checks (layout, colors, typography, element presence) that could be verified from a static screenshot. Keeping them as Gherkin scenarios forced expensive interactive QA walkthroughs and prevented screenshot-assisted batch verification.
+- **Classification Principle:** Visual Specification (checklist) = verifiable from a static screenshot, no interaction required. Manual Scenario (Gherkin) = requires interaction (clicks, hovers, typing), temporal observation, or multi-step functional verification.
+- **Changes:**
+    - **HOW_WE_WORK_BASE.md:** Added Section 9.6 (Visual vs Functional Classification) codifying the classification rule.
+    - **ARCHITECT_BASE.md:** Added "Visual-First Classification" bullet to Section 3.2 (Living Specifications).
+    - **cdd_status_monitor.md:** Removed 2 manual scenarios ("Web Dashboard Display", "Role Columns on Dashboard") -- all checks absorbed into Visual Specification. Slimmed "Web Dashboard Auto-Refresh" to functional core only (removed visual-stability lines already covered by Visual Spec). Added 6 new Visual Specification checklist items.
+    - **software_map_generator.md:** Removed 1 manual scenario ("Interactive Web View") -- all 10 checks absorbed into Visual Specification. Added 9 new Visual Specification checklist items.
+- **Manual Scenario Count:** CDD: 5 -> 3. Software Map: 6 -> 5.
+- **Impact:** Both feature specs reset to TODO (spec content changed). No code changes required. QA verification effort reduced; visual checks now eligible for screenshot-assisted batch verification.
+
 ## [2026-02-21] QA Shutdown Gate: Restructured Session Conclusion for Reliable Final Critic Run
 
 - **Scope:** QA instruction change -- restructured Session Conclusion (Section 6) to prevent the QA agent from skipping the final Critic run.

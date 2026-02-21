@@ -212,3 +212,11 @@ The section is placed between `## Implementation Notes` and `## User Testing Dis
 
 ### 9.5 Verification Methods
 Visual checklist items are verified by the QA Agent during the visual verification pass (QA_BASE Section 5.4). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.
+
+### 9.6 Visual vs Functional Classification
+When a feature has UI components, the Architect MUST classify each acceptance criterion:
+
+*   **Visual Specification** (checklist item): Verifiable from a static screenshot -- layout, colors, typography, element presence/absence, spacing. No interaction required.
+*   **Manual Scenario** (Gherkin): Requires user interaction (clicks, hovers, typing), temporal observation (waiting for refresh/animation), or multi-step functional verification (start server, trigger action, observe result).
+
+The goal is to **minimize Manual Scenarios** by moving all static visual checks to the Visual Specification section. Manual Scenarios should only test behavior that cannot be verified from a screenshot.

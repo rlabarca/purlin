@@ -95,20 +95,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
     Then the tool automatically regenerates the Mermaid exports
     And the tool automatically regenerates dependency_graph.json
 
-#### Scenario: Interactive Web View
-    Given the software map server is running
-    When the User opens the web UI in a browser
-    Then the dependency graph is rendered with nodes and edges
-    And feature nodes are visually grouped by their Category metadata
-    And each node displays its Label and its filename
-    And the Label is rendered in larger, bolder text than the filename
-    And no node labels overlap with neighboring node labels
-    And long labels wrap within their node boxes without clipping
-    And the overall UI defaults to a dark color scheme with a theme toggle available
-    And no legend overlay is displayed
-    And the graph is zoomed to fit the viewable page area
-    And a search input is visible for filtering nodes
-
 #### Scenario: Feature Detail Modal
     Given the User is viewing the web UI
     When the User clicks a feature node
@@ -171,6 +157,15 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch
 - [ ] Theme persists across auto-refresh cycles
+- [ ] Dependency graph rendered with feature nodes and directed edges
+- [ ] Feature nodes visually grouped by Category metadata with clear delineation
+- [ ] Each node displays both Label (friendly name) and filename
+- [ ] Label rendered in larger, bolder text than the filename
+- [ ] No node labels overlap with neighboring labels
+- [ ] Long labels wrap within node boxes without clipping (all text visible at default zoom)
+- [ ] No legend overlay displayed
+- [ ] Graph is zoomed and centered to fit the viewable page area on initial load
+- [ ] Search/filter text input visible for filtering nodes
 
 ## User Testing Discoveries
 
