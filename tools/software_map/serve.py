@@ -49,7 +49,7 @@ def get_dir_snapshot(directory):
     if not os.path.exists(directory):
         return snapshot
     for entry in os.scandir(directory):
-        if entry.is_file() and entry.name.endswith(".md"):
+        if entry.is_file() and entry.name.endswith(".md") and not entry.name.endswith(".impl.md"):
             snapshot[entry.name] = entry.stat().st_mtime
     return snapshot
 
@@ -125,6 +125,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "dependency_graph.json not found")
         elif self.path.startswith('/feature?'):
             self._serve_feature_content()
+        elif self.path.startswith('/impl-notes?'):
+            self._serve_impl_notes()
         else:
             super().do_GET()
 
@@ -145,6 +147,43 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if not os.path.isfile(abs_path):
             self.send_error(404, "Feature file not found")
+            return
+
+        try:
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            payload = content.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        except Exception:
+            self.send_error(500, "Error reading file")
+
+    def _serve_impl_notes(self):
+        """Serve the companion implementation notes file if it exists."""
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        file_param = params.get('file', [''])[0]
+
+        # Derive companion file path: replace .md with .impl.md
+        if not file_param.endswith('.md'):
+            self.send_error(400, "Invalid file parameter")
+            return
+        impl_path = file_param[:-3] + '.impl.md'
+
+        # Resolve to absolute path
+        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, impl_path))
+
+        # Security: ensure path is within the features directory
+        allowed_dir = os.path.normpath(FEATURES_DIR)
+        if not abs_path.startswith(allowed_dir):
+            self.send_error(403, "Access denied")
+            return
+
+        if not os.path.isfile(abs_path):
+            self.send_error(404, "Companion file not found")
             return
 
         try:

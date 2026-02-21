@@ -38,6 +38,7 @@ from critic import (
     parse_sections,
     parse_scenarios,
     get_implementation_notes,
+    resolve_impl_notes,
     get_user_testing_section,
     is_policy_file,
     check_section_completeness,
@@ -3419,6 +3420,198 @@ class TestVisualSpecificationExemptFromTraceability(unittest.TestCase):
         titles = [s['title'] for s in scenarios]
         self.assertNotIn('Check layout', titles)
         self.assertNotIn('Check colors', titles)
+
+
+# ===================================================================
+# Companion File Convention Tests
+# ===================================================================
+
+class TestCompanionFileResolution(unittest.TestCase):
+    """Scenario: Companion File Resolution for Implementation Gate
+
+    Given a feature file with a stub referencing a companion .impl.md file,
+    resolve_impl_notes() should read and return the companion file content.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_resolves_companion_file(self):
+        """Stub with companion reference reads the companion file."""
+        feature_path = os.path.join(self.tmpdir, 'my_feature.md')
+        companion_path = os.path.join(self.tmpdir, 'my_feature.impl.md')
+
+        feature_content = """\
+# Feature: My Feature
+
+## Overview
+A feature.
+
+## Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+
+## Implementation Notes
+See [my_feature.impl.md](my_feature.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
+"""
+        companion_content = """\
+# Implementation Notes: My Feature
+
+*   **Tool Location:** Some tool info.
+*   **[CLARIFICATION]** Some clarification. (Severity: INFO)
+*   **[DEVIATION]** Some deviation. (Severity: HIGH)
+"""
+        with open(feature_path, 'w') as f:
+            f.write(feature_content)
+        with open(companion_path, 'w') as f:
+            f.write(companion_content)
+
+        result = resolve_impl_notes(feature_content, feature_path)
+        self.assertIn('[CLARIFICATION]', result)
+        self.assertIn('[DEVIATION]', result)
+        self.assertIn('Tool Location', result)
+
+    def test_backward_compatible_inline_notes(self):
+        """Feature with inline notes (no companion) returns inline content."""
+        feature_path = os.path.join(self.tmpdir, 'inline_feature.md')
+
+        feature_content = """\
+# Feature: Inline
+
+## Overview
+A feature.
+
+## Implementation Notes
+*   **[CLARIFICATION]** Inline clarification. (Severity: INFO)
+*   Some inline knowledge.
+"""
+        with open(feature_path, 'w') as f:
+            f.write(feature_content)
+
+        result = resolve_impl_notes(feature_content, feature_path)
+        self.assertIn('[CLARIFICATION]', result)
+        self.assertIn('Inline clarification', result)
+
+    def test_companion_missing_returns_stub(self):
+        """Stub referencing non-existent companion returns stub text."""
+        feature_path = os.path.join(self.tmpdir, 'orphan.md')
+
+        feature_content = """\
+# Feature: Orphan
+
+## Implementation Notes
+See [orphan.impl.md](orphan.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
+"""
+        with open(feature_path, 'w') as f:
+            f.write(feature_content)
+
+        result = resolve_impl_notes(feature_content, feature_path)
+        # Returns the stub text since companion doesn't exist
+        self.assertIn('orphan.impl.md', result)
+
+
+class TestCompanionStubNotFlaggedAsEmpty(unittest.TestCase):
+    """Scenario: Stub With Companion Reference Not Flagged as Empty
+
+    A stub containing a companion file link should not be considered
+    'empty notes' by section completeness checks.
+    """
+
+    def test_stub_is_not_empty(self):
+        """Stub with companion ref has non-empty impl notes."""
+        content = """\
+# Feature: Stubbed
+
+## Overview
+A feature.
+
+## 2. Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+
+## Implementation Notes
+See [stubbed.impl.md](stubbed.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
+"""
+        sections = parse_sections(content)
+        result = check_section_completeness(content, sections)
+        # Should be PASS, not WARN about empty notes
+        self.assertEqual(result['status'], 'PASS')
+
+    def test_truly_empty_notes_warns(self):
+        """Empty implementation notes should produce a WARN."""
+        content = """\
+# Feature: Empty
+
+## Overview
+A feature.
+
+## 2. Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+
+## Implementation Notes
+"""
+        sections = parse_sections(content)
+        result = check_section_completeness(content, sections)
+        self.assertEqual(result['status'], 'WARN')
+        self.assertIn('empty', result['detail'].lower())
+
+
+class TestFeatureScanExcludesCompanionFiles(unittest.TestCase):
+    """Scenario: Feature Scanning Excludes Companion Files
+
+    When scanning for feature files, *.impl.md files must not be
+    included in the results.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        # Create a feature file and a companion file
+        with open(os.path.join(self.tmpdir, 'my_feature.md'), 'w') as f:
+            f.write('# Feature: My Feature\n')
+        with open(os.path.join(self.tmpdir, 'my_feature.impl.md'), 'w') as f:
+            f.write('# Implementation Notes\n')
+        with open(os.path.join(self.tmpdir, 'another.md'), 'w') as f:
+            f.write('# Feature: Another\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_impl_files_excluded_from_scan(self):
+        """The *.impl.md filter correctly excludes companion files."""
+        feature_files = sorted([
+            f for f in os.listdir(self.tmpdir)
+            if f.endswith('.md') and not f.endswith('.impl.md')
+        ])
+        self.assertEqual(feature_files, ['another.md', 'my_feature.md'])
+        self.assertNotIn('my_feature.impl.md', feature_files)
 
 
 # ===================================================================

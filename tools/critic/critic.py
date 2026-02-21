@@ -162,6 +162,31 @@ def get_implementation_notes(content):
     return ''
 
 
+def resolve_impl_notes(content, feature_path):
+    """Resolve implementation notes, following companion file references.
+
+    If the inline Implementation Notes stub contains a companion file
+    reference (link to <name>.impl.md), reads and returns the companion
+    file content. Otherwise returns the inline content (backward compatible).
+    """
+    inline_notes = get_implementation_notes(content)
+
+    # Check if stub references a companion file
+    companion_match = re.search(r'\[[\w_-]+\.impl\.md\]', inline_notes)
+    if companion_match:
+        # Derive companion file path from feature path
+        base = os.path.splitext(feature_path)[0]
+        companion_path = base + '.impl.md'
+        if os.path.isfile(companion_path):
+            try:
+                with open(companion_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except (IOError, OSError):
+                pass
+
+    return inline_notes
+
+
 def get_user_testing_section(content):
     """Extract the User Testing Discoveries section text."""
     match = re.search(
@@ -667,12 +692,15 @@ def check_logic_drift(scenarios=None, traceability_result=None,
     )
 
 
-def run_implementation_gate(content, feature_stem, filename):
+def run_implementation_gate(content, feature_stem, filename, feature_path=None):
     """Run all Implementation Gate checks.
 
     Returns dict with 'status' and 'checks'.
     """
-    impl_notes = get_implementation_notes(content)
+    if feature_path:
+        impl_notes = resolve_impl_notes(content, feature_path)
+    else:
+        impl_notes = get_implementation_notes(content)
     scenarios = parse_scenarios(content)
 
     # Traceability
@@ -1443,7 +1471,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     if is_policy_file(filename):
         impl_gate = _policy_exempt_implementation_gate()
     else:
-        impl_gate = run_implementation_gate(content, feature_stem, filename)
+        impl_gate = run_implementation_gate(content, feature_stem, filename, feature_path=feature_path)
 
     user_testing = run_user_testing_audit(content)
 
@@ -1678,7 +1706,8 @@ def main():
             sys.exit(1)
 
         feature_files = sorted([
-            f for f in os.listdir(FEATURES_DIR) if f.endswith('.md')
+            f for f in os.listdir(FEATURES_DIR)
+            if f.endswith('.md') and not f.endswith('.impl.md')
         ])
 
         if not feature_files:

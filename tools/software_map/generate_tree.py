@@ -41,7 +41,7 @@ def parse_features(features_dir):
         return features
 
     for filename in os.listdir(features_dir):
-        if not filename.endswith(".md"):
+        if not filename.endswith(".md") or filename.endswith(".impl.md"):
             continue
 
         filepath = os.path.join(features_dir, filename)

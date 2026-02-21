@@ -92,6 +92,31 @@
             justify-content: center; line-height: 1;
         }
         .modal-close:hover { background: var(--purlin-tag-fill); color: var(--purlin-primary); border-color: var(--purlin-muted); }
+        .modal-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--purlin-border);
+            padding: 0 24px;
+        }
+        .modal-tab {
+            background: none;
+            border: none;
+            color: var(--purlin-muted);
+            font-family: var(--font-body, 'Inter', sans-serif);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .modal-tab:hover {
+            color: var(--purlin-text, var(--purlin-primary));
+        }
+        .modal-tab.active {
+            color: var(--purlin-accent);
+            border-bottom-color: var(--purlin-accent);
+        }
         .modal-body {
             padding: 14px; overflow-y: auto; flex: 1;
             line-height: 1.6; color: var(--purlin-primary);
@@ -155,6 +180,10 @@
             <div class="modal-header">
                 <h2 id="modal-title">Feature</h2>
                 <button class="modal-close" id="modal-close" title="Close">X</button>
+            </div>
+            <div class="modal-tabs" id="modal-tabs" style="display:none">
+                <button class="modal-tab active" data-tab="spec">Specification</button>
+                <button class="modal-tab" data-tab="impl">Implementation Notes</button>
             </div>
             <div class="modal-body" id="modal-body"></div>
         </div>
@@ -564,24 +593,69 @@
         }
 
         // -- Feature Detail Modal --
+        // Cached modal content
+        let _modalSpecContent = '';
+        let _modalImplContent = null;
+
         async function openModal(filePath, label) {
             const overlay = document.getElementById('modal-overlay');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
+            const tabs = document.getElementById('modal-tabs');
 
             title.textContent = label || filePath;
             body.innerHTML = '<p style="color:var(--purlin-muted)">Loading...</p>';
             overlay.classList.add('visible');
+            _modalSpecContent = '';
+            _modalImplContent = null;
+
+            // Reset tabs
+            tabs.style.display = 'none';
+            const tabBtns = tabs.querySelectorAll('.modal-tab');
+            tabBtns[0].classList.add('active');
+            tabBtns[1].classList.remove('active');
 
             try {
                 const resp = await fetch('/feature?file=' + encodeURIComponent(filePath));
                 if (!resp.ok) throw new Error('Failed to load feature file');
                 const md = await resp.text();
-                body.innerHTML = marked.parse(md);
+                _modalSpecContent = marked.parse(md);
+                body.innerHTML = _modalSpecContent;
             } catch (e) {
                 body.innerHTML = '<p style="color:var(--purlin-status-error)">Could not load feature content.</p>';
+                return;
+            }
+
+            // Check for companion impl notes file
+            try {
+                const implResp = await fetch('/impl-notes?file=' + encodeURIComponent(filePath));
+                if (implResp.ok) {
+                    const implMd = await implResp.text();
+                    _modalImplContent = marked.parse(implMd);
+                    tabs.style.display = 'flex';
+                }
+            } catch (e) {
+                // No companion file, tabs stay hidden
             }
         }
+
+        // Tab switching for modal
+        document.getElementById('modal-tabs').addEventListener('click', function(e) {
+            const btn = e.target.closest('.modal-tab');
+            if (!btn) return;
+            const tab = btn.dataset.tab;
+            const body = document.getElementById('modal-body');
+            const tabBtns = this.querySelectorAll('.modal-tab');
+
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (tab === 'spec') {
+                body.innerHTML = _modalSpecContent;
+            } else if (tab === 'impl' && _modalImplContent) {
+                body.innerHTML = _modalImplContent;
+            }
+        });
 
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('visible');

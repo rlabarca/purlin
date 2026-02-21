@@ -121,7 +121,7 @@ def get_feature_status(features_rel, features_abs):
         return [], [], []
 
     complete, testing, todo = [], [], []
-    feature_files = [f for f in os.listdir(features_abs) if f.endswith('.md')]
+    feature_files = [f for f in os.listdir(features_abs) if f.endswith('.md') and not f.endswith('.impl.md')]
 
     for fname in feature_files:
         f_path = os.path.normpath(os.path.join(features_rel, fname))
@@ -328,7 +328,8 @@ def generate_api_status_json():
         }
 
     feature_files = sorted(
-        f for f in os.listdir(FEATURES_ABS) if f.endswith('.md'))
+        f for f in os.listdir(FEATURES_ABS)
+        if f.endswith('.md') and not f.endswith('.impl.md'))
 
     features = []
     for fname in feature_files:

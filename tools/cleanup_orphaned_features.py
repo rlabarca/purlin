@@ -27,7 +27,7 @@ else:
 def get_referenced_features(features_dir):
     if not os.path.exists(features_dir):
         return set()
-    all_files = {f for f in os.listdir(features_dir) if f.endswith(".md")}
+    all_files = {f for f in os.listdir(features_dir) if f.endswith(".md") and not f.endswith(".impl.md")}
     is_prerequisite = set()
 
     for filename in all_files:
@@ -46,6 +46,13 @@ def get_referenced_features(features_dir):
     protected_roots = {f for f in all_files if f.startswith("arch_") or f.startswith("RELEASE_")}
 
     orphans = all_files - is_prerequisite - protected_roots
+
+    # Also detect orphaned companion files
+    impl_files = {f for f in os.listdir(features_dir) if f.endswith(".impl.md")}
+    for impl_file in impl_files:
+        parent = impl_file.replace(".impl.md", ".md")
+        if parent not in all_files or parent in orphans:
+            orphans.add(impl_file)
 
     return orphans
 
