@@ -32,6 +32,8 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-status-error` | `#DC2626` | FAIL/INFEASIBLE |
 | `--purlin-tag-fill` | `#F1F5F9` | Tag backgrounds |
 | `--purlin-tag-outline` | `#CBD5E1` | Tag borders |
+| `--font-display` | `'Montserrat', sans-serif` | Titles, wordmarks |
+| `--font-body` | `'Inter', sans-serif` | Headers, labels, body |
 
 **Blueprint Theme (Dark -- Default):**
 
@@ -49,12 +51,36 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-status-error` | `#F87171` |
 | `--purlin-tag-fill` | `#1E293B` |
 | `--purlin-tag-outline` | `#334155` |
+| `--font-display` | `'Montserrat', sans-serif` |
+| `--font-body` | `'Inter', sans-serif` |
 
 ### 2.3 Typography
-*   **Display:** `'Montserrat', sans-serif` -- headings, titles. Loaded via Google Fonts CDN. Weights: 700, 900.
-*   **Body:** `'Inter', sans-serif` -- UI labels, text. Loaded via Google Fonts CDN. Weights: 400, 500.
-*   **Code:** `'Menlo', 'Monaco', 'Consolas', monospace` -- data tables, code blocks, feature file paths.
-*   Tools MUST load Montserrat (weight 700, 900) and Inter (weight 400, 500) via CDN `<link>` tags.
+
+**Font Stacks & Custom Properties:**
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--font-display` | `'Montserrat', sans-serif` | Page titles, tool wordmarks |
+| `--font-body` | `'Inter', sans-serif` | Section headers, UI labels, body text |
+| (none) | `'Menlo', 'Monaco', 'Consolas', monospace` | Data tables, code blocks, feature file paths |
+
+Both `--font-display` and `--font-body` MUST be defined in both theme blocks (`:root` and `[data-theme='light']`).
+
+**CDN Loading:** Tools MUST load Montserrat (weights 800, 900) and Inter (weights 400, 500, 700) via Google Fonts CDN `<link>` tags.
+
+**Usage Patterns:**
+
+| Element | Font | Weight | Size | Letter-Spacing | Transform |
+|---------|------|--------|------|----------------|-----------|
+| Tool wordmark / page title | Montserrat | 900 (Black) | 32-40px | `-0.025em` (tight) | None |
+| Section headers | Inter | 700 (Bold) | 14px | `0.1em` (wide) | `uppercase` |
+| Captions / sub-labels | Inter | 700 (Bold) | 10px | `0.1em` (wide) | `uppercase` |
+| Body text | Inter | 400 (Regular) | 14px | normal | None |
+| UI labels / metadata | Inter | 500 (Medium) | 12-14px | normal | None |
+| Tag text | Inter | 700 (Bold) | 12px | normal | None |
+| Monospace data | Menlo stack | 400 | 12px | normal | None |
+
+The wide letter-spacing on uppercase section headers and captions is a defining characteristic of the Purlin visual language.
 
 ### 2.4 Theme Switching
 *   **Default:** Dark (Blueprint).

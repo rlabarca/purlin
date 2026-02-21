@@ -124,7 +124,7 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **Default Theme:** Dark (Blueprint).
 *   **Persistence:** Theme choice stored in `localStorage` key `purlin-theme`, value `light` or `dark`.
 *   **FOUC Prevention:** A synchronous `<script>` in `<head>` reads `localStorage` and sets the `data-theme` attribute on `<html>` before first paint. This prevents theme flash on the 5-second auto-refresh cycle.
-*   **Typography:** Headings use `'Montserrat', sans-serif` (loaded via Google Fonts CDN, weights 700/900). Body/UI text uses `'Inter', sans-serif` (loaded via CDN, weights 400/500). Data/code text retains monospace (`'Menlo', 'Monaco', 'Consolas', monospace`).
+*   **Typography:** Per `design_visual_standards.md` Section 2.3. Tool title uses `var(--font-display)` (Montserrat Black 900, tight tracking `-0.025em`). Section headers use `var(--font-body)` (Inter Bold 700, `uppercase`, wide tracking `0.1em`). Body/UI text uses `var(--font-body)` (Inter 400-500). Data/code retains monospace. CDN loads: Montserrat weights 800,900; Inter weights 400,500,700.
 
 ## 3. Scenarios
 
