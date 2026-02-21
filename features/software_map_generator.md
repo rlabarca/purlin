@@ -103,7 +103,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
     And the Label is rendered in larger, bolder text than the filename
     And no node labels overlap with neighboring node labels
     And long labels wrap within their node boxes without clipping
-    And the overall UI uses a dark color scheme
+    And the overall UI defaults to a dark color scheme with a theme toggle available
     And no legend overlay is displayed
     And the graph is zoomed to fit the viewable page area
     And a search input is visible for filtering nodes
@@ -172,7 +172,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder MUST 
 - **Observed Behavior:** Dashboard correctly defaults to dark (Blueprint) theme, with a toggle to switch to light (Architect) theme. Both themes work.
 - **Expected Behavior:** Scenario step "And the overall UI uses a dark color scheme" implies dark-only, which contradicts Section 2.5 that specifies both themes with a toggle.
 - **Action Required:** Architect — revise the scenario step to reflect dual-theme support (e.g., "And the overall UI defaults to a dark color scheme with a theme toggle available").
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
 
 ### [BUG] Software Map server requires multiple start.sh invocations to start (Discovered: 2026-02-21)
 - **Scenario:** Server Start/Stop Lifecycle
