@@ -75,7 +75,7 @@
             "provider": "claude",
             "model": "claude-sonnet-4-6",
             "effort": "high",
-            "bypass_permissions": false
+            "bypass_permissions": true
         },
         "builder": {
             "provider": "claude",
@@ -84,8 +84,8 @@
             "bypass_permissions": true
         },
         "qa": {
-            "provider": "gemini",
-            "model": "gemini-2.5-pro",
+            "provider": "claude",
+            "model": "claude-sonnet-4-6",
             "effort": "medium",
             "bypass_permissions": true
         }

@@ -20,3 +20,12 @@ When reviewing or modifying feature specs that touch tool behavior, verify the s
 *   **Generated artifact paths** MUST target `.agentic_devops/runtime/` or `.agentic_devops/cache/`, never inside `tools/`.
 *   **Config access patterns** MUST specify `AGENTIC_PROJECT_ROOT` as the primary detection mechanism, with climbing as fallback.
 *   Reference `features/submodule_bootstrap.md` Sections 2.10-2.14 as the canonical submodule safety contract.
+
+## Script Classification Mandate
+
+When designing features that require implementation scripts, you MUST classify each script before delegating to the Builder:
+
+*   **Consumer-facing → `tools/`**: The script is useful to or runnable by consumer projects. Submodule safety compliance is mandatory (see HOW_WE_WORK_OVERRIDES Submodule Compatibility Mandate). Reference must work when `tools/` is at `<project_root>/<submodule>/tools/`.
+*   **Purlin-dev-specific → `dev/`**: The script is for maintaining, building, or releasing the Purlin framework itself. No submodule safety mandate applies. Path references use `dev/` directly (no `tools_root` indirection).
+
+When updating a feature spec, the `Ownership` section and all scenario invocations MUST reflect the correct folder. Do NOT place Purlin-dev scripts in `tools/`.

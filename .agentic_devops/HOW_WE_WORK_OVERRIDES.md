@@ -12,3 +12,17 @@ This repository is consumed by other projects as a git submodule. Every code cha
 3.  **No bare `json.load()` on config files.** Always wrap in `try/except` with fallback defaults. See Section 2.13.
 4.  **No CWD-relative path assumptions.** Use project root detection, not `os.getcwd()` or bare relative paths. See Section 2.14.
 5.  **sed commands preserve JSON structure.** Any `sed` regex operating on JSON files MUST be tested for comma preservation and validated with `python3 json.load()`. See Section 2.10.
+
+## Tool Folder Separation Convention
+
+This repository contains two distinct categories of scripts, stored in two separate directories:
+
+*   **`tools/`** — Consumer-facing framework tooling. All scripts here MUST be submodule-safe (see Submodule Compatibility Mandate above). Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
+*   **`dev/`** — Purlin-repository maintenance scripts. Scripts here are specific to developing, building, and releasing the Purlin framework itself. They are NOT designed for consumer use and are NOT subject to the submodule safety mandate.
+
+**Classification rule:** Before adding a new script, ask: "Would a consumer project ever need to run this?" If yes → `tools/`. If no → `dev/`.
+
+**Examples of `dev/` scripts:**
+- Workflow animation generator (generates Purlin's own README GIF)
+- Framework documentation build scripts
+- Release artifact scripts that produce Purlin-specific outputs
