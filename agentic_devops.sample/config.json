@@ -22,8 +22,8 @@
         }
     ],
     "agents": {
-        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false },
-        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true },
-        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false }
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true },
+        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true }
     }
 }

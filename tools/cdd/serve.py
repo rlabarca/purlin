@@ -800,12 +800,14 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.agent-row{{display:grid;grid-template-columns:64px 140px 80px auto;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-row{{display:grid;grid-template-columns:64px 140px 80px 60px 110px 80px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-row:last-child{{border-bottom:none}}
 .agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-primary);text-transform:uppercase}}
 .agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer;width:100%}}
 .agent-sel:focus{{border-color:var(--purlin-accent)}}
 .agent-bypass-lbl{{font-size:11px;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
+.agent-ctrl-lbl{{font-size:11px;font-weight:500;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
+.agent-ctrl-lbl.disabled{{opacity:0.4;cursor:default}}
 #search-input{{
   background:var(--purlin-bg);border:1px solid var(--purlin-border);
   border-radius:3px;color:var(--purlin-muted);padding:3px 8px;
@@ -1988,6 +1990,12 @@ function applyPendingWrites() {{
     }} else if (field === 'bypass_permissions') {{
       var chk = document.getElementById('agent-bypass-' + role);
       if (chk) chk.checked = val;
+    }} else if (field === 'startup_sequence') {{
+      var chk = document.getElementById('agent-startup-' + role);
+      if (chk) chk.checked = val;
+    }} else if (field === 'recommend_next_actions') {{
+      var chk = document.getElementById('agent-recommend-' + role);
+      if (chk) chk.checked = val;
     }}
   }});
 }}
@@ -2046,6 +2054,32 @@ function renderModelsRows(cfg) {{
       pendingWrites.set(role + '.bypass_permissions', bypassChk.checked);
       scheduleModelSave();
     }});
+    var startupChk = document.getElementById('agent-startup-' + role);
+    var recommendChk = document.getElementById('agent-recommend-' + role);
+    if (startupChk) startupChk.addEventListener('change', function() {{
+      pendingWrites.set(role + '.startup_sequence', startupChk.checked);
+      var recLbl = document.getElementById('agent-recommend-lbl-' + role);
+      if (!startupChk.checked) {{
+        if (recommendChk && recommendChk.checked) {{
+          recommendChk.dataset.prevState = 'true';
+        }}
+        if (recommendChk) {{ recommendChk.checked = false; recommendChk.disabled = true; }}
+        if (recLbl) recLbl.classList.add('disabled');
+        pendingWrites.set(role + '.recommend_next_actions', false);
+      }} else {{
+        if (recommendChk) {{
+          recommendChk.disabled = false;
+          if (recommendChk.dataset.prevState === 'true') recommendChk.checked = true;
+        }}
+        if (recLbl) recLbl.classList.remove('disabled');
+        pendingWrites.set(role + '.recommend_next_actions', recommendChk ? recommendChk.checked : true);
+      }}
+      scheduleModelSave();
+    }});
+    if (recommendChk) recommendChk.addEventListener('change', function() {{
+      pendingWrites.set(role + '.recommend_next_actions', recommendChk.checked);
+      scheduleModelSave();
+    }});
     syncCapabilityControls(role);
   }});
 }}
@@ -2065,6 +2099,23 @@ function diffUpdateModelRows(cfg) {{
     if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
     var yoloMode = acfg.bypass_permissions === true;
     if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== yoloMode) bypassChk.checked = yoloMode;
+    var startupChk = document.getElementById('agent-startup-' + role);
+    var recommendChk = document.getElementById('agent-recommend-' + role);
+    var recLbl = document.getElementById('agent-recommend-lbl-' + role);
+    var startupVal = acfg.startup_sequence !== false;
+    var recommendVal = acfg.recommend_next_actions !== false;
+    if (startupChk && !pendingWrites.has(role + '.startup_sequence') && startupChk.checked !== startupVal) startupChk.checked = startupVal;
+    if (recommendChk && !pendingWrites.has(role + '.recommend_next_actions')) {{
+      var shouldDisable = !startupVal;
+      recommendChk.disabled = shouldDisable;
+      if (shouldDisable) {{
+        recommendChk.checked = false;
+        if (recLbl) recLbl.classList.add('disabled');
+      }} else {{
+        if (recommendChk.checked !== recommendVal) recommendChk.checked = recommendVal;
+        if (recLbl) recLbl.classList.remove('disabled');
+      }}
+    }}
     syncCapabilityControls(role);
   }});
 }}
@@ -2073,6 +2124,9 @@ function buildAgentRowHtml(role, agentCfg) {{
   var currentModel = agentCfg.model || '';
   var currentEffort = agentCfg.effort || 'high';
   var yoloMode = agentCfg.bypass_permissions === true;
+  var startupSeq = agentCfg.startup_sequence !== false;
+  var suggestNext = agentCfg.recommend_next_actions !== false;
+  var suggestDisabled = !startupSeq;
   var modelsList = (modelsConfig && modelsConfig.models) || [];
   var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
@@ -2087,6 +2141,12 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<select id="agent-effort-' + role + '" class="agent-sel" style="visibility:hidden">' + effortOptions + '</select>' +
     '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
       '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (yoloMode ? ' checked' : '') + '> YOLO' +
+    '</label>' +
+    '<label class="agent-ctrl-lbl" id="agent-startup-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-startup-' + role + '" style="accent-color:var(--purlin-accent)"' + (startupSeq ? ' checked' : '') + '> Startup Sequence' +
+    '</label>' +
+    '<label class="agent-ctrl-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '> Suggest Next' +
     '</label>' +
   '</div>';
 }}
@@ -2111,8 +2171,12 @@ function syncCapabilityControls(role) {{
   var caps = (modelObj || {{}}).capabilities || {{}};
   var effSel = document.getElementById('agent-effort-' + role);
   var bypassLbl = document.getElementById('agent-bypass-lbl-' + role);
+  var startupLbl = document.getElementById('agent-startup-lbl-' + role);
+  var recommendLbl = document.getElementById('agent-recommend-lbl-' + role);
   if (effSel) effSel.style.visibility = caps.effort ? 'visible' : 'hidden';
   if (bypassLbl) bypassLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
+  if (startupLbl) startupLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
+  if (recommendLbl) recommendLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
 }}
 
 function updateModelsBadge(cfg) {{
@@ -2149,11 +2213,15 @@ function saveModelConfig() {{
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
+    var startupChk = document.getElementById('agent-startup-' + role);
+    var recommendChk = document.getElementById('agent-recommend-' + role);
     if (!modSel) return;
     agentsPayload[role] = {{
       model: modSel.value,
       effort: effSel ? effSel.value : 'high',
-      bypass_permissions: bypassChk ? bypassChk.checked : false
+      bypass_permissions: bypassChk ? bypassChk.checked : false,
+      startup_sequence: startupChk ? startupChk.checked : true,
+      recommend_next_actions: recommendChk ? recommendChk.checked : true
     }};
   }});
   fetch('/config/models', {{
@@ -2493,6 +2561,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             model = cfg.get('model', '')
             if model and model not in all_model_ids:
                 errors.append(f'{role}: unknown model "{model}"')
+            # Validate startup controls
+            for bool_field in ('startup_sequence', 'recommend_next_actions'):
+                if bool_field in cfg and not isinstance(cfg[bool_field], bool):
+                    errors.append(f'{role}: {bool_field} must be a boolean')
+            ss = cfg.get('startup_sequence', True)
+            rna = cfg.get('recommend_next_actions', True)
+            if ss is False and rna is True:
+                errors.append(f'{role}: startup_sequence=false with recommend_next_actions=true is invalid')
 
         if errors:
             self._send_json(400, {'error': '; '.join(errors)})
