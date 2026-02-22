@@ -24,9 +24,9 @@
         {
             "id": "purlin.run_tool_tests",
             "friendly_name": "Run Automated Tool Tests",
-            "description": "Runs the automated test suite for Purlin's DevOps tooling and verifies all tests pass.",
+            "description": "Runs the Purlin DevOps tool test suite to verify that all bundled framework tools are functioning correctly in this environment.",
             "code": null,
-            "agent_instructions": "Run the automated tool test suite. The exact command depends on the project's test runner configuration. Confirm all tests pass before proceeding. If any test fails, halt the release and report the failure."
+            "agent_instructions": "Resolve `tools_root` from `.agentic_devops/config.json` (default: `tools`). Discover all test scripts matching `<tools_root>/*/test_*.py` and run each with `python3`. Confirm all tests pass before proceeding. If any test fails, halt the release and report which test(s) failed."
         },
         {
             "id": "purlin.sync_evolution",
