@@ -1600,12 +1600,40 @@ function stopMapRefresh() {{
 // ============================
 var agentsConfig = null;
 var agentsSaveTimer = null;
-var pendingWrites = new Set();
+var pendingWrites = new Map();
+
+function applyPendingWrites() {{
+  if (pendingWrites.size === 0) return;
+  var providers = (agentsConfig && agentsConfig.llm_providers) || {{}};
+  pendingWrites.forEach(function(val, key) {{
+    var dot = key.indexOf('.');
+    var role = key.substring(0, dot);
+    var field = key.substring(dot + 1);
+    if (field === 'provider') {{
+      var sel = document.getElementById('agent-provider-' + role);
+      if (sel) {{
+        sel.value = val;
+        populateModelDropdown(role, val, providers, pendingWrites.get(role + '.model') || '');
+        syncCapabilityControls(role, providers);
+      }}
+    }} else if (field === 'model') {{
+      var sel = document.getElementById('agent-model-' + role);
+      if (sel) {{ sel.value = val; syncCapabilityControls(role, providers); }}
+    }} else if (field === 'effort') {{
+      var sel = document.getElementById('agent-effort-' + role);
+      if (sel) sel.value = val;
+    }} else if (field === 'bypass_permissions') {{
+      var chk = document.getElementById('agent-bypass-' + role);
+      if (chk) chk.checked = val;
+    }}
+  }});
+}}
 
 function initAgentsSection() {{
   // Synchronous restore from cache after innerHTML replacement clears the DOM
   if (agentsConfig && !document.getElementById('agent-provider-architect')) {{
     renderAgentsRows(agentsConfig);
+    applyPendingWrites();
     updateAgentsBadge(agentsConfig);
   }}
   // Async fetch for config updates
@@ -1619,6 +1647,7 @@ function initAgentsSection() {{
       agentsConfig = cfg;
       if (!domExists) {{
         renderAgentsRows(cfg);
+        applyPendingWrites();
       }} else if (configChanged) {{
         diffUpdateAgentRows(cfg);
       }}
@@ -1644,23 +1673,24 @@ function renderAgentsRows(cfg) {{
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
     if (provSel) provSel.addEventListener('change', function() {{
-      pendingWrites.add(role + '.provider');
-      pendingWrites.add(role + '.model');
+      pendingWrites.set(role + '.provider', provSel.value);
       populateModelDropdown(role, provSel.value, providers, '');
+      var ms = document.getElementById('agent-model-' + role);
+      pendingWrites.set(role + '.model', ms ? ms.value : '');
       syncCapabilityControls(role, providers);
       scheduleAgentSave();
     }});
     if (modSel) modSel.addEventListener('change', function() {{
-      pendingWrites.add(role + '.model');
+      pendingWrites.set(role + '.model', modSel.value);
       syncCapabilityControls(role, providers);
       scheduleAgentSave();
     }});
     if (effSel) effSel.addEventListener('change', function() {{
-      pendingWrites.add(role + '.effort');
+      pendingWrites.set(role + '.effort', effSel.value);
       scheduleAgentSave();
     }});
     if (bypassChk) bypassChk.addEventListener('change', function() {{
-      pendingWrites.add(role + '.bypass_permissions');
+      pendingWrites.set(role + '.bypass_permissions', bypassChk.checked);
       scheduleAgentSave();
     }});
     syncCapabilityControls(role, providers);

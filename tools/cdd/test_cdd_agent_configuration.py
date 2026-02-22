@@ -370,11 +370,11 @@ class TestPendingWriteLock(unittest.TestCase):
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_pending_writes_set_exists(self, mock_run, mock_status):
+    def test_pending_writes_map_exists(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('var pendingWrites = new Set()', html)
+        self.assertIn('var pendingWrites = new Map()', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -399,13 +399,27 @@ class TestPendingWriteLock(unittest.TestCase):
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_event_handlers_add_to_pending_writes(self, mock_run, mock_status):
+    def test_event_handlers_store_values_in_pending_writes(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # Event handlers should add identifiers to pendingWrites
-        self.assertIn("pendingWrites.add(role + '.model')", html)
-        self.assertIn("pendingWrites.add(role + '.bypass_permissions')", html)
+        # Event handlers should store values via Map.set()
+        self.assertIn("pendingWrites.set(role + '.model',", html)
+        self.assertIn("pendingWrites.set(role + '.bypass_permissions',", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_apply_pending_writes_restores_after_render(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # applyPendingWrites must exist and be called after renderAgentsRows
+        self.assertIn('function applyPendingWrites()', html)
+        # Must be called in both sync and async render paths of initAgentsSection
+        import re
+        calls = [m.start() for m in re.finditer(r'applyPendingWrites\(\)', html)]
+        # At least 3: function def + sync path + async path
+        self.assertGreaterEqual(len(calls), 3)
 
 
 class TestSectionVisualSeparation(unittest.TestCase):
