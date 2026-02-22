@@ -633,10 +633,11 @@ def generate_html():
         sid_escaped = s["id"].replace("'", "\\'")
         fname_escaped = s["friendly_name"].replace("'", "\\'")
         rc_rows_html += (
-            f'<tr class="{disabled_cls.strip()}" data-step-id="{s["id"]}" draggable="true" '
-            f'ondragstart="rcDragStart(event)" ondragover="rcDragOver(event)" '
-            f'ondragenter="rcDragEnter(event)" ondrop="rcDrop(event)" ondragend="rcDragEnd(event)">'
-            f'<td style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center">\u28FF</td>'
+            f'<tr class="{disabled_cls.strip()}" data-step-id="{s["id"]}" '
+            f'ondragover="rcDragOver(event)" '
+            f'ondragenter="rcDragEnter(event)" ondrop="rcDrop(event)">'
+            f'<td draggable="true" ondragstart="rcDragStart(event)" ondragend="rcDragEnd(event)" '
+            f'style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center;user-select:none">\u28FF</td>'
             f'<td style="width:32px;text-align:right;font-family:monospace;'
             f'color:var(--purlin-muted)">{s["order"]}</td>'
             f'<td style="width:60px">{source_badge}</td>'
@@ -830,8 +831,8 @@ h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purl
 .badge-cell{{text-align:center;width:70px}}
 .feature-link{{color:var(--purlin-accent);cursor:pointer;text-decoration:none}}
 .feature-link:hover{{text-decoration:underline}}
-tr.rc-disabled td{{color:var(--purlin-dim) !important}}
-tr.rc-drag-over{{border-top:2px solid var(--purlin-accent)}}
+tr.rc-disabled td,tr.rc-disabled td *{{color:var(--purlin-dim) !important}}
+tr.rc-drag-over td{{border-top:2px solid var(--purlin-accent)}}
 .ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px}}
 .clean{{color:var(--purlin-status-good)}}
 .wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
