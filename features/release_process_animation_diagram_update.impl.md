@@ -63,6 +63,14 @@ Edge indices are 0-based and correspond to the order of edge declarations in the
 
 Tests live in `tests/release_process_animation_diagram_update/test_workflow_animation.py` (the Critic's primary scan location). The test file imports from `dev/generate_workflow_animation.py` via path manipulation. The script itself lives in `dev/` per the Purlin-dev convention.
 
+## Hub-Spoke Layout Fix (BUG resolved 2026-02-22)
+
+The original `graph TB` layout with all node declarations at the same level caused Mermaid's Dagre engine to flatten all nodes horizontally. Fixed by wrapping ARCH, BLDR, QA in an invisible subgraph with `direction LR` to force horizontal arrangement, with CRITIC and FEAT below as separate nodes. The subgraph uses `style agents fill:transparent,stroke:transparent,color:transparent` and `clusterBkg: 'transparent'` in the init block to be invisible. This produces a three-tier layout: agents (top) → Critic (center hub) → features (bottom).
+
+## Caption Panel Fix (BUG resolved 2026-02-22)
+
+The original compositing used `-append -background '#0B131A' -flatten` which didn't reliably handle the diagram PNG dimensions. Two issues: (1) mmdc may output at retina scale (2x DPI), producing larger PNGs than expected; (2) `-flatten` behavior with `-append` is IM-version-dependent. Fixed by: (a) adding `--scale 1` to mmdc to prevent DPI scaling; (b) adding an explicit ImageMagick resize step (`-resize 800x460!`) after mmdc rendering to guarantee exact diagram dimensions; (c) using `-alpha remove -alpha off` instead of `-flatten` for robust transparency handling; (d) adding a post-composite resize+alpha-remove step to guarantee the final 800x500 frame dimensions.
+
 ## Traceability Overrides
 
 - traceability_override: "Generator produces GIF on success" -> test_generator_produces_gif_on_success

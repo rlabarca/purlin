@@ -52,13 +52,21 @@ CLASS_COLORS = {
 }
 
 # --- Mermaid base diagram (hub-spoke, CRITIC at center) ---
+# Uses an invisible subgraph to force three-tier layout:
+#   Row 1 (top): ARCH, BLDR, QA — arranged horizontally via direction LR
+#   Row 2 (center): CRITIC — the hub
+#   Row 3 (bottom): FEAT — the feature directory
+# The subgraph is styled transparent to avoid visible borders.
 MERMAID_BASE = """\
-%%{init: {'theme': 'dark', 'themeVariables': {'background': '#0B131A', 'primaryColor': '#162531', 'primaryTextColor': '#E2E8F0', 'edgeLabelBackground': '#162531', 'clusterBkg': '#162531'}}}%%
-graph TB
+%%{init: {'theme': 'dark', 'themeVariables': {'background': '#0B131A', 'primaryColor': '#162531', 'primaryTextColor': '#E2E8F0', 'edgeLabelBackground': '#162531', 'clusterBkg': 'transparent', 'clusterBorder': 'transparent'}}}%%
+graph TD
+    subgraph agents[" "]
+        direction LR
+        ARCH["Architect"]
+        BLDR["Builder"]
+        QA["QA Agent"]
+    end
     CRITIC["Critic / CDD"]
-    ARCH["Architect"]
-    BLDR["Builder"]
-    QA["QA Agent"]
     FEAT["features/"]
     ARCH -.-> CRITIC
     BLDR -.-> CRITIC
@@ -67,6 +75,7 @@ graph TB
     ARCH -.-> FEAT
     BLDR -.-> FEAT
     QA -.-> FEAT
+    style agents fill:transparent,stroke:transparent,color:transparent
 """
 
 # Edge index mapping (0-based, matches declaration order above)
@@ -333,19 +342,36 @@ def build_frame_mermaid(frame):
 
 
 def render_frame_png(mermaid_str, output_path, tmpdir):
-    """Render a Mermaid diagram to PNG via mmdc."""
+    """Render a Mermaid diagram to PNG via mmdc, then resize to exact dimensions."""
     mmd_path = os.path.join(tmpdir, 'frame.mmd')
     with open(mmd_path, 'w') as f:
         f.write(mermaid_str)
 
+    raw_path = output_path + '.raw.png'
     result = subprocess.run(
-        ['mmdc', '-i', mmd_path, '-o', output_path,
+        ['mmdc', '-i', mmd_path, '-o', raw_path,
          '-w', str(DIAGRAM_WIDTH), '-H', str(DIAGRAM_HEIGHT),
-         '-b', 'transparent'],
+         '-b', 'transparent', '--scale', '1'],
         capture_output=True, text=True, timeout=60,
     )
     if result.returncode != 0:
         raise RuntimeError(f"mmdc failed: {result.stderr}")
+
+    # Resize to exact canvas dimensions (mmdc may produce different sizes
+    # due to DPI scaling or diagram content bounds)
+    cmd = _convert_cmd()
+    subprocess.run(
+        cmd + [
+            raw_path,
+            '-resize', f'{DIAGRAM_WIDTH}x{DIAGRAM_HEIGHT}!',
+            '-background', '#0B131A',
+            '-alpha', 'remove',
+            '-alpha', 'off',
+            output_path,
+        ],
+        capture_output=True, text=True, timeout=10,
+        check=True,
+    )
 
 
 def create_caption_strip(text, output_path, font_name):
@@ -368,14 +394,26 @@ def create_caption_strip(text, output_path, font_name):
 
 
 def composite_frame(diagram_png, caption_png, output_path):
-    """Composite diagram + caption into a single 800x500 frame."""
+    """Composite diagram (800x460) + caption (800x40) into a single 800x500 frame."""
     cmd = _convert_cmd()
+    canvas_h = DIAGRAM_HEIGHT + CAPTION_HEIGHT
     subprocess.run(
         cmd + [
             diagram_png, caption_png,
             '-append',
+            output_path,
+        ],
+        capture_output=True, text=True, timeout=10,
+        check=True,
+    )
+    # Verify final dimensions and fill any remaining transparency
+    subprocess.run(
+        cmd + [
+            output_path,
+            '-resize', f'{DIAGRAM_WIDTH}x{canvas_h}!',
             '-background', '#0B131A',
-            '-flatten',
+            '-alpha', 'remove',
+            '-alpha', 'off',
             output_path,
         ],
         capture_output=True, text=True, timeout=10,
