@@ -217,10 +217,73 @@ else
     log_pass "Gemini launcher does not pass --no-gitignore (unsupported in Gemini CLI v0.29+)"
 fi
 
-if echo "$CAPTURED" | grep -qE '(^| )-p '; then
-    log_fail "Gemini launcher must not pass -p flag (captured: $CAPTURED)"
+if echo "$CAPTURED" | grep -q 'ARGS=chat '; then
+    log_pass "Gemini launcher uses chat subcommand"
 else
-    log_pass "Gemini launcher does not pass -p flag (non-interactive mode prohibited)"
+    log_fail "Gemini launcher must use chat subcommand (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '-p Begin QA verification session.'; then
+    log_pass "Gemini launcher passes -p with QA session message"
+else
+    log_fail "Gemini launcher must pass -p with session message (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Gemini Launcher Uses chat Subcommand with Role-Specific Prompt ---
+echo ""
+echo "[Scenario] Gemini Launcher Uses chat Subcommand with Role-Specific Prompt"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "provider": "gemini",
+            "model": "gemini-2.5-pro",
+            "effort": "",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+# Mock gemini that captures its args
+cat > "$MOCK_DIR/gemini" << MOCK_EOF
+#!/bin/bash
+echo "ARGS=\$@" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/gemini"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q 'ARGS=chat '; then
+    log_pass "Gemini Architect launcher uses chat subcommand"
+else
+    log_fail "Gemini Architect launcher must use chat subcommand (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '-p Begin Architect session.'; then
+    log_pass "Gemini Architect launcher passes -p with Architect session message"
+else
+    log_fail "Gemini Architect launcher must pass -p with session message (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '-m gemini-2.5-pro'; then
+    log_pass "Gemini Architect launcher passes -m gemini-2.5-pro"
+else
+    log_fail "Gemini Architect launcher did not pass -m flag (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--yolo'; then
+    log_fail "Gemini Architect launcher must not pass --yolo when bypass=false (captured: $CAPTURED)"
+else
+    log_pass "Gemini Architect launcher omits --yolo when bypass_permissions=false"
 fi
 
 teardown_launcher_sandbox
@@ -266,6 +329,18 @@ if echo "$CAPTURED" | grep -qv -- '--yolo'; then
     log_pass "Gemini launcher omits --yolo when bypass_permissions=false"
 else
     log_fail "Gemini launcher should not pass --yolo when bypass=false (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q 'ARGS=chat '; then
+    log_pass "Gemini launcher uses chat subcommand (effort scenario)"
+else
+    log_fail "Gemini launcher must use chat subcommand (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '-p Begin Builder session.'; then
+    log_pass "Gemini launcher passes -p with Builder session message (effort scenario)"
+else
+    log_fail "Gemini launcher must pass -p with session message (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox
