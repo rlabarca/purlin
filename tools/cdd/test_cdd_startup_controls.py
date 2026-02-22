@@ -1,7 +1,7 @@
 """Tests for CDD Startup Controls (cdd_startup_controls.md).
 
 Tests launcher validation of startup_sequence / recommend_next_actions flags,
-API validation in POST /config/models, and config schema defaults.
+API validation in POST /config/agents, and config schema defaults.
 Produces tests/cdd_startup_controls/tests.json.
 """
 import io
@@ -276,7 +276,7 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _make_handler(self, body_dict):
-        """Create a mock handler that calls _handle_config_models."""
+        """Create a mock handler that calls _handle_config_agents."""
         body_bytes = json.dumps(body_dict).encode('utf-8')
         handler = MagicMock()
         handler.headers = {'Content-Length': str(len(body_bytes))}
@@ -285,7 +285,7 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
 
         # Patch CONFIG_PATH for this test
         with patch.object(serve, 'CONFIG_PATH', self.config_path):
-            serve.Handler._handle_config_models(handler)
+            serve.Handler._handle_config_agents(handler)
 
         return handler
 
@@ -382,7 +382,7 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
         handler._send_json = MagicMock()
 
         with patch.object(serve, 'CONFIG_PATH', self.config_path):
-            serve.Handler._handle_config_models(handler)
+            serve.Handler._handle_config_agents(handler)
 
         return handler
 
@@ -455,8 +455,9 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
         # Check for startup control elements in the generated HTML
         self.assertIn('agent-startup-', html)
         self.assertIn('agent-recommend-', html)
-        self.assertIn('Startup Sequence', html)
-        self.assertIn('Suggest Next', html)
+        # Column headers use two-line text (no inline labels in agent rows)
+        self.assertIn('Startup', html)
+        self.assertIn('Suggest', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -464,7 +465,7 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('64px 140px 80px 60px 110px 80px', html)
+        self.assertIn('64px 140px 80px 60px 60px 60px', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -472,8 +473,8 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('agent-ctrl-lbl', html)
-        self.assertIn('.agent-ctrl-lbl.disabled', html)
+        self.assertIn('agent-chk-lbl', html)
+        self.assertIn('.agent-chk-lbl.disabled', html)
 
 
 class TestConfigSchemaDefaults(unittest.TestCase):
