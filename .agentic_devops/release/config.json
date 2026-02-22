@@ -29,10 +29,6 @@
       "enabled": true
     },
     {
-      "id": "workflow_animation",
-      "enabled": false
-    },
-    {
       "id": "purlin.push_to_remote",
       "enabled": true
     }
