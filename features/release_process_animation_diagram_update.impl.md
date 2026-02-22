@@ -71,6 +71,11 @@ The original `graph TB` layout with all node declarations at the same level caus
 
 The original compositing used `-append -background '#0B131A' -flatten` which didn't reliably handle the diagram PNG dimensions. Two issues: (1) mmdc may output at retina scale (2x DPI), producing larger PNGs than expected; (2) `-flatten` behavior with `-append` is IM-version-dependent. Fixed by: (a) adding `--scale 1` to mmdc to prevent DPI scaling; (b) adding an explicit ImageMagick resize step (`-resize 800x460!`) after mmdc rendering to guarantee exact diagram dimensions; (c) using `-alpha remove -alpha off` instead of `-flatten` for robust transparency handling; (d) adding a post-composite resize+alpha-remove step to guarantee the final 800x500 frame dimensions.
 
+## Pruned Discoveries
+
+- **Hub-spoke layout (BUG, resolved 2026-02-22):** Mermaid's Dagre engine flattened nodes horizontally; fixed by using an invisible subgraph to arrange agents in top tier with Critic/CDD and features/ below. See "Hub-Spoke Layout Fix" above.
+- **Caption panel missing (BUG, resolved 2026-02-22):** mmdc retina scaling and ImageMagick `-flatten` behavior caused caption compositing to fail; fixed by pinning `--scale 1`, explicit resize, and `-alpha remove`. See "Caption Panel Fix" above.
+
 ## Traceability Overrides
 
 - traceability_override: "Generator produces GIF on success" -> test_generator_produces_gif_on_success

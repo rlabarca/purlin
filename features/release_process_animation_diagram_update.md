@@ -215,16 +215,16 @@ See [release_process_animation_diagram_update.impl.md](release_process_animation
 
 ## User Testing Discoveries
 
-### [BUG] Agent nodes not arranged in hub-spoke layout around Critic/CDD (Discovered: 2026-02-22)
+### [BUG] Agent nodes not in triangular hub-spoke arrangement (Discovered: 2026-02-22)
 - **Scenario:** Animation is visually correct and coherent
-- **Observed Behavior:** All agent nodes (Architect, Builder, QA Agent, features/) are lined up horizontally at the top of the canvas with curvy arrows connecting them. The Critic/CDD node is not visually centered as a hub.
-- **Expected Behavior:** Per Section 2.5, Critic/CDD is the hub at center with the four agent/feature nodes arranged around it in a spoke pattern. The user expected a triangular or radial arrangement around the hub.
-- **Action Required:** Builder — fix the Mermaid layout or post-processing to produce a true hub-spoke arrangement. Architect may also want to add a visual diagram reference to Section 2.5 to make the intended layout unambiguous.
-- **Status:** RESOLVED
+- **Observed Behavior:** All agent boxes (Architect, Builder, QA Agent) are still arranged along the top of the canvas instead of forming the 3 corners of a triangle around the Critic/CDD and features/ nodes in the center.
+- **Expected Behavior:** Per checklist item 3, agents form a triangular arrangement around the central hub (Critic/CDD and features/). Critic/CDD is the hub at center; agents occupy the 3 triangle corners.
+- **Action Required:** Builder — revise the layout in `dev/generate_workflow_animation.py` so the 3 agent nodes form triangle corners with Critic/CDD and features/ at center.
+- **Status:** OPEN
 
-### [BUG] Caption panel missing from all frames (Discovered: 2026-02-22)
+### [DISCOVERY] Animation frame delay too short to read (Discovered: 2026-02-22)
 - **Scenario:** Animation is visually correct and coherent
-- **Observed Behavior:** No caption text block appears at the bottom of any frame. The per-frame description text (e.g., "Purlin: Continuous Design-Driven Development") is absent.
-- **Expected Behavior:** Per Section 2.6, each frame must include an 800×40px caption panel composited below the 800×460px diagram area, displaying the per-frame caption text centered in `#E2E8F0` on a `#162531` background.
-- **Action Required:** Builder — implement the caption panel compositing step in `dev/generate_workflow_animation.py`.
-- **Status:** RESOLVED
+- **Observed Behavior:** Frames advance too quickly for the viewer to read the caption text or absorb the diagram state changes. The animation needs each frame delay doubled.
+- **Expected Behavior:** No checklist item specifies frame duration. Each frame should display long enough for a viewer to read the caption and observe the active nodes/arrows.
+- **Action Required:** Architect — add a visual spec checklist item for minimum frame display duration. Builder — double the per-frame delay in `dev/generate_workflow_animation.py`.
+- **Status:** OPEN
