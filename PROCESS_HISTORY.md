@@ -2,6 +2,22 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Formalized Release Process Checklist
+
+- **Scope:** Spec additions and instruction refinement only (Builder implements tooling and dashboard changes).
+- **Problem:** The release protocol lived exclusively in `instructions/ARCHITECT_BASE.md` Section 8 as duplicated prose. It had no machine-readable structure, no UI surface, no way for consumer projects to customize steps, and no separation between the push-to-remote step and the rest of the audit.
+- **Solution:**
+    - New anchor node `features/policy_release.md` establishes governance rules: `purlin.` namespace reservation for global step IDs, immutability of global steps in consumer projects, local config as single source of truth for ordering and enable/disable state, auto-discovery safety (new global steps appended automatically), and toggleability of `purlin.push_to_remote`.
+    - New feature `features/release_checklist_core.md` defines the step schema (id, friendly_name, description, code, agent_instructions), storage paths for `global_steps.json` and `local_steps.json`, local config format, the 5-step auto-discovery resolution algorithm, local step ID validation, and the 9 initial global steps with full definitions.
+    - New feature `features/release_checklist_ui.md` specifies the CDD Dashboard "RELEASE CHECKLIST" section: collapsed/expanded states, drag-to-reorder (HTML5 DnD or existing library), enable/disable checkbox per step, Step Detail Modal, section state persistence via `localStorage`, and two new API endpoints (`GET /release-checklist`, `POST /release-checklist/config`).
+    - `instructions/ARCHITECT_BASE.md` Section 8 replaced: prose audit checklist removed and replaced with a reference to the new release checklist feature specs.
+- **Builder delegation:** Builder must implement `tools/release/global_steps.json` (9 initial step definitions), `tools/cdd/serve.py` additions for the two new endpoints, and CDD Dashboard frontend additions for the new section, drag-reorder, and modal.
+- **Changes:**
+    - **features/policy_release.md:** New anchor node.
+    - **features/release_checklist_core.md:** New feature spec.
+    - **features/release_checklist_ui.md:** New feature spec.
+    - **instructions/ARCHITECT_BASE.md:** Section 8 updated to reference the release checklist system.
+
 ## [2026-02-21] Auto-Critic Integration in status.sh
 
 - **Scope:** Spec and instruction changes only (Builder implements the script change).

@@ -99,11 +99,13 @@ We **DO NOT** create v2/v3 feature files.
 5.  **Milestone Mutation:** For release files, rename the existing file to the new version and update objectives. Preserve previous tests as regression baselines.
 
 ## 8. Release Protocol
-When a release is prepared, execute this audit:
-1.  **Verification:**
-    - Verify PASS status from tool tests.
-    - **Zero-Queue Mandate:** Verify that ALL features are fully satisfied by running `tools/cdd/status.sh` and confirming that every entry in the `features` array has `architect: "DONE"`, `builder: "DONE"`, and `qa` is either `"CLEAN"` or `"N/A"`.
-2.  **Dependency Integrity:** Verify the dependency graph is acyclic by reading `.agentic_devops/cache/dependency_graph.json`. Regenerate if stale.
-3.  **Evolution Synchronization:** Update `PROCESS_HISTORY.md` and sync the "Agentic Evolution" table in the project's `README.md`.
-4.  **Instruction Audit:** Verify that instructions are in sync with feature specs.
-5.  **Git Delivery:** Propose a clear, concise commit message following completion of all steps.
+
+The release process is governed by the Release Checklist system defined in `features/policy_release.md`, `features/release_checklist_core.md`, and `features/release_checklist_ui.md`. The canonical, ordered list of release steps lives in `tools/release/global_steps.json` (global steps) and `.agentic_devops/release/config.json` (project ordering and enable/disable state).
+
+To execute a release, work through the steps in the CDD Dashboard's RELEASE CHECKLIST section (or consult `.agentic_devops/release/config.json` for the agent-facing step sequence). Each step's `agent_instructions` field provides the specific guidance for that step.
+
+**Key invariants (see `features/policy_release.md` for full details):**
+*   The Zero-Queue Mandate: every feature MUST have `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"` before release.
+*   The dependency graph MUST be acyclic. Verify via `.agentic_devops/cache/dependency_graph.json`.
+*   The active release spec MUST be marked `[Complete]` before concluding the cycle.
+*   The `purlin.push_to_remote` step is enabled by default but MAY be disabled for air-gapped projects.

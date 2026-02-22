@@ -1,0 +1,198 @@
+# Feature: Release Checklist — Dashboard Section
+
+> Label: "Release Checklist: Dashboard Section"
+> Category: "CDD Dashboard"
+> Prerequisite: features/cdd_status_monitor.md
+> Prerequisite: features/design_visual_standards.md
+> Prerequisite: features/release_checklist_core.md
+
+## 1. Overview
+
+This feature defines the "RELEASE CHECKLIST" section in the CDD Dashboard. It surfaces the fully resolved, ordered release step list to human users as a collapsible section with drag-to-reorder, enable/disable toggles, and a step detail modal. Changes to ordering and enabled state are persisted back to `.agentic_devops/release/config.json` via a POST API.
+
+## 2. Requirements
+
+### 2.1 Section Placement
+
+The Release Checklist section is the last section in the CDD Dashboard Status view, positioned below WORKSPACE. It uses the same collapsible section pattern as ACTIVE, COMPLETE, and WORKSPACE: a clickable header row that toggles between collapsed and expanded states.
+
+### 2.2 Collapsed State
+
+*   **Heading:** "RELEASE CHECKLIST" using the standard section heading typography (Inter Bold 14px uppercase, letter-spacing 0.1em, `--purlin-text`).
+*   **Chevron:** Right-pointing when collapsed; down-pointing when expanded. Consistent with other collapsible sections.
+*   **Inline badge:** A single badge showing two counts: `N enabled · M disabled`. The enabled count is rendered using `--purlin-status-good`; the separator (` · `) and disabled count use `--purlin-dim`.
+*   **Section separator:** A 1px `--purlin-border` line above the section, consistent with other section dividers.
+
+### 2.3 Expanded State
+
+When expanded, the section renders an ordered list of steps. Each row contains the following columns, in order from left to right:
+
+*   **Drag handle** (leftmost, fixed width): The character `⠿` (Unicode U+28FF, Braille Pattern Dots 1-8). Color: `--purlin-dim`. Cursor changes to `grab` on hover. The drag handle is the only interactive element that initiates drag-to-reorder.
+*   **Step number** (fixed width, right-aligned): The 1-based position of the step in the current ordered list. Rendered in monospace font, `--purlin-muted` color.
+*   **Global/Local badge** (narrow, optional): A tag showing `GLOBAL` or `LOCAL`. Uses `--purlin-tag-fill` as background color and `--purlin-tag-outline` as border, Inter Bold 10px uppercase. Only shown when the step's `source` field is present.
+*   **Friendly name** (flex-grow): The step's `friendly_name`. Clickable. Underline appears on hover; color changes to `--purlin-accent` on hover. Clicking opens the Step Detail Modal (Section 2.6). When the step is disabled, the friendly name is dimmed to `--purlin-dim`.
+*   **Enable/disable checkbox** (rightmost, fixed width): A checkbox representing the step's `enabled` state. When unchecked, the entire row (handle, number, badge, name) is dimmed to `--purlin-dim`.
+
+### 2.4 Drag-to-Reorder
+
+Drag-and-drop reordering is supported using the HTML5 Drag and Drop API or a lightweight JS library consistent with the dashboard's existing implementation stack.
+
+Behavior when a user drops a step at a new position:
+1.  The UI optimistically updates the displayed order immediately.
+2.  A `POST /release-checklist/config` request is sent with the full new ordered list (all step IDs with their current enabled states).
+3.  On a successful response, the in-memory config is updated to match the new order.
+4.  On a failure response (non-2xx or network error), the UI reverts to the previous order and displays a brief inline error indicator adjacent to the drag handle.
+
+The drag handle element MUST have `draggable="true"` set on the row or a dedicated drag-source element.
+
+### 2.5 Enable/Disable Toggle
+
+Behavior when a checkbox is toggled:
+1.  The UI optimistically updates the row appearance (checked = normal appearance; unchecked = dimmed to `--purlin-dim`).
+2.  A `POST /release-checklist/config` request is sent with the updated enabled state for that step (full config payload, not a partial diff).
+3.  On success, the collapsed-state badge recalculates and updates the enabled/disabled count.
+4.  On failure, the checkbox reverts to its previous state and a brief inline error indicator is shown.
+
+### 2.6 Step Detail Modal
+
+Triggered by clicking a step's friendly name. Uses the same modal overlay and container pattern as the Feature Detail Modal used elsewhere in the CDD Dashboard.
+
+**Dismissal:** The modal is dismissed by clicking the close button (X), clicking outside the modal container, or pressing Escape.
+
+**Modal structure:**
+*   **Header row:** Step friendly name (Montserrat or Inter Bold, section-header scale). A `GLOBAL` or `LOCAL` source badge is displayed adjacent to the name.
+*   **Body sections** (each section is only rendered when the corresponding field is non-null/non-empty):
+    *   **DESCRIPTION:** Label "DESCRIPTION" (caption style: Inter Bold 10px uppercase, `--purlin-muted`). Body: prose text.
+    *   **CODE:** Label "CODE". Body: monospace code block with `--purlin-surface` background. Only rendered when `code` is non-null.
+    *   **AGENT INSTRUCTIONS:** Label "AGENT INSTRUCTIONS". Body: prose text. Only rendered when `agent_instructions` is non-null.
+*   **Footer:** A "Close" button (standard button style).
+
+If a step has neither a `code` field nor an `agent_instructions` field, only the DESCRIPTION section is rendered.
+
+### 2.7 Section State Persistence
+
+The expanded/collapsed state of the RELEASE CHECKLIST section is persisted in `localStorage` under the existing `purlin-section-states` key, using the same mechanism as other collapsible sections. The default state is collapsed.
+
+### 2.8 API Endpoints
+
+#### `GET /release-checklist`
+
+Returns the fully resolved, ordered list of release steps by applying the algorithm from `release_checklist_core.md` Section 2.5.
+
+**Response format:**
+```json
+{
+  "steps": [
+    {
+      "id": "purlin.record_version_notes",
+      "friendly_name": "Record Version & Release Notes",
+      "description": "...",
+      "code": null,
+      "agent_instructions": "...",
+      "source": "global",
+      "enabled": true,
+      "order": 1
+    }
+  ]
+}
+```
+
+The `source` field is `"global"` for steps defined in `global_steps.json` and `"local"` for steps from `local_steps.json`. The `order` field is the 1-based position in the resolved list.
+
+#### `POST /release-checklist/config`
+
+Accepts the updated config as a JSON body and writes it to `.agentic_devops/release/config.json`.
+
+**Request body:**
+```json
+{
+  "steps": [
+    {"id": "purlin.record_version_notes", "enabled": true},
+    {"id": "purlin.push_to_remote", "enabled": false}
+  ]
+}
+```
+
+**Success response:** `{"ok": true}`
+
+**Error response:** HTTP 400 with `{"ok": false, "error": "<message>"}` for validation failures (e.g., duplicate IDs, unknown fields). HTTP 500 for file write failures.
+
+The server MUST validate that:
+*   Each `id` in the request body corresponds to a known step (present in global or local steps). Unknown IDs are accepted but logged as warnings, consistent with the auto-discovery orphan behavior.
+*   No `id` appears more than once in the request.
+
+## 3. Scenarios
+
+### Manual Scenarios
+
+#### Scenario: Collapsed State Displays Correct Counts
+Given the release checklist has 7 enabled steps and 2 disabled steps,
+When the RELEASE CHECKLIST section is collapsed,
+Then the inline badge shows "7 enabled · 2 disabled",
+And the enabled count is styled with `--purlin-status-good`,
+And the disabled count is styled with `--purlin-dim`.
+
+#### Scenario: Drag Reorder Persists
+Given the release checklist is expanded with steps in their default order,
+When the user drags step 3 to position 1 using the drag handle,
+And the user refreshes the dashboard page,
+Then step 3 is now displayed at position 1.
+
+#### Scenario: Toggle Disables Step
+Given the release checklist is expanded,
+When the user unchecks the checkbox for `purlin.push_to_remote`,
+Then the `purlin.push_to_remote` row is dimmed,
+And the disabled count in the collapsed badge increments by 1,
+And refreshing the dashboard shows `purlin.push_to_remote` still disabled.
+
+#### Scenario: Modal Displays Step Details
+Given the release checklist is expanded,
+When the user clicks the friendly name of a step that has all three fields populated (description, code, and agent_instructions),
+Then a modal opens showing the DESCRIPTION, CODE, and AGENT INSTRUCTIONS sections in order.
+
+#### Scenario: Modal Omits Empty Sections
+Given the release checklist is expanded,
+When the user clicks the friendly name of a step where `code` is null,
+Then the modal opens showing DESCRIPTION and AGENT INSTRUCTIONS sections,
+And no CODE section is rendered.
+
+#### Scenario: Local Step Identified
+Given the project has a local step defined in `.agentic_devops/release/local_steps.json`,
+When the release checklist is expanded,
+Then that step's row displays a "LOCAL" badge,
+And when the user opens the step's detail modal, the modal header displays the "LOCAL" source badge.
+
+## Visual Specification
+
+### Screen: Release Checklist Section (Collapsed)
+- **Reference:** N/A
+- [ ] Section heading "RELEASE CHECKLIST" uses Inter Bold 14px uppercase with letter-spacing 0.1em
+- [ ] Chevron points right (collapsed) and transitions to pointing down (expanded)
+- [ ] Enabled count text uses `--purlin-status-good` color
+- [ ] Separator (` · `) and disabled count text use `--purlin-dim` color
+- [ ] A 1px `--purlin-border` horizontal line separates this section from WORKSPACE above
+
+### Screen: Release Checklist Section (Expanded)
+- **Reference:** N/A
+- [ ] Drag handle character (`⠿`) appears at the left edge of each row
+- [ ] Drag handle color is `--purlin-dim`; cursor changes to `grab` on hover
+- [ ] Step number is right-aligned, rendered in monospace font, `--purlin-muted` color
+- [ ] GLOBAL/LOCAL badge uses `--purlin-tag-fill` background and `--purlin-tag-outline` border, Inter Bold 10px uppercase
+- [ ] Friendly name is clickable; underline and `--purlin-accent` color appear on hover
+- [ ] Disabled rows have all text (handle, number, badge, name) dimmed to `--purlin-dim`
+- [ ] Checkbox is right-aligned in a fixed-width rightmost column
+
+### Screen: Step Detail Modal
+- **Reference:** N/A
+- [ ] Modal uses the same overlay dimming and container border-radius as the Feature Detail Modal
+- [ ] Section labels (DESCRIPTION, CODE, AGENT INSTRUCTIONS) use Inter Bold 10px uppercase, `--purlin-muted` color
+- [ ] CODE section body is rendered in a monospace code block with `--purlin-surface` background
+- [ ] Modal is scrollable when content exceeds viewport height
+- [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
+
+## Implementation Notes
+
+*   The drag-to-reorder implementation MUST be consistent with any drag/drop library or pattern already used in the CDD Dashboard. If none exists, the HTML5 Drag and Drop API is the default. Do not introduce a new dependency without confirming with the Architect.
+*   The `POST /release-checklist/config` endpoint writes directly to `.agentic_devops/release/config.json`. The server MUST handle concurrent writes gracefully (e.g., the user rapidly toggling checkboxes); debouncing on the frontend is preferred over server-side locking for this use case.
+*   The `purlin-section-states` localStorage key already exists (per `cdd_status_monitor.md`). The RELEASE CHECKLIST section's key within that object SHOULD be `release-checklist`.
+*   The Step Detail Modal pattern references the Feature Detail Modal. If the Feature Detail Modal does not yet exist as an independent component, the Builder should implement the modal as a reusable component and refactor the Feature Detail Modal to use it.
