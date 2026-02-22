@@ -107,7 +107,7 @@ if [ -f "\$SCRIPT_DIR/.agentic_devops/${OVERRIDES_FILE}" ]; then
 fi
 LAUNCHER_EOF
 
-    # Part 4: Config reading and provider dispatch (literal)
+    # Part 4: Config reading (literal)
     cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
 # --- Read agent config from config.json ---
@@ -119,10 +119,9 @@ LAUNCHER_EOF
 AGENT_ROLE="${ROLE}"
 LAUNCHER_EOF
 
-    # Part 4c: Config parsing and provider dispatch (literal)
+    # Part 4c: Config parsing (literal)
     cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
-AGENT_PROVIDER="claude"
 AGENT_MODEL=""
 AGENT_EFFORT=""
 AGENT_BYPASS="false"
@@ -133,7 +132,6 @@ import json
 try:
     c = json.load(open('$CONFIG_FILE'))
     a = c.get('agents', {}).get('$AGENT_ROLE', {})
-    print(f'AGENT_PROVIDER=\"{a.get(\"provider\", \"claude\")}\"')
     print(f'AGENT_MODEL=\"{a.get(\"model\", \"\")}\"')
     print(f'AGENT_EFFORT=\"{a.get(\"effort\", \"\")}\"')
     bp = 'true' if a.get('bypass_permissions', False) else 'false'
@@ -142,57 +140,41 @@ except: pass
 " 2>/dev/null)"
 fi
 
-# --- Provider dispatch ---
-case "$AGENT_PROVIDER" in
-  claude)
-    CLI_ARGS=()
-    [ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
-    [ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
+# --- Claude dispatch ---
+CLI_ARGS=()
+[ -n "$AGENT_MODEL" ] && CLI_ARGS+=(--model "$AGENT_MODEL")
+[ -n "$AGENT_EFFORT" ] && CLI_ARGS+=(--effort "$AGENT_EFFORT")
 LAUNCHER_EOF
 
     # Part 4d: Role-specific permission handling (expanded for role)
     if [ "$ROLE" = "builder" ]; then
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
-    if [ "$AGENT_BYPASS" = "true" ]; then
-        CLI_ARGS+=(--dangerously-skip-permissions)
-    fi
+if [ "$AGENT_BYPASS" = "true" ]; then
+    CLI_ARGS+=(--dangerously-skip-permissions)
+fi
 LAUNCHER_EOF
     elif [ "$ROLE" = "qa" ]; then
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
-    if [ "$AGENT_BYPASS" = "true" ]; then
-        CLI_ARGS+=(--dangerously-skip-permissions)
-    else
-        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
-    fi
+if [ "$AGENT_BYPASS" = "true" ]; then
+    CLI_ARGS+=(--dangerously-skip-permissions)
+else
+    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
+fi
 LAUNCHER_EOF
     else
         # architect (default)
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
-    if [ "$AGENT_BYPASS" = "true" ]; then
-        CLI_ARGS+=(--dangerously-skip-permissions)
-    else
-        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
-    fi
+if [ "$AGENT_BYPASS" = "true" ]; then
+    CLI_ARGS+=(--dangerously-skip-permissions)
+else
+    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
+fi
 LAUNCHER_EOF
     fi
 
-    # Part 4e: Claude invocation, Gemini invocation, and unsupported provider fallback (expanded for session msg)
+    # Part 4e: Claude invocation (expanded for session msg)
     cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
-    claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
-    ;;
-  gemini)
-    CLI_ARGS=("-m" "\$AGENT_MODEL")
-    [ "\$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
-    GEMINI_SYSTEM_MD="\$PROMPT_FILE" gemini "\${CLI_ARGS[@]}" -p "${SESSION_MSG}"
-    ;;
-  *)
-    echo "ERROR: Provider '\$AGENT_PROVIDER' is not yet supported for agent invocation."
-    echo "Supported providers: claude, gemini"
-    echo "Provider '\$AGENT_PROVIDER' models may be available for detection and configuration."
-    echo "Launcher support requires a provider-specific invocation module."
-    exit 1
-    ;;
-esac
+claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
 LAUNCHER_EOF
 
     chmod +x "$OUTPUT_FILE"

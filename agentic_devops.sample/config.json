@@ -4,69 +4,26 @@
     "critic_llm_model": "claude-sonnet-4-20250514",
     "critic_llm_enabled": false,
     "critic_gate_blocking": false,
-    "llm_providers": {
-        "claude": {
-            "models": [
-                {
-                    "id": "claude-opus-4-6",
-                    "label": "Opus 4.6",
-                    "capabilities": { "effort": true, "permissions": true }
-                },
-                {
-                    "id": "claude-sonnet-4-6",
-                    "label": "Sonnet 4.6",
-                    "capabilities": { "effort": true, "permissions": true }
-                },
-                {
-                    "id": "claude-haiku-4-5-20251001",
-                    "label": "Haiku 4.5",
-                    "capabilities": { "effort": true, "permissions": true }
-                }
-            ]
+    "models": [
+        {
+            "id": "claude-opus-4-6",
+            "label": "Opus 4.6",
+            "capabilities": { "effort": true, "permissions": true }
         },
-        "gemini": {
-            "models": [
-                {
-                    "id": "gemini-3.0-pro",
-                    "label": "Gemini 3.0 Pro",
-                    "capabilities": { "effort": false, "permissions": true }
-                },
-                {
-                    "id": "gemini-3.0-flash",
-                    "label": "Gemini 3.0 Flash",
-                    "capabilities": { "effort": false, "permissions": true }
-                },
-                {
-                    "id": "gemini-2.5-pro",
-                    "label": "Gemini 2.5 Pro",
-                    "capabilities": { "effort": false, "permissions": true }
-                },
-                {
-                    "id": "gemini-2.5-flash",
-                    "label": "Gemini 2.5 Flash",
-                    "capabilities": { "effort": false, "permissions": true }
-                }
-            ]
+        {
+            "id": "claude-sonnet-4-6",
+            "label": "Sonnet 4.6",
+            "capabilities": { "effort": true, "permissions": true }
+        },
+        {
+            "id": "claude-haiku-4-5-20251001",
+            "label": "Haiku 4.5",
+            "capabilities": { "effort": true, "permissions": true }
         }
-    },
+    ],
     "agents": {
-        "architect": {
-            "provider": "claude",
-            "model": "claude-sonnet-4-6",
-            "effort": "high",
-            "bypass_permissions": false
-        },
-        "builder": {
-            "provider": "claude",
-            "model": "claude-sonnet-4-6",
-            "effort": "high",
-            "bypass_permissions": true
-        },
-        "qa": {
-            "provider": "claude",
-            "model": "claude-sonnet-4-6",
-            "effort": "high",
-            "bypass_permissions": false
-        }
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false },
+        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true },
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false }
     }
 }
