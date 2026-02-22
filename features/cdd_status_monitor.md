@@ -639,3 +639,10 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - **Root Cause:** Format mismatch — `get_delivery_phase()` parsed `### Phase N:` headings with `- **Status:** STATUS` lines, but the canonical delivery plan format uses `## Phase N — Label [STATUS]` with inline status in brackets. The regex never matched.
 - **Action Required:** Builder — update the delivery plan path resolution in the dashboard tool to read `tools_root`/config-derived runtime path rather than a hardcoded `.purlin/cache/` path, so it correctly locates the file under `.agentic_devops/cache/`.
 - **Status:** RESOLVED
+
+### [BUG] Run Critic button loading state lasts 10-15 seconds despite fast CLI execution (Discovered: 2026-02-22)
+- **Scenario:** Run Critic Button
+- **Observed Behavior:** After clicking "Run Critic", the button remains disabled/loading for approximately 10-15 seconds before returning to its enabled state. The Critic completes in a fraction of that time when run directly via the CLI (`tools/critic/run.sh`). The POST `/run-critic` endpoint appears to be performing significant additional work beyond just running the Critic, or is blocking on an inefficient polling/wait mechanism.
+- **Expected Behavior:** The button's loading state should last approximately as long as the Critic process itself takes to complete. Once the Critic finishes, the server should return promptly and the button should re-enable without an additional multi-second delay.
+- **Action Required:** Builder — investigate the POST `/run-critic` server-side handler for extra blocking operations, inefficient subprocess polling, or unrelated I/O that extends the response time well beyond the Critic's actual execution duration.
+- **Status:** OPEN
