@@ -1,1 +1,1 @@
-{"status": "PASS", "tests": 6, "failures": 0, "tool": "cdd_lifecycle", "runner": "bash"}
+{"status": "PASS", "tests": 60, "failures": 0, "tool": "cdd", "runner": "unittest"}

@@ -237,7 +237,7 @@ And rows whose content did not change appear visually undisturbed.
 - **Observed Behavior:** The `LOCAL` scope badge renders narrower than the `GLOBAL` badge because no minimum width is set. In a list where both badge types appear, the column is visually uneven — `LOCAL` is approximately one character-width narrower and the label is not centered relative to the GLOBAL badge width.
 - **Expected Behavior:** Both `GLOBAL` and `LOCAL` badges should occupy the same fixed width with the label centered within the box, maintaining consistent column alignment across all rows.
 - **Action Required:** Builder — apply a consistent `min-width` (or fixed width) to both badge variants so they render at the same size with centered text.
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [BUG] Disabled row is not visually dimmed (Discovered: 2026-02-22)
 - **Scenario:** Toggle Disables Step
@@ -252,6 +252,13 @@ And rows whose content did not change appear visually undisturbed.
 - **Expected Behavior:** Grabbing a step by its drag handle and dropping it at a new position should reorder the steps in the displayed list immediately, without a page reload.
 - **Action Required:** Builder — implement drag-and-drop reorder functionality for release checklist rows.
 - **Status:** RESOLVED
+
+### [BUG] Drag reorder snaps back before updating; unreliable persistence (Discovered: 2026-02-22)
+- **Scenario:** Drag Handle Reorders Steps in Display
+- **Observed Behavior:** After dropping a step at a new position, the item snaps back to its original position briefly before (sometimes) settling into the new order. Occasionally the reorder does not persist at all, requiring multiple drag attempts to achieve the desired ordering.
+- **Expected Behavior:** The UI should optimistically update the displayed order immediately on drop (no snap-back). The POST /release-checklist/config request persists the change in the background. The displayed order should remain stable throughout. The operation should be fully deterministic on the first drag attempt.
+- **Action Required:** Builder — investigate the snap-back. Likely cause: the 5-second auto-refresh is overwriting the optimistic DOM update before the POST completes, because the `rcPendingSave` flag is not being set at the start of a drag operation. Ensure the in-flight guard is set before the POST and cleared only after the response is received and the cache is updated.
+- **Status:** OPEN
 
 ## Implementation Notes
 

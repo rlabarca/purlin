@@ -623,7 +623,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - **Observed Behavior:** After clicking "Run Critic", the button correctly disables and shows a loading state. On completion, the button re-enables but briefly shows the old last-run annotation (e.g. "Run Critic (3m)") before the next 5-second auto-refresh cycle resets it to "Run Critic". The feature list also does not update immediately — changes only appear after the next auto-refresh.
 - **Expected Behavior:** The completion handler should trigger an immediate dashboard refresh: (1) the button label resets to "Run Critic" (no annotation, since the Critic was just run under 60 seconds ago), and (2) the feature list updates with any new role status changes. The user should not need to wait up to 5 seconds for the dashboard to reflect the result.
 - **Action Required:** Builder — after the POST /run-critic response completes successfully, immediately invoke the dashboard refresh function (same one used by the 5-second cycle) before re-enabling the button.
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [SPEC_DISPUTE] ?? badge appears when Active section is empty and collapsed (Discovered: 2026-02-22)
 - **Scenario:** Section Collapse and Expand (collapsed summary behavior, Section 2.2.2)

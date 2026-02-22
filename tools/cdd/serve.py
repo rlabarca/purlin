@@ -657,7 +657,7 @@ def generate_html():
         source_badge = (
             f'<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
             f'font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;'
-            f'padding:0 4px;border-radius:2px;margin-right:4px">{source_tag}</span>'
+            f'padding:0 4px;border-radius:2px;margin-right:4px;min-width:44px;text-align:center;display:inline-block">{source_tag}</span>'
         ) if source_tag else ""
         checked = " checked" if s.get("enabled") else ""
         sid_escaped = s["id"].replace("'", "\\'")
@@ -1162,7 +1162,7 @@ function updateTimestamp() {{
 }}
 
 function refreshStatus() {{
-  fetch('/?_t=' + Date.now())
+  return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
     .then(function(html) {{
       var parser = new DOMParser();
@@ -1438,7 +1438,7 @@ function openStepModal(stepId) {{
   var source = (step.source || '').toUpperCase();
   var sourceBadge = source ? ('<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
     + 'font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;'
-    + 'padding:0 4px;border-radius:2px;margin-left:8px">' + source + '</span>') : '';
+    + 'padding:0 4px;border-radius:2px;margin-left:8px;min-width:44px;text-align:center;display:inline-block">' + source + '</span>') : '';
   titleEl.innerHTML = step.friendly_name + sourceBadge;
 
   var html = '';
@@ -1495,8 +1495,11 @@ function runCritic() {{
   fetch('/run-critic', {{method: 'POST'}})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      if (d.status === 'ok') {{ refreshStatus(); btn.disabled = false; updateCriticLabel(); }}
-      else {{ err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel(); }}
+      if (d.status === 'ok') {{
+        refreshStatus().then(function() {{ btn.disabled = false; }});
+      }} else {{
+        err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel();
+      }}
     }})
     .catch(function() {{ err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel(); }});
 }}
