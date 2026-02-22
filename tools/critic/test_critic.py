@@ -1551,6 +1551,115 @@ class TestActionItemsBuilder(unittest.TestCase):
         self.assertEqual(deviation_items[0]['priority'], 'HIGH')
 
 
+class TestActionItemsBugRoutingOverride(unittest.TestCase):
+    """Scenario: BUG Action Required Architect Override Routing"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Feature with an Architect-routed BUG
+        architect_bug_content = """\
+# Feature: Instruction Bug
+
+> Label: "Tool: Instruction Bug"
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [BUG] Agent ignores startup flags (Discovered: 2026-01-01)
+- **Scenario:** Expert Mode Bypasses Orientation
+- **Observed Behavior:** Agent runs full orientation despite startup_sequence false.
+- **Expected Behavior:** Agent should skip orientation.
+- **Action Required:** Architect
+- **Status:** OPEN
+"""
+        with open(os.path.join(self.features_dir, 'instruction_bug.md'),
+                  'w') as f:
+            f.write(architect_bug_content)
+        # Feature with a normal (Builder-routed) BUG
+        builder_bug_content = """\
+# Feature: Code Bug
+
+> Label: "Tool: Code Bug"
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [BUG] Button does not refresh (Discovered: 2026-01-01)
+- **Scenario:** Run Critic Button
+- **Observed Behavior:** Dashboard does not refresh after critic run.
+- **Expected Behavior:** Dashboard should refresh immediately.
+- **Status:** OPEN
+"""
+        with open(os.path.join(self.features_dir, 'code_bug.md'), 'w') as f:
+            f.write(builder_bug_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_bug_with_action_required_architect_routes_to_architect(self):
+        """BUG with Action Required: Architect routes to Architect items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/instruction_bug.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result)
+            arch_items = items['architect']
+            builder_items = items['builder']
+            # BUG should route to Architect, not Builder
+            bug_arch = [i for i in arch_items
+                        if 'instruction-level bug' in i['description']]
+            self.assertEqual(len(bug_arch), 1)
+            self.assertEqual(bug_arch[0]['priority'], 'HIGH')
+            self.assertEqual(bug_arch[0]['category'], 'user_testing')
+            # Builder should NOT have this BUG
+            bug_builder = [i for i in builder_items
+                           if 'instruction_bug' in i.get('feature', '')]
+            self.assertEqual(len(bug_builder), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_bug_without_action_required_routes_to_builder(self):
+        """BUG without Action Required field routes to Builder (default)."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/code_bug.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result)
+            builder_items = items['builder']
+            arch_items = items['architect']
+            # BUG should route to Builder
+            bug_builder = [i for i in builder_items
+                           if 'Fix bug' in i['description']]
+            self.assertEqual(len(bug_builder), 1)
+            self.assertEqual(bug_builder[0]['priority'], 'HIGH')
+            # Architect should NOT have this BUG
+            bug_arch = [i for i in arch_items
+                        if 'code_bug' in i.get('feature', '')]
+            self.assertEqual(len(bug_arch), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
 class TestActionItemsQA(unittest.TestCase):
     """Scenario: QA Action Items from TESTING Status"""
 

@@ -965,15 +965,29 @@ def generate_action_items(feature_result, cdd_status=None):
             ),
         })
 
-    # OPEN BUGs in User Testing -> HIGH Builder
+    # OPEN BUGs in User Testing -> HIGH Builder (default) or Architect (override)
     for entry in ut_entries:
         if entry['type'] == 'BUG' and entry['status'] == 'OPEN':
-            builder_items.append({
-                'priority': 'HIGH',
-                'category': 'user_testing',
-                'feature': feature_name,
-                'description': f'Fix bug in {feature_name}: {entry["heading"]}',
-            })
+            action_req = (entry.get('action_required') or '').strip().lower()
+            if action_req == 'architect':
+                architect_items.append({
+                    'priority': 'HIGH',
+                    'category': 'user_testing',
+                    'feature': feature_name,
+                    'description': (
+                        f'Fix instruction-level bug in {feature_name}: '
+                        f'{entry["heading"]}'
+                    ),
+                })
+            else:
+                builder_items.append({
+                    'priority': 'HIGH',
+                    'category': 'user_testing',
+                    'feature': feature_name,
+                    'description': (
+                        f'Fix bug in {feature_name}: {entry["heading"]}'
+                    ),
+                })
 
     # Cross-validation warnings (invalid targeted scope names) -> MEDIUM Builder
     # Only targeted: scopes have scope name validation errors. First-pass guard
