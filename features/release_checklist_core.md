@@ -82,8 +82,8 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 | # | ID | Friendly Name |
 |---|-----|--------------|
 | 1 | `purlin.record_version_notes` | Record Version & Release Notes |
-| 2 | `purlin.verify_zero_queue` | Verify Zero-Queue Status |
-| 3 | `purlin.verify_dependency_integrity` | Verify Dependency Integrity |
+| 2 | `purlin.verify_zero_queue` | Purlin Verify Zero-Queue Status |
+| 3 | `purlin.verify_dependency_integrity` | Purlin Verify Dependency Integrity |
 | 4 | `purlin.instruction_audit` | Purlin Agent Instruction Audit |
 | 5 | `purlin.doc_consistency_check` | Documentation Consistency Check |
 | 6 | `purlin.push_to_remote` | Push to Remote Repository |
@@ -91,16 +91,19 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 **Step Definitions:**
 
 **`purlin.record_version_notes`**
+- Friendly Name: "Record Version & Release Notes"
 - Description: "Gathers suggested release notes from git history since the last release, presents them to the user for selection/editing, then records the confirmed version and notes in README.md under '## Releases'."
 - Code: null
 - Agent Instructions: "1. Determine the last release tag: run `git tag --sort=-v:refname | head -1`. If no tags exist, treat everything as new.\n2. Gather candidates: run `git log <last-tag>..HEAD --oneline --no-merges` for commit summaries. Treat each commit line as a release notes candidate.\n3. Synthesize a concise bulleted suggestion list from the above data, grouping by theme (features, fixes, process changes) where possible.\n4. Present the suggestions to the user: 'Suggested release notes since <last-tag> — paste any you would like to include, edit freely, or write your own:'\n5. Ask the user for: (a) the new version number (e.g., 'v1.2.0'), and (b) their release notes (free text; they may copy from suggestions, combine, or replace entirely).\n6. Insert a new entry into README.md under a '## Releases' heading (create if absent). Format: `### <version> — <YYYY-MM-DD>\\n\\n<confirmed release notes text>`."
 
 **`purlin.verify_zero_queue`**
+- Friendly Name: "Purlin Verify Zero-Queue Status"
 - Description: "Verifies that all features are in a fully satisfied state by checking that every feature has architect: 'DONE', builder: 'DONE', and qa is 'CLEAN' or 'N/A'."
 - Code: null
 - Agent Instructions: "Run `tools/cdd/status.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready."
 
 **`purlin.verify_dependency_integrity`**
+- Friendly Name: "Purlin Verify Dependency Integrity"
 - Description: "Verifies that the dependency graph is acyclic and all prerequisite links are valid."
 - Code: null
 - Agent Instructions: "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
@@ -112,11 +115,13 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 - Agent Instructions: "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
 
 **`purlin.doc_consistency_check`**
+- Friendly Name: "Documentation Consistency Check"
 - Description: "Checks that README.md and project documentation accurately reflects the current feature set, with no stale descriptions, removed functionality references, or version mismatches."
 - Code: null
 - Agent Instructions: "Check that README.md and any project documentation (in `docs/` or equivalent) accurately reflects the current feature set. Look for: outdated feature descriptions, references to removed functionality, stale file paths, and version numbers inconsistent with the current release. Cross-check with the `features/` directory to confirm documented behavior matches specified behavior. Fix any inconsistencies and commit."
 
 **`purlin.push_to_remote`**
+- Friendly Name: "Push to Remote Repository"
 - Description: "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery."
 - Code: "git push && git push --tags"
 - Agent Instructions: "Confirm the current branch and remote configuration, then push commits and tags to the remote repository. Warn the user if they are about to force-push or if the remote is ahead. Do not proceed without explicit user confirmation for force-push scenarios."
