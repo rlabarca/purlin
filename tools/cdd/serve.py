@@ -1600,6 +1600,7 @@ function stopMapRefresh() {{
 // ============================
 var agentsConfig = null;
 var agentsSaveTimer = null;
+var pendingWrites = new Set();
 
 function initAgentsSection() {{
   // Synchronous restore from cache after innerHTML replacement clears the DOM
@@ -1643,16 +1644,25 @@ function renderAgentsRows(cfg) {{
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
     if (provSel) provSel.addEventListener('change', function() {{
+      pendingWrites.add(role + '.provider');
+      pendingWrites.add(role + '.model');
       populateModelDropdown(role, provSel.value, providers, '');
       syncCapabilityControls(role, providers);
       scheduleAgentSave();
     }});
     if (modSel) modSel.addEventListener('change', function() {{
+      pendingWrites.add(role + '.model');
       syncCapabilityControls(role, providers);
       scheduleAgentSave();
     }});
-    if (effSel) effSel.addEventListener('change', scheduleAgentSave);
-    if (bypassChk) bypassChk.addEventListener('change', scheduleAgentSave);
+    if (effSel) effSel.addEventListener('change', function() {{
+      pendingWrites.add(role + '.effort');
+      scheduleAgentSave();
+    }});
+    if (bypassChk) bypassChk.addEventListener('change', function() {{
+      pendingWrites.add(role + '.bypass_permissions');
+      scheduleAgentSave();
+    }});
     syncCapabilityControls(role, providers);
   }});
 }}
@@ -1669,14 +1679,14 @@ function diffUpdateAgentRows(cfg) {{
     var bypassChk = document.getElementById('agent-bypass-' + role);
     if (!provSel) return;
     var newProv = acfg.provider || '';
-    if (provSel.value !== newProv) {{
+    if (!pendingWrites.has(role + '.provider') && provSel.value !== newProv) {{
       provSel.value = newProv;
       populateModelDropdown(role, newProv, providers, acfg.model || '');
     }}
-    if (modSel && modSel.value !== (acfg.model || '')) modSel.value = acfg.model || '';
-    if (effSel && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
+    if (modSel && !pendingWrites.has(role + '.model') && modSel.value !== (acfg.model || '')) modSel.value = acfg.model || '';
+    if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
     var askPerm = acfg.bypass_permissions !== true;
-    if (bypassChk && bypassChk.checked !== askPerm) bypassChk.checked = askPerm;
+    if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== askPerm) bypassChk.checked = askPerm;
     syncCapabilityControls(role, providers);
   }});
 }}
@@ -1785,12 +1795,13 @@ function saveAgentConfig() {{
   }})
   .then(function(r) {{ return r.json(); }})
   .then(function(d) {{
+    pendingWrites.clear();
     if (agentsConfig && d.agents) {{
       agentsConfig.agents = d.agents;
       updateAgentsBadge(agentsConfig);
     }}
   }})
-  .catch(function() {{}});
+  .catch(function() {{ pendingWrites.clear(); }});
 }}
 
 function detectProviders() {{

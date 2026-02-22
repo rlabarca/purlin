@@ -365,6 +365,49 @@ class TestSectionPersistence(unittest.TestCase):
         self.assertIn('purlin-section-states', html)
 
 
+class TestPendingWriteLock(unittest.TestCase):
+    """Scenario: Pending Change is Not Overwritten by Auto-Refresh"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_pending_writes_set_exists(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('var pendingWrites = new Set()', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_diff_update_checks_pending_writes(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # diffUpdateAgentRows should check pendingWrites before updating each control
+        self.assertIn("pendingWrites.has(role + '.provider')", html)
+        self.assertIn("pendingWrites.has(role + '.model')", html)
+        self.assertIn("pendingWrites.has(role + '.effort')", html)
+        self.assertIn("pendingWrites.has(role + '.bypass_permissions')", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_save_clears_pending_writes(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # saveAgentConfig must clear pendingWrites on success and error
+        self.assertIn('pendingWrites.clear()', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_event_handlers_add_to_pending_writes(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # Event handlers should add identifiers to pendingWrites
+        self.assertIn("pendingWrites.add(role + '.model')", html)
+        self.assertIn("pendingWrites.add(role + '.bypass_permissions')", html)
+
+
 class TestSectionVisualSeparation(unittest.TestCase):
     """Scenario: Agents Section is Visually Separated from Workspace"""
 
