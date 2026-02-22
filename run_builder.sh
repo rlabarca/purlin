@@ -65,6 +65,21 @@ case "$AGENT_PROVIDER" in
     claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
     ;;
   gemini)
+    # Pre-launch: ensure .gemini/settings.json disables gitignore filtering
+    mkdir -p "$SCRIPT_DIR/.gemini"
+    python3 -c "
+import json, os, sys
+p = os.path.join('$SCRIPT_DIR', '.gemini', 'settings.json')
+try:
+    data = json.load(open(p))
+except (json.JSONDecodeError, IOError, OSError):
+    data = {}
+data.setdefault('context', {}).setdefault('fileFiltering', {})['respectGitIgnore'] = False
+with open(p, 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
+    git -C "$SCRIPT_DIR" add .gemini/settings.json 2>/dev/null
     CLI_ARGS=("chat" "Begin Builder session." "-m" "$AGENT_MODEL")
     [ "$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
     GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini "${CLI_ARGS[@]}"

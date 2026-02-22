@@ -38,6 +38,13 @@ echo "\$@" > "$CAPTURE_FILE"
 exit 0
 MOCK_EOF
     chmod +x "$MOCK_DIR/claude"
+
+    # Mock git so pre-launch git add doesn't touch real repos
+    cat > "$MOCK_DIR/git" << MOCK_EOF
+#!/bin/bash
+exit 0
+MOCK_EOF
+    chmod +x "$MOCK_DIR/git"
 }
 
 teardown_launcher_sandbox() {
@@ -359,6 +366,122 @@ if echo "$CAPTURED" | grep -q -- ' -p '; then
     log_fail "Gemini launcher must not pass -p flag (effort scenario; captured: $CAPTURED)"
 else
     log_pass "Gemini launcher does not pass -p flag (effort scenario)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Gemini Launcher Creates .gemini/settings.json When Absent ---
+echo ""
+echo "[Scenario] Gemini Launcher Creates .gemini/settings.json When Absent"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "provider": "gemini",
+            "model": "gemini-2.5-pro",
+            "effort": "",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+# Mock gemini that just exits 0
+cat > "$MOCK_DIR/gemini" << MOCK_EOF
+#!/bin/bash
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/gemini"
+
+# Ensure .gemini/ does not exist in sandbox
+rm -rf "$SANDBOX/.gemini"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+
+if [ -f "$SANDBOX/.gemini/settings.json" ]; then
+    log_pass ".gemini/settings.json created when absent"
+else
+    log_fail ".gemini/settings.json was not created"
+fi
+
+if python3 -c "
+import json
+data = json.load(open('$SANDBOX/.gemini/settings.json'))
+assert data['context']['fileFiltering']['respectGitIgnore'] is False, 'respectGitIgnore must be False'
+" 2>/dev/null; then
+    log_pass ".gemini/settings.json has respectGitIgnore=false"
+else
+    log_fail ".gemini/settings.json missing or wrong content: $(cat "$SANDBOX/.gemini/settings.json" 2>/dev/null)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Gemini Launcher Merges into Existing .gemini/settings.json ---
+echo ""
+echo "[Scenario] Gemini Launcher Merges into Existing .gemini/settings.json"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "provider": "gemini",
+            "model": "gemini-2.5-pro",
+            "effort": "",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+# Mock gemini that just exits 0
+cat > "$MOCK_DIR/gemini" << MOCK_EOF
+#!/bin/bash
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/gemini"
+
+# Create .gemini/settings.json with pre-existing keys
+mkdir -p "$SANDBOX/.gemini"
+cat > "$SANDBOX/.gemini/settings.json" << 'EOF'
+{
+  "codeAssist": {
+    "enabled": true
+  },
+  "context": {
+    "fileFiltering": {
+      "respectGitIgnore": true
+    }
+  }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+
+if python3 -c "
+import json
+data = json.load(open('$SANDBOX/.gemini/settings.json'))
+assert data['context']['fileFiltering']['respectGitIgnore'] is False, 'respectGitIgnore must be False'
+" 2>/dev/null; then
+    log_pass "respectGitIgnore merged to false in existing settings.json"
+else
+    log_fail "respectGitIgnore not set to false: $(cat "$SANDBOX/.gemini/settings.json" 2>/dev/null)"
+fi
+
+if python3 -c "
+import json
+data = json.load(open('$SANDBOX/.gemini/settings.json'))
+assert data['codeAssist']['enabled'] is True, 'pre-existing codeAssist.enabled key must be preserved'
+" 2>/dev/null; then
+    log_pass "Pre-existing keys preserved after merge"
+else
+    log_fail "Pre-existing keys destroyed by merge: $(cat "$SANDBOX/.gemini/settings.json" 2>/dev/null)"
 fi
 
 teardown_launcher_sandbox
