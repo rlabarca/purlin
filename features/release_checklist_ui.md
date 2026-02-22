@@ -237,7 +237,7 @@ And rows whose content did not change appear visually undisturbed.
 - **Observed Behavior:** The `LOCAL` scope badge renders narrower than the `GLOBAL` badge because no minimum width is set. In a list where both badge types appear, the column is visually uneven — `LOCAL` is approximately one character-width narrower and the label is not centered relative to the GLOBAL badge width.
 - **Expected Behavior:** Both `GLOBAL` and `LOCAL` badges should occupy the same fixed width with the label centered within the box, maintaining consistent column alignment across all rows.
 - **Action Required:** Builder — apply a consistent `min-width` (or fixed width) to both badge variants so they render at the same size with centered text.
-- **Status:** RESOLVED
+- **Status:** OPEN (re-opened 2026-02-22 — marked RESOLVED prematurely; still visible in dashboard)
 
 ### [BUG] Disabled row is not visually dimmed (Discovered: 2026-02-22)
 - **Scenario:** Toggle Disables Step
