@@ -51,23 +51,26 @@ CLASS_COLORS = {
     'success': '#34D399',
 }
 
-# --- Mermaid base diagram (hub-spoke, CRITIC at center) ---
-# Uses an invisible subgraph to force three-tier layout:
-#   Row 1 (top): ARCH, BLDR, QA — arranged horizontally via direction LR
-#   Row 2 (center): CRITIC — the hub
-#   Row 3 (bottom): FEAT — the feature directory
-# The subgraph is styled transparent to avoid visible borders.
+# --- Mermaid base diagram (triangular hub-spoke, CRITIC at center) ---
+# Layout uses structural edges to force a diamond/triangular arrangement:
+#   Tier 1 (top): ARCH — the Architect at the apex
+#   Tier 2 (middle): BLDR and QA — flanking left/right via invisible subgraph
+#   Tier 3 (center-bottom): CRITIC — the hub
+#   Tier 4 (bottom): FEAT — the feature directory
+# ARCH→BLDR and ARCH→QA are layout-only structural edges (never highlighted).
 MERMAID_BASE = """\
 %%{init: {'theme': 'dark', 'themeVariables': {'background': '#0B131A', 'primaryColor': '#162531', 'primaryTextColor': '#E2E8F0', 'edgeLabelBackground': '#162531', 'clusterBkg': 'transparent', 'clusterBorder': 'transparent'}}}%%
 graph TD
+    ARCH["Architect"]
     subgraph agents[" "]
         direction LR
-        ARCH["Architect"]
         BLDR["Builder"]
         QA["QA Agent"]
     end
     CRITIC["Critic / CDD"]
     FEAT["features/"]
+    ARCH -.-> BLDR
+    ARCH -.-> QA
     ARCH -.-> CRITIC
     BLDR -.-> CRITIC
     QA -.-> CRITIC
@@ -79,14 +82,15 @@ graph TD
 """
 
 # Edge index mapping (0-based, matches declaration order above)
+# Indices 0-1 are layout-only structural edges (ARCH→BLDR, ARCH→QA)
 EDGE_INDEX = {
-    ('ARCH', 'CRITIC'): 0,
-    ('BLDR', 'CRITIC'): 1,
-    ('QA', 'CRITIC'): 2,
-    ('CRITIC', 'FEAT'): 3,
-    ('ARCH', 'FEAT'): 4,
-    ('BLDR', 'FEAT'): 5,
-    ('QA', 'FEAT'): 6,
+    ('ARCH', 'CRITIC'): 2,
+    ('BLDR', 'CRITIC'): 3,
+    ('QA', 'CRITIC'): 4,
+    ('CRITIC', 'FEAT'): 5,
+    ('ARCH', 'FEAT'): 6,
+    ('BLDR', 'FEAT'): 7,
+    ('QA', 'FEAT'): 8,
 }
 
 # --- 16-frame canonical sequence (source of truth: spec Section 2.7) ---
@@ -97,7 +101,7 @@ FRAMES = [
         'caption': 'Purlin: Continuous Design-Driven Development',
         'highlight': {'CRITIC': 'active'},
         'active_arrows': [],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'critic_intro',
@@ -105,7 +109,7 @@ FRAMES = [
         'caption': 'The Critic coordinates the project...',
         'highlight': {'CRITIC': 'active'},
         'active_arrows': [],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'arch_reads_critic',
@@ -113,7 +117,7 @@ FRAMES = [
         'caption': 'Architect reads the Critic report...',
         'highlight': {'ARCH': 'active', 'CRITIC': 'active'},
         'active_arrows': [{'from': 'ARCH', 'to': 'CRITIC'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'arch_writes_feature',
@@ -121,7 +125,7 @@ FRAMES = [
         'caption': 'Architect designs a feature specification in features/',
         'highlight': {'ARCH': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'ARCH', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'critic_detects_feature',
@@ -129,7 +133,7 @@ FRAMES = [
         'caption': 'Critic detects the new feature \u2014 status: [TODO]',
         'highlight': {'CRITIC': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'CRITIC', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'builder_reads_critic',
@@ -137,7 +141,7 @@ FRAMES = [
         'caption': 'Builder reads Critic report: feature is ready...',
         'highlight': {'BLDR': 'active', 'CRITIC': 'active'},
         'active_arrows': [{'from': 'BLDR', 'to': 'CRITIC'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'builder_reads_feature',
@@ -145,7 +149,7 @@ FRAMES = [
         'caption': 'Builder reads feature spec and begins implementation',
         'highlight': {'BLDR': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'BLDR', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'builder_marks_ready',
@@ -153,7 +157,7 @@ FRAMES = [
         'caption': 'Builder marks feature [Ready for Verification]',
         'highlight': {'BLDR': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'BLDR', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'critic_flags_qa',
@@ -161,7 +165,7 @@ FRAMES = [
         'caption': 'Critic flags the feature for QA verification',
         'highlight': {'CRITIC': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'CRITIC', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'qa_reads_critic',
@@ -169,7 +173,7 @@ FRAMES = [
         'caption': 'QA reads Critic action items',
         'highlight': {'QA': 'active', 'CRITIC': 'active'},
         'active_arrows': [{'from': 'QA', 'to': 'CRITIC'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'qa_reads_scenarios',
@@ -177,7 +181,7 @@ FRAMES = [
         'caption': 'QA executes manual scenarios from the feature spec',
         'highlight': {'QA': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'QA', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'qa_records_bug',
@@ -185,7 +189,7 @@ FRAMES = [
         'caption': 'QA records a [BUG] discovery in the feature spec',
         'highlight': {'QA': 'active', 'FEAT': 'warning'},
         'active_arrows': [{'from': 'QA', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'arch_revises_spec',
@@ -193,7 +197,7 @@ FRAMES = [
         'caption': 'Architect revises the spec to address the discovery',
         'highlight': {'ARCH': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'ARCH', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'builder_reimplements',
@@ -201,7 +205,7 @@ FRAMES = [
         'caption': 'Builder re-implements to match the updated spec',
         'highlight': {'BLDR': 'active', 'FEAT': 'active'},
         'active_arrows': [{'from': 'BLDR', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'qa_verifies_clean',
@@ -209,7 +213,7 @@ FRAMES = [
         'caption': 'QA verifies all scenarios pass \u2014 status: CLEAN',
         'highlight': {'QA': 'active', 'FEAT': 'success'},
         'active_arrows': [{'from': 'QA', 'to': 'FEAT'}],
-        'duration_ms': 2000,
+        'duration_ms': 4000,
     },
     {
         'id': 'release_ready',
@@ -220,7 +224,7 @@ FRAMES = [
             'BLDR': 'success', 'QA': 'success', 'FEAT': 'success',
         },
         'active_arrows': [],
-        'duration_ms': 3000,
+        'duration_ms': 6000,
     },
 ]
 

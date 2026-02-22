@@ -221,11 +221,11 @@ See [release_process_animation_diagram_update.impl.md](release_process_animation
 - **Observed Behavior:** All agent boxes (Architect, Builder, QA Agent) are still arranged along the top of the canvas instead of forming the 3 corners of a triangle around the Critic/CDD and features/ nodes in the center.
 - **Expected Behavior:** Per checklist item 3, agents form a triangular arrangement around the central hub (Critic/CDD and features/). Critic/CDD is the hub at center; agents occupy the 3 triangle corners.
 - **Action Required:** Builder — revise the layout in `dev/generate_workflow_animation.py` so the 3 agent nodes form triangle corners with Critic/CDD and features/ at center.
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [DISCOVERY] Animation frame delay too short to read (Discovered: 2026-02-22)
 - **Scenario:** Animation is visually correct and coherent
 - **Observed Behavior:** Frames advance too quickly for the viewer to read the caption text or absorb the diagram state changes. The animation needs each frame delay doubled.
 - **Expected Behavior:** No checklist item specifies frame duration. Each frame should display long enough for a viewer to read the caption and observe the active nodes/arrows.
 - **Action Required:** Builder — double the per-frame delay in `dev/generate_workflow_animation.py` (frames 1–15: 4000ms, frame 16: 6000ms).
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED

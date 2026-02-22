@@ -63,9 +63,13 @@ Edge indices are 0-based and correspond to the order of edge declarations in the
 
 Tests live in `tests/release_process_animation_diagram_update/test_workflow_animation.py` (the Critic's primary scan location). The test file imports from `dev/generate_workflow_animation.py` via path manipulation. The script itself lives in `dev/` per the Purlin-dev convention.
 
-## Hub-Spoke Layout Fix (BUG resolved 2026-02-22)
+## Hub-Spoke Layout Fix (BUG resolved 2026-02-22, revised 2026-02-22)
 
-The original `graph TB` layout with all node declarations at the same level caused Mermaid's Dagre engine to flatten all nodes horizontally. Fixed by wrapping ARCH, BLDR, QA in an invisible subgraph with `direction LR` to force horizontal arrangement, with CRITIC and FEAT below as separate nodes. The subgraph uses `style agents fill:transparent,stroke:transparent,color:transparent` and `clusterBkg: 'transparent'` in the init block to be invisible. This produces a three-tier layout: agents (top) → Critic (center hub) → features (bottom).
+Original fix (subgraph with all 3 agents + `direction LR`) put all agents on the same horizontal row — not triangular. QA re-reported as still flat. Second fix: moved ARCH out of the subgraph and added structural-only edges `ARCH -.-> BLDR` and `ARCH -.-> QA` to force ARCH onto a higher Dagre tier. Layout is now a diamond: ARCH (top apex) → BLDR/QA (middle flanking) → CRITIC (center-below hub) → FEAT (bottom). The extra structural edges (indices 0-1 in EDGE_INDEX) are never highlighted in any animation frame. EDGE_INDEX values shifted +2 to account for the new edges.
+
+## Frame Duration Fix (DISCOVERY SPEC_UPDATED 2026-02-22)
+
+Original durations (2000ms/3000ms) were too fast to read. Spec updated to double all values: frames 1-15 now 4000ms, frame 16 now 6000ms. Simple value change in the FRAMES data structure.
 
 ## Caption Panel Fix (BUG resolved 2026-02-22)
 
