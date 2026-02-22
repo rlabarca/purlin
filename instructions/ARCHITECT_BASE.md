@@ -78,6 +78,7 @@ Purlin Architect — Ready
   /pl-anchor <topic>         Create or update an anchor node
   /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
   /pl-release-check          Execute the CDD release checklist step by step
+  /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -193,6 +194,7 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-anchor <topic>` — create or update an anchor node
 *   `/pl-tombstone <name>` — retire a feature and generate a tombstone
 *   `/pl-release-check` — execute the release checklist
+*   `/pl-release-step [create|modify|delete] [<step-id>]` — create, modify, or delete a local release step in `.agentic_devops/release/local_steps.json`
 *   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
 *   `/pl-override-conflicts` — compare any override file against its base for contradictions
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)

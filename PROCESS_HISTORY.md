@@ -2,6 +2,12 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Add /pl-release-step Command and Local Release Step Management Feature
+
+- **Change:** Introduced the `/pl-release-step` slash command and the `features/release_step_management.md` spec defining the backing CLI tool (`tools/release/manage_step.py`). The command provides a guided, interactive interface for the Architect to create, modify, and delete local release steps safely — with schema validation, `purlin.` prefix rejection, atomic writes, and dry-run preview before committing.
+- **Motivation:** Local release step management previously required manual JSON editing of `.agentic_devops/release/local_steps.json` and `.agentic_devops/release/config.json` — error-prone and unsafeguarded. The new command and tool enforce all invariants from `policy_release.md` (namespace, uniqueness, required fields) before any file is written.
+- **Files changed:** `features/release_step_management.md` (new), `.claude/commands/pl-release-step.md` (new), `instructions/ARCHITECT_BASE.md` (added `/pl-release-step` to startup table and authorized commands list).
+
 ## [2026-02-22] Retire purlin.mark_release_complete Step
 
 - **Problem:** The `purlin.mark_release_complete` release checklist step assumed that projects maintain per-version release specification files (e.g., `release_v0.5.md`) that are explicitly marked `[Complete]` at release time — a pattern from HOW_WE_WORK_BASE Section 5.1 ("Single Release File Rule"). This project does not use per-version release files. The only release-related feature files are specs for the release checklist tool itself, which follow the standard CDD feature lifecycle managed by the Builder and QA agents. The step had no valid target to act on.
