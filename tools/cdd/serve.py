@@ -672,10 +672,9 @@ def generate_html():
 
     # Compute summary badges for collapsed sections
     def _section_summary_badge(features_list):
-        """Return a single priority badge per spec 2.2.2:
-        DONE if all roles satisfied, ?? if empty,
-        TODO if any TODO with no FAIL/WARN, most-severe otherwise.
-        Priority: FAIL > INFEASIBLE > DISPUTED > TODO > DONE > ??
+        """Return a single priority badge for the Active section (spec 2.2.2):
+        ?? if empty, TODO if any TODO with no FAIL/WARN, most-severe otherwise.
+        Priority: FAIL > INFEASIBLE > DISPUTED > TODO.
         """
         if not features_list:
             return '<span class="st-na">??</span>'
@@ -703,7 +702,7 @@ def generate_html():
         return f'<span class="{css}">{top}</span>'
 
     active_summary = _section_summary_badge(active_features)
-    complete_summary = _section_summary_badge(complete_features)
+    complete_summary = ''  # Complete section shows no badge when collapsed (spec 2.2.2)
 
     # Workspace collapsed summary
     if not git_status:
