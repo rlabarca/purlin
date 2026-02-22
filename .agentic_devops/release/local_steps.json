@@ -1,0 +1,11 @@
+{
+  "steps": [
+    {
+      "id": "workflow_animation",
+      "friendly_name": "Update Workflow Animation",
+      "description": "Generates assets/workflow-animation.gif showing the Purlin agent lifecycle and embeds it in README.md under the '## How It Works' heading.",
+      "code": "python3 dev/generate_workflow_animation.py",
+      "agent_instructions": "Run `python3 dev/generate_workflow_animation.py` from the project root. Confirm exit code 0, that `assets/workflow-animation.gif` was created or updated, and that `README.md` contains exactly one reference to `assets/workflow-animation.gif` under the `## How It Works` heading."
+    }
+  ]
+}
