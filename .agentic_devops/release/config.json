@@ -35,6 +35,10 @@
     {
       "id": "purlin.push_to_remote",
       "enabled": true
+    },
+    {
+      "id": "workflow_animation",
+      "enabled": true
     }
   ]
 }
