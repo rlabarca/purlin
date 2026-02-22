@@ -189,8 +189,8 @@ Then `README.md` contains `![Purlin Agent Workflow](assets/workflow-animation.gi
 ### Manual Scenarios
 
 #### Scenario: Animation is visually correct and coherent
-Given `assets/workflow-animation.gif` has been generated,
-When a human opens the file in a browser or image viewer,
+Given the user runs `python3 dev/generate_workflow_animation.py` from the project root and it exits with code 0,
+When a human opens `assets/workflow-animation.gif` in a browser or image viewer,
 Then they can verify all items in the Visual Specification checklist below.
 
 ## Visual Specification
@@ -235,4 +235,4 @@ See [release_process_animation_diagram_update.impl.md](release_process_animation
 - **Observed Behavior:** The scenario's "Given" step assumes the GIF already exists (`assets/workflow-animation.gif` has been generated), so QA verification can pass using a stale pre-existing artifact without ever running the generator script.
 - **Expected Behavior:** The QA scenario should require running `python3 dev/generate_workflow_animation.py` as the first step, ensuring the GIF verified is freshly produced by the current version of the script.
 - **Action Required:** Architect — revise the "Given" step to: "Given the user runs `python3 dev/generate_workflow_animation.py` from the project root and it exits with code 0".
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
