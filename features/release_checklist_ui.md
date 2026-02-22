@@ -232,34 +232,6 @@ And rows whose content did not change appear visually undisturbed.
 
 ## User Testing Discoveries
 
-### [BUG] LOCAL badge narrower than GLOBAL badge (Discovered: 2026-02-22)
-- **Scenario:** Visual Specification — Release Checklist Row Layout
-- **Observed Behavior:** The `LOCAL` scope badge renders narrower than the `GLOBAL` badge because no minimum width is set. In a list where both badge types appear, the column is visually uneven — `LOCAL` is approximately one character-width narrower and the label is not centered relative to the GLOBAL badge width.
-- **Expected Behavior:** Both `GLOBAL` and `LOCAL` badges should occupy the same fixed width with the label centered within the box, maintaining consistent column alignment across all rows.
-- **Action Required:** Builder — apply a consistent `min-width` (or fixed width) to both badge variants so they render at the same size with centered text.
-- **Status:** RESOLVED (increased min-width from 44px to 52px in both table row and modal header badges)
-
-### [BUG] Disabled row is not visually dimmed (Discovered: 2026-02-22)
-- **Scenario:** Toggle Disables Step
-- **Observed Behavior:** Unchecking a step's checkbox leaves the row at full color — the row text (handle, number, badge, name) is not dimmed. The checkbox is empty and the disabled count increments correctly, but no visual dimming is applied.
-- **Expected Behavior:** Disabled rows should have all text dimmed to `--purlin-dim`, as specified in the scenario and the visual spec.
-- **Action Required:** Builder — apply `--purlin-dim` styling to the row when its checkbox is unchecked.
-- **Status:** RESOLVED
-
-### [BUG] Drag handle does not reorder steps (Discovered: 2026-02-22)
-- **Scenario:** Drag Handle Reorders Steps in Display
-- **Observed Behavior:** The drag handle (`⠿`) is visible but dragging it does not reorder the steps in the list.
-- **Expected Behavior:** Grabbing a step by its drag handle and dropping it at a new position should reorder the steps in the displayed list immediately, without a page reload.
-- **Action Required:** Builder — implement drag-and-drop reorder functionality for release checklist rows.
-- **Status:** RESOLVED
-
-### [BUG] Drag reorder snaps back before updating; unreliable persistence (Discovered: 2026-02-22)
-- **Scenario:** Drag Handle Reorders Steps in Display
-- **Observed Behavior:** After dropping a step at a new position, the item snaps back to its original position briefly before (sometimes) settling into the new order. Occasionally the reorder does not persist at all, requiring multiple drag attempts to achieve the desired ordering.
-- **Expected Behavior:** The UI should optimistically update the displayed order immediately on drop (no snap-back). The POST /release-checklist/config request persists the change in the background. The displayed order should remain stable throughout. The operation should be fully deterministic on the first drag attempt.
-- **Action Required:** Builder — investigate the snap-back. Likely cause: the 5-second auto-refresh is overwriting the optimistic DOM update before the POST completes, because the `rcPendingSave` flag is not being set at the start of a drag operation. Ensure the in-flight guard is set before the POST and cleared only after the response is received and the cache is updated.
-- **Status:** RESOLVED
-
 ## Implementation Notes
 
 *   The drag-to-reorder implementation MUST be consistent with any drag/drop library or pattern already used in the CDD Dashboard. If none exists, the HTML5 Drag and Drop API is the default. Do not introduce a new dependency without confirming with the Architect.
@@ -268,3 +240,4 @@ And rows whose content did not change appear visually undisturbed.
 *   The Step Detail Modal pattern references the Feature Detail Modal. If the Feature Detail Modal does not yet exist as an independent component, the Builder should implement the modal as a reusable component and refactor the Feature Detail Modal to use it.
 *   **Refresh Stability:** Uses `refreshReleaseChecklist()` called from `refreshStatus()` after innerHTML replacement. Fetches `/release-checklist`, compares against `rcStepsCache`, and only updates changed rows (reorder via DOM reappend, enabled state via checkbox+dimming diff). A `rcPendingSave` flag prevents refresh overwrites during in-flight `POST /release-checklist/config` requests — same pattern as the agents section's `pendingWrites` mechanism. Badge updates use shared `rcUpdateBadge()` function.
 *   **Drag Snap-Back Fix (2026-02-22):** BUG resolved — root cause was `refreshStatus()` replacing `status-view` innerHTML (including release checklist rows) from server-rendered HTML. When `rcPendingSave` was true, `refreshReleaseChecklist()` returned early, leaving the old server-rendered order in the DOM. Two-part fix: (1) `refreshStatus()` now saves and restores `rc-tbody` innerHTML when `rcPendingSave` is true, so the optimistic DOM survives the full-page refresh. (2) `rcPersistConfig()` optimistically updates `rcStepsCache` from the current DOM before sending the POST, so subsequent refreshes see the cache matching the server's new order and skip redundant DOM updates.
+*   **QA Verification (2026-02-22):** All 8 scenarios and 17 visual items PASS. Bugs resolved: LOCAL/GLOBAL badge width parity (min-width 52px), disabled row dimming, drag-to-reorder implementation, drag snap-back race condition with `rcPendingSave` guard.
