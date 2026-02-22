@@ -206,3 +206,10 @@ The "Startup Sequence" checkbox `onchange` handler: when unchecked, sets `checkb
 The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-columns: 64px 140px 80px 60px` (agent-name | model | effort | YOLO). Extend with two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 60px 60px` (agent-name | model | effort | YOLO | Startup/Sequence | Suggest/Next). The column header row gains two new cells with two-line text ("Startup" / "Sequence" and "Suggest" / "Next") using `<br>` or CSS wrapping; no inline labels appear in the agent data rows.
 
 ## User Testing Discoveries
+
+### [BUG] QA agent invokes /pl-status before reading startup flags (Discovered: 2026-02-22)
+- **Scenario:** Expert Mode Bypasses Orientation
+- **Observed Behavior:** QA agent (startup_sequence: false) proactively invoked the `/pl-status` skill as its first action before reading config.json, triggering a full status check and Critic report run. The command table was printed first (correct), but instead of outputting "startup_sequence disabled — awaiting instruction." and stopping, the agent ran the full orientation sequence.
+- **Expected Behavior:** After printing the command table, the QA agent should read config.json, see startup_sequence: false, output "startup_sequence disabled — awaiting instruction." and await user input. No call to tools/cdd/status.sh, no Critic report, no verification triage.
+- **Action Required:** Builder — re-examine the QA startup instruction gating (Section 3.0.1). The fix must ensure config.json is read BEFORE any skill or tool invocation, not after.
+- **Status:** OPEN
