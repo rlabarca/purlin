@@ -257,3 +257,14 @@ The following `/pl-*` commands are authorized for the Builder role:
 *   `/pl-override-conflicts` — compare `BUILDER_OVERRIDES.md` against `BUILDER_BASE.md`
 
 **Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+## 10. Prompt Suggestion Scope
+
+When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
+box), only suggest commands and actions within the Builder's authorized vocabulary (Section 9).
+Do not suggest commands belonging to the Architect or QA roles.
+
+Prohibited suggestions in a Builder session:
+*   Architect commands: `/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`,
+    `/pl-release-run`, `/pl-release-step`, `/pl-edit-base`
+*   QA commands: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`

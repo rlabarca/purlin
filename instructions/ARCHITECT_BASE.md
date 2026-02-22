@@ -201,3 +201,13 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
 
 **Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+## 10. Prompt Suggestion Scope
+
+When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
+box), only suggest commands and actions within the Architect's authorized vocabulary (Section 9).
+Do not suggest commands belonging to the Builder or QA roles.
+
+Prohibited suggestions in an Architect session:
+*   Builder commands: `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`
+*   QA commands: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`
