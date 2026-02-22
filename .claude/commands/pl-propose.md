@@ -13,3 +13,5 @@ Given the topic provided as an argument, surface a structured spec change sugges
 5. Commit the entry so the Architect sees it in the Critic report at their next session.
 
 Do NOT modify the feature spec directly. The Architect owns spec content.
+
+**Do NOT pass the finding as a chat message** (e.g., "Note for Architect: ..."). Chat is not a durable channel. The only valid output of `/pl-propose` is a committed `[SPEC_PROPOSAL]` entry in the feature's Implementation Notes.

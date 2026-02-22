@@ -191,6 +191,8 @@ When making non-trivial implementation decisions, you MUST classify and document
 *   `[INFEASIBLE]` **halts work on the feature.** Record the tag with a detailed rationale in Implementation Notes, commit the note, then **skip to the next feature** in the work plan. The Architect must revise the spec before the Builder can resume. Do NOT attempt workarounds or partial implementations.
 *   When in doubt between CLARIFICATION and AUTONOMOUS, use AUTONOMOUS. Transparency is preferred over underreporting.
 
+**Chat is not a communication channel.** Never surface spec corrections, stale path references, or other Architect-directed findings via chat output. Chat output is ephemeral and not monitored by the Architect between sessions. Use `/pl-propose` to record the finding in Implementation Notes and commit it. The Critic will route it to the Architect's action items at their next session.
+
 ### 3. Verify Locally
 *   **Testing (MANDATORY):**
     *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
