@@ -65,9 +65,9 @@ case "$AGENT_PROVIDER" in
     claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
     ;;
   gemini)
-    CLI_ARGS=("-m" "$AGENT_MODEL")
+    CLI_ARGS=("-m" "$AGENT_MODEL" "--no-gitignore")
     [ "$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
-    GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini "${CLI_ARGS[@]}" -p "Begin Builder session."
+    GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini "${CLI_ARGS[@]}"
     ;;
   *)
     echo "ERROR: Provider '$AGENT_PROVIDER' is not yet supported for agent invocation."

@@ -211,10 +211,100 @@ else
     log_fail "Gemini launcher did not pass --yolo (captured: $CAPTURED)"
 fi
 
-if echo "$CAPTURED" | grep -q 'Begin QA verification session'; then
-    log_pass "Gemini launcher passes QA session message"
+if echo "$CAPTURED" | grep -q -- '--no-gitignore'; then
+    log_pass "Gemini launcher passes --no-gitignore"
 else
-    log_fail "Gemini launcher missing session message (captured: $CAPTURED)"
+    log_fail "Gemini launcher did not pass --no-gitignore (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -qE '(^| )-p '; then
+    log_fail "Gemini launcher must not pass -p flag (captured: $CAPTURED)"
+else
+    log_pass "Gemini launcher does not pass -p flag (non-interactive mode prohibited)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Gemini Launcher Skips Effort Flag ---
+echo ""
+echo "[Scenario] Gemini Launcher Skips Effort Flag"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_builder.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": {
+            "provider": "gemini",
+            "model": "gemini-2.5-flash",
+            "effort": "high",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+# Mock gemini that captures its args
+cat > "$MOCK_DIR/gemini" << MOCK_EOF
+#!/bin/bash
+echo "ARGS=\$@" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/gemini"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_builder.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--effort\|effort'; then
+    log_fail "Gemini launcher must not pass effort-related argument (captured: $CAPTURED)"
+else
+    log_pass "Gemini launcher skips effort flag"
+fi
+
+if echo "$CAPTURED" | grep -qv -- '--yolo'; then
+    log_pass "Gemini launcher omits --yolo when bypass_permissions=false"
+else
+    log_fail "Gemini launcher should not pass --yolo when bypass=false (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Exports AGENTIC_PROJECT_ROOT ---
+echo ""
+echo "[Scenario] Launcher Exports AGENTIC_PROJECT_ROOT"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "provider": "claude",
+            "model": "claude-sonnet-4-6",
+            "effort": "",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+# Mock claude that captures AGENTIC_PROJECT_ROOT from its env
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+echo "AGENTIC_PROJECT_ROOT=\$AGENTIC_PROJECT_ROOT" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q "AGENTIC_PROJECT_ROOT=$SANDBOX"; then
+    log_pass "AGENTIC_PROJECT_ROOT exported as project root"
+else
+    log_fail "AGENTIC_PROJECT_ROOT not set correctly (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox
