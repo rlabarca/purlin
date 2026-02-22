@@ -603,3 +603,10 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Tombstone deletion modal shows no tabs (single content view only)
 
 ## User Testing Discoveries
+
+### [SPEC_DISPUTE] ?? badge appears when Active section is empty and collapsed (Discovered: 2026-02-22)
+- **Scenario:** Section Collapse and Expand (collapsed summary behavior, Section 2.2.2)
+- **Observed Behavior:** When the Active section is collapsed and contains no active items, a `??` badge appears in the section heading.
+- **Expected Behavior:** No badge should appear. An empty Active section is a positive/clean state; displaying `??` is misleading because `??` is used elsewhere in the dashboard to mean "unknown role status". An empty section heading with no badge better communicates "nothing to act on."
+- **Action Required:** Architect — review and revise Section 2.2.2 collapsed summary spec. Proposed change: when the Active section is empty and collapsed, display no badge (blank), not `??`.
+- **Status:** OPEN
