@@ -17,6 +17,10 @@
       "enabled": true
     },
     {
+      "id": "critic_consistency_check",
+      "enabled": true
+    },
+    {
       "id": "purlin.doc_consistency_check",
       "enabled": true
     },

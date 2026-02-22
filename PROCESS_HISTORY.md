@@ -2,6 +2,14 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] HOW_WE_WORK Section 8 Expansion + critic_consistency_check Release Step
+
+- **Change:** Expanded `instructions/HOW_WE_WORK_BASE.md` Section 8 (Critic-Driven Coordination) from a brief summary with one subsection to a full reference with three subsections. Added a prose intro paragraph clarifying the CLI-only agent interface. Added Section 8.1 (What the Critic Validates) covering the dual-gate model (Spec Gate + Implementation Gate) and four supplementary audits (User Testing, Builder Decision, Visual Spec, Untracked File). Added Section 8.2 (Role-Specific Action Items) documenting all four priority levels (CRITICAL/HIGH/MEDIUM/LOW) and role routing for each. Renumbered the existing "Automated Test Status in the CDD Dashboard" subsection from 8.1 to 8.3, content unchanged.
+- **Motivation:** Section 8 described the Critic in only ~8 lines with no detail on what it validates, what priorities mean, or which role receives which action item. Agents triage their work based on this section; the brevity created ambiguity at session start.
+- **Change:** Introduced the `critic_consistency_check` local release step. Added its definition to `.agentic_devops/release/local_steps.json` and positioned it after `doc_consistency_framework` in `.agentic_devops/release/config.json`. The step performs a focused two-phase audit of all Critic-related files (terminology, routing rules, status enumerations, deprecated config handling, startup mandates, CLI-only contract) and, once clean, writes or updates the `## The Critic` section in README.md.
+- **Motivation:** No release step enforced consistency across the six files that describe Critic behavior, and README.md had no actionable explanation of the Critic for new readers.
+- **Files changed:** `instructions/HOW_WE_WORK_BASE.md` (Section 8 expansion), `features/release_checklist_core.md` (Section 2.8 new step entry), `.agentic_devops/release/local_steps.json` (new step), `.agentic_devops/release/config.json` (new step ordering).
+
 ## [2026-02-22] Add /pl-release-step Command and Local Release Step Management Feature
 
 - **Change:** Introduced the `/pl-release-step` slash command and the `features/release_step_management.md` spec defining the backing CLI tool (`tools/release/manage_step.py`). The command provides a guided, interactive interface for the Architect to create, modify, and delete local release steps safely — with schema validation, `purlin.` prefix rejection, atomic writes, and dry-run preview before committing.

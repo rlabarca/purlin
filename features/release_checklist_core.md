@@ -132,6 +132,14 @@ The following steps are defined in Purlin's `.agentic_devops/release/local_steps
 
 This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `purlin.instruction_audit`, so both override-consistency and instruction-internal-consistency checks run together before the final release steps.
 
+**`critic_consistency_check`**
+- Friendly Name: "Critic Consistency Check & README Update"
+- Description: "Cross-references all Critic-related specification and instruction files for inconsistencies in terminology, routing rules, and responsibilities. Halts the release if critical inconsistencies are found. Once clean, writes or updates the '## The Critic' section in README.md."
+- Code: null
+- Agent Instructions: Two-phase execution. Phase 1 (Audit): reads `features/critic_tool.md`, `features/policy_critic.md`, `instructions/HOW_WE_WORK_BASE.md` Section 8, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, and `instructions/QA_BASE.md`. Checks for: deprecated "quality gate" terminology (all files must use "coordination engine"), routing rule consistency for BUG/DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE across `policy_critic.md`, HOW_WE_WORK Section 7.5, and QA_BASE, role status enumeration consistency, `critic_gate_blocking` described as no-op everywhere it appears, startup mandate (all role files must mandate `tools/cdd/status.sh` at session start), and CLI-only agent interface contract. Produces a findings table (CRITICAL / WARNING / OK). CRITICAL findings halt the step. Phase 2 (README Update): writes or updates the `## The Critic` section in README.md immediately after `## The Agents`, before `## Setup & Configuration`. Commits README.md with message `docs(readme): update Role of the Critic section`.
+
+This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `doc_consistency_framework`, so the focused Critic audit runs after the broader instruction-file consistency check.
+
 ## 3. Scenarios
 
 ### Automated Scenarios

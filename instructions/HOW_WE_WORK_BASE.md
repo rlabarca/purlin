@@ -200,7 +200,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 *   **INFEASIBLE** -> The feature cannot be implemented as specified (technical constraints, contradictory requirements, or dependency issues). Builder halts work on the feature, records a detailed rationale in Implementation Notes, and skips to the next feature. Architect must revise the spec before the Builder can resume.
 
 ## 8. Critic-Driven Coordination
-The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start.
+The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `tools/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
 
 *   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA columns).
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
@@ -208,7 +208,34 @@ The Critic is the project coordination engine. It validates quality AND generate
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
 *   **Agent Interface:** Agents access tool data via CLI commands (`tools/cdd/status.sh`, `tools/cdd/status.sh --graph`, `tools/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
 
-### 8.1 Automated Test Status in the CDD Dashboard
+### 8.1 What the Critic Validates
+The Critic applies a **dual-gate model** to every feature:
+
+*   **Spec Gate (pre-implementation):** Validates that required spec sections are present, scenarios are well-formed, and prerequisite anchor nodes are declared. This gate runs regardless of feature lifecycle status and is the primary signal for Architect action items.
+*   **Implementation Gate (post-implementation):** Validates that automated tests trace to their Gherkin scenarios (traceability), that code does not violate FORBIDDEN patterns from anchor nodes (policy adherence), and optionally checks for LLM-detected logic drift (disabled by default, configurable via `config.json`).
+
+In addition to the dual-gate, the Critic runs these supplementary audits on every pass:
+
+*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries in `## User Testing Discoveries` sections. Each entry is routed to the responsible role's action items.
+*   **Builder Decision Audit:** Scans `## Implementation Notes` for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags. These are flagged as HIGH-priority Architect action items.
+*   **Visual Specification Detection:** Detects `## Visual Specification` sections and surfaces visual checklist items as QA action items for the visual verification pass.
+*   **Untracked File Audit:** Checks git status for untracked files in Architect-owned directories and flags them as MEDIUM-priority Architect triage items.
+
+### 8.2 Role-Specific Action Items
+Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggregate results across all features are written to `CRITIC_REPORT.md`, organized by role.
+
+**Priority levels:**
+*   **CRITICAL:** INFEASIBLE escalation; the release is blocked until resolved.
+*   **HIGH:** Gate FAIL, open BUG entries, unacknowledged builder decisions, SPEC_DISPUTE.
+*   **MEDIUM:** Traceability gaps, gate warnings, untracked files.
+*   **LOW:** Informational warnings that do not block release.
+
+**Role routing:**
+*   **Architect:** Spec gaps (Spec Gate FAIL), INFEASIBLE escalations from Builder, unacknowledged builder decisions, untracked files.
+*   **Builder:** Features in TODO lifecycle, failing automated tests, traceability gaps, open BUG entries.
+*   **QA:** Features in TESTING lifecycle, SPEC_UPDATED discoveries awaiting re-verification, visual verification passes.
+
+### 8.3 Automated Test Status in the CDD Dashboard
 Automated test results are NOT reported as a separate column. They are surfaced through the existing Builder and QA role columns:
 
 *   **Builder column:** `DONE` means the spec is structurally complete and no open BUGs exist (automated tests passed). `FAIL` means `tests.json` exists with `status: "FAIL"` (automated tests failed).
