@@ -51,6 +51,7 @@ CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
 DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
+TOOLS_ROOT = CONFIG.get("tools_root", "tools")
 POLL_INTERVAL = 2  # seconds for file watcher polling
 
 # Release checklist module
