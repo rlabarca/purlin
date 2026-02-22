@@ -40,13 +40,13 @@ claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permi
 
 ### 2.5 Provider Dispatch: Gemini
 ```
-GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini -m $AGENT_MODEL --no-gitignore [--yolo]
+GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini chat -p "<session message>" -m $AGENT_MODEL [--yolo]
 ```
 *   `-m $AGENT_MODEL` is always passed (Gemini CLI requires a model flag).
-*   `--no-gitignore` is always passed. Gemini CLI respects `.gitignore` by default, which blocks agent access to required generated artifacts (`CRITIC_REPORT.md`, `tests/*/critic.json`, `.agentic_devops/cache/*.json`).
+*   `gemini chat` is used (not `gemini run`). The `chat` subcommand processes the initial `-p` prompt and then stays open in an interactive session. The `run` subcommand exits after printing the response and is incompatible with agent sessions.
+*   `-p "<session message>"` passes the role-specific session message as the initial prompt (see Section 2.8). This kicks off the agent's startup protocol immediately on launch without requiring manual user input.
 *   When `AGENT_BYPASS=true`: pass `--yolo`.
 *   When `AGENT_BYPASS=false`: no `--yolo`; interactive approval is used.
-*   **No `-p` flag.** The Gemini CLI `-p` flag enables non-interactive pipe mode — it sends the prompt and exits. Agents require an interactive session. The session kickoff is implicit in the system prompt injected via `GEMINI_SYSTEM_MD`; no separate `-p` argument is needed or permitted.
 *   Gemini does NOT support effort levels. If `AGENT_EFFORT` is set, it is silently skipped.
 *   Concurrent safety: each launcher instance writes to its own `mktemp` file pointed to by `GEMINI_SYSTEM_MD`, so concurrent invocations do not interfere.
 *   No `--allowedTools` equivalent exists for Gemini; tool access is governed by `--yolo` vs. interactive mode.
@@ -63,13 +63,11 @@ If `AGENT_PROVIDER` is neither `claude` nor `gemini`, the script MUST:
 3. Exit with status code 1.
 
 ### 2.8 Session Messages
-Session messages are passed as the trailing positional argument to the Claude CLI only.
+Session messages are passed as the trailing positional argument to the Claude CLI and as the `-p` flag to `gemini chat`.
 
 *   **Architect:** `"Begin Architect session."`
 *   **Builder:** `"Begin Builder session."`
 *   **QA:** `"Begin QA verification session."`
-
-For the Gemini provider, no session message argument is passed. The `GEMINI_SYSTEM_MD` system prompt already contains the role-specific startup instructions; the Gemini CLI starts interactively without a seed prompt.
 
 
 ## 3. Scenarios
@@ -87,14 +85,14 @@ For the Gemini provider, no session message argument is passed. The `GEMINI_SYST
     Given config.json contains agents.qa with provider "gemini", model "gemini-3.0-pro", bypass_permissions true
     When run_qa.sh is executed
     Then GEMINI_SYSTEM_MD is set to the temporary prompt file path
-    And it invokes gemini -m gemini-3.0-pro --no-gitignore --yolo
-    And no -p argument is passed to gemini
+    And it invokes gemini chat -p "Begin QA verification session." -m gemini-3.0-pro --yolo
     And the temporary prompt file is cleaned up on exit
 
-#### Scenario: Gemini Launcher Passes --no-gitignore for All Invocations
-    Given config.json contains agents.qa with provider "gemini", model "gemini-2.5-pro", bypass_permissions true
-    When run_qa.sh is executed
-    Then it invokes gemini with --no-gitignore
+#### Scenario: Gemini Launcher Uses chat Subcommand with Role-Specific Prompt
+    Given config.json contains agents.architect with provider "gemini", model "gemini-2.5-pro", bypass_permissions false
+    When run_architect.sh is executed
+    Then it invokes gemini using the chat subcommand
+    And passes -p "Begin Architect session." as the initial prompt argument
 
 #### Scenario: Gemini Launcher Skips Effort Flag
     Given config.json contains agents.builder with provider "gemini", model "gemini-2.5-flash", effort "high"
@@ -128,10 +126,8 @@ Gemini CLI system context injection uses the `GEMINI_SYSTEM_MD` environment vari
 
 The `--yolo` flag is the Gemini CLI equivalent of Claude's `--dangerously-skip-permissions`.
 
-Gemini CLI's `read_file` tool respects `.gitignore` filtering regardless of `--yolo` mode. The `--no-gitignore` flag must be passed unconditionally to allow agents to read generated artifacts (`CRITIC_REPORT.md`, `critic.json` files, `cache/*.json` files) that are correctly excluded from git but required by the startup protocols.
-
-The Gemini CLI `-p` flag enables non-interactive pipe mode: it sends the given prompt, waits for a single response, and exits. This is incompatible with agent sessions, which require a persistent interactive loop. Do NOT pass `-p` or any positional prompt argument when launching Gemini as an agent. The session kickoff is embedded in the system prompt via `GEMINI_SYSTEM_MD`.
+The Gemini CLI has two subcommands relevant to agent use. `gemini run -p "..."` sends the prompt, prints the response, and exits — this is incompatible with agent sessions. `gemini chat -p "..."` sends the prompt, prints the response, and remains open in an interactive session. Launchers MUST use `chat`, not `run`. The `-p` argument is required to trigger the agent's startup protocol automatically; without it, the session starts blank and the agent does not self-initialize.
 
 These scripts are the standalone versions. Bootstrap-generated equivalents (Section 2.5 of `submodule_bootstrap.md`) are produced by `tools/bootstrap.sh` and follow the same structure with a submodule-specific `CORE_DIR` path.
 
-**[DEVIATION]** `--no-gitignore` flag removed from Gemini dispatch. Gemini CLI v0.29.0 does not support this flag — it causes "Unknown argument: gitignore" and prevents agent launch. The spec (Sections 2.5, 3 scenarios) references this flag, but it does not exist in the current CLI. Launchers now invoke Gemini without it. If a future Gemini CLI version adds gitignore filtering with an opt-out flag, the launchers and spec should be updated. Architect acknowledgment required before COMPLETE. (Severity: HIGH)
+Gemini CLI v0.29.0 does not support a `--no-gitignore` flag. Earlier versions of this spec required it, but it never existed in the released CLI. It has been removed. If a future CLI version adds gitignore opt-out, the spec should be updated at that time.
