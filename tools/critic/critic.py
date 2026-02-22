@@ -976,17 +976,21 @@ def generate_action_items(feature_result, cdd_status=None):
             })
 
     # Cross-validation warnings (invalid targeted scope names) -> MEDIUM Builder
+    # Only targeted: scopes have scope name validation errors. First-pass guard
+    # escalation warnings and cosmetic cross-file warnings are informational only
+    # and MUST NOT generate Builder action items (per critic_tool.md §2.12).
     regression_scope_b = feature_result.get('regression_scope', {})
-    cv_warnings = regression_scope_b.get('cross_validation_warnings', [])
-    for warning in cv_warnings:
-        builder_items.append({
-            'priority': 'MEDIUM',
-            'category': 'scope_validation',
-            'feature': feature_name,
-            'description': (
-                f'Fix scope declaration for {feature_name}: {warning}'
-            ),
-        })
+    if regression_scope_b.get('declared', '').startswith('targeted:'):
+        cv_warnings = regression_scope_b.get('cross_validation_warnings', [])
+        for warning in cv_warnings:
+            builder_items.append({
+                'priority': 'MEDIUM',
+                'category': 'scope_validation',
+                'feature': feature_name,
+                'description': (
+                    f'Fix scope declaration for {feature_name}: {warning}'
+                ),
+            })
 
     # NOTE: SPEC_UPDATED discoveries do NOT generate Builder action items.
     # Builder signaling comes from the feature lifecycle: spec edits reset

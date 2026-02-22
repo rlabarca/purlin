@@ -3469,6 +3469,42 @@ class TestBuilderActionItemsFromInvalidTargetedScopeNames(unittest.TestCase):
         ]
         self.assertEqual(len(scope_items), 0)
 
+    def test_first_pass_guard_warning_no_builder_item(self):
+        """First-pass guard escalation warning must NOT generate a Builder item."""
+        result = _make_base_result()
+        result['regression_scope'] = {
+            'declared': 'full',  # escalated from cosmetic by first-pass guard
+            'scenarios': ['Some Scenario'],
+            'visual_items': 0,
+            'cross_validation_warnings': [
+                'Cosmetic scope declared but no prior clean QA pass exists '
+                'for this feature. Escalating to full verification.'
+            ],
+        }
+        items = generate_action_items(result, cdd_status=None)
+        scope_items = [
+            i for i in items['builder'] if i['category'] == 'scope_validation'
+        ]
+        self.assertEqual(len(scope_items), 0)
+
+    def test_cosmetic_cross_file_warning_no_builder_item(self):
+        """Cosmetic scope cross-file warning must NOT generate a Builder item."""
+        result = _make_base_result()
+        result['regression_scope'] = {
+            'declared': 'cosmetic',
+            'scenarios': [],
+            'visual_items': 0,
+            'cross_validation_warnings': [
+                'Cosmetic scope commit modifies files: tools/cdd/server.py. '
+                'Manual scenarios may be affected.'
+            ],
+        }
+        items = generate_action_items(result, cdd_status=None)
+        scope_items = [
+            i for i in items['builder'] if i['category'] == 'scope_validation'
+        ]
+        self.assertEqual(len(scope_items), 0)
+
 
 # ===================================================================
 # Visual Specification Tests (Section 2.13)

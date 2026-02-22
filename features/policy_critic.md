@@ -79,7 +79,7 @@ The Builder declares the **impact scope** of each change at status-commit time u
 *   **Mixed:** Comma-separate manual and visual targets (e.g., `targeted:Web Dashboard Auto-Refresh,Visual:CDD Web Dashboard`).
 *   The Critic MUST validate that every name in a `targeted:` scope matches an existing `#### Scenario:` title or `### Screen:` title in the feature spec. Unresolvable names produce a WARNING in the Critic report.
 
-**Cosmetic First-Pass Guard:** `cosmetic` scope MUST only suppress QA verification when the feature's previous on-disk `tests/<feature>/critic.json` shows `role_status.qa == "CLEAN"`. When no prior clean pass exists (`qa` was `TODO`, `N/A`, `FAIL`, or the file is absent), the Critic MUST escalate the declared scope to `full` and append a `cross_validation_warning`: `"Cosmetic scope declared but no prior clean QA pass exists for this feature. Escalating to full verification."`
+**Cosmetic First-Pass Guard:** `cosmetic` scope MUST only suppress QA verification when the feature's previous on-disk `tests/<feature>/critic.json` shows `role_status.qa == "CLEAN"`. When no prior clean pass exists (`qa` was `TODO`, `N/A`, `FAIL`, or the file is absent), the Critic MUST escalate the declared scope to `full` and append a `cross_validation_warning`: `"Cosmetic scope declared but no prior clean QA pass exists for this feature. Escalating to full verification."` This warning is **informational only** and MUST NOT generate a Builder action item. It is preserved in `regression_scope.cross_validation_warnings` for audit purposes only.
 
 **Constraints:**
 *   Default when omitted: `full` (backward-compatible, safe).
