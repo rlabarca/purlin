@@ -672,7 +672,7 @@ See [critic_tool.impl.md](critic_tool.impl.md) for implementation knowledge, bui
 
 ### [BUG] logic_drift.py writes LLM verdict cache inside tools/
 
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Discovered by:** Architect (Submodule Safety Audit, 2026-02-22)
 - **File:** `tools/critic/logic_drift.py:22`
 - **Description:** `CACHE_DIR` is set to `os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')`, which resolves to `tools/critic/.cache/`. The `_write_cache()` function creates this directory and writes per-pair verdict JSON files into it. This violates submodule safety contract §2.12 (artifact write locations). In a submodule deployment `tools/` is a read-only framework directory; writes will pollute the tracked submodule or fail with permission errors.

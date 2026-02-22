@@ -19,7 +19,7 @@ except ImportError:
     anthropic = None
     HAS_ANTHROPIC = False
 
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
+DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
 
 SYSTEM_PROMPT = (
     'You are a test alignment auditor. Given a Gherkin scenario and a test '
@@ -40,9 +40,21 @@ def _cache_key(scenario_body, test_body):
     return hashlib.sha256(combined.encode('utf-8')).hexdigest()
 
 
-def _read_cache(cache_key):
+def _resolve_cache_dir(project_root):
+    """Resolve the LLM verdict cache directory.
+
+    Uses <project_root>/.purlin/cache/logic_drift_cache/ per submodule
+    safety contract §2.12.  Falls back to script-local .cache/ only if
+    project_root is not provided.
+    """
+    if project_root:
+        return os.path.join(project_root, '.purlin', 'cache', 'logic_drift_cache')
+    return DEFAULT_CACHE_DIR
+
+
+def _read_cache(cache_dir, cache_key):
     """Read cached verdict. Returns dict or None."""
-    path = os.path.join(CACHE_DIR, f'{cache_key}.json')
+    path = os.path.join(cache_dir, f'{cache_key}.json')
     if os.path.isfile(path):
         try:
             with open(path, 'r') as f:
@@ -52,10 +64,10 @@ def _read_cache(cache_key):
     return None
 
 
-def _write_cache(cache_key, data):
+def _write_cache(cache_dir, cache_key, data):
     """Write verdict to cache."""
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    path = os.path.join(CACHE_DIR, f'{cache_key}.json')
+    os.makedirs(cache_dir, exist_ok=True)
+    path = os.path.join(cache_dir, f'{cache_key}.json')
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -141,6 +153,8 @@ def run_logic_drift(pairs, project_root, feature_stem, tools_root, model):
             'detail': 'Logic drift skipped: failed to initialize Anthropic client.',
         }
 
+    cache_dir = _resolve_cache_dir(project_root)
+
     results = []
     has_divergent = False
     has_partial = False
@@ -156,7 +170,7 @@ def run_logic_drift(pairs, project_root, feature_stem, tools_root, model):
 
             # Check cache first
             key = _cache_key(scenario_body, test_body)
-            cached = _read_cache(key)
+            cached = _read_cache(cache_dir, key)
 
             if cached and cached.get('verdict') in VALID_VERDICTS:
                 verdict_data = cached
@@ -171,7 +185,7 @@ def run_logic_drift(pairs, project_root, feature_stem, tools_root, model):
                         'reasoning': 'LLM call failed or returned invalid response.',
                     })
                     continue
-                _write_cache(key, verdict_data)
+                _write_cache(cache_dir, key, verdict_data)
 
             verdict = verdict_data['verdict']
             if verdict == 'DIVERGENT':

@@ -580,9 +580,10 @@ class TestLogicDriftEngine(unittest.TestCase):
     """Tests for the logic drift engine (run_logic_drift)."""
 
     def setUp(self):
-        self.cache_dir = tempfile.mkdtemp()
-        self._orig_cache = logic_drift.CACHE_DIR
-        logic_drift.CACHE_DIR = self.cache_dir
+        self.project_root = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(
+            self.project_root, '.purlin', 'cache', 'logic_drift_cache',
+        )
         self.pairs = [{
             'scenario_title': 'Test Scenario',
             'scenario_body': 'Given X\nWhen Y\nThen Z',
@@ -593,8 +594,7 @@ class TestLogicDriftEngine(unittest.TestCase):
         }]
 
     def tearDown(self):
-        logic_drift.CACHE_DIR = self._orig_cache
-        shutil.rmtree(self.cache_dir, ignore_errors=True)
+        shutil.rmtree(self.project_root, ignore_errors=True)
 
     @patch('logic_drift.HAS_ANTHROPIC', True)
     @patch('logic_drift.anthropic')
@@ -608,7 +608,8 @@ class TestLogicDriftEngine(unittest.TestCase):
         mock_client.messages.create.return_value = mock_response
 
         result = logic_drift.run_logic_drift(
-            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+            self.pairs, self.project_root, 'test', 'tools',
+            'claude-sonnet-4-20250514',
         )
         self.assertEqual(result['status'], 'PASS')
         self.assertEqual(len(result['pairs']), 1)
@@ -629,7 +630,8 @@ class TestLogicDriftEngine(unittest.TestCase):
         mock_client.messages.create.return_value = mock_response
 
         result = logic_drift.run_logic_drift(
-            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+            self.pairs, self.project_root, 'test', 'tools',
+            'claude-sonnet-4-20250514',
         )
         self.assertEqual(result['status'], 'FAIL')
         self.assertEqual(result['pairs'][0]['verdict'], 'DIVERGENT')
@@ -640,7 +642,7 @@ class TestLogicDriftEngine(unittest.TestCase):
         mock_client = MagicMock()
         mock_anthropic_mod.Anthropic.return_value = mock_client
 
-        # Pre-populate cache
+        # Pre-populate cache at the resolved path
         scenario_body = self.pairs[0]['scenario_body']
         test_body = self.pairs[0]['test_functions'][0]['body']
         key = logic_drift._cache_key(scenario_body, test_body)
@@ -653,7 +655,8 @@ class TestLogicDriftEngine(unittest.TestCase):
             }, f)
 
         result = logic_drift.run_logic_drift(
-            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+            self.pairs, self.project_root, 'test', 'tools',
+            'claude-sonnet-4-20250514',
         )
         self.assertEqual(result['status'], 'PASS')
         self.assertEqual(result['pairs'][0]['verdict'], 'ALIGNED')
@@ -664,7 +667,8 @@ class TestLogicDriftEngine(unittest.TestCase):
     @patch('logic_drift.HAS_ANTHROPIC', False)
     def test_no_anthropic_graceful_skip(self):
         result = logic_drift.run_logic_drift(
-            self.pairs, '/tmp', 'test', 'tools', 'claude-sonnet-4-20250514',
+            self.pairs, self.project_root, 'test', 'tools',
+            'claude-sonnet-4-20250514',
         )
         self.assertEqual(result['status'], 'WARN')
         self.assertIn('not installed', result['detail'])

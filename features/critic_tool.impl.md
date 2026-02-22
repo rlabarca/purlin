@@ -2,7 +2,7 @@
 
 *   **Tool Location:** `tools/critic/` directory containing `critic.py` (main engine), `traceability.py`, `policy_check.py`, `logic_drift.py`, `test_critic.py`, and `run.sh` (executable convenience wrapper).
 *   **Test Output:** Test results go to `tests/critic_tool/tests.json`.
-*   **LLM Cache:** Stored in `tools/critic/.cache/` as JSON files keyed by hash pairs. This directory should be gitignored.
+*   **LLM Cache:** Stored in `<project_root>/.purlin/cache/logic_drift_cache/` as JSON files keyed by hash pairs. Resolved via `_resolve_cache_dir(project_root)` in `logic_drift.py`, using the `project_root` parameter already passed to `run_logic_drift()`. Falls back to script-local `.cache/` only if `project_root` is not provided (defensive only — all callers pass it).
 *   **No External Dependencies:** The deterministic components (Spec Gate, traceability, policy check) MUST NOT require any external packages beyond Python 3.9+ standard library. The LLM component requires the `anthropic` Python package only when enabled.
 *   **[CLARIFICATION]** DEVIATION/DISCOVERY action items route to Architect (not Builder), as the spec says these require Architect acknowledgment. Builder's role is to get that acknowledgment, but the Critic generates the item for the Architect to act on. (Severity: INFO)
 *   **Role Status Lifecycle Dependency:** `compute_role_status()` reads `feature_status.json` via `_get_feature_lifecycle_state()` for QA TODO conditions (a) and (b) -- both require TESTING state. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent. If `feature_status.json` doesn't exist on disk, TESTING-based TODO detection is skipped for both conditions.
