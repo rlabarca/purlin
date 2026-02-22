@@ -42,9 +42,7 @@ setup_sandbox() {
     cp "$SUBMODULE_SRC/tools/sync_upstream.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
     cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/agentic-dev/tools/cdd/start.sh"
     cp "$SUBMODULE_SRC/tools/cdd/serve.py" "$PROJECT/agentic-dev/tools/cdd/serve.py"
-    cp "$SUBMODULE_SRC/tools/software_map/start.sh" "$PROJECT/agentic-dev/tools/software_map/start.sh"
-    cp "$SUBMODULE_SRC/tools/software_map/serve.py" "$PROJECT/agentic-dev/tools/software_map/serve.py"
-    cp "$SUBMODULE_SRC/tools/software_map/generate_tree.py" "$PROJECT/agentic-dev/tools/software_map/generate_tree.py"
+    cp "$SUBMODULE_SRC/tools/cdd/graph.py" "$PROJECT/agentic-dev/tools/cdd/graph.py"
     cp "$SUBMODULE_SRC/tools/critic/critic.py" "$PROJECT/agentic-dev/tools/critic/critic.py"
     cp "$SUBMODULE_SRC/tools/critic/run.sh" "$PROJECT/agentic-dev/tools/critic/run.sh"
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
@@ -497,8 +495,8 @@ Test.
 None.
 FEAT_EOF
 
-# Run generate_tree.py (produces .mmd and dependency_graph.json)
-AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/software_map/generate_tree.py" > /dev/null 2>&1
+# Run graph generation via status.sh --graph (graph.py produces .mmd and dependency_graph.json)
+AGENTIC_PROJECT_ROOT="$PROJECT" bash "$PROJECT/agentic-dev/tools/cdd/status.sh" --graph > /dev/null 2>&1
 
 if [ -f "$PROJECT/.agentic_devops/cache/dependency_graph.json" ]; then
     log_pass "dependency_graph.json written to .agentic_devops/cache/"
@@ -513,7 +511,7 @@ else
 fi
 
 # Verify NO artifacts in the submodule's tools/ directory
-if [ -f "$PROJECT/agentic-dev/tools/software_map/dependency_graph.json" ]; then
+if [ -f "$PROJECT/agentic-dev/tools/cdd/dependency_graph.json" ]; then
     log_fail "dependency_graph.json found inside submodule tools/ (should not be)"
 else
     log_pass "No dependency_graph.json inside submodule tools/"
@@ -531,19 +529,12 @@ echo "=== Start Script Config Discovery Tests ==="
 echo ""
 echo "[Scenario] CDD start.sh discovers submodule config"
 CDD_START="$SCRIPT_DIR/cdd/start.sh"
-SMAP_START="$SCRIPT_DIR/software_map/start.sh"
 
-# Check that both start scripts have the submodule fallback path
+# Check that CDD start script has the submodule fallback path
 if grep -q 'DIR/../../../.agentic_devops/config.json' "$CDD_START"; then
     log_pass "cdd/start.sh has submodule config fallback"
 else
     log_fail "cdd/start.sh missing submodule config fallback"
-fi
-
-if grep -q 'DIR/../../../.agentic_devops/config.json' "$SMAP_START"; then
-    log_pass "software_map/start.sh has submodule config fallback"
-else
-    log_fail "software_map/start.sh missing submodule config fallback"
 fi
 
 # Verify standalone path is tried first

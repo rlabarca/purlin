@@ -230,21 +230,6 @@ else
     log_fail "cdd/start.sh does not source resolve_python.sh"
 fi
 
-# --- Scenario: Software Map start.sh Replaced Ad-Hoc Detection ---
-echo ""
-echo "[Scenario] Software Map start.sh Replaced Ad-Hoc Detection"
-SMAP_START="$SCRIPT_DIR/software_map/start.sh"
-if grep -q 'if \[ -d "\$DIR/../../\.venv" \]' "$SMAP_START"; then
-    log_fail "software_map/start.sh still contains ad-hoc venv detection"
-else
-    log_pass "software_map/start.sh ad-hoc venv detection removed"
-fi
-if grep -q 'source.*resolve_python\.sh' "$SMAP_START"; then
-    log_pass "software_map/start.sh sources resolve_python.sh"
-else
-    log_fail "software_map/start.sh does not source resolve_python.sh"
-fi
-
 # --- Scenario: Bootstrap Uses Resolved Python for JSON Validation ---
 echo ""
 echo "[Scenario] Bootstrap Uses Resolved Python for JSON Validation"

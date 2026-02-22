@@ -1,7 +1,7 @@
 #!/bin/bash
 # test_agent_configuration.sh — Automated tests for agent configuration.
 # Tests launcher behavior, provider probes, and detect-providers aggregator.
-# Produces tests/agent_configuration/tests.json at project root.
+# Produces tests/agent_configuration/tests.json and tests/agent_launchers_common/tests.json at project root.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,7 +54,7 @@ echo ""
 echo "[Scenario] Launcher Reads Agent Config from Config JSON"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_claude_architect.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
 {
@@ -69,7 +69,7 @@ cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
 }
 EOF
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_claude_architect.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--model claude-sonnet-4-6'; then
@@ -97,10 +97,10 @@ echo ""
 echo "[Scenario] Launcher Falls Back When Config is Missing"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_claude_architect.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
 # No config.json written — .agentic_devops/ is empty
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_claude_architect.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -qv -- '--model'; then
@@ -123,14 +123,14 @@ echo ""
 echo "[Scenario] Launcher Handles Unsupported Provider"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_claude_builder.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/run_builder.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
 {
     "agents": {
         "builder": {
-            "provider": "gemini",
-            "model": "gemini-2.5-pro",
+            "provider": "openai",
+            "model": "gpt-4o",
             "effort": "medium",
             "bypass_permissions": false
         }
@@ -138,7 +138,7 @@ cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
 }
 EOF
 
-OUTPUT=$(PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_claude_builder.sh" 2>&1)
+OUTPUT=$(PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_builder.sh" 2>&1)
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -ne 0 ]; then
@@ -315,10 +315,14 @@ if [ $FAIL -gt 0 ]; then
 fi
 echo "==============================="
 
-# Write tests/agent_configuration/tests.json
-OUTDIR="$TESTS_DIR/agent_configuration"
-mkdir -p "$OUTDIR"
-echo "{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}" > "$OUTDIR/tests.json"
+# Write tests/agent_configuration/tests.json and tests/agent_launchers_common/tests.json
+# Both features share the same test suite (launchers depend on config).
+RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}"
+for FEAT in agent_configuration agent_launchers_common; do
+    OUTDIR="$TESTS_DIR/$FEAT"
+    mkdir -p "$OUTDIR"
+    echo "$RESULT_JSON" > "$OUTDIR/tests.json"
+done
 
 echo ""
 if [ $FAIL -eq 0 ]; then
