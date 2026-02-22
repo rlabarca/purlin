@@ -25,6 +25,10 @@
       "enabled": true
     },
     {
+      "id": "doc_consistency_framework",
+      "enabled": true
+    },
+    {
       "id": "purlin.mark_release_complete",
       "enabled": true
     },

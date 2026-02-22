@@ -1,0 +1,12 @@
+{
+    "steps": [
+        {
+            "_comment": "EXAMPLE STEP — remove _comment and replace all fields with your own. Required fields: id (must NOT start with 'purlin.'), friendly_name, description, code (string or null), agent_instructions (string or null). See tools/release/global_steps.json for format examples.",
+            "id": "my_project_step",
+            "friendly_name": "My Project Step",
+            "description": "Describe what this step does and why it belongs in the release process.",
+            "code": null,
+            "agent_instructions": "Natural language instructions for the Architect agent when executing this step. Set to null if no agent-specific guidance is needed."
+        }
+    ]
+}

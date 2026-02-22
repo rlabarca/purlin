@@ -115,14 +115,14 @@ The following 8 steps are defined in `tools/release/global_steps.json`:
 - Agent Instructions: "Read PROCESS_HISTORY.md and verify the 'Agentic Evolution' table in README.md reflects all recent entries. Add or update entries as needed. Commit any changes."
 
 **`purlin.instruction_audit`**
-- Description: "Verifies that all instruction files are in sync with the current feature specifications and architectural policies."
+- Description: "Verifies that `.agentic_devops/` override files are consistent with the base instruction layer and do not introduce contradictions."
 - Code: null
-- Agent Instructions: "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for contradictions, stale references, and terminology mismatches. Fix any inconsistencies and commit."
+- Agent Instructions: "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
 
 **`purlin.doc_consistency_check`**
-- Description: "Performs a cross-reference consistency check across all instruction and documentation files for contradictions, stale paths, and terminology mismatches."
+- Description: "Checks that README.md and project documentation accurately reflects the current feature set, with no stale descriptions, removed functionality references, or version mismatches."
 - Code: null
-- Agent Instructions: "Run a cross-reference consistency check across all instruction and documentation files. Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state. Fix any inconsistencies before proceeding."
+- Agent Instructions: "Check that README.md and any project documentation (in `docs/` or equivalent) accurately reflects the current feature set. Look for: outdated feature descriptions, references to removed functionality, stale file paths, and version numbers inconsistent with the current release. Cross-check with the `features/` directory to confirm documented behavior matches specified behavior. Fix any inconsistencies and commit."
 
 **`purlin.mark_release_complete`**
 - Description: "Marks the active release specification file with the [Complete] status tag."
@@ -133,6 +133,18 @@ The following 8 steps are defined in `tools/release/global_steps.json`:
 - Description: "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery."
 - Code: "git push && git push --tags"
 - Agent Instructions: "Confirm the current branch and remote configuration, then push commits and tags to the remote repository. Warn the user if they are about to force-push or if the remote is ahead. Do not proceed without explicit user confirmation for force-push scenarios."
+
+### 2.8 Purlin-Local Release Steps
+
+The following steps are defined in Purlin's `.agentic_devops/release/local_steps.json`. They are specific to the Purlin framework repository and do NOT appear in consumer project checklists.
+
+**`doc_consistency_framework`**
+- Friendly Name: "Framework Documentation Consistency"
+- Description: "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README and PROCESS_HISTORY. Purlin-specific: consumer projects do not own instruction files."
+- Code: null
+- Agent Instructions: "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md and PROCESS_HISTORY.md are consistent with the current instruction file content. Fix any inconsistencies and commit."
+
+This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `purlin.instruction_audit`, so both override-consistency and instruction-internal-consistency checks run together before the final release steps.
 
 ## 3. Scenarios
 

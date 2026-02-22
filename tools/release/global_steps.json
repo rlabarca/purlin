@@ -31,16 +31,16 @@
         {
             "id": "purlin.instruction_audit",
             "friendly_name": "Instruction Audit",
-            "description": "Verifies that all instruction files are in sync with the current feature specifications and architectural policies.",
+            "description": "Verifies that .agentic_devops/ override files are consistent with the base instruction layer and do not introduce contradictions.",
             "code": null,
-            "agent_instructions": "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for contradictions, stale references, and terminology mismatches. Fix any inconsistencies and commit."
+            "agent_instructions": "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
         },
         {
             "id": "purlin.doc_consistency_check",
             "friendly_name": "Documentation Consistency Check",
-            "description": "Performs a cross-reference consistency check across all instruction and documentation files for contradictions, stale paths, and terminology mismatches.",
+            "description": "Checks that README.md and project documentation accurately reflects the current feature set, with no stale descriptions, removed functionality references, or version mismatches.",
             "code": null,
-            "agent_instructions": "Run a cross-reference consistency check across all instruction and documentation files. Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state. Fix any inconsistencies before proceeding."
+            "agent_instructions": "Check that README.md and any project documentation (in `docs/` or equivalent) accurately reflects the current feature set. Look for: outdated feature descriptions, references to removed functionality, stale file paths, and version numbers inconsistent with the current release. Cross-check with the `features/` directory to confirm documented behavior matches specified behavior. Fix any inconsistencies and commit."
         },
         {
             "id": "purlin.mark_release_complete",
