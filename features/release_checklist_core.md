@@ -112,9 +112,9 @@ The following 9 steps are defined in `tools/release/global_steps.json`:
 - Agent Instructions: "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
 
 **`purlin.run_tool_tests`**
-- Description: "Runs the automated test suite for Purlin's DevOps tooling and verifies all tests pass."
+- Description: "Runs the Purlin DevOps tool test suite to verify that all bundled framework tools are functioning correctly in this environment."
 - Code: null
-- Agent Instructions: "Run the automated tool test suite. The exact command depends on the project's test runner configuration. Confirm all tests pass before proceeding. If any test fails, halt the release and report the failure."
+- Agent Instructions: "Resolve `tools_root` from `.agentic_devops/config.json` (default: `tools`). Discover all test scripts matching `<tools_root>/*/test_*.py` and run each with `python3`. Confirm all tests pass before proceeding. If any test fails, halt the release and report which test(s) failed."
 
 **`purlin.sync_evolution`**
 - Description: "Updates the 'Agentic Evolution' table in README.md based on PROCESS_HISTORY.md and verifies documentation is in sync."
