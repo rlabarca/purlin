@@ -39,6 +39,29 @@ claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permi
 *   When `AGENT_BYPASS=false`: pass role-specific `--allowedTools` (see Section 2.6).
 
 ### 2.5 Provider Dispatch: Gemini
+
+**Pre-launch: ensure `.gemini/settings.json` disables gitignore filtering**
+
+Before invoking the Gemini CLI, each launcher script MUST ensure that `.gemini/settings.json` in the project root contains `context.fileFiltering.respectGitIgnore = false`. This is required so that agents can read gitignored artifacts (`CRITIC_REPORT.md`, `tests/*/critic.json`, `.agentic_devops/cache/*.json`) that are required by startup protocols.
+
+The setup logic MUST:
+1.  Create the `.gemini/` directory if it does not exist.
+2.  If `.gemini/settings.json` does not exist: write the minimal settings object.
+3.  If `.gemini/settings.json` already exists: merge `context.fileFiltering.respectGitIgnore = false` into the existing JSON without destroying other keys.
+4.  After writing or merging, run `git add .gemini/settings.json` so the file is staged for the next commit. This ensures the setting is checked in with the project.
+
+The minimum required content is:
+```json
+{
+  "context": {
+    "fileFiltering": {
+      "respectGitIgnore": false
+    }
+  }
+}
+```
+
+**Dispatch:**
 ```
 GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini chat "<session message>" -m $AGENT_MODEL [--yolo]
 ```
@@ -80,6 +103,21 @@ Session messages are passed as the trailing positional argument to the Claude CL
     Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
     And it passes --allowedTools with the Architect role restrictions
     And it passes --append-system-prompt-file pointing to the assembled prompt
+
+#### Scenario: Gemini Launcher Creates .gemini/settings.json When Absent
+    Given config.json contains agents.architect with provider "gemini"
+    And .gemini/settings.json does not exist
+    When run_architect.sh is executed
+    Then .gemini/settings.json is created with context.fileFiltering.respectGitIgnore set to false
+    And git add .gemini/settings.json is run
+
+#### Scenario: Gemini Launcher Merges into Existing .gemini/settings.json
+    Given config.json contains agents.architect with provider "gemini"
+    And .gemini/settings.json already exists with other keys present
+    When run_architect.sh is executed
+    Then context.fileFiltering.respectGitIgnore is set to false in .gemini/settings.json
+    And the pre-existing keys are preserved
+    And git add .gemini/settings.json is run
 
 #### Scenario: Gemini Launcher Sets GEMINI_SYSTEM_MD
     Given config.json contains agents.qa with provider "gemini", model "gemini-3.0-pro", bypass_permissions true
@@ -131,6 +169,6 @@ The Gemini CLI has two subcommands relevant to agent use. `gemini run "..."` sen
 
 The session message MUST be a positional argument — the first argument after `chat`. Do NOT use `-p`; if both a positional argument and `-p` are present, the CLI errors with a conflict. Correct: `gemini chat "Begin session" -m gemini-2.5-pro`. Incorrect: `gemini chat -p "Begin session"`.
 
-`--no-gitignore` is not supported by the Gemini CLI. Agents running under Gemini cannot read gitignored artifacts directly via the CLI's file tools; this is a known limitation of the Gemini provider.
+`--no-gitignore` is not supported by the Gemini CLI. The equivalent is `.gemini/settings.json` with `context.fileFiltering.respectGitIgnore = false`. The launchers write and stage this file automatically before each Gemini launch. The JSON merge (step 3 of the pre-launch setup) should be implemented with Python `json.load` / `json.dump` to avoid corrupting existing settings — do not use `sed` or string concatenation on the JSON file.
 
 These scripts are the standalone versions. Bootstrap-generated equivalents (Section 2.5 of `submodule_bootstrap.md`) are produced by `tools/bootstrap.sh` and follow the same structure with a submodule-specific `CORE_DIR` path.
