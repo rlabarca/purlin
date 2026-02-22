@@ -40,12 +40,11 @@ claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permi
 
 ### 2.5 Provider Dispatch: Gemini
 ```
-GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini chat "<session message>" -m $AGENT_MODEL --no-gitignore [--yolo]
+GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini chat "<session message>" -m $AGENT_MODEL [--yolo]
 ```
 *   `-m $AGENT_MODEL` is always passed (Gemini CLI requires a model flag).
 *   `gemini chat` is used (not `gemini run`). The `chat` subcommand processes the initial prompt and then stays open in an interactive session. The `run` subcommand exits after printing the response and is incompatible with agent sessions.
-*   `"<session message>"` is a positional argument — the first argument after `chat`. Do NOT use `-p`; the Gemini CLI treats `-p` and a positional prompt as conflicting inputs and errors. The positional argument kicks off the agent's startup protocol immediately on launch without requiring manual user input.
-*   `--no-gitignore` is always passed. It must appear AFTER the positional prompt argument. Gemini CLI respects `.gitignore` by default, which blocks agent access to required generated artifacts (`CRITIC_REPORT.md`, `tests/*/critic.json`, `.agentic_devops/cache/*.json`).
+*   `"<session message>"` is a positional argument — the first argument after `chat`. Do NOT use `-p`; the Gemini CLI treats `-p` and a positional prompt as conflicting inputs and errors.
 *   When `AGENT_BYPASS=true`: pass `--yolo`.
 *   When `AGENT_BYPASS=false`: no `--yolo`; interactive approval is used.
 *   Gemini does NOT support effort levels. If `AGENT_EFFORT` is set, it is silently skipped.
@@ -64,7 +63,7 @@ If `AGENT_PROVIDER` is neither `claude` nor `gemini`, the script MUST:
 3. Exit with status code 1.
 
 ### 2.8 Session Messages
-Session messages are passed as the trailing positional argument to the Claude CLI and as the `-p` flag to `gemini chat`.
+Session messages are passed as the trailing positional argument to the Claude CLI and as the first positional argument after `chat` to the Gemini CLI.
 
 *   **Architect:** `"Begin Architect session."`
 *   **Builder:** `"Begin Builder session."`
@@ -86,7 +85,7 @@ Session messages are passed as the trailing positional argument to the Claude CL
     Given config.json contains agents.qa with provider "gemini", model "gemini-3.0-pro", bypass_permissions true
     When run_qa.sh is executed
     Then GEMINI_SYSTEM_MD is set to the temporary prompt file path
-    And it invokes gemini chat "Begin QA verification session." -m gemini-3.0-pro --no-gitignore --yolo
+    And it invokes gemini chat "Begin QA verification session." -m gemini-3.0-pro --yolo
     And the temporary prompt file is cleaned up on exit
 
 #### Scenario: Gemini Launcher Uses chat Subcommand with Role-Specific Prompt
@@ -95,11 +94,6 @@ Session messages are passed as the trailing positional argument to the Claude CL
     Then it invokes gemini using the chat subcommand
     And passes "Begin Architect session." as the first positional argument after chat
     And does not pass -p
-
-#### Scenario: Gemini Launcher Passes --no-gitignore for All Invocations
-    Given config.json contains agents.qa with provider "gemini", model "gemini-2.5-pro", bypass_permissions true
-    When run_qa.sh is executed
-    Then it invokes gemini with --no-gitignore appearing after the positional prompt argument
 
 #### Scenario: Gemini Launcher Skips Effort Flag
     Given config.json contains agents.builder with provider "gemini", model "gemini-2.5-flash", effort "high"
@@ -135,8 +129,8 @@ The `--yolo` flag is the Gemini CLI equivalent of Claude's `--dangerously-skip-p
 
 The Gemini CLI has two subcommands relevant to agent use. `gemini run "..."` sends the prompt, prints the response, and exits — this is incompatible with agent sessions. `gemini chat "..."` sends the prompt, prints the response, and remains open in an interactive session. Launchers MUST use `chat`, not `run`.
 
-The session message MUST be a positional argument — the first argument after `chat`. Do NOT use `-p`; if both a positional argument and `-p` are present, the CLI errors with a conflict. Correct: `gemini chat "Begin session" --no-gitignore`. Incorrect: `gemini chat -p "Begin session"`.
+The session message MUST be a positional argument — the first argument after `chat`. Do NOT use `-p`; if both a positional argument and `-p` are present, the CLI errors with a conflict. Correct: `gemini chat "Begin session" -m gemini-2.5-pro`. Incorrect: `gemini chat -p "Begin session"`.
 
-`--no-gitignore` must appear AFTER the positional prompt. Gemini CLI respects `.gitignore` by default; without this flag, agents cannot read generated artifacts (`CRITIC_REPORT.md`, `critic.json`, `cache/*.json`) that are gitignored but required by startup protocols.
+`--no-gitignore` is not supported by the Gemini CLI. Agents running under Gemini cannot read gitignored artifacts directly via the CLI's file tools; this is a known limitation of the Gemini provider.
 
 These scripts are the standalone versions. Bootstrap-generated equivalents (Section 2.5 of `submodule_bootstrap.md`) are produced by `tools/bootstrap.sh` and follow the same structure with a submodule-specific `CORE_DIR` path.
