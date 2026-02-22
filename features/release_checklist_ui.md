@@ -230,6 +230,15 @@ And rows whose content did not change appear visually undisturbed.
 - [ ] Modal is scrollable when content exceeds viewport height
 - [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
 
+## User Testing Discoveries
+
+### [BUG] Drag handle does not reorder steps (Discovered: 2026-02-22)
+- **Scenario:** Drag Handle Reorders Steps in Display
+- **Observed Behavior:** The drag handle (`⠿`) is visible but dragging it does not reorder the steps in the list.
+- **Expected Behavior:** Grabbing a step by its drag handle and dropping it at a new position should reorder the steps in the displayed list immediately, without a page reload.
+- **Action Required:** Builder — implement drag-and-drop reorder functionality for release checklist rows.
+- **Status:** OPEN
+
 ## Implementation Notes
 
 *   The drag-to-reorder implementation MUST be consistent with any drag/drop library or pattern already used in the CDD Dashboard. If none exists, the HTML5 Drag and Drop API is the default. Do not introduce a new dependency without confirming with the Architect.
