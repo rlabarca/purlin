@@ -173,25 +173,26 @@ class TestExtractLabel(unittest.TestCase):
 
 
 class TestFeatureStatusCapping(unittest.TestCase):
-    @patch('serve.run_command')
-    def test_feature_status_complete_capping(self, mock_run):
+    def test_feature_status_complete_capping(self):
         test_dir = tempfile.mkdtemp()
         try:
             features_abs = os.path.join(test_dir, "features")
             os.makedirs(features_abs)
+            # Build a cache where every feature has a Complete commit
+            cache = {}
             for i in range(15):
                 fname = f"feat_{i:02d}.md"
                 with open(os.path.join(features_abs, fname), "w") as f:
                     f.write("# Test")
-
-            def mock_git(cmd):
-                if "Complete" in cmd:
-                    return "2000000000"
-                return ""
-            mock_run.side_effect = mock_git
+                fpath = os.path.normpath(os.path.join("features", fname))
+                cache[fpath] = {
+                    'complete_ts': 2000000000, 'complete_hash': '',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
 
             complete, testing, todo = get_feature_status(
-                "features", features_abs)
+                "features", features_abs, cache)
             self.assertEqual(len(complete), 15)
             self.assertEqual(len(testing), 0)
             self.assertEqual(len(todo), 0)
@@ -498,15 +499,19 @@ class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
             # Set file mtime to future (after status commit)
             os.utime(fpath, (3000000000, 3000000000))
 
+            # Pre-built cache (replaces individual git log calls)
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            # Mock only needed for git show (spec_content_unchanged check)
             def mock_git(cmd):
-                if "Complete" in cmd and "%ct" in cmd:
-                    return "2000000000"  # status commit timestamp
-                if "Complete" in cmd and "%H" in cmd:
-                    return "abc123"  # commit hash
-                if "Ready for" in cmd:
-                    return ""
                 if "git show abc123:" in cmd:
-                    return spec_content  # content at status commit
+                    return spec_content
                 return ""
             mock_run.side_effect = mock_git
 
@@ -515,7 +520,7 @@ class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
             serve.PROJECT_ROOT = test_dir
             try:
                 complete, testing, todo = get_feature_status(
-                    "features", features_abs)
+                    "features", features_abs, cache)
                 self.assertEqual(len(complete), 1)
                 self.assertEqual(complete[0][0], "test.md")
                 self.assertEqual(len(todo), 0)
@@ -548,13 +553,17 @@ class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
 
             os.utime(fpath, (3000000000, 3000000000))
 
+            # Pre-built cache (replaces individual git log calls)
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 0, 'complete_hash': '',
+                    'testing_ts': 2000000000, 'testing_hash': 'def456',
+                    'scope': None,
+                }
+            }
+
+            # Mock only needed for git show (spec_content_unchanged check)
             def mock_git(cmd):
-                if "Complete" in cmd:
-                    return ""
-                if "Ready for" in cmd and "%ct" in cmd:
-                    return "2000000000"
-                if "Ready for" in cmd and "%H" in cmd:
-                    return "def456"
                 if "git show def456:" in cmd:
                     return spec_content
                 return ""
@@ -565,7 +574,7 @@ class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
             serve.PROJECT_ROOT = test_dir
             try:
                 complete, testing, todo = get_feature_status(
-                    "features", features_abs)
+                    "features", features_abs, cache)
                 self.assertEqual(len(testing), 1)
                 self.assertEqual(testing[0], "test.md")
                 self.assertEqual(len(todo), 0)
@@ -606,13 +615,17 @@ class TestLifecycleResetOnSpecChange(unittest.TestCase):
 
             os.utime(fpath, (3000000000, 3000000000))
 
+            # Pre-built cache (replaces individual git log calls)
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            # Mock only needed for git show (spec_content_unchanged check)
             def mock_git(cmd):
-                if "Complete" in cmd and "%ct" in cmd:
-                    return "2000000000"
-                if "Complete" in cmd and "%H" in cmd:
-                    return "abc123"
-                if "Ready for" in cmd:
-                    return ""
                 if "git show abc123:" in cmd:
                     return committed_content
                 return ""
@@ -623,7 +636,7 @@ class TestLifecycleResetOnSpecChange(unittest.TestCase):
             serve.PROJECT_ROOT = test_dir
             try:
                 complete, testing, todo = get_feature_status(
-                    "features", features_abs)
+                    "features", features_abs, cache)
                 self.assertEqual(len(todo), 1)
                 self.assertEqual(todo[0], "test.md")
                 self.assertEqual(len(complete), 0)

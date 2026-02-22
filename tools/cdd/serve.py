@@ -98,6 +98,89 @@ def run_command(command):
         return ""
 
 
+def build_status_commit_cache():
+    """Build a cache of all status commits with a single git log command.
+
+    Replaces ~100+ individual git log subprocess calls with ONE call.
+    Returns a dict mapping normalized feature paths to their status info:
+    {
+        "features/foo.md": {
+            "complete_ts": int,    # 0 if no Complete commit
+            "complete_hash": str,  # "" if no Complete commit
+            "testing_ts": int,     # 0 if no Testing commit
+            "testing_hash": str,   # "" if no Testing commit
+            "scope": str or None,  # [Scope: ...] from most recent status commit
+        }
+    }
+    """
+    output = run_command(
+        "git log --grep='\\[Complete features/' "
+        "--grep='\\[Ready for' --format='%ct %H %s'"
+    )
+    if not output:
+        return {}
+
+    cache = {}
+    complete_re = re.compile(r'\[Complete (features/\S+\.md)\]')
+    testing_re = re.compile(r'\[Ready for \w+ (features/\S+\.md)\]')
+    scope_re = re.compile(r'\[Scope:\s*([^\]]+)\]')
+
+    for line in output.splitlines():
+        parts = line.split(' ', 2)
+        if len(parts) < 3:
+            continue
+        try:
+            ts = int(parts[0])
+        except ValueError:
+            continue
+        commit_hash = parts[1]
+        subject = parts[2]
+
+        fpath = None
+        commit_type = None
+
+        m = complete_re.search(subject)
+        if m:
+            fpath = os.path.normpath(m.group(1))
+            commit_type = 'complete'
+        else:
+            m = testing_re.search(subject)
+            if m:
+                fpath = os.path.normpath(m.group(1))
+                commit_type = 'testing'
+
+        if not fpath:
+            continue
+
+        if fpath not in cache:
+            cache[fpath] = {
+                'complete_ts': 0, 'complete_hash': '',
+                'testing_ts': 0, 'testing_hash': '',
+                'scope': None, '_best_ts': 0,
+            }
+
+        info = cache[fpath]
+
+        # git log is reverse-chronological: first match = most recent
+        ts_key = f'{commit_type}_ts'
+        hash_key = f'{commit_type}_hash'
+        if info[ts_key] == 0:
+            info[ts_key] = ts
+            info[hash_key] = commit_hash
+
+        # Scope comes from the most recent status commit of either type
+        if ts > info['_best_ts']:
+            info['_best_ts'] = ts
+            sm = scope_re.search(subject)
+            info['scope'] = sm.group(1).strip() if sm else None
+
+    # Clean up internal tracking field
+    for info in cache.values():
+        del info['_best_ts']
+
+    return cache
+
+
 def extract_label(filepath):
     """Extracts the Label from a feature file's frontmatter."""
     try:
@@ -150,28 +233,26 @@ def spec_content_unchanged(f_path, commit_hash):
     return committed_spec == current_spec
 
 
-def get_feature_status(features_rel, features_abs):
+def get_feature_status(features_rel, features_abs, cache=None):
     """Gathers the status of all features for the project's features directory."""
     if not os.path.isdir(features_abs):
         return [], [], []
+
+    if cache is None:
+        cache = build_status_commit_cache()
 
     complete, testing, todo = [], [], []
     feature_files = [f for f in os.listdir(features_abs) if f.endswith('.md') and not f.endswith('.impl.md')]
 
     for fname in feature_files:
         f_path = os.path.normpath(os.path.join(features_rel, fname))
+        info = cache.get(f_path, {})
 
-        complete_ts_str = run_command(
-            f"git log -1 --grep='\\[Complete {f_path}\\]' --format=%ct"
-        )
-        test_ts_str = run_command(
-            f"git log -1 --grep='\\[Ready for .* {f_path}\\]' --format=%ct"
-        )
+        complete_ts = info.get('complete_ts', 0)
+        test_ts = info.get('testing_ts', 0)
+
         f_abs_path = os.path.join(features_abs, fname)
         file_mod_ts = int(os.path.getmtime(f_abs_path)) if os.path.exists(f_abs_path) else 0
-
-        complete_ts = int(complete_ts_str) if complete_ts_str else 0
-        test_ts = int(test_ts_str) if test_ts_str else 0
 
         status = "TODO"
         if complete_ts > test_ts:
@@ -179,9 +260,7 @@ def get_feature_status(features_rel, features_abs):
                 status = "COMPLETE"
             else:
                 # File modified after status commit — check if only Discoveries changed
-                commit_hash = run_command(
-                    f"git log -1 --grep='\\[Complete {f_path}\\]' --format=%H"
-                )
+                commit_hash = info.get('complete_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
                     status = "COMPLETE"
         elif test_ts > 0:
@@ -189,9 +268,7 @@ def get_feature_status(features_rel, features_abs):
                 status = "TESTING"
             else:
                 # File modified after status commit — check if only Discoveries changed
-                commit_hash = run_command(
-                    f"git log -1 --grep='\\[Ready for .* {f_path}\\]' --format=%H"
-                )
+                commit_hash = info.get('testing_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
                     status = "TESTING"
 
@@ -301,14 +378,19 @@ def get_delivery_phase():
     return {"current": current, "total": total}
 
 
-def get_change_scope(f_path):
+def get_change_scope(f_path, cache=None):
     """Extract change_scope from the most recent status commit for a feature.
 
-    Finds the most recent status commit (Complete or Ready for Verification),
-    then parses [Scope: <type>] from that message. Returns the scope string
-    or None if absent.
+    When cache is provided (from build_status_commit_cache), uses the
+    pre-computed scope. Otherwise falls back to individual git log calls.
     """
-    # Find most recent of either status commit type
+    f_path_norm = os.path.normpath(f_path)
+
+    if cache is not None:
+        info = cache.get(f_path_norm, {})
+        return info.get('scope')
+
+    # Fallback: individual git log calls (used only if no cache provided)
     best_ts = 0
     best_msg = None
     for pattern in (
@@ -339,13 +421,16 @@ def get_change_scope(f_path):
 # Internal Feature Status (old lifecycle format, for Critic consumption)
 # ===================================================================
 
-def generate_internal_feature_status():
+def generate_internal_feature_status(cache=None):
     """Generates the internal feature_status.json (old lifecycle-based format).
 
     This is consumed by the Critic for lifecycle-state-dependent computations.
     NOT part of the public API contract.
     """
-    complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS)
+    if cache is None:
+        cache = build_status_commit_cache()
+
+    complete_tuples, testing, todo = get_feature_status(FEATURES_REL, FEATURES_ABS, cache)
 
     all_test_statuses = []
 
@@ -358,7 +443,7 @@ def generate_internal_feature_status():
         if ts is not None:
             entry["test_status"] = ts
             all_test_statuses.append(ts)
-        scope = get_change_scope(rel_path)
+        scope = get_change_scope(rel_path, cache)
         if scope:
             entry["change_scope"] = scope
         return entry
@@ -379,9 +464,9 @@ def generate_internal_feature_status():
     }
 
 
-def write_internal_feature_status():
+def write_internal_feature_status(cache=None):
     """Writes internal feature_status.json to disk."""
-    data = generate_internal_feature_status()
+    data = generate_internal_feature_status(cache)
     with open(FEATURE_STATUS_PATH, 'w') as f:
         json.dump(data, f, indent=2, sort_keys=True)
         f.write('\n')
@@ -391,7 +476,7 @@ def write_internal_feature_status():
 # Public API: /status.json (flat schema with role fields)
 # ===================================================================
 
-def generate_api_status_json():
+def generate_api_status_json(cache=None):
     """Generates the public /status.json response (flat array with role fields).
 
     Per spec Section 2.4:
@@ -407,6 +492,9 @@ def generate_api_status_json():
             "generated_at": datetime.now(timezone.utc).strftime(
                 '%Y-%m-%dT%H:%M:%SZ'),
         }
+
+    if cache is None:
+        cache = build_status_commit_cache()
 
     feature_files = sorted(
         f for f in os.listdir(FEATURES_ABS)
@@ -428,7 +516,7 @@ def generate_api_status_json():
             if 'qa' in role_status:
                 entry["qa"] = role_status["qa"]
 
-        scope = get_change_scope(rel_path)
+        scope = get_change_scope(rel_path, cache)
         if scope:
             entry["change_scope"] = scope
 
@@ -563,7 +651,7 @@ def _is_feature_complete(entry):
     return arch_ok and builder_ok and qa_ok
 
 
-def generate_html():
+def generate_html(cache=None):
     """Generates the full dashboard HTML with role-based columns,
     view toggle (Status/SW Map), search, collapsible sections,
     feature detail modal, and Cytoscape.js graph view."""
@@ -571,7 +659,7 @@ def generate_html():
     last_commit = get_last_commit()
 
     # Get API data for dashboard
-    api_data = generate_api_status_json()
+    api_data = generate_api_status_json(cache)
     all_features = api_data["features"]
 
     # Split into Active vs Complete
@@ -2422,10 +2510,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/status.json':
             # Public API: flat array with role fields
-            api_data = generate_api_status_json()
+            cache = build_status_commit_cache()
+            api_data = generate_api_status_json(cache)
 
             # Also write internal feature_status.json (old format)
-            write_internal_feature_status()
+            write_internal_feature_status(cache)
 
             self._send_json(200, api_data)
         elif self.path == '/workspace.json':
@@ -2454,11 +2543,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_release_checklist()
         else:
             # Dashboard request: also regenerate internal file
-            write_internal_feature_status()
+            cache = build_status_commit_cache()
+            write_internal_feature_status(cache)
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            self.wfile.write(generate_html().encode('utf-8'))
+            self.wfile.write(generate_html(cache).encode('utf-8'))
 
     def _serve_feature_content(self):
         """Serve the raw markdown content of a feature file."""
@@ -2695,8 +2785,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--cli-status":
         # CLI mode: output API JSON to stdout, regenerate internal file
-        write_internal_feature_status()
-        api_data = generate_api_status_json()
+        cache = build_status_commit_cache()
+        write_internal_feature_status(cache)
+        api_data = generate_api_status_json(cache)
         json.dump(api_data, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write('\n')
     elif len(sys.argv) > 1 and sys.argv[1] == "--cli-graph":
