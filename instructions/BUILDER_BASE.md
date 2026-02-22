@@ -179,11 +179,12 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
     3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
+*   **F. Post-Commit Critic Run (MANDATORY):** After every status commit (i.e., a commit that advances a feature to `[Ready for Verification]` or `[Complete]`), you MUST run `tools/critic/run.sh` to regenerate the Critic report and all `critic.json` files. This keeps the CDD dashboard and Architect/QA action items current between status commits within a session.
 
 ## 5. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
-1.  Run `tools/critic/run.sh` to regenerate the Critic report and all `critic.json` files.
+1.  Run `tools/critic/run.sh` for a final regeneration of the Critic report and all `critic.json` files. (Per-status-commit runs in Step 4.F keep state current during the session; this final run catches any remaining drift.)
 2.  This ensures the CDD dashboard reflects the current project state for the next agent session.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain, include a phase completion message: "Phase N of M complete. Launch Builder again to continue with Phase N+1." If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 

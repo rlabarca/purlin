@@ -2,6 +2,14 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Builder: Post-Commit Critic Run Mandate
+
+- **Scope:** Instruction refinement -- no feature spec changes.
+- **Problem:** The Builder had no instruction to run `tools/critic/run.sh` after status commits during a session. This created a staleness window where `critic.json` files (powering the CDD dashboard and action-item queues) lagged behind actual project state until the Shutdown Protocol's final critic run.
+- **Solution:** Added Step 4.F "Post-Commit Critic Run (MANDATORY)" to Section 4 of `instructions/BUILDER_BASE.md`, directly after the Phase Completion Check (Step 4.E). The rule mirrors the Architect's Responsibility 6 pattern, with the Builder's trigger being status commits (`[Ready for Verification]` or `[Complete]`) rather than spec edits. Also updated the Shutdown Protocol (Section 5) to clarify its run is the "final" critic run, distinguishing it from the per-status-commit runs.
+- **Changes:**
+    - **instructions/BUILDER_BASE.md:** Section 4, Step 4 — added Step 4.F; Section 5 — clarified Shutdown Protocol wording.
+
 ## [2026-02-21] Phased Delivery Protocol — Builder Instruction Gaps Resolved
 
 - **Scope:** Instruction refinement -- no feature spec changes.
