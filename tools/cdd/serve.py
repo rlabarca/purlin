@@ -1147,6 +1147,8 @@ function refreshStatus() {{
         applySearchFilter();
         // Re-populate agents section (dynamic JS content cleared by innerHTML replace)
         initAgentsSection();
+        // Incremental refresh for release checklist (diff-based, skips during pending saves)
+        refreshReleaseChecklist();
       }}
       updateTimestamp();
     }})
@@ -1217,6 +1219,7 @@ function toggleSection(sectionId) {{
 // Release Checklist
 // ============================
 var rcStepsCache = null;
+var rcPendingSave = false;
 
 function loadReleaseChecklist() {{
   fetch('/release-checklist')
@@ -1228,6 +1231,50 @@ function loadReleaseChecklist() {{
 }}
 
 loadReleaseChecklist();
+
+function refreshReleaseChecklist() {{
+  if (rcPendingSave) return;
+  fetch('/release-checklist')
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      if (rcPendingSave) return;
+      var newSteps = data.steps || [];
+      if (JSON.stringify(newSteps) === JSON.stringify(rcStepsCache)) return;
+      rcStepsCache = newSteps;
+      var tbody = document.getElementById('rc-tbody');
+      if (!tbody) return;
+      var existingRows = Array.from(tbody.querySelectorAll('tr'));
+      var existingIds = existingRows.map(function(r) {{ return r.dataset.stepId; }});
+      var newIds = newSteps.map(function(s) {{ return s.id; }});
+      // Check if order changed
+      var orderChanged = existingIds.join(',') !== newIds.join(',');
+      if (orderChanged) {{
+        // Rebuild rows in new order
+        newSteps.forEach(function(step) {{
+          var row = tbody.querySelector('tr[data-step-id="' + step.id + '"]');
+          if (row) tbody.appendChild(row);
+        }});
+        rcUpdateNumbers();
+      }}
+      // Diff-update enabled state per row
+      newSteps.forEach(function(step) {{
+        var row = tbody.querySelector('tr[data-step-id="' + step.id + '"]');
+        if (!row) return;
+        var cb = row.querySelector('input[type=checkbox]');
+        if (cb && cb.checked !== step.enabled) {{
+          cb.checked = step.enabled;
+          var cells = row.querySelectorAll('td');
+          cells.forEach(function(cell, idx) {{
+            if (idx < cells.length - 1) {{
+              cell.style.color = step.enabled ? '' : 'var(--purlin-dim)';
+            }}
+          }});
+        }}
+      }});
+      rcUpdateBadge();
+    }})
+    .catch(function() {{}});
+}}
 
 var rcDragSrcRow = null;
 
@@ -1286,7 +1333,10 @@ function rcToggle(stepId, enabled) {{
     }});
   }}
   rcPersistConfig();
-  // Update badge
+  rcUpdateBadge();
+}}
+
+function rcUpdateBadge() {{
   var rows = document.querySelectorAll('#rc-tbody tr');
   var en = 0, dis = 0;
   rows.forEach(function(r) {{
@@ -1307,11 +1357,18 @@ function rcPersistConfig() {{
     var cb = row.querySelector('input[type=checkbox]');
     steps.push({{id: row.dataset.stepId, enabled: cb ? cb.checked : true}});
   }});
+  rcPendingSave = true;
   fetch('/release-checklist/config', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify({{steps: steps}})
-  }}).catch(function() {{}});
+  }})
+  .then(function(r) {{ return r.json(); }})
+  .then(function() {{
+    rcPendingSave = false;
+    loadReleaseChecklist();
+  }})
+  .catch(function() {{ rcPendingSave = false; }});
 }}
 
 function openStepModal(stepId) {{
