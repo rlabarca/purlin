@@ -50,6 +50,110 @@ Automated test results are not a separate dashboard column. They are embedded in
 
 There is no separate "test status" indicator. Builder status reflects test *health*; QA status reflects test *coverage*.
 
+## The Agents
+
+### Shared Commands
+
+| Command | Description |
+|---|---|
+| `/pl-status` | Check CDD status and role-specific action items |
+| `/pl-find <topic>` | Discover where a topic belongs in the spec system |
+
+---
+
+### The Architect
+
+The Architect owns the specification system. All feature requirements, architectural constraints, and governance rules flow through this role. Code is never written here -- only the specs that make code possible.
+
+| Command | Description |
+|---|---|
+| `/pl-spec <topic>` | Add or refine a feature spec (routes to edit or create after discovery) |
+| `/pl-anchor <topic>` | Create or update an architectural, design, or policy anchor node |
+| `/pl-tombstone <name>` | Retire a feature -- checks dependents, generates tombstone for Builder |
+| `/pl-release-check` | Execute the CDD-controlled release checklist step by step |
+
+**Workflow examples:**
+
+*Adding a new capability:*
+```
+/pl-find "webhook delivery retries"
+→ Agent: "Nothing exists. A new spec makes sense."
+/pl-spec "webhook delivery retries"
+→ Agent scaffolds feature with Gherkin template, prerequisite stubs
+```
+
+*Retiring a deprecated feature:*
+```
+/pl-tombstone legacy_notifications
+→ Agent: "3 features reference this. Here's the impact. Confirm?"
+→ Tombstone created, feature file deleted, commit staged
+```
+
+---
+
+### The Builder
+
+The Builder translates specifications into working code and tests. It owns the implementation -- never the requirements. When a spec is impossible to implement as written, the Builder escalates rather than improvising.
+
+| Command | Description |
+|---|---|
+| `/pl-build [name]` | Implement pending work from the Critic backlog, or a named feature |
+| `/pl-delivery-plan` | Create or review a phased delivery plan for large backlogs |
+| `/pl-infeasible <name>` | Escalate a feature as unimplementable -- pauses work, notifies Architect |
+| `/pl-propose <topic>` | Surface a spec change suggestion to the Architect as a structured proposal |
+
+**Workflow examples:**
+
+*Standard build cycle:*
+```
+/pl-build
+→ Agent reads Critic report, checks tombstones, begins highest-priority feature
+```
+
+*Large backlog needing phasing:*
+```
+/pl-delivery-plan
+→ Agent: "6 TODO features. Dependency ordering suggests 3 phases:
+   Phase 1 (foundation): arch_api_contract, python_environment
+   Phase 2 (core tools): critic_tool, cdd_status_monitor
+   Phase 3 (release): release_checklist_core, release_checklist_ui
+   Rationale: Phase 1 unblocks all Phase 2 prerequisites.
+   Adjust or confirm?"
+```
+
+---
+
+### The QA Agent
+
+The QA Agent verifies features against their specifications through interactive scenario execution. It owns exactly one thing in the spec system: the `## User Testing Discoveries` section of each feature file. It never modifies code, tests, or Gherkin requirements.
+
+| Command | Description |
+|---|---|
+| `/pl-verify <name>` | Run interactive scenario verification for a feature |
+| `/pl-discovery <name>` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) |
+| `/pl-complete <name>` | Mark a feature complete -- gates on all tests pass, all scenarios verified, zero open discoveries, no pending delivery phases |
+| `/pl-qa-report` | Summary of open discoveries, features in TESTING, completion blockers |
+
+**Workflow examples:**
+
+*Verifying a feature:*
+```
+/pl-verify critic_tool
+→ Agent loads scenarios, walks through each step interactively
+→ All pass: "Ready to close. Run /pl-complete critic_tool when confirmed."
+```
+
+*Recording unexpected behavior:*
+```
+/pl-discovery cdd_status_monitor
+→ Agent: "Describe what you observed."
+→ "The graph view shows stale data after a spec change."
+→ Agent: "No duplicate open. Classifying as BUG. Confirm?"
+→ Discovery recorded, Builder notified via Critic on next run
+```
+
+---
+
 ## Setup & Configuration
 
 ### Option A: Using as a Submodule (Recommended for Projects)

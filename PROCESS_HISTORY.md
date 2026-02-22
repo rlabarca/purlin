@@ -2,6 +2,17 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] README Agent Reference Section + CDD Startup Controls Design Record
+
+- **Scope:** README documentation update and design record only (no instruction files, no tool code affected).
+- **Problem 1:** The README described agent roles abstractly but gave users no operational reference for what to ask each agent. New and returning users had no command vocabulary or workflow examples to get started.
+- **Problem 2:** The design for per-agent startup control flags (`startup_sequence`, `recommend_next_actions`) was agreed in discussion but not recorded anywhere. Without a design record, the spec would need to be reconstructed from scratch before the Builder could implement it.
+- **Solution 1 (README Agent Reference):** Added a new `## The Agents` section to `README.md` between `## Core Concepts` and `## Setup & Configuration`. The section contains: a Shared Commands table (`/pl-status`, `/pl-find`); per-agent subsections for Architect, Builder, and QA Agent -- each with a role description, command vocabulary table, and two workflow examples. Command tables surface: `/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check` (Architect); `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose` (Builder); `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report` (QA).
+- **Solution 2 (Design Record):** The CDD startup controls design is recorded here for future Builder spec authorship. Two new boolean flags per agent in `config.json`: `startup_sequence` (agent runs CDD orientation on launch) and `recommend_next_actions` (agent presents prioritized work plan after orientation). Valid combinations: `true/true` (full guided session, default); `true/false` (agent orients, then awaits direction); `false/false` (expert mode, print commands and await instruction); `false/true` (invalid -- rejected). A startup print sequence (agent name + command table) runs unconditionally regardless of flag state. Dashboard surface: two checkboxes in the Agent Configuration section alongside provider/model selectors. Implementation scope (for future Builder spec): `config.json` schema, agent instruction conditionals, dashboard toggle UI, `agentic_devops.sample/config.json` defaults.
+- **Changes:**
+    - **README.md:** `## The Agents` section added between `## Core Concepts` and `## Setup & Configuration`.
+    - **PROCESS_HISTORY.md:** This entry.
+
 ## [2026-02-22] Removed Chat Delegation Prompts + Introduced Tombstone Protocol
 
 - **Scope:** Instruction file changes only (no feature specs or tool code affected).
