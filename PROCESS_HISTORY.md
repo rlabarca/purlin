@@ -2,6 +2,16 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] BUG Routing Clarification: Instruction-Level vs Code-Level
+
+- **Problem:** The SOP routing rule "BUG → Builder" has no exception for bugs in instruction-file-driven agent behavior. When an agent fails to follow its startup protocol ordering (an LLM compliance issue, not a code issue), the Critic and discovery format incorrectly route the action item to the Builder. The Builder has no mechanism to fix instruction-following failures from launcher code (per `cdd_startup_controls.md` Section 2.3: "No behavioral injection").
+- **Trigger:** QA agent invoked `/pl-status` before reading startup flags despite `startup_sequence: false`, and the resulting discovery was mis-recorded with `Action Required: Builder`. The Builder correctly escalated: the fix requires strengthening instruction gating, which is Architect-owned.
+- **Solution:** Four coordinated changes:
+    1. **`features/cdd_startup_controls.md`** — Fixed discovery `Action Required` from `Builder` to `Architect`.
+    2. **`instructions/QA_BASE.md` Section 3.0** — Added CRITICAL prohibition: do not invoke `/pl-status` or any tool/skill during the print-table step. Must print the pre-formatted block verbatim.
+    3. **`instructions/HOW_WE_WORK_BASE.md` Section 7.5** — Added exception to the BUG routing rule: when the bug is in instruction-file-driven behavior, recorder sets `Action Required: Architect` to override the default Builder routing.
+    4. **`features/policy_critic.md` Section 2.4** — Documented that the Critic reads `Action Required` to route BUG action items; `Action Required: Architect` overrides the default BUG→Builder rule.
+
 ## [2026-02-22] Startup Flag Gating in Instruction Files
 
 - **Problem:** `startup_sequence` and `recommend_next_actions` flags in `config.json` were read and validated by launchers and the dashboard, but the instruction files for all three roles never read the flags at session start. Agents always ran full orientation regardless of flag values, making `startup_sequence: false` (expert mode) non-functional.
