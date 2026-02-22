@@ -370,6 +370,68 @@ fi
 
 cleanup_sandbox
 
+# --- Scenario: Bootstrap Excludes pl-edit-base.md from Consumer Projects ---
+echo ""
+echo "[Scenario] Bootstrap Excludes pl-edit-base.md from Consumer Projects"
+setup_sandbox
+
+# Ensure pl-edit-base.md exists in the submodule's commands directory
+mkdir -p "$PROJECT/agentic-dev/.claude/commands"
+echo "# pl-edit-base — MUST NOT be distributed" > "$PROJECT/agentic-dev/.claude/commands/pl-edit-base.md"
+# Also ensure at least one other command file exists for baseline
+echo "# pl-status — shared command" > "$PROJECT/agentic-dev/.claude/commands/pl-status.md"
+
+"$BOOTSTRAP" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.claude/commands/pl-edit-base.md" ]; then
+    log_fail "pl-edit-base.md was copied to consumer project (MUST NOT be)"
+else
+    log_pass "pl-edit-base.md correctly excluded from consumer project"
+fi
+
+if [ -f "$PROJECT/.claude/commands/pl-status.md" ]; then
+    log_pass "Other command files still copied normally"
+else
+    log_fail "Other command files not copied (pl-status.md missing)"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Sync Excludes pl-edit-base.md from Consumer Projects ---
+echo ""
+echo "[Scenario] Sync Excludes pl-edit-base.md from Consumer Projects"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+BEFORE_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+echo "$BEFORE_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+
+# Simulate upstream change: add pl-edit-base.md and commit
+mkdir -p "$PROJECT/agentic-dev/.claude/commands"
+echo "# pl-edit-base — updated upstream" > "$PROJECT/agentic-dev/.claude/commands/pl-edit-base.md"
+git -C "$PROJECT/agentic-dev" add ".claude/commands/pl-edit-base.md" 2>/dev/null
+git -C "$PROJECT/agentic-dev" commit -q -m "test: add pl-edit-base.md" 2>/dev/null
+
+OUTPUT=$("$SYNC" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully"; else log_fail "Sync exit code $EXIT_CODE"; fi
+
+if [ -f "$PROJECT/.claude/commands/pl-edit-base.md" ]; then
+    log_fail "pl-edit-base.md was synced to consumer project (MUST NOT be)"
+else
+    log_pass "pl-edit-base.md correctly excluded from sync"
+fi
+
+# Verify it's not mentioned in sync output (silently skipped)
+if echo "$OUTPUT" | grep -q "pl-edit-base"; then
+    log_fail "pl-edit-base.md mentioned in sync output (should be silently skipped)"
+else
+    log_pass "pl-edit-base.md silently skipped (not in output)"
+fi
+
+cleanup_sandbox
+
 ###############################################################################
 # Section 2.10: Config JSON Validity After Bootstrap
 ###############################################################################

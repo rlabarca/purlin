@@ -125,6 +125,10 @@ if [ -d "$COMMANDS_SRC" ]; then
         while IFS= read -r rel_path; do
             [ -n "$rel_path" ] || continue
             fname="$(basename "$rel_path")"
+            # Section 2.6: pl-edit-base.md MUST NEVER be synced to consumer projects
+            if [ "$fname" = "pl-edit-base.md" ]; then
+                continue
+            fi
             src_file="$SUBMODULE_DIR/$rel_path"
             dst_file="$COMMANDS_DST/$fname"
 

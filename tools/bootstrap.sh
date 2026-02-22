@@ -179,6 +179,8 @@ LAUNCHER_EOF
 AGENT_MODEL=""
 AGENT_EFFORT=""
 AGENT_BYPASS="false"
+AGENT_STARTUP="true"
+AGENT_RECOMMEND="true"
 
 if [ -f "$CONFIG_FILE" ]; then
     eval "$(python3 -c "
@@ -190,8 +192,18 @@ try:
     print(f'AGENT_EFFORT=\"{a.get(\"effort\", \"\")}\"')
     bp = 'true' if a.get('bypass_permissions', False) else 'false'
     print(f'AGENT_BYPASS=\"{bp}\"')
+    ss = 'true' if a.get('startup_sequence', True) else 'false'
+    print(f'AGENT_STARTUP=\"{ss}\"')
+    rn = 'true' if a.get('recommend_next_actions', True) else 'false'
+    print(f'AGENT_RECOMMEND=\"{rn}\"')
 except: pass
 " 2>/dev/null)"
+fi
+
+# --- Validate startup controls ---
+if [ "$AGENT_STARTUP" = "false" ] && [ "$AGENT_RECOMMEND" = "true" ]; then
+    echo "Error: Invalid startup controls for $AGENT_ROLE: startup_sequence=false with recommend_next_actions=true is not a valid combination. Set recommend_next_actions to false or enable startup_sequence." >&2
+    exit 1
 fi
 
 # --- Claude dispatch ---
@@ -252,6 +264,10 @@ if [ -d "$COMMANDS_SRC" ]; then
     for src_file in "$COMMANDS_SRC"/*.md; do
         [ -f "$src_file" ] || continue
         fname="$(basename "$src_file")"
+        # Section 2.18: pl-edit-base.md MUST NEVER be copied to consumer projects
+        if [ "$fname" = "pl-edit-base.md" ]; then
+            continue
+        fi
         dst_file="$COMMANDS_DST/$fname"
         if [ -f "$dst_file" ] && [ "$dst_file" -nt "$src_file" ]; then
             CMD_SKIPPED=$((CMD_SKIPPED + 1))
