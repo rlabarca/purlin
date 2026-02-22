@@ -41,13 +41,13 @@ The Status view is the default view (`/#status`).
 *   **Section Collapse/Expand Behavior:**
     *   Each section heading has a chevron indicator: right-pointing when collapsed, down-pointing when expanded.
     *   Clicking the section heading toggles between collapsed and expanded.
-    *   **Collapsed Summary (Active/Complete):** When collapsed, the section heading displays a summary badge:
-        - `DONE` (green) if all features in the section have all roles satisfied.
+    *   **Collapsed Summary (Active):** When the Active section is collapsed, the section heading displays a summary badge:
         - `??` (dim) if the section is empty.
         - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
+    *   **Collapsed Summary (Complete):** When the Complete section is collapsed, the section heading displays no summary badge. Complete implies all roles are satisfied; a badge is redundant.
     *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean State" or a brief status indicator.
-    *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default, displaying their summary badge/status indicator.
+    *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default. The Active section shows its summary badge when collapsed; the Workspace section shows its status indicator; the Complete section shows nothing.
     *   **State Persistence:** Section expanded/collapsed states MUST be persisted to `localStorage` (key: `purlin-section-states`). On page load, saved states are restored, overriding the defaults above. This ensures the user's preferred section layout survives page reloads and browser restarts. Each toggle updates the stored state immediately.
 *   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
 *   **Active Section Sorting:** Features sorted by urgency: any red state (FAIL, INFEASIBLE) first, then any yellow/orange state (TODO, DISPUTED), then alphabetical.
@@ -567,7 +567,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") have a visible underline separator
 - [ ] Section headings are clearly distinguished from the content beneath them
 - [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
-- [ ] Collapsed sections show a summary badge (DONE/??/TODO/most-severe)
+- [ ] Collapsed Active section shows a summary badge (??/TODO/most-severe); Complete section shows no badge when collapsed
 - [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
 - [ ] Section collapse/expand states persist across page reloads via localStorage
 - [ ] Workspace section shows "Clean State" or status summary in its collapsed form
