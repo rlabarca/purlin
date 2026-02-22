@@ -205,6 +205,9 @@ The "Startup Sequence" checkbox `onchange` handler: when unchecked, sets `checkb
 ### Dashboard Grid Extension
 The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-columns: 64px 140px 80px 60px` (agent-name | model | effort | YOLO). Extend with two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 60px 60px` (agent-name | model | effort | YOLO | Startup/Sequence | Suggest/Next). The column header row gains two new cells with two-line text ("Startup" / "Sequence" and "Suggest" / "Next") using `<br>` or CSS wrapping; no inline labels appear in the agent data rows.
 
+### **[CLARIFICATION]** BUG Ownership: /pl-status Invocation Before Flag Read (Severity: INFO)
+The OPEN BUG "QA agent invokes /pl-status before reading startup flags" is in Architect scope, not Builder scope. All Builder-owned code (launchers, API validation, dashboard checkboxes, config schema) is implemented and passing 19/19 tests. The bug is an LLM agent behavior issue: the QA agent does not follow the instruction ordering in `QA_BASE.md` Section 3.0.1 — it invokes `/pl-status` before reading config.json. The fix requires the Architect to strengthen the instruction file gating (e.g., stronger ordering cues, explicit prohibition of skill invocation before flag read). The Builder has no mechanism to enforce instruction-level behavior from launchers (per Section 2.3: "No behavioral injection").
+
 ## User Testing Discoveries
 
 ### [BUG] QA agent invokes /pl-status before reading startup flags (Discovered: 2026-02-22)
