@@ -16,14 +16,14 @@ import shutil
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Project root detection
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 

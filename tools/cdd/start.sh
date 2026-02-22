@@ -2,15 +2,15 @@
 # start.sh
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 # Project root and config discovery (Section 2.11)
-if [ -n "${AGENTIC_PROJECT_ROOT:-}" ] && [ -d "$AGENTIC_PROJECT_ROOT/.agentic_devops" ]; then
-    PROJECT_ROOT="$AGENTIC_PROJECT_ROOT"
-    CONFIG_FILE="$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json"
+if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
+    PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
+    CONFIG_FILE="$PURLIN_PROJECT_ROOT/.purlin/config.json"
 else
     # Climbing fallback: try submodule path (further) first, then standalone (nearer)
-    CONFIG_FILE="$DIR/../../../.agentic_devops/config.json"
+    CONFIG_FILE="$DIR/../../../.purlin/config.json"
     PROJECT_ROOT="$(cd "$DIR/../../.." 2>/dev/null && pwd)"
     if [ ! -f "$CONFIG_FILE" ]; then
-        CONFIG_FILE="$DIR/../../.agentic_devops/config.json"
+        CONFIG_FILE="$DIR/../../.purlin/config.json"
         PROJECT_ROOT="$(cd "$DIR/../.." 2>/dev/null && pwd)"
     fi
 fi
@@ -28,8 +28,8 @@ if [ -f "$CONFIG_FILE" ]; then
     fi
 fi
 
-# Artifact isolation (Section 2.12): logs/pids to .agentic_devops/runtime/
-RUNTIME_DIR="$PROJECT_ROOT/.agentic_devops/runtime"
+# Artifact isolation (Section 2.12): logs/pids to .purlin/runtime/
+RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
 
 nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &

@@ -21,8 +21,8 @@ from datetime import datetime, timezone
 # ---------------------------------------------------------------------------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 1. Check AGENTIC_PROJECT_ROOT env var (authoritative when set by launchers)
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+# 1. Check PURLIN_PROJECT_ROOT env var (authoritative when set by launchers)
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
@@ -30,19 +30,19 @@ else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 
 # Config loading with resilience (Section 2.13)
 CONFIG = {}
-_cfg_path = os.path.join(PROJECT_ROOT, '.agentic_devops/config.json')
+_cfg_path = os.path.join(PROJECT_ROOT, '.purlin/config.json')
 if os.path.exists(_cfg_path):
     try:
         with open(_cfg_path, 'r') as f:
             CONFIG = json.load(f)
     except (json.JSONDecodeError, IOError, OSError):
-        print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
+        print("Warning: Failed to parse .purlin/config.json; using defaults",
               file=sys.stderr)
 
 TOOLS_ROOT = CONFIG.get('tools_root', 'tools')
@@ -809,7 +809,7 @@ def _read_cdd_feature_status():
     Returns dict or None if file doesn't exist or is malformed.
     """
     status_path = os.path.join(
-        PROJECT_ROOT, '.agentic_devops', 'cache', 'feature_status.json')
+        PROJECT_ROOT, '.purlin', 'cache', 'feature_status.json')
     if not os.path.isfile(status_path):
         return None
     try:
@@ -1134,7 +1134,7 @@ def audit_untracked_files(project_root=None):
     """Detect untracked files and generate Architect action items.
 
     Runs ``git status --porcelain`` and collects untracked entries (``??``).
-    Excludes ``.agentic_devops/`` and ``.claude/`` directories.
+    Excludes ``.purlin/`` and ``.claude/`` directories.
 
     Returns:
         list of action item dicts with priority MEDIUM and category
@@ -1161,8 +1161,8 @@ def audit_untracked_files(project_root=None):
         path = line[3:].strip()
         if not path:
             continue
-        # Exclude .agentic_devops/ and .claude/ directories
-        if path.startswith('.agentic_devops/') or path == '.agentic_devops/':
+        # Exclude .purlin/ and .claude/ directories
+        if path.startswith('.purlin/') or path == '.purlin/':
             continue
         if path.startswith('.claude/') or path == '.claude/':
             continue

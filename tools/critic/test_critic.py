@@ -2005,10 +2005,10 @@ class TestUntrackedFileDetection(unittest.TestCase):
         self.assertIn('docs/readme.txt', items[1]['description'])
 
     @patch('critic.subprocess.run')
-    def test_excludes_agentic_devops(self, mock_run):
+    def test_excludes_purlin_dir(self, mock_run):
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout='?? .agentic_devops/config.json\n?? real_file.py\n',
+            stdout='?? .purlin/config.json\n?? real_file.py\n',
         )
         items = audit_untracked_files('/fake/root')
         self.assertEqual(len(items), 1)

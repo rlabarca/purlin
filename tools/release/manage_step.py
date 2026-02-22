@@ -13,19 +13,19 @@ import tempfile
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Project root detection (submodule_bootstrap.md Section 2.11)
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 
 # Config loading with resilience (Section 2.13)
-_config_path = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
+_config_path = os.path.join(PROJECT_ROOT, ".purlin/config.json")
 _config = {}
 if os.path.exists(_config_path):
     try:
@@ -37,8 +37,8 @@ if os.path.exists(_config_path):
 TOOLS_ROOT = _config.get("tools_root", "tools")
 
 GLOBAL_STEPS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "release", "global_steps.json")
-LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops", "release", "local_steps.json")
-LOCAL_CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops", "release", "config.json")
+LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "local_steps.json")
+LOCAL_CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "config.json")
 
 RESERVED_PREFIX = "purlin."
 

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Project root detection (Section 2.11)
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
@@ -22,19 +22,19 @@ else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 
 # Config loading with resilience (Section 2.13)
-CONFIG_PATH = os.path.join(PROJECT_ROOT, ".agentic_devops/config.json")
+CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin/config.json")
 CONFIG = {}
 if os.path.exists(CONFIG_PATH):
     try:
         with open(CONFIG_PATH, 'r') as f:
             CONFIG = json.load(f)
     except (json.JSONDecodeError, IOError, OSError):
-        print("Warning: Failed to parse .agentic_devops/config.json; using defaults",
+        print("Warning: Failed to parse .purlin/config.json; using defaults",
               file=sys.stderr)
 
 PORT = CONFIG.get("cdd_port", 8086)
@@ -46,8 +46,8 @@ FEATURES_DIR = FEATURES_ABS  # alias used by /feature endpoint
 TESTS_DIR = os.path.join(PROJECT_ROOT, "tests")
 
 COMPLETE_CAP = 10
-# Artifact isolation (Section 2.12): write to .agentic_devops/cache/
-CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
+# Artifact isolation (Section 2.12): write to .purlin/cache/
+CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
 DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
@@ -64,7 +64,7 @@ except ImportError:
     RELEASE_RESOLVE_AVAILABLE = False
 
 RELEASE_CONFIG_PATH = os.path.join(
-    PROJECT_ROOT, ".agentic_devops", "release", "config.json")
+    PROJECT_ROOT, ".purlin", "release", "config.json")
 
 
 def get_release_checklist():
@@ -74,7 +74,7 @@ def get_release_checklist():
     global_path = os.path.join(
         PROJECT_ROOT, TOOLS_ROOT, "release", "global_steps.json")
     local_path = os.path.join(
-        PROJECT_ROOT, ".agentic_devops", "release", "local_steps.json")
+        PROJECT_ROOT, ".purlin", "release", "local_steps.json")
     return _resolve_checklist(
         global_path=global_path,
         local_path=local_path,
@@ -258,7 +258,7 @@ def aggregate_test_statuses(statuses):
 def get_delivery_phase():
     """Parse the delivery plan and return the current phase info.
 
-    Reads `.agentic_devops/cache/delivery_plan.md`, counts `### Phase N:`
+    Reads `.purlin/cache/delivery_plan.md`, counts `### Phase N:`
     headings, and finds the first PENDING or IN_PROGRESS phase.
 
     Returns {"current": int, "total": int} or None if no plan exists

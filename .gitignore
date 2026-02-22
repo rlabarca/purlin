@@ -10,11 +10,11 @@ __pycache__/
 env/
 venv/
 
-# Agentic Runtime & Cache (generated artifacts outside tools/)
-.agentic_devops/cache/
-.agentic_devops/runtime/
+# Purlin Runtime & Cache (generated artifacts outside tools/)
+.purlin/cache/
+.purlin/runtime/
 
-# Agentic Tool Logs & Artifacts
+# Purlin Tool Logs & Artifacts
 *.log
 *.pid
 *.mmd

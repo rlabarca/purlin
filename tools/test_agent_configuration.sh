@@ -25,7 +25,7 @@ setup_launcher_sandbox() {
     CAPTURE_FILE="$MOCK_DIR/captured_args"
 
     # Minimal instruction stubs so launcher cat commands don't fail
-    mkdir -p "$SANDBOX/instructions" "$SANDBOX/.agentic_devops"
+    mkdir -p "$SANDBOX/instructions" "$SANDBOX/.purlin"
     echo "# stub" > "$SANDBOX/instructions/HOW_WE_WORK_BASE.md"
     echo "# stub" > "$SANDBOX/instructions/BUILDER_BASE.md"
     echo "# stub" > "$SANDBOX/instructions/ARCHITECT_BASE.md"
@@ -60,7 +60,7 @@ echo "=== Model Configuration & Launcher Tests ==="
 echo ""
 echo "[Scenario] Config Schema Has Flat Models Array"
 
-CONFIG_FILE="$PROJECT_ROOT/.agentic_devops/config.json"
+CONFIG_FILE="$PROJECT_ROOT/.purlin/config.json"
 if [ -f "$CONFIG_FILE" ]; then
     if python3 -c "
 import json
@@ -100,7 +100,7 @@ fi
 echo ""
 echo "[Scenario] Sample Config Matches Schema"
 
-SAMPLE_FILE="$PROJECT_ROOT/agentic_devops.sample/config.json"
+SAMPLE_FILE="$PROJECT_ROOT/purlin-config-sample/config.json"
 if [ -f "$SAMPLE_FILE" ]; then
     if python3 -c "
 import json
@@ -112,12 +112,12 @@ for role in ['architect', 'builder', 'qa']:
     a = agents.get(role, {})
     assert 'provider' not in a, f'sample {role} must not have provider field'
 " 2>/dev/null; then
-        log_pass "agentic_devops.sample/config.json matches new schema"
+        log_pass "purlin-config-sample/config.json matches new schema"
     else
         log_fail "Sample config does not match new schema"
     fi
 else
-    log_fail "agentic_devops.sample/config.json does not exist"
+    log_fail "purlin-config-sample/config.json does not exist"
 fi
 
 # --- Scenario: Provider Probe Infrastructure Removed ---
@@ -143,7 +143,7 @@ setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
 
-cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
     "agents": {
         "architect": {
@@ -190,7 +190,7 @@ echo "[Scenario] Launcher Falls Back When Config is Missing"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
-# No config.json written — .agentic_devops/ is empty
+# No config.json written — .purlin/ is empty
 
 PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
@@ -217,7 +217,7 @@ setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_builder.sh" "$SANDBOX/"
 
-cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
     "agents": {
         "builder": {
@@ -253,7 +253,7 @@ setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_qa.sh" "$SANDBOX/"
 
-cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
     "agents": {
         "qa": {
@@ -295,7 +295,7 @@ setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_qa.sh" "$SANDBOX/"
 
-cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
     "agents": {
         "qa": {
@@ -324,14 +324,14 @@ fi
 
 teardown_launcher_sandbox
 
-# --- Scenario: Launcher Exports AGENTIC_PROJECT_ROOT ---
+# --- Scenario: Launcher Exports PURLIN_PROJECT_ROOT ---
 echo ""
-echo "[Scenario] Launcher Exports AGENTIC_PROJECT_ROOT"
+echo "[Scenario] Launcher Exports PURLIN_PROJECT_ROOT"
 setup_launcher_sandbox
 
 cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
 
-cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
     "agents": {
         "architect": {
@@ -343,10 +343,10 @@ cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
 }
 EOF
 
-# Mock claude that captures AGENTIC_PROJECT_ROOT from its env
+# Mock claude that captures PURLIN_PROJECT_ROOT from its env
 cat > "$MOCK_DIR/claude" << MOCK_EOF
 #!/bin/bash
-echo "AGENTIC_PROJECT_ROOT=\$AGENTIC_PROJECT_ROOT" > "$CAPTURE_FILE"
+echo "PURLIN_PROJECT_ROOT=\$PURLIN_PROJECT_ROOT" > "$CAPTURE_FILE"
 exit 0
 MOCK_EOF
 chmod +x "$MOCK_DIR/claude"
@@ -354,10 +354,10 @@ chmod +x "$MOCK_DIR/claude"
 PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
-if echo "$CAPTURED" | grep -q "AGENTIC_PROJECT_ROOT=$SANDBOX"; then
-    log_pass "AGENTIC_PROJECT_ROOT exported as project root"
+if echo "$CAPTURED" | grep -q "PURLIN_PROJECT_ROOT=$SANDBOX"; then
+    log_pass "PURLIN_PROJECT_ROOT exported as project root"
 else
-    log_fail "AGENTIC_PROJECT_ROOT not set correctly (captured: $CAPTURED)"
+    log_fail "PURLIN_PROJECT_ROOT not set correctly (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox

@@ -24,9 +24,9 @@ _resolve_python() {
         return
     fi
 
-    # Priority 2: AGENTIC_PROJECT_ROOT/.venv/
-    if [ -n "${AGENTIC_PROJECT_ROOT:-}" ] && [ -x "$AGENTIC_PROJECT_ROOT/.venv/$venv_bin" ]; then
-        PYTHON_EXE="$AGENTIC_PROJECT_ROOT/.venv/$venv_bin"
+    # Priority 2: PURLIN_PROJECT_ROOT/.venv/
+    if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -x "$PURLIN_PROJECT_ROOT/.venv/$venv_bin" ]; then
+        PYTHON_EXE="$PURLIN_PROJECT_ROOT/.venv/$venv_bin"
         echo "[resolve_python] Using project root venv at $PYTHON_EXE" >&2
         return
     fi

@@ -11,18 +11,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Project root detection (Section 2.11)
-if [ -n "${AGENTIC_PROJECT_ROOT:-}" ] && [ -d "$AGENTIC_PROJECT_ROOT" ]; then
-    PROJECT_ROOT="$AGENTIC_PROJECT_ROOT"
+if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT" ]; then
+    PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
 else
-    if [ -d "$SCRIPT_DIR/../../../.agentic_devops" ]; then
+    if [ -d "$SCRIPT_DIR/../../../.purlin" ]; then
         PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-    elif [ -d "$SCRIPT_DIR/../../.agentic_devops" ]; then
+    elif [ -d "$SCRIPT_DIR/../../.purlin" ]; then
         PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
     else
         PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
     fi
 fi
-export AGENTIC_PROJECT_ROOT="$PROJECT_ROOT"
+export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
 
 # Source shared Python resolver (python_environment.md §2.2)
 source "$SCRIPT_DIR/../resolve_python.sh"
@@ -62,7 +62,7 @@ get_lifecycle() {
     "$PYTHON_EXE" -c "
 import json, sys
 try:
-    with open('.agentic_devops/cache/feature_status.json') as f:
+    with open('.purlin/cache/feature_status.json') as f:
         d = json.load(f)
     for state in ('complete', 'testing', 'todo'):
         for entry in d['features'].get(state, []):
@@ -258,7 +258,7 @@ fi
 
 html=$("$PYTHON_EXE" -c "
 import sys, os
-sys.path.insert(0, os.path.join(os.environ['AGENTIC_PROJECT_ROOT'], 'tools', 'cdd'))
+sys.path.insert(0, os.path.join(os.environ['PURLIN_PROJECT_ROOT'], 'tools', 'cdd'))
 from serve import generate_html
 print(generate_html())
 " 2>/dev/null || echo "ERROR_GENERATING_HTML")

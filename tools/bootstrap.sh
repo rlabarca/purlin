@@ -12,40 +12,40 @@ SUBMODULE_NAME="$(basename "$SUBMODULE_DIR")"
 PROJECT_ROOT="$(cd "$SUBMODULE_DIR/.." && pwd)"
 
 # Source shared Python resolver (python_environment.md §2.2)
-export AGENTIC_PROJECT_ROOT="$PROJECT_ROOT"
+export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
 source "$SCRIPT_DIR/resolve_python.sh"
 
 ###############################################################################
 # 2. Guard: Prevent Re-Initialization
 ###############################################################################
-if [ -d "$PROJECT_ROOT/.agentic_devops" ]; then
-    echo "ERROR: .agentic_devops/ already exists at $PROJECT_ROOT"
-    echo "If you want to re-initialize, remove it first:  rm -rf $PROJECT_ROOT/.agentic_devops"
+if [ -d "$PROJECT_ROOT/.purlin" ]; then
+    echo "ERROR: .purlin/ already exists at $PROJECT_ROOT"
+    echo "If you want to re-initialize, remove it first:  rm -rf $PROJECT_ROOT/.purlin"
     exit 1
 fi
 
 ###############################################################################
 # 3. Override Directory Initialization
 ###############################################################################
-SAMPLE_DIR="$SUBMODULE_DIR/agentic_devops.sample"
+SAMPLE_DIR="$SUBMODULE_DIR/purlin-config-sample"
 if [ ! -d "$SAMPLE_DIR" ]; then
-    echo "ERROR: agentic_devops.sample/ not found in $SUBMODULE_DIR"
+    echo "ERROR: purlin-config-sample/ not found in $SUBMODULE_DIR"
     exit 1
 fi
 
-echo "Copying agentic_devops.sample/ -> .agentic_devops/ ..."
-cp -R "$SAMPLE_DIR" "$PROJECT_ROOT/.agentic_devops"
+echo "Copying purlin-config-sample/ -> .purlin/ ..."
+cp -R "$SAMPLE_DIR" "$PROJECT_ROOT/.purlin"
 
 # Patch tools_root in the copied config.json (Section 2.10: JSON-safe sed)
 TOOLS_ROOT_VALUE="$SUBMODULE_NAME/tools"
 sed -i.bak "s|\"tools_root\": \"[^\"]*\"|\"tools_root\": \"$TOOLS_ROOT_VALUE\"|" \
-    "$PROJECT_ROOT/.agentic_devops/config.json"
-rm -f "$PROJECT_ROOT/.agentic_devops/config.json.bak"
+    "$PROJECT_ROOT/.purlin/config.json"
+rm -f "$PROJECT_ROOT/.purlin/config.json.bak"
 
 # Validate JSON after patching (Section 2.10)
-if ! "$PYTHON_EXE" -c "import json; json.load(open('$PROJECT_ROOT/.agentic_devops/config.json'))"; then
+if ! "$PYTHON_EXE" -c "import json; json.load(open('$PROJECT_ROOT/.purlin/config.json'))"; then
     echo "ERROR: config.json is invalid JSON after patching tools_root."
-    echo "  File: $PROJECT_ROOT/.agentic_devops/config.json"
+    echo "  File: $PROJECT_ROOT/.purlin/config.json"
     exit 1
 fi
 
@@ -66,7 +66,7 @@ try:
 except (json.JSONDecodeError, ValueError):
     sys.exit(0)
 
-config_path = '$PROJECT_ROOT/.agentic_devops/config.json'
+config_path = '$PROJECT_ROOT/.purlin/config.json'
 sample_path = '$SAMPLE_DIR/config.json'
 
 try:
@@ -107,7 +107,7 @@ fi
 # 4. Upstream SHA Marker
 ###############################################################################
 CURRENT_SHA="$(git -C "$SUBMODULE_DIR" rev-parse HEAD)"
-echo "$CURRENT_SHA" > "$PROJECT_ROOT/.agentic_devops/.upstream_sha"
+echo "$CURRENT_SHA" > "$PROJECT_ROOT/.purlin/.upstream_sha"
 
 ###############################################################################
 # 5. Launcher Script Generation
@@ -123,11 +123,11 @@ generate_launcher() {
     local OVERRIDES_FILE="$4"
     local SESSION_MSG="$5"
 
-    # Part 1: Shebang, SCRIPT_DIR, AGENTIC_PROJECT_ROOT (literal)
+    # Part 1: Shebang, SCRIPT_DIR, PURLIN_PROJECT_ROOT (literal)
     cat > "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
+export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 LAUNCHER_EOF
 
     # Part 2: CORE_DIR with submodule path (expanded)
@@ -150,14 +150,14 @@ cat "\$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "\$PROMPT_FILE"
 printf "\n\n" >> "\$PROMPT_FILE"
 cat "\$CORE_DIR/instructions/${INSTRUCTION_FILE}" >> "\$PROMPT_FILE"
 
-if [ -f "\$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
+if [ -f "\$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
     printf "\n\n" >> "\$PROMPT_FILE"
-    cat "\$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "\$PROMPT_FILE"
+    cat "\$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "\$PROMPT_FILE"
 fi
 
-if [ -f "\$SCRIPT_DIR/.agentic_devops/${OVERRIDES_FILE}" ]; then
+if [ -f "\$SCRIPT_DIR/.purlin/${OVERRIDES_FILE}" ]; then
     printf "\n\n" >> "\$PROMPT_FILE"
-    cat "\$SCRIPT_DIR/.agentic_devops/${OVERRIDES_FILE}" >> "\$PROMPT_FILE"
+    cat "\$SCRIPT_DIR/.purlin/${OVERRIDES_FILE}" >> "\$PROMPT_FILE"
 fi
 LAUNCHER_EOF
 
@@ -165,7 +165,7 @@ LAUNCHER_EOF
     cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
 # --- Read agent config from config.json ---
-CONFIG_FILE="$SCRIPT_DIR/.agentic_devops/config.json"
+CONFIG_FILE="$SCRIPT_DIR/.purlin/config.json"
 LAUNCHER_EOF
 
     # Part 4b: Role name (expanded)
@@ -291,12 +291,12 @@ fi
 ###############################################################################
 GITIGNORE="$PROJECT_ROOT/.gitignore"
 
-# Warn if .agentic_devops is gitignored
-if [ -f "$GITIGNORE" ] && grep -q '\.agentic_devops' "$GITIGNORE"; then
+# Warn if .purlin is gitignored
+if [ -f "$GITIGNORE" ] && grep -q '\.purlin' "$GITIGNORE"; then
     echo ""
-    echo "WARNING: .agentic_devops appears in .gitignore."
-    echo "  .agentic_devops/ contains project-specific overrides and SHOULD be tracked (committed)."
-    echo "  Remove '.agentic_devops' from .gitignore if it was added by mistake."
+    echo "WARNING: .purlin appears in .gitignore."
+    echo "  .purlin/ contains project-specific overrides and SHOULD be tracked (committed)."
+    echo "  Remove '.purlin' from .gitignore if it was added by mistake."
 fi
 
 # Recommended ignores
@@ -313,11 +313,11 @@ RECOMMENDED_IGNORES=(
     "env/"
     "venv/"
     ""
-    "# Agentic Tool Logs & Artifacts"
+    "# Purlin Tool Logs & Artifacts"
     "*.log"
     "*.pid"
-    ".agentic_devops/runtime/"
-    ".agentic_devops/cache/"
+    ".purlin/runtime/"
+    ".purlin/cache/"
 )
 
 if [ ! -f "$GITIGNORE" ]; then
@@ -353,9 +353,9 @@ echo ""
 echo "=== Bootstrap Complete ==="
 echo ""
 echo "Created:"
-echo "  .agentic_devops/              (override directory)"
-echo "  .agentic_devops/config.json   (tools_root: $TOOLS_ROOT_VALUE)"
-echo "  .agentic_devops/.upstream_sha (submodule SHA: ${CURRENT_SHA:0:12}...)"
+echo "  .purlin/              (override directory)"
+echo "  .purlin/config.json   (tools_root: $TOOLS_ROOT_VALUE)"
+echo "  .purlin/.upstream_sha (submodule SHA: ${CURRENT_SHA:0:12}...)"
 echo "  run_claude_architect.sh       (launcher)"
 echo "  run_claude_builder.sh         (launcher)"
 echo "  run_claude_qa.sh              (launcher)"
@@ -364,7 +364,7 @@ echo "  run_claude_qa.sh              (launcher)"
 [ ! -d "$PROJECT_ROOT/features" ] || echo "  features/                     (feature specs directory)"
 echo ""
 echo "Next steps:"
-echo "  1. Review and customize .agentic_devops/ override files."
+echo "  1. Review and customize .purlin/ override files."
 echo "  2. Run ./run_claude_architect.sh to start the Architect agent."
 echo "  3. Run ./run_claude_builder.sh to start the Builder agent."
 echo "  4. Run ./run_claude_qa.sh to start the QA agent."

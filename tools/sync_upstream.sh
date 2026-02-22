@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$SUBMODULE_DIR/.." && pwd)"
 ###############################################################################
 # 2. SHA Comparison
 ###############################################################################
-SHA_FILE="$PROJECT_ROOT/.agentic_devops/.upstream_sha"
+SHA_FILE="$PROJECT_ROOT/.purlin/.upstream_sha"
 
 if [ ! -f "$SHA_FILE" ]; then
     echo "ERROR: $SHA_FILE not found."

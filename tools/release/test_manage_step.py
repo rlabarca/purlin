@@ -25,14 +25,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MANAGE_STEP = os.path.join(SCRIPT_DIR, "manage_step.py")
 
 # Project root detection
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 
@@ -77,12 +77,12 @@ def read_json(path):
 
 
 def make_sandbox():
-    """Create a sandbox with .agentic_devops structure and config pointing to real tools."""
+    """Create a sandbox with .purlin structure and config pointing to real tools."""
     d = tempfile.mkdtemp()
-    release_dir = os.path.join(d, ".agentic_devops", "release")
+    release_dir = os.path.join(d, ".purlin", "release")
     os.makedirs(release_dir, exist_ok=True)
     # Write config.json so manage_step.py can resolve tools_root
-    config_dir = os.path.join(d, ".agentic_devops")
+    config_dir = os.path.join(d, ".purlin")
     write_json(os.path.join(config_dir, "config.json"), {
         "tools_root": os.path.relpath(
             os.path.join(PROJECT_ROOT, "tools"), d
@@ -96,8 +96,8 @@ def cleanup_sandbox(d):
 
 
 def run_cmd(sandbox, args):
-    """Run manage_step.py with AGENTIC_PROJECT_ROOT set to sandbox."""
-    env = dict(os.environ, AGENTIC_PROJECT_ROOT=sandbox)
+    """Run manage_step.py with PURLIN_PROJECT_ROOT set to sandbox."""
+    env = dict(os.environ, PURLIN_PROJECT_ROOT=sandbox)
     result = subprocess.run(
         [sys.executable, MANAGE_STEP] + args,
         capture_output=True, text=True, env=env,
@@ -106,11 +106,11 @@ def run_cmd(sandbox, args):
 
 
 def local_steps_path(sandbox):
-    return os.path.join(sandbox, ".agentic_devops", "release", "local_steps.json")
+    return os.path.join(sandbox, ".purlin", "release", "local_steps.json")
 
 
 def config_path(sandbox):
-    return os.path.join(sandbox, ".agentic_devops", "release", "config.json")
+    return os.path.join(sandbox, ".purlin", "release", "config.json")
 
 
 def seed_local_step(sandbox, step):

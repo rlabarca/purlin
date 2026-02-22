@@ -69,20 +69,20 @@ EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then log_pass "Exit code 0"; else log_fail "Exit code was $EXIT_CODE (expected 0)"; fi
 
-if [ -d "$PROJECT/.agentic_devops" ]; then log_pass ".agentic_devops/ created"; else log_fail ".agentic_devops/ not created"; fi
+if [ -d "$PROJECT/.purlin" ]; then log_pass ".purlin/ created"; else log_fail ".purlin/ not created"; fi
 
-if [ -f "$PROJECT/.agentic_devops/config.json" ]; then
-    if grep -q '"tools_root": "agentic-dev/tools"' "$PROJECT/.agentic_devops/config.json"; then
+if [ -f "$PROJECT/.purlin/config.json" ]; then
+    if grep -q '"tools_root": "agentic-dev/tools"' "$PROJECT/.purlin/config.json"; then
         log_pass "config.json tools_root patched correctly"
     else
-        log_fail "config.json tools_root incorrect: $(cat "$PROJECT/.agentic_devops/config.json")"
+        log_fail "config.json tools_root incorrect: $(cat "$PROJECT/.purlin/config.json")"
     fi
 else
     log_fail "config.json not created"
 fi
 
-if [ -f "$PROJECT/.agentic_devops/.upstream_sha" ]; then
-    SHA_LEN=$(wc -c < "$PROJECT/.agentic_devops/.upstream_sha" | tr -d ' ')
+if [ -f "$PROJECT/.purlin/.upstream_sha" ]; then
+    SHA_LEN=$(wc -c < "$PROJECT/.purlin/.upstream_sha" | tr -d ' ')
     if [ "$SHA_LEN" -ge 40 ]; then
         log_pass ".upstream_sha recorded (${SHA_LEN} chars)"
     else
@@ -92,9 +92,9 @@ else
     log_fail ".upstream_sha not created"
 fi
 
-if [ -f "$PROJECT/.agentic_devops/ARCHITECT_OVERRIDES.md" ]; then log_pass "ARCHITECT_OVERRIDES.md copied"; else log_fail "ARCHITECT_OVERRIDES.md missing"; fi
-if [ -f "$PROJECT/.agentic_devops/BUILDER_OVERRIDES.md" ]; then log_pass "BUILDER_OVERRIDES.md copied"; else log_fail "BUILDER_OVERRIDES.md missing"; fi
-if [ -f "$PROJECT/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then log_pass "HOW_WE_WORK_OVERRIDES.md copied"; else log_fail "HOW_WE_WORK_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" ]; then log_pass "ARCHITECT_OVERRIDES.md copied"; else log_fail "ARCHITECT_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/BUILDER_OVERRIDES.md" ]; then log_pass "BUILDER_OVERRIDES.md copied"; else log_fail "BUILDER_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then log_pass "HOW_WE_WORK_OVERRIDES.md copied"; else log_fail "HOW_WE_WORK_OVERRIDES.md missing"; fi
 
 if [ -x "$PROJECT/run_claude_architect.sh" ]; then log_pass "run_claude_architect.sh executable"; else log_fail "run_claude_architect.sh not executable"; fi
 if [ -x "$PROJECT/run_claude_builder.sh" ]; then log_pass "run_claude_builder.sh executable"; else log_fail "run_claude_builder.sh not executable"; fi
@@ -189,10 +189,10 @@ cleanup_sandbox
 echo ""
 echo "[Scenario] Gitignore Warning"
 setup_sandbox
-echo ".agentic_devops" > "$PROJECT/.gitignore"
+echo ".purlin" > "$PROJECT/.gitignore"
 
 OUTPUT=$("$BOOTSTRAP" 2>&1)
-if echo "$OUTPUT" | grep -qi "WARNING.*\.agentic_devops"; then
+if echo "$OUTPUT" | grep -qi "WARNING.*\.purlin"; then
     log_pass "Gitignore warning printed"
 else
     log_fail "Gitignore warning not printed"
@@ -213,11 +213,11 @@ if [ -f "$PROJECT/.gitignore" ]; then
     else
         log_fail ".gitignore missing recommended ignores"
     fi
-    # Check that .agentic_devops itself is not ignored (subdirs like runtime/cache are OK)
-    if grep -qE '^\\.agentic_devops/?$' "$PROJECT/.gitignore"; then
-        log_fail ".gitignore ignores .agentic_devops directory (MUST NOT)"
+    # Check that .purlin itself is not ignored (subdirs like runtime/cache are OK)
+    if grep -qE '^\\.purlin/?$' "$PROJECT/.gitignore"; then
+        log_fail ".gitignore ignores .purlin directory (MUST NOT)"
     else
-        log_pass ".gitignore does not ignore .agentic_devops directory"
+        log_pass ".gitignore does not ignore .purlin directory"
     fi
 else
     log_fail ".gitignore not created"
@@ -249,7 +249,7 @@ echo ""
 echo "[Scenario] Missing Upstream SHA File"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
-rm "$PROJECT/.agentic_devops/.upstream_sha"
+rm "$PROJECT/.purlin/.upstream_sha"
 
 OUTPUT=$("$SYNC" 2>&1)
 EXIT_CODE=$?
@@ -271,7 +271,7 @@ REAL_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
 PARENT_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~1 2>/dev/null || echo "")"
 
 if [ -n "$PARENT_SHA" ]; then
-    echo "$PARENT_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+    echo "$PARENT_SHA" > "$PROJECT/.purlin/.upstream_sha"
 
     OUTPUT=$("$SYNC" 2>&1)
     EXIT_CODE=$?
@@ -284,7 +284,7 @@ if [ -n "$PARENT_SHA" ]; then
     fi
 
     # Verify SHA was updated
-    UPDATED_SHA="$(cat "$PROJECT/.agentic_devops/.upstream_sha" | tr -d '[:space:]')"
+    UPDATED_SHA="$(cat "$PROJECT/.purlin/.upstream_sha" | tr -d '[:space:]')"
     if [ "$UPDATED_SHA" = "$REAL_SHA" ]; then
         log_pass ".upstream_sha updated to current HEAD"
     else
@@ -316,7 +316,7 @@ for N in 1 2 3 4 5; do
 done
 
 if [ -n "$ANCESTOR_SHA" ]; then
-    echo "$ANCESTOR_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+    echo "$ANCESTOR_SHA" > "$PROJECT/.purlin/.upstream_sha"
     OUTPUT=$("$SYNC" 2>&1)
 
     if echo "$OUTPUT" | grep -qi "automatic"; then
@@ -338,7 +338,7 @@ setup_sandbox
 
 # Record current HEAD as the "old" SHA
 BEFORE_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
-echo "$BEFORE_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+echo "$BEFORE_SHA" > "$PROJECT/.purlin/.upstream_sha"
 
 # Simulate upstream change: modify a command file and commit
 if [ -d "$PROJECT/agentic-dev/.claude/commands" ]; then
@@ -402,7 +402,7 @@ setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
 BEFORE_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
-echo "$BEFORE_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+echo "$BEFORE_SHA" > "$PROJECT/.purlin/.upstream_sha"
 
 # Simulate upstream change: add pl-edit-base.md and commit
 mkdir -p "$PROJECT/agentic-dev/.claude/commands"
@@ -438,7 +438,7 @@ echo "[Scenario] Config JSON Validity After Bootstrap"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
-if python3 -c "import json; json.load(open('$PROJECT/.agentic_devops/config.json'))" 2>/dev/null; then
+if python3 -c "import json; json.load(open('$PROJECT/.purlin/config.json'))" 2>/dev/null; then
     log_pass "config.json is valid JSON after bootstrap"
 else
     log_fail "config.json is NOT valid JSON after bootstrap"
@@ -447,7 +447,7 @@ fi
 # Verify original keys preserved
 if python3 -c "
 import json
-c = json.load(open('$PROJECT/.agentic_devops/config.json'))
+c = json.load(open('$PROJECT/.purlin/config.json'))
 assert 'tools_root' in c, 'missing tools_root'
 assert 'cdd_port' in c, 'missing cdd_port'
 " 2>/dev/null; then
@@ -459,28 +459,28 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Section 2.11: Launcher Scripts Export AGENTIC_PROJECT_ROOT
+# Section 2.11: Launcher Scripts Export PURLIN_PROJECT_ROOT
 ###############################################################################
 echo ""
-echo "[Scenario] Launcher Scripts Export AGENTIC_PROJECT_ROOT"
+echo "[Scenario] Launcher Scripts Export PURLIN_PROJECT_ROOT"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
 for LAUNCHER in run_claude_architect.sh run_claude_builder.sh run_claude_qa.sh; do
-    if grep -q 'export AGENTIC_PROJECT_ROOT=' "$PROJECT/$LAUNCHER"; then
-        log_pass "$LAUNCHER exports AGENTIC_PROJECT_ROOT"
+    if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/$LAUNCHER"; then
+        log_pass "$LAUNCHER exports PURLIN_PROJECT_ROOT"
     else
-        log_fail "$LAUNCHER does NOT export AGENTIC_PROJECT_ROOT"
+        log_fail "$LAUNCHER does NOT export PURLIN_PROJECT_ROOT"
     fi
 done
 
 cleanup_sandbox
 
 ###############################################################################
-# Section 2.11: Python Tool Uses AGENTIC_PROJECT_ROOT
+# Section 2.11: Python Tool Uses PURLIN_PROJECT_ROOT
 ###############################################################################
 echo ""
-echo "[Scenario] Python Tool Uses AGENTIC_PROJECT_ROOT"
+echo "[Scenario] Python Tool Uses PURLIN_PROJECT_ROOT"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
@@ -508,15 +508,15 @@ Test.
 None.
 FEAT_EOF
 
-# Set AGENTIC_PROJECT_ROOT to the consumer project and invoke critic
+# Set PURLIN_PROJECT_ROOT to the consumer project and invoke critic
 mkdir -p "$PROJECT/tests"
-AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" "$PROJECT/features/test_feature.md" > /dev/null 2>&1
+PURLIN_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" "$PROJECT/features/test_feature.md" > /dev/null 2>&1
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
-    log_pass "critic.py runs with AGENTIC_PROJECT_ROOT set"
+    log_pass "critic.py runs with PURLIN_PROJECT_ROOT set"
 else
-    log_fail "critic.py failed with AGENTIC_PROJECT_ROOT set (exit $EXIT_CODE)"
+    log_fail "critic.py failed with PURLIN_PROJECT_ROOT set (exit $EXIT_CODE)"
 fi
 
 # Verify it used the consumer project root (critic.json written to consumer's tests/)
@@ -537,13 +537,13 @@ setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
 # Corrupt the config.json
-echo "{ this is not valid json" > "$PROJECT/.agentic_devops/config.json"
+echo "{ this is not valid json" > "$PROJECT/.purlin/config.json"
 
 mkdir -p "$PROJECT/features"
 mkdir -p "$PROJECT/tests"
 
 # Attempt to run critic with malformed config — should not crash
-AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>/dev/null
+PURLIN_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>/dev/null
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
@@ -553,7 +553,7 @@ else
 fi
 
 # Verify warning is printed to stderr
-STDERR_OUTPUT=$(AGENTIC_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>&1 1>/dev/null || true)
+STDERR_OUTPUT=$(PURLIN_PROJECT_ROOT="$PROJECT" python3 "$PROJECT/agentic-dev/tools/critic/critic.py" 2>&1 1>/dev/null || true)
 if echo "$STDERR_OUTPUT" | grep -qi "warning"; then
     log_pass "Warning printed to stderr for malformed config"
 else
@@ -594,18 +594,18 @@ None.
 FEAT_EOF
 
 # Run graph generation via status.sh --graph (graph.py produces .mmd and dependency_graph.json)
-AGENTIC_PROJECT_ROOT="$PROJECT" bash "$PROJECT/agentic-dev/tools/cdd/status.sh" --graph > /dev/null 2>&1
+PURLIN_PROJECT_ROOT="$PROJECT" bash "$PROJECT/agentic-dev/tools/cdd/status.sh" --graph > /dev/null 2>&1
 
-if [ -f "$PROJECT/.agentic_devops/cache/dependency_graph.json" ]; then
-    log_pass "dependency_graph.json written to .agentic_devops/cache/"
+if [ -f "$PROJECT/.purlin/cache/dependency_graph.json" ]; then
+    log_pass "dependency_graph.json written to .purlin/cache/"
 else
-    log_fail "dependency_graph.json NOT in .agentic_devops/cache/"
+    log_fail "dependency_graph.json NOT in .purlin/cache/"
 fi
 
-if [ -f "$PROJECT/.agentic_devops/cache/feature_graph.mmd" ]; then
-    log_pass "feature_graph.mmd written to .agentic_devops/cache/"
+if [ -f "$PROJECT/.purlin/cache/feature_graph.mmd" ]; then
+    log_pass "feature_graph.mmd written to .purlin/cache/"
 else
-    log_fail "feature_graph.mmd NOT in .agentic_devops/cache/"
+    log_fail "feature_graph.mmd NOT in .purlin/cache/"
 fi
 
 # Verify NO artifacts in the submodule's tools/ directory
@@ -629,14 +629,14 @@ echo "[Scenario] CDD start.sh discovers submodule config"
 CDD_START="$SCRIPT_DIR/cdd/start.sh"
 
 # Check that CDD start script has the submodule fallback path
-if grep -q 'DIR/../../../.agentic_devops/config.json' "$CDD_START"; then
+if grep -q 'DIR/../../../.purlin/config.json' "$CDD_START"; then
     log_pass "cdd/start.sh has submodule config fallback"
 else
     log_fail "cdd/start.sh missing submodule config fallback"
 fi
 
 # Verify standalone path is tried first
-if grep -q 'DIR/../../.agentic_devops/config.json' "$CDD_START"; then
+if grep -q 'DIR/../../.purlin/config.json' "$CDD_START"; then
     log_pass "cdd/start.sh tries standalone path first"
 else
     log_fail "cdd/start.sh missing standalone config path"

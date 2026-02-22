@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Project root detection (Section 2.11)
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
@@ -24,12 +24,12 @@ else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
     for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 
-# Artifact isolation (Section 2.12): write outputs to .agentic_devops/cache/
-CACHE_DIR = os.path.join(PROJECT_ROOT, ".agentic_devops", "cache")
+# Artifact isolation (Section 2.12): write outputs to .purlin/cache/
+CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 MMD_FILE = os.path.join(CACHE_DIR, "feature_graph.mmd")
 DEPENDENCY_GRAPH_FILE = os.path.join(CACHE_DIR, "dependency_graph.json")

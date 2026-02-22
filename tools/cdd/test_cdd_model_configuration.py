@@ -422,7 +422,7 @@ if __name__ == '__main__':
     # Discover project root
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(script_dir, '../..'))
-    env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+    env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
     if env_root and os.path.isdir(env_root):
         project_root = env_root
 

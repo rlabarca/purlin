@@ -29,12 +29,12 @@ class TestLauncherRejectsInvalidFlagCombination(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.agentic_dir = os.path.join(self.tmpdir, '.agentic_devops')
-        os.makedirs(self.agentic_dir)
+        self.purlin_dir = os.path.join(self.tmpdir, '.purlin')
+        os.makedirs(self.purlin_dir)
         # Minimal project structure
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.project_root = os.environ.get(
-            'AGENTIC_PROJECT_ROOT',
+            'PURLIN_PROJECT_ROOT',
             os.path.abspath(os.path.join(script_dir, '../..'))
         )
 
@@ -45,7 +45,7 @@ class TestLauncherRejectsInvalidFlagCombination(unittest.TestCase):
         config = {
             "agents": {"builder": agent_config}
         }
-        with open(os.path.join(self.agentic_dir, 'config.json'), 'w') as f:
+        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
             json.dump(config, f)
 
     def _run_launcher_validation(self, role, agent_config):
@@ -484,10 +484,10 @@ class TestConfigSchemaDefaults(unittest.TestCase):
         """config.json includes startup_sequence and recommend_next_actions."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.environ.get(
-            'AGENTIC_PROJECT_ROOT',
+            'PURLIN_PROJECT_ROOT',
             os.path.abspath(os.path.join(script_dir, '../..'))
         )
-        config_path = os.path.join(project_root, '.agentic_devops', 'config.json')
+        config_path = os.path.join(project_root, '.purlin', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
         for role in ('architect', 'builder', 'qa'):
@@ -500,13 +500,13 @@ class TestConfigSchemaDefaults(unittest.TestCase):
             self.assertIsInstance(agent['recommend_next_actions'], bool)
 
     def test_sample_config_has_startup_fields(self):
-        """agentic_devops.sample/config.json includes startup fields."""
+        """purlin-config-sample/config.json includes startup fields."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.environ.get(
-            'AGENTIC_PROJECT_ROOT',
+            'PURLIN_PROJECT_ROOT',
             os.path.abspath(os.path.join(script_dir, '../..'))
         )
-        sample_path = os.path.join(project_root, 'agentic_devops.sample', 'config.json')
+        sample_path = os.path.join(project_root, 'purlin-config-sample', 'config.json')
         with open(sample_path) as f:
             config = json.load(f)
         for role in ('architect', 'builder', 'qa'):
@@ -526,7 +526,7 @@ if __name__ == '__main__':
     # Discover project root
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(script_dir, '../..'))
-    env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+    env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
     if env_root and os.path.isdir(env_root):
         project_root = env_root
 

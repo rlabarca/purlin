@@ -11,7 +11,7 @@ that are not part of the dependency tree to a .trash folder.
 
 # Project root detection (Section 2.11, 2.14)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
+_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
@@ -19,7 +19,7 @@ else:
     PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../'))
     for depth in ('../../', '../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.agentic_devops')):
+        if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
 

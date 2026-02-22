@@ -917,7 +917,7 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
-        self.cache_dir = os.path.join(self.test_dir, ".agentic_devops", "cache")
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
         os.makedirs(self.cache_dir)
 
     def tearDown(self):
@@ -1021,7 +1021,7 @@ class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
-        self.cache_dir = os.path.join(self.test_dir, ".agentic_devops", "cache")
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
         os.makedirs(self.cache_dir)
 
     def tearDown(self):

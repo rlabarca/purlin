@@ -7,7 +7,7 @@ if [ ! -d "$CORE_DIR/instructions" ]; then
     CORE_DIR="$SCRIPT_DIR"
 fi
 
-export AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"
+export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
 PROMPT_FILE=$(mktemp)
 trap "rm -f '$PROMPT_FILE'" EXIT
@@ -16,18 +16,18 @@ cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
 printf "\n\n" >> "$PROMPT_FILE"
 cat "$CORE_DIR/instructions/BUILDER_BASE.md" >> "$PROMPT_FILE"
 
-if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
+if [ -f "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
     printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-if [ -f "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" ]; then
+if [ -f "$SCRIPT_DIR/.purlin/BUILDER_OVERRIDES.md" ]; then
     printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.purlin/BUILDER_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
 # --- Read agent config from config.json ---
-CONFIG_FILE="$SCRIPT_DIR/.agentic_devops/config.json"
+CONFIG_FILE="$SCRIPT_DIR/.purlin/config.json"
 AGENT_ROLE="builder"
 
 AGENT_MODEL=""

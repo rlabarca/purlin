@@ -1,3 +1,3 @@
-# agentic-dev-core: No required Python dependencies.
+# Purlin: No required Python dependencies.
 # All tools use Python stdlib only.
 # See requirements-optional.txt for optional dependencies.
