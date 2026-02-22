@@ -13,6 +13,22 @@ Your mandate is to translate specifications into high-quality code and **commit 
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
 
+### 2.0 Startup Print Sequence (Always-On)
+
+Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+
+```
+Purlin Builder — Ready
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-build [name]           Implement pending work or a specific feature
+  /pl-delivery-plan          Create or review phased delivery plan
+  /pl-infeasible <name>      Escalate a feature as unimplementable
+  /pl-propose <topic>        Surface a spec change suggestion to the Architect
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ### 2.1 Gather Project State
 1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
@@ -211,3 +227,16 @@ Before concluding your session, after all work is committed to git:
 ## 8. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
+
+## 9. Authorized Slash Commands
+
+The following `/pl-*` commands are authorized for the Builder role:
+
+*   `/pl-status` — check CDD status and Builder action items
+*   `/pl-find <topic>` — search the spec system for a topic
+*   `/pl-build [name]` — implement pending work or a named feature
+*   `/pl-delivery-plan` — create or review a phased delivery plan
+*   `/pl-infeasible <name>` — escalate an unimplementable feature
+*   `/pl-propose <topic>` — surface a spec change suggestion to the Architect
+
+**Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.

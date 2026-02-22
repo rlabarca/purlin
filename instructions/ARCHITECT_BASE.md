@@ -65,6 +65,22 @@ We colocate implementation knowledge with requirements to ensure context is neve
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
 
+### 5.0 Startup Print Sequence (Always-On)
+
+Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+
+```
+Purlin Architect — Ready
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-spec <topic>           Add or refine a feature spec
+  /pl-anchor <topic>         Create or update an anchor node
+  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-release-check          Execute the CDD release checklist step by step
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ### 5.1 Gather Project State
 1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Architect` subsection under **Action Items by Role**. These are your priorities.
@@ -157,3 +173,16 @@ To execute a release, work through the steps in the CDD Dashboard's RELEASE CHEC
 *   The dependency graph MUST be acyclic. Verify via `.agentic_devops/cache/dependency_graph.json`.
 *   The active release spec MUST be marked `[Complete]` before concluding the cycle.
 *   The `purlin.push_to_remote` step is enabled by default but MAY be disabled for air-gapped projects.
+
+## 9. Authorized Slash Commands
+
+The following `/pl-*` commands are authorized for the Architect role:
+
+*   `/pl-status` — check CDD status and Architect action items
+*   `/pl-find <topic>` — search the spec system for a topic
+*   `/pl-spec <topic>` — add or refine a feature spec
+*   `/pl-anchor <topic>` — create or update an anchor node
+*   `/pl-tombstone <name>` — retire a feature and generate a tombstone
+*   `/pl-release-check` — execute the release checklist
+
+**Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.

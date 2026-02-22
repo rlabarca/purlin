@@ -185,6 +185,30 @@ generate_launcher "$PROJECT_ROOT/run_claude_builder.sh"  "builder"   "BUILDER_BA
 generate_launcher "$PROJECT_ROOT/run_claude_qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
 
 ###############################################################################
+# 5b. Command File Distribution (Section 2.18)
+###############################################################################
+COMMANDS_SRC="$SUBMODULE_DIR/.claude/commands"
+COMMANDS_DST="$PROJECT_ROOT/.claude/commands"
+
+CMD_COPIED=0
+CMD_SKIPPED=0
+
+if [ -d "$COMMANDS_SRC" ]; then
+    mkdir -p "$COMMANDS_DST"
+    for src_file in "$COMMANDS_SRC"/*.md; do
+        [ -f "$src_file" ] || continue
+        fname="$(basename "$src_file")"
+        dst_file="$COMMANDS_DST/$fname"
+        if [ -f "$dst_file" ] && [ "$dst_file" -nt "$src_file" ]; then
+            CMD_SKIPPED=$((CMD_SKIPPED + 1))
+        else
+            cp "$src_file" "$dst_file"
+            CMD_COPIED=$((CMD_COPIED + 1))
+        fi
+    done
+fi
+
+###############################################################################
 # 6. Project Scaffolding
 ###############################################################################
 if [ ! -d "$PROJECT_ROOT/features" ]; then
@@ -277,6 +301,8 @@ echo "  .agentic_devops/.upstream_sha (submodule SHA: ${CURRENT_SHA:0:12}...)"
 echo "  run_claude_architect.sh       (launcher)"
 echo "  run_claude_builder.sh         (launcher)"
 echo "  run_claude_qa.sh              (launcher)"
+[ "$CMD_COPIED" -gt 0 ] && echo "  .claude/commands/             ($CMD_COPIED pl-* command file(s))"
+[ "$CMD_SKIPPED" -gt 0 ] && echo "  .claude/commands/             ($CMD_SKIPPED file(s) skipped — consumer version newer)"
 [ ! -d "$PROJECT_ROOT/features" ] || echo "  features/                     (feature specs directory)"
 [ ! -f "$PROJECT_ROOT/PROCESS_HISTORY.md" ] || echo "  PROCESS_HISTORY.md            (process log)"
 echo ""

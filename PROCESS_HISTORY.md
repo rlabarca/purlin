@@ -2,6 +2,24 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Slash Command Distribution via Bootstrap + Sync
+
+- **Scope:** New `.claude/commands/` command files, spec additions to `submodule_bootstrap.md` and `submodule_sync.md`, startup print sequence + authorized commands sections added to all three role instruction files, and corresponding script implementations in `bootstrap.sh` and `sync_upstream.sh`.
+- **Problem:** The `/pl-*` commands documented in `README.md` and `features/cdd_startup_controls.md` were vocabulary notation only — no `.claude/commands/` files existed anywhere in the project. Claude Code had no awareness of them. Consumer projects receiving Purlin via submodule had no mechanism to get command files distributed or kept up to date.
+- **Solution:** Three-part implementation.
+    1. **Command file definitions:** Created `.claude/commands/` with 14 `pl-*.md` files. Shared commands (`/pl-status`, `/pl-find`) have no role gate. Role-owned commands (Architect: `/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`; Builder: `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`; QA: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`) open with an owner declaration and a refusal instruction for other roles.
+    2. **Instruction file updates:** Added startup print sequence (always-on command vocabulary table, section 5.0/2.0/3.0 in each role's startup protocol) and authorized commands list with role prohibition to `ARCHITECT_BASE.md`, `BUILDER_BASE.md`, and `QA_BASE.md`.
+    3. **Distribution mechanism:** Bootstrap (Section 2.18) copies command files to `<project>/.claude/commands/` at init time, skipping consumer-modified files. Sync (Section 2.6) diffs command files between SHAs: auto-copies unmodified changed files, warns on locally modified files, reports new commands added and deleted commands to clean up.
+- **Changes:**
+    - `.claude/commands/` — 14 new command definition files.
+    - `instructions/ARCHITECT_BASE.md` — Section 5.0 (startup print sequence), Section 9 (authorized commands + prohibition).
+    - `instructions/BUILDER_BASE.md` — Section 2.0 (startup print sequence), Section 9 (authorized commands + prohibition).
+    - `instructions/QA_BASE.md` — Section 3.0 (startup print sequence), Section 8 (authorized commands + prohibition).
+    - `features/submodule_bootstrap.md` — Section 2.18 (command file distribution), 3 new automated scenarios.
+    - `features/submodule_sync.md` — Section 2.6 (command file sync), 4 new automated scenarios.
+    - `tools/bootstrap.sh` — Section 5b (command file copy loop with skip-if-newer guard).
+    - `tools/sync_upstream.sh` — Section 3b (command file sync with SHA-based modification detection).
+
 ## [2026-02-22] CDD Startup Controls Feature Spec
 
 - **Scope:** New feature spec only (Builder implements config/launcher/dashboard; Architect updates instruction files separately).

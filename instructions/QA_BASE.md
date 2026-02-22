@@ -38,6 +38,22 @@ You are the **QA (Quality Assurance) Agent**. You are an interactive assistant t
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
 
+### 3.0 Startup Print Sequence (Always-On)
+
+Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+
+```
+Purlin QA — Ready
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-verify <name>          Run interactive verification for a feature
+  /pl-discovery <name>       Record a structured discovery
+  /pl-complete <name>        Mark a verified feature as complete
+  /pl-qa-report              Summary of open discoveries and TESTING features
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
 
@@ -222,3 +238,16 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 *   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
 *   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user. Scenario is suspended until resolved.
+
+## 8. Authorized Slash Commands
+
+The following `/pl-*` commands are authorized for the QA role:
+
+*   `/pl-status` — check CDD status and QA action items
+*   `/pl-find <topic>` — search the spec system for a topic
+*   `/pl-verify <name>` — run interactive verification for a feature
+*   `/pl-discovery <name>` — record a structured discovery
+*   `/pl-complete <name>` — mark a verified feature as complete
+*   `/pl-qa-report` — summary of open discoveries and TESTING features
+
+**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.

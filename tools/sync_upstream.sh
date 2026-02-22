@@ -103,6 +103,75 @@ git -C "$SUBMODULE_DIR" diff --no-color "$OLD_SHA"..HEAD -- tools/ 2>/dev/null |
 echo ""
 
 ###############################################################################
+# 3b. Command File Sync (Section 2.6)
+###############################################################################
+COMMANDS_SRC="$SUBMODULE_DIR/.claude/commands"
+COMMANDS_DST="$PROJECT_ROOT/.claude/commands"
+
+echo "────────────────────────────────────────"
+echo "  Command File Updates"
+echo "────────────────────────────────────────"
+echo ""
+
+if [ -d "$COMMANDS_SRC" ]; then
+    CMD_UPDATED=0
+    CMD_ADDED=0
+    CMD_WARNED=0
+
+    CHANGED_CMDS="$(git -C "$SUBMODULE_DIR" diff --name-only "$OLD_SHA"..HEAD -- .claude/commands/ 2>/dev/null || true)"
+
+    if [ -n "$CHANGED_CMDS" ]; then
+        mkdir -p "$COMMANDS_DST"
+        while IFS= read -r rel_path; do
+            [ -n "$rel_path" ] || continue
+            fname="$(basename "$rel_path")"
+            src_file="$SUBMODULE_DIR/$rel_path"
+            dst_file="$COMMANDS_DST/$fname"
+
+            # File deleted upstream
+            if [ ! -f "$src_file" ]; then
+                echo "  DELETED upstream: $fname (manual cleanup may be required)"
+                continue
+            fi
+
+            if [ -f "$dst_file" ]; then
+                # Compare consumer copy against what it was at old SHA
+                old_content="$(git -C "$SUBMODULE_DIR" show "$OLD_SHA:.claude/commands/$fname" 2>/dev/null || true)"
+                dst_content="$(cat "$dst_file")"
+                if [ -n "$old_content" ] && [ "$old_content" != "$dst_content" ]; then
+                    echo "  WARNING: $fname has local modifications — manual review required"
+                    echo "    Updated version at: $SUBMODULE_DIR/.claude/commands/$fname"
+                    CMD_WARNED=$((CMD_WARNED + 1))
+                    continue
+                fi
+                cp "$src_file" "$dst_file"
+                CMD_UPDATED=$((CMD_UPDATED + 1))
+                echo "  Updated: $fname"
+            else
+                cp "$src_file" "$dst_file"
+                CMD_ADDED=$((CMD_ADDED + 1))
+                echo "  Added: $fname (new command)"
+            fi
+        done <<< "$CHANGED_CMDS"
+
+        echo ""
+        # Summary line
+        summary_parts=()
+        [ "$CMD_UPDATED" -gt 0 ] && summary_parts+=("$CMD_UPDATED command file(s) updated")
+        [ "$CMD_ADDED" -gt 0 ] && summary_parts+=("$CMD_ADDED new command(s) added")
+        [ "$CMD_WARNED" -gt 0 ] && summary_parts+=("$CMD_WARNED require manual review")
+        if [ "${#summary_parts[@]}" -gt 0 ]; then
+            (IFS=', '; echo "Summary: ${summary_parts[*]}")
+        fi
+    else
+        echo "  (no command file changes)"
+    fi
+else
+    echo "  (no .claude/commands/ found in submodule)"
+fi
+echo ""
+
+###############################################################################
 # 4. SHA Update
 ###############################################################################
 echo "$CURRENT_SHA" > "$SHA_FILE"

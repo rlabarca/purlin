@@ -32,6 +32,15 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
 ### 2.5 Project Root Detection
 *   **Detection Logic:** The script MUST detect the project root using the same approach as `bootstrap.sh` (climbing from script location through the submodule directory to the parent project).
 
+### 2.6 Command File Sync
+*   **Change Detection:** Detect command files changed or added between `<old_sha>` and `HEAD` by running `git -C <submodule_dir> diff --name-only <old_sha>..HEAD -- .claude/commands/`.
+*   **Auto-Update (unmodified):** For each changed or new command file, compare the consumer's current copy against what the file was at `<old_sha>` in the submodule. If the content matches (consumer has not modified it), auto-copy the updated file unconditionally and report: `Updated: <filename>`.
+*   **Modified Warning:** If the consumer's copy differs from the `<old_sha>` version (consumer has local modifications), print a warning and skip the file. Do NOT overwrite. Report: `WARNING: <filename> has local modifications — manual review required`.
+*   **New Commands:** If the command file does not yet exist in the consumer project, copy it unconditionally and report: `Added: <filename> (new command)`.
+*   **Deleted Upstream:** If a file was deleted upstream between old and current SHA, print an informational note: `DELETED upstream: <filename> (manual cleanup may be required)`. Do not delete the consumer's copy automatically.
+*   **Summary:** Print a summary line: `N command file(s) updated. N new command(s) added. N require manual review.`
+*   **No-Change Case:** If no command files changed between SHAs, print `(no command file changes)`.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -62,6 +71,32 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
     Then a note explains that tool changes are automatic
     And a note explains that base instruction changes are automatic
     And structural changes that may affect overrides are flagged
+
+#### Scenario: Command Files Auto-Updated
+    Given the submodule has been updated and pl-status.md changed upstream
+    And the consumer's .claude/commands/pl-status.md matches the old submodule version (unmodified)
+    When the user runs "agentic-dev/tools/sync_upstream.sh"
+    Then pl-status.md is auto-copied from the submodule to .claude/commands/
+    And the sync report prints "Updated: pl-status.md"
+
+#### Scenario: New Command File Added Upstream
+    Given the submodule has been updated and pl-graph.md is a new file
+    And the consumer project does not yet have .claude/commands/pl-graph.md
+    When the user runs "agentic-dev/tools/sync_upstream.sh"
+    Then pl-graph.md is copied to .claude/commands/
+    And the sync report prints "Added: pl-graph.md (new command)"
+
+#### Scenario: Locally Modified Command File Warns
+    Given the submodule has been updated and pl-status.md changed upstream
+    And the consumer's .claude/commands/pl-status.md has been locally modified (differs from old submodule version)
+    When the user runs "agentic-dev/tools/sync_upstream.sh"
+    Then pl-status.md is NOT overwritten
+    And the sync report prints a WARNING about local modifications
+
+#### Scenario: No Command File Changes
+    Given the submodule update did not change any .claude/commands/ files
+    When the user runs "agentic-dev/tools/sync_upstream.sh"
+    Then the Command File Updates section prints "(no command file changes)"
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.

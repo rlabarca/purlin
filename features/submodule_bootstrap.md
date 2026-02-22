@@ -115,6 +115,14 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Non-Blocking:** The suggestion is purely informational. Bootstrap MUST NOT fail if Python is unavailable, if venv creation is skipped, or if `.venv/` does not exist. Bootstrap success is independent of the Python environment.
 *   **Suppression:** If `.venv/` already exists at the project root, the suggestion MUST NOT be printed.
 
+### 2.18 Command File Distribution
+*   **Source:** `<submodule>/.claude/commands/` — contains Purlin `pl-*` slash command definitions.
+*   **Destination:** `<project_root>/.claude/commands/`.
+*   **Copy Logic:** For each `.md` file in the source, copy it to the destination. If the destination file already exists AND is newer than the source file (indicating a local consumer modification), skip it — do NOT overwrite locally modified command files.
+*   **Directory Creation:** Create `<project_root>/.claude/commands/` if it does not exist.
+*   **Non-Blocking:** If no `.claude/commands/` directory exists in the submodule (e.g., older framework version), bootstrap MUST continue without error. This step is silently skipped.
+*   **Summary Output:** If files are copied, include the count in the bootstrap summary. If any are skipped because the consumer version is newer, report the skip count.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -229,6 +237,28 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
     When the test suite runs bootstrap and tool scenarios
     Then all path resolution uses the consumer project root (not the submodule root)
     And the sandbox is cleaned up on exit even if tests fail
+
+#### Scenario: Command Files Copied to Consumer Project
+    Given agentic-dev-core is added as a submodule at "agentic-dev/"
+    And .claude/commands/ exists in the submodule with pl-*.md files
+    And no .claude/commands/ directory exists at the project root
+    When the user runs "agentic-dev/tools/bootstrap.sh"
+    Then .claude/commands/ is created at the project root
+    And all pl-*.md files from the submodule are copied to .claude/commands/
+    And the bootstrap summary reports the number of command files copied
+
+#### Scenario: Bootstrap Skips Locally Modified Command Files
+    Given agentic-dev-core is added as a submodule
+    And .claude/commands/pl-status.md exists at the project root with a modification timestamp newer than the submodule version
+    When the user runs bootstrap.sh (re-run scenario)
+    Then pl-status.md is NOT overwritten
+    And the bootstrap summary reports the number of skipped files
+
+#### Scenario: Bootstrap Continues Without Command Directory
+    Given the submodule does not have a .claude/commands/ directory
+    When the user runs "agentic-dev/tools/bootstrap.sh"
+    Then the bootstrap completes successfully
+    And no .claude/commands/ directory is created at the project root
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
