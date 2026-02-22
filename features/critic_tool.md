@@ -195,7 +195,7 @@ The Critic MUST compute a regression set for each TESTING feature based on the B
 *   **Regression Set Computation (`compute_regression_set`):**
     *   `full` (or missing) -- All manual scenarios AND all visual checklist items.
     *   `targeted:<exact names>` (per `policy_critic.md` Section 2.8 naming contract) -- Only the named scenarios. Visual verification is skipped unless a visual screen name is explicitly listed.
-    *   `cosmetic` -- Empty set (QA skip). No scenarios or visual items queued.
+    *   `cosmetic` -- Empty set (QA skip). No scenarios or visual items queued. **First-Pass Guard:** The Critic MUST read the previous on-disk `tests/<feature_name>/critic.json` before applying cosmetic suppression. If `role_status.qa != "CLEAN"` (or the file does not exist), escalate declared scope to `full` and append a `cross_validation_warning`: `"Cosmetic scope declared but no prior clean QA pass exists for this feature. Escalating to full verification."`
     *   `dependency-only` -- Scenarios referencing the changed prerequisite's surface area. Determined by cross-referencing the feature's prerequisite links with the dependency graph.
 *   **Cross-Validation:** If the declared scope is `cosmetic` but the status commit modifies files that are referenced by manual scenarios (detected via git diff of the commit), the Critic MUST emit a WARNING in the report and in the feature's `critic.json`.
 *   **Scope Name Validation Action Items:** Cross-validation warnings from `targeted:` scope name validation (names not matching any `#### Scenario:` or `### Screen:` title per `policy_critic.md` Section 2.8 naming contract) MUST be surfaced as MEDIUM-priority Builder action items with category `scope_validation`. These appear in both the per-feature `critic.json` action items and the aggregate `CRITIC_REPORT.md` under the Builder section.
@@ -563,10 +563,20 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 #### Scenario: Regression Scope Cosmetic
     Given a feature is in TESTING state
     And the most recent status commit contains [Scope: cosmetic]
+    And the feature's previous tests/<feature>/critic.json shows role_status.qa set to "CLEAN"
     When the Critic computes the regression set
     Then the regression_scope.declared is "cosmetic"
     And the regression set is empty (0 scenarios, 0 visual items)
     And the QA action item reads "QA skip (cosmetic change)"
+
+#### Scenario: Cosmetic Scope Does Not Skip First-Time Verification
+    Given a feature is in TESTING state
+    And the most recent status commit contains [Scope: cosmetic]
+    And the feature's previous tests/<feature>/critic.json has role_status.qa set to "TODO"
+    When the Critic computes the regression set
+    Then the regression_scope.declared is "full"
+    And the regression_scope.cross_validation_warnings contains a message about no prior clean pass
+    And the QA action item describes full verification, not a skip
 
 #### Scenario: Regression Scope Dependency Only
     Given a feature is in TESTING state

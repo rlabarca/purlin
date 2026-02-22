@@ -1225,6 +1225,23 @@ def _get_commit_changed_files(feature_file, project_root=None):
         return set()
 
 
+def _get_previous_qa_status(feature_file, project_root=None):
+    """Read the previous QA status from the on-disk critic.json for a feature.
+
+    Returns the qa status string ('CLEAN', 'TODO', 'FAIL', 'N/A', etc.)
+    or None if the file does not exist or cannot be parsed.
+    """
+    root = project_root or PROJECT_ROOT
+    feature_stem = os.path.splitext(os.path.basename(feature_file))[0]
+    critic_json_path = os.path.join(root, 'tests', feature_stem, 'critic.json')
+    try:
+        with open(critic_json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data.get('role_status', {}).get('qa')
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+
+
 def compute_regression_set(feature_file, content, cdd_status=None,
                            project_root=None):
     """Compute the regression set for a feature based on declared scope.
@@ -1245,6 +1262,20 @@ def compute_regression_set(feature_file, content, cdd_status=None,
     warnings = []
 
     if declared == 'cosmetic':
+        # First-Pass Guard: cosmetic suppression only valid when a prior clean
+        # QA pass exists. If not, escalate to full verification.
+        prev_qa = _get_previous_qa_status(feature_file, root)
+        if prev_qa != 'CLEAN':
+            warnings.append(
+                'Cosmetic scope declared but no prior clean QA pass exists '
+                'for this feature. Escalating to full verification.'
+            )
+            return {
+                'declared': 'full',
+                'scenarios': manual_titles,
+                'visual_items': visual['items'] if visual['present'] else 0,
+                'cross_validation_warnings': warnings,
+            }
         # Cross-validate: check if commit modified files referenced by manual
         # scenarios -- if so, emit a warning
         changed_files = _get_commit_changed_files(feature_file, root)

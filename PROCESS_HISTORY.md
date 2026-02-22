@@ -2,6 +2,20 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Cosmetic First-Pass Guard
+
+- **Scope:** Spec gap fix and code correction; no new features.
+- **Problem:** `compute_regression_set()` in `tools/critic/critic.py` applied cosmetic scope suppression unconditionally when `[Scope: cosmetic]` was found in the most recent status commit. This caused the QA Agent to skip first-time verification for features that had never passed QA (`role_status.qa = "TODO"`). The root cause was a spec gap: neither `features/critic_tool.md` Section 2.12 nor `features/policy_critic.md` Section 2.8 defined a precondition requiring a prior clean QA pass before cosmetic suppression could apply.
+- **Solution:**
+    - `features/policy_critic.md` Section 2.8: Added **Cosmetic First-Pass Guard** paragraph specifying that cosmetic scope may only suppress verification when the prior on-disk `tests/<feature>/critic.json` shows `role_status.qa == "CLEAN"`. When no prior clean pass exists, the Critic must escalate to `full` and append a `cross_validation_warning`.
+    - `features/critic_tool.md` Section 2.12: Updated `cosmetic` bullet to include the First-Pass Guard requirement. Updated the "Regression Scope Cosmetic" scenario to add the prior-CLEAN precondition. Added new scenario "Cosmetic Scope Does Not Skip First-Time Verification".
+    - `tools/critic/critic.py`: Added `_get_previous_qa_status()` helper that reads the prior `critic.json`. Modified `compute_regression_set()` cosmetic branch to call the guard and escalate when `qa != 'CLEAN'`. Updated three existing cosmetic tests to mock `_get_previous_qa_status` returning `'CLEAN'`. Added new `TestRegressionScopeCosmeticFirstPassGuard` test class with three cases.
+- **Changes:**
+    - **features/policy_critic.md:** Section 2.8 Cosmetic First-Pass Guard added.
+    - **features/critic_tool.md:** Section 2.12 cosmetic bullet updated; new scenario added; existing scenario precondition tightened.
+    - **tools/critic/critic.py:** `_get_previous_qa_status()` added; `compute_regression_set()` cosmetic branch guarded.
+    - **tools/critic/test_critic.py:** New `TestRegressionScopeCosmeticFirstPassGuard` class; three existing cosmetic tests extended with prior-CLEAN mock.
+
 ## [2026-02-21] Formalized Release Process Checklist
 
 - **Scope:** Spec additions and instruction refinement only (Builder implements tooling and dashboard changes).

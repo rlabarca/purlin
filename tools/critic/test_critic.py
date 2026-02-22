@@ -3263,19 +3263,22 @@ class TestRegressionScopeCosmetic(unittest.TestCase):
 * Note.
 """
 
+    @patch('critic._get_previous_qa_status', return_value='CLEAN')
     @patch('critic._extract_scope_from_commit', return_value='cosmetic')
     @patch('critic._get_commit_changed_files', return_value=set())
-    def test_cosmetic_empty_set(self, _mock_files, _mock_scope):
+    def test_cosmetic_empty_set(self, _mock_files, _mock_scope, _mock_qa):
         result = compute_regression_set(
             'features/cosmetic.md', self.content)
         self.assertEqual(result['declared'], 'cosmetic')
         self.assertEqual(result['scenarios'], [])
         self.assertEqual(result['visual_items'], 0)
 
+    @patch('critic._get_previous_qa_status', return_value='CLEAN')
     @patch('critic._extract_scope_from_commit', return_value='cosmetic')
     @patch('critic._get_commit_changed_files',
            return_value={'tools/cdd/server.py'})
-    def test_cosmetic_cross_validation_warning(self, _mock_files, _mock_scope):
+    def test_cosmetic_cross_validation_warning(
+            self, _mock_files, _mock_scope, _mock_qa):
         """Cross-validation: cosmetic scope with changed files emits warning."""
         result = compute_regression_set(
             'features/cosmetic.md', self.content)
@@ -3283,6 +3286,63 @@ class TestRegressionScopeCosmetic(unittest.TestCase):
         self.assertEqual(len(result['cross_validation_warnings']), 1)
         self.assertIn('Cosmetic scope',
                       result['cross_validation_warnings'][0])
+
+
+class TestRegressionScopeCosmeticFirstPassGuard(unittest.TestCase):
+    """Scenario: Cosmetic Scope Does Not Skip First-Time Verification
+
+    When [Scope: cosmetic] is declared but no prior clean QA pass exists,
+    the Critic escalates to full verification.
+    """
+
+    def setUp(self):
+        self.content = """\
+# Feature: Cosmetic First Pass
+
+## 3. Scenarios
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Scenario One
+    Given something
+    When something
+    Then something
+"""
+
+    @patch('critic._get_previous_qa_status', return_value=None)
+    @patch('critic._extract_scope_from_commit', return_value='cosmetic')
+    def test_cosmetic_escalates_when_no_prior_qa(self, _mock_scope, _mock_qa):
+        """No prior critic.json → escalate to full."""
+        result = compute_regression_set(
+            'features/cosmetic_first_pass.md', self.content)
+        self.assertEqual(result['declared'], 'full')
+        self.assertEqual(len(result['cross_validation_warnings']), 1)
+        self.assertIn('no prior clean QA pass',
+                      result['cross_validation_warnings'][0])
+        self.assertEqual(result['scenarios'], ['Manual Scenario One'])
+
+    @patch('critic._get_previous_qa_status', return_value='TODO')
+    @patch('critic._extract_scope_from_commit', return_value='cosmetic')
+    def test_cosmetic_escalates_when_qa_todo(self, _mock_scope, _mock_qa):
+        """Prior qa=TODO → escalate to full."""
+        result = compute_regression_set(
+            'features/cosmetic_first_pass.md', self.content)
+        self.assertEqual(result['declared'], 'full')
+        self.assertIn('no prior clean QA pass',
+                      result['cross_validation_warnings'][0])
+
+    @patch('critic._get_previous_qa_status', return_value='CLEAN')
+    @patch('critic._get_commit_changed_files', return_value=set())
+    @patch('critic._extract_scope_from_commit', return_value='cosmetic')
+    def test_cosmetic_suppressed_when_prior_qa_clean(
+            self, _mock_scope, _mock_files, _mock_qa):
+        """Prior qa=CLEAN → cosmetic suppression applies normally."""
+        result = compute_regression_set(
+            'features/cosmetic_first_pass.md', self.content)
+        self.assertEqual(result['declared'], 'cosmetic')
+        self.assertEqual(result['scenarios'], [])
+        self.assertEqual(result['visual_items'], 0)
+        self.assertEqual(result['cross_validation_warnings'], [])
 
 
 class TestRegressionScopeDependencyOnly(unittest.TestCase):
@@ -3344,10 +3404,12 @@ class TestRegressionScopeCrossValidationWarning(unittest.TestCase):
 * Note.
 """
 
+    @patch('critic._get_previous_qa_status', return_value='CLEAN')
     @patch('critic._extract_scope_from_commit', return_value='cosmetic')
     @patch('critic._get_commit_changed_files',
            return_value={'tools/cdd/server.py', 'tools/cdd/templates/index.html'})
-    def test_cross_validation_warning_emitted(self, _mock_files, _mock_scope):
+    def test_cross_validation_warning_emitted(
+            self, _mock_files, _mock_scope, _mock_qa):
         result = compute_regression_set(
             'features/cross_val.md', self.content)
         self.assertTrue(len(result['cross_validation_warnings']) > 0)
