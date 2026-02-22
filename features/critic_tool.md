@@ -669,12 +669,3 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 See [critic_tool.impl.md](critic_tool.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
 ## User Testing Discoveries
-
-### [BUG] logic_drift.py writes LLM verdict cache inside tools/
-
-- **Status:** RESOLVED
-- **Discovered by:** Architect (Submodule Safety Audit, 2026-02-22)
-- **File:** `tools/critic/logic_drift.py:22`
-- **Description:** `CACHE_DIR` is set to `os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')`, which resolves to `tools/critic/.cache/`. The `_write_cache()` function creates this directory and writes per-pair verdict JSON files into it. This violates submodule safety contract §2.12 (artifact write locations). In a submodule deployment `tools/` is a read-only framework directory; writes will pollute the tracked submodule or fail with permission errors.
-- **Required fix:** Detect `PROJECT_ROOT` using the standard §2.11 pattern and set `CACHE_DIR` to `os.path.join(PROJECT_ROOT, '.purlin', 'cache', 'logic_drift_cache')`.
-- **Severity:** CRITICAL (blocks submodule deployment when LLM drift checking is enabled)
