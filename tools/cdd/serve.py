@@ -633,10 +633,8 @@ def generate_html():
         sid_escaped = s["id"].replace("'", "\\'")
         fname_escaped = s["friendly_name"].replace("'", "\\'")
         rc_rows_html += (
-            f'<tr class="{disabled_cls.strip()}" data-step-id="{s["id"]}" '
-            f'ondragover="rcDragOver(event)" '
-            f'ondragenter="rcDragEnter(event)" ondrop="rcDrop(event)">'
-            f'<td draggable="true" ondragstart="rcDragStart(event)" ondragend="rcDragEnd(event)" '
+            f'<tr class="{disabled_cls.strip()}" data-step-id="{s["id"]}">'
+            f'<td onmousedown="rcHandleDown(event)" '
             f'style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center;user-select:none">\u28FF</td>'
             f'<td style="width:32px;text-align:right;font-family:monospace;'
             f'color:var(--purlin-muted)">{s["order"]}</td>'
@@ -1277,64 +1275,66 @@ function refreshReleaseChecklist() {{
     .catch(function() {{}});
 }}
 
-var rcDragSrcRow = null;
+var rcDragRow = null;
 
-function rcDragStart(e) {{
-  rcDragSrcRow = e.target.closest('tr');
-  if (!rcDragSrcRow) return;
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', rcDragSrcRow.dataset.stepId || '');
-  rcDragSrcRow.style.opacity = '0.4';
-}}
-
-function rcDragOver(e) {{
+function rcHandleDown(e) {{
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+  var td = e.target.closest('td');
+  var row = td ? td.closest('tr') : null;
+  if (!row) return;
+  rcDragRow = row;
+  row.style.opacity = '0.4';
+  document.addEventListener('mousemove', rcMouseMove);
+  document.addEventListener('mouseup', rcMouseUp);
 }}
 
-function rcDragEnter(e) {{
-  e.preventDefault();
-  var row = e.target.closest('tr');
-  if (!row || row === rcDragSrcRow) return;
-  var tbody = document.getElementById('rc-tbody');
-  if (!tbody) return;
-  Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
-    r.classList.remove('rc-drag-over');
-  }});
-  row.classList.add('rc-drag-over');
-}}
-
-function rcDrop(e) {{
+function rcMouseMove(e) {{
+  if (!rcDragRow) return;
   e.preventDefault();
   var tbody = document.getElementById('rc-tbody');
   if (!tbody) return;
-  Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
-    r.classList.remove('rc-drag-over');
-  }});
-  var targetRow = e.target.closest('tr');
-  if (!targetRow || !rcDragSrcRow || targetRow === rcDragSrcRow) return;
   var rows = Array.from(tbody.querySelectorAll('tr'));
-  var srcIdx = rows.indexOf(rcDragSrcRow);
-  var tgtIdx = rows.indexOf(targetRow);
-  if (srcIdx < 0 || tgtIdx < 0) return;
-  if (srcIdx < tgtIdx) {{
-    tbody.insertBefore(rcDragSrcRow, targetRow.nextSibling);
-  }} else {{
-    tbody.insertBefore(rcDragSrcRow, targetRow);
+  rows.forEach(function(r) {{ r.classList.remove('rc-drag-over'); }});
+  for (var i = 0; i < rows.length; i++) {{
+    var rect = rows[i].getBoundingClientRect();
+    if (e.clientY >= rect.top && e.clientY <= rect.bottom && rows[i] !== rcDragRow) {{
+      rows[i].classList.add('rc-drag-over');
+      break;
+    }}
   }}
-  rcUpdateNumbers();
-  rcPersistConfig();
 }}
 
-function rcDragEnd(e) {{
-  if (rcDragSrcRow) rcDragSrcRow.style.opacity = '1';
-  rcDragSrcRow = null;
+function rcMouseUp(e) {{
+  document.removeEventListener('mousemove', rcMouseMove);
+  document.removeEventListener('mouseup', rcMouseUp);
+  if (!rcDragRow) return;
+  rcDragRow.style.opacity = '1';
   var tbody = document.getElementById('rc-tbody');
-  if (tbody) {{
-    Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
-      r.classList.remove('rc-drag-over');
-    }});
+  if (!tbody) {{ rcDragRow = null; return; }}
+  var rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.forEach(function(r) {{ r.classList.remove('rc-drag-over'); }});
+  var targetRow = null;
+  for (var i = 0; i < rows.length; i++) {{
+    var rect = rows[i].getBoundingClientRect();
+    if (e.clientY >= rect.top && e.clientY <= rect.bottom && rows[i] !== rcDragRow) {{
+      targetRow = rows[i];
+      break;
+    }}
   }}
+  if (targetRow) {{
+    var srcIdx = rows.indexOf(rcDragRow);
+    var tgtIdx = rows.indexOf(targetRow);
+    if (srcIdx >= 0 && tgtIdx >= 0) {{
+      if (srcIdx < tgtIdx) {{
+        tbody.insertBefore(rcDragRow, targetRow.nextSibling);
+      }} else {{
+        tbody.insertBefore(rcDragRow, targetRow);
+      }}
+      rcUpdateNumbers();
+      rcPersistConfig();
+    }}
+  }}
+  rcDragRow = null;
 }}
 
 function rcUpdateNumbers() {{
