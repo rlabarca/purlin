@@ -53,6 +53,33 @@ FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
 DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
 POLL_INTERVAL = 2  # seconds for file watcher polling
 
+# Release checklist module
+RELEASE_RESOLVE_DIR = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "release")
+sys.path.insert(0, RELEASE_RESOLVE_DIR)
+try:
+    from resolve import resolve_checklist as _resolve_checklist
+    RELEASE_RESOLVE_AVAILABLE = True
+except ImportError:
+    RELEASE_RESOLVE_AVAILABLE = False
+
+RELEASE_CONFIG_PATH = os.path.join(
+    PROJECT_ROOT, ".agentic_devops", "release", "config.json")
+
+
+def get_release_checklist():
+    """Resolve the release checklist using the core module."""
+    if not RELEASE_RESOLVE_AVAILABLE:
+        return [], [], []
+    global_path = os.path.join(
+        PROJECT_ROOT, TOOLS_ROOT, "release", "global_steps.json")
+    local_path = os.path.join(
+        PROJECT_ROOT, ".agentic_devops", "release", "local_steps.json")
+    return _resolve_checklist(
+        global_path=global_path,
+        local_path=local_path,
+        config_path=RELEASE_CONFIG_PATH,
+    )
+
 
 def run_command(command):
     """Runs a shell command and returns its stdout."""
@@ -583,6 +610,45 @@ def generate_html():
 
     agents_badge = _agents_badge(CONFIG)
 
+    # Release checklist badge
+    rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
+    rc_enabled = sum(1 for s in rc_steps if s.get("enabled"))
+    rc_disabled = len(rc_steps) - rc_enabled
+    rc_badge = (
+        f'<span style="color:var(--purlin-status-good)">{rc_enabled} enabled</span>'
+        f' <span style="color:var(--purlin-dim)">&middot; {rc_disabled} disabled</span>'
+    )
+    # Build release checklist rows HTML
+    rc_rows_html = ""
+    for s in rc_steps:
+        dim = ' style="color:var(--purlin-dim)"' if not s.get("enabled") else ""
+        source_tag = s.get("source", "").upper()
+        source_badge = (
+            f'<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
+            f'font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;'
+            f'padding:0 4px;border-radius:2px;margin-right:4px">{source_tag}</span>'
+        ) if source_tag else ""
+        checked = " checked" if s.get("enabled") else ""
+        sid_escaped = s["id"].replace("'", "\\'")
+        fname_escaped = s["friendly_name"].replace("'", "\\'")
+        rc_rows_html += (
+            f'<tr data-step-id="{s["id"]}" draggable="true" '
+            f'ondragstart="rcDragStart(event)" ondragover="rcDragOver(event)" '
+            f'ondrop="rcDrop(event)" ondragend="rcDragEnd(event)">'
+            f'<td style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center"'
+            f'{dim}>\u28FF</td>'
+            f'<td style="width:32px;text-align:right;font-family:monospace;'
+            f'color:var(--purlin-muted)"{dim}>{s["order"]}</td>'
+            f'<td style="width:60px"{dim}>{source_badge}</td>'
+            f'<td style="flex:1"{dim}>'
+            f'<span class="feature-link" onclick="openStepModal(\'{sid_escaped}\')">'
+            f'{s["friendly_name"]}</span></td>'
+            f'<td style="width:32px;text-align:center">'
+            f'<input type="checkbox"{checked} '
+            f'onchange="rcToggle(\'{sid_escaped}\', this.checked)"></td>'
+            f'</tr>'
+        )
+
     # Compute summary badges for collapsed sections
     def _section_summary_badge(features_list):
         """Return a single priority badge per spec 2.2.2:
@@ -919,6 +985,18 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         </div>
       </div>
     </div>
+    <div class="ctx" style="margin-top:10px">
+      <div class="section-hdr" onclick="toggleSection('release-checklist')">
+        <span class="chevron" id="release-checklist-chevron">&#9654;</span>
+        <h3>Release Checklist</h3>
+        <span class="section-badge" id="release-checklist-badge">{rc_badge}</span>
+      </div>
+      <div class="section-body collapsed" id="release-checklist">
+        <table class="ft" style="width:100%"><tbody id="rc-tbody">
+          {rc_rows_html}
+        </tbody></table>
+      </div>
+    </div>
   </div>
   <!-- SW Map View -->
   <div class="view-panel" id="map-view">
@@ -938,6 +1016,20 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <button class="modal-tab" data-tab="impl" onclick="switchModalTab('impl')">Implementation Notes</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Step Detail Modal -->
+<div class="modal-overlay" id="step-modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="step-modal-title">Step</h2>
+      <button class="modal-close" onclick="closeStepModal()" title="Close">X</button>
+    </div>
+    <div class="modal-body" id="step-modal-body" style="padding:14px;overflow-y:auto"></div>
+    <div style="padding:8px 14px;border-top:1px solid var(--purlin-border);text-align:right">
+      <button class="btn-critic" onclick="closeStepModal()">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1074,7 +1166,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1083,7 +1175,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1119,6 +1211,154 @@ function toggleSection(sectionId) {{
   }}
   saveSectionStates();
 }}
+
+// ============================
+// Release Checklist
+// ============================
+var rcStepsCache = null;
+
+function loadReleaseChecklist() {{
+  fetch('/release-checklist')
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      rcStepsCache = data.steps || [];
+    }})
+    .catch(function() {{}});
+}}
+
+loadReleaseChecklist();
+
+var rcDragSrcRow = null;
+
+function rcDragStart(e) {{
+  rcDragSrcRow = e.target.closest('tr');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', rcDragSrcRow.dataset.stepId);
+  rcDragSrcRow.style.opacity = '0.4';
+}}
+
+function rcDragOver(e) {{
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}}
+
+function rcDrop(e) {{
+  e.preventDefault();
+  var targetRow = e.target.closest('tr');
+  if (!targetRow || !rcDragSrcRow || targetRow === rcDragSrcRow) return;
+  var tbody = targetRow.parentNode;
+  var rows = Array.from(tbody.querySelectorAll('tr'));
+  var srcIdx = rows.indexOf(rcDragSrcRow);
+  var tgtIdx = rows.indexOf(targetRow);
+  if (srcIdx < tgtIdx) {{
+    tbody.insertBefore(rcDragSrcRow, targetRow.nextSibling);
+  }} else {{
+    tbody.insertBefore(rcDragSrcRow, targetRow);
+  }}
+  // Renumber and persist
+  rcUpdateNumbers();
+  rcPersistConfig();
+}}
+
+function rcDragEnd(e) {{
+  if (rcDragSrcRow) rcDragSrcRow.style.opacity = '1';
+  rcDragSrcRow = null;
+}}
+
+function rcUpdateNumbers() {{
+  var rows = document.querySelectorAll('#rc-tbody tr');
+  rows.forEach(function(row, i) {{
+    var numCell = row.querySelectorAll('td')[1];
+    if (numCell) numCell.textContent = (i + 1);
+  }});
+}}
+
+function rcToggle(stepId, enabled) {{
+  // Update row appearance
+  var row = document.querySelector('tr[data-step-id="' + stepId + '"]');
+  if (row) {{
+    var cells = row.querySelectorAll('td');
+    cells.forEach(function(cell, idx) {{
+      if (idx < cells.length - 1) {{
+        cell.style.color = enabled ? '' : 'var(--purlin-dim)';
+      }}
+    }});
+  }}
+  rcPersistConfig();
+  // Update badge
+  var rows = document.querySelectorAll('#rc-tbody tr');
+  var en = 0, dis = 0;
+  rows.forEach(function(r) {{
+    var cb = r.querySelector('input[type=checkbox]');
+    if (cb && cb.checked) en++; else dis++;
+  }});
+  var badge = document.getElementById('release-checklist-badge');
+  if (badge) {{
+    badge.innerHTML = '<span style="color:var(--purlin-status-good)">' + en + ' enabled</span>' +
+      ' <span style="color:var(--purlin-dim)">&middot; ' + dis + ' disabled</span>';
+  }}
+}}
+
+function rcPersistConfig() {{
+  var rows = document.querySelectorAll('#rc-tbody tr');
+  var steps = [];
+  rows.forEach(function(row) {{
+    var cb = row.querySelector('input[type=checkbox]');
+    steps.push({{id: row.dataset.stepId, enabled: cb ? cb.checked : true}});
+  }});
+  fetch('/release-checklist/config', {{
+    method: 'POST',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify({{steps: steps}})
+  }}).catch(function() {{}});
+}}
+
+function openStepModal(stepId) {{
+  if (!rcStepsCache) return;
+  var step = null;
+  for (var i = 0; i < rcStepsCache.length; i++) {{
+    if (rcStepsCache[i].id === stepId) {{ step = rcStepsCache[i]; break; }}
+  }}
+  if (!step) return;
+
+  var titleEl = document.getElementById('step-modal-title');
+  var bodyEl = document.getElementById('step-modal-body');
+  var source = (step.source || '').toUpperCase();
+  var sourceBadge = source ? ('<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
+    + 'font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;'
+    + 'padding:0 4px;border-radius:2px;margin-left:8px">' + source + '</span>') : '';
+  titleEl.innerHTML = step.friendly_name + sourceBadge;
+
+  var html = '';
+  if (step.description) {{
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">DESCRIPTION</div>';
+    html += '<div style="color:var(--purlin-primary);font-size:12px;line-height:1.5">' + step.description + '</div></div>';
+  }}
+  if (step.code !== null && step.code !== undefined) {{
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">CODE</div>';
+    html += '<pre style="background:var(--purlin-surface);padding:8px;border-radius:3px;border:1px solid var(--purlin-border);font-size:12px;color:var(--purlin-primary)">' + step.code + '</pre></div>';
+  }}
+  if (step.agent_instructions !== null && step.agent_instructions !== undefined) {{
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">AGENT INSTRUCTIONS</div>';
+    html += '<div style="color:var(--purlin-primary);font-size:12px;line-height:1.5">' + step.agent_instructions + '</div></div>';
+  }}
+  bodyEl.innerHTML = html;
+  document.getElementById('step-modal-overlay').classList.add('visible');
+}}
+
+function closeStepModal() {{
+  document.getElementById('step-modal-overlay').classList.remove('visible');
+}}
+
+document.getElementById('step-modal-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) closeStepModal();
+}});
+
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape' && document.getElementById('step-modal-overlay').classList.contains('visible')) {{
+    closeStepModal();
+  }}
+}});
 
 // ============================
 // Run Critic
@@ -2036,6 +2276,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_impl_notes()
         elif self.path == '/config.json':
             self._serve_config_json()
+        elif self.path == '/release-checklist':
+            self._serve_release_checklist()
         else:
             # Dashboard request: also regenerate internal file
             write_internal_feature_status()
@@ -2148,6 +2390,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_config_agents()
         elif self.path == '/detect-providers':
             self._handle_detect_providers()
+        elif self.path == '/release-checklist/config':
+            self._handle_release_config()
         else:
             self.send_response(404)
             self.end_headers()
@@ -2261,6 +2505,47 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(200, providers)
         except Exception as e:
             self._send_json(500, {'error': str(e)})
+
+    def _serve_release_checklist(self):
+        """GET /release-checklist — return resolved, ordered release steps."""
+        steps, warnings, errors = get_release_checklist()
+        self._send_json(200, {"steps": steps})
+
+    def _handle_release_config(self):
+        """POST /release-checklist/config — update release config."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {"ok": False, "error": f"Invalid JSON: {e}"})
+            return
+
+        config_steps = body.get("steps")
+        if not isinstance(config_steps, list):
+            self._send_json(400, {"ok": False, "error": "steps must be an array"})
+            return
+
+        # Validate no duplicate IDs
+        seen = set()
+        for entry in config_steps:
+            sid = entry.get("id", "")
+            if sid in seen:
+                self._send_json(400, {
+                    "ok": False,
+                    "error": f"Duplicate step ID: {sid}"
+                })
+                return
+            seen.add(sid)
+
+        # Write to disk
+        config_dir = os.path.dirname(RELEASE_CONFIG_PATH)
+        os.makedirs(config_dir, exist_ok=True)
+        try:
+            with open(RELEASE_CONFIG_PATH, 'w') as f:
+                json.dump({"steps": config_steps}, f, indent=2)
+            self._send_json(200, {"ok": True})
+        except (IOError, OSError) as e:
+            self._send_json(500, {"ok": False, "error": str(e)})
 
     def log_message(self, format, *args):
         pass  # Suppress request logging noise
