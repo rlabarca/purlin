@@ -92,7 +92,7 @@ We do not maintain a history of release files in the project's features director
 1. There is exactly ONE active Release Specification file.
 2. When moving to a new release, the Architect **renames** the existing release file to the new version and updates the objectives.
 3. The previous release's tests are preserved as **Regression Tests** in the new file.
-4. Historical release data is tracked via `PROCESS_HISTORY.md` and the project's root `README.md`.
+4. Historical release data is tracked via the project's root `README.md`.
 
 ## 6. Layered Instruction Architecture
 
@@ -153,7 +153,6 @@ Agents in the Purlin framework's own repository (not a consumer project) may mod
 3. No contradictions with base. Surface conflicts with `/pl-override-conflicts` before committing.
 4. No code or script content. Override files are prose instruction documents only.
 5. Commit after editing.
-6. Architect: update `PROCESS_HISTORY.md` when the change affects workflow.
 
 **Commands:** `/pl-override-edit` (role-scoped edit), `/pl-override-conflicts` (conflict scan, all roles), `/pl-edit-base` (base file edit — Purlin repo only, never distributed to consumers).
 

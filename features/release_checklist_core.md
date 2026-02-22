@@ -91,9 +91,9 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 **Step Definitions:**
 
 **`purlin.record_version_notes`**
-- Description: "Gathers suggested release notes from git history and PROCESS_HISTORY.md since the last release, presents them to the user for selection/editing, then records the confirmed version and notes in README.md under '## Releases'."
+- Description: "Gathers suggested release notes from git history since the last release, presents them to the user for selection/editing, then records the confirmed version and notes in README.md under '## Releases'."
 - Code: null
-- Agent Instructions: "1. Determine the last release tag: run `git tag --sort=-v:refname | head -1`. If no tags exist, treat everything as new.\n2. Gather candidates: run `git log <last-tag>..HEAD --oneline --no-merges` for commit summaries. Read `PROCESS_HISTORY.md` and extract entries dated after the last release.\n3. Synthesize a concise bulleted suggestion list from the above data, grouping by theme (features, fixes, process changes) where possible.\n4. Present the suggestions to the user: 'Suggested release notes since <last-tag> — paste any you would like to include, edit freely, or write your own:'\n5. Ask the user for: (a) the new version number (e.g., 'v1.2.0'), and (b) their release notes (free text; they may copy from suggestions, combine, or replace entirely).\n6. Insert a new entry into README.md under a '## Releases' heading (create if absent). Format: `### <version> — <YYYY-MM-DD>\\n\\n<confirmed release notes text>`."
+- Agent Instructions: "1. Determine the last release tag: run `git tag --sort=-v:refname | head -1`. If no tags exist, treat everything as new.\n2. Gather candidates: run `git log <last-tag>..HEAD --oneline --no-merges` for commit summaries. Treat each commit line as a release notes candidate.\n3. Synthesize a concise bulleted suggestion list from the above data, grouping by theme (features, fixes, process changes) where possible.\n4. Present the suggestions to the user: 'Suggested release notes since <last-tag> — paste any you would like to include, edit freely, or write your own:'\n5. Ask the user for: (a) the new version number (e.g., 'v1.2.0'), and (b) their release notes (free text; they may copy from suggestions, combine, or replace entirely).\n6. Insert a new entry into README.md under a '## Releases' heading (create if absent). Format: `### <version> — <YYYY-MM-DD>\\n\\n<confirmed release notes text>`."
 
 **`purlin.verify_zero_queue`**
 - Description: "Verifies that all features are in a fully satisfied state by checking that every feature has architect: 'DONE', builder: 'DONE', and qa is 'CLEAN' or 'N/A'."
@@ -126,9 +126,9 @@ The following steps are defined in Purlin's `.agentic_devops/release/local_steps
 
 **`doc_consistency_framework`**
 - Friendly Name: "Framework Documentation Consistency"
-- Description: "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README and PROCESS_HISTORY. Purlin-specific: consumer projects do not own instruction files."
+- Description: "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README. Purlin-specific: consumer projects do not own instruction files."
 - Code: null
-- Agent Instructions: "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md and PROCESS_HISTORY.md are consistent with the current instruction file content. Fix any inconsistencies and commit."
+- Agent Instructions: "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md is consistent with the current instruction file content. Fix any inconsistencies and commit."
 
 This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `purlin.instruction_audit`, so both override-consistency and instruction-internal-consistency checks run together before the final release steps.
 

@@ -19,4 +19,3 @@ If no argument is provided, default to the calling role's own override file (Bui
    - No code, scripts, JSON config, or executable content of any kind.
 5. Show the proposed edit and ask for user confirmation before writing.
 6. After approval, apply and commit: `git commit -m "override(<role>): <brief description>"`
-7. Architect only: ask if a `PROCESS_HISTORY.md` entry is needed.

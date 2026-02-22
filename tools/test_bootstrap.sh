@@ -100,8 +100,6 @@ if [ -x "$PROJECT/run_claude_architect.sh" ]; then log_pass "run_claude_architec
 if [ -x "$PROJECT/run_claude_builder.sh" ]; then log_pass "run_claude_builder.sh executable"; else log_fail "run_claude_builder.sh not executable"; fi
 
 if [ -d "$PROJECT/features" ]; then log_pass "features/ created"; else log_fail "features/ missing"; fi
-if [ -f "$PROJECT/PROCESS_HISTORY.md" ]; then log_pass "PROCESS_HISTORY.md created"; else log_fail "PROCESS_HISTORY.md missing"; fi
-
 cleanup_sandbox
 
 # --- Scenario: Double init guard ---

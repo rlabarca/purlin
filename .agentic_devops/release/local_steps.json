@@ -3,9 +3,9 @@
         {
             "id": "doc_consistency_framework",
             "friendly_name": "Framework Documentation Consistency",
-            "description": "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README and PROCESS_HISTORY. Purlin-specific: consumer projects do not own instruction files.",
+            "description": "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README. Purlin-specific: consumer projects do not own instruction files.",
             "code": null,
-            "agent_instructions": "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md and PROCESS_HISTORY.md are consistent with the current instruction file content. Fix any inconsistencies and commit."
+            "agent_instructions": "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md is consistent with the current instruction file content. Fix any inconsistencies and commit."
         },
         {
             "id": "critic_consistency_check",

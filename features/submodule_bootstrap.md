@@ -39,7 +39,6 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 ### 2.6 Project Scaffolding
 *   **Features Directory:** Create `features/` at the project root if it does not exist.
-*   **Process History:** Create a starter `PROCESS_HISTORY.md` at the project root if it does not exist. The starter file MUST contain a header and a single entry documenting the bootstrap.
 
 ### 2.7 Gitignore Guidance
 *   **Warning:** If `.agentic_devops` appears in the project's `.gitignore`, the script MUST print a warning that `.agentic_devops/` should be tracked (committed) and NOT gitignored.
@@ -139,7 +138,6 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
     And run_architect.sh, run_builder.sh, and run_qa.sh exist at the project root
     And all launcher scripts are executable
     And features/ directory exists at the project root
-    And PROCESS_HISTORY.md exists at the project root
 
 #### Scenario: Prevent Double Initialization
     Given .agentic_devops/ already exists at the project root

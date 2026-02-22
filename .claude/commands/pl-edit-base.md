@@ -27,5 +27,4 @@ indicate this is a consumer project, not the Purlin repo itself).
 5. Show the proposed edit and ask for user confirmation before writing.
 6. After approval, apply and commit:
    `git commit -m "arch(instructions): <brief description of base file change>"`
-7. Add a PROCESS_HISTORY.md entry — mandatory for all base file modifications.
-8. Run `tools/cdd/status.sh` to regenerate the Critic report.
+7. Run `tools/cdd/status.sh` to regenerate the Critic report.

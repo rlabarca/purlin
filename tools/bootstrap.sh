@@ -286,18 +286,6 @@ if [ ! -d "$PROJECT_ROOT/features" ]; then
     echo "Created features/"
 fi
 
-if [ ! -f "$PROJECT_ROOT/PROCESS_HISTORY.md" ]; then
-    cat > "$PROJECT_ROOT/PROCESS_HISTORY.md" << EOF
-# Process History
-
-## $(date +%Y-%m-%d) — Project Bootstrapped
-- Initialized Purlin submodule integration.
-- Created \`.agentic_devops/\` override directory.
-- Generated launcher scripts.
-EOF
-    echo "Created PROCESS_HISTORY.md"
-fi
-
 ###############################################################################
 # 7. Gitignore Handling
 ###############################################################################
@@ -374,7 +362,6 @@ echo "  run_claude_qa.sh              (launcher)"
 [ "$CMD_COPIED" -gt 0 ] && echo "  .claude/commands/             ($CMD_COPIED pl-* command file(s))"
 [ "$CMD_SKIPPED" -gt 0 ] && echo "  .claude/commands/             ($CMD_SKIPPED file(s) skipped — consumer version newer)"
 [ ! -d "$PROJECT_ROOT/features" ] || echo "  features/                     (feature specs directory)"
-[ ! -f "$PROJECT_ROOT/PROCESS_HISTORY.md" ] || echo "  PROCESS_HISTORY.md            (process log)"
 echo ""
 echo "Next steps:"
 echo "  1. Review and customize .agentic_devops/ override files."

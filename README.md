@@ -173,7 +173,7 @@ The QA Agent verifies features against their specifications through interactive 
     This creates:
     *   `.agentic_devops/` -- override templates and config (MUST be committed to your project)
     *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
-    *   `features/` directory and `PROCESS_HISTORY.md`
+    *   `features/` directory
 
 3.  **Customize your overrides:**
     Edit the files in `.agentic_devops/`:
@@ -253,7 +253,6 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 *   `agentic_devops.sample/` -- Override templates for new consumer projects.
 *   `features/` -- Meta-specifications for the framework's own tools.
 *   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync).
-*   `PROCESS_HISTORY.md` -- Changelog tracking Agentic Workflow and DevOps tool evolution.
 
 ## Port Allocation
 
