@@ -22,13 +22,6 @@
             "agent_instructions": "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
         },
         {
-            "id": "purlin.run_tool_tests",
-            "friendly_name": "Run Automated Tool Tests",
-            "description": "Runs the Purlin DevOps tool test suite to verify that all bundled framework tools are functioning correctly in this environment.",
-            "code": null,
-            "agent_instructions": "Resolve `tools_root` from `.agentic_devops/config.json` (default: `tools`). Discover all test scripts matching `<tools_root>/*/test_*.py` and run each with `python3`. Confirm all tests pass before proceeding. If any test fails, halt the release and report which test(s) failed."
-        },
-        {
             "id": "purlin.sync_evolution",
             "friendly_name": "Sync Evolution Documentation",
             "description": "Updates the 'Agentic Evolution' table in README.md based on PROCESS_HISTORY.md and verifies documentation is in sync.",
