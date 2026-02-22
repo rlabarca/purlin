@@ -52,12 +52,11 @@ We colocate implementation knowledge with requirements to ensure context is neve
 6.  **Commit Mandate:** You MUST commit your changes to git before concluding any task. This applies to ALL Architect-owned artifacts: feature specs, architectural policies, instruction files, process history, and DevOps scripts. Changes should not remain uncommitted.
     *   **Post-Commit Critic Run:** After committing changes that modify any feature spec (`features/*.md`) or anchor node (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`), you MUST run `tools/cdd/status.sh` to regenerate the Critic report and all `critic.json` files. (The script runs the Critic automatically.) This keeps the CDD dashboard and Builder/QA action items current. You do NOT need to run this after changes that only touch instruction files or process history.
 7.  **Evolution Tracking:** Before any major release push, you MUST update the "Agentic Evolution" table in the project's root `README.md` based on `PROCESS_HISTORY.md`.
-8.  **Release Status Mandate:** You MUST ensure the active release file is explicitly marked with the `[Complete]` status tag before concluding a release cycle.
-9.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
-10. **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
-11. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Verify the graph is acyclic by reading `.agentic_devops/cache/dependency_graph.json` (the machine-readable output). Do NOT use the web UI for this check.
-12. **Feature Scope Restriction:** Feature files (`features/*.md`) MUST only be created for buildable tooling and application behavior. NEVER create feature files for agent instructions, process definitions, or workflow rules. These are governed exclusively by the instruction files (`instructions/HOW_WE_WORK_BASE.md`, role-specific base files) and their override equivalents in `.agentic_devops/`.
-13. **Untracked File Triage:** You are the single point of responsibility for orphaned (untracked) files in the working directory. The Critic flags these as MEDIUM-priority Architect action items. For each untracked file, you MUST take one of two actions:
+8.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
+9.  **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
+10. **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Verify the graph is acyclic by reading `.agentic_devops/cache/dependency_graph.json` (the machine-readable output). Do NOT use the web UI for this check.
+11. **Feature Scope Restriction:** Feature files (`features/*.md`) MUST only be created for buildable tooling and application behavior. NEVER create feature files for agent instructions, process definitions, or workflow rules. These are governed exclusively by the instruction files (`instructions/HOW_WE_WORK_BASE.md`, role-specific base files) and their override equivalents in `.agentic_devops/`.
+12. **Untracked File Triage:** You are the single point of responsibility for orphaned (untracked) files in the working directory. The Critic flags these as MEDIUM-priority Architect action items. For each untracked file, you MUST take one of two actions:
     *   **Gitignore:** If the file is a generated artifact (tool output, report, cache), add its pattern to `.gitignore` and commit.
     *   **Commit:** If the file is an Architect-owned artifact (feature spec, instruction, script), commit it directly.
     *   If the file is Builder-owned source, take no action. The Builder's startup protocol checks git status and will discover untracked files independently. The Architect is not responsible for tracking Builder-owned work.
@@ -182,7 +181,6 @@ To execute a release, work through the steps in the CDD Dashboard's RELEASE CHEC
 **Key invariants (see `features/policy_release.md` for full details):**
 *   The Zero-Queue Mandate: every feature MUST have `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"` before release.
 *   The dependency graph MUST be acyclic. Verify via `.agentic_devops/cache/dependency_graph.json`.
-*   The active release spec MUST be marked `[Complete]` before concluding the cycle.
 *   The `purlin.push_to_remote` step is enabled by default but MAY be disabled for air-gapped projects.
 
 ## 9. Authorized Slash Commands

@@ -2,6 +2,13 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Retire purlin.mark_release_complete Step
+
+- **Problem:** The `purlin.mark_release_complete` release checklist step assumed that projects maintain per-version release specification files (e.g., `release_v0.5.md`) that are explicitly marked `[Complete]` at release time — a pattern from HOW_WE_WORK_BASE Section 5.1 ("Single Release File Rule"). This project does not use per-version release files. The only release-related feature files are specs for the release checklist tool itself, which follow the standard CDD feature lifecycle managed by the Builder and QA agents. The step had no valid target to act on.
+- **Solution:** Removed the step entirely. Updated `features/release_checklist_core.md` (step table, step definition block, example config, scenarios, and Implementation Notes with Builder delegation notes for `global_steps.json` and `.agentic_devops/release/config.json`). Removed the corresponding "Release Status Mandate" from `instructions/ARCHITECT_BASE.md` Section 4 (responsibility 8) and the invariant bullet from Section 8.
+- **Files changed:** `features/release_checklist_core.md`, `instructions/ARCHITECT_BASE.md`.
+- **Builder action required:** Update `tools/release/global_steps.json` (remove `purlin.mark_release_complete` entry) and `.agentic_devops/release/config.json` (remove matching config entry). See Implementation Notes in `release_checklist_core.md`.
+
 ## [2026-02-22] BUG Routing Clarification: Instruction-Level vs Code-Level
 
 - **Problem:** The SOP routing rule "BUG → Builder" has no exception for bugs in instruction-file-driven agent behavior. When an agent fails to follow its startup protocol ordering (an LLM compliance issue, not a code issue), the Critic and discovery format incorrectly route the action item to the Builder. The Builder has no mechanism to fix instruction-following failures from launcher code (per `cdd_startup_controls.md` Section 2.3: "No behavioral injection").

@@ -50,7 +50,6 @@ No additional fields are permitted in the schema at this time. Tooling MUST igno
         {"id": "purlin.verify_dependency_integrity", "enabled": true},
         {"id": "purlin.instruction_audit", "enabled": true},
         {"id": "purlin.doc_consistency_check", "enabled": true},
-        {"id": "purlin.mark_release_complete", "enabled": true},
         {"id": "purlin.push_to_remote", "enabled": true}
       ]
     }
@@ -78,7 +77,7 @@ When a local step is loaded from `local_steps.json`, the tooling MUST validate t
 
 ### 2.7 Initial Global Steps
 
-The following 7 steps are defined in `tools/release/global_steps.json`:
+The following 6 steps are defined in `tools/release/global_steps.json`:
 
 | # | ID | Friendly Name |
 |---|-----|--------------|
@@ -87,8 +86,7 @@ The following 7 steps are defined in `tools/release/global_steps.json`:
 | 3 | `purlin.verify_dependency_integrity` | Verify Dependency Integrity |
 | 4 | `purlin.instruction_audit` | Instruction Audit |
 | 5 | `purlin.doc_consistency_check` | Documentation Consistency Check |
-| 6 | `purlin.mark_release_complete` | Mark Release Specification Complete |
-| 7 | `purlin.push_to_remote` | Push to Remote Repository |
+| 6 | `purlin.push_to_remote` | Push to Remote Repository |
 
 **Step Definitions:**
 
@@ -117,11 +115,6 @@ The following 7 steps are defined in `tools/release/global_steps.json`:
 - Code: null
 - Agent Instructions: "Check that README.md and any project documentation (in `docs/` or equivalent) accurately reflects the current feature set. Look for: outdated feature descriptions, references to removed functionality, stale file paths, and version numbers inconsistent with the current release. Cross-check with the `features/` directory to confirm documented behavior matches specified behavior. Fix any inconsistencies and commit."
 
-**`purlin.mark_release_complete`**
-- Description: "Marks the active release specification file with the [Complete] status tag."
-- Code: null
-- Agent Instructions: "Open the active release feature file in `features/`. Add the `[Complete]` status tag to the file's status field. Commit the change."
-
 **`purlin.push_to_remote`**
 - Description: "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery."
 - Code: "git push && git push --tags"
@@ -144,9 +137,9 @@ This step is positioned in Purlin's `.agentic_devops/release/config.json` immedi
 ### Automated Scenarios
 
 #### Scenario: Full resolution with defaults
-Given `global_steps.json` contains 7 step definitions and `local_steps.json` is absent or empty, and `config.json` is absent,
+Given `global_steps.json` contains 6 step definitions and `local_steps.json` is absent or empty, and `config.json` is absent,
 When the checklist is loaded,
-Then the resolved list contains exactly 7 steps in their declared order from `global_steps.json`,
+Then the resolved list contains exactly 6 steps in their declared order from `global_steps.json`,
 And all steps have `enabled: true`.
 
 #### Scenario: Disabled step preserved
@@ -156,7 +149,7 @@ Then the resolved list includes `purlin.push_to_remote`,
 And that step's `enabled` field is `false`.
 
 #### Scenario: Auto-discovery appends new global step
-Given a `config.json` listing 6 of the 7 global steps (omitting `purlin.push_to_remote`),
+Given a `config.json` listing 5 of the 6 global steps (omitting `purlin.push_to_remote`),
 When the checklist is loaded,
 Then `purlin.push_to_remote` is appended to the end of the resolved list with `enabled: true`.
 
@@ -178,6 +171,8 @@ None. All scenarios for this feature are fully automated (unit tests against the
 ## Implementation Notes
 
 *   The auto-discovery algorithm in Section 2.5 is designed to be idempotent: running it multiple times against the same inputs produces the same result.
-*   The Builder MUST create `tools/release/global_steps.json` with the 7 step definitions from Section 2.7. The exact JSON structure follows the schema in Section 2.1.
+*   The Builder MUST update `tools/release/global_steps.json` to contain the 6 step definitions from Section 2.7. Remove the `purlin.mark_release_complete` entry. The exact JSON structure follows the schema in Section 2.1.
+*   The Builder MUST update `.agentic_devops/release/config.json` to remove the `{"id": "purlin.mark_release_complete", "enabled": true}` entry from the steps array.
+*   **Removal rationale (`purlin.mark_release_complete`):** This step assumed per-version release specification files (e.g., `release_v0.5.md`) marked `[Complete]` at release time. This project does not use per-version release files. The only release-related feature files are specs for the release checklist tool itself, which follow the standard CDD feature lifecycle and are not a release-time Architect action. The step had no valid target and was retired.
 *   The `code` field for `purlin.push_to_remote` is the only step with a non-null `code` value in the initial set. The other steps require agent judgment or interactive verification and cannot be safely automated with a single shell command.
 *   There are no Manual Scenarios for this feature. Verification is entirely automated (unit tests against the data loading and resolution logic).
