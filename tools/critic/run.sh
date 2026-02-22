@@ -20,6 +20,10 @@ fi
 # Source shared Python resolver (python_environment.md §2.2)
 source "$SCRIPT_DIR/../resolve_python.sh"
 
+# Set CRITIC_RUNNING to prevent recursion: status.sh auto-runs this script,
+# so when we call status.sh below, the guard prevents an infinite loop.
+export CRITIC_RUNNING=1
+
 # Refresh CDD feature_status.json so lifecycle state is current
 CDD_STATUS_SCRIPT="$SCRIPT_DIR/../cdd/status.sh"
 if [ -f "$CDD_STATUS_SCRIPT" ]; then

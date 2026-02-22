@@ -47,8 +47,8 @@ cleanup() {
     git reset "$PRE_TEST_SHA" >/dev/null 2>&1 || true
     # Remove temp files from working tree (untracked after reset)
     rm -rf "$TEMP_FEATURE" "$TEMP_TESTS_DIR"
-    # Restore critic.json state for real features
-    bash tools/critic/run.sh >/dev/null 2>&1 || true
+    # Restore critic.json state for real features (status.sh auto-runs Critic)
+    bash tools/cdd/status.sh >/dev/null 2>&1 || true
     echo "Cleanup complete."
 }
 trap cleanup EXIT
@@ -101,10 +101,9 @@ assert_eq() {
     fi
 }
 
-# Refresh cycle: status.sh -> critic -> (read results)
+# Refresh cycle: status.sh auto-runs Critic (Section 2.6), so one call suffices.
 refresh() {
     bash tools/cdd/status.sh >/dev/null 2>&1
-    bash tools/critic/run.sh >/dev/null 2>&1
 }
 
 # ============================================================

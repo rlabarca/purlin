@@ -23,5 +23,17 @@ source "$SCRIPT_DIR/../resolve_python.sh"
 if [ "${1:-}" = "--graph" ]; then
     exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-graph
 else
+    # Auto-Critic integration (cdd_status_monitor.md Section 2.6):
+    # Run Critic before status output so critic.json files are fresh.
+    # Recursion guard: skip if CRITIC_RUNNING is already set (the Critic's
+    # run.sh calls status.sh to refresh feature_status.json; the guard
+    # prevents that inner call from triggering a second Critic run).
+    if [ -z "${CRITIC_RUNNING:-}" ]; then
+        export CRITIC_RUNNING=1
+        CRITIC_SCRIPT="$SCRIPT_DIR/../critic/run.sh"
+        if [ -f "$CRITIC_SCRIPT" ]; then
+            "$CRITIC_SCRIPT" >/dev/null 2>&1 || true
+        fi
+    fi
     exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-status
 fi
