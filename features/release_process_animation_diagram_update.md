@@ -112,22 +112,22 @@ Each frame definition:
 
 | # | `id` | `scene` | `caption` | Active Nodes | Arrows | `duration_ms` |
 |---|------|---------|-----------|--------------|--------|---------------|
-| 1 | `title` | Title | "Purlin: Continuous Design-Driven Development" | CRITIC (active) | — | 2000 |
-| 2 | `critic_intro` | Critic Intro | "The Critic coordinates the project..." | CRITIC (active) | — | 2000 |
-| 3 | `arch_reads_critic` | Architect Reads Critic | "Architect reads the Critic report..." | ARCH (active), CRITIC (active) | ARCH→CRITIC | 2000 |
-| 4 | `arch_writes_feature` | Architect Writes Feature | "Architect designs a feature specification in features/" | ARCH (active), FEAT (active) | ARCH→FEAT | 2000 |
-| 5 | `critic_detects_feature` | Critic Detects Feature | "Critic detects the new feature — status: [TODO]" | CRITIC (active), FEAT (active) | CRITIC→FEAT | 2000 |
-| 6 | `builder_reads_critic` | Builder Reads Critic | "Builder reads Critic report: feature is ready..." | BLDR (active), CRITIC (active) | BLDR→CRITIC | 2000 |
-| 7 | `builder_reads_feature` | Builder Reads Feature | "Builder reads feature spec and begins implementation" | BLDR (active), FEAT (active) | BLDR→FEAT | 2000 |
-| 8 | `builder_marks_ready` | Builder Marks Ready | "Builder marks feature [Ready for Verification]" | BLDR (active), FEAT (active) | BLDR→FEAT | 2000 |
-| 9 | `critic_flags_qa` | Critic Flags QA | "Critic flags the feature for QA verification" | CRITIC (active), FEAT (active) | CRITIC→FEAT | 2000 |
-| 10 | `qa_reads_critic` | QA Reads Critic | "QA reads Critic action items" | QA (active), CRITIC (active) | QA→CRITIC | 2000 |
-| 11 | `qa_reads_scenarios` | QA Reads Scenarios | "QA executes manual scenarios from the feature spec" | QA (active), FEAT (active) | QA→FEAT | 2000 |
-| 12 | `qa_records_bug` | QA Records Bug | "QA records a [BUG] discovery in the feature spec" | QA (active), FEAT (**warning**) | QA→FEAT | 2000 |
-| 13 | `arch_revises_spec` | Architect Revises Spec | "Architect revises the spec to address the discovery" | ARCH (active), FEAT (active) | ARCH→FEAT | 2000 |
-| 14 | `builder_reimplements` | Builder Reimplements | "Builder re-implements to match the updated spec" | BLDR (active), FEAT (active) | BLDR→FEAT | 2000 |
-| 15 | `qa_verifies_clean` | QA Verifies Clean | "QA verifies all scenarios pass — status: CLEAN" | QA (active), FEAT (**success**) | QA→FEAT | 2000 |
-| 16 | `release_ready` | Release Ready | "Critic signals all features CLEAN — ready for release!" | ALL (**success**) | — | 3000 |
+| 1 | `title` | Title | "Purlin: Continuous Design-Driven Development" | CRITIC (active) | — | 4000 |
+| 2 | `critic_intro` | Critic Intro | "The Critic coordinates the project..." | CRITIC (active) | — | 4000 |
+| 3 | `arch_reads_critic` | Architect Reads Critic | "Architect reads the Critic report..." | ARCH (active), CRITIC (active) | ARCH→CRITIC | 4000 |
+| 4 | `arch_writes_feature` | Architect Writes Feature | "Architect designs a feature specification in features/" | ARCH (active), FEAT (active) | ARCH→FEAT | 4000 |
+| 5 | `critic_detects_feature` | Critic Detects Feature | "Critic detects the new feature — status: [TODO]" | CRITIC (active), FEAT (active) | CRITIC→FEAT | 4000 |
+| 6 | `builder_reads_critic` | Builder Reads Critic | "Builder reads Critic report: feature is ready..." | BLDR (active), CRITIC (active) | BLDR→CRITIC | 4000 |
+| 7 | `builder_reads_feature` | Builder Reads Feature | "Builder reads feature spec and begins implementation" | BLDR (active), FEAT (active) | BLDR→FEAT | 4000 |
+| 8 | `builder_marks_ready` | Builder Marks Ready | "Builder marks feature [Ready for Verification]" | BLDR (active), FEAT (active) | BLDR→FEAT | 4000 |
+| 9 | `critic_flags_qa` | Critic Flags QA | "Critic flags the feature for QA verification" | CRITIC (active), FEAT (active) | CRITIC→FEAT | 4000 |
+| 10 | `qa_reads_critic` | QA Reads Critic | "QA reads Critic action items" | QA (active), CRITIC (active) | QA→CRITIC | 4000 |
+| 11 | `qa_reads_scenarios` | QA Reads Scenarios | "QA executes manual scenarios from the feature spec" | QA (active), FEAT (active) | QA→FEAT | 4000 |
+| 12 | `qa_records_bug` | QA Records Bug | "QA records a [BUG] discovery in the feature spec" | QA (active), FEAT (**warning**) | QA→FEAT | 4000 |
+| 13 | `arch_revises_spec` | Architect Revises Spec | "Architect revises the spec to address the discovery" | ARCH (active), FEAT (active) | ARCH→FEAT | 4000 |
+| 14 | `builder_reimplements` | Builder Reimplements | "Builder re-implements to match the updated spec" | BLDR (active), FEAT (active) | BLDR→FEAT | 4000 |
+| 15 | `qa_verifies_clean` | QA Verifies Clean | "QA verifies all scenarios pass — status: CLEAN" | QA (active), FEAT (**success**) | QA→FEAT | 4000 |
+| 16 | `release_ready` | Release Ready | "Critic signals all features CLEAN — ready for release!" | ALL (**success**) | — | 6000 |
 
 **CSS class → visual mapping for nodes:**
 | Class | Color |
@@ -199,6 +199,7 @@ Then they can verify all items in the Visual Specification checklist below.
 
 - **Reference:** N/A
 - [ ] Animation loops continuously without visible flicker between frames.
+- [ ] Each frame displays for long enough to read the caption and observe the active nodes/arrows (minimum 4 seconds for frames 1–15; minimum 6 seconds for frame 16).
 - [ ] Blueprint Dark background (`#0B131A`) fills the full canvas throughout all frames.
 - [ ] All 5 nodes (`Architect`, `Builder`, `QA Agent`, `Critic / CDD`, `features/`) are legible in a hub-spoke layout with `Critic / CDD` at center.
 - [ ] Active nodes render in sky blue; warning nodes in orange; success nodes in green.
@@ -226,5 +227,5 @@ See [release_process_animation_diagram_update.impl.md](release_process_animation
 - **Scenario:** Animation is visually correct and coherent
 - **Observed Behavior:** Frames advance too quickly for the viewer to read the caption text or absorb the diagram state changes. The animation needs each frame delay doubled.
 - **Expected Behavior:** No checklist item specifies frame duration. Each frame should display long enough for a viewer to read the caption and observe the active nodes/arrows.
-- **Action Required:** Architect — add a visual spec checklist item for minimum frame display duration. Builder — double the per-frame delay in `dev/generate_workflow_animation.py`.
-- **Status:** OPEN
+- **Action Required:** Builder — double the per-frame delay in `dev/generate_workflow_animation.py` (frames 1–15: 4000ms, frame 16: 6000ms).
+- **Status:** SPEC_UPDATED
