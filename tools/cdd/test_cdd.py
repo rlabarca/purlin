@@ -929,15 +929,12 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         and total 3."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "### Phase 1: Foundation\n"
-            "- **Status:** COMPLETE\n"
-            "- Features: feat_a\n\n"
-            "### Phase 2: Core\n"
-            "- **Status:** IN_PROGRESS\n"
-            "- Features: feat_b\n\n"
-            "### Phase 3: Polish\n"
-            "- **Status:** PENDING\n"
-            "- Features: feat_c\n"
+            "## Phase 1 — Foundation [COMPLETE]\n"
+            "**Features:** feat_a\n\n"
+            "## Phase 2 — Core [IN_PROGRESS]\n"
+            "**Features:** feat_b\n\n"
+            "## Phase 3 — Polish [PENDING]\n"
+            "**Features:** feat_c\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -957,12 +954,9 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         """Integration: delivery_phase appears in generate_api_status_json."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "### Phase 1: Foundation\n"
-            "- **Status:** COMPLETE\n\n"
-            "### Phase 2: Core\n"
-            "- **Status:** IN_PROGRESS\n\n"
-            "### Phase 3: Polish\n"
-            "- **Status:** PENDING\n"
+            "## Phase 1 — Foundation [COMPLETE]\n\n"
+            "## Phase 2 — Core [IN_PROGRESS]\n\n"
+            "## Phase 3 — Polish [PENDING]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -996,10 +990,8 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         """When Phase 1 COMPLETE and Phase 2 PENDING, current = 2."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "### Phase 1: Foundation\n"
-            "- **Status:** COMPLETE\n\n"
-            "### Phase 2: Core\n"
-            "- **Status:** PENDING\n"
+            "## Phase 1 — Foundation [COMPLETE]\n\n"
+            "## Phase 2 — Core [PENDING]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -1067,10 +1059,8 @@ class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
         """All phases COMPLETE -> delivery_phase omitted."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "### Phase 1: Foundation\n"
-            "- **Status:** COMPLETE\n\n"
-            "### Phase 2: Core\n"
-            "- **Status:** COMPLETE\n"
+            "## Phase 1 — Foundation [COMPLETE]\n\n"
+            "## Phase 2 — Core [COMPLETE]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)

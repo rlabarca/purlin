@@ -636,6 +636,6 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - **Scenario:** Dashboard Phase Annotation (Visual Spec — ACTIVE header shows [PHASE (X/Y)])
 - **Observed Behavior:** A delivery plan exists and Phase 1 is IN_PROGRESS, but the ACTIVE section header shows no phase annotation. The dashboard renders the standard `ACTIVE (<count>)` heading with no `[PHASE (X/Y)]` suffix.
 - **Expected Behavior:** When `.purlin/cache/delivery_plan.md` exists with at least one non-COMPLETE phase, the ACTIVE section heading should display `ACTIVE (<count>) [PHASE (<current>/<total>)]`.
-- **Root Cause (suspected):** Path mismatch — the delivery plan file is located at `.agentic_devops/cache/delivery_plan.md` (directory rename applied to prose only, not on disk). The tool likely looks for the file at `.purlin/cache/delivery_plan.md` and silently treats the missing file as "no active plan."
+- **Root Cause:** Format mismatch — `get_delivery_phase()` parsed `### Phase N:` headings with `- **Status:** STATUS` lines, but the canonical delivery plan format uses `## Phase N — Label [STATUS]` with inline status in brackets. The regex never matched.
 - **Action Required:** Builder — update the delivery plan path resolution in the dashboard tool to read `tools_root`/config-derived runtime path rather than a hardcoded `.purlin/cache/` path, so it correctly locates the file under `.agentic_devops/cache/`.
-- **Status:** OPEN
+- **Status:** RESOLVED

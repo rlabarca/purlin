@@ -258,8 +258,10 @@ def aggregate_test_statuses(statuses):
 def get_delivery_phase():
     """Parse the delivery plan and return the current phase info.
 
-    Reads `.purlin/cache/delivery_plan.md`, counts `### Phase N:`
-    headings, and finds the first PENDING or IN_PROGRESS phase.
+    Reads `.purlin/cache/delivery_plan.md`, counts phase headings,
+    and finds the first PENDING or IN_PROGRESS phase.
+
+    Supports the canonical format: `## Phase N — Label [STATUS]`
 
     Returns {"current": int, "total": int} or None if no plan exists
     or all phases are COMPLETE.
@@ -274,27 +276,22 @@ def get_delivery_phase():
     except (IOError, OSError):
         return None
 
-    # Find all phase headings: ### Phase N:
-    phase_pattern = re.compile(r'^### Phase (\d+):', re.MULTILINE)
-    phases = phase_pattern.findall(content)
-    if not phases:
+    # Match canonical format: ## Phase N — Label [STATUS]
+    phase_pattern = re.compile(
+        r'^##\s+Phase\s+(\d+)\s.*?\[(\w+)\]',
+        re.MULTILINE
+    )
+    matches = phase_pattern.findall(content)
+    if not matches:
         return None
 
-    total = len(phases)
+    total = len(matches)
 
-    # Find the first phase with Status PENDING or IN_PROGRESS
-    # Status lines appear as: - **Status:** PENDING|IN_PROGRESS|COMPLETE
-    status_pattern = re.compile(
-        r'^### Phase (\d+):.*?(?:^-\s*\*\*Status:\*\*\s*(\w+))',
-        re.MULTILINE | re.DOTALL
-    )
-
+    # Find the first phase with PENDING or IN_PROGRESS status
     current = None
-    for match in status_pattern.finditer(content):
-        phase_num = int(match.group(1))
-        status = match.group(2).strip().upper()
-        if status in ('PENDING', 'IN_PROGRESS'):
-            current = phase_num
+    for phase_num_str, status in matches:
+        if status.upper() in ('PENDING', 'IN_PROGRESS'):
+            current = int(phase_num_str)
             break
 
     if current is None:
