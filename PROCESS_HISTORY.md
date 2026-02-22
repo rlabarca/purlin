@@ -2,6 +2,17 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Removed Chat Delegation Prompts + Introduced Tombstone Protocol
+
+- **Scope:** Instruction file changes only (no feature specs or tool code affected).
+- **Problem 1:** The Architect's startup protocol and Section 2 (ZERO CODE MANDATE) allowed and encouraged producing chat-based "delegation prompts" for the Builder. This contradicted the "feature files as single source of truth" principle — Builder work items described only in chat are not discoverable from project artifacts and break the self-directing startup protocol.
+- **Problem 2:** The existing guidance to delete a feature file when retiring a feature left the Builder with no instruction about which code to remove. The feature file -- the Builder's only input -- is gone.
+- **Solution 1 (No Chat Delegation):** Added a new `### NO CHAT-BASED DELEGATION MANDATE` in `instructions/ARCHITECT_BASE.md` Section 2. Removed the "provide a Builder delegation prompt" clause from the ZERO CODE MANDATE last bullet. Removed the "Delegate to Builder" option from Responsibility 13 (Untracked File Triage). Removed item 4 (Delegation Prompts) from Section 5.2 Work Plan presentation.
+- **Solution 2 (Tombstone Protocol):** Added `### Feature Retirement (Tombstone Protocol)` to `instructions/ARCHITECT_BASE.md` Section 7. The protocol requires the Architect to write a `features/tombstones/<feature_name>.md` file (canonical format: files to delete, dependencies to check, context) before deleting the feature file, committing both together. Added a Tombstone Check as step 6 to `instructions/BUILDER_BASE.md` Section 2.1, tombstone items at the top of the Builder work plan, and a new `## 4. Tombstone Processing` section (before regular feature work). Old sections 4–7 renumbered to 5–8.
+- **Changes:**
+    - **instructions/ARCHITECT_BASE.md:** NO CHAT-BASED DELEGATION MANDATE added; ZERO CODE MANDATE last bullet updated; Responsibility 13 "Delegate to Builder" option removed; Section 5.2 item 4 (Delegation Prompts) removed; Tombstone Protocol added to Section 7.
+    - **instructions/BUILDER_BASE.md:** Tombstone Check added as startup step 6; work plan action items updated to list tombstones first; new Section 4 (Tombstone Processing) added; old sections 4–7 renumbered to 5–8; stale cross-reference in 2.2.0 corrected from "step 2.1.6" to "step 2.1.5".
+
 ## [2026-02-22] Removed `purlin.run_tool_tests` Release Step
 
 - **Scope:** Spec update and JSON file changes (Builder-implemented).

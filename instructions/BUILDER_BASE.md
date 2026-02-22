@@ -19,11 +19,15 @@ When you are launched, execute this sequence automatically (do not wait for the 
 3.  Read `.agentic_devops/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
 4.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
 5.  **Delivery Plan Check:** Check if a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
+6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
+    *   Read the tombstone to understand what code to delete and what dependencies to check.
+    *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
+    *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
 
 ### 2.2 Propose a Work Plan
 
 #### 2.2.0 Resuming a Delivery Plan
-If a delivery plan exists (step 2.1.6), skip the scope assessment below. Instead, present a phase-scoped resume plan:
+If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead, present a phase-scoped resume plan:
 1.  State which phase is being resumed (e.g., "Resuming Phase 2 of 3").
 2.  List any QA bugs from prior phases that must be addressed first (highest priority).
 3.  List the features in the current phase with their implementation status. If resuming an interrupted IN_PROGRESS phase, skip features already in TESTING state (they were completed before the interruption).
@@ -79,7 +83,7 @@ If phasing is not warranted or the user declines, proceed with the standard work
 
 Present the user with a structured summary:
 
-1.  **Builder Action Items** -- List all items from the Critic report AND from the spec-level gap analysis (step 2.1.5), grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "traceability gap", "failing tests", "spec gap: new section not implemented"), and a one-line description. When the spec-level analysis reveals gaps that the Critic missed, call these out explicitly.
+1.  **Builder Action Items** -- List tombstone tasks first (labeled `[TOMBSTONE]`), then all items from the Critic report AND from the spec-level gap analysis (step 2.1.5), grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "tombstone", "traceability gap", "failing tests", "spec gap: new section not implemented"), and a one-line description. When the spec-level analysis reveals gaps that the Critic missed, call these out explicitly.
 2.  **Feature Queue** -- Which features are in TODO state and relevant to the action items.
 3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Resolve blockers and dependencies first, then implement, then test. If multiple features are independent, note which could be parallelized.
 4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
@@ -106,7 +110,20 @@ The CDD Monitor tracks every feature through three states. Status is driven enti
 
 **Companion File Exemption:** Edits to companion files (`<name>.impl.md`) do NOT reset the parent feature's status. Only edits to the feature spec (`<name>.md`) trigger resets.
 
-## 4. Per-Feature Implementation & Commit Protocol
+## 4. Tombstone Processing (BEFORE Regular Feature Work)
+
+For each tombstone in `features/tombstones/`, execute this protocol before starting any new feature implementation:
+
+1.  Read the tombstone carefully: files to delete, dependencies to check, context.
+2.  Delete the specified files/directories.
+3.  Update or remove any code in "Dependencies to Check" that referenced the deleted code.
+4.  Run the project's test suite to confirm nothing is broken.
+5.  Commit the deletions: `git commit -m "feat(<scope>): remove retired <feature_name> code"`.
+6.  Delete the tombstone file itself: `features/tombstones/<feature_name>.md`.
+7.  Commit the tombstone deletion: `git commit -m "chore: remove tombstone for <feature_name>"`.
+8.  Run `tools/cdd/status.sh` to confirm the Critic no longer surfaces this tombstone.
+
+## 5. Per-Feature Implementation & Commit Protocol
 
 For each feature in the approved work plan, execute this protocol:
 
@@ -179,18 +196,18 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
     3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
 
-## 5. Shutdown Protocol
+## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain, include a phase completion message: "Phase N of M complete. Launch Builder again to continue with Phase N+1." If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 
-## 6. Agentic Team Orchestration
+## 7. Agentic Team Orchestration
 1.  **Orchestration Mandate:** You are encouraged to act as a "Lead Developer." When faced with a complex task, you SHOULD delegate sub-tasks to specialized sub-agents to ensure maximum accuracy and efficiency.
 2.  **Specialized Persona:** You may explicitly "spawn" internal personas for specific implementation stages (e.g., "The Critic" for review) to improve quality.
 3.  **Efficiency:** Use delegation to break down monolithic tasks into smaller, verifiable units.
 
-## 7. Build & Environment Protocols
+## 8. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
