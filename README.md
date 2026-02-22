@@ -71,6 +71,8 @@ The Architect owns the specification system. All feature requirements, architect
 | `/pl-anchor <topic>` | Create or update an architectural, design, or policy anchor node |
 | `/pl-tombstone <name>` | Retire a feature -- checks dependents, generates tombstone for Builder |
 | `/pl-release-check` | Execute the CDD-controlled release checklist step by step |
+| `/pl-release-run [<step>]` | Run a single release step by name without the full checklist |
+| `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
 
 **Workflow examples:**
 

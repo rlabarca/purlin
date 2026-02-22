@@ -2,6 +2,15 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Framework Documentation Consistency Fixes
+
+- **Change:** Fixed three documentation inconsistencies discovered during the `doc_consistency_framework` release step.
+    1. `instructions/ARCHITECT_BASE.md` Section 5.1 — Step numbering jumped from 3 to 5, skipping 4. Renumbered steps 5→4 and 6→5 to restore sequential ordering.
+    2. `instructions/ARCHITECT_BASE.md` Section 5.1 — Step 5 (formerly 6) referenced "responsibility 13" for Untracked File Triage, but item 4 (Delegation Prompts) was removed in a prior session, shifting Untracked File Triage to responsibility 12. Corrected the reference.
+    3. `instructions/HOW_WE_WORK_BASE.md` Section 8.3 — Builder column description used a bare `` `tests.json` `` path while the QA column correctly used the full `` `tests/<feature>/tests.json` `` path. Normalized Builder column to use the full path for consistency.
+- **Change:** Added `/pl-release-run` and `/pl-release-step` commands to the Architect command table in `README.md`. Both commands were added on 2026-02-22 but the README table was not updated at that time.
+- **Files changed:** `instructions/ARCHITECT_BASE.md`, `instructions/HOW_WE_WORK_BASE.md`, `README.md`.
+
 ## [2026-02-22] HOW_WE_WORK Section 8 Expansion + critic_consistency_check Release Step
 
 - **Change:** Expanded `instructions/HOW_WE_WORK_BASE.md` Section 8 (Critic-Driven Coordination) from a brief summary with one subsection to a full reference with three subsections. Added a prose intro paragraph clarifying the CLI-only agent interface. Added Section 8.1 (What the Critic Validates) covering the dual-gate model (Spec Gate + Implementation Gate) and four supplementary audits (User Testing, Builder Decision, Visual Spec, Untracked File). Added Section 8.2 (Role-Specific Action Items) documenting all four priority levels (CRITICAL/HIGH/MEDIUM/LOW) and role routing for each. Renumbered the existing "Automated Test Status in the CDD Dashboard" subsection from 8.1 to 8.3, content unchanged.
