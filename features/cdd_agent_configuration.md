@@ -32,6 +32,7 @@ The CDD Dashboard exposes agent runtime configuration (provider, model, effort, 
     5.  **Ask Permission Checkbox:** Labeled "Ask Permission". Visible only when the selected model has `capabilities.permissions: true`. Checked = `bypass_permissions: false` (agent will ask before using tools). Unchecked = `bypass_permissions: true` (agent skips permission prompts). The checkbox label describes the user-facing behavior (asking permission), not the internal config key.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Provider, Model, Effort, Ask Permission) are identical across all three rows. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited. This follows the same stability principle as the feature status tables (Section 2.3 of `cdd_status_monitor.md`).
+*   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until the `POST /config/agents` response is received. While any control is pending, the auto-refresh cycle MUST NOT overwrite its value with server-returned state — even if the server returns the pre-change value (i.e., the write has not yet landed). Only non-pending controls are updated by auto-refresh during this window. Once the server acknowledges the write (success or error), all pending locks are released and subsequent refreshes resume normal behavior. This prevents the visible bounce: user changes value → refresh reverts it → write lands → it changes again.
 *   **Detect Providers Button:** Placed at the bottom-right of the Agents section body (inside the collapsible, below agent rows), right-aligned within the section container. Styled as a secondary button matching the `btn-critic` pattern. Calls `POST /detect-providers`. Displays a confirmation dialog listing detected providers and model counts. "Apply" merges detected providers into `llm_providers` in config (additive -- never removes existing entries).
 *   **Styling:** All controls follow existing dashboard patterns:
     *   `<select>`: `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size.
@@ -95,6 +96,13 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Then the Agents section heading has a visible underline separator
     And the Agents section is visually distinct from the Workspace section above it
 
+#### Scenario: Pending Change is Not Overwritten by Auto-Refresh
+    Given the user unchecks "Ask Permission" for the Builder agent
+    And the config write is debounced or the POST /config/agents request is in-flight
+    When the 5-second auto-refresh fires and returns the pre-change config value
+    Then the "Ask Permission" checkbox remains unchecked
+    And the control does not visibly revert to checked and then flip back to unchecked
+
 #### Scenario: Agents Section State Persists Across Reloads
     Given the user expands the Agents section
     When the page is reloaded
@@ -121,6 +129,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Dropdown styling matches existing dashboard selects: `var(--purlin-bg)` bg, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px
 - [ ] Checkbox uses `accent-color: var(--purlin-accent)`
 - [ ] On 5-second auto-refresh, the Agents section does not flicker or visibly re-render
+- [ ] Changing a control value does not cause it to visibly revert and re-apply while the config write is in-flight
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Detect Providers button is right-aligned within the Agents section container
 - [ ] Detect Providers button matches `btn-critic` styling pattern
@@ -134,6 +143,9 @@ Uses CSS Grid (`grid-template-columns: 64px 100px 140px 80px auto`) for consiste
 
 ### Ask Permission Checkbox Semantics
 The checkbox is labeled "Ask Permission" (user-facing behavior) and its checked state is the inverse of `bypass_permissions` in config.json. Checked = agent asks before using tools (`bypass_permissions: false`). Unchecked = agent skips permission prompts (`bypass_permissions: true`).
+
+### Pending-Write Lock
+Track pending writes in a `pendingWrites` Set of control identifiers (e.g., `"builder.bypass_permissions"`, `"architect.model"`). On user interaction with any control, add its identifier to the set. When `POST /config/agents` resolves (success or error), clear the set. In `diffUpdateAgentRows()`, skip any control whose identifier is present in `pendingWrites`. This ensures auto-refresh never overwrites a value the user has changed but the server has not yet confirmed.
 
 ### Flicker-Free Refresh
 On 5-second auto-refresh, `initAgentsSection()` compares incoming config JSON against the cached `agentsConfig` before deciding whether to re-render. If config is unchanged, rendering is skipped entirely. If changed, `diffUpdateAgentRows()` updates only the controls whose values differ, avoiding full innerHTML replacement.
