@@ -71,7 +71,7 @@ def cleanup_sandbox(d):
     shutil.rmtree(d, ignore_errors=True)
 
 
-# Build a small global steps fixture (8 steps matching spec Section 2.7)
+# Global steps fixture (6 steps matching spec Section 2.7)
 GLOBAL_STEPS_PATH = os.path.join(SCRIPT_DIR, "global_steps.json")
 
 
@@ -90,10 +90,10 @@ def test_full_resolution_with_defaults(r):
             config_path=config_path,
         )
 
-        if len(resolved) == 8:
-            r.log_pass("Resolved list contains exactly 8 steps")
+        if len(resolved) == 6:
+            r.log_pass("Resolved list contains exactly 6 steps")
         else:
-            r.log_fail(f"Expected 8 steps, got {len(resolved)}")
+            r.log_fail(f"Expected 6 steps, got {len(resolved)}")
 
         all_enabled = all(s["enabled"] for s in resolved)
         if all_enabled:
@@ -113,7 +113,7 @@ def test_full_resolution_with_defaults(r):
 
         # Verify order field is 1-based
         orders = [s["order"] for s in resolved]
-        if orders == list(range(1, 9)):
+        if orders == list(range(1, 7)):
             r.log_pass("Order field is 1-based sequential")
         else:
             r.log_fail(f"Order field incorrect: {orders}")
@@ -169,7 +169,7 @@ def test_auto_discovery_appends_new_step(r):
         local_path = os.path.join(sandbox, "local_steps.json")
         config_path = os.path.join(sandbox, "config.json")
 
-        # Config listing 7 of 8 steps (omitting push_to_remote)
+        # Config listing 5 of 6 steps (omitting push_to_remote)
         global_steps = load_global_steps(GLOBAL_STEPS_PATH)
         config_entries = [
             {"id": s["id"], "enabled": True}
@@ -184,10 +184,10 @@ def test_auto_discovery_appends_new_step(r):
             config_path=config_path,
         )
 
-        if len(resolved) == 8:
-            r.log_pass("All 8 steps present after auto-discovery")
+        if len(resolved) == 6:
+            r.log_pass("All 6 steps present after auto-discovery")
         else:
-            r.log_fail(f"Expected 8 steps, got {len(resolved)}")
+            r.log_fail(f"Expected 6 steps, got {len(resolved)}")
 
         # push_to_remote should be appended at the end
         last_step = resolved[-1]

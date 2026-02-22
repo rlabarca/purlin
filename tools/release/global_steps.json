@@ -36,13 +36,6 @@
             "agent_instructions": "Check that README.md and any project documentation (in `docs/` or equivalent) accurately reflects the current feature set. Look for: outdated feature descriptions, references to removed functionality, stale file paths, and version numbers inconsistent with the current release. Cross-check with the `features/` directory to confirm documented behavior matches specified behavior. Fix any inconsistencies and commit."
         },
         {
-            "id": "purlin.mark_release_complete",
-            "friendly_name": "Mark Release Specification Complete",
-            "description": "Marks the active release specification file with the [Complete] status tag.",
-            "code": null,
-            "agent_instructions": "Open the active release feature file in `features/`. Add the `[Complete]` status tag to the file's status field. Commit the change."
-        },
-        {
             "id": "purlin.push_to_remote",
             "friendly_name": "Push to Remote Repository",
             "description": "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery.",

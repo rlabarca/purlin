@@ -1,6 +1,10 @@
 {
   "steps": [
     {
+      "id": "purlin.instruction_audit",
+      "enabled": true
+    },
+    {
       "id": "purlin.verify_zero_queue",
       "enabled": true
     },
@@ -21,16 +25,8 @@
       "enabled": true
     },
     {
-      "id": "purlin.instruction_audit",
-      "enabled": true
-    },
-    {
-      "id": "purlin.mark_release_complete",
-      "enabled": true
-    },
-    {
       "id": "purlin.push_to_remote",
-      "enabled": true
+      "enabled": false
     }
   ]
 }
