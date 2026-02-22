@@ -332,6 +332,44 @@ fi
 
 cleanup_sandbox
 
+# --- Scenario: Command Files Auto-Updated ---
+echo ""
+echo "[Scenario] Command Files Auto-Updated"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+# Record current HEAD as the "old" SHA
+BEFORE_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+echo "$BEFORE_SHA" > "$PROJECT/.agentic_devops/.upstream_sha"
+
+# Simulate upstream change: modify a command file and commit
+if [ -d "$PROJECT/agentic-dev/.claude/commands" ]; then
+    CMD_TEST_FILE="$(ls "$PROJECT/agentic-dev/.claude/commands"/pl-*.md 2>/dev/null | head -1)"
+    if [ -n "$CMD_TEST_FILE" ]; then
+        CMD_FNAME="$(basename "$CMD_TEST_FILE")"
+        # Consumer copy should match old submodule version (unmodified by bootstrap)
+        echo "# Updated content for test" >> "$CMD_TEST_FILE"
+        git -C "$PROJECT/agentic-dev" add ".claude/commands/$CMD_FNAME" 2>/dev/null
+        git -C "$PROJECT/agentic-dev" commit -q -m "test: update command file" 2>/dev/null
+
+        OUTPUT=$("$SYNC" 2>&1)
+        EXIT_CODE=$?
+
+        if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully"; else log_fail "Sync exit code $EXIT_CODE"; fi
+        if echo "$OUTPUT" | grep -q "Updated: $CMD_FNAME"; then
+            log_pass "Auto-updated unmodified command file"
+        else
+            log_fail "Expected 'Updated: $CMD_FNAME' in output"
+        fi
+    else
+        echo "  SKIP: No pl-*.md command files found"
+    fi
+else
+    echo "  SKIP: No .claude/commands/ in submodule"
+fi
+
+cleanup_sandbox
+
 ###############################################################################
 # Section 2.10: Config JSON Validity After Bootstrap
 ###############################################################################
