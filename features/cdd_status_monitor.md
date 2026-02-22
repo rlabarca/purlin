@@ -35,7 +35,7 @@ The Status view is the default view (`/#status`).
 *   **Column Alignment:** Status column headers (Architect, Builder, QA) MUST be centered. The Feature column header MUST be left-justified.
 *   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
 *   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
-    *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A).
+    *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A). Tombstone entries (files in `features/tombstones/`) are ALWAYS included in this section until the Builder processes them.
     *   **Complete** -- All roles fully satisfied. Capped at 10 most recent entries.
     *   **Workspace** -- Git status and last commit information.
 *   **Section Collapse/Expand Behavior:**
@@ -81,6 +81,25 @@ The Status view is the default view (`/#status`).
 *   **Single Tab:** When no companion file exists, the modal shows content without tabs (same as current behavior).
 *   **Close Methods:** The modal MUST close via: (1) X button in the top-right corner, (2) clicking outside the modal, (3) pressing Escape.
 *   **API Endpoints:** Feature content is served via `/feature?file=<path>` and companion content via `/impl-notes?file=<path>` (Section 2.4).
+*   **Tombstone Modal Variant:** When the user clicks a tombstone entry (Section 2.2.5), the modal opens in a visually distinct deletion state. See Section 2.2.5 for full details.
+
+#### 2.2.5 Tombstone Feature Display
+
+Tombstone files at `features/tombstones/<name>.md` represent features queued for deletion by the Builder. The dashboard MUST surface these as first-class entries to ensure pending deletions are never overlooked.
+
+*   **Active Section Inclusion:** Tombstone entries MUST always appear in the Active section regardless of lifecycle state. They are NEVER promoted to Complete.
+*   **Hardcoded Role Status:** Tombstone entries do not have `critic.json` files. Their role status is hardcoded by the dashboard:
+    *   **Architect:** DONE (the tombstone file is the completed Architect action).
+    *   **Builder:** TODO (deletion work is pending).
+    *   **QA:** N/A (no QA verification required for deletions).
+*   **Feature Name Styling:** The feature name cell MUST render the tombstone entry name in `var(--purlin-status-error)`. The name MUST include a `[TOMBSTONE]` suffix to make the deletion state unambiguous at a glance. Example: `some_retired_feature [TOMBSTONE]`.
+*   **Sorting:** Tombstone entries sort alongside other TODO-state features in the Active section urgency order (after FAIL/INFEASIBLE entries, before alphabetical).
+*   **Tombstone Modal:** Clicking a tombstone entry opens a visually distinct deletion modal:
+    *   The modal MUST display a prominent "READY FOR DELETION" banner at the top of the content area, using `var(--purlin-status-error)` as the banner background with contrasting text.
+    *   The modal border MUST use `var(--purlin-status-error)` in place of the standard `var(--purlin-border)` to clearly distinguish it from a normal feature modal.
+    *   The modal title text MUST render in `var(--purlin-status-error)`.
+    *   No tabs are shown (tombstone files have no companion `.impl.md` files).
+    *   The content area renders the tombstone file's markdown (retired date, reason, files to delete, dependencies, context).
 
 ### 2.3 Verification Signals
 *   **Role Status Source:** The CDD monitor reads role status from pre-computed `tests/<name>/critic.json` files produced by the Critic tool. CDD does NOT compute role status itself.
@@ -114,6 +133,7 @@ The Status view is the default view (`/#status`).
     *   No per-feature `test_status` or `qa_status` fields (replaced by role columns).
     *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
+    *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`. No `change_scope` field is present on tombstone entries.
     *   `delivery_phase` is present ONLY when `.agentic_devops/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
     *   Array sorted by file path (deterministic).
 *   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.agentic_devops/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
@@ -130,6 +150,7 @@ The Status view is the default view (`/#status`).
 *   **No Direct Computation:** CDD does NOT compute role status itself. It reads pre-computed values from the Critic's `role_status` output.
 *   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2.2. Blank cells when no `critic.json` exists.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
+*   **Tombstone Role Status:** Tombstone files at `features/tombstones/<name>.md` do not have associated `critic.json` files. The dashboard MUST hardcode their role status: `architect=DONE`, `builder=TODO`, `qa=N/A`. This is a fixed invariant, not a computed value. The No Direct Computation rule applies only to regular feature files.
 
 ### 2.6 CLI Status Tool (Agent Interface)
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.
@@ -422,6 +443,19 @@ These scenarios are validated by the Builder's automated test suite.
     When an agent calls GET /status.json
     Then the response does not include a delivery_phase field
 
+#### Scenario: Tombstone Entry in API Response
+    Given a tombstone file exists at features/tombstones/some_retired_feature.md
+    When an agent calls GET /status.json
+    Then the features array includes an entry with file "features/tombstones/some_retired_feature.md"
+    And the entry includes tombstone true
+    And the entry has architect DONE, builder TODO, qa N/A
+    And no change_scope field is present on the tombstone entry
+
+#### Scenario: Tombstone Entry in CLI Status Output
+    Given a tombstone file exists at features/tombstones/some_retired_feature.md
+    When an agent runs tools/cdd/status.sh
+    Then the JSON output includes the tombstone entry with tombstone true, architect DONE, builder TODO, qa N/A
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
 
@@ -485,6 +519,24 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And after the Critic finishes, the dashboard refreshes with updated role status columns
     And the button returns to its enabled state
 
+#### Scenario: Tombstone Feature Appears Red in Active Section
+    Given a tombstone file exists at features/tombstones/some_retired_feature.md
+    And the User opens the CDD dashboard Status view
+    When the User views the Active section
+    Then the tombstone entry is visible with the feature name rendered in red (--purlin-status-error)
+    And the name includes a [TOMBSTONE] suffix
+    And the Builder badge shows TODO and the QA badge shows N/A
+    And the Architect badge shows DONE
+
+#### Scenario: Tombstone Feature Modal Displays Deletion State
+    Given a tombstone entry is visible in the Active section
+    When the User clicks the tombstone feature name
+    Then a modal opens with the tombstone file's markdown content
+    And the modal border uses red (--purlin-status-error) instead of the standard border color
+    And the modal title is rendered in red (--purlin-status-error)
+    And a "READY FOR DELETION" banner is prominently displayed at the top of the content area
+    And no tabs are shown in the tombstone modal
+
 ## 4. Implementation Notes
 See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
@@ -541,5 +593,13 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Phase annotation uses TODO/yellow color (--purlin-warn)
 - [ ] Phase annotation visible in both expanded and collapsed ACTIVE section states
 - [ ] Phase annotation disappears when no delivery plan exists
+- [ ] Tombstone entries appear in the Active section with feature name text color `--purlin-status-error` (red)
+- [ ] Tombstone entry names include a `[TOMBSTONE]` suffix
+- [ ] Tombstone entries display Architect=DONE, Builder=TODO, QA=N/A badges
+- [ ] Clicking a tombstone entry opens a deletion modal visually distinct from a standard feature modal
+- [ ] Tombstone deletion modal border uses `--purlin-status-error` instead of the normal border color
+- [ ] Tombstone deletion modal title text is rendered in `--purlin-status-error`
+- [ ] A "READY FOR DELETION" banner appears prominently at the top of the tombstone modal content area
+- [ ] Tombstone deletion modal shows no tabs (single content view only)
 
 ## User Testing Discoveries
