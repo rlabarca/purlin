@@ -42,7 +42,7 @@ The Status view is the default view (`/#status`).
     *   Each section heading has a chevron indicator: right-pointing when collapsed, down-pointing when expanded.
     *   Clicking the section heading toggles between collapsed and expanded.
     *   **Collapsed Summary (Active):** When the Active section is collapsed, the section heading displays a summary badge:
-        - `??` (dim) if the section is empty.
+        - No badge if the section is empty (blank heading only -- an empty Active section is a clean state, not an unknown one).
         - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
     *   **Collapsed Summary (Complete):** When the Complete section is collapsed, the section heading displays no summary badge. Complete implies all roles are satisfied; a badge is redundant.
@@ -581,7 +581,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") have a visible underline separator
 - [ ] Section headings are clearly distinguished from the content beneath them
 - [ ] Section headings have chevron indicators (right=collapsed, down=expanded)
-- [ ] Collapsed Active section shows a summary badge (??/TODO/most-severe); Complete section shows no badge when collapsed
+- [ ] Collapsed Active section shows no badge when empty; shows TODO/most-severe badge when non-empty; Complete section shows no badge when collapsed
 - [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
 - [ ] Section collapse/expand states persist across page reloads via localStorage
 - [ ] Workspace section shows "Clean State" or status summary in its collapsed form
@@ -623,4 +623,4 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - **Observed Behavior:** When the Active section is collapsed and contains no active items, a `??` badge appears in the section heading.
 - **Expected Behavior:** No badge should appear. An empty Active section is a positive/clean state; displaying `??` is misleading because `??` is used elsewhere in the dashboard to mean "unknown role status". An empty section heading with no badge better communicates "nothing to act on."
 - **Action Required:** Architect — review and revise Section 2.2.2 collapsed summary spec. Proposed change: when the Active section is empty and collapsed, display no badge (blank), not `??`.
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
