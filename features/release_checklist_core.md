@@ -48,7 +48,6 @@ No additional fields are permitted in the schema at this time. Tooling MUST igno
         {"id": "purlin.record_version_notes", "enabled": true},
         {"id": "purlin.verify_zero_queue", "enabled": true},
         {"id": "purlin.verify_dependency_integrity", "enabled": true},
-        {"id": "purlin.run_tool_tests", "enabled": true},
         {"id": "purlin.sync_evolution", "enabled": true},
         {"id": "purlin.instruction_audit", "enabled": true},
         {"id": "purlin.doc_consistency_check", "enabled": true},
@@ -80,19 +79,18 @@ When a local step is loaded from `local_steps.json`, the tooling MUST validate t
 
 ### 2.7 Initial Global Steps
 
-The following 9 steps are defined in `tools/release/global_steps.json`:
+The following 8 steps are defined in `tools/release/global_steps.json`:
 
 | # | ID | Friendly Name |
 |---|-----|--------------|
 | 1 | `purlin.record_version_notes` | Record Version & Release Notes |
 | 2 | `purlin.verify_zero_queue` | Verify Zero-Queue Status |
 | 3 | `purlin.verify_dependency_integrity` | Verify Dependency Integrity |
-| 4 | `purlin.run_tool_tests` | Run Automated Tool Tests |
-| 5 | `purlin.sync_evolution` | Sync Evolution Documentation |
-| 6 | `purlin.instruction_audit` | Instruction Audit |
-| 7 | `purlin.doc_consistency_check` | Documentation Consistency Check |
-| 8 | `purlin.mark_release_complete` | Mark Release Specification Complete |
-| 9 | `purlin.push_to_remote` | Push to Remote Repository |
+| 4 | `purlin.sync_evolution` | Sync Evolution Documentation |
+| 5 | `purlin.instruction_audit` | Instruction Audit |
+| 6 | `purlin.doc_consistency_check` | Documentation Consistency Check |
+| 7 | `purlin.mark_release_complete` | Mark Release Specification Complete |
+| 8 | `purlin.push_to_remote` | Push to Remote Repository |
 
 **Step Definitions:**
 
@@ -110,11 +108,6 @@ The following 9 steps are defined in `tools/release/global_steps.json`:
 - Description: "Verifies that the dependency graph is acyclic and all prerequisite links are valid."
 - Code: null
 - Agent Instructions: "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
-
-**`purlin.run_tool_tests`**
-- Description: "Runs the Purlin DevOps tool test suite to verify that all bundled framework tools are functioning correctly in this environment."
-- Code: null
-- Agent Instructions: "Resolve `tools_root` from `.agentic_devops/config.json` (default: `tools`). Discover all test scripts matching `<tools_root>/*/test_*.py` and run each with `python3`. Confirm all tests pass before proceeding. If any test fails, halt the release and report which test(s) failed."
 
 **`purlin.sync_evolution`**
 - Description: "Updates the 'Agentic Evolution' table in README.md based on PROCESS_HISTORY.md and verifies documentation is in sync."
@@ -146,9 +139,9 @@ The following 9 steps are defined in `tools/release/global_steps.json`:
 ### Automated Scenarios
 
 #### Scenario: Full resolution with defaults
-Given `global_steps.json` contains 9 step definitions and `local_steps.json` is absent or empty, and `config.json` is absent,
+Given `global_steps.json` contains 8 step definitions and `local_steps.json` is absent or empty, and `config.json` is absent,
 When the checklist is loaded,
-Then the resolved list contains exactly 9 steps in their declared order from `global_steps.json`,
+Then the resolved list contains exactly 8 steps in their declared order from `global_steps.json`,
 And all steps have `enabled: true`.
 
 #### Scenario: Disabled step preserved
@@ -158,7 +151,7 @@ Then the resolved list includes `purlin.push_to_remote`,
 And that step's `enabled` field is `false`.
 
 #### Scenario: Auto-discovery appends new global step
-Given a `config.json` listing 8 of the 9 global steps (omitting `purlin.push_to_remote`),
+Given a `config.json` listing 7 of the 8 global steps (omitting `purlin.push_to_remote`),
 When the checklist is loaded,
 Then `purlin.push_to_remote` is appended to the end of the resolved list with `enabled: true`.
 
@@ -180,6 +173,6 @@ None. All scenarios for this feature are fully automated (unit tests against the
 ## Implementation Notes
 
 *   The auto-discovery algorithm in Section 2.5 is designed to be idempotent: running it multiple times against the same inputs produces the same result.
-*   The Builder MUST create `tools/release/global_steps.json` with the 9 step definitions from Section 2.7. The exact JSON structure follows the schema in Section 2.1.
+*   The Builder MUST create `tools/release/global_steps.json` with the 8 step definitions from Section 2.7. The exact JSON structure follows the schema in Section 2.1.
 *   The `code` field for `purlin.push_to_remote` is the only step with a non-null `code` value in the initial set. The other steps require agent judgment or interactive verification and cannot be safely automated with a single shell command.
 *   There are no Manual Scenarios for this feature. Verification is entirely automated (unit tests against the data loading and resolution logic).

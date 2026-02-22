@@ -2,6 +2,17 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Removed `purlin.run_tool_tests` Release Step
+
+- **Scope:** Spec update and JSON file changes (Builder-implemented).
+- **Problem:** `purlin.run_tool_tests` had two overlapping issues: (1) Purlin-internal language ("Purlin DevOps tool test suite") that is meaningless to consumer projects, and (2) architectural redundancy — per HOW_WE_WORK_BASE Section 8.1, `Builder: DONE` already guarantees automated tests passed; `verify_zero_queue` (Step 2) confirms this for every feature. Running a separate test-discovery step afterward double-checks a guarantee the CDD model already provides.
+- **Solution:** Remove `purlin.run_tool_tests` from the global release steps entirely. The release checklist reduces from 9 to 8 global steps. The "environmental regression" counterargument (tests passed then but not now) is a CI/CD concern, not an agent release checklist concern.
+- **Changes:**
+    - **features/release_checklist_core.md:** Section 2.4 config example, Section 2.7 table and step definitions, "Full resolution with defaults" scenario, and Implementation Notes all updated from 9 to 8 steps; `purlin.run_tool_tests` entry removed.
+    - **tools/release/global_steps.json:** `purlin.run_tool_tests` step object removed (Builder-delegated).
+    - **.agentic_devops/release/config.json:** `{"id": "purlin.run_tool_tests", "enabled": true}` entry removed (Builder-delegated).
+    - **Unit tests for `release_checklist_core`:** Builder must update the "Full resolution with defaults" test to expect 8 steps.
+
 ## [2026-02-21] Cosmetic First-Pass Guard
 
 - **Scope:** Spec gap fix and code correction; no new features.
