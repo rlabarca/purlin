@@ -10,6 +10,11 @@ This log tracks the evolution of the **Purlin** framework itself. This repositor
 - **Motivation:** No release step enforced consistency across the six files that describe Critic behavior, and README.md had no actionable explanation of the Critic for new readers.
 - **Files changed:** `instructions/HOW_WE_WORK_BASE.md` (Section 8 expansion), `features/release_checklist_core.md` (Section 2.8 new step entry), `.agentic_devops/release/local_steps.json` (new step), `.agentic_devops/release/config.json` (new step ordering).
 
+## [2026-02-22] Add /pl-release-run Command
+
+- **Change:** Added `/pl-release-run [<step-name>]` Architect slash command. Allows the Architect to execute a single release step by friendly name without running the full checklist sequence. Step selection uses case-insensitive partial matching against `friendly_name`; disambiguates if multiple steps match. Disabled steps can be run with explicit confirmation. Executes via `agent_instructions` and/or `code` fields from the resolved step definition.
+- **Files changed:** `.claude/commands/pl-release-run.md` (new), `instructions/ARCHITECT_BASE.md` (startup table and Section 9).
+
 ## [2026-02-22] Add /pl-release-step Command and Local Release Step Management Feature
 
 - **Change:** Introduced the `/pl-release-step` slash command and the `features/release_step_management.md` spec defining the backing CLI tool (`tools/release/manage_step.py`). The command provides a guided, interactive interface for the Architect to create, modify, and delete local release steps safely — with schema validation, `purlin.` prefix rejection, atomic writes, and dry-run preview before committing.
