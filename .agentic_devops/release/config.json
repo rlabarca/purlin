@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "id": "purlin.record_version_notes",
+      "enabled": true
+    },
+    {
+      "id": "purlin.verify_zero_queue",
+      "enabled": true
+    },
+    {
+      "id": "purlin.verify_dependency_integrity",
+      "enabled": true
+    },
+    {
+      "id": "purlin.run_tool_tests",
+      "enabled": true
+    },
+    {
+      "id": "purlin.sync_evolution",
+      "enabled": true
+    },
+    {
+      "id": "purlin.instruction_audit",
+      "enabled": true
+    },
+    {
+      "id": "purlin.doc_consistency_check",
+      "enabled": true
+    },
+    {
+      "id": "purlin.mark_release_complete",
+      "enabled": true
+    },
+    {
+      "id": "purlin.push_to_remote",
+      "enabled": true
+    }
+  ]
+}
