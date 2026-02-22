@@ -4,7 +4,7 @@
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/agent_launchers_common.md
-> Prerequisite: features/cdd_model_configuration.md
+> Prerequisite: features/cdd_agent_configuration.md
 
 
 ## 1. Overview
@@ -79,14 +79,14 @@ Purlin Builder — Ready
 
 ### 2.5 Dashboard Toggle Controls
 
-*   **Location:** Within the existing Models section (from `features/cdd_model_configuration.md`), each agent row gains two checkbox controls appended to the right of the existing YOLO checkbox.
-*   **Controls per row:**
-    *   `startup_sequence` → label **"Startup Sequence"**
-    *   `recommend_next_actions` → label **"Suggest Next"**
-*   **Constraint enforcement:** When the user unchecks "Startup Sequence", the "Suggest Next" checkbox for that agent MUST be simultaneously disabled and unchecked. Re-checking "Startup Sequence" re-enables "Suggest Next" to its previous state.
-*   **Persistence:** Changes are written via `POST /config/agents` immediately, using the same debounce and pending-write-lock pattern as existing model/effort/YOLO controls (see `cdd_model_configuration.md` Section 2.1).
-*   **Styling:** Native checkboxes using `accent-color: var(--purlin-accent)`. Labels use Inter 500 11px matching other control labels.
-*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Startup Sequence | Suggest Next)`. Column alignment is consistent across all three agent rows per the grid rules in `cdd_model_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
+*   **Location:** Within the existing Agents section (from `features/cdd_agent_configuration.md`), each agent row gains two checkbox controls appended to the right of the existing YOLO checkbox.
+*   **Controls per row:** Two checkboxes with no inline labels; each is identified by its column header in the section header row (see `cdd_agent_configuration.md` Section 2.1):
+    *   `startup_sequence` → column header **"Startup"** / **"Sequence"** (two lines)
+    *   `recommend_next_actions` → column header **"Suggest"** / **"Next"** (two lines)
+*   **Constraint enforcement:** When the user unchecks the Startup Sequence control, the Suggest Next checkbox for that agent MUST be simultaneously disabled and unchecked. Re-checking Startup Sequence re-enables Suggest Next to its previous state.
+*   **Persistence:** Changes are written via `POST /config/agents` immediately, using the same debounce and pending-write-lock pattern as existing model/effort/YOLO controls (see `cdd_agent_configuration.md` Section 2.1).
+*   **Styling:** Native checkboxes using `accent-color: var(--purlin-accent)`. No inline label text is rendered beside the checkboxes in agent rows; column headers provide all identification.
+*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Startup/Sequence | Suggest/Next)`. Column alignment is consistent across all three agent rows per the grid rules in `cdd_agent_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
 
 ### 2.6 API Extension
 
@@ -160,16 +160,17 @@ Purlin Builder — Ready
     And a brief status summary is output
     And no work plan is presented; the agent awaits user direction
 
-#### Scenario: Dashboard Toggle Controls Render in Models Section
-    Given the CDD Dashboard is loaded and the Models section is expanded
+#### Scenario: Dashboard Toggle Controls Render in Agents Section
+    Given the CDD Dashboard is loaded and the Agents section is expanded
     When the user views any agent row
-    Then "Startup Sequence" and "Suggest Next" checkboxes appear to the right of YOLO
+    Then the Startup Sequence and Suggest Next checkboxes appear to the right of YOLO
+    And their column headers appear in the section header row on two lines each
     And their checked state matches the values in config.json
 
 #### Scenario: Suggest Next Disables When Startup Sequence Unchecked
-    Given the Models section is expanded
-    When the user unchecks "Startup Sequence" for an agent
-    Then the "Suggest Next" checkbox for that agent is immediately disabled and unchecked
+    Given the Agents section is expanded
+    When the user unchecks the Startup Sequence control for an agent
+    Then the Suggest Next checkbox for that agent is immediately disabled and unchecked
     And POST /config/agents is called with startup_sequence false and recommend_next_actions false for that agent
 
 
@@ -199,4 +200,4 @@ The `ROLE` placeholder is substituted per-launcher (`architect`, `builder`, `qa`
 The "Startup Sequence" checkbox `onchange` handler: when unchecked, sets `checkbox_suggest_next.disabled = true` and `checkbox_suggest_next.checked = false`, then marks both controls as pending. When re-checked, restores `checkbox_suggest_next.disabled = false` and restores the checkbox to its pre-disable state (cached locally before the disable action).
 
 ### Dashboard Grid Extension
-The agent row grid currently uses `grid-template-columns: 64px 140px 80px auto` (agent-name | model | effort | YOLO). Add two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 110px 80px` (agent-name | model | effort | YOLO | Startup Sequence | Suggest Next). The YOLO column moves from `auto` to `60px` to prevent layout shift when new columns are added.
+The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-columns: 64px 140px 80px 60px` (agent-name | model | effort | YOLO). Extend with two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 60px 60px` (agent-name | model | effort | YOLO | Startup/Sequence | Suggest/Next). The column header row gains two new cells with two-line text ("Startup" / "Sequence" and "Suggest" / "Next") using `<br>` or CSS wrapping; no inline labels appear in the agent data rows.
