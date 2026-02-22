@@ -1170,7 +1170,17 @@ function refreshStatus() {{
       var newStatusView = doc.getElementById('status-view');
       if (newStatusView) {{
         var current = document.getElementById('status-view');
+        // Preserve release checklist rows during pending save to prevent snap-back
+        var savedRcTbody = null;
+        if (rcPendingSave) {{
+          var rcT = document.getElementById('rc-tbody');
+          if (rcT) savedRcTbody = rcT.innerHTML;
+        }}
         current.innerHTML = newStatusView.innerHTML;
+        if (savedRcTbody) {{
+          var rcT = document.getElementById('rc-tbody');
+          if (rcT) rcT.innerHTML = savedRcTbody;
+        }}
         // Restore section states from localStorage
         applySectionStates();
         // Re-apply search filter
@@ -1411,6 +1421,16 @@ function rcPersistConfig() {{
     var cb = row.querySelector('input[type=checkbox]');
     steps.push({{id: row.dataset.stepId, enabled: cb ? cb.checked : true}});
   }});
+  // Optimistically update cache to match DOM order/state
+  if (rcStepsCache) {{
+    var cacheMap = {{}};
+    rcStepsCache.forEach(function(s) {{ cacheMap[s.id] = s; }});
+    rcStepsCache = steps.map(function(s) {{
+      var full = cacheMap[s.id];
+      if (full) {{ full = JSON.parse(JSON.stringify(full)); full.enabled = s.enabled; return full; }}
+      return s;
+    }});
+  }}
   rcPendingSave = true;
   fetch('/release-checklist/config', {{
     method: 'POST',
