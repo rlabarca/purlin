@@ -1,14 +1,6 @@
 {
   "steps": [
     {
-      "id": "purlin.doc_consistency_check",
-      "enabled": true
-    },
-    {
-      "id": "purlin.record_version_notes",
-      "enabled": true
-    },
-    {
       "id": "purlin.verify_zero_queue",
       "enabled": true
     },
@@ -17,15 +9,19 @@
       "enabled": true
     },
     {
-      "id": "purlin.sync_evolution",
+      "id": "doc_consistency_framework",
+      "enabled": true
+    },
+    {
+      "id": "purlin.doc_consistency_check",
+      "enabled": true
+    },
+    {
+      "id": "purlin.record_version_notes",
       "enabled": true
     },
     {
       "id": "purlin.instruction_audit",
-      "enabled": true
-    },
-    {
-      "id": "doc_consistency_framework",
       "enabled": true
     },
     {

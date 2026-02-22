@@ -3,9 +3,9 @@
         {
             "id": "purlin.record_version_notes",
             "friendly_name": "Record Version & Release Notes",
-            "description": "Prompts for a version number and release notes, then records them in the README.md under a '## Release Notes' section as a new dated entry.",
+            "description": "Gathers suggested release notes from git history and PROCESS_HISTORY.md since the last release, presents them to the user for selection/editing, then records the confirmed version and notes in README.md under '## Releases'.",
             "code": null,
-            "agent_instructions": "Ask the user for the version number (e.g., 'v1.2.0') and release notes (a brief summary of what changed). Then insert a new entry into the project's README.md under a '## Release Notes' heading (creating the heading if absent). Format the entry as: `### <version> \u2014 <YYYY-MM-DD>\n\n<release notes text>`."
+            "agent_instructions": "1. Determine the last release tag: run `git tag --sort=-v:refname | head -1`. If no tags exist, treat everything as new.\n2. Gather candidates: run `git log <last-tag>..HEAD --oneline --no-merges` for commit summaries. Read `PROCESS_HISTORY.md` and extract entries dated after the last release.\n3. Synthesize a concise bulleted suggestion list from the above data, grouping by theme (features, fixes, process changes) where possible.\n4. Present the suggestions to the user: 'Suggested release notes since <last-tag> — paste any you would like to include, edit freely, or write your own:'\n5. Ask the user for: (a) the new version number (e.g., 'v1.2.0'), and (b) their release notes (free text; they may copy from suggestions, combine, or replace entirely).\n6. Insert a new entry into README.md under a '## Releases' heading (create if absent). Format: `### <version> \u2014 <YYYY-MM-DD>\\n\\n<confirmed release notes text>`."
         },
         {
             "id": "purlin.verify_zero_queue",
@@ -20,13 +20,6 @@
             "description": "Verifies that the dependency graph is acyclic and all prerequisite links are valid.",
             "code": null,
             "agent_instructions": "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
-        },
-        {
-            "id": "purlin.sync_evolution",
-            "friendly_name": "Sync Evolution Documentation",
-            "description": "Updates the 'Agentic Evolution' table in README.md based on PROCESS_HISTORY.md and verifies documentation is in sync.",
-            "code": null,
-            "agent_instructions": "Read PROCESS_HISTORY.md and verify the 'Agentic Evolution' table in README.md reflects all recent entries. Add or update entries as needed. Commit any changes."
         },
         {
             "id": "purlin.instruction_audit",
