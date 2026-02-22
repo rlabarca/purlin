@@ -2,6 +2,34 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Multi-Provider Agent Launchers & Gemini Support
+
+- **Scope:** Feature spec additions, instruction refinement, script and config changes (Builder-implemented).
+- **Problem:** All three agent launchers failed at runtime with `ERROR: Provider 'gemini' is not yet supported for agent invocation` because provider dispatch only implemented Claude. No spec existed for the multi-provider launcher contract. Gemini 3.0 models were missing from provider configs and the `permissions` capability was incorrectly set to `false` for all Gemini models.
+- **Solution:**
+    - New feature spec `features/agent_launchers_common.md` defines the full multi-provider launcher contract: prompt assembly, config reading, Claude dispatch, Gemini dispatch (`GEMINI_SYSTEM_MD` injection, `--yolo` flag), concurrent safety, role-specific tool restrictions, and unsupported provider error handling.
+    - Category renamed from `"Initialization & Update"` to `"Install, Update & Scripts"` across four feature files (`agent_configuration.md`, `python_environment.md`, `submodule_bootstrap.md`, `submodule_sync.md`).
+    - `features/agent_configuration.md` updated: script names updated to `run_architect.sh` etc.; provider dispatch description updated to include Gemini as a supported provider.
+    - `features/submodule_bootstrap.md` updated: Section 2.5 and all scenarios updated to new script names; new Section 2.17 (Provider Detection Integration) specifies that bootstrap runs `detect-providers.sh` after config patching, merges available provider models into config, and prints a detection summary.
+    - `instructions/ARCHITECT_BASE.md` Zero Code Implementation Mandate tightened: DevOps script exception removed. Architect write access is now strictly limited to feature specs, instruction files, and prose docs. All script and code changes are Builder-delegated.
+    - Gemini 3.0 Pro and 3.0 Flash added to provider configs; `permissions` capability updated to `true` for all Gemini models.
+    - Launcher scripts renamed from `run_claude_*.sh` to `run_architect.sh`, `run_builder.sh`, `run_qa.sh`.
+    - `README.md` updated: all script name references updated; new `## Supported Providers` section added with provider table, capability notes, and install hints.
+- **Changes:**
+    - **features/agent_launchers_common.md:** New file.
+    - **features/agent_configuration.md:** Category rename; script name and provider dispatch description updates.
+    - **features/submodule_bootstrap.md:** Category rename; Section 2.5, Section 2.17, and scenario script name updates.
+    - **features/python_environment.md:** Category rename.
+    - **features/submodule_sync.md:** Category rename.
+    - **instructions/ARCHITECT_BASE.md:** Zero Code Mandate tightened; DevOps script exception removed.
+    - **tools/providers/gemini.sh:** Added Gemini 3.0 Pro and 3.0 Flash; `permissions: true` for all models.
+    - **agentic_devops.sample/config.json:** Added full Gemini provider section.
+    - **.agentic_devops/config.json:** Added Gemini 3.0 models; fixed `permissions` to `true` for all Gemini models.
+    - **run_architect.sh, run_builder.sh, run_qa.sh:** New provider-agnostic launchers.
+    - **run_claude_architect.sh, run_claude_builder.sh, run_claude_qa.sh:** Deleted.
+    - **tools/bootstrap.sh:** Updated launcher generation to use new script names, added Gemini dispatch block, added detect-providers integration (Section 2.17).
+    - **README.md:** Script name references updated; Supported Providers section added.
+
 ## [2026-02-21] Hard Submodule Prohibition in Sample Override Templates
 
 - **Scope:** Documentation/template hardening -- no feature spec or instruction base file changes.

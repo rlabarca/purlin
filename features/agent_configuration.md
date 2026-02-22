@@ -1,7 +1,7 @@
 # Feature: Agent Configuration
 
 > Label: "Tool: Agent Configuration"
-> Category: "Initialization & Update"
+> Category: "Install, Update & Scripts"
 > Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 2: Roles and Responsibilities)
 
 
@@ -47,8 +47,8 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 
 ### 2.4 Launcher Script Behavior
 
-*   **Config Reading:** Each launcher script (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) MUST read agent configuration from `config.json` at startup.
-*   **Provider Dispatch:** The launcher MUST dispatch to the correct CLI based on the configured `provider`. Only `claude` is invocable; other providers produce an informative error message.
+*   **Config Reading:** Each launcher script (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST read agent configuration from `config.json` at startup.
+*   **Provider Dispatch:** The launcher MUST dispatch to the correct CLI based on the configured `provider`. Supported providers are `claude` and `gemini`. Unsupported providers produce a clear error message with setup instructions.
 *   **Dynamic CLI Arguments:** For the `claude` provider:
     *   If `model` is set, pass `--model <model>`.
     *   If `effort` is set, pass `--effort <effort>`.
@@ -63,7 +63,7 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 
 ### 2.5 Bootstrap Generation
 
-*   **Updated Launchers:** `tools/bootstrap.sh` Section 5 (Launcher Script Generation) MUST generate launchers with config-reading, provider dispatch, and role-specific tool restrictions as described in Section 2.4.
+*   **Updated Launchers:** `tools/bootstrap.sh` Section 5 (Launcher Script Generation) MUST generate launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) with config-reading, provider dispatch, and role-specific tool restrictions as described in Section 2.4.
 *   **No `.claude/agents/` Generation:** Bootstrap MUST NOT generate Claude-specific agent configuration files. Agent configuration is provider-agnostic and lives in `config.json`.
 
 

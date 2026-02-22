@@ -1,7 +1,7 @@
 # Feature: Python Environment Isolation
 
 > Label: "Tool: Python Environment"
-> Category: "Initialization & Update"
+> Category: "Install, Update & Scripts"
 > Prerequisite: features/submodule_bootstrap.md
 
 ## 1. Overview

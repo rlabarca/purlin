@@ -14,21 +14,21 @@ trap "rm -f '$PROMPT_FILE'" EXIT
 
 cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
 printf "\n\n" >> "$PROMPT_FILE"
-cat "$CORE_DIR/instructions/BUILDER_BASE.md" >> "$PROMPT_FILE"
+cat "$CORE_DIR/instructions/ARCHITECT_BASE.md" >> "$PROMPT_FILE"
 
 if [ -f "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" ]; then
     printf "\n\n" >> "$PROMPT_FILE"
     cat "$SCRIPT_DIR/.agentic_devops/HOW_WE_WORK_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-if [ -f "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" ]; then
+if [ -f "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" ]; then
     printf "\n\n" >> "$PROMPT_FILE"
-    cat "$SCRIPT_DIR/.agentic_devops/BUILDER_OVERRIDES.md" >> "$PROMPT_FILE"
+    cat "$SCRIPT_DIR/.agentic_devops/ARCHITECT_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
 # --- Read agent config from config.json ---
 CONFIG_FILE="$SCRIPT_DIR/.agentic_devops/config.json"
-AGENT_ROLE="builder"
+AGENT_ROLE="architect"
 
 AGENT_PROVIDER="claude"
 AGENT_MODEL=""
@@ -59,15 +59,19 @@ case "$AGENT_PROVIDER" in
     if [ "$AGENT_BYPASS" = "true" ]; then
         CLI_ARGS+=(--dangerously-skip-permissions)
     else
-        # Builder: no --allowedTools (default permissions, user confirms each tool use)
-        :
+        CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
     fi
-    claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
+    claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Architect session."
+    ;;
+  gemini)
+    CLI_ARGS=("-m" "$AGENT_MODEL")
+    [ "$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
+    GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini "${CLI_ARGS[@]}" -p "Begin Architect session."
     ;;
   *)
     echo "ERROR: Provider '$AGENT_PROVIDER' is not yet supported for agent invocation."
-    echo "Supported providers: claude"
-    echo "Provider '$AGENT_PROVIDER' models are available for detection and configuration."
+    echo "Supported providers: claude, gemini"
+    echo "Provider '$AGENT_PROVIDER' models may be available for detection and configuration."
     echo "Launcher support requires a provider-specific invocation module."
     exit 1
     ;;

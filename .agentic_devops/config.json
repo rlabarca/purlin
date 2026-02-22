@@ -36,11 +36,27 @@
         "gemini": {
             "models": [
                 {
+                    "id": "gemini-3.0-pro",
+                    "label": "Gemini 3.0 Pro",
+                    "capabilities": {
+                        "effort": false,
+                        "permissions": true
+                    }
+                },
+                {
+                    "id": "gemini-3.0-flash",
+                    "label": "Gemini 3.0 Flash",
+                    "capabilities": {
+                        "effort": false,
+                        "permissions": true
+                    }
+                },
+                {
                     "id": "gemini-2.5-pro",
                     "label": "Gemini 2.5 Pro",
                     "capabilities": {
                         "effort": false,
-                        "permissions": false
+                        "permissions": true
                     }
                 },
                 {
@@ -48,7 +64,7 @@
                     "label": "Gemini 2.5 Flash",
                     "capabilities": {
                         "effort": false,
-                        "permissions": false
+                        "permissions": true
                     }
                 }
             ]
@@ -68,10 +84,10 @@
             "bypass_permissions": true
         },
         "qa": {
-            "provider": "claude",
-            "model": "claude-sonnet-4-6",
-            "effort": "high",
-            "bypass_permissions": false
+            "provider": "gemini",
+            "model": "gemini-2.5-pro",
+            "effort": "medium",
+            "bypass_permissions": true
         }
     }
 }

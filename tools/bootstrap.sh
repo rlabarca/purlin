@@ -176,14 +176,19 @@ LAUNCHER_EOF
 LAUNCHER_EOF
     fi
 
-    # Part 4e: Claude invocation and unsupported provider fallback (expanded for session msg)
+    # Part 4e: Claude invocation, Gemini invocation, and unsupported provider fallback (expanded for session msg)
     cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
     claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
     ;;
+  gemini)
+    CLI_ARGS=("-m" "\$AGENT_MODEL")
+    [ "\$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
+    GEMINI_SYSTEM_MD="\$PROMPT_FILE" gemini "\${CLI_ARGS[@]}" -p "${SESSION_MSG}"
+    ;;
   *)
     echo "ERROR: Provider '\$AGENT_PROVIDER' is not yet supported for agent invocation."
-    echo "Supported providers: claude"
-    echo "Provider '\$AGENT_PROVIDER' models are available for detection and configuration."
+    echo "Supported providers: claude, gemini"
+    echo "Provider '\$AGENT_PROVIDER' models may be available for detection and configuration."
     echo "Launcher support requires a provider-specific invocation module."
     exit 1
     ;;

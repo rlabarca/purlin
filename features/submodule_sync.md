@@ -1,7 +1,7 @@
 # Feature: Submodule Upstream Sync
 
 > Label: "Tool: Upstream Sync"
-> Category: "Initialization & Update"
+> Category: "Install, Update & Scripts"
 > Prerequisite: features/submodule_bootstrap.md
 
 ## 1. Overview

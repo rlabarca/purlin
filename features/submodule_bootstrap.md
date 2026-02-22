@@ -1,7 +1,7 @@
 # Feature: Submodule Bootstrap
 
 > Label: "Tool: Bootstrap"
-> Category: "Initialization & Update"
+> Category: "Install, Update & Scripts"
 > Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 6: Layered Instruction Architecture)
 
 ## 1. Overview
@@ -27,7 +27,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Format:** Plain text, single line, the full 40-character SHA.
 
 ### 2.5 Launcher Script Generation
-*   **Files Generated:** `run_claude_architect.sh`, `run_claude_builder.sh`, and `run_claude_qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
+*   **Files Generated:** `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Architect Launcher Logic:**
     1. Determine the framework directory (the submodule path) relative to the script's location.
     2. Create a temporary file (cleaned up on exit via `trap`).
@@ -61,7 +61,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Test Coverage:** The bootstrap test (`tools/test_bootstrap.sh`) MUST include a JSON validity assertion on the patched `config.json`. A `grep` for the expected `tools_root` value is necessary but NOT sufficient -- the test MUST also verify JSON parseability.
 
 ### 2.11 Project Root Environment Variable
-*   **Launcher Export:** All generated launcher scripts (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) MUST export `AGENTIC_PROJECT_ROOT` set to the absolute path of the consumer project root (i.e., `$SCRIPT_DIR`). This variable is the authoritative project root for all tools invoked during the session.
+*   **Launcher Export:** All generated launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST export `AGENTIC_PROJECT_ROOT` set to the absolute path of the consumer project root (i.e., `$SCRIPT_DIR`). This variable is the authoritative project root for all tools invoked during the session.
 *   **Python Tool Detection:** All Python tools (`tools/critic/critic.py`, `tools/cdd/serve.py`) MUST check the `AGENTIC_PROJECT_ROOT` environment variable first. If set and the path exists, use it as the project root without climbing. If not set, fall back to directory-climbing detection. Note: Graph generation is now part of the CDD tool (`serve.py`), not a separate `generate_tree.py`.
 *   **Climbing Priority Reversal:** When using the directory-climbing fallback (no `AGENTIC_PROJECT_ROOT`), Python tools MUST try the FURTHER path first (`../../../.agentic_devops/config.json` -- the submodule layout where `tools/` is 3 levels deep) before the nearer path (`../../.agentic_devops/config.json` -- standalone layout). This prevents the submodule's own `.agentic_devops/` from shadowing the consumer project's config.
 *   **Shell Tool Detection:** Shell-based tool scripts (`tools/critic/run.sh`, `tools/cdd/start.sh`) MUST check `AGENTIC_PROJECT_ROOT` before falling back to relative path climbing. When set, they MUST derive config paths from `$AGENTIC_PROJECT_ROOT/.agentic_devops/config.json`.
@@ -102,6 +102,13 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Sandbox Cleanup:** The test harness MUST clean up all temporary directories on exit (via `trap` or equivalent), even on test failure.
 *   **Dual-Layout Coverage:** Where feasible, tests SHOULD run the same assertions in both standalone layout (tools at `<root>/tools/`) and submodule layout (tools at `<root>/agentic-dev/tools/`) to catch layout-dependent regressions.
 
+### 2.17 Provider Detection Integration
+*   **Trigger:** After patching `config.json` (Section 2.3) and validating JSON, bootstrap MUST run `tools/detect-providers.sh` to discover available LLM providers in the consumer's environment.
+*   **Merge Behavior:** For each provider reported as `available: true` by `detect-providers.sh`, bootstrap MUST merge that provider's `models` array into the installed `.agentic_devops/config.json` under `llm_providers.<provider>`. The sample config already contains all known provider and model definitions as the source of truth; bootstrap reads them and writes only the available subset.
+*   **Unavailable Providers:** Providers where `available: false` MUST be omitted from the installed config's `llm_providers` section. This keeps the consumer config clean -- it only lists models the user can actually run.
+*   **Summary Output:** After merging, bootstrap MUST print a one-line summary: `Providers detected and configured: claude (N models), gemini (M models)`. Providers not detected are noted as unavailable.
+*   **Non-Blocking:** If `detect-providers.sh` fails or is missing (e.g., older framework version), bootstrap MUST continue without error. The installed config retains whatever the sample config provided.
+
 ### 2.16 Python Environment Suggestion
 *   **Trigger:** After the summary output (Section 2.8), if `.venv/` does not exist at the consumer project root.
 *   **Content:** The bootstrap script MUST print an informational message suggesting optional venv creation and installation of optional dependencies from the submodule's `requirements-optional.txt`.
@@ -119,7 +126,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
     Then .agentic_devops/ is created with ARCHITECT_OVERRIDES.md, BUILDER_OVERRIDES.md, QA_OVERRIDES.md, HOW_WE_WORK_OVERRIDES.md, and config.json
     And config.json contains "tools_root": "agentic-dev/tools"
     And .agentic_devops/.upstream_sha contains the current submodule HEAD SHA
-    And run_claude_architect.sh, run_claude_builder.sh, and run_claude_qa.sh exist at the project root
+    And run_architect.sh, run_builder.sh, and run_qa.sh exist at the project root
     And all launcher scripts are executable
     And features/ directory exists at the project root
     And PROCESS_HISTORY.md exists at the project root
@@ -132,7 +139,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 #### Scenario: Launcher Script Concatenation Order
     Given bootstrap has been run successfully
-    When run_claude_architect.sh is executed
+    When run_architect.sh is executed
     Then the system prompt file contains HOW_WE_WORK_BASE.md content first
     Then ARCHITECT_BASE.md content second
     Then HOW_WE_WORK_OVERRIDES.md content third (if it exists)
@@ -140,7 +147,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 #### Scenario: QA Launcher Script Concatenation Order
     Given bootstrap has been run successfully
-    When run_claude_qa.sh is executed
+    When run_qa.sh is executed
     Then the system prompt file contains HOW_WE_WORK_BASE.md content first
     Then QA_BASE.md content second
     Then HOW_WE_WORK_OVERRIDES.md content third (if it exists)
@@ -175,7 +182,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 #### Scenario: Launcher Scripts Export Project Root
     Given bootstrap has been run successfully
-    When any generated launcher script (run_claude_architect.sh, run_claude_builder.sh, run_claude_qa.sh) is inspected
+    When any generated launcher script (run_architect.sh, run_builder.sh, run_qa.sh) is inspected
     Then the script contains an export of AGENTIC_PROJECT_ROOT
     And its value is set to the absolute path of the project root ($SCRIPT_DIR)
 

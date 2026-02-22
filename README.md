@@ -66,7 +66,7 @@ There is no separate "test status" indicator. Builder status reflects test *heal
     ```
     This creates:
     *   `.agentic_devops/` -- override templates and config (MUST be committed to your project)
-    *   `run_claude_architect.sh` / `run_claude_builder.sh` / `run_claude_qa.sh` -- layered launcher scripts
+    *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- provider-agnostic layered launcher scripts
     *   `features/` directory and `PROCESS_HISTORY.md`
 
 3.  **Customize your overrides:**
@@ -79,21 +79,21 @@ There is no separate "test status" indicator. Builder status reflects test *heal
 
 4.  **Launch agents:**
     ```bash
-    ./run_claude_architect.sh   # Architect agent
-    ./run_claude_builder.sh     # Builder agent
-    ./run_claude_qa.sh          # QA agent
+    ./run_architect.sh   # Architect agent
+    ./run_builder.sh     # Builder agent
+    ./run_qa.sh          # QA agent
     ```
 
 ### Option B: Standalone (For Framework Development)
 
 1.  **Launch agents directly:**
     ```bash
-    ./run_claude_architect.sh
-    ./run_claude_builder.sh
+    ./run_architect.sh
+    ./run_builder.sh
     ```
     The launcher scripts detect standalone mode and use `instructions/` and `.agentic_devops/` from the repo root.
 
-    All three launchers (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) are available in standalone mode.
+    All three launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are available in standalone mode.
 
 ### Python Environment (Optional)
 
@@ -157,6 +157,35 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 | Consumer project default | 8086 |
 
 Consumer projects get 8086 by default (from `agentic_devops.sample/config.json`). Core development uses 9086.
+
+## Supported Providers
+
+Purlin launchers are provider-agnostic. The active provider for each agent role is configured in `.agentic_devops/config.json` under `agents.<role>.provider`.
+
+| Provider | CLI Tool | Auth | `effort` flag | Permissions bypass |
+|----------|----------|------|---------------|--------------------|
+| `claude` | `claude` | Claude account / API key | Yes (`--effort low/medium/high`) | `--dangerously-skip-permissions` |
+| `gemini` | `gemini` | `GOOGLE_API_KEY` or `GEMINI_API_KEY` | No (silently skipped) | `--yolo` |
+
+**Notes:**
+*   The `effort` capability is Claude-only. If a Gemini model is selected and `effort` is set in config, it is silently ignored.
+*   `bypass_permissions: true` maps to `--dangerously-skip-permissions` for Claude and `--yolo` for Gemini.
+*   System context injection for Gemini uses the `GEMINI_SYSTEM_MD` environment variable (per-process, safe for concurrent agent invocations).
+*   Provider detection: `tools/detect-providers.sh` probes all installed providers and outputs a JSON array. Run it directly to see what is available in your environment.
+
+### Installing Providers
+
+**Claude CLI:**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+Authenticate with `claude` on first run.
+
+**Gemini CLI:**
+```bash
+npm install -g @google/gemini-cli
+```
+Set `GOOGLE_API_KEY` or `GEMINI_API_KEY` in your environment, or authenticate interactively.
 
 ## Purlin Evolution
 
