@@ -40,9 +40,10 @@ claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permi
 
 ### 2.5 Provider Dispatch: Gemini
 ```
-GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini -m $AGENT_MODEL [--yolo] -p "<session message>"
+GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini -m $AGENT_MODEL --no-gitignore [--yolo] -p "<session message>"
 ```
 *   `-m $AGENT_MODEL` is always passed (Gemini CLI requires a model flag).
+*   `--no-gitignore` is always passed. Gemini CLI respects `.gitignore` by default, which blocks agent access to required generated artifacts (`CRITIC_REPORT.md`, `tests/*/critic.json`, `.agentic_devops/cache/*.json`).
 *   When `AGENT_BYPASS=true`: pass `--yolo`.
 *   When `AGENT_BYPASS=false`: no `--yolo`; interactive approval is used.
 *   Gemini does NOT support effort levels. If `AGENT_EFFORT` is set, it is silently skipped.
@@ -81,8 +82,13 @@ If `AGENT_PROVIDER` is neither `claude` nor `gemini`, the script MUST:
     Given config.json contains agents.qa with provider "gemini", model "gemini-3.0-pro", bypass_permissions true
     When run_qa.sh is executed
     Then GEMINI_SYSTEM_MD is set to the temporary prompt file path
-    And it invokes gemini -m gemini-3.0-pro --yolo -p "Begin QA verification session."
+    And it invokes gemini -m gemini-3.0-pro --no-gitignore --yolo -p "Begin QA verification session."
     And the temporary prompt file is cleaned up on exit
+
+#### Scenario: Gemini Launcher Passes --no-gitignore for All Invocations
+    Given config.json contains agents.qa with provider "gemini", model "gemini-2.5-pro", bypass_permissions true
+    When run_qa.sh is executed
+    Then it invokes gemini with --no-gitignore
 
 #### Scenario: Gemini Launcher Skips Effort Flag
     Given config.json contains agents.builder with provider "gemini", model "gemini-2.5-flash", effort "high"
@@ -114,5 +120,7 @@ None. All scenarios for this feature are fully automated.
 Gemini CLI system context injection uses the `GEMINI_SYSTEM_MD` environment variable (per-process, safe for concurrent agents). This is the canonical method as of Gemini CLI v1.x — no GEMINI.md file required.
 
 The `--yolo` flag is the Gemini CLI equivalent of Claude's `--dangerously-skip-permissions`.
+
+Gemini CLI's `read_file` tool respects `.gitignore` filtering regardless of `--yolo` mode. The `--no-gitignore` flag must be passed unconditionally to allow agents to read generated artifacts (`CRITIC_REPORT.md`, `critic.json` files, `cache/*.json` files) that are correctly excluded from git but required by the startup protocols.
 
 These scripts are the standalone versions. Bootstrap-generated equivalents (Section 2.5 of `submodule_bootstrap.md`) are produced by `tools/bootstrap.sh` and follow the same structure with a submodule-specific `CORE_DIR` path.
