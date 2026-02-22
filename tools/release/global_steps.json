@@ -1,0 +1,67 @@
+{
+    "steps": [
+        {
+            "id": "purlin.record_version_notes",
+            "friendly_name": "Record Version & Release Notes",
+            "description": "Prompts for a version number and release notes, then records them in the README.md under a '## Release Notes' section as a new dated entry.",
+            "code": null,
+            "agent_instructions": "Ask the user for the version number (e.g., 'v1.2.0') and release notes (a brief summary of what changed). Then insert a new entry into the project's README.md under a '## Release Notes' heading (creating the heading if absent). Format the entry as: `### <version> \u2014 <YYYY-MM-DD>\n\n<release notes text>`."
+        },
+        {
+            "id": "purlin.verify_zero_queue",
+            "friendly_name": "Verify Zero-Queue Status",
+            "description": "Verifies that all features are in a fully satisfied state by checking that every feature has architect: 'DONE', builder: 'DONE', and qa is 'CLEAN' or 'N/A'.",
+            "code": null,
+            "agent_instructions": "Run `tools/cdd/status.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready."
+        },
+        {
+            "id": "purlin.verify_dependency_integrity",
+            "friendly_name": "Verify Dependency Integrity",
+            "description": "Verifies that the dependency graph is acyclic and all prerequisite links are valid.",
+            "code": null,
+            "agent_instructions": "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
+        },
+        {
+            "id": "purlin.run_tool_tests",
+            "friendly_name": "Run Automated Tool Tests",
+            "description": "Runs the automated test suite for Purlin's DevOps tooling and verifies all tests pass.",
+            "code": null,
+            "agent_instructions": "Run the automated tool test suite. The exact command depends on the project's test runner configuration. Confirm all tests pass before proceeding. If any test fails, halt the release and report the failure."
+        },
+        {
+            "id": "purlin.sync_evolution",
+            "friendly_name": "Sync Evolution Documentation",
+            "description": "Updates the 'Agentic Evolution' table in README.md based on PROCESS_HISTORY.md and verifies documentation is in sync.",
+            "code": null,
+            "agent_instructions": "Read PROCESS_HISTORY.md and verify the 'Agentic Evolution' table in README.md reflects all recent entries. Add or update entries as needed. Commit any changes."
+        },
+        {
+            "id": "purlin.instruction_audit",
+            "friendly_name": "Instruction Audit",
+            "description": "Verifies that all instruction files are in sync with the current feature specifications and architectural policies.",
+            "code": null,
+            "agent_instructions": "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for contradictions, stale references, and terminology mismatches. Fix any inconsistencies and commit."
+        },
+        {
+            "id": "purlin.doc_consistency_check",
+            "friendly_name": "Documentation Consistency Check",
+            "description": "Performs a cross-reference consistency check across all instruction and documentation files for contradictions, stale paths, and terminology mismatches.",
+            "code": null,
+            "agent_instructions": "Run a cross-reference consistency check across all instruction and documentation files. Check for: direct contradictions between files, stale file path references, terminology mismatches, lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions, and README content that no longer reflects current state. Fix any inconsistencies before proceeding."
+        },
+        {
+            "id": "purlin.mark_release_complete",
+            "friendly_name": "Mark Release Specification Complete",
+            "description": "Marks the active release specification file with the [Complete] status tag.",
+            "code": null,
+            "agent_instructions": "Open the active release feature file in `features/`. Add the `[Complete]` status tag to the file's status field. Commit the change."
+        },
+        {
+            "id": "purlin.push_to_remote",
+            "friendly_name": "Push to Remote Repository",
+            "description": "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery.",
+            "code": "git push && git push --tags",
+            "agent_instructions": "Confirm the current branch and remote configuration, then push commits and tags to the remote repository. Warn the user if they are about to force-push or if the remote is ahead. Do not proceed without explicit user confirmation for force-push scenarios."
+        }
+    ]
+}
