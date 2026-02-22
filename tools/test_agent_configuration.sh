@@ -212,9 +212,9 @@ else
 fi
 
 if echo "$CAPTURED" | grep -q -- '--no-gitignore'; then
-    log_pass "Gemini launcher passes --no-gitignore"
+    log_fail "Gemini launcher must not pass --no-gitignore (unsupported flag; captured: $CAPTURED)"
 else
-    log_fail "Gemini launcher did not pass --no-gitignore (captured: $CAPTURED)"
+    log_pass "Gemini launcher does not pass --no-gitignore (unsupported in Gemini CLI v0.29+)"
 fi
 
 if echo "$CAPTURED" | grep -qE '(^| )-p '; then

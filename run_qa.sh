@@ -64,7 +64,7 @@ case "$AGENT_PROVIDER" in
     claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
     ;;
   gemini)
-    CLI_ARGS=("-m" "$AGENT_MODEL" "--no-gitignore")
+    CLI_ARGS=("-m" "$AGENT_MODEL")
     [ "$AGENT_BYPASS" = "true" ] && CLI_ARGS+=("--yolo")
     GEMINI_SYSTEM_MD="$PROMPT_FILE" gemini "${CLI_ARGS[@]}"
     ;;
