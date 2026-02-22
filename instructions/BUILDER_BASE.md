@@ -33,7 +33,7 @@ If a delivery plan exists (step 2.1.6), skip the scope assessment below. Instead
 
 #### 2.2.1 Scope Assessment
 If no delivery plan exists, assess whether the work scope warrants phased delivery. Apply these heuristics:
-*   3+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing.
+*   3+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
 *   5+ features of any complexity mix -> recommend phasing.
 *   Single feature with 8+ scenarios needing implementation -> consider intra-feature phasing.
 *   Builder judgment as a final factor (context exhaustion risk for the session).
@@ -42,7 +42,39 @@ If phasing is warranted, present the user with two options:
 1.  **All-in-one:** Implement everything in a single session (standard workflow).
 2.  **Phased delivery:** Split work into N phases, each producing a testable state. Present the proposed phase breakdown with features grouped by: (a) dependency order (foundations first), (b) logical cohesion (same subsystem together), (c) testability gate (every phase must produce verifiable output), (d) roughly balanced effort.
 
-If the user approves phasing, create the delivery plan at `.agentic_devops/cache/delivery_plan.md` and commit: `git commit -m "chore: create delivery plan (N phases)"`. Set Phase 1 to IN_PROGRESS and proceed with the standard work plan presentation scoped to Phase 1 features.
+If the user approves phasing, create the delivery plan at `.agentic_devops/cache/delivery_plan.md` using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed with the standard work plan presentation scoped to Phase 1 features.
+
+**Canonical `delivery_plan.md` format:**
+
+```markdown
+# Delivery Plan
+
+**Created:** <YYYY-MM-DD>
+**Total Phases:** <N>
+
+## Summary
+<One or two sentences describing the overall scope and why phasing was chosen.>
+
+## Phase 1 — <Short Label> [IN_PROGRESS]
+**Features:** <feature-name-1.md>, <feature-name-2.md>
+**Completion Commit:** —
+**QA Bugs Addressed:** —
+
+## Phase 2 — <Short Label> [PENDING]
+**Features:** <feature-name-3.md>
+**Completion Commit:** —
+**QA Bugs Addressed:** —
+
+## Plan Amendments
+_None._
+```
+
+Rules:
+*   Exactly one phase is IN_PROGRESS at a time. All others are PENDING or COMPLETE.
+*   When a phase completes, set its status to COMPLETE and record the git commit hash in "Completion Commit".
+*   "QA Bugs Addressed" lists bug IDs or one-line descriptions of bugs fixed from prior phases before starting this phase.
+*   COMPLETE phases are immutable. Do not edit them after recording the commit hash.
+*   When the final phase completes, delete the file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
 
 If phasing is not warranted or the user declines, proceed with the standard work plan.
 

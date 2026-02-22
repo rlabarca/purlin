@@ -2,6 +2,16 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Phased Delivery Protocol — Builder Instruction Gaps Resolved
+
+- **Scope:** Instruction refinement -- no feature spec changes.
+- **Problem:** `BUILDER_BASE.md` used the term "HIGH-complexity" in phasing heuristics without defining it, and referenced `delivery_plan.md` format in prose only (no template). Both gaps could produce inconsistent Builder behavior across sessions.
+- **Solution:**
+    - Added an inline definition of HIGH-complexity (4 criteria: new infrastructure, 5+ functions, 3+ files, behavioral uncertainty).
+    - Added a canonical `delivery_plan.md` Markdown template with rules for status transitions, commit recording, and immutability of COMPLETE phases.
+- **Changes:**
+    - **instructions/BUILDER_BASE.md:** Section 2.2.1 — expanded HIGH-complexity definition and added template block.
+
 ## [2026-02-21] Provider-Agnostic Agent Configuration
 
 - **Scope:** New feature -- config-driven agent parameters with provider-agnostic architecture. Launcher scripts, probe scripts, bootstrap, feature spec.
