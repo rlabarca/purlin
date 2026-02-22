@@ -631,3 +631,11 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - **Expected Behavior:** No badge should appear. An empty Active section is a positive/clean state; displaying `??` is misleading because `??` is used elsewhere in the dashboard to mean "unknown role status". An empty section heading with no badge better communicates "nothing to act on."
 - **Action Required:** Architect — review and revise Section 2.2.2 collapsed summary spec. Proposed change: when the Active section is empty and collapsed, display no badge (blank), not `??`.
 - **Status:** SPEC_UPDATED
+
+### [BUG] Phase annotation not displayed despite active delivery plan (Discovered: 2026-02-22)
+- **Scenario:** Dashboard Phase Annotation (Visual Spec — ACTIVE header shows [PHASE (X/Y)])
+- **Observed Behavior:** A delivery plan exists and Phase 1 is IN_PROGRESS, but the ACTIVE section header shows no phase annotation. The dashboard renders the standard `ACTIVE (<count>)` heading with no `[PHASE (X/Y)]` suffix.
+- **Expected Behavior:** When `.purlin/cache/delivery_plan.md` exists with at least one non-COMPLETE phase, the ACTIVE section heading should display `ACTIVE (<count>) [PHASE (<current>/<total>)]`.
+- **Root Cause (suspected):** Path mismatch — the delivery plan file is located at `.agentic_devops/cache/delivery_plan.md` (directory rename applied to prose only, not on disk). The tool likely looks for the file at `.purlin/cache/delivery_plan.md` and silently treats the missing file as "no active plan."
+- **Action Required:** Builder — update the delivery plan path resolution in the dashboard tool to read `tools_root`/config-derived runtime path rather than a hardcoded `.purlin/cache/` path, so it correctly locates the file under `.agentic_devops/cache/`.
+- **Status:** OPEN
