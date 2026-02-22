@@ -229,3 +229,10 @@ See [release_process_animation_diagram_update.impl.md](release_process_animation
 - **Expected Behavior:** No checklist item specifies frame duration. Each frame should display long enough for a viewer to read the caption and observe the active nodes/arrows.
 - **Action Required:** Builder — double the per-frame delay in `dev/generate_workflow_animation.py` (frames 1–15: 4000ms, frame 16: 6000ms).
 - **Status:** RESOLVED
+
+### [INTENT_DRIFT] Manual scenario does not require fresh generation of the animation (Discovered: 2026-02-22)
+- **Scenario:** Animation is visually correct and coherent
+- **Observed Behavior:** The scenario's "Given" step assumes the GIF already exists (`assets/workflow-animation.gif` has been generated), so QA verification can pass using a stale pre-existing artifact without ever running the generator script.
+- **Expected Behavior:** The QA scenario should require running `python3 dev/generate_workflow_animation.py` as the first step, ensuring the GIF verified is freshly produced by the current version of the script.
+- **Action Required:** Architect — revise the "Given" step to: "Given the user runs `python3 dev/generate_workflow_animation.py` from the project root and it exits with code 0".
+- **Status:** OPEN
