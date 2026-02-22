@@ -437,6 +437,24 @@ def generate_api_status_json():
 
         features.append(entry)
 
+    # Scan tombstones (Section 2.2.5 / 2.4 / 2.5)
+    tombstones_dir = os.path.join(FEATURES_ABS, "tombstones")
+    if os.path.isdir(tombstones_dir):
+        tombstone_files = sorted(
+            f for f in os.listdir(tombstones_dir) if f.endswith('.md'))
+        for fname in tombstone_files:
+            rel_path = os.path.normpath(
+                os.path.join(FEATURES_REL, "tombstones", fname))
+            label = extract_label(os.path.join(tombstones_dir, fname))
+            features.append({
+                "file": rel_path,
+                "label": label,
+                "tombstone": True,
+                "architect": "DONE",
+                "builder": "TODO",
+                "qa": "N/A",
+            })
+
     result = {
         "features": sorted(features, key=lambda x: x["file"]),
         "generated_at": datetime.now(timezone.utc).strftime(
@@ -522,6 +540,10 @@ def _feature_urgency(entry):
 
 def _is_feature_complete(entry):
     """Check if all roles are fully satisfied."""
+    # Tombstone entries are NEVER complete (always Active)
+    if entry.get('tombstone'):
+        return False
+
     arch = entry.get('architect')
     builder = entry.get('builder')
     qa = entry.get('qa')
@@ -1591,8 +1613,44 @@ function switchModalTab(tab) {{
   }}
 }}
 
+function openTombstoneModal(filePath, label) {{
+  var overlay = document.getElementById('modal-overlay');
+  var title = document.getElementById('modal-title');
+  var body = document.getElementById('modal-body');
+  var tabs = document.getElementById('modal-tabs');
+  var content = document.querySelector('#modal-overlay .modal-content');
+
+  title.textContent = label || filePath;
+  title.style.color = 'var(--purlin-status-error)';
+  content.style.borderColor = 'var(--purlin-status-error)';
+  body.innerHTML = '<p style="color:var(--purlin-dim)">Loading...</p>';
+  tabs.style.display = 'none';
+  overlay.classList.add('visible');
+  window._tombstoneModal = true;
+
+  fetch('/feature?file=' + encodeURIComponent(filePath))
+    .then(function(r) {{ if (!r.ok) throw new Error('Failed'); return r.text(); }})
+    .then(function(md) {{
+      body.innerHTML =
+        '<div style="background:var(--purlin-status-error);color:#fff;' +
+        'padding:8px 14px;margin:-14px -14px 14px -14px;font-weight:bold;' +
+        'text-align:center;font-family:var(--font-body);font-size:13px;' +
+        'letter-spacing:0.05em">READY FOR DELETION</div>' +
+        marked.parse(md);
+    }})
+    .catch(function() {{
+      body.innerHTML = '<p style="color:var(--purlin-status-error)">Could not load tombstone content.</p>';
+    }});
+}}
+
 function closeModal() {{
-  document.getElementById('modal-overlay').classList.remove('visible');
+  var overlay = document.getElementById('modal-overlay');
+  overlay.classList.remove('visible');
+  if (window._tombstoneModal) {{
+    document.getElementById('modal-title').style.color = '';
+    document.querySelector('#modal-overlay .modal-content').style.borderColor = '';
+    window._tombstoneModal = false;
+  }}
 }}
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
@@ -2247,10 +2305,28 @@ def _role_table_html(features):
         qa = _role_badge_html(entry.get("qa"))
         escaped_fname = fname.replace("'", "\\'")
         escaped_label = label.replace("'", "\\'")
+
+        is_tombstone = entry.get("tombstone", False)
+        if is_tombstone:
+            # Extract short name from features/tombstones/<name>.md
+            short_name = os.path.splitext(os.path.basename(fname))[0]
+            display_name = (
+                f'<span style="color:var(--purlin-status-error)">'
+                f'{short_name} <b>[TOMBSTONE]</b></span>'
+            )
+            onclick = (
+                f"openTombstoneModal(\'{escaped_fname}\',\'{escaped_label}\')"
+            )
+        else:
+            display_name = fname
+            onclick = (
+                f"openModal(\'{escaped_fname}\',\'{escaped_label}\')"
+            )
+
         rows += (
             f'<tr>'
-            f'<td><a class="feature-link" onclick="openModal(\'{escaped_fname}\','
-            f'\'{escaped_label}\')">{fname}</a></td>'
+            f'<td><a class="feature-link" onclick="{onclick}">'
+            f'{display_name}</a></td>'
             f'<td class="badge-cell">{arch}</td>'
             f'<td class="badge-cell">{builder}</td>'
             f'<td class="badge-cell">{qa}</td>'

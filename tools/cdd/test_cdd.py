@@ -1086,6 +1086,149 @@ class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
 
 
 # ===================================================================
+# Tombstone Entry Tests
+# ===================================================================
+
+class TestTombstoneEntryInApiResponse(unittest.TestCase):
+    """Scenario: Tombstone Entry in API Response"""
+
+    def test_tombstone_appears_in_features_array(self):
+        """Tombstone file at features/tombstones/<name>.md appears in API response
+        with tombstone=true, hardcoded role status, and no change_scope."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tombstones_dir = os.path.join(features_dir, "tombstones")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(tombstones_dir)
+            os.makedirs(tests_dir)
+
+            # Create a tombstone file
+            with open(os.path.join(
+                    tombstones_dir, "some_retired_feature.md"), "w") as f:
+                f.write(
+                    "# TOMBSTONE: some_retired_feature\n\n"
+                    "> Label: \"Retired Feature\"\n\n"
+                    "**Retired:** 2026-02-22\n"
+                )
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                features = data["features"]
+
+                # Find the tombstone entry
+                tombstone_entries = [
+                    e for e in features if e.get("tombstone")]
+                self.assertEqual(
+                    len(tombstone_entries), 1,
+                    f"Expected 1 tombstone entry, got {len(tombstone_entries)}")
+
+                entry = tombstone_entries[0]
+                self.assertEqual(
+                    entry["file"],
+                    "features/tombstones/some_retired_feature.md")
+                self.assertTrue(entry["tombstone"])
+                self.assertEqual(entry["architect"], "DONE")
+                self.assertEqual(entry["builder"], "TODO")
+                self.assertEqual(entry["qa"], "N/A")
+                self.assertNotIn("change_scope", entry)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+    def test_tombstone_never_in_complete(self):
+        """Tombstone entries are never classified as complete."""
+        entry = {
+            "file": "features/tombstones/retired.md",
+            "tombstone": True,
+            "architect": "DONE",
+            "builder": "TODO",
+            "qa": "N/A",
+        }
+        self.assertFalse(_is_feature_complete(entry))
+
+    def test_no_tombstones_dir_is_fine(self):
+        """When features/tombstones/ doesn't exist, no tombstone entries."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "test.md"), "w") as f:
+                f.write('# Feature\n\n> Label: "Test"\n')
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                data = generate_api_status_json()
+                tombstone_entries = [
+                    e for e in data["features"] if e.get("tombstone")]
+                self.assertEqual(len(tombstone_entries), 0)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+
+class TestTombstoneEntryInCliOutput(unittest.TestCase):
+    """Scenario: Tombstone Entry in CLI Status Output
+
+    CLI uses the same generate_api_status_json() function, so tombstone
+    entries appear in CLI output identically to the API response.
+    """
+
+    def test_cli_tombstone_same_as_api(self):
+        """CLI status output includes tombstone with same fields as API."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tombstones_dir = os.path.join(features_dir, "tombstones")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(tombstones_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(
+                    tombstones_dir, "some_retired_feature.md"), "w") as f:
+                f.write("# TOMBSTONE: some_retired_feature\n\n"
+                        "> Label: \"Retired Feature\"\n")
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_tests = serve.TESTS_DIR
+            serve.FEATURES_ABS = features_dir
+            serve.TESTS_DIR = tests_dir
+            try:
+                # CLI uses generate_api_status_json() via --cli-status
+                data = generate_api_status_json()
+                tombstone_entries = [
+                    e for e in data["features"] if e.get("tombstone")]
+                self.assertEqual(len(tombstone_entries), 1)
+                entry = tombstone_entries[0]
+                self.assertTrue(entry["tombstone"])
+                self.assertEqual(entry["architect"], "DONE")
+                self.assertEqual(entry["builder"], "TODO")
+                self.assertEqual(entry["qa"], "N/A")
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.TESTS_DIR = orig_tests
+        finally:
+            shutil.rmtree(test_dir)
+
+
+# ===================================================================
 # CLI Graph Output Tests
 # ===================================================================
 
