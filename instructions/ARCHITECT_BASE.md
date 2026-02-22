@@ -84,6 +84,14 @@ Purlin Architect — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+### 5.0.1 Read Startup Flags
+
+After printing the command table, read `.agentic_devops/config.json` and extract `startup_sequence` and `recommend_next_actions` for the `architect` role. Default both to `true` if absent.
+
+*   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 5.1–5.3.
+*   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 5.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full work plan (skip steps 5.2–5.3).
+*   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 5.1–5.3 in full (default guided behavior).
+
 ### 5.1 Gather Project State
 1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Architect` subsection under **Action Items by Role**. These are your priorities.

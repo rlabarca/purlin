@@ -208,5 +208,5 @@ The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-co
 - **Scenario:** Expert Mode Bypasses Orientation
 - **Observed Behavior:** User set `startup_sequence: false` and `recommend_next_actions: false` for the Architect agent via the CDD Dashboard UI. Config was saved correctly to `config.json` (confirmed). Despite the flag being `false`, the Architect ran its full startup orientation sequence (status check, Critic report, etc.) instead of printing the command table and outputting "startup_sequence disabled — awaiting instruction."
 - **Expected Behavior:** After printing the command vocabulary table, the agent outputs "startup_sequence disabled — awaiting instruction." and then awaits user input with no orientation steps performed.
-- **Action Required:** Architect — update `instructions/ARCHITECT_BASE.md` (and `BUILDER_BASE.md`, `QA_BASE.md`) to read `startup_sequence` and `recommend_next_actions` from `config.json` at session start and conditionally gate the orientation protocol per Section 2.4.
-- **Status:** OPEN
+- **Action Required:** QA — re-verify "Expert Mode Bypasses Orientation" scenario with `startup_sequence: false` and `recommend_next_actions: false` set in config.json for the target agent.
+- **Status:** SPEC_UPDATED (Architect added Sections 5.0.1 / 2.0.1 / 3.0.1 to all three BASE instruction files — 2026-02-22)

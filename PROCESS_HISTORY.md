@@ -2,6 +2,13 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Startup Flag Gating in Instruction Files
+
+- **Problem:** `startup_sequence` and `recommend_next_actions` flags in `config.json` were read and validated by launchers and the dashboard, but the instruction files for all three roles never read the flags at session start. Agents always ran full orientation regardless of flag values, making `startup_sequence: false` (expert mode) non-functional.
+- **Solution:** Added Section 5.0.1 (Architect), Section 2.0.1 (Builder), and Section 3.0.1 (QA) to the respective BASE instruction files. Each new section directs the agent to read its flags from `config.json` immediately after printing the command table, then gate the remaining startup protocol accordingly: skip entirely (`startup_sequence: false`), orient-only without work plan (`recommend_next_actions: false`), or full guided behavior (both `true`).
+- **Files changed:** `instructions/ARCHITECT_BASE.md` (Section 5.0.1), `instructions/BUILDER_BASE.md` (Section 2.0.1), `instructions/QA_BASE.md` (Section 3.0.1).
+- **Discovery resolved:** `features/cdd_startup_controls.md` BUG — "Agent ignores startup_sequence flag" — advanced to SPEC_UPDATED.
+
 ## [2026-02-22] Override Instruction Management Formalization
 
 - **Problem:** No formal protocol governed which agent could edit which override file, no tooling detected contradictions between overrides and base files, and no safe mechanism existed for Purlin-framework-level base file edits.

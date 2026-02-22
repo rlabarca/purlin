@@ -57,6 +57,14 @@ Purlin QA — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+### 3.0.1 Read Startup Flags
+
+After printing the command table, read `.agentic_devops/config.json` and extract `startup_sequence` and `recommend_next_actions` for the `qa` role. Default both to `true` if absent.
+
+*   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
+*   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 3.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full verification plan (skip steps 3.2–3.3).
+*   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 3.1–3.3 in full (default guided behavior).
+
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
 
