@@ -9,21 +9,21 @@
         },
         {
             "id": "purlin.verify_zero_queue",
-            "friendly_name": "Verify Zero-Queue Status",
+            "friendly_name": "Purlin Verify Zero-Queue Status",
             "description": "Verifies that all features are in a fully satisfied state by checking that every feature has architect: 'DONE', builder: 'DONE', and qa is 'CLEAN' or 'N/A'.",
             "code": null,
             "agent_instructions": "Run `tools/cdd/status.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready."
         },
         {
             "id": "purlin.verify_dependency_integrity",
-            "friendly_name": "Verify Dependency Integrity",
+            "friendly_name": "Purlin Verify Dependency Integrity",
             "description": "Verifies that the dependency graph is acyclic and all prerequisite links are valid.",
             "code": null,
             "agent_instructions": "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
         },
         {
             "id": "purlin.instruction_audit",
-            "friendly_name": "Instruction Audit",
+            "friendly_name": "Purlin Agent Instruction Audit",
             "description": "Verifies that .agentic_devops/ override files are consistent with the base instruction layer and do not introduce contradictions.",
             "code": null,
             "agent_instructions": "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
