@@ -176,6 +176,9 @@ Purlin Builder — Ready
 
 ## Implementation Notes
 
+### BUG Resolution: startup_sequence Flag Ignored (2026-02-22)
+Initial implementation ran full orientation despite `startup_sequence: false`. Fixed by Architect adding explicit flag-gating sections (5.0.1/2.0.1/3.0.1) to all three BASE instruction files. Re-verified PASS 2026-02-22.
+
 ### Ownership Boundary
 The Builder implements: config schema updates (both `config.json` and `agentic_devops.sample/config.json`), launcher validation logic, dashboard checkbox controls, and API validation. The Architect separately updates instruction files (`instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`) to add the startup print sequence and conditional startup behavior. Instruction files are not Builder-owned.
 
@@ -203,10 +206,3 @@ The "Startup Sequence" checkbox `onchange` handler: when unchecked, sets `checkb
 The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-columns: 64px 140px 80px 60px` (agent-name | model | effort | YOLO). Extend with two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 60px 60px` (agent-name | model | effort | YOLO | Startup/Sequence | Suggest/Next). The column header row gains two new cells with two-line text ("Startup" / "Sequence" and "Suggest" / "Next") using `<br>` or CSS wrapping; no inline labels appear in the agent data rows.
 
 ## User Testing Discoveries
-
-### [BUG] Agent ignores startup_sequence flag — runs full orientation despite false (Discovered: 2026-02-22)
-- **Scenario:** Expert Mode Bypasses Orientation
-- **Observed Behavior:** User set `startup_sequence: false` and `recommend_next_actions: false` for the Architect agent via the CDD Dashboard UI. Config was saved correctly to `config.json` (confirmed). Despite the flag being `false`, the Architect ran its full startup orientation sequence (status check, Critic report, etc.) instead of printing the command table and outputting "startup_sequence disabled — awaiting instruction."
-- **Expected Behavior:** After printing the command vocabulary table, the agent outputs "startup_sequence disabled — awaiting instruction." and then awaits user input with no orientation steps performed.
-- **Action Required:** QA — re-verify "Expert Mode Bypasses Orientation" scenario with `startup_sequence: false` and `recommend_next_actions: false` set in config.json for the target agent.
-- **Status:** SPEC_UPDATED (Architect added Sections 5.0.1 / 2.0.1 / 3.0.1 to all three BASE instruction files — 2026-02-22)
