@@ -613,8 +613,8 @@ def generate_html():
             f'</span>'
         )
 
-    # Models section collapsed badge
-    def _models_badge(config):
+    # Agents section collapsed badge
+    def _agents_badge(config):
         models_list = config.get('models', [])
         agents = config.get('agents', {})
         roles = ['architect', 'builder', 'qa']
@@ -629,7 +629,7 @@ def generate_html():
         segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
-    models_badge = _models_badge(CONFIG)
+    agents_badge = _agents_badge(CONFIG)
 
     # Release checklist badge
     rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
@@ -800,14 +800,16 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.agent-row{{display:grid;grid-template-columns:64px 140px 80px 60px 110px 80px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-hdr{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px;align-items:end;gap:6px;padding:2px 0 4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-hdr-cell{{font-size:10px;font-weight:600;color:var(--purlin-muted);text-transform:uppercase;letter-spacing:0.5px;line-height:1.2}}
+.agent-hdr-cell.center{{text-align:center}}
+.agent-row{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-row:last-child{{border-bottom:none}}
 .agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-primary);text-transform:uppercase}}
 .agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer;width:100%}}
 .agent-sel:focus{{border-color:var(--purlin-accent)}}
-.agent-bypass-lbl{{font-size:11px;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
-.agent-ctrl-lbl{{font-size:11px;font-weight:500;color:var(--purlin-muted);display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer}}
-.agent-ctrl-lbl.disabled{{opacity:0.4;cursor:default}}
+.agent-chk-lbl{{display:flex;align-items:center;justify-content:center;cursor:pointer}}
+.agent-chk-lbl.disabled{{opacity:0.4;cursor:default}}
 #search-input{{
   background:var(--purlin-bg);border:1px solid var(--purlin-border);
   border-radius:3px;color:var(--purlin-muted);padding:3px 8px;
@@ -994,13 +996,13 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
-      <div class="section-hdr" onclick="toggleSection('models-section')">
-        <span class="chevron" id="models-section-chevron">&#9654;</span>
-        <h3>Models</h3>
-        <span class="section-badge" id="models-section-badge">{models_badge}</span>
+      <div class="section-hdr" onclick="toggleSection('agents-section')">
+        <span class="chevron" id="agents-section-chevron">&#9654;</span>
+        <h3>Agents</h3>
+        <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
       </div>
-      <div class="section-body collapsed" id="models-section">
-        <div id="models-rows" style="margin-bottom:8px"></div>
+      <div class="section-body collapsed" id="agents-section">
+        <div id="agents-rows" style="margin-bottom:8px"></div>
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1162,8 +1164,8 @@ function refreshStatus() {{
         applySectionStates();
         // Re-apply search filter
         applySearchFilter();
-        // Re-populate models section (dynamic JS content cleared by innerHTML replace)
-        initModelsSection();
+        // Re-populate agents section (dynamic JS content cleared by innerHTML replace)
+        initAgentsSection();
         // Incremental refresh for release checklist (diff-based, skips during pending saves)
         refreshReleaseChecklist();
       }}
@@ -1186,7 +1188,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'models-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1195,7 +1197,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'models-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1969,10 +1971,10 @@ function stopMapRefresh() {{
 }}
 
 // ============================
-// Models Section
+// Agents Section
 // ============================
-var modelsConfig = null;
-var modelsSaveTimer = null;
+var agentsConfig = null;
+var agentsSaveTimer = null;
 var pendingWrites = new Map();
 
 function applyPendingWrites() {{
@@ -2000,39 +2002,46 @@ function applyPendingWrites() {{
   }});
 }}
 
-function initModelsSection() {{
+function initAgentsSection() {{
   // Synchronous restore from cache after innerHTML replacement clears the DOM
-  if (modelsConfig && !document.getElementById('agent-model-architect')) {{
-    renderModelsRows(modelsConfig);
+  if (agentsConfig && !document.getElementById('agent-model-architect')) {{
+    renderAgentsRows(agentsConfig);
     applyPendingWrites();
-    updateModelsBadge(modelsConfig);
+    updateAgentsBadge(agentsConfig);
   }}
   // Async fetch for config updates
   fetch('/config.json')
     .then(function(r) {{ return r.json(); }})
     .then(function(cfg) {{
       var domExists = !!document.getElementById('agent-model-architect');
-      var configChanged = !modelsConfig ||
-          JSON.stringify(cfg.agents) !== JSON.stringify(modelsConfig.agents) ||
-          JSON.stringify(cfg.models) !== JSON.stringify(modelsConfig.models);
-      modelsConfig = cfg;
+      var configChanged = !agentsConfig ||
+          JSON.stringify(cfg.agents) !== JSON.stringify(agentsConfig.agents) ||
+          JSON.stringify(cfg.models) !== JSON.stringify(agentsConfig.models);
+      agentsConfig = cfg;
       if (!domExists) {{
-        renderModelsRows(cfg);
+        renderAgentsRows(cfg);
         applyPendingWrites();
       }} else if (configChanged) {{
-        diffUpdateModelRows(cfg);
+        diffUpdateAgentRows(cfg);
       }}
-      updateModelsBadge(cfg);
+      updateAgentsBadge(cfg);
     }})
     .catch(function() {{}});
 }}
 
-function renderModelsRows(cfg) {{
-  var container = document.getElementById('models-rows');
+function renderAgentsRows(cfg) {{
+  var container = document.getElementById('agents-rows');
   if (!container) return;
   var agents = cfg.agents || {{}};
   var roles = ['architect', 'builder', 'qa'];
-  var html = '';
+  var html = '<div class="agent-hdr">' +
+    '<span></span>' +
+    '<span class="agent-hdr-cell">MODEL</span>' +
+    '<span class="agent-hdr-cell">EFFORT</span>' +
+    '<span class="agent-hdr-cell center">YOLO</span>' +
+    '<span class="agent-hdr-cell center">Startup<br>Sequence</span>' +
+    '<span class="agent-hdr-cell center">Suggest<br>Next</span>' +
+  '</div>';
   roles.forEach(function(role) {{
     html += buildAgentRowHtml(role, agents[role] || {{}});
   }});
@@ -2044,15 +2053,15 @@ function renderModelsRows(cfg) {{
     if (modSel) modSel.addEventListener('change', function() {{
       pendingWrites.set(role + '.model', modSel.value);
       syncCapabilityControls(role);
-      scheduleModelSave();
+      scheduleAgentSave();
     }});
     if (effSel) effSel.addEventListener('change', function() {{
       pendingWrites.set(role + '.effort', effSel.value);
-      scheduleModelSave();
+      scheduleAgentSave();
     }});
     if (bypassChk) bypassChk.addEventListener('change', function() {{
       pendingWrites.set(role + '.bypass_permissions', bypassChk.checked);
-      scheduleModelSave();
+      scheduleAgentSave();
     }});
     var startupChk = document.getElementById('agent-startup-' + role);
     var recommendChk = document.getElementById('agent-recommend-' + role);
@@ -2074,17 +2083,17 @@ function renderModelsRows(cfg) {{
         if (recLbl) recLbl.classList.remove('disabled');
         pendingWrites.set(role + '.recommend_next_actions', recommendChk ? recommendChk.checked : true);
       }}
-      scheduleModelSave();
+      scheduleAgentSave();
     }});
     if (recommendChk) recommendChk.addEventListener('change', function() {{
       pendingWrites.set(role + '.recommend_next_actions', recommendChk.checked);
-      scheduleModelSave();
+      scheduleAgentSave();
     }});
     syncCapabilityControls(role);
   }});
 }}
 
-function diffUpdateModelRows(cfg) {{
+function diffUpdateAgentRows(cfg) {{
   var agents = cfg.agents || {{}};
   var roles = ['architect', 'builder', 'qa'];
   roles.forEach(function(role) {{
@@ -2127,7 +2136,7 @@ function buildAgentRowHtml(role, agentCfg) {{
   var startupSeq = agentCfg.startup_sequence !== false;
   var suggestNext = agentCfg.recommend_next_actions !== false;
   var suggestDisabled = !startupSeq;
-  var modelsList = (modelsConfig && modelsConfig.models) || [];
+  var modelsList = (agentsConfig && agentsConfig.models) || [];
   var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
   }}).join('');
@@ -2139,14 +2148,14 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<span class="agent-lbl">' + role.toUpperCase() + '</span>' +
     '<select id="agent-model-' + role + '" class="agent-sel">' + modOptions + '</select>' +
     '<select id="agent-effort-' + role + '" class="agent-sel" style="visibility:hidden">' + effortOptions + '</select>' +
-    '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (yoloMode ? ' checked' : '') + '> YOLO' +
+    '<label class="agent-chk-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (yoloMode ? ' checked' : '') + '>' +
     '</label>' +
-    '<label class="agent-ctrl-lbl" id="agent-startup-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-startup-' + role + '" style="accent-color:var(--purlin-accent)"' + (startupSeq ? ' checked' : '') + '> Startup Sequence' +
+    '<label class="agent-chk-lbl" id="agent-startup-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-startup-' + role + '" style="accent-color:var(--purlin-accent)"' + (startupSeq ? ' checked' : '') + '>' +
     '</label>' +
-    '<label class="agent-ctrl-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '> Suggest Next' +
+    '<label class="agent-chk-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '>' +
     '</label>' +
   '</div>';
 }}
@@ -2154,7 +2163,7 @@ function buildAgentRowHtml(role, agentCfg) {{
 function populateModelDropdown(role, selectedModel) {{
   var modSel = document.getElementById('agent-model-' + role);
   if (!modSel) return;
-  var models = (modelsConfig && modelsConfig.models) || [];
+  var models = (agentsConfig && agentsConfig.models) || [];
   modSel.innerHTML = models.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.label + '</option>';
   }}).join('');
@@ -2163,7 +2172,7 @@ function populateModelDropdown(role, selectedModel) {{
 function syncCapabilityControls(role) {{
   var modSel = document.getElementById('agent-model-' + role);
   if (!modSel) return;
-  var models = (modelsConfig && modelsConfig.models) || [];
+  var models = (agentsConfig && agentsConfig.models) || [];
   var modelObj = null;
   for (var i = 0; i < models.length; i++) {{
     if (models[i].id === modSel.value) {{ modelObj = models[i]; break; }}
@@ -2179,8 +2188,8 @@ function syncCapabilityControls(role) {{
   if (recommendLbl) recommendLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
 }}
 
-function updateModelsBadge(cfg) {{
-  var badge = document.getElementById('models-section-badge');
+function updateAgentsBadge(cfg) {{
+  var badge = document.getElementById('agents-section-badge');
   if (!badge) return;
   var modelsList = cfg.models || [];
   var agents = cfg.agents || {{}};
@@ -2201,12 +2210,12 @@ function updateModelsBadge(cfg) {{
   badge.textContent = segments.map(function(s) {{ return s.count + 'x ' + s.label; }}).join(' | ');
 }}
 
-function scheduleModelSave() {{
-  if (modelsSaveTimer) clearTimeout(modelsSaveTimer);
-  modelsSaveTimer = setTimeout(saveModelConfig, 600);
+function scheduleAgentSave() {{
+  if (agentsSaveTimer) clearTimeout(agentsSaveTimer);
+  agentsSaveTimer = setTimeout(saveAgentConfig, 600);
 }}
 
-function saveModelConfig() {{
+function saveAgentConfig() {{
   var roles = ['architect', 'builder', 'qa'];
   var agentsPayload = {{}};
   roles.forEach(function(role) {{
@@ -2224,7 +2233,7 @@ function saveModelConfig() {{
       recommend_next_actions: recommendChk ? recommendChk.checked : true
     }};
   }});
-  fetch('/config/models', {{
+  fetch('/config/agents', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify(agentsPayload)
@@ -2232,9 +2241,9 @@ function saveModelConfig() {{
   .then(function(r) {{ return r.json(); }})
   .then(function(d) {{
     pendingWrites.clear();
-    if (modelsConfig && d.agents) {{
-      modelsConfig.agents = d.agents;
-      updateModelsBadge(modelsConfig);
+    if (agentsConfig && d.agents) {{
+      agentsConfig.agents = d.agents;
+      updateAgentsBadge(agentsConfig);
     }}
   }})
   .catch(function() {{ pendingWrites.clear(); }});
@@ -2244,7 +2253,7 @@ function saveModelConfig() {{
 // Initialize
 // ============================
 applySectionStates();
-initModelsSection();
+initAgentsSection();
 initFromHash();
 </script>
 </body>
@@ -2504,8 +2513,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
-        elif self.path == '/config/models':
-            self._handle_config_models()
+        elif self.path == '/config/agents':
+            self._handle_config_agents()
         elif self.path == '/release-checklist/config':
             self._handle_release_config()
         else:
@@ -2520,8 +2529,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _handle_config_models(self):
-        """POST /config/models — update agents in config.json, validated against flat models array."""
+    def _handle_config_agents(self):
+        """POST /config/agents — update agent configuration in config.json, validated against flat models array."""
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(length).decode('utf-8'))
