@@ -126,6 +126,37 @@ When used as a git submodule (e.g., at `purlin/`):
 *   All project-specific customizations go in the consumer project's own files: `.agentic_devops/` overrides, `features/`, and root-level launcher scripts.
 *   If an agent needs to change framework behavior, it MUST do so via the override layer (`.agentic_devops/*_OVERRIDES.md`), never by editing base files.
 
+### Override Management Protocol
+
+**Override File Ownership (Role-Scoped Write Access):**
+
+Each override file has a designated set of agents permitted to modify it:
+
+| Override File | Who May Edit |
+|---|---|
+| `.agentic_devops/HOW_WE_WORK_OVERRIDES.md` | Architect only |
+| `.agentic_devops/ARCHITECT_OVERRIDES.md` | Architect only |
+| `.agentic_devops/BUILDER_OVERRIDES.md` | Builder (own) and Architect |
+| `.agentic_devops/QA_OVERRIDES.md` | QA (own) and Architect |
+
+No agent may modify another agent's exclusive override file. The Architect has universal override access as the process owner.
+
+**Base File Protection:**
+
+Consumer project agents MUST NOT modify base instruction files under any circumstances — governed by the Submodule Immutability Mandate above. If a consumer project needs to change framework behavior, changes go into the appropriate override file in `.agentic_devops/`.
+
+Agents in the Purlin framework's own repository (not a consumer project) may modify base files, but MUST use `/pl-edit-base` to do so. Direct editing without this command is prohibited.
+
+**Override Editing Rules (apply in all contexts):**
+1. Read existing content first. Never overwrite without reading.
+2. Additive only. Do not delete or contradict existing rules.
+3. No contradictions with base. Surface conflicts with `/pl-override-conflicts` before committing.
+4. No code or script content. Override files are prose instruction documents only.
+5. Commit after editing.
+6. Architect: update `PROCESS_HISTORY.md` when the change affects workflow.
+
+**Commands:** `/pl-override-edit` (role-scoped edit), `/pl-override-conflicts` (conflict scan, all roles), `/pl-edit-base` (base file edit — Purlin repo only, never distributed to consumers).
+
 ### Path Resolution Conventions
 In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
 

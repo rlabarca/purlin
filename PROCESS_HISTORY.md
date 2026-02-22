@@ -2,6 +2,15 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] Override Instruction Management Formalization
+
+- **Problem:** No formal protocol governed which agent could edit which override file, no tooling detected contradictions between overrides and base files, and no safe mechanism existed for Purlin-framework-level base file edits.
+- **Solution:** Three new slash commands + instruction file updates across all role BASE files + spec update to bootstrap distribution.
+    - `pl-override-edit` — role-scoped guided override edit with conflict pre-scan and commit
+    - `pl-override-conflicts` — shared soft-check analysis (CONFLICT / WARNING / INFO)
+    - `pl-edit-base` — Purlin-local only; guided base file modification with mandatory PROCESS_HISTORY.md entry
+- **Files changed:** `HOW_WE_WORK_BASE.md` (new Override Management Protocol subsection), `ARCHITECT_BASE.md`, `BUILDER_BASE.md`, `QA_BASE.md` (soft checks, override write access, authorized commands), `features/submodule_bootstrap.md` Section 2.18 (exclusion rule — Builder to implement in bootstrap.sh and sync_upstream.sh), `features/submodule_sync.md` Section 2.6 (same exclusion rule), 3 new `.claude/commands/pl-*.md` files.
+
 ## [2026-02-22] Slash Command Distribution via Bootstrap + Sync
 
 - **Scope:** New `.claude/commands/` command files, spec additions to `submodule_bootstrap.md` and `submodule_sync.md`, startup print sequence + authorized commands sections added to all three role instruction files, and corresponding script implementations in `bootstrap.sh` and `sync_upstream.sh`.

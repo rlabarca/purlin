@@ -34,6 +34,7 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
 
 ### 2.6 Command File Sync
 *   **Change Detection:** Detect command files changed or added between `<old_sha>` and `HEAD` by running `git -C <submodule_dir> diff --name-only <old_sha>..HEAD -- .claude/commands/`.
+*   **Exclusion — `pl-edit-base.md`:** This file MUST NEVER be synced to consumer projects. It is Purlin-internal and allows modification of base instruction files. Skip it in all sync operations — do not auto-copy, do not warn, do not report it as a change.
 *   **Auto-Update (unmodified):** For each changed or new command file, compare the consumer's current copy against what the file was at `<old_sha>` in the submodule. If the content matches (consumer has not modified it), auto-copy the updated file unconditionally and report: `Updated: <filename>`.
 *   **Modified Warning:** If the consumer's copy differs from the `<old_sha>` version (consumer has local modifications), print a warning and skip the file. Do NOT overwrite. Report: `WARNING: <filename> has local modifications — manual review required`.
 *   **New Commands:** If the command file does not yet exist in the consumer project, copy it unconditionally and report: `Added: <filename> (new command)`.

@@ -118,7 +118,9 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 ### 2.18 Command File Distribution
 *   **Source:** `<submodule>/.claude/commands/` — contains Purlin `pl-*` slash command definitions.
 *   **Destination:** `<project_root>/.claude/commands/`.
-*   **Copy Logic:** For each `.md` file in the source, copy it to the destination. If the destination file already exists AND is newer than the source file (indicating a local consumer modification), skip it — do NOT overwrite locally modified command files.
+*   **Copy Logic:** For each `.md` file in the source, copy it to the destination, with this exception:
+    *   **`pl-edit-base.md` MUST NEVER be copied.** This command is Purlin-internal — it allows modification of base instruction files and must not be distributed to consumer projects. Silently skip it.
+    If the destination file already exists AND is newer than the source file (indicating a local consumer modification), skip it — do NOT overwrite locally modified command files.
 *   **Directory Creation:** Create `<project_root>/.claude/commands/` if it does not exist.
 *   **Non-Blocking:** If no `.claude/commands/` directory exists in the submodule (e.g., older framework version), bootstrap MUST continue without error. This step is silently skipped.
 *   **Summary Output:** If files are copied, include the count in the bootstrap summary. If any are skipped because the consumer version is newer, report the skip count.
@@ -253,6 +255,13 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
     When the user runs bootstrap.sh (re-run scenario)
     Then pl-status.md is NOT overwritten
     And the bootstrap summary reports the number of skipped files
+
+#### Scenario: Bootstrap Excludes pl-edit-base.md from Consumer Projects
+    Given agentic-dev-core is added as a submodule at "agentic-dev/"
+    And .claude/commands/pl-edit-base.md exists in the submodule
+    When the user runs "agentic-dev/tools/bootstrap.sh"
+    Then all pl-*.md files EXCEPT pl-edit-base.md are copied to .claude/commands/
+    And .claude/commands/pl-edit-base.md does NOT exist at the project root
 
 #### Scenario: Bootstrap Continues Without Command Directory
     Given the submodule does not have a .claude/commands/ directory

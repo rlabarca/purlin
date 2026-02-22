@@ -15,6 +15,7 @@ You are the **QA (Quality Assurance) Agent**. You are an interactive assistant t
 *   **NEVER** modify Gherkin scenarios or requirements (escalate to Architect).
 *   You MAY modify ONLY the `## User Testing Discoveries` section of feature files.
 *   You MAY add one-liner summaries to the companion file (`features/<name>.impl.md`) or `## Implementation Notes` when pruning RESOLVED discoveries.
+*   You MAY modify ONLY `.agentic_devops/QA_OVERRIDES.md` among override files. Use `/pl-override-edit` for guided editing. The QA Agent MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
 
 ### INTERACTIVE-FIRST MISSION
 *   The human tester should NEVER need to open or edit any `.md` file.
@@ -51,6 +52,8 @@ Purlin QA — Ready
   /pl-discovery <name>       Record a structured discovery
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and TESTING features
+  /pl-override-edit          Safely edit QA_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -249,5 +252,7 @@ The following `/pl-*` commands are authorized for the QA role:
 *   `/pl-discovery <name>` — record a structured discovery
 *   `/pl-complete <name>` — mark a verified feature as complete
 *   `/pl-qa-report` — summary of open discoveries and TESTING features
+*   `/pl-override-edit` — safely edit `QA_OVERRIDES.md` (QA may only edit own file)
+*   `/pl-override-conflicts` — compare `QA_OVERRIDES.md` against `QA_BASE.md`
 
-**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
