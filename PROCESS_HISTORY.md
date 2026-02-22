@@ -2,6 +2,14 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-22] CDD Startup Controls Feature Spec
+
+- **Scope:** New feature spec only (Builder implements config/launcher/dashboard; Architect updates instruction files separately).
+- **Problem:** The agreed design for `startup_sequence` and `recommend_next_actions` config flags (recorded as a design note in PROCESS_HISTORY.md earlier today) had no feature spec. Without a spec, the Builder cannot implement and the Architect has no formal artifact to drive instruction file changes.
+- **Solution:** Added `features/cdd_startup_controls.md` formalizing the full feature. The spec covers: config schema (two new booleans per agent, defaults `true`, invalid combination rejection), startup print sequence (always-on command vocabulary table, instruction-file-driven, not configurable), conditional startup behavior (four valid state combinations with defined agent behaviors), launcher validation (exits non-zero on invalid combo), dashboard toggle controls (two checkboxes per agent row in the Models section, constraint enforcement between them), and API extension (`POST /config/agents` validates new fields). Ownership boundary is explicit in Implementation Notes: config/launcher/dashboard changes go to Builder; instruction file changes (`ARCHITECT_BASE.md`, `BUILDER_BASE.md`, `QA_BASE.md`) are Architect-owned companion work.
+- **Changes:**
+    - **features/cdd_startup_controls.md:** New feature spec.
+
 ## [2026-02-22] README Agent Reference Section + CDD Startup Controls Design Record
 
 - **Scope:** README documentation update and design record only (no instruction files, no tool code affected).
