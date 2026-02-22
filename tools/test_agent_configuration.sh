@@ -161,6 +161,64 @@ fi
 
 teardown_launcher_sandbox
 
+# --- Scenario: Gemini Launcher Sets GEMINI_SYSTEM_MD ---
+echo ""
+echo "[Scenario] Gemini Launcher Sets GEMINI_SYSTEM_MD"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/run_qa.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.agentic_devops/config.json" << 'EOF'
+{
+    "agents": {
+        "qa": {
+            "provider": "gemini",
+            "model": "gemini-3.0-pro",
+            "effort": "",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+# Mock gemini that captures its args and env
+cat > "$MOCK_DIR/gemini" << MOCK_EOF
+#!/bin/bash
+echo "GEMINI_SYSTEM_MD=\$GEMINI_SYSTEM_MD" > "$CAPTURE_FILE"
+echo "ARGS=\$@" >> "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/gemini"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_qa.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q 'GEMINI_SYSTEM_MD=.*tmp'; then
+    log_pass "GEMINI_SYSTEM_MD is set to a temporary prompt file path"
+else
+    log_fail "GEMINI_SYSTEM_MD not set (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '-m gemini-3.0-pro'; then
+    log_pass "Gemini launcher passes -m gemini-3.0-pro"
+else
+    log_fail "Gemini launcher did not pass -m flag (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--yolo'; then
+    log_pass "Gemini launcher passes --yolo for bypass_permissions=true"
+else
+    log_fail "Gemini launcher did not pass --yolo (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q 'Begin QA verification session'; then
+    log_pass "Gemini launcher passes QA session message"
+else
+    log_fail "Gemini launcher missing session message (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
 # --- Scenario: Claude Probe Detects Installed CLI ---
 echo ""
 echo "[Scenario] Claude Probe Detects Installed CLI"
