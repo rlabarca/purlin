@@ -139,26 +139,28 @@ class TestAgentsCssGrid(unittest.TestCase):
         self.assertNotIn('--purlin-accent', agent_lbl_rule.group())
 
 
-class TestAskPermissionCheckbox(unittest.TestCase):
-    """Scenario: Ask Permission checkbox label and inverted logic"""
+class TestYoloCheckbox(unittest.TestCase):
+    """Scenario: YOLO checkbox label and direct mapping logic"""
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_ask_permission_label_in_js(self, mock_run, mock_status):
+    def test_yolo_label_in_js(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('Ask Permission', html)
+        self.assertIn('> YOLO', html)
         self.assertNotIn('> Bypass<', html)
+        self.assertNotIn('Ask Permission', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_inverted_bypass_logic_in_save(self, mock_run, mock_status):
+    def test_direct_bypass_logic_in_save(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # The saveAgentConfig function should invert: !bypassChk.checked
-        self.assertIn('!bypassChk.checked', html)
+        # YOLO checked = bypass_permissions: true (direct, no inversion)
+        self.assertIn('bypassChk.checked', html)
+        self.assertNotIn('!bypassChk.checked', html)
 
 
 class TestVisibilityHiddenForCapabilityGating(unittest.TestCase):

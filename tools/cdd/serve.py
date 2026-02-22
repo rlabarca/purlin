@@ -825,7 +825,7 @@ h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purl
 .features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
 .ft th{{text-align:left;font-family:var(--font-body);font-weight:700;color:var(--purlin-dim);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
-.ft th.badge-col{{text-align:center}}
+.ft th.badge-col{{text-align:center}}.col-abbr{{display:none}}@media(max-width:520px){{.col-full{{display:none}}.col-abbr{{display:inline}}}}
 .ft td{{padding:2px 6px;line-height:1.5}}
 .ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
@@ -1956,8 +1956,8 @@ function diffUpdateAgentRows(cfg) {{
     }}
     if (modSel && !pendingWrites.has(role + '.model') && modSel.value !== (acfg.model || '')) modSel.value = acfg.model || '';
     if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
-    var askPerm = acfg.bypass_permissions !== true;
-    if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== askPerm) bypassChk.checked = askPerm;
+    var yoloMode = acfg.bypass_permissions === true;
+    if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== yoloMode) bypassChk.checked = yoloMode;
     syncCapabilityControls(role, providers);
   }});
 }}
@@ -1966,7 +1966,7 @@ function buildAgentRowHtml(role, agentCfg, providers) {{
   var currentProvider = agentCfg.provider || '';
   var currentModel = agentCfg.model || '';
   var currentEffort = agentCfg.effort || 'high';
-  var askPermission = agentCfg.bypass_permissions !== true;
+  var yoloMode = agentCfg.bypass_permissions === true;
   var provOptions = Object.keys(providers).map(function(k) {{
     return '<option value="' + k + '"' + (k === currentProvider ? ' selected' : '') + '>' + k + '</option>';
   }}).join('');
@@ -1985,7 +1985,7 @@ function buildAgentRowHtml(role, agentCfg, providers) {{
     '<select id="agent-model-' + role + '" class="agent-sel">' + modOptions + '</select>' +
     '<select id="agent-effort-' + role + '" class="agent-sel" style="visibility:hidden">' + effortOptions + '</select>' +
     '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (askPermission ? ' checked' : '') + '> Ask Permission' +
+      '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (yoloMode ? ' checked' : '') + '> YOLO' +
     '</label>' +
   '</div>';
 }}
@@ -2056,7 +2056,7 @@ function saveAgentConfig() {{
       provider: provSel.value,
       model: modSel ? modSel.value : '',
       effort: effSel ? effSel.value : 'high',
-      bypass_permissions: bypassChk ? !bypassChk.checked : false
+      bypass_permissions: bypassChk ? bypassChk.checked : false
     }};
   }});
   fetch('/config/agents', {{
@@ -2179,8 +2179,10 @@ def _role_table_html(features):
         )
     return (
         f'<table class="ft">'
-        f'<thead><tr><th>Feature</th><th class="badge-col">Architect</th>'
-        f'<th class="badge-col">Builder</th><th class="badge-col">QA</th></tr></thead>'
+        f'<thead><tr><th>Feature</th>'
+        f'<th class="badge-col"><span class="col-full">Architect</span><span class="col-abbr">Arch</span></th>'
+        f'<th class="badge-col"><span class="col-full">Builder</span><span class="col-abbr">Build</span></th>'
+        f'<th class="badge-col">QA</th></tr></thead>'
         f'<tbody>{rows}</tbody>'
         f'</table>'
     )

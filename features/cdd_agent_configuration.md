@@ -29,8 +29,8 @@ The CDD Dashboard exposes agent runtime configuration (provider, model, effort, 
     2.  **Provider Dropdown:** Lists keys from `llm_providers`. Changing the provider repopulates the model dropdown with that provider's models.
     3.  **Model Dropdown:** Lists models from the selected provider. Active selection matches config value.
     4.  **Effort Dropdown:** Options: `low`, `medium`, `high`. Visible only when the selected model has `capabilities.effort: true`.
-    5.  **Ask Permission Checkbox:** Labeled "Ask Permission". Visible only when the selected model has `capabilities.permissions: true`. Checked = `bypass_permissions: false` (agent will ask before using tools). Unchecked = `bypass_permissions: true` (agent skips permission prompts). The checkbox label describes the user-facing behavior (asking permission), not the internal config key.
-*   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Provider, Model, Effort, Ask Permission) are identical across all three rows. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
+    5.  **YOLO Checkbox:** Labeled "YOLO". Visible only when the selected model has `capabilities.permissions: true`. Checked = `bypass_permissions: true` (agent skips permission prompts — YOLO mode). Unchecked = `bypass_permissions: false` (agent asks before using tools). The checkbox label describes the mode being enabled, not the underlying config key.
+*   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Provider, Model, Effort, YOLO) are identical across all three rows. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited. This follows the same stability principle as the feature status tables (Section 2.3 of `cdd_status_monitor.md`).
 *   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until the `POST /config/agents` response is received. While any control is pending, the auto-refresh cycle MUST NOT overwrite its value with server-returned state — even if the server returns the pre-change value (i.e., the write has not yet landed). Only non-pending controls are updated by auto-refresh during this window. Once the server acknowledges the write (success or error), all pending locks are released and subsequent refreshes resume normal behavior. This prevents the visible bounce: user changes value → refresh reverts it → write lands → it changes again.
 *   **Detect Providers Button:** Placed at the bottom-right of the Agents section body (inside the collapsible, below agent rows), right-aligned within the section container. Styled as a secondary button matching the `btn-critic` pattern. Calls `POST /detect-providers`. Displays a confirmation dialog listing detected providers and model counts. "Apply" merges detected providers into `llm_providers` in config (additive -- never removes existing entries).
@@ -57,7 +57,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Given the dashboard is loaded with valid config.json
     When the user expands the Agents section
     Then three rows are displayed for Architect, Builder, and QA
-    And each row shows the configured provider, model, effort, and ask-permission state
+    And each row shows the configured provider, model, effort, and YOLO state
 
 #### Scenario: Capability-Aware Control Visibility
     Given an agent is configured with a model that has capabilities.effort false
@@ -100,11 +100,11 @@ These scenarios require the running CDD Dashboard server and human interaction t
     And the Agents section is visually distinct from the Workspace section above it
 
 #### Scenario: Pending Change is Not Overwritten by Auto-Refresh
-    Given the user unchecks "Ask Permission" for the Builder agent
+    Given the user checks "YOLO" for the Builder agent
     And the config write is debounced or the POST /config/agents request is in-flight
     When the 5-second auto-refresh fires and returns the pre-change config value
-    Then the "Ask Permission" checkbox remains unchecked
-    And the control does not visibly revert to checked and then flip back to unchecked
+    Then the "YOLO" checkbox remains checked
+    And the control does not visibly revert to unchecked and then flip back to checked
 
 #### Scenario: Agents Section State Persists Across Reloads
     Given the user expands the Agents section
@@ -127,8 +127,8 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Effort dropdowns are left-edge aligned across all three agent rows
 - [ ] All dropdowns in the same column have identical widths across rows
 - [ ] When a control is hidden (capability-gated), its column space is preserved so adjacent controls do not shift
-- [ ] Permission checkbox is labeled "Ask Permission" (not "Bypass")
-- [ ] "Ask Permission" checkbox is checked when the agent asks before using tools (bypass_permissions=false)
+- [ ] Permission checkbox is labeled "YOLO"
+- [ ] "YOLO" checkbox is checked when the agent skips permission prompts (bypass_permissions=true)
 - [ ] Dropdown styling matches existing dashboard selects: `var(--purlin-bg)` bg, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px
 - [ ] Checkbox uses `accent-color: var(--purlin-accent)`
 - [ ] On 5-second auto-refresh, the Agents section does not flicker or visibly re-render
@@ -144,8 +144,8 @@ These scenarios require the running CDD Dashboard server and human interaction t
 ### Agent Row Grid Layout
 Uses CSS Grid (`grid-template-columns: 64px 100px 140px 80px auto`) for consistent column alignment across all three agent rows. Hidden capability-gated controls use `visibility: hidden` (not `display: none`) to preserve column space and prevent layout shift.
 
-### Ask Permission Checkbox Semantics
-The checkbox is labeled "Ask Permission" (user-facing behavior) and its checked state is the inverse of `bypass_permissions` in config.json. Checked = agent asks before using tools (`bypass_permissions: false`). Unchecked = agent skips permission prompts (`bypass_permissions: true`).
+### YOLO Checkbox Semantics
+The checkbox is labeled "YOLO" and its checked state matches `bypass_permissions` in config.json directly. Checked = agent skips permission prompts (`bypass_permissions: true`). Unchecked = agent asks before using tools (`bypass_permissions: false`). Variable names in JS updated from `askPermission`/`askPerm` to `yoloMode` and save logic changed from `!bypassChk.checked` to `bypassChk.checked` (no inversion).
 
 ### Pending-Write Lock
 Uses a `pendingWrites` Map (key: control identifier like `"builder.bypass_permissions"`, value: the user's pending DOM value). On user interaction, the event handler stores the value via `pendingWrites.set()`. In `diffUpdateAgentRows()`, controls present in the Map are skipped. When `POST /config/agents` resolves (success or error), the Map is cleared.
