@@ -825,7 +825,7 @@ h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purl
 .features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
 .ft{{width:100%;border-collapse:collapse}}
 .ft th{{text-align:left;font-family:var(--font-body);font-weight:700;color:var(--purlin-dim);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:2px 6px;border-bottom:1px solid var(--purlin-border)}}
-.ft th.badge-col{{text-align:center}}.col-abbr{{display:none}}@media(max-width:520px){{.col-full{{display:none}}.col-abbr{{display:inline}}}}
+.ft th.badge-col{{text-align:center}}.col-abbr{{display:none}}@media(max-width:600px){{.col-full{{display:none}}.col-abbr{{display:inline}}}}
 .ft td{{padding:2px 6px;line-height:1.5}}
 .ft tr:hover{{background:var(--purlin-tag-fill)}}
 .badge-cell{{text-align:center;width:70px}}
