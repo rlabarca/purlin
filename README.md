@@ -170,7 +170,7 @@ The QA Agent verifies features against their specifications through interactive 
     ```
     This creates:
     *   `.agentic_devops/` -- override templates and config (MUST be committed to your project)
-    *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- provider-agnostic layered launcher scripts
+    *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
     *   `features/` directory and `PROCESS_HISTORY.md`
 
 3.  **Customize your overrides:**
@@ -262,34 +262,25 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 Consumer projects get 8086 by default (from `agentic_devops.sample/config.json`). Core development uses 9086.
 
-## Supported Providers
+## Claude CLI
 
-Purlin launchers are provider-agnostic. The active provider for each agent role is configured in `.agentic_devops/config.json` under `agents.<role>.provider`.
+Purlin agents run exclusively on the Claude CLI.
 
-| Provider | CLI Tool | Auth | `effort` flag | Permissions bypass |
-|----------|----------|------|---------------|--------------------|
-| `claude` | `claude` | Claude account / API key | Yes (`--effort low/medium/high`) | `--dangerously-skip-permissions` |
-| `gemini` | `gemini` | `GOOGLE_API_KEY` or `GEMINI_API_KEY` | No (silently skipped) | `--yolo` |
+| Parameter | Flag |
+|-----------|------|
+| Model | `--model <id>` |
+| Effort | `--effort low/medium/high` |
+| Permissions bypass | `--dangerously-skip-permissions` |
 
-**Notes:**
-*   The `effort` capability is Claude-only. If a Gemini model is selected and `effort` is set in config, it is silently ignored.
-*   `bypass_permissions: true` maps to `--dangerously-skip-permissions` for Claude and `--yolo` for Gemini.
-*   System context injection for Gemini uses the `GEMINI_SYSTEM_MD` environment variable (per-process, safe for concurrent agent invocations).
-*   Provider detection: `tools/detect-providers.sh` probes all installed providers and outputs a JSON array. Run it directly to see what is available in your environment.
+Agent model, effort, and permissions are configured per-role in `.agentic_devops/config.json` under `agents.<role>`.
 
-### Installing Providers
+### Installing the Claude CLI
 
-**Claude CLI:**
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
-Authenticate with `claude` on first run.
 
-**Gemini CLI:**
-```bash
-npm install -g @google/gemini-cli
-```
-Set `GOOGLE_API_KEY` or `GEMINI_API_KEY` in your environment, or authenticate interactively.
+Authenticate with `claude` on first run.
 
 ## Purlin Evolution
 
@@ -301,6 +292,3 @@ Set `GOOGLE_API_KEY` or `GEMINI_API_KEY` in your environment, or authenticate in
 | v1.0.1 | Port Isolation & Spec Refinement | Configurable ports for tool isolation; Meta-mode support; Refined instruction specs. |
 | v1.0.0 | Framework Bootstrap | Isolated workflow from project context; Generalized role definitions. |
 
-## License
-
-This project is licensed under the MIT License.
