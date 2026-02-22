@@ -223,10 +223,16 @@ else
     log_fail "Gemini launcher must use chat subcommand (captured: $CAPTURED)"
 fi
 
-if echo "$CAPTURED" | grep -q -- '-p Begin QA verification session.'; then
-    log_pass "Gemini launcher passes -p with QA session message"
+if echo "$CAPTURED" | grep -q 'chat Begin QA verification session.'; then
+    log_pass "Gemini launcher passes session message as positional arg after chat"
 else
-    log_fail "Gemini launcher must pass -p with session message (captured: $CAPTURED)"
+    log_fail "Gemini launcher must pass session message as positional arg after chat (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- ' -p '; then
+    log_fail "Gemini launcher must not pass -p flag (captured: $CAPTURED)"
+else
+    log_pass "Gemini launcher does not pass -p flag"
 fi
 
 teardown_launcher_sandbox
@@ -268,10 +274,16 @@ else
     log_fail "Gemini Architect launcher must use chat subcommand (captured: $CAPTURED)"
 fi
 
-if echo "$CAPTURED" | grep -q -- '-p Begin Architect session.'; then
-    log_pass "Gemini Architect launcher passes -p with Architect session message"
+if echo "$CAPTURED" | grep -q 'chat Begin Architect session.'; then
+    log_pass "Gemini Architect launcher passes session message as positional arg after chat"
 else
-    log_fail "Gemini Architect launcher must pass -p with session message (captured: $CAPTURED)"
+    log_fail "Gemini Architect launcher must pass session message as positional arg after chat (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- ' -p '; then
+    log_fail "Gemini Architect launcher must not pass -p flag (captured: $CAPTURED)"
+else
+    log_pass "Gemini Architect launcher does not pass -p flag"
 fi
 
 if echo "$CAPTURED" | grep -q -- '-m gemini-2.5-pro'; then
@@ -337,10 +349,16 @@ else
     log_fail "Gemini launcher must use chat subcommand (captured: $CAPTURED)"
 fi
 
-if echo "$CAPTURED" | grep -q -- '-p Begin Builder session.'; then
-    log_pass "Gemini launcher passes -p with Builder session message (effort scenario)"
+if echo "$CAPTURED" | grep -q 'chat Begin Builder session.'; then
+    log_pass "Gemini launcher passes session message as positional arg after chat (effort scenario)"
 else
-    log_fail "Gemini launcher must pass -p with session message (captured: $CAPTURED)"
+    log_fail "Gemini launcher must pass session message as positional arg after chat (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- ' -p '; then
+    log_fail "Gemini launcher must not pass -p flag (effort scenario; captured: $CAPTURED)"
+else
+    log_pass "Gemini launcher does not pass -p flag (effort scenario)"
 fi
 
 teardown_launcher_sandbox
