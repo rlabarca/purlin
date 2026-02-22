@@ -461,6 +461,13 @@ def generate_api_status_json():
             '%Y-%m-%dT%H:%M:%SZ'),
     }
 
+    # critic_last_run: mtime of CRITIC_REPORT.md (Section 2.4 / 2.7)
+    critic_report_path = os.path.join(PROJECT_ROOT, "CRITIC_REPORT.md")
+    if os.path.isfile(critic_report_path):
+        mtime = os.path.getmtime(critic_report_path)
+        result["critic_last_run"] = datetime.fromtimestamp(
+            mtime, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
     delivery_phase = get_delivery_phase()
     if delivery_phase:
         result["delivery_phase"] = delivery_phase
@@ -603,6 +610,9 @@ def generate_html():
     active_count = len(active_features)
     complete_count = len(complete_features)
 
+    # critic_last_run for Run Critic button annotation (Section 2.7)
+    critic_last_run_ts = api_data.get("critic_last_run", "")
+
     # Delivery phase annotation for ACTIVE heading
     delivery_phase = get_delivery_phase()
     phase_annotation = ""
@@ -671,11 +681,11 @@ def generate_html():
     # Compute summary badges for collapsed sections
     def _section_summary_badge(features_list):
         """Return a single priority badge for the Active section (spec 2.2.2):
-        ?? if empty, TODO if any TODO with no FAIL/WARN, most-severe otherwise.
+        No badge if empty, TODO if any TODO with no FAIL/WARN, most-severe otherwise.
         Priority: FAIL > INFEASIBLE > DISPUTED > TODO.
         """
         if not features_list:
-            return '<span class="st-na">??</span>'
+            return ''
         severity = {
             'FAIL': 6, 'INFEASIBLE': 5, 'DISPUTED': 4,
             'TODO': 3, 'BLOCKED': 2, 'DONE': 1, 'CLEAN': 1, 'N/A': 0,
@@ -965,6 +975,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 <div class="content-area">
   <!-- Status View -->
   <div class="view-panel active" id="status-view">
+    <span id="critic-last-run-data" style="display:none" data-ts="{critic_last_run_ts}"></span>
     <div class="features">
       <div class="section-hdr" onclick="toggleSection('active-section')">
         <span class="chevron expanded" id="active-section-chevron">&#9654;</span>
@@ -1168,6 +1179,8 @@ function refreshStatus() {{
         initAgentsSection();
         // Incremental refresh for release checklist (diff-based, skips during pending saves)
         refreshReleaseChecklist();
+        // Update Run Critic button annotation (Section 2.7)
+        updateCriticLabel();
       }}
       updateTimestamp();
     }})
@@ -1460,8 +1473,21 @@ document.addEventListener('keydown', function(e) {{
 }});
 
 // ============================
-// Run Critic
+// Run Critic (Section 2.7 — last-run annotation)
 // ============================
+function updateCriticLabel() {{
+  var el = document.getElementById('critic-last-run-data');
+  var btn = document.getElementById('btn-critic');
+  if (!el || !btn || btn.disabled) return;
+  var ts = el.getAttribute('data-ts');
+  if (!ts) {{ btn.textContent = 'Run Critic'; return; }}
+  var elapsed = (Date.now() - new Date(ts).getTime()) / 1000;
+  if (elapsed < 60) {{ btn.textContent = 'Run Critic'; return; }}
+  if (elapsed < 3600) {{ btn.textContent = 'Run Critic (' + Math.floor(elapsed / 60) + 'm)'; return; }}
+  if (elapsed < 86400) {{ btn.textContent = 'Run Critic (' + Math.floor(elapsed / 3600) + 'h)'; return; }}
+  btn.textContent = 'Run Critic (' + Math.floor(elapsed / 86400) + 'd)';
+}}
+
 function runCritic() {{
   var btn = document.getElementById('btn-critic');
   var err = document.getElementById('critic-err');
@@ -1469,10 +1495,10 @@ function runCritic() {{
   fetch('/run-critic', {{method: 'POST'}})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      if (d.status === 'ok') {{ refreshStatus(); btn.disabled = false; btn.textContent = 'Run Critic'; }}
-      else {{ err.textContent = 'Critic run failed'; btn.disabled = false; btn.textContent = 'Run Critic'; }}
+      if (d.status === 'ok') {{ refreshStatus(); btn.disabled = false; updateCriticLabel(); }}
+      else {{ err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel(); }}
     }})
-    .catch(function() {{ err.textContent = 'Critic run failed'; btn.disabled = false; btn.textContent = 'Run Critic'; }});
+    .catch(function() {{ err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel(); }});
 }}
 
 // ============================
@@ -2254,6 +2280,7 @@ function saveAgentConfig() {{
 // ============================
 applySectionStates();
 initAgentsSection();
+updateCriticLabel();
 initFromHash();
 </script>
 </body>
