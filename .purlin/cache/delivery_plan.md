@@ -6,10 +6,10 @@
 ## Summary
 20 features reset to TODO by the Phase A rename commit (.agentic_devops → .purlin in prose). Work split into 3 phases: foundations/infrastructure first, then CDD dashboard tools, then release process features.
 
-## Phase 1 — Foundations & Infrastructure [IN_PROGRESS]
+## Phase 1 — Foundations & Infrastructure [COMPLETE]
 **Features:** policy_release.md, policy_critic.md, design_visual_standards.md, models_configuration.md, agent_launchers_common.md, python_environment.md, submodule_bootstrap.md
-**Completion Commit:** —
-**QA Bugs Addressed:** —
+**Completion Commit:** 6f71f07
+**QA Bugs Addressed:** None (all features were cosmetic/rename resets)
 
 ## Phase 2 — CDD Dashboard & Core Tools [PENDING]
 **Features:** critic_tool.md, cdd_status_monitor.md, cdd_startup_controls.md, cdd_software_map.md, submodule_sync.md
