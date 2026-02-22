@@ -1,11 +1,11 @@
 {
   "steps": [
     {
-      "id": "purlin.instruction_audit",
+      "id": "purlin.verify_zero_queue",
       "enabled": true
     },
     {
-      "id": "purlin.verify_zero_queue",
+      "id": "purlin.instruction_audit",
       "enabled": true
     },
     {
@@ -22,6 +22,10 @@
     },
     {
       "id": "purlin.doc_consistency_check",
+      "enabled": true
+    },
+    {
+      "id": "submodule_safety_audit",
       "enabled": true
     },
     {
