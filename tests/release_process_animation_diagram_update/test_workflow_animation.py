@@ -18,23 +18,24 @@ import tempfile
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Project root detection
+# Project root detection (tests/<feature>/ is 2 levels below project root)
 _env_root = os.environ.get('AGENTIC_PROJECT_ROOT', '')
 if _env_root and os.path.isdir(_env_root):
     PROJECT_ROOT = _env_root
 else:
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
-    for depth in ('../../', '../'):
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+    for depth in ('../../../', '../../'):
         candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
         if os.path.exists(os.path.join(candidate, '.agentic_devops')):
             PROJECT_ROOT = candidate
             break
 
 TESTS_DIR = os.path.join(PROJECT_ROOT, "tests", "release_process_animation_diagram_update")
-SCRIPT_PATH = os.path.join(SCRIPT_DIR, "generate_workflow_animation.py")
+DEV_DIR = os.path.join(PROJECT_ROOT, "dev")
+SCRIPT_PATH = os.path.join(DEV_DIR, "generate_workflow_animation.py")
 
-# Import the module under test
-sys.path.insert(0, SCRIPT_DIR)
+# Import the module under test from dev/
+sys.path.insert(0, DEV_DIR)
 from generate_workflow_animation import (
     FRAMES, EDGE_INDEX, MERMAID_BASE, IMAGE_REF,
     build_frame_mermaid, update_readme,
