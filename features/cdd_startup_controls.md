@@ -205,14 +205,10 @@ The "Startup Sequence" checkbox `onchange` handler: when unchecked, sets `checkb
 ### Dashboard Grid Extension
 The base agent row grid from `cdd_agent_configuration.md` uses `grid-template-columns: 64px 140px 80px 60px` (agent-name | model | effort | YOLO). Extend with two fixed-width columns: `grid-template-columns: 64px 140px 80px 60px 60px 60px` (agent-name | model | effort | YOLO | Startup/Sequence | Suggest/Next). The column header row gains two new cells with two-line text ("Startup" / "Sequence" and "Suggest" / "Next") using `<br>` or CSS wrapping; no inline labels appear in the agent data rows.
 
+### QA Verification (2026-02-22)
+All 6 manual scenarios PASS. Expert Mode BUG (QA invokes /pl-status before reading startup flags) re-verified PASS after Architect added CRITICAL prohibition to QA_BASE.md Section 3.0.
+
 ### **[CLARIFICATION]** BUG Ownership: /pl-status Invocation Before Flag Read (Severity: INFO)
 The BUG "QA agent invokes /pl-status before reading startup flags" was in Architect scope, not Builder scope. All Builder-owned code (launchers, API validation, dashboard checkboxes, config schema) was implemented and passing 19/19 tests. The bug was an LLM agent behavior issue: the QA agent did not follow the instruction ordering in `QA_BASE.md` Section 3.0.1. Fixed 2026-02-22 by adding a CRITICAL prohibition to `QA_BASE.md` Section 3.0: the print-table step must output the pre-formatted text verbatim with no tool or skill invocations. The Builder has no mechanism to enforce instruction-level behavior from launchers (per Section 2.3: "No behavioral injection"). This case also drove a SOP update — see `HOW_WE_WORK_BASE.md` Section 7.5 and `policy_critic.md` Section 2.4 for the new `Action Required: Architect` override mechanism for instruction-level BUGs.
 
 ## User Testing Discoveries
-
-### [BUG] QA agent invokes /pl-status before reading startup flags (Discovered: 2026-02-22)
-- **Scenario:** Expert Mode Bypasses Orientation
-- **Observed Behavior:** QA agent (startup_sequence: false) proactively invoked the `/pl-status` skill as its first action before reading config.json, triggering a full status check and Critic report run. The command table was printed first (correct), but instead of outputting "startup_sequence disabled — awaiting instruction." and stopping, the agent ran the full orientation sequence.
-- **Expected Behavior:** After printing the command table, the QA agent should read config.json, see startup_sequence: false, output "startup_sequence disabled — awaiting instruction." and await user input. No call to tools/cdd/status.sh, no Critic report, no verification triage.
-- **Action Required:** Architect — strengthen QA startup instruction gating (Section 3.0.1) to explicitly prohibit skill or tool invocation before config.json is read.
-- **Status:** SPEC_UPDATED — Added CRITICAL prohibition to QA_BASE.md Section 3.0: do not invoke /pl-status or any tool during the print-table step. QA to re-verify Scenario: Expert Mode Bypasses Orientation.
