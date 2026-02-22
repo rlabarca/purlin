@@ -84,7 +84,7 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 | 1 | `purlin.record_version_notes` | Record Version & Release Notes |
 | 2 | `purlin.verify_zero_queue` | Verify Zero-Queue Status |
 | 3 | `purlin.verify_dependency_integrity` | Verify Dependency Integrity |
-| 4 | `purlin.instruction_audit` | Instruction Audit |
+| 4 | `purlin.instruction_audit` | Purlin Agent Instruction Audit |
 | 5 | `purlin.doc_consistency_check` | Documentation Consistency Check |
 | 6 | `purlin.push_to_remote` | Push to Remote Repository |
 
@@ -106,6 +106,7 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 - Agent Instructions: "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
 
 **`purlin.instruction_audit`**
+- Friendly Name: "Purlin Agent Instruction Audit"
 - Description: "Verifies that `.agentic_devops/` override files are consistent with the base instruction layer and do not introduce contradictions."
 - Code: null
 - Agent Instructions: "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
