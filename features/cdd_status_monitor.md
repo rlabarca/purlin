@@ -33,6 +33,7 @@ The Status view is the default view (`/#status`).
     *   **Builder** -- The Builder role status badge.
     *   **QA** -- The QA role status badge.
 *   **Column Alignment:** Status column headers (Architect, Builder, QA) MUST be centered. The Feature column header MUST be left-justified.
+*   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
 *   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
     *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A).
     *   **Complete** -- All roles fully satisfied. Capped at 10 most recent entries.
@@ -524,6 +525,8 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Active and Complete tables have matching column widths
 - [ ] Status column headers (Architect, Builder, QA) are centered
 - [ ] Feature column header is left-justified
+- [ ] At viewport widths ≤600px, ARCHITECT and BUILDER column headers abbreviate to ARCH and BUILD
+- [ ] At viewport widths >600px, ARCHITECT and BUILDER column headers display full text (Architect, Builder)
 - [ ] Workspace section visible between Active and Complete sections (or at its collapsible position)
 - [ ] Workspace shows "Clean State" or "Work in Progress" with file list
 - [ ] Workspace shows last commit summary (hash, message, relative timestamp)
