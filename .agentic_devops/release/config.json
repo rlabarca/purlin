@@ -33,11 +33,11 @@
       "enabled": true
     },
     {
-      "id": "purlin.push_to_remote",
-      "enabled": true
+      "id": "workflow_animation",
+      "enabled": false
     },
     {
-      "id": "workflow_animation",
+      "id": "purlin.push_to_remote",
       "enabled": true
     }
   ]
