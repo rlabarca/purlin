@@ -174,6 +174,9 @@ When the checklist is loaded,
 Then an error is raised identifying `purlin.custom_deploy` as using the reserved `purlin.` prefix,
 And that step is excluded from the resolved list.
 
+### Manual Scenarios (Human Verification Required)
+None. All scenarios for this feature are fully automated (unit tests against the data loading and resolution logic).
+
 ## Implementation Notes
 
 *   The auto-discovery algorithm in Section 2.5 is designed to be idempotent: running it multiple times against the same inputs produces the same result.

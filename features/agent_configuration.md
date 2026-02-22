@@ -114,6 +114,9 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     Then it outputs a JSON array with one entry per probe script in tools/providers/
     And each entry contains provider, available, and models fields
 
+### Manual Scenarios (Human Verification Required)
+None. All scenarios for this feature are fully automated.
+
 
 ## Implementation Notes
 See [agent_configuration.impl.md](agent_configuration.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

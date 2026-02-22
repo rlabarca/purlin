@@ -114,6 +114,7 @@ For the Gemini provider, no session message argument is passed. The `GEMINI_SYST
     And exits with a non-zero status code
 
 #### Scenario: Launcher Exports AGENTIC_PROJECT_ROOT
+    Given a launcher script is invoked from any working directory
     When any launcher script (run_architect.sh, run_builder.sh, run_qa.sh) is executed
     Then AGENTIC_PROJECT_ROOT is exported as the absolute path of the project root
 

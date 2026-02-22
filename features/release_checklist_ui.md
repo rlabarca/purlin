@@ -123,6 +123,9 @@ The server MUST validate that:
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All scenarios for this feature require the running CDD Dashboard server and human interaction to verify.
+
 ### Manual Scenarios
 
 #### Scenario: Collapsed State Displays Correct Counts

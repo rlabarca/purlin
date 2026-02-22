@@ -47,6 +47,9 @@ The CDD Dashboard exposes agent runtime configuration (provider, model, effort, 
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All scenarios for this feature require the running CDD Dashboard server and human interaction to verify.
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
