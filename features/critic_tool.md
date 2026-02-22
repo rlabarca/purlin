@@ -47,7 +47,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 *   **Input:** Gherkin scenario text + mapped test function body (from traceability).
 *   **Output:** Per scenario-test pair: `ALIGNED` | `PARTIAL` | `DIVERGENT`.
 *   **Configuration:** Controlled by `critic_llm_model` (default `claude-sonnet-4-20250514`) and `critic_llm_enabled` (default `false`) in `.purlin/config.json`.
-*   **Caching:** Results are cached by `(scenario_hash, test_hash)` tuple in `tools/critic/.cache/`. Cache invalidates when either the scenario text or test body changes.
+*   **Caching:** Results are cached by `(scenario_hash, test_hash)` tuple in `.purlin/cache/logic_drift_cache/`. Cache invalidates when either the scenario text or test body changes.
 *   **Graceful Fallback:** If `critic_llm_enabled` is `false` or the API is unavailable, the logic drift check is skipped entirely with a WARN-level note in the output. The overall Implementation Gate does not FAIL due to LLM unavailability.
 
 ### 2.5 Policy Adherence Scanner
