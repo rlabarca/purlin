@@ -1,6 +1,6 @@
 # How We Work: The Agentic Workflow
 
-> **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the Purlin framework. Project-specific workflow additions are defined in the **override layer** at `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
+> **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the Purlin framework. Project-specific workflow additions are defined in the **override layer** at `.purlin/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
 
 ## 1. Core Philosophy: Continuous Design-Driven (CDD)
 
@@ -100,7 +100,7 @@ We do not maintain a history of release files in the project's features director
 The Purlin framework uses a two-layer instruction model to separate framework rules from project-specific context:
 
 *   **Base Layer** (`instructions/` directory in the framework): Contains the framework's core rules, protocols, and philosophies. These are read-only from the consumer project's perspective and are updated by pulling new versions of the framework.
-*   **Override Layer** (`.agentic_devops/` directory in the consumer project): Contains project-specific customizations, domain context, and workflow additions. These are owned and maintained by the consumer project.
+*   **Override Layer** (`.purlin/` directory in the consumer project): Contains project-specific customizations, domain context, and workflow additions. These are owned and maintained by the consumer project.
 
 ### How It Works
 At agent launch time, the launcher scripts (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) concatenate the base and override files into a single prompt:
@@ -115,16 +115,16 @@ This ordering ensures that project-specific rules can refine or extend (but not 
 ### Submodule Consumption Pattern
 When used as a git submodule (e.g., at `purlin/`):
 1. The submodule provides the base layer (`purlin/instructions/`) and all tools (`purlin/tools/`).
-2. The consumer project runs `purlin/tools/bootstrap.sh` to initialize `.agentic_devops/` with override templates.
-3. Tools resolve their paths via `tools_root` in `.agentic_devops/config.json`.
+2. The consumer project runs `purlin/tools/bootstrap.sh` to initialize `.purlin/` with override templates.
+3. Tools resolve their paths via `tools_root` in `.purlin/config.json`.
 4. Upstream updates are pulled via `cd purlin && git pull origin main && cd ..` and audited with `purlin/tools/sync_upstream.sh`.
 
 ### Submodule Immutability Mandate
 **Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `purlin/`). The submodule is a read-only dependency. Specifically:
 *   **NEVER** edit files in `<submodule>/instructions/`, `<submodule>/tools/`, `<submodule>/features/`, or any other path inside the submodule.
 *   **NEVER** commit changes to the submodule from a consumer project. The submodule is only modified from its own repository.
-*   All project-specific customizations go in the consumer project's own files: `.agentic_devops/` overrides, `features/`, and root-level launcher scripts.
-*   If an agent needs to change framework behavior, it MUST do so via the override layer (`.agentic_devops/*_OVERRIDES.md`), never by editing base files.
+*   All project-specific customizations go in the consumer project's own files: `.purlin/` overrides, `features/`, and root-level launcher scripts.
+*   If an agent needs to change framework behavior, it MUST do so via the override layer (`.purlin/*_OVERRIDES.md`), never by editing base files.
 
 ### Override Management Protocol
 
@@ -134,16 +134,16 @@ Each override file has a designated set of agents permitted to modify it:
 
 | Override File | Who May Edit |
 |---|---|
-| `.agentic_devops/HOW_WE_WORK_OVERRIDES.md` | Architect only |
-| `.agentic_devops/ARCHITECT_OVERRIDES.md` | Architect only |
-| `.agentic_devops/BUILDER_OVERRIDES.md` | Builder (own) and Architect |
-| `.agentic_devops/QA_OVERRIDES.md` | QA (own) and Architect |
+| `.purlin/HOW_WE_WORK_OVERRIDES.md` | Architect only |
+| `.purlin/ARCHITECT_OVERRIDES.md` | Architect only |
+| `.purlin/BUILDER_OVERRIDES.md` | Builder (own) and Architect |
+| `.purlin/QA_OVERRIDES.md` | QA (own) and Architect |
 
 No agent may modify another agent's exclusive override file. The Architect has universal override access as the process owner.
 
 **Base File Protection:**
 
-Consumer project agents MUST NOT modify base instruction files under any circumstances — governed by the Submodule Immutability Mandate above. If a consumer project needs to change framework behavior, changes go into the appropriate override file in `.agentic_devops/`.
+Consumer project agents MUST NOT modify base instruction files under any circumstances — governed by the Submodule Immutability Mandate above. If a consumer project needs to change framework behavior, changes go into the appropriate override file in `.purlin/`.
 
 Agents in the Purlin framework's own repository (not a consumer project) may modify base files, but MUST use `/pl-edit-base` to do so. Direct editing without this command is prohibited.
 
@@ -160,8 +160,8 @@ Agents in the Purlin framework's own repository (not a consumer project) may mod
 In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
 
 *   **`features/` directory:** Always refers to `<project_root>/features/` -- the **consumer project's** feature specs. In a submodule setup, this is NOT the framework submodule's own `features/` directory. The framework's features are internal to the submodule and are not scanned by consumer project tools.
-*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.agentic_devops/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"purlin/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
-*   **`AGENTIC_PROJECT_ROOT`:** All launcher scripts (both standalone and bootstrap-generated) export this environment variable as the authoritative project root. All Python and shell tools check this variable first, falling back to directory-climbing detection only when it is not set.
+*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.purlin/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"purlin/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
+*   **`PURLIN_PROJECT_ROOT`:** All launcher scripts (both standalone and bootstrap-generated) export this environment variable as the authoritative project root. All Python and shell tools check this variable first, falling back to directory-climbing detection only when it is not set.
 
 ## 7. User Testing Protocol
 
@@ -293,7 +293,7 @@ The goal is to **minimize Manual Scenarios** by moving all static visual checks 
 When the Architect introduces large-scale changes (multiple new feature files, major revisions across existing features), the Builder may need to split work across multiple sessions to manage context window limits and ensure quality. The Phased Delivery Protocol provides a persistent coordination artifact that lets the Builder propose splitting work into numbered phases, each producing a testable state. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete.
 
 ### 10.2 The Delivery Plan Artifact
-*   **Path:** `.agentic_devops/cache/delivery_plan.md`
+*   **Path:** `.purlin/cache/delivery_plan.md`
 *   **Created by:** Builder, when user approves phased delivery.
 *   **Committed to git:** Yes (all agents read it across sessions).
 *   **Deleted by:** Builder, when the final phase completes.
@@ -304,7 +304,7 @@ When the Architect introduces large-scale changes (multiple new feature files, m
 When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
 
 ### 10.4 QA Interaction
-The QA Agent MUST check for a delivery plan at `.agentic_devops/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
+The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
 
 ### 10.5 Phasing is Optional
 Phased delivery is never automatic. The Builder proposes phasing based on scope assessment heuristics, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.

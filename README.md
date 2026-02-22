@@ -37,9 +37,9 @@ Instead of separate documentation or global logs, implementation discoveries, ha
 ### 4. Layered Instruction Architecture
 The framework separates **framework rules** (base layer) from **project-specific context** (override layer):
 *   **Base Layer** (`instructions/`): Core rules, protocols, and philosophies. Read-only from the consumer's perspective.
-*   **Override Layer** (`.agentic_devops/`): Project-specific customizations, domain context, and workflow additions.
+*   **Override Layer** (`.purlin/`): Project-specific customizations, domain context, and workflow additions.
 
-> **Compatibility note:** The `.agentic_devops/` internal directory name is retained for backward compatibility with existing consumer projects and tooling. It functions as the project's override and configuration directory regardless of the framework's product name.
+> **Compatibility note:** The `.purlin/` internal directory name is retained for backward compatibility with existing consumer projects and tooling. It functions as the project's override and configuration directory regardless of the framework's product name.
 
 At launch, the launcher scripts concatenate base + override files into a single agent prompt. This allows upstream framework updates without merge conflicts in project-specific configuration.
 
@@ -171,12 +171,12 @@ The QA Agent verifies features against their specifications through interactive 
     ./purlin/tools/bootstrap.sh
     ```
     This creates:
-    *   `.agentic_devops/` -- override templates and config (MUST be committed to your project)
+    *   `.purlin/` -- override templates and config (MUST be committed to your project)
     *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
     *   `features/` directory
 
 3.  **Customize your overrides:**
-    Edit the files in `.agentic_devops/`:
+    Edit the files in `.purlin/`:
     *   `ARCHITECT_OVERRIDES.md` -- project-specific Architect rules and domain context
     *   `BUILDER_OVERRIDES.md` -- tech stack constraints, build environment rules
     *   `QA_OVERRIDES.md` -- project-specific QA verification rules
@@ -197,7 +197,7 @@ The QA Agent verifies features against their specifications through interactive 
     ./run_architect.sh
     ./run_builder.sh
     ```
-    The launcher scripts detect standalone mode and use `instructions/` and `.agentic_devops/` from the repo root.
+    The launcher scripts detect standalone mode and use `instructions/` and `.purlin/` from the repo root.
 
     All three launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are available in standalone mode.
 
@@ -216,7 +216,7 @@ python3 -m venv .venv
 
 No additional configuration is needed -- all shell scripts that invoke Python use a shared resolver (`tools/resolve_python.sh`) that checks for the venv automatically. The resolution priority is:
 1. `$AGENTIC_PYTHON` env var (explicit override)
-2. `$AGENTIC_PROJECT_ROOT/.venv/`
+2. `$PURLIN_PROJECT_ROOT/.venv/`
 3. Climbing detection from script directory
 4. System `python3`, then `python`
 
@@ -235,7 +235,7 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 ### Gitignore Guidance
 
-**`.agentic_devops/` MUST be committed** to your project. It contains project-specific overrides, config, and the upstream sync marker. The bootstrap script will warn if it detects `.agentic_devops` in your `.gitignore`.
+**`.purlin/` MUST be committed** to your project. It contains project-specific overrides, config, and the upstream sync marker. The bootstrap script will warn if it detects `.purlin` in your `.gitignore`.
 
 ## Directory Structure
 
@@ -244,13 +244,13 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
     *   `BUILDER_BASE.md` -- Core Builder implementation protocol.
     *   `QA_BASE.md` -- Core QA verification and discovery protocol.
     *   `HOW_WE_WORK_BASE.md` -- Core workflow philosophy and lifecycle.
-*   `.agentic_devops/` -- Override layer (project-specific customizations).
+*   `.purlin/` -- Override layer (project-specific customizations).
     *   `ARCHITECT_OVERRIDES.md` -- Project-specific Architect rules.
     *   `BUILDER_OVERRIDES.md` -- Project-specific Builder rules.
     *   `QA_OVERRIDES.md` -- Project-specific QA verification rules.
     *   `HOW_WE_WORK_OVERRIDES.md` -- Project-specific workflow additions.
     *   `config.json` -- Ports, `tools_root`, critic configuration, and other settings.
-*   `agentic_devops.sample/` -- Override templates for new consumer projects.
+*   `purlin-config-sample/` -- Override templates for new consumer projects.
 *   `features/` -- Meta-specifications for the framework's own tools.
 *   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync).
 
@@ -261,7 +261,7 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 | purlin standalone | 9086 |
 | Consumer project default | 8086 |
 
-Consumer projects get 8086 by default (from `agentic_devops.sample/config.json`). Core development uses 9086.
+Consumer projects get 8086 by default (from `purlin-config-sample/config.json`). Core development uses 9086.
 
 ## Claude CLI
 
@@ -273,7 +273,7 @@ Purlin agents run exclusively on the Claude CLI.
 | Effort | `--effort low/medium/high` |
 | Permissions bypass | `--dangerously-skip-permissions` |
 
-Agent model, effort, and permissions are configured per-role in `.agentic_devops/config.json` under `agents.<role>`.
+Agent model, effort, and permissions are configured per-role in `.purlin/config.json` under `agents.<role>`.
 
 ### Installing the Claude CLI
 

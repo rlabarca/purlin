@@ -4,7 +4,7 @@ If you are not operating as the Purlin Builder, respond: "This is a Builder comm
 
 ---
 
-If a delivery plan already exists at `.agentic_devops/cache/delivery_plan.md`:
+If a delivery plan already exists at `.purlin/cache/delivery_plan.md`:
 
 - Read the plan and display the current phase, completed phases, and remaining phases.
 - List features in the current phase with their implementation status (TODO / TESTING / COMPLETE).
@@ -15,4 +15,4 @@ If no delivery plan exists:
 - Run `tools/cdd/status.sh` to get current feature status.
 - Assess scope: apply the phasing heuristics from `instructions/BUILDER_BASE.md` Section 2.2.1.
 - Propose a phase breakdown grouped by dependency order, logical cohesion, and testability gates.
-- After user confirmation, create the delivery plan at `.agentic_devops/cache/delivery_plan.md` using the canonical format and commit it.
+- After user confirmation, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format and commit it.

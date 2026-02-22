@@ -46,7 +46,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 ### 2.4 Logic Drift Engine (LLM-Based)
 *   **Input:** Gherkin scenario text + mapped test function body (from traceability).
 *   **Output:** Per scenario-test pair: `ALIGNED` | `PARTIAL` | `DIVERGENT`.
-*   **Configuration:** Controlled by `critic_llm_model` (default `claude-sonnet-4-20250514`) and `critic_llm_enabled` (default `false`) in `.agentic_devops/config.json`.
+*   **Configuration:** Controlled by `critic_llm_model` (default `claude-sonnet-4-20250514`) and `critic_llm_enabled` (default `false`) in `.purlin/config.json`.
 *   **Caching:** Results are cached by `(scenario_hash, test_hash)` tuple in `tools/critic/.cache/`. Cache invalidates when either the scenario text or test body changes.
 *   **Graceful Fallback:** If `critic_llm_enabled` is `false` or the API is unavailable, the logic drift check is skipped entirely with a WARN-level note in the output. The overall Implementation Gate does not FAIL due to LLM unavailability.
 
@@ -155,7 +155,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 *   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting QA re-verification, invalid targeted scope names.
 *   **LOW** -- Gate WARNs, informational items.
 
-**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. The `tools/cdd/status.sh` CLI tool triggers a Critic run before outputting status (see `cdd_status_monitor.md` Section 2.6). The Critic's own `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before launching `critic.py`; the `CRITIC_RUNNING` guard prevents that inner call from triggering a second Critic run. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
+**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.purlin/cache/feature_status.json` to exist on disk. The `tools/cdd/status.sh` CLI tool triggers a Critic run before outputting status (see `cdd_status_monitor.md` Section 2.6). The Critic's own `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before launching `critic.py`; the `CRITIC_RUNNING` guard prevents that inner call from triggering a second Critic run. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
 
 ### 2.11 Role Status Computation
 The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
@@ -173,7 +173,7 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 
 **Builder Precedence (highest wins):** INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 
-**Builder Lifecycle State Dependency:** Builder status computation requires `.agentic_devops/cache/feature_status.json` to determine the feature's lifecycle state. If the feature is in TODO lifecycle state, Builder is TODO regardless of traceability or test status -- the spec has changed and the implementation must be reviewed. If `feature_status.json` is unavailable, lifecycle-based TODO detection is skipped with a note in the report.
+**Builder Lifecycle State Dependency:** Builder status computation requires `.purlin/cache/feature_status.json` to determine the feature's lifecycle state. If the feature is in TODO lifecycle state, Builder is TODO regardless of traceability or test status -- the spec has changed and the implementation must be reviewed. If `feature_status.json` is unavailable, lifecycle-based TODO detection is skipped with a note in the report.
 
 **QA Status:**
 *   `FAIL`: Has OPEN BUGs in User Testing Discoveries. (Lifecycle-independent.)
@@ -186,7 +186,7 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 
 **QA Actionability Principle:** QA=TODO only when QA has work to do RIGHT NOW. OPEN items routing to Architect (DISCOVERYs, INTENT_DRIFTs) and SPEC_UPDATED items waiting for Builder (feature in TODO lifecycle) are not QA-actionable. This ensures the CDD dashboard shows at most one role with actionable TODO per discovery lifecycle step, making it unambiguous which agent to run next.
 
-**Lifecycle State Dependency:** QA TODO conditions (a) and (b) both use `.agentic_devops/cache/feature_status.json` to determine the feature's lifecycle state (TESTING). If unavailable, TESTING-based TODO detection is skipped for both conditions. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent.
+**Lifecycle State Dependency:** QA TODO conditions (a) and (b) both use `.purlin/cache/feature_status.json` to determine the feature's lifecycle state (TESTING). If unavailable, TESTING-based TODO detection is skipped for both conditions. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent.
 
 ### 2.12 Regression Scope Computation
 The Critic MUST compute a regression set for each TESTING feature based on the Builder's declared change scope. The scope is extracted from the most recent status commit message for the feature.
@@ -236,7 +236,7 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
 The Critic MUST detect untracked files in the working directory and generate Architect action items for triage.
 
 *   **Detection:** Run `git status --porcelain` and collect all untracked entries (lines starting with `??`).
-*   **Filtering:** Exclude files and directories already covered by `.gitignore` patterns (git handles this automatically). Also exclude the `.agentic_devops/` directory and any files inside `.claude/`.
+*   **Filtering:** Exclude files and directories already covered by `.gitignore` patterns (git handles this automatically). Also exclude the `.purlin/` directory and any files inside `.claude/`.
 *   **Action Item Generation:** For each untracked file (or untracked directory, reported as a single entry), generate an Architect action item:
     *   Priority: **MEDIUM**.
     *   Category: `untracked_file`.

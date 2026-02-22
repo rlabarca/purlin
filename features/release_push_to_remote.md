@@ -30,7 +30,7 @@ Both commits and tags are pushed. If either command fails, the Architect reports
 
 ### 2.4 Enable/Disable Behavior
 
-This step may be set to `enabled: false` in `.agentic_devops/release/config.json`. When disabled, the step is skipped entirely and the release is considered complete at the prior step.
+This step may be set to `enabled: false` in `.purlin/release/config.json`. When disabled, the step is skipped entirely and the release is considered complete at the prior step.
 
 ### 2.5 Step Metadata
 
@@ -66,7 +66,7 @@ And awaits explicit user confirmation before proceeding,
 And does not force-push without that confirmation.
 
 #### Scenario: Step is disabled
-Given `.agentic_devops/release/config.json` has `purlin.push_to_remote` set to `enabled: false`,
+Given `.purlin/release/config.json` has `purlin.push_to_remote` set to `enabled: false`,
 When the Architect executes the release checklist,
 Then the `purlin.push_to_remote` step is skipped entirely,
 And the release is considered complete at the prior step.
@@ -75,4 +75,4 @@ And the release is considered complete at the prior step.
 
 This is the only global release step with a non-null `code` field. The shell command `git push && git push --tags` is the canonical execution path. However, the Architect always verifies pre-push conditions (Sections 2.1–2.2) before invoking it.
 
-In Purlin's own `.agentic_devops/release/config.json`, this step is currently set to `enabled: false` pending remote repository setup.
+In Purlin's own `.purlin/release/config.json`, this step is currently set to `enabled: false` pending remote repository setup.

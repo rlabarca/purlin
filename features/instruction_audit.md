@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This feature defines the `purlin.instruction_audit` release step: a pre-push audit that verifies the `.agentic_devops/` override files do not introduce contradictions or drift against the base instruction layer. It is one of the global release steps defined in `tools/release/global_steps.json` and applies to all projects using the Purlin framework — both the framework repository itself and consumer projects.
+This feature defines the `purlin.instruction_audit` release step: a pre-push audit that verifies the `.purlin/` override files do not introduce contradictions or drift against the base instruction layer. It is one of the global release steps defined in `tools/release/global_steps.json` and applies to all projects using the Purlin framework — both the framework repository itself and consumer projects.
 
 ## 2. Requirements
 
@@ -15,10 +15,10 @@ This feature defines the `purlin.instruction_audit` release step: a pre-push aud
 
 The Architect executes this step against the four standard override files:
 
-- `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`
-- `.agentic_devops/ARCHITECT_OVERRIDES.md`
-- `.agentic_devops/BUILDER_OVERRIDES.md`
-- `.agentic_devops/QA_OVERRIDES.md`
+- `.purlin/HOW_WE_WORK_OVERRIDES.md`
+- `.purlin/ARCHITECT_OVERRIDES.md`
+- `.purlin/BUILDER_OVERRIDES.md`
+- `.purlin/QA_OVERRIDES.md`
 
 Each override file is cross-referenced against its corresponding base instruction file in `instructions/`. The base files are read-only; the override files are the unit of correction.
 
@@ -49,14 +49,14 @@ This step is registered in `tools/release/global_steps.json` as:
 | ID | `purlin.instruction_audit` |
 | Friendly Name | `Purlin Agent Instruction Audit` |
 | Code | null |
-| Agent Instructions | "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit." |
+| Agent Instructions | "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit." |
 
 ## 3. Scenarios
 
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Clean audit with no issues
-Given all four `.agentic_devops/` override files are present and consistent with the base layer,
+Given all four `.purlin/` override files are present and consistent with the base layer,
 When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect reports "Instruction audit: CLEAN — no contradictions, stale paths, or terminology mismatches found."
 And no commits are made.
@@ -85,4 +85,4 @@ And the release does not proceed until the conflict is resolved.
 
 This feature has no automated test coverage. Verification is performed by the Architect during the release process per the scenarios above. The QA column for this feature will always be `N/A`.
 
-The audit scope covers only the four standard override files. Other files in `.agentic_devops/` (e.g., `config.json`, `runtime/`, `cache/`) are out of scope for this step.
+The audit scope covers only the four standard override files. Other files in `.purlin/` (e.g., `config.json`, `runtime/`, `cache/`) are out of scope for this step.

@@ -11,7 +11,7 @@ Launchers use inline Python to parse nested JSON from config.json. This avoids a
 Reading the model for the architect role:
 ```python
 import json,sys
-c=json.load(open('.agentic_devops/config.json'))
+c=json.load(open('.purlin/config.json'))
 a=c.get('agents',{}).get('architect',{})
 print(f"AGENT_MODEL={a.get('model','')}")
 print(f"AGENT_EFFORT={a.get('effort','')}")
@@ -40,7 +40,7 @@ The provider probe infrastructure is retired. The Builder MUST delete:
 - `tools/detect-providers.sh`
 
 ### Config Files to Update
-Both `config.json` and `agentic_devops.sample/config.json` MUST be updated:
+Both `config.json` and `purlin-config-sample/config.json` MUST be updated:
 - Remove the `llm_providers` object
 - Add a top-level `models` array (see Section 2.1 canonical schema)
 - Remove `provider` field from each `agents.*` entry

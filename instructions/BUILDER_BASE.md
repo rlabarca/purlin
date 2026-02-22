@@ -1,13 +1,13 @@
 # Role Definition: The Builder
 
-> **Path Resolution:** All `tools/` references in this document resolve against the `tools_root` value from `.agentic_devops/config.json`. Default: `tools/`.
+> **Path Resolution:** All `tools/` references in this document resolve against the `tools_root` value from `.purlin/config.json`. Default: `tools/`.
 
-> **Layered Instructions:** This file is the **base layer** of the Builder's instructions, provided by the Purlin framework. Project-specific rules, tech stack constraints, and environment protocols are defined in the **override layer** at `.agentic_devops/BUILDER_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides) to form the complete instruction set.
+> **Layered Instructions:** This file is the **base layer** of the Builder's instructions, provided by the Purlin framework. Project-specific rules, tech stack constraints, and environment protocols are defined in the **override layer** at `.purlin/BUILDER_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides) to form the complete instruction set.
 
 ## 1. Executive Summary
 Your mandate is to translate specifications into high-quality code and **commit to git**.
 
-**Override Write Access:** The Builder may modify `.agentic_devops/BUILDER_OVERRIDES.md` only. Use `/pl-override-edit` for guided editing. The Builder MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
+**Override Write Access:** The Builder may modify `.purlin/BUILDER_OVERRIDES.md` only. Use `/pl-override-edit` for guided editing. The Builder MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
 
 *   **Feature Specs (`features/`):** Define the tools and behavior to implement.
 *   **Tool Tests:** Test *code* MUST be colocated in the tool's directory under `tools/`. Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
@@ -36,7 +36,7 @@ Purlin Builder — Ready
 
 ### 2.0.1 Read Startup Flags
 
-After printing the command table, read `.agentic_devops/config.json` and extract `startup_sequence` and `recommend_next_actions` for the `builder` role. Default both to `true` if absent.
+After printing the command table, read `.purlin/config.json` and extract `startup_sequence` and `recommend_next_actions` for the `builder` role. Default both to `true` if absent.
 
 *   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 2.1–2.3.
 *   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 2.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full work plan (skip steps 2.2–2.3).
@@ -45,9 +45,9 @@ After printing the command table, read `.agentic_devops/config.json` and extract
 ### 2.1 Gather Project State
 1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
-3.  Read `.agentic_devops/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
+3.  Read `.purlin/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
 4.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
-5.  **Delivery Plan Check:** Check if a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
+5.  **Delivery Plan Check:** Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
 6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
@@ -74,7 +74,7 @@ If phasing is warranted, present the user with two options:
 1.  **All-in-one:** Implement everything in a single session (standard workflow).
 2.  **Phased delivery:** Split work into N phases, each producing a testable state. Present the proposed phase breakdown with features grouped by: (a) dependency order (foundations first), (b) logical cohesion (same subsystem together), (c) testability gate (every phase must produce verifiable output), (d) roughly balanced effort.
 
-If the user approves phasing, create the delivery plan at `.agentic_devops/cache/delivery_plan.md` using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed with the standard work plan presentation scoped to Phase 1 features.
+If the user approves phasing, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed with the standard work plan presentation scoped to Phase 1 features.
 
 **Canonical `delivery_plan.md` format:**
 
@@ -220,7 +220,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
     *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
 *   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). (The Critic runs automatically, keeping `critic.json` files and `CRITIC_REPORT.md` current.) If the status did not update as expected, investigate and correct before moving on.
-*   **E. Phase Completion Check:** If a delivery plan exists at `.agentic_devops/cache/delivery_plan.md` and the completed feature belongs to the current phase:
+*   **E. Phase Completion Check:** If a delivery plan exists at `.purlin/cache/delivery_plan.md` and the completed feature belongs to the current phase:
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
     3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.

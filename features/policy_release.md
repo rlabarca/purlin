@@ -22,7 +22,7 @@ This policy establishes the governance rules and invariants for the Purlin relea
 *   The CDD Dashboard and CLI tooling treat `global_steps.json` as a read-only data source at runtime.
 
 ### 2.3 Local Config as Single Source of Truth
-*   The local config file (`.agentic_devops/release/config.json`) is the authoritative, ordered list of steps that constitute a project's release process.
+*   The local config file (`.purlin/release/config.json`) is the authoritative, ordered list of steps that constitute a project's release process.
 *   Ordering and enable/disable state are determined solely by the local config. The global step definition order is informational, not authoritative.
 *   If the local config does not exist, the system behaves as if all known steps are enabled and ordered by their declaration order in `global_steps.json` followed by `local_steps.json`.
 
@@ -37,13 +37,13 @@ This policy establishes the governance rules and invariants for the Purlin relea
 *   Unknown step IDs in the local config (referencing steps not present in either JSON file) are silently skipped with a warning. They never cause a hard error, ensuring forward compatibility when a global step is removed.
 
 ### 2.6 Architect Ownership
-*   The `.agentic_devops/release/` directory (both `local_steps.json` and `config.json`) is Architect-owned. The Architect agent creates and maintains these files.
+*   The `.purlin/release/` directory (both `local_steps.json` and `config.json`) is Architect-owned. The Architect agent creates and maintains these files.
 *   The CDD Dashboard MAY write to `config.json` when the user reorders or toggles steps via the UI. This is the only automated write to Architect-owned files permitted.
 *   Builders and QA agents do not modify release config files.
 
 ## 3. FORBIDDEN Patterns
 
-*   `purlin.` prefix in local step IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"purlin\.[^"]*"` in `.agentic_devops/release/local_steps.json`.
+*   `purlin.` prefix in local step IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"purlin\.[^"]*"` in `.purlin/release/local_steps.json`.
 
 ## Implementation Notes
 

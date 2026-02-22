@@ -4,7 +4,7 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
-Manage local release steps interactively. Operates on `.agentic_devops/release/local_steps.json` and `.agentic_devops/release/config.json` via `tools/release/manage_step.py`.
+Manage local release steps interactively. Operates on `.purlin/release/local_steps.json` and `.purlin/release/config.json` via `tools/release/manage_step.py`.
 
 **Supported operations:** `create`, `modify`, `delete`
 **Usage:** `/pl-release-step [create|modify|delete] [<step-id>]`

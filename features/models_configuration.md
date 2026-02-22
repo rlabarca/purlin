@@ -24,7 +24,7 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     *   `model` (string): Model ID from the `models` array.
     *   `effort` (string): One of `"low"`, `"medium"`, `"high"`. Only meaningful when the model's `capabilities.effort` is `true`.
     *   `bypass_permissions` (boolean): Whether to skip permission prompts. Only meaningful when the model's `capabilities.permissions` is `true`.
-*   **Canonical Schema:** The following structure is the reference for both `config.json` and `agentic_devops.sample/config.json`. The Builder MUST update both files to match, removing the former `llm_providers` wrapper and any `provider` fields from `agents.*` entries:
+*   **Canonical Schema:** The following structure is the reference for both `config.json` and `purlin-config-sample/config.json`. The Builder MUST update both files to match, removing the former `llm_providers` wrapper and any `provider` fields from `agents.*` entries:
 
 ```json
 {

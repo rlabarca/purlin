@@ -97,7 +97,7 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 
 ### 2.6 Project Name Display
 *   **Source (resolution order):**
-    1.  The `project_name` key in `.agentic_devops/config.json` (preferred).
+    1.  The `project_name` key in `.purlin/config.json` (preferred).
     2.  If the key is absent or empty, fall back to the **directory name** of the project root (i.e., the last path component, not the full path). For example, if the project root is `/home/user/my-app`, the displayed name is `my-app`.
 *   **Position:** Displayed on a second line below the tool title in the page header left group, left-justified. The left edge of the project name text MUST align horizontally with the left edge of the "P" in the PURLIN title above it (i.e., the project name sits directly under the title text, not under the logo).
 *   **Font:** `var(--font-body)` (Inter), weight 500 (Medium), same size as body text (14px). No text-transform.

@@ -26,21 +26,21 @@ No additional fields are permitted in the schema at this time. Tooling MUST igno
 
 ### 2.2 Global Steps Storage
 
-*   **Path:** `<tools_root>/release/global_steps.json` (resolved via `tools_root` in `.agentic_devops/config.json`; default `tools/release/global_steps.json`).
+*   **Path:** `<tools_root>/release/global_steps.json` (resolved via `tools_root` in `.purlin/config.json`; default `tools/release/global_steps.json`).
 *   **Format:** `{"steps": [ <step-object>, ... ]}`
 *   **Immutability:** Consumer projects MUST NOT modify this file. See `policy_release.md` Invariant 2.2.
 *   **Read access:** The CDD dashboard server and CLI tooling read this file on every checklist load. It is never cached beyond the duration of a single tool invocation.
 
 ### 2.3 Local Steps Storage
 
-*   **Path:** `.agentic_devops/release/local_steps.json`
+*   **Path:** `.purlin/release/local_steps.json`
 *   **Format:** `{"steps": [ <step-object>, ... ]}`
 *   **Ownership:** Architect-owned. The Architect agent creates and maintains this file.
 *   **Absence:** If the file does not exist, it is treated as an empty steps array (`{"steps": []}`). The system MUST NOT error when this file is absent.
 
 ### 2.4 Local Config (Ordering and Enable/Disable State)
 
-*   **Path:** `.agentic_devops/release/config.json`
+*   **Path:** `.purlin/release/config.json`
 *   **Format:**
     ```json
     {
@@ -106,13 +106,13 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 - Friendly Name: "Purlin Verify Dependency Integrity"
 - Description: "Verifies that the dependency graph is acyclic and all prerequisite links are valid."
 - Code: null
-- Agent Instructions: "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
+- Agent Instructions: "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
 
 **`purlin.instruction_audit`**
 - Friendly Name: "Purlin Agent Instruction Audit"
-- Description: "Verifies that `.agentic_devops/` override files are consistent with the base instruction layer and do not introduce contradictions."
+- Description: "Verifies that `.purlin/` override files are consistent with the base instruction layer and do not introduce contradictions."
 - Code: null
-- Agent Instructions: "Check `.agentic_devops/HOW_WE_WORK_OVERRIDES.md`, `.agentic_devops/ARCHITECT_OVERRIDES.md`, `.agentic_devops/BUILDER_OVERRIDES.md`, and `.agentic_devops/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
+- Agent Instructions: "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
 
 **`purlin.doc_consistency_check`**
 - Friendly Name: "Documentation Consistency Check"
@@ -128,7 +128,7 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 
 ### 2.8 Purlin-Local Release Steps
 
-The following steps are defined in Purlin's `.agentic_devops/release/local_steps.json`. They are specific to the Purlin framework repository and do NOT appear in consumer project checklists.
+The following steps are defined in Purlin's `.purlin/release/local_steps.json`. They are specific to the Purlin framework repository and do NOT appear in consumer project checklists.
 
 **`doc_consistency_framework`**
 - Friendly Name: "Framework Documentation Consistency"
@@ -136,7 +136,7 @@ The following steps are defined in Purlin's `.agentic_devops/release/local_steps
 - Code: null
 - Agent Instructions: "Cross-reference `instructions/HOW_WE_WORK_BASE.md`, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `features/policy_critic.md`. Check for: direct contradictions between files, stale file path references, terminology mismatches, and lifecycle/protocol definitions that differ between the shared philosophy and role-specific instructions. Also verify that README.md is consistent with the current instruction file content. Fix any inconsistencies and commit."
 
-This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `purlin.instruction_audit`, so both override-consistency and instruction-internal-consistency checks run together before the final release steps.
+This step is positioned in Purlin's `.purlin/release/config.json` immediately after `purlin.instruction_audit`, so both override-consistency and instruction-internal-consistency checks run together before the final release steps.
 
 **`critic_consistency_check`**
 - Friendly Name: "Critic Consistency Check & README Update"
@@ -144,7 +144,7 @@ This step is positioned in Purlin's `.agentic_devops/release/config.json` immedi
 - Code: null
 - Agent Instructions: Two-phase execution. Phase 1 (Audit): reads `features/critic_tool.md`, `features/policy_critic.md`, `instructions/HOW_WE_WORK_BASE.md` Section 8, `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, and `instructions/QA_BASE.md`. Checks for: deprecated "quality gate" terminology (all files must use "coordination engine"), routing rule consistency for BUG/DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE across `policy_critic.md`, HOW_WE_WORK Section 7.5, and QA_BASE, role status enumeration consistency, `critic_gate_blocking` described as no-op everywhere it appears, startup mandate (all role files must mandate `tools/cdd/status.sh` at session start), and CLI-only agent interface contract. Produces a findings table (CRITICAL / WARNING / OK). CRITICAL findings halt the step. Phase 2 (README Update): writes or updates the `## The Critic` section in README.md immediately after `## The Agents`, before `## Setup & Configuration`. Commits README.md with message `docs(readme): update Role of the Critic section`.
 
-This step is positioned in Purlin's `.agentic_devops/release/config.json` immediately after `doc_consistency_framework`, so the focused Critic audit runs after the broader instruction-file consistency check.
+This step is positioned in Purlin's `.purlin/release/config.json` immediately after `doc_consistency_framework`, so the focused Critic audit runs after the broader instruction-file consistency check.
 
 ## 3. Scenarios
 
@@ -186,7 +186,7 @@ None. All scenarios for this feature are fully automated (unit tests against the
 
 *   The auto-discovery algorithm in Section 2.5 is designed to be idempotent: running it multiple times against the same inputs produces the same result.
 *   The Builder MUST update `tools/release/global_steps.json` to contain the 6 step definitions from Section 2.7. Remove the `purlin.mark_release_complete` entry. The exact JSON structure follows the schema in Section 2.1.
-*   The Builder MUST update `.agentic_devops/release/config.json` to remove the `{"id": "purlin.mark_release_complete", "enabled": true}` entry from the steps array.
+*   The Builder MUST update `.purlin/release/config.json` to remove the `{"id": "purlin.mark_release_complete", "enabled": true}` entry from the steps array.
 *   **Removal rationale (`purlin.mark_release_complete`):** This step assumed per-version release specification files (e.g., `release_v0.5.md`) marked `[Complete]` at release time. This project does not use per-version release files. The only release-related feature files are specs for the release checklist tool itself, which follow the standard CDD feature lifecycle and are not a release-time Architect action. The step had no valid target and was retired.
 *   The `code` field for `purlin.push_to_remote` is the only step with a non-null `code` value in the initial set. The other steps require agent judgment or interactive verification and cannot be safely automated with a single shell command.
 *   There are no Manual Scenarios for this feature. Verification is entirely automated (unit tests against the data loading and resolution logic).

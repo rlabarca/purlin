@@ -2,7 +2,7 @@
 
 > IMPORTANT: This command is local to the Purlin framework repository. It MUST NOT be distributed
 > to consumer projects via bootstrap.sh or sync_upstream.sh. Consumer project agents MUST NEVER
-> modify base instruction files — use the override layer at `.agentic_devops/` instead.
+> modify base instruction files — use the override layer at `.purlin/` instead.
 
 ---
 
@@ -19,7 +19,7 @@ indicate this is a consumer project, not the Purlin repo itself).
 
 1. Confirm which base file to edit and what change is needed and why.
 2. Read the target base file in full.
-3. Run `/pl-override-conflicts` on all `.agentic_devops/` and `agentic_devops.sample/` overrides
+3. Run `/pl-override-conflicts` on all `.purlin/` and `purlin-config-sample/` overrides
    that correspond to the file being changed. If proposed changes would break existing overrides,
    surface them before proceeding.
 4. Apply additive-only principle where possible. For revisionary changes (not extensions), state

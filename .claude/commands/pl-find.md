@@ -7,4 +7,4 @@ Given the topic or concern provided as an argument, search the spec system and r
 3. Whether the topic is covered only in instruction files (process/workflow) rather than feature specs.
 4. A recommendation: does this need a new spec, a spec refinement, an anchor node update, or is it already covered?
 
-Use Glob and Grep to search `features/`, `instructions/`, and `.agentic_devops/` for the topic keywords.
+Use Glob and Grep to search `features/`, `instructions/`, and `.purlin/` for the topic keywords.

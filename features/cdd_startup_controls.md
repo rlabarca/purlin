@@ -31,7 +31,7 @@ The flags allow expert users to bypass orientation and hand-holding while keepin
     | `false` | `false` | Expert mode: print command table, await instruction |
     | `false` | `true` | **Invalid** |
 
-*   **Canonical schema extension** (both `config.json` and `agentic_devops.sample/config.json` MUST be updated to add the new fields with defaults `true`):
+*   **Canonical schema extension** (both `config.json` and `purlin-config-sample/config.json` MUST be updated to add the new fields with defaults `true`):
 
 ```json
 "agents": {
@@ -180,7 +180,7 @@ Purlin Builder — Ready
 Initial implementation ran full orientation despite `startup_sequence: false`. Fixed by Architect adding explicit flag-gating sections (5.0.1/2.0.1/3.0.1) to all three BASE instruction files. Re-verified PASS 2026-02-22.
 
 ### Ownership Boundary
-The Builder implements: config schema updates (both `config.json` and `agentic_devops.sample/config.json`), launcher validation logic, dashboard checkbox controls, and API validation. The Architect separately updates instruction files (`instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`) to add the startup print sequence and conditional startup behavior. Instruction files are not Builder-owned.
+The Builder implements: config schema updates (both `config.json` and `purlin-config-sample/config.json`), launcher validation logic, dashboard checkbox controls, and API validation. The Architect separately updates instruction files (`instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`) to add the startup print sequence and conditional startup behavior. Instruction files are not Builder-owned.
 
 ### Config Reading Pattern for New Fields
 Launchers read the new flags with the same Python one-liner pattern used for existing agent fields:
@@ -188,7 +188,7 @@ Launchers read the new flags with the same Python one-liner pattern used for exi
 eval "$(python3 -c "
 import json, sys
 try:
-    cfg = json.load(open('.agentic_devops/config.json'))
+    cfg = json.load(open('.purlin/config.json'))
     a = cfg.get('agents', {}).get('ROLE', {})
     print('AGENT_STARTUP=' + ('true' if a.get('startup_sequence', True) else 'false'))
     print('AGENT_RECOMMEND=' + ('true' if a.get('recommend_next_actions', True) else 'false'))

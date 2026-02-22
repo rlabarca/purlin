@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This feature defines the `doc_consistency_framework` local release step: a Purlin-repository-specific audit that verifies Purlin's own instruction files are internally consistent with each other and with the framework's README. This step is defined in Purlin's `.agentic_devops/release/local_steps.json` and does not appear in consumer project checklists.
+This feature defines the `doc_consistency_framework` local release step: a Purlin-repository-specific audit that verifies Purlin's own instruction files are internally consistent with each other and with the framework's README. This step is defined in Purlin's `.purlin/release/local_steps.json` and does not appear in consumer project checklists.
 
 Consumer projects do not own instruction files — those reside inside the Purlin submodule and are read-only from the consumer's perspective. This step is therefore only meaningful in the Purlin framework repository itself.
 
@@ -29,7 +29,7 @@ The Architect cross-references all five base instruction files and the framework
 For each pair of files in scope, the Architect verifies:
 
 1. **No direct contradictions.** A rule stated in one instruction file must not be contradicted by a rule in another.
-2. **No stale file path references.** All `tools/`, `features/`, and `.agentic_devops/` paths referenced in instruction files must exist in the current codebase.
+2. **No stale file path references.** All `tools/`, `features/`, and `.purlin/` paths referenced in instruction files must exist in the current codebase.
 3. **No terminology mismatches.** Role names, lifecycle status labels, step IDs, and protocol names must be consistent across all files.
 4. **No lifecycle or protocol divergence.** Definitions of the Feature Lifecycle, Discovery lifecycle, Critic routing, and release protocol MUST be consistent between `HOW_WE_WORK_BASE` and the role-specific base files.
 5. **README accuracy.** README.md must accurately describe the framework's current instruction-file-governed behavior.
@@ -82,4 +82,4 @@ And commits the correction.
 
 This step is positioned immediately after `purlin.instruction_audit` in Purlin's release config, so override consistency (`purlin.instruction_audit`) and instruction-internal consistency (this step) run together before the broader doc check.
 
-This step's scope intentionally excludes `.agentic_devops/` override files — those are covered by `purlin.instruction_audit`. This step focuses on the base instruction layer.
+This step's scope intentionally excludes `.purlin/` override files — those are covered by `purlin.instruction_audit`. This step focuses on the base instruction layer.

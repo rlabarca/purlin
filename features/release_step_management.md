@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This feature defines the CLI tool and Architect slash command for creating, modifying, and deleting local release steps. The tool enforces schema correctness and namespace safety before writing to `.agentic_devops/release/local_steps.json` and `.agentic_devops/release/config.json`, preventing the malformed states that manual JSON editing can introduce.
+This feature defines the CLI tool and Architect slash command for creating, modifying, and deleting local release steps. The tool enforces schema correctness and namespace safety before writing to `.purlin/release/local_steps.json` and `.purlin/release/config.json`, preventing the malformed states that manual JSON editing can introduce.
 
 ## 2. Requirements
 
@@ -17,8 +17,8 @@ A CLI tool at `tools/release/manage_step.py` accepts three sub-commands: `create
 
 **Shared behavior across all sub-commands:**
 
-*   Tool locates the project root using `AGENTIC_PROJECT_ROOT` first, then directory-climbing fallback (per the submodule safety contract in `submodule_bootstrap.md`).
-*   Target files are `.agentic_devops/release/local_steps.json` and `.agentic_devops/release/config.json`.
+*   Tool locates the project root using `PURLIN_PROJECT_ROOT` first, then directory-climbing fallback (per the submodule safety contract in `submodule_bootstrap.md`).
+*   Target files are `.purlin/release/local_steps.json` and `.purlin/release/config.json`.
 *   If `local_steps.json` does not exist, treat it as `{"steps": []}`. Do NOT error on absence.
 *   If `config.json` does not exist, treat it as `{"steps": []}`. Do NOT error on absence.
 *   Writes are atomic: write to a temp file, then rename into place to prevent partial-write corruption.
@@ -222,4 +222,4 @@ None. All verification is automated.
 *   Atomic writes must use a temp file in the same directory as the target (not `/tmp`), to ensure the rename is on the same filesystem. Pattern: write to `<file>.tmp`, then `os.replace("<file>.tmp", "<file>")`.
 *   The slash command MUST call the CLI tool rather than manipulating JSON directly. This ensures validation is enforced through a single code path.
 *   After the Builder implements `manage_step.py`, the `ARCHITECT_BASE.md` Authorized Slash Commands section must be updated to register `/pl-release-step`. Use `/pl-edit-base` to make that change.
-*   `global_steps.json` is located via `tools_root` from `.agentic_devops/config.json`, consistent with the path resolution convention in `HOW_WE_WORK_BASE.md` Section 6.
+*   `global_steps.json` is located via `tools_root` from `.purlin/config.json`, consistent with the path resolution convention in `HOW_WE_WORK_BASE.md` Section 6.

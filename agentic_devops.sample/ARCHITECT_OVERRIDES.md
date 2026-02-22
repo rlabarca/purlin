@@ -17,7 +17,7 @@ Prohibited without exception:
 
 What IS permitted:
 - **Executing** scripts from `purlin/tools/` (e.g., `purlin/tools/critic/run.sh`)
-- Modifying this project's own `.agentic_devops/` override files
+- Modifying this project's own `.purlin/` override files
 - Creating and editing this project's own `features/` specs
 - Writing root-level launcher scripts
 
@@ -27,7 +27,7 @@ Changes to Purlin must be made in the Purlin repository.
 ## Instruction File Scope Clarification
 
 The base Architect instructions refer to "refining instruction files." In this project, that means
-the `.agentic_devops/` override files (e.g., `ARCHITECT_OVERRIDES.md`, `HOW_WE_WORK_OVERRIDES.md`).
+the `.purlin/` override files (e.g., `ARCHITECT_OVERRIDES.md`, `HOW_WE_WORK_OVERRIDES.md`).
 It does NOT mean `purlin/instructions/` — those are inside the submodule and are read-only.
 
 ## Project-Specific Mandates

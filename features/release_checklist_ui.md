@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This feature defines the "RELEASE CHECKLIST" section in the CDD Dashboard. It surfaces the fully resolved, ordered release step list to human users as a collapsible section with drag-to-reorder, enable/disable toggles, and a step detail modal. Changes to ordering and enabled state are persisted back to `.agentic_devops/release/config.json` via a POST API.
+This feature defines the "RELEASE CHECKLIST" section in the CDD Dashboard. It surfaces the fully resolved, ordered release step list to human users as a collapsible section with drag-to-reorder, enable/disable toggles, and a step detail modal. Changes to ordering and enabled state are persisted back to `.purlin/release/config.json` via a POST API.
 
 ## 2. Requirements
 
@@ -75,7 +75,7 @@ The expanded/collapsed state of the RELEASE CHECKLIST section is persisted in `l
 
 ### 2.8 Refresh Stability
 
-The RELEASE CHECKLIST section participates in the dashboard's existing 5-second incremental refresh cycle (per `cdd_status_monitor.md` Section 2.10). When a backing config file changes — `.agentic_devops/release/config.json`, `tools/release/global_steps.json`, or `.agentic_devops/release/local_steps.json` — the section MUST update to reflect the new state without any visible disruption.
+The RELEASE CHECKLIST section participates in the dashboard's existing 5-second incremental refresh cycle (per `cdd_status_monitor.md` Section 2.10). When a backing config file changes — `.purlin/release/config.json`, `tools/release/global_steps.json`, or `.purlin/release/local_steps.json` — the section MUST update to reflect the new state without any visible disruption.
 
 **What updates on each refresh cycle (incremental DOM mutation only):**
 *   Step order and step content in the expanded list.
@@ -118,7 +118,7 @@ The `source` field is `"global"` for steps defined in `global_steps.json` and `"
 
 #### `POST /release-checklist/config`
 
-Accepts the updated config as a JSON body and writes it to `.agentic_devops/release/config.json`.
+Accepts the updated config as a JSON body and writes it to `.purlin/release/config.json`.
 
 **Request body:**
 ```json
@@ -165,7 +165,7 @@ And no page reload is required for these changes to appear.
 Given the release checklist is expanded showing at least 3 steps in their current order,
 And the step currently at position 3 has a known step ID (e.g. "purlin.push_to_remote"),
 When the user grabs that step by its drag handle and drops it at position 1,
-Then the `steps` array in `.agentic_devops/release/config.json` lists that step's ID as the first entry,
+Then the `steps` array in `.purlin/release/config.json` lists that step's ID as the first entry,
 And the IDs of all other steps appear in the file in the same relative order they now occupy in the displayed list.
 
 #### Scenario: Toggle Disables Step
@@ -187,7 +187,7 @@ Then the modal opens showing DESCRIPTION and AGENT INSTRUCTIONS sections,
 And no CODE section is rendered.
 
 #### Scenario: Local Step Identified
-Given the project has a local step defined in `.agentic_devops/release/local_steps.json`,
+Given the project has a local step defined in `.purlin/release/local_steps.json`,
 When the release checklist is expanded,
 Then that step's row displays a "LOCAL" badge,
 And when the user opens the step's detail modal, the modal header displays the "LOCAL" source badge.
@@ -195,7 +195,7 @@ And when the user opens the step's detail modal, the modal header displays the "
 #### Scenario: Config File Change Refreshes Without Visual Disruption
 Given the CDD Dashboard is open in a browser with the RELEASE CHECKLIST section expanded,
 And the user has scrolled down so that the release checklist is visible,
-When `.agentic_devops/release/config.json` is edited externally to change the enabled state of one step or its order,
+When `.purlin/release/config.json` is edited externally to change the enabled state of one step or its order,
 Then within one 5-second refresh cycle the release checklist section updates to reflect the new state,
 And the section remains expanded (it does not collapse and re-expand),
 And no row flickers or disappears and reappears during the update,
@@ -263,7 +263,7 @@ And rows whose content did not change appear visually undisturbed.
 ## Implementation Notes
 
 *   The drag-to-reorder implementation MUST be consistent with any drag/drop library or pattern already used in the CDD Dashboard. If none exists, the HTML5 Drag and Drop API is the default. Do not introduce a new dependency without confirming with the Architect.
-*   The `POST /release-checklist/config` endpoint writes directly to `.agentic_devops/release/config.json`. The server MUST handle concurrent writes gracefully (e.g., the user rapidly toggling checkboxes); debouncing on the frontend is preferred over server-side locking for this use case.
+*   The `POST /release-checklist/config` endpoint writes directly to `.purlin/release/config.json`. The server MUST handle concurrent writes gracefully (e.g., the user rapidly toggling checkboxes); debouncing on the frontend is preferred over server-side locking for this use case.
 *   The `purlin-section-states` localStorage key already exists (per `cdd_status_monitor.md`). The RELEASE CHECKLIST section's key within that object SHOULD be `release-checklist`.
 *   The Step Detail Modal pattern references the Feature Detail Modal. If the Feature Detail Modal does not yet exist as an independent component, the Builder should implement the modal as a reusable component and refactor the Feature Detail Modal to use it.
 *   **Refresh Stability:** Uses `refreshReleaseChecklist()` called from `refreshStatus()` after innerHTML replacement. Fetches `/release-checklist`, compares against `rcStepsCache`, and only updates changed rows (reorder via DOM reappend, enabled state via checkbox+dimming diff). A `rcPendingSave` flag prevents refresh overwrites during in-flight `POST /release-checklist/config` requests — same pattern as the agents section's `pendingWrites` mechanism. Badge updates use shared `rcUpdateBadge()` function.

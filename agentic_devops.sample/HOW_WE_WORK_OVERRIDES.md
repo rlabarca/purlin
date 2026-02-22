@@ -17,7 +17,7 @@ Prohibited without exception:
 
 What IS permitted:
 - **Executing** scripts from `purlin/tools/` (e.g., `purlin/tools/critic/run.sh`)
-- Modifying this project's own `.agentic_devops/` override files
+- Modifying this project's own `.purlin/` override files
 - Creating and editing this project's own `features/` specs
 - Writing root-level launcher scripts
 

@@ -12,7 +12,7 @@ The `<step-name>` argument matches against a step's `friendly_name` (case-insens
 
 ---
 
-1. **Resolve the checklist.** Load the fully resolved release step list by merging `.agentic_devops/release/config.json` (ordering and enabled state) with step definitions from `tools/release/global_steps.json` and `.agentic_devops/release/local_steps.json`. Apply the auto-discovery algorithm from `release_checklist_core.md` Section 2.5.
+1. **Resolve the checklist.** Load the fully resolved release step list by merging `.purlin/release/config.json` (ordering and enabled state) with step definitions from `tools/release/global_steps.json` and `.purlin/release/local_steps.json`. Apply the auto-discovery algorithm from `release_checklist_core.md` Section 2.5.
 
 2. **Select a step.**
    - If a `<step-name>` argument was provided: match it against all step `friendly_name` values (case-insensitive, partial match allowed).

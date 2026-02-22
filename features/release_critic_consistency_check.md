@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This feature defines the `critic_consistency_check` local release step: a Purlin-repository-specific two-phase audit that (1) cross-references all Critic-related specification and instruction files for inconsistencies in terminology, routing rules, and responsibilities, and (2) writes or updates the `## The Critic` section in README.md. This step is defined in Purlin's `.agentic_devops/release/local_steps.json` and does not appear in consumer project checklists.
+This feature defines the `critic_consistency_check` local release step: a Purlin-repository-specific two-phase audit that (1) cross-references all Critic-related specification and instruction files for inconsistencies in terminology, routing rules, and responsibilities, and (2) writes or updates the `## The Critic` section in README.md. This step is defined in Purlin's `.purlin/release/local_steps.json` and does not appear in consumer project checklists.
 
 ## 2. Requirements
 

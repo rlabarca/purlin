@@ -16,13 +16,13 @@ Scripts are named `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` and live
 ### 2.1 Script Names and Location
 *   **Files:** `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Submodule detection:** Each script MUST check for `$SCRIPT_DIR/purlin/instructions/` and fall back to `$SCRIPT_DIR/instructions/` when not in a submodule consumer context.
-*   **Project root export:** Each script MUST export `AGENTIC_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
+*   **Project root export:** Each script MUST export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
 
 ### 2.2 Prompt Assembly
 1.  Create a temporary file via `mktemp`. Register cleanup with `trap "rm -f '$PROMPT_FILE'" EXIT`.
 2.  Concatenate in order: `<framework>/instructions/HOW_WE_WORK_BASE.md`, `<framework>/instructions/<ROLE>_BASE.md`.
-3.  If `.agentic_devops/HOW_WE_WORK_OVERRIDES.md` exists, append it.
-4.  If `.agentic_devops/<ROLE>_OVERRIDES.md` exists, append it.
+3.  If `.purlin/HOW_WE_WORK_OVERRIDES.md` exists, append it.
+4.  If `.purlin/<ROLE>_OVERRIDES.md` exists, append it.
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
@@ -62,10 +62,10 @@ Session messages are passed as the trailing positional argument to the Claude CL
     And it passes --allowedTools with the Architect role restrictions
     And it passes --append-system-prompt-file pointing to the assembled prompt
 
-#### Scenario: Launcher Exports AGENTIC_PROJECT_ROOT
+#### Scenario: Launcher Exports PURLIN_PROJECT_ROOT
     Given a launcher script is invoked from any working directory
     When any launcher script (run_architect.sh, run_builder.sh, run_qa.sh) is executed
-    Then AGENTIC_PROJECT_ROOT is exported as the absolute path of the project root
+    Then PURLIN_PROJECT_ROOT is exported as the absolute path of the project root
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.

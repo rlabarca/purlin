@@ -17,7 +17,7 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
 *   **Output Variable:** After sourcing, `$PYTHON_EXE` MUST be set to the resolved Python interpreter path.
 *   **Resolution Priority:** The helper MUST resolve `$PYTHON_EXE` using the following priority order (first match wins):
     1. `$AGENTIC_PYTHON` environment variable, if set and the path exists and is executable.
-    2. `$AGENTIC_PROJECT_ROOT/.venv/` — project root venv (requires `$AGENTIC_PROJECT_ROOT` to be set).
+    2. `$PURLIN_PROJECT_ROOT/.venv/` — project root venv (requires `$PURLIN_PROJECT_ROOT` to be set).
     3. Climbing detection from the sourcing script's directory: `../../.venv` (standalone layout), then `../../../.venv` (submodule layout). The climbing base MUST be derived from `${BASH_SOURCE[1]}` (the sourcing script's path, not the helper's own path).
     4. System `python3` (via `command -v python3`).
     5. System `python` (via `command -v python`).
@@ -85,18 +85,18 @@ Example output:
     Then $PYTHON_EXE is set to the value of $AGENTIC_PYTHON
     And the .venv/ is not used
 
-#### Scenario: resolve_python Finds Project Root Venv via AGENTIC_PROJECT_ROOT
-    Given AGENTIC_PROJECT_ROOT is set to a valid project root
-    And $AGENTIC_PROJECT_ROOT/.venv/bin/python3 exists
+#### Scenario: resolve_python Finds Project Root Venv via PURLIN_PROJECT_ROOT
+    Given PURLIN_PROJECT_ROOT is set to a valid project root
+    And $PURLIN_PROJECT_ROOT/.venv/bin/python3 exists
     And AGENTIC_PYTHON is not set
     When a script sources tools/resolve_python.sh
-    Then $PYTHON_EXE is set to $AGENTIC_PROJECT_ROOT/.venv/bin/python3
+    Then $PYTHON_EXE is set to $PURLIN_PROJECT_ROOT/.venv/bin/python3
 
 #### Scenario: resolve_python Climbing Detection (Standalone Layout)
     Given the script is located at <project_root>/tools/critic/run.sh
     And <project_root>/.venv/bin/python3 exists
     And AGENTIC_PYTHON is not set
-    And AGENTIC_PROJECT_ROOT is not set
+    And PURLIN_PROJECT_ROOT is not set
     When tools/critic/run.sh sources tools/resolve_python.sh
     Then $PYTHON_EXE is set to <project_root>/.venv/bin/python3
 
@@ -104,14 +104,14 @@ Example output:
     Given the script is located at <project_root>/agentic-dev/tools/critic/run.sh
     And <project_root>/.venv/bin/python3 exists
     And AGENTIC_PYTHON is not set
-    And AGENTIC_PROJECT_ROOT is not set
+    And PURLIN_PROJECT_ROOT is not set
     When tools/critic/run.sh sources tools/resolve_python.sh
     Then $PYTHON_EXE is set to <project_root>/.venv/bin/python3
 
 #### Scenario: resolve_python Falls Back to System Python
     Given no .venv/ exists at any detectable location
     And AGENTIC_PYTHON is not set
-    And AGENTIC_PROJECT_ROOT is not set
+    And PURLIN_PROJECT_ROOT is not set
     When a script sources tools/resolve_python.sh
     Then $PYTHON_EXE is set to the system python3 path
     And no diagnostic output is printed to stderr

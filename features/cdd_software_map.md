@@ -16,7 +16,7 @@ The SW Map view is activated via the view mode toggle in the dashboard shell (de
 ### 2.1 Graph Generation
 *   **Tree Generation:** Recursively parses `> Prerequisite:` links in all feature files in `features/`.
 *   **Cycle Detection:** Must identify and flag circular dependencies.
-*   **Mermaid Export:** Generates Mermaid diagrams for documentation and reference. Mermaid files are written to `.agentic_devops/cache/feature_graph.mmd`.
+*   **Mermaid Export:** Generates Mermaid diagrams for documentation and reference. Mermaid files are written to `.purlin/cache/feature_graph.mmd`.
 
 ### 2.2 Reactive Generation
 *   **File Watch Mode:** When the CDD Dashboard server is running, the tool MUST watch `features/` for file changes (create, modify, delete).
@@ -42,7 +42,7 @@ The SW Map view is activated via the view mode toggle in the dashboard shell (de
 *   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
 
 ### 2.5 Machine-Readable Output
-*   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.agentic_devops/cache/dependency_graph.json`.
+*   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.purlin/cache/dependency_graph.json`.
 *   **Schema:**
     ```json
     {
@@ -75,7 +75,7 @@ These scenarios are validated by the Builder's automated test suite.
     And the Mermaid export files are regenerated
 
 #### Scenario: Agent Reads Dependency Graph
-    Given dependency_graph.json exists at .agentic_devops/cache/dependency_graph.json
+    Given dependency_graph.json exists at .purlin/cache/dependency_graph.json
     When an agent needs to query the dependency graph
     Then the agent reads dependency_graph.json directly
     And the agent does NOT use the web UI or parse Mermaid files

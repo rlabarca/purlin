@@ -13,7 +13,7 @@ This feature defines the `purlin.verify_dependency_integrity` release step: a st
 
 ### 2.1 Graph File Check
 
-The Architect reads `.agentic_devops/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, the Architect runs `tools/cdd/status.sh --graph` to regenerate it before proceeding.
+The Architect reads `.purlin/cache/dependency_graph.json`. If the file is absent or its modification time predates the most recently modified feature file, the Architect runs `tools/cdd/status.sh --graph` to regenerate it before proceeding.
 
 ### 2.2 Cycle Detection
 
@@ -34,20 +34,20 @@ The graph is valid when: (1) no cycles are detected, and (2) all prerequisite li
 | ID | `purlin.verify_dependency_integrity` |
 | Friendly Name | `Purlin Verify Dependency Integrity` |
 | Code | null |
-| Agent Instructions | "Read `.agentic_devops/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links." |
+| Agent Instructions | "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links." |
 
 ## 3. Scenarios
 
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Graph is current and valid
-Given `.agentic_devops/cache/dependency_graph.json` is up to date and contains no cycles or broken links,
+Given `.purlin/cache/dependency_graph.json` is up to date and contains no cycles or broken links,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the total node count and confirms graph integrity,
 And proceeds to the next release step.
 
 #### Scenario: Graph file is stale or absent
-Given `.agentic_devops/cache/dependency_graph.json` is missing or older than the most recently modified feature file,
+Given `.purlin/cache/dependency_graph.json` is missing or older than the most recently modified feature file,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect runs `tools/cdd/status.sh --graph` to regenerate the cache file,
 And proceeds with the freshly generated graph.

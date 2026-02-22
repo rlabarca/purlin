@@ -136,12 +136,12 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
     *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`. No `change_scope` field is present on tombstone entries.
-    *   `delivery_phase` is present ONLY when `.agentic_devops/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
+    *   `delivery_phase` is present ONLY when `.purlin/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
     *   Array sorted by file path (deterministic).
-*   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.agentic_devops/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
+*   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.purlin/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
 *   **API Endpoint (`/feature?file=<path>`):** Serves the raw content of the specified feature file. The `file` query parameter is the relative path (e.g., `features/cdd_status_monitor.md`). Returns 200 with `Content-Type: text/plain` on success, 404 if the file does not exist. Path traversal outside the project root MUST be rejected.
 *   **API Endpoint (`/impl-notes?file=<path>`):** Resolves the companion file for the specified feature file. If `features/<name>.md` is requested, serves `features/<name>.impl.md`. Returns 200 with `Content-Type: text/plain` on success, 404 if no companion file exists.
-*   **Internal Artifact (`feature_status.json`):** The monitor MUST also produce a `feature_status.json` file at `.agentic_devops/cache/feature_status.json`, regenerated on every request (web) or CLI invocation. This file retains the **old** lifecycle-based format with `todo`/`testing`/`complete` arrays and `test_status` fields, plus a `change_scope` field per feature (extracted from the most recent status commit's `[Scope: ...]` trailer, omitted when absent). This is an internal implementation detail consumed by the Critic for lifecycle-state-dependent computations (e.g., QA TODO detection, regression scope). It is NOT part of the public API contract.
+*   **Internal Artifact (`feature_status.json`):** The monitor MUST also produce a `feature_status.json` file at `.purlin/cache/feature_status.json`, regenerated on every request (web) or CLI invocation. This file retains the **old** lifecycle-based format with `todo`/`testing`/`complete` arrays and `test_status` fields, plus a `change_scope` field per feature (extracted from the most recent status commit's `[Scope: ...]` trailer, omitted when absent). This is an internal implementation detail consumed by the Critic for lifecycle-state-dependent computations (e.g., QA TODO detection, regression scope). It is NOT part of the public API contract.
 *   **Regeneration:** Both outputs MUST be freshly computed on every `/status.json` request. The disk file is also regenerated on dashboard requests.
 *   **Deterministic Output:** Arrays MUST be sorted by file path. Keys MUST be sorted.
 *   **Agent Contract:** Agents MUST query status via `tools/cdd/status.sh`, which outputs the same JSON schema to stdout without requiring the web server. Agents MUST NOT scrape the web dashboard, use HTTP endpoints, or guess ports.
@@ -159,8 +159,8 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
 *   **Output:** Writes the same JSON schema as the `/status.json` API endpoint to stdout. The output MUST be valid JSON parseable by `python3 json.load()`.
 *   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first.
-*   **Side Effect:** Regenerates `.agentic_devops/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic).
-*   **Project Root Detection:** Uses `AGENTIC_PROJECT_ROOT` if set, then climbing fallback (per submodule_bootstrap Section 2.11).
+*   **Side Effect:** Regenerates `.purlin/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic).
+*   **Project Root Detection:** Uses `PURLIN_PROJECT_ROOT` if set, then climbing fallback (per submodule_bootstrap Section 2.11).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
 *   **Auto-Critic Integration:** When invoked without `--graph`, `status.sh` MUST run `tools/critic/run.sh` as a prerequisite step before computing status output. This ensures all `critic.json` files and `CRITIC_REPORT.md` are current, so agents always receive fresh role status data from a single invocation. **Recursion guard:** If the `CRITIC_RUNNING` environment variable is already set, the Critic step MUST be skipped. The Critic's `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before analysis; the guard ensures that inner call does not trigger a second Critic run.
@@ -258,7 +258,7 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 
 ### 2.11 Delivery Phase Indicator
 
-*   **ACTIVE Header Annotation:** When a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`, the ACTIVE section heading displays the current phase progress: `ACTIVE (<feature_count>) [PHASE (<current>/<total>)]`. Example: `ACTIVE (5) [PHASE (2/3)]`.
+*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/cache/delivery_plan.md`, the ACTIVE section heading displays the current phase progress: `ACTIVE (<feature_count>) [PHASE (<current>/<total>)]`. Example: `ACTIVE (5) [PHASE (2/3)]`.
 *   **Parsing:** The CDD tool reads the delivery plan file, counts phases by `### Phase N:` headings, and determines the current phase (first phase with Status `PENDING`, or the phase with Status `IN_PROGRESS`). If all phases are `COMPLETE` or no delivery plan exists, the phase annotation is omitted.
 *   **Styling:** The `[PHASE (X/Y)]` text is styled with the same color as a `TODO` badge (yellow: `--purlin-warn`). It appears inline after the feature count, separated by a space.
 *   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [PHASE (2/3)] TODO`.
@@ -273,7 +273,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Agent Reads Feature Status via API
     Given the CDD server is running
     When an agent needs to check feature queue status
-    Then the agent reads cdd_port from .agentic_devops/config.json
+    Then the agent reads cdd_port from .purlin/config.json
     And the agent calls GET /status.json on that port
     And the agent receives a valid JSON response
     And the agent does NOT scrape the web dashboard or guess ports
@@ -322,7 +322,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Internal Feature Status File Preserved
     Given the CDD server is running
     When any request is made to the server
-    Then .agentic_devops/cache/feature_status.json is regenerated with the old lifecycle-based format
+    Then .purlin/cache/feature_status.json is regenerated with the old lifecycle-based format
     And it contains todo, testing, and complete arrays with test_status fields
 
 #### Scenario: CLI Status Tool Output
@@ -330,7 +330,7 @@ These scenarios are validated by the Builder's automated test suite.
     And critic.json files exist for some features
     When an agent runs tools/cdd/status.sh
     Then valid JSON is written to stdout matching the /status.json schema
-    And .agentic_devops/cache/feature_status.json is regenerated
+    And .purlin/cache/feature_status.json is regenerated
     And the tool does not require the CDD web server to be running
 
 #### Scenario: CLI Graph Output
@@ -357,9 +357,9 @@ These scenarios are validated by the Builder's automated test suite.
     Then the feature entry does not include a change_scope field
 
 #### Scenario: CLI Status Tool Project Root Detection
-    Given AGENTIC_PROJECT_ROOT is set to a valid project root
+    Given PURLIN_PROJECT_ROOT is set to a valid project root
     When an agent runs tools/cdd/status.sh
-    Then the tool uses AGENTIC_PROJECT_ROOT for all path resolution
+    Then the tool uses PURLIN_PROJECT_ROOT for all path resolution
     And it scans features/ relative to that root
 
 #### Scenario: Lifecycle Integration -- TODO with No Tests
@@ -420,7 +420,7 @@ These scenarios are validated by the Builder's automated test suite.
 
 #### Scenario: Dependency Graph Endpoint
     Given the CDD server is running
-    And .agentic_devops/cache/dependency_graph.json exists
+    And .purlin/cache/dependency_graph.json exists
     When a GET request is sent to /dependency_graph.json
     Then the server returns the dependency graph JSON with Content-Type application/json
 
@@ -443,13 +443,13 @@ These scenarios are validated by the Builder's automated test suite.
     Then a 404 status is returned
 
 #### Scenario: Delivery Phase in API Response
-    Given a delivery plan exists at .agentic_devops/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/cache/delivery_plan.md
     And the plan has 3 phases with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
     When an agent calls GET /status.json
     Then the response includes delivery_phase with current 2 and total 3
 
 #### Scenario: Delivery Phase Omitted When No Plan
-    Given no delivery plan exists at .agentic_devops/cache/delivery_plan.md
+    Given no delivery plan exists at .purlin/cache/delivery_plan.md
     When an agent calls GET /status.json
     Then the response does not include a delivery_phase field
 
@@ -512,7 +512,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Given the CDD server is not running
     When the User runs tools/cdd/start.sh
     Then the server starts on the configured port on the first invocation
-    And a PID file is written to .agentic_devops/runtime/cdd.pid
+    And a PID file is written to .purlin/runtime/cdd.pid
     When the User runs tools/cdd/stop.sh
     Then the server process is terminated
     And the PID file is removed
