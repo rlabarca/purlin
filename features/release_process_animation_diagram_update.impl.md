@@ -58,3 +58,15 @@ linkStyle 2 stroke:#38BDF8,stroke-width:2px
 ```
 
 Edge indices are 0-based and correspond to the order of edge declarations in the base diagram. Document the index-to-connection mapping in the script as a constant dict for maintainability.
+
+## Test File Location
+
+Tests live in `dev/test_workflow_animation.py` (alongside the script in `dev/`) since both are Purlin-dev-specific and exempt from the submodule safety mandate. The Critic's test discovery only scans `tests/<feature>/` and `tools/*/`, so traceability overrides are required below.
+
+## Traceability Overrides
+
+- traceability_override: "Generator produces GIF on success" -> test_generator_produces_gif_on_success
+- traceability_override: "Generator exits with error when mmdc is absent" -> test_generator_exits_with_error_when_mmdc_absent
+- traceability_override: "Generator auto-installs ImageMagick when absent" -> test_generator_auto_installs_imagemagick_when_absent
+- traceability_override: "README embedding is idempotent" -> test_readme_embedding_is_idempotent
+- traceability_override: "README embedding inserts reference when absent" -> test_readme_embedding_inserts_reference_when_absent
