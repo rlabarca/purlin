@@ -50,6 +50,60 @@ if ! "$PYTHON_EXE" -c "import json; json.load(open('$PROJECT_ROOT/.agentic_devop
 fi
 
 ###############################################################################
+# 3b. Provider Detection Integration (Section 2.17)
+###############################################################################
+DETECT_SCRIPT="$SCRIPT_DIR/detect-providers.sh"
+if [ -x "$DETECT_SCRIPT" ]; then
+    DETECT_OUTPUT=""
+    DETECT_OUTPUT="$("$DETECT_SCRIPT" 2>/dev/null)" || true
+    if [ -n "$DETECT_OUTPUT" ]; then
+        # Merge available providers into installed config.json
+        "$PYTHON_EXE" -c "
+import json, sys
+
+try:
+    detect = json.loads('''$DETECT_OUTPUT''')
+except (json.JSONDecodeError, ValueError):
+    sys.exit(0)
+
+config_path = '$PROJECT_ROOT/.agentic_devops/config.json'
+sample_path = '$SAMPLE_DIR/config.json'
+
+try:
+    with open(config_path) as f:
+        config = json.load(f)
+    with open(sample_path) as f:
+        sample = json.load(f)
+except (IOError, json.JSONDecodeError):
+    sys.exit(0)
+
+# Merge available providers from sample definitions
+sample_providers = sample.get('llm_providers', {})
+available = {}
+summaries = []
+for name, info in detect.get('providers', {}).items():
+    if info.get('available', False) and name in sample_providers:
+        available[name] = sample_providers[name]
+        model_count = len(sample_providers[name].get('models', []))
+        summaries.append(f'{name} ({model_count} models)')
+
+if available:
+    config['llm_providers'] = available
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=4)
+
+# Report
+if summaries:
+    print('Providers detected and configured: ' + ', '.join(summaries))
+else:
+    unavail = [n for n, i in detect.get('providers', {}).items() if not i.get('available', False)]
+    if unavail:
+        print('Providers detected: none available (' + ', '.join(unavail) + ' unavailable)')
+" 2>/dev/null || true
+    fi
+fi
+
+###############################################################################
 # 4. Upstream SHA Marker
 ###############################################################################
 CURRENT_SHA="$(git -C "$SUBMODULE_DIR" rev-parse HEAD)"
