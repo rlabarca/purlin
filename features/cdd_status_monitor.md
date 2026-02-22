@@ -112,6 +112,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     ```json
     {
       "generated_at": "<ISO 8601 timestamp>",
+      "critic_last_run": "<ISO 8601 timestamp>",
       "delivery_phase": {
         "current": 2,
         "total": 3
@@ -128,6 +129,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
       ]
     }
     ```
+    *   `critic_last_run` is the ISO 8601 mtime of `CRITIC_REPORT.md`. Omitted when no `CRITIC_REPORT.md` exists (Critic has never been run).
     *   Flat `features` array (no `todo`/`testing`/`complete` sub-arrays).
     *   No top-level `test_status` field.
     *   No per-feature `test_status` or `qa_status` fields (replaced by role columns).
@@ -171,6 +173,13 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     2.  The server executes `tools/critic/run.sh` (or equivalent logic) server-side.
     3.  On completion, the dashboard refreshes to reflect updated role status columns.
     4.  The button returns to its enabled state.
+*   **Last-Run Annotation:** The button label includes a relative timestamp in parentheses showing when the Critic was last run. The annotation is derived from the `critic_last_run` field in the `/status.json` response (see Section 2.4), which reflects the mtime of `CRITIC_REPORT.md`. Format rules:
+    *   No `CRITIC_REPORT.md` exists (Critic never run): no annotation — button reads `Run Critic`.
+    *   Less than 60 seconds ago: no annotation — button reads `Run Critic`.
+    *   60 seconds to 59 minutes: `Run Critic (Nm)` where N = floor(elapsed seconds / 60).
+    *   1 hour to 23 hours: `Run Critic (Nh)` where N = floor(elapsed seconds / 3600).
+    *   24 hours or more: `Run Critic (Nd)` where N = floor(elapsed seconds / 86400).
+    *   The annotation is computed client-side from the ISO 8601 timestamp and updates on each 5-second auto-refresh cycle.
 *   **Error Handling:** If the Critic run fails, the button returns to its enabled state and a brief error indicator is shown near the button (e.g., red text "Critic run failed"). The dashboard retains its previous data.
 *   **No Agent Use:** This button is for human use only. Agents MUST continue to use `tools/critic/run.sh` via CLI.
 
@@ -236,6 +245,7 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 *   **Dynamic Elements (updated every refresh cycle):**
     *   Feature table rows (Active and Complete sections).
     *   Last-refreshed timestamp (text content only).
+    *   Run Critic button label annotation (the relative last-run time derived from `critic_last_run` in the status response).
     *   Workspace section (git status and last commit).
 *   **Static Elements (rendered once on initial page load, never re-created or replaced):**
     *   Page header structure (logo, title, project name).
@@ -518,6 +528,9 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the button enters a disabled/loading state
     And after the Critic finishes, the dashboard refreshes with updated role status columns
     And the button returns to its enabled state
+    And the button label shows a relative last-run annotation in the format "Run Critic (Xm)", "Run Critic (Xh)", or "Run Critic (Xd)"
+    And the annotation updates automatically on subsequent 5-second refresh cycles
+    And if the Critic was run less than 60 seconds ago, no annotation is appended and the label reads "Run Critic"
 
 #### Scenario: Tombstone Feature Appears Red in Active Section
     Given a tombstone file exists at features/tombstones/some_retired_feature.md
@@ -551,6 +564,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
 - [ ] Header Row 1 left side: Logo + Title + project name; right side: timestamp, theme toggle
 - [ ] Header Row 2 left side: "Status" / "SW Map" toggle buttons below the logo; right side: Run Critic button, search input
+- [ ] Run Critic button shows a relative last-run annotation: "(Xm)", "(Xh)", or "(Xd)" — no annotation when never run or run less than 60 seconds ago
 - [ ] A subtle 1px border separates Row 1 from Row 2
 - [ ] View mode toggle buttons are left-justified below the logo/title block (Row 2)
 - [ ] Active view button is visually distinguished from inactive
