@@ -622,7 +622,7 @@ def generate_html():
     # Build release checklist rows HTML
     rc_rows_html = ""
     for s in rc_steps:
-        dim = ' style="color:var(--purlin-dim)"' if not s.get("enabled") else ""
+        disabled_cls = " rc-disabled" if not s.get("enabled") else ""
         source_tag = s.get("source", "").upper()
         source_badge = (
             f'<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
@@ -633,15 +633,14 @@ def generate_html():
         sid_escaped = s["id"].replace("'", "\\'")
         fname_escaped = s["friendly_name"].replace("'", "\\'")
         rc_rows_html += (
-            f'<tr data-step-id="{s["id"]}" draggable="true" '
+            f'<tr class="{disabled_cls.strip()}" data-step-id="{s["id"]}" draggable="true" '
             f'ondragstart="rcDragStart(event)" ondragover="rcDragOver(event)" '
-            f'ondrop="rcDrop(event)" ondragend="rcDragEnd(event)">'
-            f'<td style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center"'
-            f'{dim}>\u28FF</td>'
+            f'ondragenter="rcDragEnter(event)" ondrop="rcDrop(event)" ondragend="rcDragEnd(event)">'
+            f'<td style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center">\u28FF</td>'
             f'<td style="width:32px;text-align:right;font-family:monospace;'
-            f'color:var(--purlin-muted)"{dim}>{s["order"]}</td>'
-            f'<td style="width:60px"{dim}>{source_badge}</td>'
-            f'<td style="flex:1"{dim}>'
+            f'color:var(--purlin-muted)">{s["order"]}</td>'
+            f'<td style="width:60px">{source_badge}</td>'
+            f'<td style="flex:1">'
             f'<span class="feature-link" onclick="openStepModal(\'{sid_escaped}\')">'
             f'{s["friendly_name"]}</span></td>'
             f'<td style="width:32px;text-align:center">'
@@ -831,6 +830,8 @@ h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purl
 .badge-cell{{text-align:center;width:70px}}
 .feature-link{{color:var(--purlin-accent);cursor:pointer;text-decoration:none}}
 .feature-link:hover{{text-decoration:underline}}
+tr.rc-disabled td{{color:var(--purlin-dim) !important}}
+tr.rc-drag-over{{border-top:2px solid var(--purlin-accent)}}
 .ctx{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px}}
 .clean{{color:var(--purlin-status-good)}}
 .wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
@@ -1263,12 +1264,11 @@ function refreshReleaseChecklist() {{
         var cb = row.querySelector('input[type=checkbox]');
         if (cb && cb.checked !== step.enabled) {{
           cb.checked = step.enabled;
-          var cells = row.querySelectorAll('td');
-          cells.forEach(function(cell, idx) {{
-            if (idx < cells.length - 1) {{
-              cell.style.color = step.enabled ? '' : 'var(--purlin-dim)';
-            }}
-          }});
+          if (step.enabled) {{
+            row.classList.remove('rc-disabled');
+          }} else {{
+            row.classList.add('rc-disabled');
+          }}
         }}
       }});
       rcUpdateBadge();
@@ -1280,8 +1280,9 @@ var rcDragSrcRow = null;
 
 function rcDragStart(e) {{
   rcDragSrcRow = e.target.closest('tr');
+  if (!rcDragSrcRow) return;
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', rcDragSrcRow.dataset.stepId);
+  e.dataTransfer.setData('text/plain', rcDragSrcRow.dataset.stepId || '');
   rcDragSrcRow.style.opacity = '0.4';
 }}
 
@@ -1290,20 +1291,36 @@ function rcDragOver(e) {{
   e.dataTransfer.dropEffect = 'move';
 }}
 
+function rcDragEnter(e) {{
+  e.preventDefault();
+  var row = e.target.closest('tr');
+  if (!row || row === rcDragSrcRow) return;
+  var tbody = document.getElementById('rc-tbody');
+  if (!tbody) return;
+  Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
+    r.classList.remove('rc-drag-over');
+  }});
+  row.classList.add('rc-drag-over');
+}}
+
 function rcDrop(e) {{
   e.preventDefault();
+  var tbody = document.getElementById('rc-tbody');
+  if (!tbody) return;
+  Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
+    r.classList.remove('rc-drag-over');
+  }});
   var targetRow = e.target.closest('tr');
   if (!targetRow || !rcDragSrcRow || targetRow === rcDragSrcRow) return;
-  var tbody = targetRow.parentNode;
   var rows = Array.from(tbody.querySelectorAll('tr'));
   var srcIdx = rows.indexOf(rcDragSrcRow);
   var tgtIdx = rows.indexOf(targetRow);
+  if (srcIdx < 0 || tgtIdx < 0) return;
   if (srcIdx < tgtIdx) {{
     tbody.insertBefore(rcDragSrcRow, targetRow.nextSibling);
   }} else {{
     tbody.insertBefore(rcDragSrcRow, targetRow);
   }}
-  // Renumber and persist
   rcUpdateNumbers();
   rcPersistConfig();
 }}
@@ -1311,6 +1328,12 @@ function rcDrop(e) {{
 function rcDragEnd(e) {{
   if (rcDragSrcRow) rcDragSrcRow.style.opacity = '1';
   rcDragSrcRow = null;
+  var tbody = document.getElementById('rc-tbody');
+  if (tbody) {{
+    Array.from(tbody.querySelectorAll('tr.rc-drag-over')).forEach(function(r) {{
+      r.classList.remove('rc-drag-over');
+    }});
+  }}
 }}
 
 function rcUpdateNumbers() {{
@@ -1322,15 +1345,13 @@ function rcUpdateNumbers() {{
 }}
 
 function rcToggle(stepId, enabled) {{
-  // Update row appearance
   var row = document.querySelector('tr[data-step-id="' + stepId + '"]');
   if (row) {{
-    var cells = row.querySelectorAll('td');
-    cells.forEach(function(cell, idx) {{
-      if (idx < cells.length - 1) {{
-        cell.style.color = enabled ? '' : 'var(--purlin-dim)';
-      }}
-    }});
+    if (enabled) {{
+      row.classList.remove('rc-disabled');
+    }} else {{
+      row.classList.add('rc-disabled');
+    }}
   }}
   rcPersistConfig();
   rcUpdateBadge();

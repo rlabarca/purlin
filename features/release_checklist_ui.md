@@ -237,14 +237,14 @@ And rows whose content did not change appear visually undisturbed.
 - **Observed Behavior:** Unchecking a step's checkbox leaves the row at full color — the row text (handle, number, badge, name) is not dimmed. The checkbox is empty and the disabled count increments correctly, but no visual dimming is applied.
 - **Expected Behavior:** Disabled rows should have all text dimmed to `--purlin-dim`, as specified in the scenario and the visual spec.
 - **Action Required:** Builder — apply `--purlin-dim` styling to the row when its checkbox is unchecked.
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [BUG] Drag handle does not reorder steps (Discovered: 2026-02-22)
 - **Scenario:** Drag Handle Reorders Steps in Display
 - **Observed Behavior:** The drag handle (`⠿`) is visible but dragging it does not reorder the steps in the list.
 - **Expected Behavior:** Grabbing a step by its drag handle and dropping it at a new position should reorder the steps in the displayed list immediately, without a page reload.
 - **Action Required:** Builder — implement drag-and-drop reorder functionality for release checklist rows.
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ## Implementation Notes
 
