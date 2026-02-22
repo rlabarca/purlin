@@ -232,6 +232,13 @@ And rows whose content did not change appear visually undisturbed.
 
 ## User Testing Discoveries
 
+### [BUG] LOCAL badge narrower than GLOBAL badge (Discovered: 2026-02-22)
+- **Scenario:** Visual Specification — Release Checklist Row Layout
+- **Observed Behavior:** The `LOCAL` scope badge renders narrower than the `GLOBAL` badge because no minimum width is set. In a list where both badge types appear, the column is visually uneven — `LOCAL` is approximately one character-width narrower and the label is not centered relative to the GLOBAL badge width.
+- **Expected Behavior:** Both `GLOBAL` and `LOCAL` badges should occupy the same fixed width with the label centered within the box, maintaining consistent column alignment across all rows.
+- **Action Required:** Builder — apply a consistent `min-width` (or fixed width) to both badge variants so they render at the same size with centered text.
+- **Status:** OPEN
+
 ### [BUG] Disabled row is not visually dimmed (Discovered: 2026-02-22)
 - **Scenario:** Toggle Disables Step
 - **Observed Behavior:** Unchecking a step's checkbox leaves the row at full color — the row text (handle, number, badge, name) is not dimmed. The checkbox is empty and the disabled count increments correctly, but no visual dimming is applied.
