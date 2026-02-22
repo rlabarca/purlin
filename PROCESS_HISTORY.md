@@ -2,6 +2,16 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Auto-Critic Integration in status.sh
+
+- **Scope:** Spec and instruction changes only (Builder implements the script change).
+- **Problem:** Builder agents consistently forgot to run `tools/critic/run.sh` after status commits (Step 4.F), resulting in stale `CRITIC_REPORT.md` and `critic.json` files between sessions.
+- **Solution:** Specify that `tools/cdd/status.sh` automatically runs the Critic before outputting status, guarded by a `CRITIC_RUNNING` env var to prevent infinite recursion (since `run.sh` already invokes `status.sh` internally to refresh `feature_status.json`). The Builder instruction file simplifies: startup Step 3 (separate `status.sh` call) and Step 4.F (mandatory post-commit critic run) are both eliminated.
+- **Changes:**
+    - **features/cdd_status_monitor.md:** Section 2.6 gains Auto-Critic Integration bullet with recursion guard spec; Section 2.8 lifecycle test Verification Method and Cleanup updated to single `status.sh` command; four lifecycle integration scenarios updated from two-step `When/And` to single `When`.
+    - **features/critic_tool.md:** Section 2.9 clarifies "does NOT run the Critic" applies to the web server only, not the CLI tool; Section 2.10 CDD Feature Status Dependency updated to describe new direction (status.sh → run.sh → status.sh with guard).
+    - **instructions/BUILDER_BASE.md:** Section 2.1 steps 1+3 collapsed into single step; Step 4.F removed; Shutdown Protocol step 1 updated to `status.sh`.
+
 ## [2026-02-21] Multi-Provider Agent Launchers & Gemini Support
 
 - **Scope:** Feature spec additions, instruction refinement, script and config changes (Builder-implemented).

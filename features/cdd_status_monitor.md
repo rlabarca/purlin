@@ -139,6 +139,7 @@ The Status view is the default view (`/#status`).
 *   **Project Root Detection:** Uses `AGENTIC_PROJECT_ROOT` if set, then climbing fallback (per submodule_bootstrap Section 2.11).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
+*   **Auto-Critic Integration:** When invoked without `--graph`, `status.sh` MUST run `tools/critic/run.sh` as a prerequisite step before computing status output. This ensures all `critic.json` files and `CRITIC_REPORT.md` are current, so agents always receive fresh role status data from a single invocation. **Recursion guard:** If the `CRITIC_RUNNING` environment variable is already set, the Critic step MUST be skipped. The Critic's `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before analysis; the guard ensures that inner call does not trigger a second Critic run.
 
 ### 2.7 Manual Critic Trigger (Dashboard)
 *   **Button Location:** Per Section 2.9 Header Layout -- the "Run Critic" button is on the right side of the header's second row (Row 2), immediately to the left of the search input.
@@ -159,8 +160,8 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **Temporary Feature:** The test creates a well-formed temporary feature file (e.g., `features/_test_lifecycle_temp.md`) containing all required sections (Overview, Requirements, Scenarios), both Automated and Manual scenario subsections, a `> Prerequisite:` link to an existing feature, and properly structured Gherkin. The feature MUST pass the Critic Spec Gate (architect=DONE).
 *   **Temporary Tests:** The test creates a minimal passing test result at `tests/_test_lifecycle_temp/tests.json` with `{"status": "PASS"}`.
 *   **Git Commits:** The test creates real git commits (feature creation, implementation, status tag commits, spec edits) to exercise the lifecycle state machine. Each commit SHA is recorded for rollback.
-*   **Verification Method:** At each lifecycle stage, the test runs `tools/critic/run.sh` to regenerate `critic.json` files, then runs `tools/cdd/status.sh` and parses the JSON output to assert expected role status values for the temporary feature. Assertions use `python3 -c` or `jq` to extract and compare JSON fields.
-*   **Cleanup Guarantee:** The test MUST use `trap` to ensure cleanup runs on exit (success, failure, or signal). Cleanup sequence: (1) `git reset --hard <pre-test-sha>` to revert all temporary commits, (2) remove any untracked temporary files (`features/_test_lifecycle_temp.md`, `tests/_test_lifecycle_temp/`), (3) run `tools/critic/run.sh` to restore clean critic.json state. After cleanup, `git log` and `git status` MUST show no trace of the test.
+*   **Verification Method:** At each lifecycle stage, the test runs `tools/cdd/status.sh` and parses the JSON output to assert expected role status values for the temporary feature. (The Critic runs automatically as part of `status.sh`, regenerating `critic.json` files before the status JSON is produced.) Assertions use `python3 -c` or `jq` to extract and compare JSON fields.
+*   **Cleanup Guarantee:** The test MUST use `trap` to ensure cleanup runs on exit (success, failure, or signal). Cleanup sequence: (1) `git reset --hard <pre-test-sha>` to revert all temporary commits, (2) remove any untracked temporary files (`features/_test_lifecycle_temp.md`, `tests/_test_lifecycle_temp/`), (3) run `tools/cdd/status.sh` to restore clean critic.json state. After cleanup, `git log` and `git status` MUST show no trace of the test.
 *   **Test Results:** On success, output `[Scenario] <title>` lines for each passing stage (Bash test file convention) and write `tests/cdd_status_monitor/tests.json` with `{"status": "PASS"}`. On any assertion failure, report the failing stage and expected vs actual values, then proceed to cleanup.
 
 ### 2.9 Branding & Theme
@@ -333,8 +334,7 @@ These scenarios are validated by the Builder's automated test suite.
     Given a temporary feature file is created and committed
     And the feature has both Automated and Manual scenario subsections
     And no tests or status commits exist for the feature
-    When tools/critic/run.sh is run
-    And tools/cdd/status.sh is run
+    When tools/cdd/status.sh is run
     Then the feature lifecycle is TODO
     And role_status.builder is TODO
     And role_status.qa is N/A
@@ -343,8 +343,7 @@ These scenarios are validated by the Builder's automated test suite.
     Given the temporary feature exists
     And tests are created and pass (tests.json with status PASS)
     And an implementation commit is made (no status tag)
-    When tools/critic/run.sh is run
-    And tools/cdd/status.sh is run
+    When tools/cdd/status.sh is run
     Then the feature lifecycle is TODO
     And role_status.builder is TODO
     And role_status.qa is CLEAN
@@ -352,8 +351,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Lifecycle Integration -- TESTING
     Given the temporary feature has passing tests
     And a status commit "[Ready for Verification features/<temp>.md]" is made
-    When tools/critic/run.sh is run
-    And tools/cdd/status.sh is run
+    When tools/cdd/status.sh is run
     Then the feature lifecycle is TESTING
     And role_status.builder is DONE
     And role_status.qa is TODO
@@ -361,8 +359,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Lifecycle Integration -- COMPLETE
     Given the temporary feature has passing tests
     And a status commit "[Complete features/<temp>.md]" is made
-    When tools/critic/run.sh is run
-    And tools/cdd/status.sh is run
+    When tools/cdd/status.sh is run
     Then the feature lifecycle is COMPLETE
     And role_status.builder is DONE
     And role_status.qa is CLEAN

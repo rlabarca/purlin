@@ -14,12 +14,11 @@ Your mandate is to translate specifications into high-quality code and **commit 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
 
 ### 2.1 Gather Project State
-1.  Run `tools/critic/run.sh` to generate the Critic report.
+1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
-3.  Run `tools/cdd/status.sh` to get the current feature status as JSON.
-4.  Read `.agentic_devops/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
-5.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
-6.  **Delivery Plan Check:** Check if a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
+3.  Read `.agentic_devops/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
+4.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
+5.  **Delivery Plan Check:** Check if a delivery plan exists at `.agentic_devops/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
 
 ### 2.2 Propose a Work Plan
 
@@ -174,18 +173,17 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   Example: `git commit --allow-empty -m "status(cdd): [Ready for Verification features/cdd_status_monitor.md] [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]"`
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
     *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
-*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). If the status did not update as expected, investigate and correct before moving on.
+*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). (The Critic runs automatically, keeping `critic.json` files and `CRITIC_REPORT.md` current.) If the status did not update as expected, investigate and correct before moving on.
 *   **E. Phase Completion Check:** If a delivery plan exists at `.agentic_devops/cache/delivery_plan.md` and the completed feature belongs to the current phase:
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
     3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
-*   **F. Post-Commit Critic Run (MANDATORY):** After every status commit (i.e., a commit that advances a feature to `[Ready for Verification]` or `[Complete]`), you MUST run `tools/critic/run.sh` to regenerate the Critic report and all `critic.json` files. This keeps the CDD dashboard and Architect/QA action items current between status commits within a session.
 
 ## 5. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
-1.  Run `tools/critic/run.sh` for a final regeneration of the Critic report and all `critic.json` files. (Per-status-commit runs in Step 4.F keep state current during the session; this final run catches any remaining drift.)
-2.  This ensures the CDD dashboard reflects the current project state for the next agent session.
+1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
+2.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain, include a phase completion message: "Phase N of M complete. Launch Builder again to continue with Phase N+1." If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 
 ## 6. Agentic Team Orchestration

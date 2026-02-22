@@ -116,7 +116,7 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
 *   Open user testing items: all OPEN discoveries across features.
 
 ### 2.9 CDD Integration (Decoupled)
-The Critic is agent-facing; CDD is human-facing. CDD does NOT run the Critic.
+The Critic is agent-facing; CDD is human-facing. The CDD **web server** does NOT auto-run the Critic on requests -- it reads from pre-computed `critic.json` files only. The `tools/cdd/status.sh` CLI tool, however, DOES auto-run the Critic before outputting status (see `cdd_status_monitor.md` Section 2.6), ensuring agents always receive fresh data from a single invocation.
 
 *   **Role Status Contract:** CDD reads the `role_status` object from on-disk `tests/<feature_name>/critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT read or display spec_gate or implementation_gate status directly.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on Critic results.
@@ -155,7 +155,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 *   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting QA re-verification, invalid targeted scope names.
 *   **LOW** -- Gate WARNs, informational items.
 
-**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. The Critic shell wrapper (`run.sh`) regenerates this file by invoking `tools/cdd/status.sh` before launching `critic.py`, ensuring lifecycle data reflects the current git state. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
+**CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.agentic_devops/cache/feature_status.json` to exist on disk. The `tools/cdd/status.sh` CLI tool triggers a Critic run before outputting status (see `cdd_status_monitor.md` Section 2.6). The Critic's own `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before launching `critic.py`; the `CRITIC_RUNNING` guard prevents that inner call from triggering a second Critic run. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
 
 ### 2.11 Role Status Computation
 The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
