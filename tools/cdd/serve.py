@@ -613,25 +613,23 @@ def generate_html():
             f'</span>'
         )
 
-    # Agents section collapsed badge
-    def _agents_badge(config):
-        providers = config.get('llm_providers', {})
+    # Models section collapsed badge
+    def _models_badge(config):
+        models_list = config.get('models', [])
         agents = config.get('agents', {})
         roles = ['architect', 'builder', 'qa']
         labels = []
         for role in roles:
             acfg = agents.get(role, {})
-            prov = acfg.get('provider', '')
             mid = acfg.get('model', '')
-            models = (providers.get(prov) or {}).get('models', [])
-            lbl = next((m.get('label', mid) for m in models if m.get('id') == mid), mid or '?')
+            lbl = next((m.get('label', mid) for m in models_list if m.get('id') == mid), mid or '?')
             labels.append(lbl)
         # Group by label, sort by count descending then alphabetically
         counts = Counter(labels)
         segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
-    agents_badge = _agents_badge(CONFIG)
+    models_badge = _models_badge(CONFIG)
 
     # Release checklist badge
     rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
@@ -802,7 +800,7 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.agent-row{{display:grid;grid-template-columns:64px 100px 140px 80px auto;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-row{{display:grid;grid-template-columns:64px 140px 80px auto;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-row:last-child{{border-bottom:none}}
 .agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-primary);text-transform:uppercase}}
 .agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer;width:100%}}
@@ -994,17 +992,13 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
-      <div class="section-hdr" onclick="toggleSection('agents-section')">
-        <span class="chevron" id="agents-section-chevron">&#9654;</span>
-        <h3>Agents</h3>
-        <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
+      <div class="section-hdr" onclick="toggleSection('models-section')">
+        <span class="chevron" id="models-section-chevron">&#9654;</span>
+        <h3>Models</h3>
+        <span class="section-badge" id="models-section-badge">{models_badge}</span>
       </div>
-      <div class="section-body collapsed" id="agents-section">
-        <div id="agents-rows" style="margin-bottom:8px"></div>
-        <div style="text-align:right">
-          <button class="btn-critic" id="btn-detect-providers" onclick="detectProviders()">Detect Providers</button>
-          <span id="detect-providers-err" style="margin-left:8px;font-size:11px;color:var(--purlin-status-error)"></span>
-        </div>
+      <div class="section-body collapsed" id="models-section">
+        <div id="models-rows" style="margin-bottom:8px"></div>
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1166,8 +1160,8 @@ function refreshStatus() {{
         applySectionStates();
         // Re-apply search filter
         applySearchFilter();
-        // Re-populate agents section (dynamic JS content cleared by innerHTML replace)
-        initAgentsSection();
+        // Re-populate models section (dynamic JS content cleared by innerHTML replace)
+        initModelsSection();
         // Incremental refresh for release checklist (diff-based, skips during pending saves)
         refreshReleaseChecklist();
       }}
@@ -1190,7 +1184,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'models-section', 'release-checklist'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1199,7 +1193,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'models-section', 'release-checklist'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1973,29 +1967,21 @@ function stopMapRefresh() {{
 }}
 
 // ============================
-// Agents Section
+// Models Section
 // ============================
-var agentsConfig = null;
-var agentsSaveTimer = null;
+var modelsConfig = null;
+var modelsSaveTimer = null;
 var pendingWrites = new Map();
 
 function applyPendingWrites() {{
   if (pendingWrites.size === 0) return;
-  var providers = (agentsConfig && agentsConfig.llm_providers) || {{}};
   pendingWrites.forEach(function(val, key) {{
     var dot = key.indexOf('.');
     var role = key.substring(0, dot);
     var field = key.substring(dot + 1);
-    if (field === 'provider') {{
-      var sel = document.getElementById('agent-provider-' + role);
-      if (sel) {{
-        sel.value = val;
-        populateModelDropdown(role, val, providers, pendingWrites.get(role + '.model') || '');
-        syncCapabilityControls(role, providers);
-      }}
-    }} else if (field === 'model') {{
+    if (field === 'model') {{
       var sel = document.getElementById('agent-model-' + role);
-      if (sel) {{ sel.value = val; syncCapabilityControls(role, providers); }}
+      if (sel) {{ sel.value = val; syncCapabilityControls(role); }}
     }} else if (field === 'effort') {{
       var sel = document.getElementById('agent-effort-' + role);
       if (sel) sel.value = val;
@@ -2006,109 +1992,89 @@ function applyPendingWrites() {{
   }});
 }}
 
-function initAgentsSection() {{
+function initModelsSection() {{
   // Synchronous restore from cache after innerHTML replacement clears the DOM
-  if (agentsConfig && !document.getElementById('agent-provider-architect')) {{
-    renderAgentsRows(agentsConfig);
+  if (modelsConfig && !document.getElementById('agent-model-architect')) {{
+    renderModelsRows(modelsConfig);
     applyPendingWrites();
-    updateAgentsBadge(agentsConfig);
+    updateModelsBadge(modelsConfig);
   }}
   // Async fetch for config updates
   fetch('/config.json')
     .then(function(r) {{ return r.json(); }})
     .then(function(cfg) {{
-      var domExists = !!document.getElementById('agent-provider-architect');
-      var configChanged = !agentsConfig ||
-          JSON.stringify(cfg.agents) !== JSON.stringify(agentsConfig.agents) ||
-          JSON.stringify(cfg.llm_providers) !== JSON.stringify(agentsConfig.llm_providers);
-      agentsConfig = cfg;
+      var domExists = !!document.getElementById('agent-model-architect');
+      var configChanged = !modelsConfig ||
+          JSON.stringify(cfg.agents) !== JSON.stringify(modelsConfig.agents) ||
+          JSON.stringify(cfg.models) !== JSON.stringify(modelsConfig.models);
+      modelsConfig = cfg;
       if (!domExists) {{
-        renderAgentsRows(cfg);
+        renderModelsRows(cfg);
         applyPendingWrites();
       }} else if (configChanged) {{
-        diffUpdateAgentRows(cfg);
+        diffUpdateModelRows(cfg);
       }}
-      updateAgentsBadge(cfg);
+      updateModelsBadge(cfg);
     }})
     .catch(function() {{}});
 }}
 
-function renderAgentsRows(cfg) {{
-  var container = document.getElementById('agents-rows');
+function renderModelsRows(cfg) {{
+  var container = document.getElementById('models-rows');
   if (!container) return;
-  var providers = cfg.llm_providers || {{}};
   var agents = cfg.agents || {{}};
   var roles = ['architect', 'builder', 'qa'];
   var html = '';
   roles.forEach(function(role) {{
-    html += buildAgentRowHtml(role, agents[role] || {{}}, providers);
+    html += buildAgentRowHtml(role, agents[role] || {{}});
   }});
   container.innerHTML = html;
   roles.forEach(function(role) {{
-    var provSel = document.getElementById('agent-provider-' + role);
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
-    if (provSel) provSel.addEventListener('change', function() {{
-      pendingWrites.set(role + '.provider', provSel.value);
-      populateModelDropdown(role, provSel.value, providers, '');
-      var ms = document.getElementById('agent-model-' + role);
-      pendingWrites.set(role + '.model', ms ? ms.value : '');
-      syncCapabilityControls(role, providers);
-      scheduleAgentSave();
-    }});
     if (modSel) modSel.addEventListener('change', function() {{
       pendingWrites.set(role + '.model', modSel.value);
-      syncCapabilityControls(role, providers);
-      scheduleAgentSave();
+      syncCapabilityControls(role);
+      scheduleModelSave();
     }});
     if (effSel) effSel.addEventListener('change', function() {{
       pendingWrites.set(role + '.effort', effSel.value);
-      scheduleAgentSave();
+      scheduleModelSave();
     }});
     if (bypassChk) bypassChk.addEventListener('change', function() {{
       pendingWrites.set(role + '.bypass_permissions', bypassChk.checked);
-      scheduleAgentSave();
+      scheduleModelSave();
     }});
-    syncCapabilityControls(role, providers);
+    syncCapabilityControls(role);
   }});
 }}
 
-function diffUpdateAgentRows(cfg) {{
-  var providers = cfg.llm_providers || {{}};
+function diffUpdateModelRows(cfg) {{
   var agents = cfg.agents || {{}};
   var roles = ['architect', 'builder', 'qa'];
   roles.forEach(function(role) {{
     var acfg = agents[role] || {{}};
-    var provSel = document.getElementById('agent-provider-' + role);
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
-    if (!provSel) return;
-    var newProv = acfg.provider || '';
-    if (!pendingWrites.has(role + '.provider') && provSel.value !== newProv) {{
-      provSel.value = newProv;
-      populateModelDropdown(role, newProv, providers, acfg.model || '');
+    if (!modSel) return;
+    if (!pendingWrites.has(role + '.model') && modSel.value !== (acfg.model || '')) {{
+      modSel.value = acfg.model || '';
     }}
-    if (modSel && !pendingWrites.has(role + '.model') && modSel.value !== (acfg.model || '')) modSel.value = acfg.model || '';
     if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
     var yoloMode = acfg.bypass_permissions === true;
     if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== yoloMode) bypassChk.checked = yoloMode;
-    syncCapabilityControls(role, providers);
+    syncCapabilityControls(role);
   }});
 }}
 
-function buildAgentRowHtml(role, agentCfg, providers) {{
-  var currentProvider = agentCfg.provider || '';
+function buildAgentRowHtml(role, agentCfg) {{
   var currentModel = agentCfg.model || '';
   var currentEffort = agentCfg.effort || 'high';
   var yoloMode = agentCfg.bypass_permissions === true;
-  var provOptions = Object.keys(providers).map(function(k) {{
-    return '<option value="' + k + '"' + (k === currentProvider ? ' selected' : '') + '>' + k + '</option>';
-  }}).join('');
-  if (!provOptions) provOptions = '<option value="">—</option>';
-  var providerModels = (providers[currentProvider] || {{}}).models || [];
-  var modOptions = providerModels.map(function(m) {{
+  var modelsList = (modelsConfig && modelsConfig.models) || [];
+  var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
   }}).join('');
   if (!modOptions) modOptions = '<option value="' + currentModel + '" selected>' + currentModel + '</option>';
@@ -2117,7 +2083,6 @@ function buildAgentRowHtml(role, agentCfg, providers) {{
   }}).join('');
   return '<div class="agent-row">' +
     '<span class="agent-lbl">' + role.toUpperCase() + '</span>' +
-    '<select id="agent-provider-' + role + '" class="agent-sel">' + provOptions + '</select>' +
     '<select id="agent-model-' + role + '" class="agent-sel">' + modOptions + '</select>' +
     '<select id="agent-effort-' + role + '" class="agent-sel" style="visibility:hidden">' + effortOptions + '</select>' +
     '<label class="agent-bypass-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
@@ -2126,20 +2091,19 @@ function buildAgentRowHtml(role, agentCfg, providers) {{
   '</div>';
 }}
 
-function populateModelDropdown(role, providerKey, providers, selectedModel) {{
+function populateModelDropdown(role, selectedModel) {{
   var modSel = document.getElementById('agent-model-' + role);
   if (!modSel) return;
-  var models = (providers[providerKey] || {{}}).models || [];
+  var models = (modelsConfig && modelsConfig.models) || [];
   modSel.innerHTML = models.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.label + '</option>';
   }}).join('');
 }}
 
-function syncCapabilityControls(role, providers) {{
-  var provSel = document.getElementById('agent-provider-' + role);
+function syncCapabilityControls(role) {{
   var modSel = document.getElementById('agent-model-' + role);
-  if (!provSel || !modSel) return;
-  var models = (providers[provSel.value] || {{}}).models || [];
+  if (!modSel) return;
+  var models = (modelsConfig && modelsConfig.models) || [];
   var modelObj = null;
   for (var i = 0; i < models.length; i++) {{
     if (models[i].id === modSel.value) {{ modelObj = models[i]; break; }}
@@ -2151,18 +2115,17 @@ function syncCapabilityControls(role, providers) {{
   if (bypassLbl) bypassLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
 }}
 
-function updateAgentsBadge(cfg) {{
-  var badge = document.getElementById('agents-section-badge');
+function updateModelsBadge(cfg) {{
+  var badge = document.getElementById('models-section-badge');
   if (!badge) return;
-  var providers = cfg.llm_providers || {{}};
+  var modelsList = cfg.models || [];
   var agents = cfg.agents || {{}};
   var roles = ['architect', 'builder', 'qa'];
   var labels = roles.map(function(role) {{
     var acfg = agents[role] || {{}};
-    var models = (providers[acfg.provider || ''] || {{}}).models || [];
     var mid = acfg.model || '';
-    for (var i = 0; i < models.length; i++) {{
-      if (models[i].id === mid) return models[i].label;
+    for (var i = 0; i < modelsList.length; i++) {{
+      if (modelsList[i].id === mid) return modelsList[i].label;
     }}
     return mid || '?';
   }});
@@ -2174,28 +2137,26 @@ function updateAgentsBadge(cfg) {{
   badge.textContent = segments.map(function(s) {{ return s.count + 'x ' + s.label; }}).join(' | ');
 }}
 
-function scheduleAgentSave() {{
-  if (agentsSaveTimer) clearTimeout(agentsSaveTimer);
-  agentsSaveTimer = setTimeout(saveAgentConfig, 600);
+function scheduleModelSave() {{
+  if (modelsSaveTimer) clearTimeout(modelsSaveTimer);
+  modelsSaveTimer = setTimeout(saveModelConfig, 600);
 }}
 
-function saveAgentConfig() {{
+function saveModelConfig() {{
   var roles = ['architect', 'builder', 'qa'];
   var agentsPayload = {{}};
   roles.forEach(function(role) {{
-    var provSel = document.getElementById('agent-provider-' + role);
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
-    if (!provSel) return;
+    if (!modSel) return;
     agentsPayload[role] = {{
-      provider: provSel.value,
-      model: modSel ? modSel.value : '',
+      model: modSel.value,
       effort: effSel ? effSel.value : 'high',
       bypass_permissions: bypassChk ? bypassChk.checked : false
     }};
   }});
-  fetch('/config/agents', {{
+  fetch('/config/models', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify(agentsPayload)
@@ -2203,87 +2164,19 @@ function saveAgentConfig() {{
   .then(function(r) {{ return r.json(); }})
   .then(function(d) {{
     pendingWrites.clear();
-    if (agentsConfig && d.agents) {{
-      agentsConfig.agents = d.agents;
-      updateAgentsBadge(agentsConfig);
+    if (modelsConfig && d.agents) {{
+      modelsConfig.agents = d.agents;
+      updateModelsBadge(modelsConfig);
     }}
   }})
   .catch(function() {{ pendingWrites.clear(); }});
-}}
-
-function detectProviders() {{
-  var btn = document.getElementById('btn-detect-providers');
-  var errEl = document.getElementById('detect-providers-err');
-  btn.disabled = true; btn.textContent = 'Detecting\u2026'; errEl.textContent = '';
-  fetch('/detect-providers', {{method: 'POST'}})
-    .then(function(r) {{ return r.json(); }})
-    .then(function(data) {{
-      btn.disabled = false; btn.textContent = 'Detect Providers';
-      if (!Array.isArray(data)) {{ errEl.textContent = 'Invalid response'; return; }}
-      showDetectProvidersDialog(data);
-    }})
-    .catch(function() {{
-      btn.disabled = false; btn.textContent = 'Detect Providers';
-      errEl.textContent = 'Detection failed';
-    }});
-}}
-
-function showDetectProvidersDialog(providers) {{
-  var existing = document.getElementById('detect-dialog-overlay');
-  if (existing) existing.remove();
-  var lines = providers.map(function(p) {{
-    var avail = p.available ? '\u2713 available' : '\u2717 unavailable';
-    var n = p.models ? p.models.length : 0;
-    return p.provider + ': ' + avail + ' (' + n + ' model' + (n !== 1 ? 's' : '') + ')';
-  }}).join('\\n');
-  var overlay = document.createElement('div');
-  overlay.id = 'detect-dialog-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center';
-  var dialog = document.createElement('div');
-  dialog.style.cssText = 'background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:6px;padding:20px;min-width:280px;max-width:400px';
-  dialog.innerHTML = '<h3 style="margin:0 0 12px;font-size:13px;color:var(--purlin-primary)">Detected Providers</h3>' +
-    '<pre style="margin:0 0 16px;font-size:11px;color:var(--purlin-muted);white-space:pre-wrap">' + lines + '</pre>' +
-    '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-      '<button class="btn-critic" id="detect-cancel-btn">Cancel</button>' +
-      '<button class="btn-critic" id="detect-apply-btn" style="color:var(--purlin-accent)">Apply</button>' +
-    '</div>';
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-  document.getElementById('detect-cancel-btn').onclick = function() {{ overlay.remove(); }};
-  document.getElementById('detect-apply-btn').onclick = function() {{
-    var mergedProviders = {{}};
-    if (agentsConfig && agentsConfig.llm_providers) Object.assign(mergedProviders, agentsConfig.llm_providers);
-    providers.forEach(function(p) {{
-      if (!mergedProviders[p.provider]) mergedProviders[p.provider] = {{models: p.models || []}};
-    }});
-    fetch('/config/agents', {{
-      method: 'POST',
-      headers: {{'Content-Type': 'application/json'}},
-      body: JSON.stringify({{
-        agents: (agentsConfig && agentsConfig.agents) || {{}},
-        llm_providers: mergedProviders
-      }})
-    }})
-    .then(function(r) {{ return r.json(); }})
-    .then(function(d) {{
-      overlay.remove();
-      if (agentsConfig) {{
-        if (d.agents) agentsConfig.agents = d.agents;
-        if (d.llm_providers) agentsConfig.llm_providers = d.llm_providers;
-        renderAgentsRows(agentsConfig);
-        updateAgentsBadge(agentsConfig);
-      }}
-    }})
-    .catch(function() {{ overlay.remove(); }});
-  }};
-  overlay.onclick = function(e) {{ if (e.target === overlay) overlay.remove(); }};
 }}
 
 // ============================
 // Initialize
 // ============================
 applySectionStates();
-initAgentsSection();
+initModelsSection();
 initFromHash();
 </script>
 </body>
@@ -2543,10 +2436,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
-        elif self.path == '/config/agents':
-            self._handle_config_agents()
-        elif self.path == '/detect-providers':
-            self._handle_detect_providers()
+        elif self.path == '/config/models':
+            self._handle_config_models()
         elif self.path == '/release-checklist/config':
             self._handle_release_config()
         else:
@@ -2561,8 +2452,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _handle_config_agents(self):
-        """POST /config/agents — update agents (and optionally llm_providers) in config.json."""
+    def _handle_config_models(self):
+        """POST /config/models — update agents in config.json, validated against flat models array."""
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(length).decode('utf-8'))
@@ -2571,7 +2462,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         agents_data = body.get('agents', body) if isinstance(body, dict) else body
-        providers_override = body.get('llm_providers') if isinstance(body, dict) else None
 
         if not isinstance(agents_data, dict):
             self._send_json(400, {'error': 'agents must be an object'})
@@ -2586,20 +2476,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except (json.JSONDecodeError, IOError, OSError):
                 pass
 
-        # Effective providers for validation
-        if providers_override is not None:
-            # Merge: existing first, then new additions
-            effective_providers = dict(current.get('llm_providers', {}))
-            for k, v in providers_override.items():
-                if k not in effective_providers:
-                    effective_providers[k] = v
-        else:
-            effective_providers = current.get('llm_providers', {})
-
+        # Collect valid model IDs from the flat models array
         all_model_ids = {
             m['id']
-            for p in effective_providers.values()
-            for m in p.get('models', [])
+            for m in current.get('models', [])
         }
         valid_efforts = {'low', 'medium', 'high'}
         errors = []
@@ -2620,12 +2500,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         # Atomic write
         current['agents'] = agents_data
-        if providers_override is not None:
-            merged = dict(current.get('llm_providers', {}))
-            for k, v in providers_override.items():
-                if k not in merged:
-                    merged[k] = v
-            current['llm_providers'] = merged
 
         tmp = CONFIG_PATH + '.tmp'
         try:
@@ -2639,29 +2513,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         response = {'agents': current['agents']}
-        if 'llm_providers' in current:
-            response['llm_providers'] = current['llm_providers']
         self._send_json(200, response)
-
-    def _handle_detect_providers(self):
-        """POST /detect-providers — run detect-providers.sh and return JSON array."""
-        try:
-            tools_root = CONFIG.get('tools_root', 'tools')
-            script = os.path.join(PROJECT_ROOT, tools_root, 'detect-providers.sh')
-            result = subprocess.run(
-                ['bash', script],
-                cwd=PROJECT_ROOT,
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            try:
-                providers = json.loads(result.stdout)
-            except (json.JSONDecodeError, ValueError):
-                providers = []
-            self._send_json(200, providers)
-        except Exception as e:
-            self._send_json(500, {'error': str(e)})
 
     def _serve_release_checklist(self):
         """GET /release-checklist — return resolved, ordered release steps."""
