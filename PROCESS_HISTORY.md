@@ -2,6 +2,17 @@
 
 This log tracks the evolution of the **Purlin** framework itself. This repository serves as the project-agnostic engine for Continuous Design-Driven AI workflows.
 
+## [2026-02-21] Hard Submodule Prohibition in Sample Override Templates
+
+- **Scope:** Documentation/template hardening -- no feature spec or instruction base file changes.
+- **Problem:** The "Submodule Immutability Mandate" in `HOW_WE_WORK_BASE.md` Section 6 is buried in a long document. Consumer-project agents could miss it or fail to recognize they are in a consumer project rather than the Purlin repo itself. One existing sample file (`HOW_WE_WORK_OVERRIDES.md`) had a soft, one-paragraph reminder that was easy to overlook.
+- **Solution:** Added a `## HARD PROHIBITION: Purlin Submodule Is Read-Only` block as the **first section** in all four `agentic_devops.sample/` override templates. This block is installed verbatim into every consumer project by `bootstrap.sh`, so every agent reads it before any project-specific rules. The pre-existing soft-reminder section in `HOW_WE_WORK_OVERRIDES.md` was replaced (consolidated into the new top-of-file block). `ARCHITECT_OVERRIDES.md` also received an "Instruction File Scope Clarification" section resolving the ambiguity in `ARCHITECT_BASE.md` Section 4 Responsibility #2 ("refine instruction files" means `.agentic_devops/` overrides, not `purlin/instructions/`).
+- **Changes:**
+    - **agentic_devops.sample/HOW_WE_WORK_OVERRIDES.md:** Replaced "Submodule Immutability (DO NOT REMOVE)" with top-of-file HARD PROHIBITION block.
+    - **agentic_devops.sample/ARCHITECT_OVERRIDES.md:** Added top-of-file HARD PROHIBITION block and "Instruction File Scope Clarification" section.
+    - **agentic_devops.sample/BUILDER_OVERRIDES.md:** Added top-of-file HARD PROHIBITION block.
+    - **agentic_devops.sample/QA_OVERRIDES.md:** Added top-of-file HARD PROHIBITION block.
+
 ## [2026-02-21] Builder: Post-Commit Critic Run Mandate
 
 - **Scope:** Instruction refinement -- no feature spec changes.
