@@ -36,19 +36,10 @@ Instead of separate documentation or global logs, implementation discoveries, ha
 
 ### 4. Layered Instruction Architecture
 The framework separates **framework rules** (base layer) from **project-specific context** (override layer):
-*   **Base Layer** (`instructions/`): Core rules, protocols, and philosophies. Read-only from the consumer's perspective.
-*   **Override Layer** (`.purlin/`): Project-specific customizations, domain context, and workflow additions.
+*   **Base Layer** (`purlin/instructions/` in your project): Core rules, protocols, and philosophies. Stays inside the Purlin submodule -- never copied to your project. Consumed directly by the launcher scripts at runtime.
+*   **Override Layer** (`.purlin/` in your project root): Project-specific customizations, domain context, and workflow additions. Created by the bootstrap script and committed to your project.
 
-> **Compatibility note:** The `.purlin/` internal directory name is retained for backward compatibility with existing consumer projects and tooling. It functions as the project's override and configuration directory regardless of the framework's product name.
-
-At launch, the launcher scripts concatenate base + override files into a single agent prompt. This allows upstream framework updates without merge conflicts in project-specific configuration.
-
-### 5. Automated Test Status
-Automated test results are not a separate dashboard column. They are embedded in the existing role status model:
-*   **Builder `DONE`** = spec is complete and automated tests passed. **Builder `FAIL`** = automated tests failed.
-*   **QA `CLEAN`** = automated tests exist and passed. **QA `N/A`** = no automated test coverage exists.
-
-There is no separate "test status" indicator. Builder status reflects test *health*; QA status reflects test *coverage*.
+At launch, the generated launcher scripts concatenate base + override files into a single agent prompt. This allows upstream Purlin updates without merge conflicts in your project-specific configuration.
 
 ## The Agents
 
@@ -249,50 +240,47 @@ Builder (Phase 1)
 
 ---
 
-## Setup & Configuration
+## Setup & Configuration For Your Project
 
-### Option A: Using as a Submodule (Recommended for Projects)
+### 1. Install Claude Code
 
-1.  **Add the submodule:**
-    ```bash
-    git submodule add https://github.com/rlabarca/purlin purlin
-    git submodule update --init
-    ```
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) must be installed before using Purlin. Purlin agents run exclusively inside Claude Code sessions.
 
-2.  **Run the bootstrap:**
-    ```bash
-    ./purlin/tools/bootstrap.sh
-    ```
-    This creates:
-    *   `.purlin/` -- override templates and config (MUST be committed to your project)
-    *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
-    *   `features/` directory
+### 2. Add Purlin as a Submodule
 
-3.  **Customize your overrides:**
-    Edit the files in `.purlin/`:
-    *   `ARCHITECT_OVERRIDES.md` -- project-specific Architect rules and domain context
-    *   `BUILDER_OVERRIDES.md` -- tech stack constraints, build environment rules
-    *   `QA_OVERRIDES.md` -- project-specific QA verification rules
-    *   `HOW_WE_WORK_OVERRIDES.md` -- project-specific workflow additions
-    *   `config.json` -- ports and tool paths
+```bash
+git submodule add https://github.com/rlabarca/purlin purlin
+git submodule update --init
+```
 
-4.  **Launch agents:**
-    ```bash
-    ./run_architect.sh   # Architect agent
-    ./run_builder.sh     # Builder agent
-    ./run_qa.sh          # QA agent
-    ```
+### 3. Run the Bootstrap Script
 
-### Option B: Standalone (For Framework Development)
+```bash
+./purlin/tools/bootstrap.sh
+```
 
-1.  **Launch agents directly:**
-    ```bash
-    ./run_architect.sh
-    ./run_builder.sh
-    ```
-    The launcher scripts detect standalone mode and use `instructions/` and `.purlin/` from the repo root.
+This creates in your project root:
+*   `.purlin/` -- override templates and config (MUST be committed to your project)
+*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
+*   `features/` directory
 
-    All three launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are available in standalone mode.
+Your Architect agent will guide you through customizing the overrides for your project on first launch.
+
+### 4. Launch Agents
+
+```bash
+./run_architect.sh   # Architect agent
+./run_builder.sh     # Builder agent
+./run_qa.sh          # QA agent
+```
+
+### 5. Run the CDD Dashboard
+
+```bash
+./purlin/tools/cdd/start.sh
+```
+
+Open **http://localhost:8086** in your browser. The dashboard shows real-time feature status by role (Architect, Builder, QA) and the release checklist.
 
 ### Python Environment (Optional)
 
@@ -302,9 +290,7 @@ All tool scripts auto-detect a `.venv/` at the project root. To set up:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r purlin/requirements-optional.txt   # submodule
-# or
-.venv/bin/pip install -r requirements-optional.txt               # standalone
+.venv/bin/pip install -r purlin/requirements-optional.txt
 ```
 
 No additional configuration is needed -- all shell scripts that invoke Python use a shared resolver (`tools/resolve_python.sh`) that checks for the venv automatically. The resolution priority is:
@@ -332,49 +318,21 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 ## Directory Structure
 
-*   `instructions/` -- Base instruction layer (framework rules, read-only for consumers).
-    *   `ARCHITECT_BASE.md` -- Core Architect mandates and protocols.
-    *   `BUILDER_BASE.md` -- Core Builder implementation protocol.
-    *   `QA_BASE.md` -- Core QA verification and discovery protocol.
-    *   `HOW_WE_WORK_BASE.md` -- Core workflow philosophy and lifecycle.
-*   `.purlin/` -- Override layer (project-specific customizations).
+**In your project (created by bootstrap):**
+*   `purlin/` -- The Purlin submodule. Contains all framework tooling and base instruction files.
+*   `.purlin/` -- Your project's override layer.
     *   `ARCHITECT_OVERRIDES.md` -- Project-specific Architect rules.
     *   `BUILDER_OVERRIDES.md` -- Project-specific Builder rules.
     *   `QA_OVERRIDES.md` -- Project-specific QA verification rules.
     *   `HOW_WE_WORK_OVERRIDES.md` -- Project-specific workflow additions.
-    *   `config.json` -- Ports, `tools_root`, critic configuration, and other settings.
-*   `purlin-config-sample/` -- Override templates for new consumer projects.
-*   `features/` -- Meta-specifications for the framework's own tools.
+    *   `config.json` -- `tools_root`, critic configuration, agent settings, and dashboard port.
+*   `features/` -- Your project's feature specifications.
+*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- Agent launcher scripts.
+
+**Inside the Purlin submodule (`purlin/`):**
+*   `instructions/` -- Base instruction layer (framework rules). Read by launcher scripts at runtime; never copied to your project.
 *   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync, Release Step management).
-
-## Port Allocation
-
-| Context | CDD Dashboard Port |
-|---------|--------------------|
-| purlin standalone | 9086 |
-| Consumer project default | 8086 |
-
-Consumer projects get 8086 by default (from `purlin-config-sample/config.json`). Core development uses 9086.
-
-## Claude CLI
-
-Purlin agents run exclusively on the Claude CLI.
-
-| Parameter | Flag |
-|-----------|------|
-| Model | `--model <id>` |
-| Effort | `--effort low/medium/high` |
-| Permissions bypass | `--dangerously-skip-permissions` |
-
-Agent model, effort, and permissions are configured per-role in `.purlin/config.json` under `agents.<role>`.
-
-### Installing the Claude CLI
-
-```bash
-npm install -g @anthropic-ai/claude-code
-```
-
-Authenticate with `claude` on first run.
+*   `purlin-config-sample/` -- Override templates used by the bootstrap script.
 
 ## Releases
 
