@@ -26,7 +26,7 @@ This feature extends (does not replace) `agent_launchers_common.md`. The standal
   1. Check that `.worktrees/` is gitignored; if not, warn and exit.
   2. Accept an optional `--project-root <path>` argument; defaults to CWD.
   3. Create branch `spec/collab` and worktree at `.worktrees/architect-session/` (if not already present).
-  4. Create branch `impl/collab` and worktree at `.worktrees/builder-session/` (if not already present).
+  4. Create branch `build/collab` and worktree at `.worktrees/build-session/` (if not already present).
   5. Create branch `qa/collab` and worktree at `.worktrees/qa-session/` (if not already present).
   6. All three branches start from the current `HEAD` of `main`.
   7. Print a summary of what was created and the next-steps instructions.
@@ -47,11 +47,11 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 After setup:
 
 1. Architect session: `cd .worktrees/architect-session && bash run_architect.sh`
-2. Architect completes spec work, runs `/pl-handoff-check`, merges `spec/collab` to `main`.
-3. Builder session: `cd .worktrees/builder-session && git merge main` (to get spec commits), then `bash run_builder.sh`.
-4. Builder completes, runs `/pl-handoff-check`, merges `impl/collab` to `main`.
+2. Architect completes spec work, runs `/pl-work-push`, merges `spec/collab` to `main`.
+3. Builder session: `cd .worktrees/build-session && git merge main` (to get spec commits), then `bash run_builder.sh`.
+4. Builder completes, runs `/pl-work-push`, merges `build/collab` to `main`.
 5. QA session: `cd .worktrees/qa-session && git merge main` (to get impl commits), then `bash run_qa.sh`.
-6. QA completes, runs `/pl-handoff-check`, merges `qa/collab` to `main`.
+6. QA completes, runs `/pl-work-push`, merges `qa/collab` to `main`.
 
 ### 2.4 Worktree Isolation Invariants
 
@@ -65,7 +65,7 @@ After setup:
 
 - When all phases are complete and merged to `main`, use `tools/collab/teardown_worktrees.sh` to remove worktrees safely (see Section 2.6).
 - Consumer invocation: `bash purlin/tools/collab/teardown_worktrees.sh`
-- The branches (`spec/collab`, `impl/collab`, `qa/collab`) can be deleted after merge: `git branch -d spec/collab`.
+- The branches (`spec/collab`, `build/collab`, `qa/collab`) can be deleted after merge: `git branch -d spec/collab`.
 
 ### 2.6 teardown_worktrees.sh
 
@@ -115,7 +115,7 @@ After setup:
     And .worktrees/ is gitignored
     When setup_worktrees.sh is run
     Then .worktrees/architect-session/ is created on branch spec/collab
-    And .worktrees/builder-session/ is created on branch impl/collab
+    And .worktrees/build-session/ is created on branch build/collab
     And .worktrees/qa-session/ is created on branch qa/collab
     And all three branches start from the same HEAD as main
 
@@ -136,20 +136,20 @@ After setup:
 
 #### Scenario: Teardown Is Blocked When Worktree Has Uncommitted Changes
 
-    Given .worktrees/builder-session exists and has uncommitted file changes
+    Given .worktrees/build-session exists and has uncommitted file changes
     When teardown_worktrees.sh is run without --force
     Then the script exits with code 1
-    And the output lists the dirty files in builder-session
+    And the output lists the dirty files in build-session
     And no worktrees are removed
 
 #### Scenario: Teardown Proceeds with Warning When Branch Has Unmerged Commits
 
-    Given .worktrees/builder-session exists with 3 commits not yet merged to main
+    Given .worktrees/build-session exists with 3 commits not yet merged to main
     And the worktree has no uncommitted changes
     When teardown_worktrees.sh is run
     Then the script prints a warning listing the unmerged branch and commit count
     And the worktree is removed
-    And the impl/collab branch still exists in the git repository
+    And the build/collab branch still exists in the git repository
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -28,7 +28,7 @@ CDD Collab Mode is a dashboard mode activated automatically when the CDD server 
 Branch prefix determines role assignment:
 
 - `spec/*` → Architect
-- `impl/*` → Builder
+- `build/*` → Builder
 - `qa/*` → QA
 - Any other prefix → Unknown (shown as a worktree but displayed as role-unlabeled)
 
@@ -41,7 +41,7 @@ When Collab Mode is active, the WORKSPACE section becomes "WORKSPACE & COLLABORA
 | Role | Branch | Dirty? | Last Activity |
 |------|--------|--------|---------------|
 | Architect | spec/collab | 2 files | 45 min ago — feat(spec): add filtering scenarios |
-| Builder | impl/collab | Clean | 12 min ago — feat(impl): implement CRUD handlers |
+| Builder | build/collab | Clean | 12 min ago — feat(build): implement CRUD handlers |
 | QA | qa/collab | 1 file | just now — qa: record test discovery |
 
 "Dirty?" shows file count when modified, "Clean" when clean. "Last Activity" shows relative timestamp + last commit subject.
@@ -49,8 +49,12 @@ When Collab Mode is active, the WORKSPACE section becomes "WORKSPACE & COLLABORA
 **Pre-Merge Status sub-section:** Per-worktree handoff readiness:
 
 - For each worktree, shows role, branch, and a readiness indicator.
-- `Ready to merge` — all auto-evaluable handoff checklist items pass.
-- `N items pending` — N items need attention; `[view checklist ->]` link text.
+- `No changes from main` — the worktree branch has no commits ahead of main; no merge action needed.
+- `Ready to merge (N commits)` — commits exist ahead of main and all auto-evaluable handoff checklist items pass.
+- `N issues pending` — commits exist ahead of main but checklist items fail; issues are listed inline.
+
+When `feature_summary` is available, show it as a compact inline row beneath the status:
+`ARCH: 8/10  BUILD: 7/10  QA: 5/10`
 
 **Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content):
 
@@ -67,18 +71,26 @@ CDD reads each worktree's state using read-only git commands:
 - `git -C <path> status --porcelain` — dirty/clean per worktree.
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
 - `git -C <path> log --grep='\[Ready for Verification\]' --format=%ct` — check for status commit.
+- `git -C <path> rev-list --count main..HEAD` → `commits_ahead` (int)
+- Read `<worktree_path>/.purlin/cache/status.json` if it exists → if present, extract per-role counts for `feature_summary` → if absent or unreadable, omit `feature_summary` from the response (no error)
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
 
 ### 2.5 Pre-Merge Status Evaluation
 
-For each worktree, CDD evaluates auto-checkable items from the handoff checklist:
+For each worktree, CDD evaluates the pre-merge status using a four-state model:
 
-- `purlin.handoff.git_clean` — checked via `git status --porcelain` output.
-- `purlin.handoff.status_commit_made` (Builder only) — checked via grep on git log.
-- `purlin.handoff.complete_commit_made` (QA only) — checked via grep on git log.
+1. If `commits_ahead == 0` → status is `no_changes`; skip remaining checks
+2. Evaluate auto-checkable items from the handoff checklist (git_clean, status_commit_made, complete_commit_made)
+3. If all pass → status is `ready`
+4. If any fail → status is `pending`; enumerate each failing item as an issue string
 
-Items requiring human judgment (e.g., spec gate pass, visual spec complete) are shown as pending until the agent runs `/pl-handoff-check` and records results.
+Issue strings (shown in the dashboard when status is `pending`):
+- `"Uncommitted changes in working tree"` — from git_clean check
+- `"No [Ready for Verification] commit found"` — Builder role only
+- `"No [Complete ...] commit found"` — QA role only
+
+Items requiring human judgment (e.g., spec gate pass, visual spec complete) are shown as pending until the agent runs `/pl-work-push` and records results.
 
 ### 2.6 /status.json API Extension
 
@@ -96,17 +108,29 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "file_count": 2,
       "last_commit": "abc1234 feat(spec): add filtering scenarios (45 min ago)",
       "handoff_ready": false,
-      "handoff_pending_count": 1
+      "handoff_pending_count": 1,
+      "commits_ahead": 0,
+      "wt_merge_status": "no_changes",
+      "pending_issues": []
     },
     {
-      "path": ".worktrees/builder-session",
-      "branch": "impl/collab",
+      "path": ".worktrees/build-session",
+      "branch": "build/collab",
       "role": "builder",
       "dirty": false,
       "file_count": 0,
-      "last_commit": "def5678 feat(impl): implement CRUD handlers (12 min ago)",
+      "last_commit": "def5678 feat(build): implement CRUD handlers (12 min ago)",
       "handoff_ready": true,
-      "handoff_pending_count": 0
+      "handoff_pending_count": 0,
+      "commits_ahead": 3,
+      "wt_merge_status": "ready",
+      "pending_issues": [],
+      "feature_summary": {
+        "total": 10,
+        "arch_done": 8,
+        "builder_done": 7,
+        "qa_clean": 5
+      }
     }
   ]
 }
@@ -124,6 +148,16 @@ Fields per worktree entry:
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
 - `handoff_ready` — true if all auto-evaluable handoff items pass.
 - `handoff_pending_count` — count of pending items (0 when ready).
+- `commits_ahead` — always present (int, 0 if none).
+- `wt_merge_status` — always present (`"no_changes"` | `"ready"` | `"pending"` | `"unknown"`).
+- `pending_issues` — always present (empty array when ready or no_changes).
+- `feature_summary` — optional; omitted when worktree has no `.purlin/cache/status.json`; contains: `total`, `arch_done`, `builder_done`, `qa_clean`.
+
+`feature_summary` fields:
+- `total` — total feature count
+- `arch_done` — count where `architect == "DONE"`
+- `builder_done` — count where `builder == "DONE"`
+- `qa_clean` — count where `qa == "CLEAN"` or `qa == "N/A"`
 
 ### 2.7 Visual Design
 
@@ -186,7 +220,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 #### Scenario: Role Mapped from Branch Prefix
 
-    Given worktrees on branches spec/feature-a, impl/feature-a, qa/feature-a
+    Given worktrees on branches spec/feature-a, build/feature-a, qa/feature-a
     When an agent calls GET /status.json
     Then the worktrees array contains entries with roles architect, builder, and qa respectively
 
@@ -198,7 +232,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 #### Scenario: Dirty State Detected
 
-    Given a worktree at .worktrees/builder-session has uncommitted files
+    Given a worktree at .worktrees/build-session has uncommitted files
     When an agent calls GET /status.json
     Then the worktree entry has dirty true and file_count greater than 0
 
@@ -210,6 +244,44 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     When an agent calls GET /status.json
     Then the builder worktree entry has handoff_ready true and handoff_pending_count 0
 
+#### Scenario: No Changes State When Worktree Has No Commits Ahead
+
+    Given a worktree exists at .worktrees/architect-session
+    And git rev-list --count main..HEAD returns 0
+    When an agent calls GET /status.json
+    Then the worktree entry has wt_merge_status "no_changes"
+    And commits_ahead is 0
+
+#### Scenario: Ready State When Commits Ahead And Handoff Checks Pass
+
+    Given a builder worktree has 3 commits ahead of main
+    And git status is clean
+    And a [Ready for Verification] commit exists in the log
+    When an agent calls GET /status.json
+    Then the worktree entry has wt_merge_status "ready"
+    And commits_ahead is 3
+    And pending_issues is empty
+
+#### Scenario: Pending State When Commits Ahead But Handoff Checks Fail
+
+    Given a builder worktree has 2 commits ahead of main
+    And git status shows uncommitted changes
+    When an agent calls GET /status.json
+    Then the worktree entry has wt_merge_status "pending"
+    And pending_issues contains "Uncommitted changes in working tree"
+
+#### Scenario: Feature Summary Included When Worktree Cache Exists
+
+    Given a worktree at .worktrees/build-session has .purlin/cache/status.json
+    When an agent calls GET /status.json
+    Then the worktree entry contains a feature_summary object with total, arch_done, builder_done, qa_clean
+
+#### Scenario: Feature Summary Absent When No Cache
+
+    Given a worktree at .worktrees/architect-session has no .purlin/cache/status.json
+    When an agent calls GET /status.json
+    Then the worktree entry does not contain a feature_summary field
+
 #### Scenario: Start Collab Creates Worktrees via Dashboard
 
     Given no worktrees exist under .worktrees/
@@ -217,11 +289,11 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     When a POST request is sent to /start-collab with body {}
     Then the server runs setup_worktrees.sh --project-root <PROJECT_ROOT>
     And the response contains { "status": "ok" }
-    And .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session are created
+    And .worktrees/architect-session, .worktrees/build-session, .worktrees/qa-session are created
 
 #### Scenario: End Collab Removes Worktrees via Dashboard (Clean State)
 
-    Given worktrees exist at .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session
+    Given worktrees exist at .worktrees/architect-session, .worktrees/build-session, .worktrees/qa-session
     And all worktrees have clean git status
     And no worktree branches have commits ahead of main
     When a POST request is sent to /end-collab with body { "force": true }
@@ -234,7 +306,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 #### Scenario: Sessions Table Displays Worktree State
 
     Given the CDD server is running from the project root
-    And three worktrees exist (architect-session, builder-session, qa-session)
+    And three worktrees exist (architect-session, build-session, qa-session)
     When the User opens the CDD dashboard
     Then the WORKSPACE & COLLABORATION section is visible
     And the Sessions sub-section shows a table with Role, Branch, Dirty, and Last Activity columns
@@ -267,6 +339,28 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     And the modal instructs the user to commit or stash before ending the session
     And the Confirm button is disabled
 
+#### Scenario: Pre-Merge Status Shows No Changes When Worktree Matches Main
+
+    Given a worktree exists but has no commits ahead of main
+    When the User views the Pre-Merge Status sub-section
+    Then the row shows "No changes from main" with a neutral indicator
+
+#### Scenario: Pre-Merge Status Shows Ready With Feature Summary
+
+    Given a builder worktree has commits ahead of main and all handoff checks pass
+    And the worktree has a populated .purlin/cache/status.json
+    When the User views the Pre-Merge Status sub-section
+    Then the row shows "Ready to merge (N commits)" with a check indicator
+    And a compact ARCH/BUILD/QA summary is shown beneath it
+
+#### Scenario: Pre-Merge Status Shows Issues When Pending
+
+    Given a builder worktree has commits ahead of main
+    And there are uncommitted changes
+    When the User views the Pre-Merge Status sub-section
+    Then the row shows "1 issue pending"
+    And "Uncommitted changes in working tree" is listed beneath it
+
 ---
 
 ## 4. Visual Specification
@@ -295,6 +389,10 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 - [ ] End Collab dirty-state modal lists dirty worktree names and uncommitted file counts; Confirm button is disabled
 - [ ] End Collab unsynced-state modal includes an "I understand, the branches still exist" checkbox; Confirm is disabled until checked
 - [ ] End Collab clean-state modal shows a simple Confirm/Cancel dialog
+- [ ] Pre-Merge Status row shows "No changes from main" (neutral/dim) when worktree has no commits ahead
+- [ ] Pre-Merge Status row shows "Ready to merge (N commits)" with commit count when ahead and ready
+- [ ] Pre-Merge Status row shows issue list inline when pending (one issue per line)
+- [ ] Feature summary compact row (ARCH: X/Y BUILD: X/Y QA: X/Y) appears beneath status when cache is present
 
 ---
 
@@ -311,6 +409,12 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
 
 **[CLARIFICATION]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. Acknowledged by Architect — `features/critic_tool.md` Section 2.13 updated to require numbered-prefix detection, and a new Gherkin scenario was added. Builder must update the regex in `parse_visual_spec()` and add a corresponding test case.
+
+- `commits_ahead`: add `git rev-list --count main..HEAD` to `_worktree_state()` in `tools/cdd/serve.py`.
+- `feature_summary`: read `{wt_abs_path}/.purlin/cache/status.json` in `get_collab_worktrees()`; wrap in `try/except`; parse the `features` array for role status counts.
+- `wt_merge_status` + `pending_issues`: compute in `get_collab_worktrees()` after calling `_worktree_handoff_status()`; derive state from `commits_ahead` + existing `handoff_pending_count`.
+- Existing `handoff_ready` field is preserved unchanged for API compatibility.
+- `ROLE_PREFIX_MAP` in `serve.py`: update `'impl': 'builder'` → `'build': 'builder'`.
 
 ## User Testing Discoveries
 

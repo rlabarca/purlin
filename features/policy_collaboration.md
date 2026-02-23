@@ -12,7 +12,7 @@ Multi-person collaboration in Purlin uses git worktrees (local) and lifecycle br
 ### 2.1 Branch Naming Convention
 
 *   `spec/collab` — Architect-owned; contains spec commits
-*   `impl/collab` — Builder-owned; contains implementation commits
+*   `build/collab` — Builder-owned; contains implementation commits
 *   `qa/collab` — QA-owned; contains verification commits
 *   Branch prefix determines role assignment in CDD Collab Mode
 *   Branches not matching this pattern are shown in the dashboard but are role-unlabeled
@@ -39,7 +39,7 @@ Multi-person collaboration in Purlin uses git worktrees (local) and lifecycle br
 *   Who merges: the agent that completed the role's phase (before shutting down)
 *   What it triggers: the next agent role's pre-flight check can now see the merged commits
 *   For remote collaboration, the merge is followed by `git push origin main`
-*   The handoff checklist (`/pl-handoff-check`) verifies readiness before the merge
+*   `/pl-work-push` verifies readiness and performs the merge in one step
 
 ### 2.5 Worktree Location Convention
 
