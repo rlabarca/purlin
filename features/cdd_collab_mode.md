@@ -391,3 +391,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Expected Behavior:** Modified column should show category counts (e.g., "1 Specs") when non-.purlin/ files are dirty in the worktree, per spec Section 2 and visual spec checklist.
 - **Action Required:** Builder
 - **Status:** OPEN
+
+### [BUG] End Collab dirty-state detection includes .purlin/ files and miscounts QA changes (Discovered: 2026-02-23)
+- **Scenario:** End Collab Button Shows Safety Warning When Worktrees Are Dirty
+- **Observed Behavior:** Clicking "End Collab Session" showed the dirty-state modal with "1 file uncommitted changes" for the architect-session and build-session worktrees — which the user never touched. Only `.purlin/config.json` was modified in those worktrees (auto-propagated by agent config). The qa-session also showed "1 file" despite having more than 1 non-.purlin/ file modified.
+- **Expected Behavior:** Per spec Section 2.2, `.purlin/` files must be excluded from the clean/dirty determination. Architect and build sessions should be reported as clean (no `.purlin/`-only changes count as dirty). QA session file count should reflect only non-.purlin/ changes.
+- **Action Required:** Builder
+- **Status:** OPEN
