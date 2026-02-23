@@ -38,11 +38,17 @@ When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It co
 
 **Sessions sub-section:** A table listing all active worktrees:
 
-| Role | Branch | Modified |
-|------|--------|----------|
-| Architect | spec/collab | 2 Specs 1 Code/Other |
-| Builder | impl/collab | |
-| QA | qa/collab | 1 Tests |
+| Role | Branch | Main Diff | Modified |
+|------|--------|-----------|----------|
+| Architect | spec/collab | BEHIND | 2 Specs 1 Code/Other |
+| Builder | build/collab | SAME | |
+| QA | qa/collab | SAME | 1 Tests |
+
+"Main Diff" shows whether the worktree's branch has all commits from main:
+- `SAME` — no commits on main are missing from this worktree's branch; the branch may additionally be ahead.
+- `BEHIND` — one or more commits exist on main that are not in this worktree's branch. Run `/pl-work-pull` before pushing.
+
+Combined interpretation: SAME + empty Modified = aligned with main. SAME + non-empty Modified = new committed or uncommitted work ready to push. BEHIND = sync with main required before this worktree can push.
 
 "Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`.
 
@@ -69,6 +75,12 @@ CDD reads each worktree's state using read-only git commands:
   - Lines where the file path starts with `tests/` → Tests count.
   - All other modified/staged/untracked lines → Code/Other count.
 - `git -C <path> log --grep='\[Ready for Verification\]' --format=%ct` — check for status commit.
+- `git log <worktree-branch>..main --oneline` — determine whether the worktree branch is behind main.
+
+  Run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name as the range start. This is necessary because the CDD server has the full ref namespace and can evaluate `main` authoritatively. Agents running inside a worktree may not reliably resolve `main` in all configurations.
+
+  - If output is non-empty → `main_diff: "BEHIND"`
+  - If output is empty → `main_diff: "SAME"`
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
 
@@ -79,6 +91,7 @@ For each worktree, CDD evaluates auto-checkable items from the handoff checklist
 - `purlin.handoff.git_clean` — checked via `git status --porcelain` output.
 - `purlin.handoff.status_commit_made` (Builder only) — checked via grep on git log.
 - `purlin.handoff.complete_commit_made` (QA only) — checked via grep on git log.
+- `purlin.handoff.main_diff` — if `main_diff == "BEHIND"`, auto-fail with message "Worktree is behind main — run /pl-work-pull first."
 
 Items requiring human judgment (e.g., spec gate pass, visual spec complete) are shown as pending until the agent runs `/pl-handoff-check` and records results.
 
@@ -94,18 +107,20 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "path": ".worktrees/architect-session",
       "branch": "spec/collab",
       "role": "architect",
+      "main_diff": "BEHIND",
       "modified": {
         "specs": 2,
         "tests": 0,
         "other": 1
       },
       "handoff_ready": false,
-      "handoff_pending_count": 1
+      "handoff_pending_count": 2
     },
     {
       "path": ".worktrees/builder-session",
-      "branch": "impl/collab",
+      "branch": "build/collab",
       "role": "builder",
+      "main_diff": "SAME",
       "modified": {
         "specs": 0,
         "tests": 0,
@@ -125,6 +140,7 @@ Fields per worktree entry:
 - `path` — relative path from project root.
 - `branch` — current branch name.
 - `role` — `"architect"`, `"builder"`, `"qa"`, or `"unknown"`.
+- `main_diff` — `"SAME"` if no commits on main are missing from this worktree's branch; `"BEHIND"` otherwise. Computed via `git log <branch>..main --oneline` from the project root.
 - `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix.
 - `handoff_ready` — true if all auto-evaluable handoff items pass.
 - `handoff_pending_count` — count of pending items (0 when ready).
@@ -263,6 +279,20 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     When an agent calls GET /status.json
     Then the worktree entry's modified field has specs=2, tests=0, other=1
 
+#### Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits
+
+    Given a worktree at .worktrees/architect-session on branch spec/collab
+    And main has commits that are not in spec/collab
+    When an agent calls GET /status.json
+    Then the worktree entry has main_diff "BEHIND"
+
+#### Scenario: Main Diff SAME When Worktree Branch Has All Main Commits
+
+    Given a worktree at .worktrees/builder-session on branch build/collab
+    And build/collab has all commits that are in main (may also be ahead)
+    When an agent calls GET /status.json
+    Then the worktree entry has main_diff "SAME"
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Sessions Table Displays Worktree State
@@ -271,7 +301,7 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     And three worktrees exist (architect-session, builder-session, qa-session)
     When the User opens the CDD dashboard
     Then the Collaboration section is visible
-    And the Sessions sub-section shows a table with Role, Branch, and Modified columns
+    And the Sessions sub-section shows a table with Role, Branch, Main Diff, and Modified columns
     And each worktree appears as a row with correct role and branch information
 
 #### Scenario: Pre-Merge Status Shows Ready Indicator
@@ -310,9 +340,11 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - **Reference:** N/A
 - [ ] Section heading reads "Collaboration" when collab mode is active (vs "Workspace" when not)
 - [ ] "Sessions" sub-label is visible above the worktree table
-- [ ] Sessions table has columns: Role, Branch, Modified
+- [ ] Sessions table has columns: Role, Branch, Main Diff, Modified
 - [ ] Each active worktree appears as a row
 - [ ] Role badges use same styling as status badges (no new colors needed)
+- [ ] Main Diff cell shows "BEHIND" (styled as a warning badge) when the worktree branch is missing commits from main
+- [ ] Main Diff cell shows "SAME" (neutral/muted style) when the worktree branch has all of main's commits
 - [ ] Modified cell is empty when worktree is clean
 - [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when dirty
 - [ ] Multiple categories appear in order: Specs, Tests, Code/Other; zero-count categories omitted
@@ -346,6 +378,8 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 **[CLARIFICATION]** The End Collab modal is implemented as a dedicated overlay element (`collab-modal-overlay`) rather than reusing the feature detail modal, since it has a different structure (checkbox, 3-state content, no tabs). The modal is populated by `showEndCollabModal()` based on the dry-run response JSON. (Severity: INFO)
 
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
+
+**Main Diff computation:** The `main_diff` field is computed at the project root — `git log <branch>..main --oneline` — not via `git -C <worktree-path>`. This ensures `main` resolves correctly regardless of the worktree's internal git context. Agents running inside a worktree should use `/pl-work-pull` to determine their own sync state; the dashboard is the authoritative display.
 
 **[CLARIFICATION]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. Acknowledged by Architect — `features/critic_tool.md` Section 2.13 updated to require numbered-prefix detection, and a new Gherkin scenario was added. Builder must update the regex in `parse_visual_spec()` and add a corresponding test case.
 
