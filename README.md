@@ -156,6 +156,47 @@ The QA Agent verifies features against their specifications through interactive 
 
 ---
 
+## Phased Delivery
+
+When the Architect introduces a large batch of new or revised specs, the Builder may split work across multiple sessions using a **phased delivery plan**. Each phase produces a testable state; the user orchestrates the cycle: Builder → QA → Builder → QA → ... until the backlog is clear.
+
+### How It Works
+
+The Builder creates a delivery plan at `.purlin/cache/delivery_plan.md` when the user approves phased delivery. The plan contains numbered phases, each with a feature list and one of three statuses: `PENDING`, `IN_PROGRESS`, or `COMPLETE`. The file is committed to git so all agents share the same view across sessions.
+
+```
+/pl-delivery-plan
+→ Agent assesses scope and dependency ordering
+→ "6 TODO features. Dependency analysis suggests 3 phases:
+   Phase 1 (foundation): arch_api_contract, python_environment
+   Phase 2 (core tools): critic_tool, cdd_status_monitor
+   Phase 3 (release): release_checklist_core, release_checklist_ui
+   Rationale: Phase 1 unblocks all Phase 2 prerequisites.
+   Adjust or confirm?"
+```
+
+The standard multi-phase cycle:
+
+```
+Builder (Phase 1)
+  → QA verifies Phase 1 features
+  → Builder (addresses QA bugs + implements Phase 2)
+  → QA verifies Phase 2 features
+  → ... until all phases COMPLETE
+  → Builder deletes delivery_plan.md
+```
+
+### Rules
+
+*   **Phasing is opt-in.** The Builder proposes phases; the user always decides whether to accept, modify, or proceed as a single session.
+*   **QA is phase-gated.** QA will not mark a feature `[Complete]` if it appears in any `PENDING` phase of the delivery plan, even if all currently-delivered scenarios pass.
+*   **Cross-session resumption.** If a Builder session is interrupted mid-phase, the next Builder session resumes from where it left off -- skipping features already in `TESTING` state.
+*   **Spec changes trigger amendments.** If the Architect modifies specs while a plan is active, the Builder detects the mismatch on resume and proposes a plan amendment before continuing.
+*   **Dashboard visibility.** While a plan is active, the CDD Dashboard annotates the active section: `ACTIVE (N) [PHASE (current/total)]`.
+*   **Flexible exit.** At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
+
+---
+
 ## Setup & Configuration
 
 ### Option A: Using as a Submodule (Recommended for Projects)

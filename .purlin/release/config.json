@@ -13,6 +13,10 @@
       "enabled": true
     },
     {
+      "id": "submodule_safety_audit",
+      "enabled": true
+    },
+    {
       "id": "doc_consistency_framework",
       "enabled": true
     },
@@ -25,16 +29,12 @@
       "enabled": true
     },
     {
-      "id": "submodule_safety_audit",
-      "enabled": true
-    },
-    {
       "id": "purlin.record_version_notes",
       "enabled": true
     },
     {
       "id": "purlin.push_to_remote",
-      "enabled": false
+      "enabled": true
     }
   ]
 }
