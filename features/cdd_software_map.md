@@ -33,7 +33,10 @@ The SW Map view is activated via the view mode toggle in the dashboard shell (de
 *   **Label Non-Overlap:** Node labels (both friendly name and filename) MUST NOT visually overlap with labels of neighboring nodes or with each other. The layout engine must provide sufficient spacing, padding, or collision avoidance to ensure all text remains fully legible at the default zoom-to-fit level.
 *   **Label Wrapping:** Long labels MUST wrap within their containing node box rather than being clipped. The full text of both the friendly name and filename MUST remain visible at the default zoom-to-fit level.
 *   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
-*   **Zoom-to-Fit on Load:** On initial page load (or when switching to the SW Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. On auto-refresh cycles, the current zoom level and pan position MUST be preserved.
+*   **Zoom-to-Fit on Load:** On initial page load (or when switching to the SW Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
+    *   If the user has NOT modified zoom or pan since the last fit (initial load, view switch, or Recenter), auto-refresh cycles MUST re-fit the graph to the viewable area.
+    *   If the user HAS modified zoom or pan, auto-refresh cycles MUST preserve the current zoom level and pan position.
+*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the SW Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, and (2) reset the interaction state to "unmodified" so that subsequent auto-refresh cycles re-fit rather than preserve position.
 *   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
 
 ### 2.4 Cytoscape.js Theme Integration
@@ -110,10 +113,23 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the node's direct prerequisites and direct dependents are highlighted
     And non-adjacent nodes are visually de-emphasized
 
-#### Scenario: Zoom Persistence on Refresh
+#### Scenario: Zoom Preserved on Refresh When Modified
     Given the User has zoomed or panned the graph in the SW Map view
     When the dashboard auto-refreshes
     Then the current zoom level and pan position are preserved
+
+#### Scenario: Zoom Resets on Refresh When Unmodified
+    Given the User has not modified zoom or pan since the last fit
+    When the dashboard auto-refreshes
+    Then the graph is re-fitted to the viewable area
+
+#### Scenario: Recenter Graph Button Resets View and Interaction State
+    Given the User has zoomed or panned the graph
+    When the User clicks the Recenter Graph button
+    Then the zoom and pan are reset to fit the graph in the viewable area
+    And the interaction state is reset to unmodified
+    When the dashboard next auto-refreshes
+    Then the graph is re-fitted to the viewable area rather than preserving the previous zoom/pan
 
 ## 4. Implementation Notes
 See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
@@ -130,6 +146,7 @@ See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation know
 - [ ] Long labels wrap within node boxes without clipping (all text visible at default zoom)
 - [ ] No legend overlay displayed
 - [ ] Graph is zoomed and centered to fit the viewable page area on initial load
+- [ ] "Recenter Graph" button is displayed in the bottom-right corner of the SW Map canvas
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch
 - [ ] Theme persists across auto-refresh cycles
