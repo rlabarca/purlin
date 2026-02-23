@@ -32,6 +32,8 @@ Branch prefix determines role assignment:
 - `qa/*` → QA
 - Any other prefix → Unknown (shown as a worktree but displayed as role-unlabeled)
 
+**Display labels in the Sessions table:** role values from the API are lowercase (`architect`, `builder`, `qa`, `unknown`). Displayed as: `architect` → "Architect", `builder` → "Builder", `qa` → "QA" (all caps, not "Qa"), `unknown` → "Unknown". This capitalization rule applies everywhere the role label is rendered in the Collaboration section.
+
 ### 2.3 Collaboration Section
 
 When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It contains two sub-sections:
@@ -50,13 +52,17 @@ When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It co
 
 Combined interpretation: SAME + empty Modified = aligned with main. SAME + non-empty Modified = new committed or uncommitted work ready to push. BEHIND = sync with main required before this worktree can push.
 
-"Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`.
+"Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all Modified column categories — they do not contribute to Specs, Tests, Code/Other, or any other count.
 
 **Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content):
 
 - Branch name, ahead/behind status.
 - Clean/dirty state.
 - Last commit summary.
+
+When the main checkout has no uncommitted changes, the sub-section heading is exactly "Local (main)" with no additional annotations. Text such as "Ready for specs" or any other status label MUST NOT be appended when the checkout is clean.
+
+Files under `.purlin/` do not constitute "dirty" state for the main checkout display — they are excluded from the clean/dirty determination. It is a process invariant that `.purlin/`-only commits should not appear on `main`; `.purlin/` is environment-specific configuration and must not be committed to the shared main branch.
 
 ### 2.4 Worktree State Reading
 
@@ -65,7 +71,8 @@ CDD reads each worktree's state using read-only git commands:
 - `git worktree list --porcelain` — all worktree paths and HEAD commits.
 - `git -C <path> rev-parse --abbrev-ref HEAD` — branch name per worktree.
 - `git -C <path> status --porcelain` — modified/staged/untracked files per worktree. Output is parsed by path prefix to count per-category modified files:
-  - Lines where the file path (columns 4+) starts with `features/` → Specs count.
+  - Lines where the file path (columns 4+) starts with `.purlin/` → **excluded entirely** (not counted in any category).
+  - Lines where the file path starts with `features/` → Specs count.
   - Lines where the file path starts with `tests/` → Tests count.
   - All other modified/staged/untracked lines → Code/Other count.
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
@@ -126,7 +133,7 @@ Fields per worktree entry:
 - `main_diff` — `"SAME"` if no commits on main are missing from this worktree's branch; `"BEHIND"` otherwise. Computed via `git log <branch>..main --oneline` from the project root.
 - `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
-- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix.
+- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix. Files under `.purlin/` are excluded and do not contribute to any sub-field.
 
 ### 2.7 Visual Design
 
@@ -311,6 +318,7 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - [ ] "Sessions" sub-label is visible above the worktree table
 - [ ] Sessions table has columns: Role, Branch, Main Diff, Modified
 - [ ] Each active worktree appears as a row
+- [ ] Role column renders "QA" (all caps) for the qa role; "Architect", "Builder", "Unknown" for other roles
 - [ ] Role badges use same styling as status badges (no new colors needed)
 - [ ] Main Diff cell shows "BEHIND" (styled as a warning badge) when the worktree branch is missing commits from main
 - [ ] Main Diff cell shows "SAME" (neutral/muted style) when the worktree branch has all of main's commits
