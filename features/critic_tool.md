@@ -1,4 +1,4 @@
-# Feature: Critic Quality Gate Tool
+# Feature: Critic Coordination Engine Tool
 
 > Label: "Tool: Critic"
 > Category: "Coordination & Lifecycle"

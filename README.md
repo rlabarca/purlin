@@ -156,6 +156,56 @@ The QA Agent verifies features against their specifications through interactive 
 
 ---
 
+## The Critic
+
+The Critic is the **project coordination engine** -- not a pass/fail badge. It generates role-specific action items that tell each agent what to work on next.
+
+### Dual-Gate Validation
+
+Every feature is evaluated through two independent gates:
+
+*   **Spec Gate (pre-implementation):** Validates structural completeness, prerequisite anchoring, and Gherkin quality. Runs before any code exists.
+*   **Implementation Gate (post-implementation):** Validates traceability (automated scenarios matched to test functions), policy adherence (FORBIDDEN pattern scanning), builder decision audit, and optional LLM-based logic drift detection.
+
+A feature that passes the Spec Gate but fails the Implementation Gate has a code problem. A feature that passes the Implementation Gate but fails the Spec Gate has a specification problem.
+
+### Supplementary Audits
+
+On every run, the Critic also executes:
+
+*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries across all feature files.
+*   **Builder Decision Audit:** Scans `## Implementation Notes` for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags (HIGH-priority Architect items).
+*   **Visual Specification Detection:** Detects `## Visual Specification` sections and generates separate QA action items for visual verification.
+*   **Untracked File Audit:** Flags untracked files as MEDIUM-priority Architect triage items.
+
+### Role-Specific Action Items
+
+The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific action item section:
+
+| Role | Typical Action Items |
+|------|---------------------|
+| **Architect** | Fix spec gaps, revise infeasible specs, acknowledge builder decisions, triage untracked files |
+| **Builder** | Implement TODO features, fix failing tests, close traceability gaps, resolve open bugs |
+| **QA** | Verify TESTING features, re-verify SPEC_UPDATED discoveries, run visual verification passes |
+
+### CDD vs. The Critic
+
+*   **CDD** shows what IS — per-role status (Architect, Builder, QA) on the dashboard.
+*   **The Critic** shows what SHOULD BE DONE — imperative action items per role.
+
+CDD does not run the Critic. It reads the `role_status` values from pre-computed `tests/<feature>/critic.json` files.
+
+### CLI Invocation
+
+```bash
+tools/cdd/status.sh           # Run Critic automatically + show CDD status (primary agent interface)
+tools/critic/run.sh           # Run Critic directly
+```
+
+Agents use the CLI exclusively. The CDD web dashboard is for human consumption only.
+
+---
+
 ## Phased Delivery
 
 When the Architect introduces a large batch of new or revised specs, the Builder may split work across multiple sessions using a **phased delivery plan**. Each phase produces a testable state; the user orchestrates the cycle: Builder → QA → Builder → QA → ... until the backlog is clear.

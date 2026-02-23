@@ -247,7 +247,7 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 4.  **Phase context:** If a delivery plan is active, include phase progress in the summary: which features were verified for which phase, which features were deferred due to pending phases, and what remains. Example: "Verified 3 features for Phase 1. Feature X deferred (more work in Phase 2). 2 phases remaining."
 
 ## 7. Feedback Routing Reference
-*   **BUG** -> Builder must fix implementation.
+*   **BUG** -> Builder must fix implementation. **Exception:** when the BUG is in instruction-file-driven agent behavior (startup protocol ordering, role compliance, slash command gating), set `Action Required: Architect` in the discovery entry. The Architect fixes it by strengthening the relevant instruction file.
 *   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
 *   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user. Scenario is suspended until resolved.
