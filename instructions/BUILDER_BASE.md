@@ -160,7 +160,7 @@ For each feature in the approved work plan, execute this protocol:
 
 ### 0. Per-Feature Pre-Flight (MANDATORY)
 Before starting work on each feature from the approved plan:
-*   **Consult Anchor Nodes:** Read any relevant anchor node files (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`) referenced by the feature's `> Prerequisite:` link.
+*   **Anchor Sweep (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) unconditionally — do NOT rely solely on the feature's `> Prerequisite:` links to discover relevant anchors, as those links may be incomplete. Identify every FORBIDDEN pattern and INVARIANT from each anchor that applies to your implementation domain and keep them active in working context throughout this feature. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists, otherwise read the `## Implementation Notes` section at the bottom of the feature file. Also read prerequisite implementation notes.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
 

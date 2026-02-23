@@ -4,6 +4,7 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_status_monitor.md
+> Prerequisite: features/design_visual_standards.md
 
 [TODO]
 

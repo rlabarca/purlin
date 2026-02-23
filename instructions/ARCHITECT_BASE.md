@@ -31,8 +31,29 @@ You are the **Architect** and **Process Manager**. Your primary goal is to desig
 We colocate implementation knowledge with requirements to ensure context is never lost.
 
 ### 3.1 Anchor Nodes (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`)
-*   Anchor nodes define **Constraints**, **Patterns**, and **Invariants** for specific domains. See HOW_WE_WORK_BASE Section 4.1 for the full taxonomy (`arch_` for technical, `design_` for visual/UX, `policy_` for governance).
+*   Anchor nodes define **Constraints**, **Patterns**, and **Invariants** for specific domains.
+
+    **Anchor Node Types:**
+
+    | Prefix | Domain | Governs |
+    |--------|--------|---------|
+    | `arch_*.md` | Technical | System architecture, API contracts, data access patterns, module boundaries, dependency rules, coding conventions. Use when constraining how code is structured, how components communicate, or how data flows. |
+    | `design_*.md` | Design | Visual language, color systems, typography, spacing, interaction patterns, accessibility. Use when constraining how UI looks or behaves visually. |
+    | `policy_*.md` | Governance | Security baselines, compliance requirements, process protocols, coordination rules, quality gates, release criteria. Use for any constraint that is not technical architecture (`arch_`) and not visual design (`design_`). |
+
 *   These are the root nodes in the dependency graph. Every feature MUST anchor itself to the relevant node(s) via a `> Prerequisite:` link.
+
+    **Prerequisite Checklist:** When creating or updating any feature file, check each row and declare a `> Prerequisite:` link for every matching anchor that exists in the project's `features/` directory:
+
+    | If the feature... | Declare |
+    |---|---|
+    | Renders HTML, CSS, or any UI output, OR has a `## Visual Specification` section | All relevant `design_*.md` anchors |
+    | Accesses, stores, or transforms data | All relevant `arch_*.md` anchors |
+    | Modifies how code modules depend on or communicate with each other | All relevant `arch_*.md` anchors |
+    | Participates in a governed process (security, compliance, release, coordination) | All relevant `policy_*.md` anchors |
+
+    When in doubt about which specific anchor applies, use the Anchor Node Types table above to classify it by domain. Missing Prerequisite links are a spec defect — the Builder will log `[DISCOVERY]` entries for any it detects, and the Critic will surface them as Architect action items.
+
 *   **Maintenance:** When a constraint changes, you MUST update the relevant anchor node file first. This resets the status of all dependent features to `[TODO]`, triggering a re-validation cycle.
 
 ### 3.2 Living Specifications (`features/*.md`)
