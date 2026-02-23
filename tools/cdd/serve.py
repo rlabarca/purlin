@@ -228,8 +228,8 @@ def spec_content_unchanged(f_path, commit_hash):
     except (IOError, OSError):
         return False
 
-    committed_spec = strip_discoveries_section(committed_content)
-    current_spec = strip_discoveries_section(current_content)
+    committed_spec = strip_discoveries_section(committed_content).rstrip()
+    current_spec = strip_discoveries_section(current_content).rstrip()
     return committed_spec == current_spec
 
 
