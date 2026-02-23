@@ -42,15 +42,18 @@ When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It co
 
 | Role | Branch | Main Diff | Modified |
 |------|--------|-----------|----------|
-| Architect | spec/collab | BEHIND | 2 Specs 1 Code/Other |
+| Architect | spec/collab | AHEAD | |
 | Builder | build/collab | SAME | |
-| QA | qa/collab | SAME | 1 Tests |
+| QA | qa/collab | BEHIND | 1 Specs |
 
-"Main Diff" shows whether the worktree's branch has all commits from main:
-- `SAME` — no commits on main are missing from this worktree's branch; the branch may additionally be ahead.
+"Main Diff" shows the sync state between the worktree's branch and main:
+- `AHEAD` — this worktree has commits not yet in main; no commits from main are missing. Merge is ready.
+- `SAME` — branch and main are at identical commit positions. No work ahead or behind.
 - `BEHIND` — one or more commits exist on main that are not in this worktree's branch. Run `/pl-work-pull` before pushing.
 
-Combined interpretation: SAME + empty Modified = aligned with main. SAME + non-empty Modified = new committed or uncommitted work ready to push. BEHIND = sync with main required before this worktree can push.
+BEHIND takes precedence over AHEAD: a branch that is both ahead and behind (diverged) shows BEHIND — it must pull before it can push.
+
+Combined interpretation: AHEAD + empty Modified = committed work ready to merge to main. AHEAD + non-empty Modified = committed work ready to merge, plus additional uncommitted changes. SAME + empty Modified = no work in progress, fully aligned with main. BEHIND = pull from main required before this worktree can push.
 
 "Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all Modified column categories — they do not contribute to Specs, Tests, Code/Other, or any other count.
 
@@ -77,12 +80,15 @@ CDD reads each worktree's state using read-only git commands:
   - All other modified/staged/untracked lines → Code/Other count.
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
 - `git -C <path> rev-list --count main..HEAD` → `commits_ahead` (int).
-- `git log <worktree-branch>..main --oneline` — determine whether the worktree branch is behind main.
+- Two `git log` range queries to determine `main_diff` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name. Running from the project root is necessary because the CDD server has the full ref namespace and can evaluate `main` authoritatively; agents running inside a worktree may not reliably resolve `main` in all configurations.
 
-  Run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name as the range start. This is necessary because the CDD server has the full ref namespace and can evaluate `main` authoritatively. Agents running inside a worktree may not reliably resolve `main` in all configurations.
+  1. `git log <branch>..main --oneline` — commits on main not in branch (branch is behind).
+  2. `git log main..<branch> --oneline` — commits on branch not in main (branch is ahead).
 
-  - If output is non-empty → `main_diff: "BEHIND"`
-  - If output is empty → `main_diff: "SAME"`
+  Evaluation (BEHIND takes precedence):
+  - If query 1 is non-empty → `main_diff: "BEHIND"` (branch is missing commits from main; must pull before pushing)
+  - Else if query 2 is non-empty → `main_diff: "AHEAD"` (branch has commits not yet in main; ready to merge)
+  - Else → `main_diff: "SAME"` (branch and main are at identical positions)
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
 ### 2.6 /status.json API Extension
@@ -97,7 +103,7 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "path": ".worktrees/architect-session",
       "branch": "spec/collab",
       "role": "architect",
-      "main_diff": "BEHIND",
+      "main_diff": "AHEAD",
       "commits_ahead": 0,
       "last_commit": "abc1234 feat(spec): add filtering scenarios (45 min ago)",
       "modified": {
@@ -130,7 +136,7 @@ Fields per worktree entry:
 - `path` — relative path from project root.
 - `branch` — current branch name.
 - `role` — `"architect"`, `"builder"`, `"qa"`, or `"unknown"`.
-- `main_diff` — `"SAME"` if no commits on main are missing from this worktree's branch; `"BEHIND"` otherwise. Computed via `git log <branch>..main --oneline` from the project root.
+- `main_diff` — three-state sync indicator. `"BEHIND"` if main has commits this branch is missing (pull required). `"AHEAD"` if this branch has commits not yet in main (ready to merge). `"SAME"` if branch and main are at identical positions. BEHIND takes precedence over AHEAD for diverged branches. Computed via two `git log` range queries from the project root.
 - `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
 - `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix. Files under `.purlin/` are excluded and do not contribute to any sub-field.
@@ -288,12 +294,28 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "BEHIND"
 
-#### Scenario: Main Diff SAME When Worktree Branch Has All Main Commits
+#### Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Main
+
+    Given a worktree at .worktrees/architect-session on branch spec/collab
+    And spec/collab has commits that are not in main
+    And main has no commits that are missing from spec/collab
+    When an agent calls GET /status.json
+    Then the worktree entry has main_diff "AHEAD"
+
+#### Scenario: Main Diff SAME When Branch And Main Are Identical
 
     Given a worktree at .worktrees/builder-session on branch build/collab
-    And build/collab has all commits that are in main (may also be ahead)
+    And build/collab and main point to the same commit
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "SAME"
+
+#### Scenario: Main Diff BEHIND Takes Precedence Over AHEAD For Diverged Branch
+
+    Given a worktree at .worktrees/builder-session on branch build/collab
+    And build/collab has commits not in main
+    And main has commits not in build/collab
+    When an agent calls GET /status.json
+    Then the worktree entry has main_diff "BEHIND"
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -334,8 +356,9 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - [ ] Each active worktree appears as a row
 - [ ] Role column renders "QA" (all caps) for the qa role; "Architect", "Builder", "Unknown" for other roles
 - [ ] Role badges use same styling as status badges (no new colors needed)
-- [ ] Main Diff cell shows "BEHIND" (styled as a warning badge) when the worktree branch is missing commits from main
-- [ ] Main Diff cell shows "SAME" (neutral/muted style) when the worktree branch has all of main's commits
+- [ ] Main Diff cell shows "AHEAD" (green or info badge) when the branch has commits not yet in main
+- [ ] Main Diff cell shows "SAME" (neutral/muted style) when branch and main are at identical positions
+- [ ] Main Diff cell shows "BEHIND" (warning badge, yellow/orange) when the worktree branch is missing commits from main
 - [ ] Modified cell is empty when worktree is clean
 - [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when dirty
 - [ ] Multiple categories appear in order: Specs, Tests, Code/Other; zero-count categories omitted
@@ -365,7 +388,7 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
 
-**Main Diff computation:** The `main_diff` field is computed at the project root — `git log <branch>..main --oneline` — not via `git -C <worktree-path>`. This ensures `main` resolves correctly regardless of the worktree's internal git context. Agents running inside a worktree should use `/pl-work-pull` to determine their own sync state; the dashboard is the authoritative display.
+**Main Diff computation:** The `main_diff` field is a three-state indicator computed at the project root using two `git log` range queries — not via `git -C <worktree-path>`. Running from the project root ensures `main` resolves correctly regardless of the worktree's internal git context. BEHIND takes precedence over AHEAD for diverged branches. Agents running inside a worktree should use `/pl-work-pull` to determine their own sync state; the dashboard is the authoritative display.
 
 **[CLARIFICATION]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. Acknowledged by Architect — `features/critic_tool.md` Section 2.13 updated to require numbered-prefix detection, and a new Gherkin scenario was added. Builder must update the regex in `parse_visual_spec()` and add a corresponding test case.
 
