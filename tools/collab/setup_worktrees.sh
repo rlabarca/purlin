@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
             echo "Creates three git worktrees under .worktrees/ for concurrent"
             echo "Architect, Builder, and QA sessions."
             echo ""
-            echo "Branches created: spec/collab, impl/collab, qa/collab"
+            echo "Branches created: spec/collab, build/collab, qa/collab"
             echo ""
             echo "Options:"
             echo "  --project-root <path>  Project root directory (default: current directory)"
@@ -59,7 +59,7 @@ fi
 # Role definitions: role-name, branch-prefix, worktree-dirname
 ROLES=(
     "architect:spec:architect-session"
-    "builder:impl:builder-session"
+    "builder:build:build-session"
     "qa:qa:qa-session"
 )
 
@@ -97,7 +97,7 @@ if [ "$CREATED" -gt 0 ]; then
     echo "Next steps:"
     echo "  1. cd .worktrees/architect-session && bash run_architect.sh"
     echo "  2. After Architect merges to main:"
-    echo "     cd .worktrees/builder-session && git merge main && bash run_builder.sh"
+    echo "     cd .worktrees/build-session && git merge main && bash run_builder.sh"
     echo "  3. After Builder merges to main:"
     echo "     cd .worktrees/qa-session && git merge main && bash run_qa.sh"
 else
