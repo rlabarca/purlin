@@ -3,7 +3,7 @@
 > Label: "Policy: Multi-Person Collaboration"
 > Category: "Coordination & Lifecycle"
 
-## 1. Overview
+## Purpose
 
 Multi-person collaboration in Purlin uses git worktrees (local) and lifecycle branches (remote) to allow Architect, Builder, and QA agents to work concurrently without interfering with each other. This policy defines the invariants that keep concurrent work safe and coordinated.
 

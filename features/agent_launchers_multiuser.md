@@ -72,7 +72,7 @@ After setup:
 
 ### Automated Scenarios
 
-**Scenario: setup_worktrees Creates Three Worktrees**
+#### Scenario: setup_worktrees Creates Three Worktrees
 
     Given the project root has no worktrees under .worktrees/
     And .worktrees/ is gitignored
@@ -82,14 +82,14 @@ After setup:
     And .worktrees/qa-session/ is created on branch qa/task-crud
     And all three branches start from the same HEAD as main
 
-**Scenario: setup_worktrees Is Idempotent**
+#### Scenario: setup_worktrees Is Idempotent
 
     Given .worktrees/architect-session already exists
     When setup_worktrees.sh is run again
     Then the script prints a status message and exits cleanly
     And no duplicate worktrees or branches are created
 
-**Scenario: PURLIN_PROJECT_ROOT Resolves to Worktree Path**
+#### Scenario: PURLIN_PROJECT_ROOT Resolves to Worktree Path
 
     Given the user runs run_architect.sh from .worktrees/architect-session/
     When the launcher script executes

@@ -138,14 +138,14 @@ When the CDD server is run from within a worktree (not the project root), Collab
 
 ### Automated Scenarios
 
-**Scenario: Collab Mode Inactive When No Worktrees**
+#### Scenario: Collab Mode Inactive When No Worktrees
 
     Given git worktree list shows only the main checkout
     When an agent calls GET /status.json
     Then collab_mode is false or absent
     And no worktrees array is present in the response
 
-**Scenario: Collab Mode Active When Worktrees Detected**
+#### Scenario: Collab Mode Active When Worktrees Detected
 
     Given a worktree exists at .worktrees/architect-session on branch spec/task-crud
     When an agent calls GET /status.json
@@ -153,25 +153,25 @@ When the CDD server is run from within a worktree (not the project root), Collab
     And the worktrees array contains one entry with path ".worktrees/architect-session"
     And the entry has branch "spec/task-crud" and role "architect"
 
-**Scenario: Role Mapped from Branch Prefix**
+#### Scenario: Role Mapped from Branch Prefix
 
     Given worktrees on branches spec/feature-a, impl/feature-a, qa/feature-a
     When an agent calls GET /status.json
     Then the worktrees array contains entries with roles architect, builder, and qa respectively
 
-**Scenario: Unknown Role for Non-Standard Branch**
+#### Scenario: Unknown Role for Non-Standard Branch
 
     Given a worktree on branch hotfix/urgent-fix
     When an agent calls GET /status.json
     Then the worktree entry has role "unknown"
 
-**Scenario: Dirty State Detected**
+#### Scenario: Dirty State Detected
 
     Given a worktree at .worktrees/builder-session has uncommitted files
     When an agent calls GET /status.json
     Then the worktree entry has dirty true and file_count greater than 0
 
-**Scenario: Handoff Ready When Auto-Steps Pass**
+#### Scenario: Handoff Ready When Auto-Steps Pass
 
     Given a builder worktree with clean git status
     And tests/task_crud/tests.json exists with status PASS
@@ -181,7 +181,7 @@ When the CDD server is run from within a worktree (not the project root), Collab
 
 ### Manual Scenarios (Human Verification Required)
 
-**Scenario: Sessions Table Displays Worktree State**
+#### Scenario: Sessions Table Displays Worktree State
 
     Given the CDD server is running from the project root
     And three worktrees exist (architect-session, builder-session, qa-session)
@@ -190,13 +190,13 @@ When the CDD server is run from within a worktree (not the project root), Collab
     And the Sessions sub-section shows a table with Role, Branch, Dirty, and Last Activity columns
     And each worktree appears as a row with correct role and branch information
 
-**Scenario: Pre-Merge Status Shows Ready Indicator**
+#### Scenario: Pre-Merge Status Shows Ready Indicator
 
     Given a builder worktree has passed all auto-evaluable handoff steps
     When the User views the Pre-Merge Status sub-section
     Then the builder row shows a check mark and "Ready to merge"
 
-**Scenario: Pre-Merge Status Shows Pending Count**
+#### Scenario: Pre-Merge Status Shows Pending Count
 
     Given an architect worktree has 2 handoff items pending
     When the User views the Pre-Merge Status sub-section
