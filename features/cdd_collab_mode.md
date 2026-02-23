@@ -355,6 +355,8 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - Pre-Merge Status sub-section and `_worktree_handoff_status()` / `_read_feature_summary()` removed — spec no longer requires handoff checks on the dashboard.
 - Agent config propagation: `_handle_config_agents()` writes updated config to all active worktree `.purlin/config.json` files after the project root write. Failures are collected as `warnings` in the response.
 
+- traceability_override: "Dirty State Detected" -> test_categorizes_by_path_prefix
+
 **[CLARIFICATION]** The AGENTS heading annotation ("applies across all local worktrees") is applied server-side in `generate_html()` rather than client-side via JS. Since the dashboard's 5-second refresh fetches fresh server-rendered HTML, this is functionally equivalent to the spec's "applied client-side after each poll" phrasing — the heading updates on every refresh cycle. (Severity: INFO)
 
 **[CLARIFICATION]** The `git status --porcelain` output is now read with raw `result.stdout` (no `.strip()`) to preserve the position-dependent XY status columns. The previous approach of using `_wt_cmd()` (which strips the entire output) would corrupt the first line's status columns, causing incorrect file categorization. (Severity: INFO)
