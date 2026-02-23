@@ -80,7 +80,7 @@ def infer_role_from_branch(project_root):
 
     if branch.startswith("spec/"):
         return "architect"
-    elif branch.startswith("impl/"):
+    elif branch.startswith("build/"):
         return "builder"
     elif branch.startswith("qa/"):
         return "qa"
