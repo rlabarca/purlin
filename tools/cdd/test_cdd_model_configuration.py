@@ -1,7 +1,7 @@
-"""Tests for CDD Dashboard Model Configuration (cdd_model_configuration.md).
+"""Tests for CDD Dashboard Agent Configuration (cdd_agent_configuration.md).
 
-Tests the Models section rendering, badge logic, API endpoints,
-and HTML structure. Produces tests/cdd_model_configuration/tests.json.
+Tests the Agents section rendering, badge logic, API endpoints,
+and HTML structure. Produces tests/cdd_agent_configuration/tests.json.
 """
 import io
 import json
@@ -74,8 +74,8 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('models-section', html)
-        self.assertIn('models-rows', html)
+        self.assertIn('agents-section', html)
+        self.assertIn('agents-rows', html)
         # Detect Providers button should NOT exist
         self.assertNotIn('Detect Providers', html)
 
@@ -85,7 +85,7 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('models-section-chevron', html)
+        self.assertIn('agents-section-chevron', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -93,7 +93,7 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('models-section-badge', html)
+        self.assertIn('agents-section-badge', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -101,8 +101,8 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # The models section body should have 'collapsed' class
-        self.assertIn('class="section-body collapsed" id="models-section"', html)
+        # The agents section body should have 'collapsed' class
+        self.assertIn('class="section-body collapsed" id="agents-section"', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -110,7 +110,7 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('<h3>Models</h3>', html)
+        self.assertIn('<h3>Agents</h3>', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -158,7 +158,8 @@ class TestYoloCheckbox(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('> YOLO', html)
+        # YOLO label appears in column header, not as an inline label
+        self.assertIn('YOLO', html)
         self.assertNotIn('> Bypass<', html)
         self.assertNotIn('Ask Permission', html)
 
@@ -206,7 +207,7 @@ class TestFlickerFreeRefresh(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('diffUpdateModelRows', html)
+        self.assertIn('diffUpdateAgentRows', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -214,7 +215,7 @@ class TestFlickerFreeRefresh(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # initModelsSection should compare JSON before deciding to render
+        # initAgentsSection should compare JSON before deciding to render
         self.assertIn('JSON.stringify(cfg.agents)', html)
         self.assertIn('configChanged', html)
 
@@ -224,9 +225,9 @@ class TestFlickerFreeRefresh(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # initModelsSection should synchronously restore from modelsConfig cache
+        # initAgentsSection should synchronously restore from agentsConfig cache
         # when DOM is empty (after innerHTML replacement)
-        self.assertIn("modelsConfig && !document.getElementById('agent-model-architect')", html)
+        self.assertIn("agentsConfig && !document.getElementById('agent-model-architect')", html)
 
 
 class TestConfigModelsEndpoint(unittest.TestCase):
@@ -236,8 +237,8 @@ class TestConfigModelsEndpoint(unittest.TestCase):
         from serve import Handler
         handler = Handler.__new__(Handler)
         body = json.dumps(body_dict).encode('utf-8')
-        handler.path = '/config/models'
-        handler.requestline = 'POST /config/models HTTP/1.1'
+        handler.path = '/config/agents'
+        handler.requestline = 'POST /config/agents HTTP/1.1'
         handler.request_version = 'HTTP/1.1'
         handler.command = 'POST'
         handler.headers = {'Content-Length': str(len(body))}
@@ -338,8 +339,8 @@ class TestSectionPersistence(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # The models section should be included in localStorage persistence
-        self.assertIn("'models-section'", html)
+        # The agents section should be included in localStorage persistence
+        self.assertIn("'agents-section'", html)
         self.assertIn('purlin-section-states', html)
 
 
@@ -360,7 +361,7 @@ class TestPendingWriteLock(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # diffUpdateModelRows should check pendingWrites before updating each control
+        # diffUpdateAgentRows should check pendingWrites before updating each control
         self.assertIn("pendingWrites.has(role + '.model')", html)
         self.assertIn("pendingWrites.has(role + '.effort')", html)
         self.assertIn("pendingWrites.has(role + '.bypass_permissions')", html)
@@ -371,7 +372,7 @@ class TestPendingWriteLock(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # saveModelConfig must clear pendingWrites on success and error
+        # saveAgentConfig must clear pendingWrites on success and error
         self.assertIn('pendingWrites.clear()', html)
 
     @patch('serve.get_feature_status')
@@ -390,9 +391,9 @@ class TestPendingWriteLock(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # applyPendingWrites must exist and be called after renderModelsRows
+        # applyPendingWrites must exist and be called after renderAgentsRows
         self.assertIn('function applyPendingWrites()', html)
-        # Must be called in both sync and async render paths of initModelsSection
+        # Must be called in both sync and async render paths of initAgentsSection
         import re
         calls = [m.start() for m in re.finditer(r'applyPendingWrites\(\)', html)]
         # At least 3: function def + sync path + async path
@@ -416,7 +417,7 @@ class TestSectionVisualSeparation(unittest.TestCase):
 
 
 # =============================================================================
-# Test runner: writes results to tests/cdd_model_configuration/tests.json
+# Test runner: writes results to tests/cdd_agent_configuration/tests.json
 # =============================================================================
 if __name__ == '__main__':
     # Discover project root
@@ -433,7 +434,7 @@ if __name__ == '__main__':
     result = runner.run(suite)
 
     # Write tests.json
-    tests_dir = os.path.join(project_root, 'tests', 'cdd_model_configuration')
+    tests_dir = os.path.join(project_root, 'tests', 'cdd_agent_configuration')
     os.makedirs(tests_dir, exist_ok=True)
     passed = result.testsRun - len(result.failures) - len(result.errors)
     failed = len(result.failures) + len(result.errors)
