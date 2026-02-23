@@ -245,3 +245,51 @@ Do not suggest commands belonging to the Builder or QA roles.
 Prohibited suggestions in an Architect session:
 *   Builder commands: `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`
 *   QA commands: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`
+
+## 12. Feature File Format Reference
+
+The Critic's parser enforces specific Markdown heading formats. Wrong heading levels or
+section names cause Spec Gate failures that are not obvious from the error message.
+
+### Template files
+Copy from `{tools_root}/feature_templates/`:
+- `_feature.md` — regular feature file
+- `_anchor.md` — anchor node (arch_*, design_*, policy_*)
+
+### Regular feature files
+
+**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+- A heading containing `overview`
+- A heading containing `requirements`
+- A heading containing `scenarios`
+
+**Scenario heading format — MUST use four-hash `####`:**
+
+    #### Scenario: Title of the scenario
+
+        Given <precondition>
+        When <action>
+        Then <expected outcome>
+
+NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
+
+**Manual scenario block:**
+
+    ### Manual Scenarios (Human Verification Required)
+
+    #### Scenario: Title
+
+        Given ...
+
+    (Use "None." if no manual scenarios.)
+
+### Anchor nodes (arch_*, design_*, policy_*)
+
+**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+- A heading containing `purpose`
+- A heading containing `invariants`
+
+Note: `## 1. Overview` does NOT satisfy the `purpose` check. The heading text must contain
+the word "purpose" — e.g., `## Purpose`, `## 1. Purpose`.
+
+Scenario classification and gherkin quality checks are automatically skipped for anchor nodes.
