@@ -19,16 +19,18 @@ This feature extends (does not replace) `agent_launchers_common.md`. The standal
 
 ### 2.1 setup_worktrees.sh
 
-- **Location:** Project root (executable, `chmod +x`).
+- **Location:** `tools/collab/setup_worktrees.sh` (framework-delivered via submodule).
+- **Consumer invocation:** `bash purlin/tools/collab/setup_worktrees.sh --feature <name>`
 - **Purpose:** One-time setup that creates three git worktrees under `.worktrees/`.
 - **Behavior:**
   1. Check that `.worktrees/` is gitignored; if not, warn and exit.
   2. Accept an optional `--feature <name>` argument to name the lifecycle branches. Default: `feature`.
-  3. Create branch `spec/<feature>` and worktree at `.worktrees/architect-session/` (if not already present).
-  4. Create branch `impl/<feature>` and worktree at `.worktrees/builder-session/` (if not already present).
-  5. Create branch `qa/<feature>` and worktree at `.worktrees/qa-session/` (if not already present).
-  6. All three branches start from the current `HEAD` of `main`.
-  7. Print a summary of what was created and the next-steps instructions.
+  3. Accept an optional `--project-root <path>` argument; defaults to CWD.
+  4. Create branch `spec/<feature>` and worktree at `.worktrees/architect-session/` (if not already present).
+  5. Create branch `impl/<feature>` and worktree at `.worktrees/builder-session/` (if not already present).
+  6. Create branch `qa/<feature>` and worktree at `.worktrees/qa-session/` (if not already present).
+  7. All three branches start from the current `HEAD` of `main`.
+  8. Print a summary of what was created and the next-steps instructions.
 - **Idempotency:** Running `setup_worktrees.sh` again when worktrees already exist MUST print a status message and exit cleanly (no duplicate worktrees).
 
 ### 2.2 Worktree Session Launchers
@@ -62,9 +64,45 @@ After setup:
 
 ### 2.5 Cleanup
 
-- When all phases are complete and merged to `main`, worktrees can be removed: `git worktree remove .worktrees/<role>-session`.
+- When all phases are complete and merged to `main`, use `tools/collab/teardown_worktrees.sh` to remove worktrees safely (see Section 2.6).
+- Consumer invocation: `bash purlin/tools/collab/teardown_worktrees.sh`
 - The branches (`spec/*`, `impl/*`, `qa/*`) can be deleted after merge: `git branch -d spec/<feature>`.
-- The `.worktrees/` directory itself should be removed when empty.
+
+### 2.6 teardown_worktrees.sh
+
+- **Location:** `tools/collab/teardown_worktrees.sh` (framework-delivered via submodule).
+- **Consumer invocation:** `bash purlin/tools/collab/teardown_worktrees.sh`
+- **Purpose:** Safely remove all worktrees under `.worktrees/`, with pre-removal safety checks.
+
+**Safety conditions (two distinct levels):**
+
+**HARD BLOCK — uncommitted/staged changes (dirty state):**
+
+- Detected via: `git -C <path> status --porcelain` returns output.
+- These changes would be permanently lost if the worktree is removed.
+- Script exits with code 1, lists the dirty files, and instructs the user to commit or stash first.
+- Only bypassed with `--force`. The dashboard End Collab modal does NOT offer a force path for dirty worktrees — it instructs the user to commit or stash first.
+
+**WARN + ALLOW — commits not yet merged to `main` (unsynced):**
+
+- Detected via: `git -C <path> log main..HEAD --oneline` returns commits.
+- The commits are NOT at risk — removing a worktree does not delete its branch. The branch survives and can be re-added with `git worktree add`.
+- Script prints a warning listing unmerged branches and their commit counts, then proceeds without user input.
+- The dashboard modal surfaces this warning prominently with an "I understand, the branches still exist" checkbox before enabling Confirm.
+
+**Behavior sequence:**
+
+1. For each worktree under `.worktrees/`: check dirty (hard block), then unsynced (soft warn).
+2. If any dirty: exit code 1, list files, instruct user to commit/stash first.
+3. If any unsynced (but none dirty): list branches + commit counts with a warning, then proceed.
+4. Remove each worktree: `git worktree remove .worktrees/<role>-session`.
+5. Remove `.worktrees/` directory if empty.
+
+**Flags:**
+
+- `--force`: Bypasses the HARD BLOCK dirty check. Use only after confirming data loss is acceptable.
+- `--dry-run`: Reports safety status without removing anything. Used by the dashboard to populate the End Collab modal.
+- `--project-root <path>`: Defaults to CWD.
 
 ---
 
@@ -96,6 +134,23 @@ After setup:
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of the worktree directory
     And features/ scanning targets the worktree's features/ directory
     And .purlin/cache/ writes target the worktree's .purlin/cache/
+
+#### Scenario: Teardown Is Blocked When Worktree Has Uncommitted Changes
+
+    Given .worktrees/builder-session exists and has uncommitted file changes
+    When teardown_worktrees.sh is run without --force
+    Then the script exits with code 1
+    And the output lists the dirty files in builder-session
+    And no worktrees are removed
+
+#### Scenario: Teardown Proceeds with Warning When Branch Has Unmerged Commits
+
+    Given .worktrees/builder-session exists with 3 commits not yet merged to main
+    And the worktree has no uncommitted changes
+    When teardown_worktrees.sh is run
+    Then the script prints a warning listing the unmerged branch and commit count
+    And the worktree is removed
+    And the impl/task-crud branch still exists in the git repository
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -32,7 +32,7 @@ git submodule update --init
 **3. Create worktrees for a feature.**
 
 ```bash
-bash setup_worktrees.sh --feature task-crud
+bash purlin/tools/collab/setup_worktrees.sh --feature task-crud
 ```
 
 This creates three worktrees under `.worktrees/`:

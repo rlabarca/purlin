@@ -132,6 +132,36 @@ The WORKSPACE & COLLABORATION section uses the same Purlin CSS tokens as the res
 
 When the CDD server is run from within a worktree (not the project root), Collab Mode is not available. The dashboard operates in standard mode. Only the project root has visibility into all worktrees.
 
+### 2.9 Collab Session Controls
+
+The dashboard exposes UI controls to start and stop Collab Sessions, complementing the CLI scripts in `tools/collab/`.
+
+**Start Collab Session (when Collab Mode is inactive):**
+
+- A "Start Collab Session" button appears as a footer action in the standard WORKSPACE section.
+- Clicking opens a small inline form with a feature name text input and a Start button.
+- On submit: dashboard sends `POST /start-collab` with body `{ "feature": "<name>" }`.
+- The server runs `tools/collab/setup_worktrees.sh --feature <name> --project-root <PROJECT_ROOT>`.
+- On success (`{ "status": "ok" }`): dashboard refreshes; WORKSPACE becomes WORKSPACE & COLLABORATION.
+- On error: inline error message shown near the form.
+
+**End Collab Session (when Collab Mode is active):**
+
+- An "End Collab Session" button appears in the WORKSPACE & COLLABORATION section header.
+- On click: dashboard sends `POST /end-collab` with body `{ "dry_run": true }`. The server runs `tools/collab/teardown_worktrees.sh --dry-run` and returns the safety status.
+- The dashboard shows a modal based on the dry-run result:
+  - **Dirty worktrees present:** Modal lists the dirty worktrees and their uncommitted files. Instructs the user to commit or stash before ending the session. Confirm button is disabled. No force path is offered.
+  - **Unsynced commits present (no dirty):** Modal shows a warning listing unmerged branches and commit counts, with a note that branches survive worktree removal. User must check "I understand, the branches still exist" before the Confirm button is enabled.
+  - **Clean state:** Simple confirmation dialog with Confirm and Cancel buttons.
+- On confirm: dashboard sends `POST /end-collab` with body `{ "force": true }`. Server runs `tools/collab/teardown_worktrees.sh --force`.
+- On success: dashboard refreshes; WORKSPACE & COLLABORATION becomes standard WORKSPACE.
+
+**Server endpoints:**
+
+- `POST /start-collab` — body: `{ "feature": "..." }` — runs `setup_worktrees.sh`, returns `{ "status": "ok" }` or `{ "error": "..." }`.
+- `POST /end-collab` — body: `{ "dry_run": true }` or `{ "force": true }` — runs `teardown_worktrees.sh` with the appropriate flag. Returns safety status JSON for dry-run; returns `{ "status": "ok" }` for a force run.
+- Both endpoints follow the same pattern as `/run-critic` in `serve.py`.
+
 ---
 
 ## 3. Scenarios
@@ -179,6 +209,25 @@ When the CDD server is run from within a worktree (not the project root), Collab
     When an agent calls GET /status.json
     Then the builder worktree entry has handoff_ready true and handoff_pending_count 0
 
+#### Scenario: Start Collab Creates Worktrees via Dashboard
+
+    Given no worktrees exist under .worktrees/
+    And the CDD server is running
+    When a POST request is sent to /start-collab with body { "feature": "task-crud" }
+    Then the server runs setup_worktrees.sh --feature task-crud
+    And the response contains { "status": "ok" }
+    And .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session are created
+
+#### Scenario: End Collab Removes Worktrees via Dashboard (Clean State)
+
+    Given worktrees exist at .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session
+    And all worktrees have clean git status
+    And no worktree branches have commits ahead of main
+    When a POST request is sent to /end-collab with body { "force": true }
+    Then the server runs teardown_worktrees.sh --force
+    And the response contains { "status": "ok" }
+    And no worktrees remain under .worktrees/
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Sessions Table Displays Worktree State
@@ -202,6 +251,21 @@ When the CDD server is run from within a worktree (not the project root), Collab
     When the User views the Pre-Merge Status sub-section
     Then the architect row shows "2 items pending" with a "view checklist ->" indicator
 
+#### Scenario: Start Collab Button Visible in Standard WORKSPACE Mode
+
+    Given no worktrees exist under .worktrees/
+    When the User opens the CDD dashboard
+    Then the WORKSPACE section shows a "Start Collab Session" button in the footer
+    And clicking the button reveals an inline form with a feature name input and a Start button
+
+#### Scenario: End Collab Button Shows Safety Warning When Worktrees Are Dirty
+
+    Given worktrees exist and at least one worktree has uncommitted changes
+    When the User clicks the "End Collab Session" button
+    Then a modal appears listing the dirty worktree and its uncommitted files
+    And the modal instructs the user to commit or stash before ending the session
+    And the Confirm button is disabled
+
 ---
 
 ## 4. Visual Specification
@@ -221,10 +285,22 @@ When the CDD server is run from within a worktree (not the project root), Collab
 - [ ] Pending worktrees show a circle indicator ("N items pending")
 - [ ] "Local (main)" sub-label introduces the existing workspace content
 
+### Screen: CDD Dashboard — Collab Session Controls
+
+- **Reference:** N/A
+- [ ] "Start Collab Session" button is visible in the WORKSPACE section footer when no worktrees are present
+- [ ] Clicking "Start Collab Session" reveals an inline form with a feature name text input and a Start button
+- [ ] "End Collab Session" button is visible in the WORKSPACE & COLLABORATION section header when collab is active
+- [ ] End Collab dirty-state modal lists dirty worktree names and uncommitted file counts; Confirm button is disabled
+- [ ] End Collab unsynced-state modal includes an "I understand, the branches still exist" checkbox; Confirm is disabled until checked
+- [ ] End Collab clean-state modal shows a simple Confirm/Cancel dialog
+
 ---
 
 ## 5. Implementation Notes
 
-The key implementation insight is that CDD is always run-only (read-only) with respect to worktrees. It uses `git -C <path>` to query each worktree's state without modifying anything. The Collab Mode detection happens on every `/status.json` call — there is no "enable collab mode" toggle.
+The CDD dashboard is read-only with respect to worktree monitoring — it uses `git -C <path>` to query state without modifying anything, and Collab Mode detection happens on every `/status.json` call.
+
+The `/start-collab` and `/end-collab` endpoints are intentional exceptions to the read-only pattern: they delegate to `tools/collab/setup_worktrees.sh` and `tools/collab/teardown_worktrees.sh` respectively. These endpoints are explicit write operations initiated by the user; they are not invoked automatically by the dashboard's status polling.
 
 The Pre-Merge Status evaluation deliberately avoids running the full handoff checklist (which may have side effects or require user interaction). It only evaluates items that can be determined from git state alone.
