@@ -6,7 +6,7 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
@@ -402,6 +402,7 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 
 - `setup_worktrees.sh` config initialization: after each `git worktree add`, the script copies `$PROJECT_ROOT/.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy. If the live config doesn't exist, the git-committed copy is used as-is.
 - traceability_override: "Dirty State Detected" -> test_categorizes_by_path_prefix
+- RESOLVED BUGs (2026-02-22/23): Start Collab and End Collab modal buttons used `btn` class (no CSS), fixed to `btn-critic`. Modified column zeroed on git lock contention — removed `check=True` from subprocess call. Dirty detection included `.purlin/` files — added exclusion filter to teardown script and API. Worktree config init now copies live project root `.purlin/config.json` after each `git worktree add`.
 
 **[CLARIFICATION]** The AGENTS heading annotation ("applies across all local worktrees") is applied server-side in `generate_html()` rather than client-side via JS. Since the dashboard's 5-second refresh fetches fresh server-rendered HTML, this is functionally equivalent to the spec's "applied client-side after each poll" phrasing — the heading updates on every refresh cycle. (Severity: INFO)
 
@@ -412,38 +413,3 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **BUG FIX: Teardown .purlin/ exclusion:** `teardown_worktrees.sh` did not exclude `.purlin/` files from the dirty detection, counting auto-propagated `config.json` changes as "dirty". Added `grep -v '\.purlin/'` filter to both Phase 1 dirty detection and dry-run JSON output, matching the exclusion already present in `_worktree_state()` and `get_git_status()`.
 
 ## User Testing Discoveries
-
-### [BUG] Start Collab Session button has incorrect colors in dark mode (Discovered: 2026-02-22)
-- **Scenario:** Visual Specification — Screen: CDD Dashboard — Collab Session Controls
-- **Observed Behavior:** In dark mode, the "Start Collab Session" button renders with a light background and dark text, opposite of the correct dark-mode button style.
-- **Expected Behavior:** Button should have a darker background with lighter text, matching the styling of other dashboard action buttons (e.g., "Run Critic"), consistent with the Purlin CSS token system (Section 2.7).
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [BUG] End Collab modal buttons have incorrect colors in dark mode (Discovered: 2026-02-23)
-- **Scenario:** Visual Specification — Screen: CDD Dashboard — Collab Session Controls
-- **Observed Behavior:** In dark mode, the End Collab modal buttons (Confirm/Cancel) render with a light background and dark text, when they should be the opposite — matching the styling of other dashboard action buttons (e.g., "Run Critic").
-- **Expected Behavior:** Modal buttons should use dark-mode-compliant styling consistent with the Purlin CSS token system (design_visual_standards.md Section 2.7), same as other dashboard action buttons.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [BUG] Modified column shows empty for qa-session worktree despite uncommitted file changes (Discovered: 2026-02-23)
-- **Scenario:** Sessions Table Displays Worktree State; Visual Specification — Screen: CDD Dashboard — Collaboration Section
-- **Observed Behavior:** The Modified column in the Sessions table shows empty for the qa-session worktree while non-.purlin/ files (e.g., features/cdd_collab_mode.md) were actively modified and uncommitted in that worktree.
-- **Expected Behavior:** Modified column should show category counts (e.g., "1 Specs") when non-.purlin/ files are dirty in the worktree, per spec Section 2 and visual spec checklist.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [BUG] End Collab dirty-state detection includes .purlin/ files and miscounts QA changes (Discovered: 2026-02-23)
-- **Scenario:** End Collab Button Shows Safety Warning When Worktrees Are Dirty
-- **Observed Behavior:** Clicking "End Collab Session" showed the dirty-state modal with "1 file uncommitted changes" for the architect-session and build-session worktrees — which the user never touched. Only `.purlin/config.json` was modified in those worktrees (auto-propagated by agent config). The qa-session also showed "1 file" despite having more than 1 non-.purlin/ file modified.
-- **Expected Behavior:** Per spec Section 2.2, `.purlin/` files must be excluded from the clean/dirty determination. Architect and build sessions should be reported as clean (no `.purlin/`-only changes count as dirty). QA session file count should reflect only non-.purlin/ changes.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [DISCOVERY] Newly-created worktrees initialize .purlin/config.json from git, not from live project root (Discovered: 2026-02-23)
-- **Scenario:** NONE — no scenario covers config.json initialization for newly-created worktrees
-- **Observed Behavior:** User enabled `startup_sequence: true` and `recommend_next_actions: true` for QA in the CDD Dashboard, then clicked "Start Collab Session". The newly created `qa-session` worktree had `startup_sequence: false` / `recommend_next_actions: false` — the old git-committed values. The main project root `.purlin/config.json` correctly had the new values, confirming the CDD write succeeded. The worktree simply received a stale copy from git.
-- **Expected Behavior:** When "Start Collab Session" creates worktrees, each worktree's `.purlin/config.json` should be initialized from the live project root `.purlin/config.json` (not from the git-committed version). Section 2.10 specifies that agents "must reflect the new settings" but only covers the push-propagation case for existing worktrees — the initialization case is unspecified.
-- **Action Required:** Builder
-- **Status:** RESOLVED
