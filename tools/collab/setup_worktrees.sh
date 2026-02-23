@@ -3,11 +3,9 @@
 # See features/agent_launchers_multiuser.md for full specification.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKTREES_DIR="$SCRIPT_DIR/.worktrees"
-
 # Parse arguments
 FEATURE_NAME="feature"
+PROJECT_ROOT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --feature)
@@ -18,15 +16,24 @@ while [[ $# -gt 0 ]]; do
             FEATURE_NAME="$2"
             shift 2
             ;;
+        --project-root)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: --project-root requires a path argument." >&2
+                exit 1
+            fi
+            PROJECT_ROOT="$2"
+            shift 2
+            ;;
         -h|--help)
-            echo "Usage: setup_worktrees.sh [--feature <name>]"
+            echo "Usage: setup_worktrees.sh [--feature <name>] [--project-root <path>]"
             echo ""
             echo "Creates three git worktrees under .worktrees/ for concurrent"
             echo "Architect, Builder, and QA sessions."
             echo ""
             echo "Options:"
-            echo "  --feature <name>  Name for lifecycle branches (default: feature)"
-            echo "  -h, --help        Show this help message"
+            echo "  --feature <name>       Name for lifecycle branches (default: feature)"
+            echo "  --project-root <path>  Project root directory (default: current directory)"
+            echo "  -h, --help             Show this help message"
             exit 0
             ;;
         *)
@@ -36,14 +43,21 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Resolve project root
+if [[ -z "$PROJECT_ROOT" ]]; then
+    PROJECT_ROOT="$(pwd)"
+fi
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+WORKTREES_DIR="$PROJECT_ROOT/.worktrees"
+
 # Verify we are in a git repository
-if ! git rev-parse --git-dir > /dev/null 2>&1; then
+if ! git -C "$PROJECT_ROOT" rev-parse --git-dir > /dev/null 2>&1; then
     echo "Error: Not a git repository. Run this from the project root." >&2
     exit 1
 fi
 
 # Check that .worktrees/ is gitignored
-if ! git check-ignore -q ".worktrees/" 2>/dev/null; then
+if ! git -C "$PROJECT_ROOT" check-ignore -q ".worktrees/" 2>/dev/null; then
     echo "Error: .worktrees/ is not gitignored." >&2
     echo "Add '.worktrees/' to your .gitignore before running this script." >&2
     exit 1
@@ -56,7 +70,7 @@ ROLES=(
     "qa:qa:qa-session"
 )
 
-MAIN_HEAD=$(git rev-parse HEAD)
+MAIN_HEAD=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
 CREATED=0
 SKIPPED=0
 
@@ -72,13 +86,13 @@ for role_def in "${ROLES[@]}"; do
     fi
 
     # Create branch from main HEAD if it doesn't exist
-    if ! git rev-parse --verify "$branch" > /dev/null 2>&1; then
-        git branch "$branch" "$MAIN_HEAD"
+    if ! git -C "$PROJECT_ROOT" rev-parse --verify "$branch" > /dev/null 2>&1; then
+        git -C "$PROJECT_ROOT" branch "$branch" "$MAIN_HEAD"
     fi
 
     # Create worktree
     mkdir -p "$WORKTREES_DIR"
-    git worktree add "$wt_path" "$branch" > /dev/null 2>&1
+    git -C "$PROJECT_ROOT" worktree add "$wt_path" "$branch" > /dev/null 2>&1
     echo "  CREATED: $wt_path (branch: $branch)"
     CREATED=$((CREATED + 1))
 done

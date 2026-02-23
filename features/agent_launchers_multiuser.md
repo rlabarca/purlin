@@ -163,3 +163,7 @@ None.
 The `setup_worktrees.sh` approach avoids modifying the main checkout during setup. All three branches are created from `HEAD` of `main`. The key insight: when a launcher script does `SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)`, running from within a worktree makes `$SCRIPT_DIR` the worktree root — which is exactly what `PURLIN_PROJECT_ROOT` should be. No special worktree-aware logic is needed in the launchers.
 
 The `.worktrees/` directory convention (under `.worktrees/`, gitignored) is important for CDD Collab Mode detection — `serve.py` specifically looks for worktrees under this path to activate Collab Mode.
+
+**[CLARIFICATION]** Both scripts use `--project-root` defaulting to CWD and all git operations use `git -C "$PROJECT_ROOT"` for consistency. The `teardown_worktrees.sh` `--dry-run` mode outputs JSON (matching what `/end-collab` dry-run endpoint returns to the dashboard modal). (Severity: INFO)
+
+**[CLARIFICATION]** `teardown_worktrees.sh` uses `git worktree remove --force` for each session to handle both clean and force-mode removals uniformly. The `--force` flag on the script controls whether the dirty-state safety check is bypassed; the `--force` on `git worktree remove` is always used to avoid interactive prompts. (Severity: INFO)
