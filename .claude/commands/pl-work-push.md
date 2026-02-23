@@ -27,7 +27,11 @@ Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --
 ```
 git status --porcelain
 ```
-If any output is returned, abort immediately: "Commit or stash changes before pushing."
+
+Filter out any lines where the file path starts with `.purlin/` — these are environment-specific
+config files excluded from dirty state per the collaboration policy (ref: cdd_collab_mode.md §2.3).
+
+If any non-.purlin/ output remains, abort: "Commit or stash changes before pushing."
 
 **b. Behind-main check:**
 ```
