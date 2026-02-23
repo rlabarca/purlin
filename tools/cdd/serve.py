@@ -572,7 +572,7 @@ def generate_api_status_json(cache=None):
 
 def get_git_status():
     """Gets the current git status."""
-    return run_command("git status --porcelain | grep -v '.DS_Store' | grep -v '.cache/'")
+    return run_command("git status --porcelain | grep -v '.DS_Store' | grep -v '.cache/' | grep -v '.purlin/'")
 
 
 def get_last_commit():
@@ -699,6 +699,9 @@ def _worktree_state(wt_abs_path):
         # Handle renamed files: "R  old -> new" — use the new path
         if ' -> ' in file_path:
             file_path = file_path.split(' -> ')[-1]
+        # Exclude .purlin/ files entirely (Section 2.4)
+        if file_path.startswith('.purlin/'):
+            continue
         if file_path.startswith('features/'):
             specs += 1
         elif file_path.startswith('tests/'):
@@ -815,7 +818,9 @@ def _collab_section_html(worktrees):
     # Sessions table: Role, Branch, Main Diff, Modified
     rows = ""
     for wt in worktrees:
-        role = wt.get('role', 'unknown').capitalize()
+        role_raw = wt.get('role', 'unknown')
+        role = {'architect': 'Architect', 'builder': 'Builder',
+                'qa': 'QA', 'unknown': 'Unknown'}.get(role_raw, role_raw.capitalize())
         branch = wt.get('branch', '')
 
         # Main Diff badge

@@ -20,7 +20,9 @@ from serve import (
     _role_from_branch,
     _worktree_state,
     _compute_main_diff,
+    _collab_section_html,
     get_collab_worktrees,
+    get_git_status,
     generate_api_status_json,
     generate_workspace_json,
     Handler,
@@ -551,6 +553,90 @@ class TestAgentConfigPropagation(unittest.TestCase):
                 with open(wt_cfg_path, 'r') as f:
                     wt_config = json.load(f)
                 self.assertEqual(wt_config['agents']['architect']['effort'], 'medium')
+
+
+class TestWorktreeStatePurlinExclusion(unittest.TestCase):
+    """Files under .purlin/ are excluded from all Modified counts (Section 2.4)."""
+
+    def _mock_subprocess(self, responses):
+        call_count = [0]
+
+        def _side_effect(*args, **kwargs):
+            idx = call_count[0]
+            call_count[0] += 1
+            if idx < len(responses):
+                return subprocess.CompletedProcess(
+                    args='mock', returncode=0, stdout=responses[idx], stderr='')
+            raise Exception(f"Unexpected subprocess.run call {idx}")
+
+        return _side_effect
+
+    @patch('subprocess.run')
+    def test_purlin_files_excluded(self, mock_run):
+        """Files under .purlin/ do not count in specs, tests, or other."""
+        mock_run.side_effect = self._mock_subprocess([
+            'spec/collab',    # git rev-parse
+            ' M .purlin/config.json\n M features/foo.md\n M tools/bar.py\n',
+            'abc1234 commit (5m ago)',
+            '1',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['modified'], {'specs': 1, 'tests': 0, 'other': 1})
+
+    @patch('subprocess.run')
+    def test_purlin_only_changes_appear_clean(self, mock_run):
+        """Worktree with only .purlin/ changes has all-zero modified counts."""
+        mock_run.side_effect = self._mock_subprocess([
+            'build/collab',
+            ' M .purlin/config.json\n M .purlin/cache/status.json\n',
+            'def5678 commit (3m ago)',
+            '0',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['modified'], {'specs': 0, 'tests': 0, 'other': 0})
+
+
+class TestRoleDisplayLabel(unittest.TestCase):
+    """Role column renders "QA" (all caps) per Section 2.2 display label rule."""
+
+    def test_qa_rendered_as_all_caps(self):
+        """QA role displays as 'QA', not 'Qa'."""
+        worktrees = [{
+            'role': 'qa', 'branch': 'qa/collab', 'main_diff': 'SAME',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('<td>QA</td>', html)
+        self.assertNotIn('<td>Qa</td>', html)
+
+    def test_architect_capitalized(self):
+        worktrees = [{
+            'role': 'architect', 'branch': 'spec/collab', 'main_diff': 'SAME',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('<td>Architect</td>', html)
+
+    def test_unknown_capitalized(self):
+        worktrees = [{
+            'role': 'unknown', 'branch': 'hotfix/x', 'main_diff': 'SAME',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('<td>Unknown</td>', html)
+
+
+class TestGetGitStatusPurlinExclusion(unittest.TestCase):
+    """get_git_status() excludes .purlin/ files from clean/dirty (Section 2.3)."""
+
+    @patch('serve.run_command')
+    def test_purlin_filtered_from_status(self, mock_cmd):
+        """Verifies .purlin/ filter is present in the git status command."""
+        mock_cmd.return_value = ''
+        get_git_status()
+        cmd_arg = mock_cmd.call_args[0][0]
+        self.assertIn('.purlin/', cmd_arg)
+        self.assertIn('grep -v', cmd_arg)
 
 
 # ===================================================================
