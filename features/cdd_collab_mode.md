@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Collab Mode is a dashboard mode activated automatically when the CDD server runs from a project root that has active git worktrees under `.worktrees/`. In Collab Mode, the Workspace section of the dashboard becomes "Collaboration", showing what each agent role session is doing and surfacing per-role pre-merge checklists.
+CDD Collab Mode is a dashboard mode activated automatically when the CDD server runs from a project root that has active git worktrees under `.worktrees/`. In Collab Mode, the Workspace section of the dashboard becomes "Collaboration", showing what each agent role session is doing.
 
 ---
 
@@ -34,7 +34,7 @@ Branch prefix determines role assignment:
 
 ### 2.3 Collaboration Section
 
-When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It contains three sub-sections:
+When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It contains two sub-sections:
 
 **Sessions sub-section:** A table listing all active worktrees:
 
@@ -52,12 +52,6 @@ Combined interpretation: SAME + empty Modified = aligned with main. SAME + non-e
 
 "Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`.
 
-**Pre-Merge Status sub-section:** Per-worktree handoff readiness:
-
-- For each worktree, shows role, branch, and a readiness indicator.
-- `Ready to merge` — all auto-evaluable handoff checklist items pass.
-- `N items pending` — N items need attention; `[view checklist ->]` link text.
-
 **Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content):
 
 - Branch name, ahead/behind status.
@@ -74,7 +68,6 @@ CDD reads each worktree's state using read-only git commands:
   - Lines where the file path (columns 4+) starts with `features/` → Specs count.
   - Lines where the file path starts with `tests/` → Tests count.
   - All other modified/staged/untracked lines → Code/Other count.
-- `git -C <path> log --grep='\[Ready for Verification\]' --format=%ct` — check for status commit.
 - `git log <worktree-branch>..main --oneline` — determine whether the worktree branch is behind main.
 
   Run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name as the range start. This is necessary because the CDD server has the full ref namespace and can evaluate `main` authoritatively. Agents running inside a worktree may not reliably resolve `main` in all configurations.
@@ -83,17 +76,6 @@ CDD reads each worktree's state using read-only git commands:
   - If output is empty → `main_diff: "SAME"`
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
-
-### 2.5 Pre-Merge Status Evaluation
-
-For each worktree, CDD evaluates auto-checkable items from the handoff checklist:
-
-- `purlin.handoff.git_clean` — checked via `git status --porcelain` output.
-- `purlin.handoff.status_commit_made` (Builder only) — checked via grep on git log.
-- `purlin.handoff.complete_commit_made` (QA only) — checked via grep on git log.
-- `purlin.handoff.main_diff` — if `main_diff == "BEHIND"`, auto-fail with message "Worktree is behind main — run /pl-work-pull first."
-
-Items requiring human judgment (e.g., spec gate pass, visual spec complete) are shown as pending until the agent runs `/pl-handoff-check` and records results.
 
 ### 2.6 /status.json API Extension
 
@@ -112,9 +94,7 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
         "specs": 2,
         "tests": 0,
         "other": 1
-      },
-      "handoff_ready": false,
-      "handoff_pending_count": 2
+      }
     },
     {
       "path": ".worktrees/builder-session",
@@ -125,9 +105,7 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
         "specs": 0,
         "tests": 0,
         "other": 0
-      },
-      "handoff_ready": true,
-      "handoff_pending_count": 0
+      }
     }
   ]
 }
@@ -142,12 +120,10 @@ Fields per worktree entry:
 - `role` — `"architect"`, `"builder"`, `"qa"`, or `"unknown"`.
 - `main_diff` — `"SAME"` if no commits on main are missing from this worktree's branch; `"BEHIND"` otherwise. Computed via `git log <branch>..main --oneline` from the project root.
 - `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix.
-- `handoff_ready` — true if all auto-evaluable handoff items pass.
-- `handoff_pending_count` — count of pending items (0 when ready).
 
 ### 2.7 Visual Design
 
-The Collaboration section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The section heading changes from "Workspace" to "Collaboration" when Collab Mode is active. Sub-section labels ("Sessions", "Pre-Merge Status", "Local (main)") use the same section header typography.
+The Collaboration section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The section heading changes from "Workspace" to "Collaboration" when Collab Mode is active. Sub-section labels ("Sessions", "Local (main)") use the same section header typography.
 
 ### 2.8 No Collab Mode During Main Checkout
 
@@ -237,14 +213,6 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     When an agent calls GET /status.json
     Then the worktree entry's modified object has at least one non-zero field (specs, tests, or other)
 
-#### Scenario: Handoff Ready When Auto-Steps Pass
-
-    Given a builder worktree with clean git status
-    And tests/task_crud/tests.json exists with status PASS
-    And a [Ready for Verification] commit is in the worktree log
-    When an agent calls GET /status.json
-    Then the builder worktree entry has handoff_ready true and handoff_pending_count 0
-
 #### Scenario: Start Collab Creates Worktrees via Dashboard
 
     Given no worktrees exist under .worktrees/
@@ -304,18 +272,6 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     And the Sessions sub-section shows a table with Role, Branch, Main Diff, and Modified columns
     And each worktree appears as a row with correct role and branch information
 
-#### Scenario: Pre-Merge Status Shows Ready Indicator
-
-    Given a builder worktree has passed all auto-evaluable handoff steps
-    When the User views the Pre-Merge Status sub-section
-    Then the builder row shows a check mark and "Ready to merge"
-
-#### Scenario: Pre-Merge Status Shows Pending Count
-
-    Given an architect worktree has 2 handoff items pending
-    When the User views the Pre-Merge Status sub-section
-    Then the architect row shows "2 items pending" with a "view checklist ->" indicator
-
 #### Scenario: Start Collab Button Visible in Standard WORKSPACE Mode
 
     Given no worktrees exist under .worktrees/
@@ -348,9 +304,6 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - [ ] Modified cell is empty when worktree is clean
 - [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when dirty
 - [ ] Multiple categories appear in order: Specs, Tests, Code/Other; zero-count categories omitted
-- [ ] "Pre-Merge Status" sub-label is visible below the Sessions table
-- [ ] Ready worktrees show a check mark ("Ready to merge")
-- [ ] Pending worktrees show a circle indicator ("N items pending")
 - [ ] "Local (main)" sub-label introduces the existing workspace content
 
 ### Screen: CDD Dashboard — Collab Session Controls
@@ -372,8 +325,6 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 The CDD dashboard is read-only with respect to worktree monitoring — it uses `git -C <path>` to query state without modifying anything, and Collab Mode detection happens on every `/status.json` call.
 
 The `/start-collab` and `/end-collab` endpoints are intentional exceptions to the read-only pattern: they delegate to `tools/collab/setup_worktrees.sh` and `tools/collab/teardown_worktrees.sh` respectively. These endpoints are explicit write operations initiated by the user; they are not invoked automatically by the dashboard's status polling.
-
-The Pre-Merge Status evaluation deliberately avoids running the full handoff checklist (which may have side effects or require user interaction). It only evaluates items that can be determined from git state alone.
 
 **[CLARIFICATION]** The End Collab modal is implemented as a dedicated overlay element (`collab-modal-overlay`) rather than reusing the feature detail modal, since it has a different structure (checkbox, 3-state content, no tabs). The modal is populated by `showEndCollabModal()` based on the dry-run response JSON. (Severity: INFO)
 
