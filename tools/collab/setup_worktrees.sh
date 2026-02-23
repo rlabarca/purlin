@@ -78,9 +78,11 @@ for role_def in "${ROLES[@]}"; do
         continue
     fi
 
-    # Create branch from main HEAD if it doesn't exist
+    # Create or reset branch to main HEAD
     if ! git -C "$PROJECT_ROOT" rev-parse --verify "$branch" > /dev/null 2>&1; then
         git -C "$PROJECT_ROOT" branch "$branch" "$MAIN_HEAD"
+    else
+        git -C "$PROJECT_ROOT" branch -f "$branch" "$MAIN_HEAD"
     fi
 
     # Create worktree
