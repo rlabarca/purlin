@@ -190,9 +190,9 @@ class TestDependencyGraphExcludesCompanion(unittest.TestCase):
     """Software Map dependency graph must not include .impl.md files."""
 
     def test_generate_tree_filter(self):
-        """generate_tree.py parse_features() excludes .impl.md."""
-        sys.path.insert(0, os.path.join(TOOLS_DIR, 'software_map'))
-        from generate_tree import parse_features
+        """graph.py parse_features() excludes .impl.md."""
+        sys.path.insert(0, os.path.join(TOOLS_DIR, 'cdd'))
+        from graph import parse_features
 
         tmpdir = tempfile.mkdtemp()
         try:
