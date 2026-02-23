@@ -88,9 +88,9 @@ Behavior:
 
 **QA-only steps (`roles: ["qa"]`):**
 
-*   `purlin.handoff.scenarios_complete` — all manual scenarios for in-scope features have been verified (PASS or recorded FAIL)
-*   `purlin.handoff.discoveries_addressed` — all OPEN discoveries have been recorded and committed
-*   `purlin.handoff.complete_commit_made` — a `[Complete]` commit exists for all clean features (zero discoveries)
+*   `purlin.handoff.scenarios_complete` — all manual scenarios for in-scope features have been attempted; scenarios blocked by an open BUG may be explicitly noted as deferred rather than run
+*   `purlin.handoff.discoveries_addressed` — all discoveries found during this verification cycle are committed to the branch; OPEN status is acceptable (routes to Builder); FAIL only when observed bugs are uncommitted
+*   `purlin.handoff.complete_commit_made` — a `[Complete]` commit exists for every in-scope feature that is fully clean; PASS when all in-scope features have open discoveries (nothing to complete yet)
 
 ### 2.6 Slash Commands
 
@@ -176,6 +176,18 @@ And only QA-specific and shared steps are included.
     When /pl-work-pull is invoked
     Then git merge main is executed
     And the output reports commits pulled and lists changed feature files
+
+#### Scenario: pl-work-push Allows QA Merge When Discoveries Are Committed But Open
+
+    Given the current branch is qa/collab
+    And features/cdd_collab_mode.md has 3 OPEN entries in ## User Testing Discoveries
+    And all discovery entries are committed to the branch
+    And all manual scenarios have been attempted (failed ones have BUG discoveries)
+    And no in-scope feature is fully clean (no [Complete] commit needed)
+    When /pl-work-push is invoked
+    Then discoveries_addressed evaluates as PASS
+    And complete_commit_made evaluates as PASS
+    And the branch is merged to main
 
 ### Manual Scenarios
 

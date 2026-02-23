@@ -77,9 +77,9 @@ Evaluate each item below. Record PASS or FAIL with a one-line reason.
 
 | Item | How to evaluate |
 |------|----------------|
-| `scenarios_complete` | Read `CRITIC_REPORT.md` QA section. Any TESTING features with open manual scenario items? FAIL if yes. |
-| `discoveries_addressed` | For each `features/*.md` modified in `git diff main..HEAD`, check `## User Testing Discoveries` for any entry with status `OPEN` or `SPEC_UPDATED`. FAIL if any OPEN entries remain. |
-| `complete_commit_made` | Run `git log main..HEAD --oneline`. Output must contain a line with `[Complete]`. FAIL if not present. |
+| `scenarios_complete` | For each in-scope feature: confirm all manual scenarios have been attempted. A scenario may be marked as blocked by an open BUG (explicitly noted) rather than attempted. FAIL only if scenarios were not attempted and have no blocking BUG noted. Features where all scenarios were attempted (even if some failed) are PASS. |
+| `discoveries_addressed` | For each `features/*.md` modified in `git diff main..HEAD`, check `## User Testing Discoveries`. PASS if all discovery entries are written and committed to the branch — OPEN status is expected and acceptable (routes to Builder after merge). FAIL only if QA has uncommitted discovery notes (found bugs but did not commit them). |
+| `complete_commit_made` | Run `git log main..HEAD --oneline`. For every in-scope feature that is fully clean (all scenarios pass, zero OPEN discoveries), a `[Complete]` commit must exist. PASS if all in-scope features have open discoveries (no clean features requiring a completion commit). FAIL only when a clean feature exists that has no `[Complete]` commit. |
 
 ### 5. Report Checklist
 
