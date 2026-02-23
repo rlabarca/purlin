@@ -3674,6 +3674,37 @@ Overview.
         self.assertEqual(result['items'], 0)
 
 
+class TestVisualSpecificationDetectedWithNumberedHeader(unittest.TestCase):
+    """Scenario: Visual Specification Detected with Numbered Section Header
+
+    Feature with ## 4. Visual Specification (numbered prefix) reports
+    screens and items correctly.
+    """
+
+    def test_numbered_header_detected(self):
+        content = """\
+# Feature: Numbered Visual
+
+## 1. Overview
+Overview.
+
+## 4. Visual Specification
+
+### Screen: Main View
+- [ ] Layout is correct
+- [ ] Colors match tokens
+- [x] Logo visible
+
+## Implementation Notes
+* Note.
+"""
+        result = parse_visual_spec(content)
+        self.assertTrue(result['present'])
+        self.assertEqual(result['screens'], 1)
+        self.assertEqual(result['items'], 3)
+        self.assertEqual(result['screen_names'], ['Main View'])
+
+
 class TestVisualSpecificationExemptFromTraceability(unittest.TestCase):
     """Scenario: Visual Specification Exempt from Traceability
 
