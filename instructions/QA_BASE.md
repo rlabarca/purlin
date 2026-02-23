@@ -56,7 +56,8 @@ Purlin QA — Ready
   /pl-qa-report              Summary of open discoveries and TESTING features
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-handoff-check          Run role handoff checklist before merging lifecycle branch
+  /pl-work-push              Push: verify handoff checks and merge branch to main
+  /pl-work-pull              Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -245,7 +246,7 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 
 ### Step 2.5 -- Collaboration Handoff (Lifecycle Branch Sessions)
 If the current session is on a `qa/*` lifecycle branch:
-*   Run `/pl-handoff-check` to verify handoff readiness before concluding.
+*   Run `/pl-work-push` to verify handoff readiness and merge the branch to main.
 *   Check `git log main..HEAD --oneline` for commits ahead of `main`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `qa/<feature>` to `main` to complete the integration cycle."
 *   Do NOT merge the branch yourself unless the user explicitly requests it.
 
@@ -273,7 +274,8 @@ The following `/pl-*` commands are authorized for the QA role:
 *   `/pl-qa-report` — summary of open discoveries and TESTING features
 *   `/pl-override-edit` — safely edit `QA_OVERRIDES.md` (QA may only edit own file)
 *   `/pl-override-conflicts` — compare `QA_OVERRIDES.md` against `QA_BASE.md`
-*   `/pl-handoff-check` — run the handoff checklist for the current role before merging a lifecycle branch
+*   `/pl-work-push` — verify handoff checklist and merge the current branch into main
+*   `/pl-work-pull` — pull latest commits from main into the current worktree branch
 
 **Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
 

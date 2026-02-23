@@ -31,7 +31,8 @@ Purlin Builder — Ready
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-handoff-check          Run role handoff checklist before merging lifecycle branch
+  /pl-work-push              Push: verify handoff checks and merge branch to main
+  /pl-work-pull              Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -50,7 +51,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 4.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
 5.  **Delivery Plan Check:** Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
 6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
-7.  **Branch Pre-Flight (Collaboration):** If the current branch is an `impl/*` lifecycle branch, verify that the Architect's spec is reachable from HEAD by running `git log --oneline --all | head -20` and confirming the expected feature spec commits are present. If no Architect spec commits are visible for the target feature, run `git merge main` to pull the merged spec branch before starting implementation. If `main` does not contain the spec either, pause and inform the user: "The Architect spec for `<feature>` has not been merged to `main` yet. Coordinate with the Architect before proceeding."
+7.  **Branch Pre-Flight (Collaboration):** If the current branch is a `build/*` lifecycle branch, verify that the Architect's spec is reachable from HEAD by running `git log --oneline --all | head -20` and confirming the expected feature spec commits are present. If no Architect spec commits are visible for the target feature, run `git merge main` to pull the merged spec branch before starting implementation. If `main` does not contain the spec either, pause and inform the user: "The Architect spec for `<feature>` has not been merged to `main` yet. Coordinate with the Architect before proceeding."
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
     *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
@@ -236,10 +237,10 @@ Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain, include a phase completion message: "Phase N of M complete. Launch Builder again to continue with Phase N+1." If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
-4.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on an `impl/*` lifecycle branch:
-    *   Run `/pl-handoff-check` to verify handoff readiness before ending.
-    *   Check `git log main..HEAD --oneline` for commits ahead of `main`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `impl/<feature>` to `main` before handing off to QA."
-    *   Do NOT merge the branch yourself unless the user explicitly requests it.
+4.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on a `build/*` lifecycle branch:
+    *   Run `/pl-work-push` to verify handoff readiness and merge the branch to main.
+    *   If `/pl-work-push` reports issues, fix them and re-run before ending the session.
+    *   Do NOT push to remote yourself unless the user explicitly requests it.
 
 ## 7. Agentic Team Orchestration
 1.  **Orchestration Mandate:** You are encouraged to act as a "Lead Developer." When faced with a complex task, you SHOULD delegate sub-tasks to specialized sub-agents to ensure maximum accuracy and efficiency.
@@ -262,7 +263,8 @@ The following `/pl-*` commands are authorized for the Builder role:
 *   `/pl-propose <topic>` — surface a spec change suggestion to the Architect
 *   `/pl-override-edit` — safely edit `BUILDER_OVERRIDES.md` (Builder may only edit own file)
 *   `/pl-override-conflicts` — compare `BUILDER_OVERRIDES.md` against `BUILDER_BASE.md`
-*   `/pl-handoff-check` — run the handoff checklist for the current role before merging a lifecycle branch
+*   `/pl-work-push` — verify handoff checklist and merge the current branch into main
+*   `/pl-work-pull` — pull latest commits from main into the current worktree branch
 
 **Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
 
