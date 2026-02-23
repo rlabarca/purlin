@@ -86,7 +86,7 @@ EOF
 echo "[Scenario] setup_worktrees Creates Three Worktrees"
 setup_sandbox
 
-OUTPUT=$(bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" 2>&1)
+OUTPUT=$(bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" 2>&1)
 
 # Check that all three worktrees were created
 if [ -d "$SANDBOX/.worktrees/architect-session" ]; then
@@ -95,10 +95,10 @@ else
     log_fail "architect-session directory NOT created"
 fi
 
-if [ -d "$SANDBOX/.worktrees/builder-session" ]; then
-    log_pass "builder-session directory created"
+if [ -d "$SANDBOX/.worktrees/build-session" ]; then
+    log_pass "build-session directory created"
 else
-    log_fail "builder-session directory NOT created"
+    log_fail "build-session directory NOT created"
 fi
 
 if [ -d "$SANDBOX/.worktrees/qa-session" ]; then
@@ -109,29 +109,29 @@ fi
 
 # Check branch names
 ARCH_BRANCH=$(git -C "$SANDBOX/.worktrees/architect-session" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-if [ "$ARCH_BRANCH" = "spec/task-crud" ]; then
-    log_pass "architect-session on branch spec/task-crud"
+if [ "$ARCH_BRANCH" = "spec/collab" ]; then
+    log_pass "architect-session on branch spec/collab"
 else
-    log_fail "architect-session on wrong branch: '$ARCH_BRANCH' (expected spec/task-crud)"
+    log_fail "architect-session on wrong branch: '$ARCH_BRANCH' (expected spec/collab)"
 fi
 
-BUILD_BRANCH=$(git -C "$SANDBOX/.worktrees/builder-session" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-if [ "$BUILD_BRANCH" = "impl/task-crud" ]; then
-    log_pass "builder-session on branch impl/task-crud"
+BUILD_BRANCH=$(git -C "$SANDBOX/.worktrees/build-session" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ "$BUILD_BRANCH" = "build/collab" ]; then
+    log_pass "build-session on branch build/collab"
 else
-    log_fail "builder-session on wrong branch: '$BUILD_BRANCH' (expected impl/task-crud)"
+    log_fail "build-session on wrong branch: '$BUILD_BRANCH' (expected build/collab)"
 fi
 
 QA_BRANCH=$(git -C "$SANDBOX/.worktrees/qa-session" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-if [ "$QA_BRANCH" = "qa/task-crud" ]; then
-    log_pass "qa-session on branch qa/task-crud"
+if [ "$QA_BRANCH" = "qa/collab" ]; then
+    log_pass "qa-session on branch qa/collab"
 else
-    log_fail "qa-session on wrong branch: '$QA_BRANCH' (expected qa/task-crud)"
+    log_fail "qa-session on wrong branch: '$QA_BRANCH' (expected qa/collab)"
 fi
 
 # Check all branches start from the same HEAD as main
 MAIN_HEAD=$(git -C "$SANDBOX" rev-parse main)
-for wt_dir in architect-session builder-session qa-session; do
+for wt_dir in architect-session build-session qa-session; do
     WT_HEAD=$(git -C "$SANDBOX/.worktrees/$wt_dir" rev-parse HEAD 2>/dev/null || echo "")
     if [ "$WT_HEAD" = "$MAIN_HEAD" ]; then
         log_pass "$wt_dir HEAD matches main"
@@ -157,13 +157,13 @@ echo "[Scenario] setup_worktrees Is Idempotent"
 setup_sandbox
 
 # First run — create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
 # Count worktrees before
 WT_COUNT_BEFORE=$(git -C "$SANDBOX" worktree list 2>/dev/null | wc -l | tr -d ' ')
 
 # Second run — should be idempotent
-OUTPUT2=$(bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" 2>&1)
+OUTPUT2=$(bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" 2>&1)
 EXIT_CODE=$?
 
 # Count worktrees after
@@ -203,7 +203,7 @@ echo "[Scenario] PURLIN_PROJECT_ROOT Resolves to Worktree Path"
 setup_sandbox
 
 # Create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
 # The launcher script sets PURLIN_PROJECT_ROOT="$SCRIPT_DIR" (line 10 of run_builder.sh).
 # When run from a worktree directory, SCRIPT_DIR resolves to the worktree path.
@@ -283,10 +283,10 @@ echo "[Scenario] Teardown Is Blocked When Worktree Has Uncommitted Changes"
 setup_sandbox
 
 # Create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
-# Make builder-session dirty
-echo "dirty change" > "$SANDBOX/.worktrees/builder-session/dirty_file.txt"
+# Make build-session dirty
+echo "dirty change" > "$SANDBOX/.worktrees/build-session/dirty_file.txt"
 
 # Run teardown without --force
 OUTPUT=$(bash "$SANDBOX/tools/collab/teardown_worktrees.sh" --project-root "$SANDBOX" 2>&1)
@@ -304,14 +304,14 @@ else
     log_fail "Error message missing uncommitted changes reference"
 fi
 
-if echo "$OUTPUT" | grep -qi "builder-session"; then
-    log_pass "Error output identifies dirty worktree (builder-session)"
+if echo "$OUTPUT" | grep -qi "build-session"; then
+    log_pass "Error output identifies dirty worktree (build-session)"
 else
     log_fail "Error output missing dirty worktree name"
 fi
 
 # Verify worktrees still exist (not removed)
-if [ -d "$SANDBOX/.worktrees/builder-session" ]; then
+if [ -d "$SANDBOX/.worktrees/build-session" ]; then
     log_pass "Worktrees not removed when blocked"
 else
     log_fail "Worktrees were removed despite dirty block"
@@ -327,10 +327,10 @@ echo "[Scenario] Teardown Proceeds with Warning When Branch Has Unmerged Commits
 setup_sandbox
 
 # Create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
-# Add commits to builder-session that are not merged to main
-cd "$SANDBOX/.worktrees/builder-session"
+# Add commits to build-session that are not merged to main
+cd "$SANDBOX/.worktrees/build-session"
 echo "impl code" > impl_file.txt
 git add impl_file.txt
 git commit -q -m "feat: implement handler"
@@ -358,24 +358,24 @@ else
     log_fail "Output missing warning about unmerged commits"
 fi
 
-if echo "$OUTPUT" | grep -q "impl/task-crud"; then
+if echo "$OUTPUT" | grep -q "build/collab"; then
     log_pass "Warning mentions unmerged branch name"
 else
     log_fail "Warning missing branch name reference"
 fi
 
 # Verify worktrees are removed
-if [ ! -d "$SANDBOX/.worktrees/builder-session" ]; then
+if [ ! -d "$SANDBOX/.worktrees/build-session" ]; then
     log_pass "Worktrees removed after unsynced warning"
 else
     log_fail "Worktrees still present after teardown"
 fi
 
 # Verify the branch still exists
-if git -C "$SANDBOX" rev-parse --verify "impl/task-crud" > /dev/null 2>&1; then
-    log_pass "impl/task-crud branch still exists after worktree removal"
+if git -C "$SANDBOX" rev-parse --verify "build/collab" > /dev/null 2>&1; then
+    log_pass "build/collab branch still exists after worktree removal"
 else
-    log_fail "impl/task-crud branch was deleted (should survive)"
+    log_fail "build/collab branch was deleted (should survive)"
 fi
 
 teardown_sandbox
@@ -388,7 +388,7 @@ echo "[Scenario] Teardown --dry-run Reports Without Removing"
 setup_sandbox
 
 # Create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
 # Make architect-session dirty
 echo "draft" > "$SANDBOX/.worktrees/architect-session/draft.md"
@@ -433,10 +433,10 @@ echo "[Scenario] Teardown --force Bypasses Dirty Check"
 setup_sandbox
 
 # Create worktrees
-bash "$SANDBOX/tools/collab/setup_worktrees.sh" --feature task-crud --project-root "$SANDBOX" > /dev/null 2>&1
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
 
-# Make builder-session dirty
-echo "dirty change" > "$SANDBOX/.worktrees/builder-session/dirty_file.txt"
+# Make build-session dirty
+echo "dirty change" > "$SANDBOX/.worktrees/build-session/dirty_file.txt"
 
 # Run teardown with --force
 OUTPUT=$(bash "$SANDBOX/tools/collab/teardown_worktrees.sh" --force --project-root "$SANDBOX" 2>&1)
@@ -449,7 +449,7 @@ else
 fi
 
 # Verify worktrees are removed
-if [ ! -d "$SANDBOX/.worktrees/builder-session" ]; then
+if [ ! -d "$SANDBOX/.worktrees/build-session" ]; then
     log_pass "Dirty worktree removed with --force"
 else
     log_fail "Dirty worktree still present after --force teardown"
@@ -473,7 +473,7 @@ echo ".worktrees/" > .gitignore
 git add -A && git commit -q -m "initial"
 
 # Run setup from a different directory using --project-root
-OUTPUT=$(bash "$PROJECT_ROOT/tools/collab/setup_worktrees.sh" --feature remote-test --project-root "$SANDBOX" 2>&1)
+OUTPUT=$(bash "$PROJECT_ROOT/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" 2>&1)
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -eq 0 ]; then
