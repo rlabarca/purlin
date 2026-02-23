@@ -377,3 +377,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Expected Behavior:** Button should have a darker background with lighter text, matching the styling of other dashboard action buttons (e.g., "Run Critic"), consistent with the Purlin CSS token system (Section 2.7).
 - **Action Required:** Builder
 - **Status:** RESOLVED
+
+### [BUG] End Collab modal buttons have incorrect colors in dark mode (Discovered: 2026-02-23)
+- **Scenario:** Visual Specification — Screen: CDD Dashboard — Collab Session Controls
+- **Observed Behavior:** In dark mode, the End Collab modal buttons (Confirm/Cancel) render with a light background and dark text, when they should be the opposite — matching the styling of other dashboard action buttons (e.g., "Run Critic").
+- **Expected Behavior:** Modal buttons should use dark-mode-compliant styling consistent with the Purlin CSS token system (design_visual_standards.md Section 2.7), same as other dashboard action buttons.
+- **Action Required:** Builder
+- **Status:** OPEN
