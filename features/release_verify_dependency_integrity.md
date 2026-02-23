@@ -38,6 +38,9 @@ The graph is valid when: (1) no cycles are detected, and (2) all prerequisite li
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Graph is current and valid

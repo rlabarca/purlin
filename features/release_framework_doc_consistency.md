@@ -50,6 +50,9 @@ Any inconsistency found is corrected using `/pl-edit-base` (for base instruction
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: All instruction files are internally consistent

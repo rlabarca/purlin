@@ -42,6 +42,9 @@ If all features satisfy the conditions, the Architect reports the total feature 
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: All features satisfy zero-queue conditions

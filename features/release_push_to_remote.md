@@ -43,6 +43,9 @@ This step may be set to `enabled: false` in `.purlin/release/config.json`. When 
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Clean push to remote
@@ -75,4 +78,4 @@ And the release is considered complete at the prior step.
 
 This is the only global release step with a non-null `code` field. The shell command `git push && git push --tags` is the canonical execution path. However, the Architect always verifies pre-push conditions (Sections 2.1–2.2) before invoking it.
 
-In Purlin's own `.purlin/release/config.json`, this step is currently set to `enabled: false` pending remote repository setup.
+In Purlin's own `.purlin/release/config.json`, this step is `enabled: true`.

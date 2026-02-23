@@ -173,6 +173,9 @@ not this file).
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Clean audit — all checks pass

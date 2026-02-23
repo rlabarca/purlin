@@ -39,6 +39,9 @@ The Architect corrects all inconsistencies found. Each correction is committed w
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Documentation is fully consistent

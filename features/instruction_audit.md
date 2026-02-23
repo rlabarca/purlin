@@ -53,6 +53,9 @@ This step is registered in `tools/release/global_steps.json` as:
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Clean audit with no issues

@@ -59,6 +59,9 @@ New entries are prepended at the top of the `## Releases` section (most recent f
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: No prior release tags

@@ -54,6 +54,9 @@ The Architect commits with message `docs(readme): update Role of the Critic sect
 
 ## 3. Scenarios
 
+### Automated Scenarios
+None. All verification is manual (Architect-executed release step).
+
 ### Manual Scenarios (Architect Execution)
 
 #### Scenario: Clean audit — README updated
