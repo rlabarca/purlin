@@ -310,7 +310,7 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
 
-**[DISCOVERY]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. This prevents targeted scope validation from resolving `Visual:` scope references for feature files using numbered sections. Filed as a Critic tool gap for Architect acknowledgment. (Severity: HIGH)
+**[CLARIFICATION]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. Acknowledged by Architect — `features/critic_tool.md` Section 2.13 updated to require numbered-prefix detection, and a new Gherkin scenario was added. Builder must update the regex in `parse_visual_spec()` and add a corresponding test case.
 
 ## User Testing Discoveries
 

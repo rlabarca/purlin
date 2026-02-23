@@ -217,7 +217,7 @@ The Critic MUST compute a regression set for each TESTING feature based on the B
 ### 2.13 Visual Specification Detection
 The Critic MUST detect and report `## Visual Specification` sections in feature files.
 
-*   **Detection (`has_visual_spec`):** Check for the presence of a `## Visual Specification` heading in the feature file content.
+*   **Detection (`has_visual_spec`):** Check for the presence of a `## Visual Specification` heading in the feature file content. The heading MAY have a numbered prefix (e.g., `## 4. Visual Specification`); both forms MUST be detected.
 *   **Item Counting:** Count checklist items (lines matching `- [ ]` or `- [x]`) within the visual specification section. Count `### Screen:` subsections.
 *   **QA Action Items:** Generate separate QA action items for visual verification: `"Visual verify X: N checklist item(s) across M screen(s)"`. These are distinct from functional scenario verification items.
 *   **Per-Feature Output:** Include a `visual_spec` block in `tests/<feature_name>/critic.json`:
@@ -614,6 +614,14 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then visual_spec.present is false
     And visual_spec.screens is 0
     And visual_spec.items is 0
+
+#### Scenario: Visual Specification Detected with Numbered Section Header
+    Given a feature file contains a "## 4. Visual Specification" section
+    And the section has 1 screen with 3 checklist items
+    When the Critic tool runs analysis
+    Then visual_spec.present is true
+    And visual_spec.screens is 1
+    And visual_spec.items is 3
 
 #### Scenario: Visual Specification QA Action Item
     Given a feature is in TESTING state with a visual specification (3 screens, 12 items)
