@@ -664,7 +664,8 @@ def _role_from_branch(branch_name):
 def _worktree_state(wt_abs_path):
     """Read state of a single worktree using git -C commands.
 
-    Returns dict with dirty, file_count, branch, last_commit.
+    Returns dict with branch, last_commit, commits_ahead, and modified
+    (object with specs, tests, other integer counts).
     """
     def _wt_cmd(cmd):
         try:
@@ -676,9 +677,35 @@ def _worktree_state(wt_abs_path):
             return ""
 
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
-    status_output = _wt_cmd("git status --porcelain")
-    dirty = bool(status_output)
-    file_count = len(status_output.splitlines()) if dirty else 0
+
+    # Get raw status output (not stripped) — XY columns are position-dependent
+    try:
+        _status_result = subprocess.run(
+            "git status --porcelain", shell=True, capture_output=True,
+            text=True, check=True, cwd=wt_abs_path)
+        status_output = _status_result.stdout
+    except subprocess.CalledProcessError:
+        status_output = ""
+
+    # Categorize modified files by path prefix (Section 2.4 of cdd_collab_mode)
+    specs = 0
+    tests = 0
+    other = 0
+    for line in status_output.splitlines():
+        if not line:
+            continue
+        # git status --porcelain format: XY <path> (columns 0-1 status, 3+ path)
+        file_path = line[3:] if len(line) > 3 else ''
+        # Handle renamed files: "R  old -> new" — use the new path
+        if ' -> ' in file_path:
+            file_path = file_path.split(' -> ')[-1]
+        if file_path.startswith('features/'):
+            specs += 1
+        elif file_path.startswith('tests/'):
+            tests += 1
+        else:
+            other += 1
+
     last_commit = _wt_cmd("git log -1 --format='%h %s (%cr)'")
     commits_ahead_str = _wt_cmd("git rev-list --count main..HEAD")
     try:
@@ -688,75 +715,26 @@ def _worktree_state(wt_abs_path):
 
     return {
         'branch': branch,
-        'dirty': dirty,
-        'file_count': file_count,
+        'modified': {'specs': specs, 'tests': tests, 'other': other},
         'last_commit': last_commit,
         'commits_ahead': commits_ahead,
     }
 
 
-def _worktree_handoff_status(wt_abs_path, role):
-    """Evaluate auto-checkable handoff items for a worktree.
+def _compute_main_diff(branch):
+    """Determine whether a worktree branch is behind main.
 
-    Returns (handoff_ready: bool, pending_count: int, issues: list[str]).
+    Runs from PROJECT_ROOT (not per-worktree) to ensure 'main' resolves
+    correctly. Returns "SAME" or "BEHIND".
     """
-    def _wt_cmd(cmd):
-        try:
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True,
-                check=True, cwd=wt_abs_path)
-            return result.stdout.strip()
-        except subprocess.CalledProcessError:
-            return ""
-
-    pending = 0
-    issues = []
-
-    # Check git clean
-    status = _wt_cmd("git status --porcelain")
-    if status:
-        pending += 1
-        issues.append("Uncommitted changes in working tree")
-
-    # Role-specific checks
-    if role == 'builder':
-        rfv = _wt_cmd("git log --grep='\\[Ready for Verification\\]' --format='%ct' -1")
-        if not rfv:
-            pending += 1
-            issues.append("No [Ready for Verification] commit found")
-    elif role == 'qa':
-        complete = _wt_cmd("git log --grep='\\[Complete ' --format='%ct' -1")
-        if not complete:
-            pending += 1
-            issues.append("No [Complete ...] commit found")
-
-    return (pending == 0, pending, issues)
-
-
-def _read_feature_summary(wt_abs_path):
-    """Read per-role feature counts from worktree's cached status.json.
-
-    Returns dict with total/arch_done/builder_done/qa_clean, or None if
-    the cache file does not exist or cannot be parsed.
-    """
-    cache_path = os.path.join(wt_abs_path, '.purlin', 'cache', 'status.json')
     try:
-        with open(cache_path, 'r') as f:
-            data = json.load(f)
-        features = data.get('features', [])
-        total = len(features)
-        arch_done = sum(1 for feat in features if feat.get('architect') == 'DONE')
-        builder_done = sum(1 for feat in features if feat.get('builder') == 'DONE')
-        qa_clean = sum(1 for feat in features
-                       if feat.get('qa') in ('CLEAN', 'N/A'))
-        return {
-            'total': total,
-            'arch_done': arch_done,
-            'builder_done': builder_done,
-            'qa_clean': qa_clean,
-        }
-    except Exception:
-        return None
+        result = subprocess.run(
+            f"git log {branch}..main --oneline",
+            shell=True, capture_output=True, text=True,
+            check=True, cwd=PROJECT_ROOT)
+        return "BEHIND" if result.stdout.strip() else "SAME"
+    except subprocess.CalledProcessError:
+        return "SAME"
 
 
 def get_collab_worktrees():
@@ -783,38 +761,18 @@ def get_collab_worktrees():
         except ValueError:
             rel_path = abs_path
 
-        handoff_ready, pending_count, pending_issues = _worktree_handoff_status(
-            abs_path, role)
-
-        commits_ahead = state.get('commits_ahead', 0)
-
-        if commits_ahead == 0:
-            wt_merge_status = 'no_changes'
-            wt_pending_issues = []
-        elif handoff_ready:
-            wt_merge_status = 'ready'
-            wt_pending_issues = []
-        else:
-            wt_merge_status = 'pending'
-            wt_pending_issues = pending_issues
-
-        feature_summary = _read_feature_summary(abs_path)
+        # Main diff: run from project root (Section 2.4 of cdd_collab_mode)
+        main_diff = _compute_main_diff(branch)
 
         entry = {
             'path': rel_path,
             'branch': branch,
             'role': role,
-            'dirty': state['dirty'],
-            'file_count': state['file_count'],
+            'main_diff': main_diff,
+            'commits_ahead': state.get('commits_ahead', 0),
             'last_commit': state['last_commit'],
-            'commits_ahead': commits_ahead,
-            'handoff_ready': handoff_ready,
-            'handoff_pending_count': pending_count,
-            'wt_merge_status': wt_merge_status,
-            'pending_issues': wt_pending_issues,
+            'modified': state['modified'],
         }
-        if feature_summary is not None:
-            entry['feature_summary'] = feature_summary
         result.append(entry)
 
     return result
@@ -850,60 +808,53 @@ def _role_badge_html(status):
 
 
 def _collab_section_html(worktrees):
-    """Generate HTML for the Collab Mode sub-sections (Sessions + Pre-Merge)."""
+    """Generate HTML for the Collab Mode Sessions sub-section."""
     if not worktrees:
         return ""
 
-    # Sessions table
+    # Sessions table: Role, Branch, Main Diff, Modified
     rows = ""
     for wt in worktrees:
         role = wt.get('role', 'unknown').capitalize()
         branch = wt.get('branch', '')
-        if wt.get('dirty'):
-            dirty_text = f'{wt["file_count"]} file{"s" if wt["file_count"] != 1 else ""}'
-            dirty_cls = 'st-todo'
+
+        # Main Diff badge
+        main_diff = wt.get('main_diff', 'SAME')
+        if main_diff == 'BEHIND':
+            diff_html = '<span class="st-todo">BEHIND</span>'
         else:
-            dirty_text = 'Clean'
-            dirty_cls = 'st-done'
-        last = wt.get('last_commit', '')
+            diff_html = '<span class="dim">SAME</span>'
+
+        # Modified column: empty when clean, categorized counts otherwise
+        mod = wt.get('modified', {})
+        specs = mod.get('specs', 0)
+        tests_count = mod.get('tests', 0)
+        other = mod.get('other', 0)
+        if specs == 0 and tests_count == 0 and other == 0:
+            mod_text = ''
+        else:
+            parts = []
+            if specs > 0:
+                parts.append(f'{specs} Specs')
+            if tests_count > 0:
+                parts.append(f'{tests_count} Tests')
+            if other > 0:
+                parts.append(f'{other} Code/Other')
+            mod_text = ' '.join(parts)
+
         rows += (
             f'<tr><td>{role}</td><td><code>{branch}</code></td>'
-            f'<td><span class="{dirty_cls}">{dirty_text}</span></td>'
-            f'<td class="dim">{last}</td></tr>'
+            f'<td>{diff_html}</td>'
+            f'<td class="dim">{mod_text}</td></tr>'
         )
 
-    sessions_html = (
+    return (
         '<h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;'
         'text-transform:uppercase;letter-spacing:0.5px">Sessions</h4>'
         '<table class="ft" style="width:100%"><thead><tr>'
-        '<th>Role</th><th>Branch</th><th>Dirty?</th><th>Last Activity</th>'
+        '<th>Role</th><th>Branch</th><th>Main Diff</th><th>Modified</th>'
         '</tr></thead><tbody>' + rows + '</tbody></table>'
     )
-
-    # Pre-Merge Status
-    merge_rows = ""
-    for wt in worktrees:
-        role = wt.get('role', 'unknown').capitalize()
-        branch = wt.get('branch', '')
-        if wt.get('handoff_ready'):
-            status_text = '<span class="st-done">&#10003; Ready to merge</span>'
-        else:
-            n = wt.get('handoff_pending_count', 0)
-            status_text = f'<span class="st-todo">{n} item{"s" if n != 1 else ""} pending</span>'
-        merge_rows += (
-            f'<tr><td>{role}</td><td><code>{branch}</code></td>'
-            f'<td>{status_text}</td></tr>'
-        )
-
-    merge_html = (
-        '<h4 style="margin:12px 0 4px;color:var(--purlin-muted);font-size:11px;'
-        'text-transform:uppercase;letter-spacing:0.5px">Pre-Merge Status</h4>'
-        '<table class="ft" style="width:100%"><thead><tr>'
-        '<th>Role</th><th>Branch</th><th>Status</th>'
-        '</tr></thead><tbody>' + merge_rows + '</tbody></table>'
-    )
-
-    return sessions_html + merge_html
 
 
 def _feature_urgency(entry):
@@ -983,7 +934,7 @@ def generate_html(cache=None):
     # Collab Mode detection for dashboard
     collab_worktrees = get_collab_worktrees()
     collab_active = bool(collab_worktrees)
-    workspace_heading = "Workspace &amp; Collaboration" if collab_active else "Workspace"
+    workspace_heading = "Collaboration" if collab_active else "Workspace"
     collab_html = ""
     if collab_active:
         collab_html = _collab_section_html(collab_worktrees)
@@ -1040,6 +991,7 @@ def generate_html(cache=None):
         return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
     agents_badge = _agents_badge(CONFIG)
+    agents_heading = "Agents (applies across all local worktrees)" if collab_active else "Agents"
 
     # Release checklist badge
     rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
@@ -1412,7 +1364,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
-        <h3>Agents</h3>
+        <h3>{agents_heading}</h3>
         <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
       </div>
       <div class="section-body collapsed" id="agents-section">
@@ -3255,6 +3207,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         response = {'agents': current['agents']}
+
+        # Collab Mode: propagate config to all active worktrees (Section 2.10)
+        collab_worktrees = get_collab_worktrees()
+        if collab_worktrees:
+            warnings = []
+            for wt in collab_worktrees:
+                wt_config_path = os.path.join(
+                    PROJECT_ROOT, wt['path'], '.purlin', 'config.json')
+                try:
+                    wt_tmp = wt_config_path + '.tmp'
+                    with open(wt_tmp, 'w') as f:
+                        json.dump(current, f, indent=4)
+                    os.replace(wt_tmp, wt_config_path)
+                except Exception as e:
+                    warnings.append(
+                        f"Failed to propagate config to {wt['path']}: {e}")
+                    if os.path.exists(wt_tmp):
+                        try:
+                            os.remove(wt_tmp)
+                        except OSError:
+                            pass
+            if warnings:
+                response['warnings'] = warnings
+
         self._send_json(200, response)
 
     def _serve_release_checklist(self):

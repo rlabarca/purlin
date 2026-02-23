@@ -1,6 +1,6 @@
 """Unit tests for CDD Collab Mode.
 
-Covers all 8 automated scenarios from features/cdd_collab_mode.md.
+Covers automated scenarios from features/cdd_collab_mode.md.
 Outputs test results to tests/cdd_collab_mode/tests.json.
 """
 
@@ -12,13 +12,14 @@ import json
 import sys
 import tempfile
 import shutil
+import subprocess
 import http.server
 
 from serve import (
     _detect_worktrees,
     _role_from_branch,
     _worktree_state,
-    _worktree_handoff_status,
+    _compute_main_diff,
     get_collab_worktrees,
     generate_api_status_json,
     generate_workspace_json,
@@ -123,11 +124,10 @@ class TestCollabModeActive(unittest.TestCase):
         'path': '.worktrees/architect-session',
         'branch': 'spec/collab',
         'role': 'architect',
-        'dirty': False,
-        'file_count': 0,
+        'main_diff': 'SAME',
+        'commits_ahead': 0,
         'last_commit': 'abc1234 feat(spec): add scenarios (45 min ago)',
-        'handoff_ready': True,
-        'handoff_pending_count': 0,
+        'modified': {'specs': 0, 'tests': 0, 'other': 0},
     }]
 
     @patch('serve.get_collab_worktrees')
@@ -146,14 +146,14 @@ class TestCollabModeActive(unittest.TestCase):
 class TestRoleMappedFromBranchPrefix(unittest.TestCase):
     """Scenario: Role Mapped from Branch Prefix.
 
-    Given worktrees on branches spec/feature-a, impl/feature-a, qa/feature-a
+    Given worktrees on branches spec/feature-a, build/feature-a, qa/feature-a
     Then the worktrees array contains entries with roles architect, builder, qa.
     """
 
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
+    @patch('serve._compute_main_diff', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
-    def test_three_roles_mapped(self, mock_detect, mock_state, mock_handoff):
+    def test_three_roles_mapped(self, mock_detect, mock_state, mock_diff):
         wt_base = os.path.join(PROJECT_ROOT, '.worktrees')
         mock_detect.return_value = [
             {'abs_path': os.path.join(wt_base, 'architect-session'),
@@ -164,12 +164,15 @@ class TestRoleMappedFromBranchPrefix(unittest.TestCase):
              'branch_ref': 'refs/heads/qa/feature-a'},
         ]
         mock_state.side_effect = [
-            {'branch': 'spec/feature-a', 'dirty': False,
-             'file_count': 0, 'last_commit': 'abc spec'},
-            {'branch': 'build/feature-a', 'dirty': False,
-             'file_count': 0, 'last_commit': 'def build'},
-            {'branch': 'qa/feature-a', 'dirty': False,
-             'file_count': 0, 'last_commit': 'ghi qa'},
+            {'branch': 'spec/feature-a',
+             'modified': {'specs': 0, 'tests': 0, 'other': 0},
+             'last_commit': 'abc spec', 'commits_ahead': 0},
+            {'branch': 'build/feature-a',
+             'modified': {'specs': 0, 'tests': 0, 'other': 0},
+             'last_commit': 'def build', 'commits_ahead': 0},
+            {'branch': 'qa/feature-a',
+             'modified': {'specs': 0, 'tests': 0, 'other': 0},
+             'last_commit': 'ghi qa', 'commits_ahead': 0},
         ]
         result = get_collab_worktrees()
         roles = [wt['role'] for wt in result]
@@ -181,116 +184,201 @@ class TestRoleMappedFromBranchPrefix(unittest.TestCase):
 class TestUnknownRoleForNonStandardBranch(unittest.TestCase):
     """Scenario: Unknown Role for Non-Standard Branch."""
 
-    @patch('serve._worktree_handoff_status', return_value=(False, 1, ['No status commit']))
+    @patch('serve._compute_main_diff', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
-    def test_hotfix_maps_to_unknown(self, mock_detect, mock_state,
-                                     mock_handoff):
+    def test_hotfix_maps_to_unknown(self, mock_detect, mock_state, mock_diff):
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'hotfix-session')
         mock_detect.return_value = [
             {'abs_path': wt_path,
              'branch_ref': 'refs/heads/hotfix/urgent-fix'},
         ]
         mock_state.return_value = {
-            'branch': 'hotfix/urgent-fix', 'dirty': False,
-            'file_count': 0, 'last_commit': 'xyz hotfix',
+            'branch': 'hotfix/urgent-fix',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'last_commit': 'xyz hotfix', 'commits_ahead': 0,
         }
         result = get_collab_worktrees()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['role'], 'unknown')
 
 
-class TestDirtyStateDetected(unittest.TestCase):
-    """Scenario: Dirty State Detected."""
+class TestModifiedColumnCategorization(unittest.TestCase):
+    """Scenario: Modified Column Categorizes Uncommitted Files by Type.
 
-    @patch('serve._worktree_handoff_status', return_value=(False, 1, ['Uncommitted changes in working tree']))
+    Given a worktree has two modified files under features/
+    And one modified file outside features/ and tests/
+    Then the modified field has specs=2, tests=0, other=1.
+    """
+
+    @patch('serve._compute_main_diff', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
-    def test_dirty_worktree(self, mock_detect, mock_state, mock_handoff):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'build-session')
+    def test_modified_categorized(self, mock_detect, mock_state, mock_diff):
+        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'architect-session')
         mock_detect.return_value = [
             {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/build/collab'},
+             'branch_ref': 'refs/heads/spec/collab'},
         ]
         mock_state.return_value = {
-            'branch': 'build/collab',
-            'dirty': True,
-            'file_count': 3,
-            'last_commit': 'def5678 feat(build): handlers (12 min ago)',
+            'branch': 'spec/collab',
+            'modified': {'specs': 2, 'tests': 0, 'other': 1},
+            'last_commit': 'abc spec', 'commits_ahead': 0,
         }
         result = get_collab_worktrees()
         self.assertEqual(len(result), 1)
-        wt = result[0]
-        self.assertTrue(wt['dirty'])
-        self.assertGreater(wt['file_count'], 0)
+        mod = result[0]['modified']
+        self.assertEqual(mod['specs'], 2)
+        self.assertEqual(mod['tests'], 0)
+        self.assertEqual(mod['other'], 1)
 
 
-class TestHandoffReadyWhenAutoStepsPass(unittest.TestCase):
-    """Scenario: Handoff Ready When Auto-Steps Pass."""
+class TestWorktreeStateFileCategories(unittest.TestCase):
+    """Test _worktree_state() parses git status --porcelain into categories."""
 
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_handoff_ready(self, mock_detect, mock_state, mock_handoff):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'build-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/build/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'build/collab',
-            'dirty': False,
-            'file_count': 0,
-            'last_commit': 'def5678 status(build): ready (5 min ago)',
-        }
-        result = get_collab_worktrees()
-        self.assertEqual(len(result), 1)
-        wt = result[0]
-        self.assertTrue(wt['handoff_ready'])
-        self.assertEqual(wt['handoff_pending_count'], 0)
+    def _mock_subprocess(self, responses):
+        """Create mock for subprocess.run returning CompletedProcess-like objects.
 
-
-class TestHandoffStatusEvaluation(unittest.TestCase):
-    """Test the handoff status evaluation logic directly."""
-
-    def _mock_wt_cmd(self, responses):
-        """Create a mock that returns different values per call."""
+        _worktree_state calls subprocess.run 4 times:
+          0: git rev-parse --abbrev-ref HEAD (via _wt_cmd, .strip())
+          1: git status --porcelain (direct, raw stdout)
+          2: git log -1 (via _wt_cmd, .strip())
+          3: git rev-list --count (via _wt_cmd, .strip())
+        """
         call_count = [0]
 
         def _side_effect(*args, **kwargs):
             idx = call_count[0]
             call_count[0] += 1
             if idx < len(responses):
-                result = MagicMock()
-                result.stdout.strip.return_value = responses[idx]
-                return result
-            raise Exception(f"Unexpected call {idx}")
+                return subprocess.CompletedProcess(
+                    args='mock', returncode=0, stdout=responses[idx], stderr='')
+            raise Exception(f"Unexpected subprocess.run call {idx}")
 
         return _side_effect
 
     @patch('subprocess.run')
-    def test_builder_clean_with_rfv_is_ready(self, mock_run):
-        """Builder with clean state and RFV commit is handoff-ready."""
-        mock_run.side_effect = self._mock_wt_cmd([
-            '',       # git status --porcelain (clean)
-            '12345',  # git log --grep RFV (found)
+    def test_categorizes_by_path_prefix(self, mock_run):
+        """Files under features/ count as specs, tests/ as tests, rest as other."""
+        mock_run.side_effect = self._mock_subprocess([
+            'spec/collab',    # git rev-parse (via _wt_cmd)
+            ' M features/foo.md\n M features/bar.md\n M tools/thing.py\n',  # git status (raw)
+            'abc1234 commit (5m ago)',  # git log (via _wt_cmd)
+            '2',              # git rev-list (via _wt_cmd)
         ])
-        ready, pending, issues = _worktree_handoff_status('/tmp/test', 'builder')
-        self.assertTrue(ready)
-        self.assertEqual(pending, 0)
-        self.assertEqual(issues, [])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['modified'], {'specs': 2, 'tests': 0, 'other': 1})
+        self.assertEqual(state['commits_ahead'], 2)
 
     @patch('subprocess.run')
-    def test_builder_dirty_not_ready(self, mock_run):
-        """Builder with dirty state is not handoff-ready."""
-        mock_run.side_effect = self._mock_wt_cmd([
-            'M file.py',  # git status --porcelain (dirty)
-            '12345',      # git log --grep RFV (found)
+    def test_clean_worktree(self, mock_run):
+        """Clean worktree has all zeros in modified."""
+        mock_run.side_effect = self._mock_subprocess([
+            'build/collab',   # branch (via _wt_cmd)
+            '',               # git status (raw, clean)
+            'def5678 commit (3m ago)',  # git log (via _wt_cmd)
+            '0',              # commits ahead (via _wt_cmd)
         ])
-        ready, pending, issues = _worktree_handoff_status('/tmp/test', 'builder')
-        self.assertFalse(ready)
-        self.assertGreater(pending, 0)
-        self.assertIn('Uncommitted changes in working tree', issues)
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['modified'], {'specs': 0, 'tests': 0, 'other': 0})
+
+    @patch('subprocess.run')
+    def test_tests_directory_counted(self, mock_run):
+        """Files under tests/ count in the tests category."""
+        mock_run.side_effect = self._mock_subprocess([
+            'qa/collab',     # branch (via _wt_cmd)
+            ' M tests/foo/tests.json\nA  tests/bar/critic.json\n',  # git status (raw)
+            'ghi9012 commit (1m ago)',  # git log (via _wt_cmd)
+            '1',             # commits ahead (via _wt_cmd)
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['modified']['tests'], 2)
+        self.assertEqual(state['modified']['specs'], 0)
+        self.assertEqual(state['modified']['other'], 0)
+
+
+class TestCommitsAheadReported(unittest.TestCase):
+    """Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Main.
+
+    Given a worktree has 3 commits not yet merged to main
+    Then the worktree entry has commits_ahead equal to 3.
+    """
+
+    @patch('serve._compute_main_diff', return_value='SAME')
+    @patch('serve._worktree_state')
+    @patch('serve._detect_worktrees')
+    def test_commits_ahead(self, mock_detect, mock_state, mock_diff):
+        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'builder-session')
+        mock_detect.return_value = [
+            {'abs_path': wt_path,
+             'branch_ref': 'refs/heads/build/collab'},
+        ]
+        mock_state.return_value = {
+            'branch': 'build/collab',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'last_commit': 'def5678 feat(build): handlers (12 min ago)',
+            'commits_ahead': 3,
+        }
+        result = get_collab_worktrees()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['commits_ahead'], 3)
+
+
+class TestMainDiffBehind(unittest.TestCase):
+    """Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits.
+
+    Given main has commits that are not in spec/collab
+    Then the worktree entry has main_diff "BEHIND".
+    """
+
+    @patch('subprocess.run')
+    def test_behind_when_main_has_extra_commits(self, mock_run):
+        """_compute_main_diff returns BEHIND when git log shows output."""
+        mock_run.return_value = MagicMock(
+            stdout='abc1234 some commit on main\n', returncode=0)
+        result = _compute_main_diff('spec/collab')
+        self.assertEqual(result, 'BEHIND')
+
+    @patch('serve._compute_main_diff', return_value='BEHIND')
+    @patch('serve._worktree_state')
+    @patch('serve._detect_worktrees')
+    def test_behind_in_worktree_entry(self, mock_detect, mock_state, mock_diff):
+        """Worktree entry surfaces main_diff BEHIND."""
+        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'architect-session')
+        mock_detect.return_value = [
+            {'abs_path': wt_path,
+             'branch_ref': 'refs/heads/spec/collab'},
+        ]
+        mock_state.return_value = {
+            'branch': 'spec/collab',
+            'modified': {'specs': 2, 'tests': 0, 'other': 1},
+            'last_commit': 'abc spec', 'commits_ahead': 0,
+        }
+        result = get_collab_worktrees()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['main_diff'], 'BEHIND')
+
+
+class TestMainDiffSame(unittest.TestCase):
+    """Scenario: Main Diff SAME When Worktree Branch Has All Main Commits.
+
+    Given build/collab has all commits that are in main
+    Then the worktree entry has main_diff "SAME".
+    """
+
+    @patch('subprocess.run')
+    def test_same_when_no_missing_commits(self, mock_run):
+        """_compute_main_diff returns SAME when git log output is empty."""
+        mock_run.return_value = MagicMock(stdout='', returncode=0)
+        result = _compute_main_diff('build/collab')
+        self.assertEqual(result, 'SAME')
+
+    @patch('subprocess.run')
+    def test_same_on_git_error(self, mock_run):
+        """_compute_main_diff defaults to SAME on git errors."""
+        mock_run.side_effect = subprocess.CalledProcessError(1, 'git')
+        result = _compute_main_diff('nonexistent/branch')
+        self.assertEqual(result, 'SAME')
 
 
 class TestStartCollabEndpoint(unittest.TestCase):
@@ -309,7 +397,7 @@ class TestStartCollabEndpoint(unittest.TestCase):
     @patch('subprocess.run')
     @patch('os.path.exists', return_value=True)
     def test_start_collab_success(self, mock_exists, mock_run):
-        """POST /start-collab (empty body) creates worktrees on spec/collab, impl/collab, qa/collab."""
+        """POST /start-collab (empty body) creates worktrees."""
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         handler = self._make_handler()
         handler._handle_start_collab()
@@ -386,168 +474,83 @@ class TestEndCollabEndpoint(unittest.TestCase):
         self.assertIn('uncommitted', args[0][1]['error'])
 
 
-import subprocess
+class TestAgentConfigPropagation(unittest.TestCase):
+    """Scenario: Agent Config Save Propagates to All Active Worktrees.
 
-from serve import _read_feature_summary
-
-
-class TestNoChangesStateWhenNoCommitsAhead(unittest.TestCase):
-    """Scenario: No Changes State When Worktree Has No Commits Ahead.
-
-    Given a worktree exists and git rev-list --count main..HEAD returns 0,
-    Then wt_merge_status is "no_changes" and commits_ahead is 0.
+    Given collab mode is active with two worktrees,
+    When a POST request is sent to /config/agents with updated values,
+    Then the project root and all worktree configs reflect the new values.
     """
 
-    @patch('serve._read_feature_summary', return_value=None)
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_no_changes_state(self, mock_detect, mock_state, mock_handoff,
-                               mock_summary):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'architect-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/spec/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'spec/collab', 'dirty': False,
-            'file_count': 0, 'last_commit': 'abc spec',
-            'commits_ahead': 0,
-        }
-        result = get_collab_worktrees()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['wt_merge_status'], 'no_changes')
-        self.assertEqual(result[0]['commits_ahead'], 0)
-
-
-class TestReadyStateWhenCommitsAheadAndHandoffPass(unittest.TestCase):
-    """Scenario: Ready State When Commits Ahead And Handoff Checks Pass.
-
-    Given a builder worktree has 3 commits ahead and all checks pass,
-    Then wt_merge_status is "ready" and pending_issues is empty.
-    """
-
-    @patch('serve._read_feature_summary', return_value=None)
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_ready_state(self, mock_detect, mock_state, mock_handoff,
-                          mock_summary):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'build-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/build/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'build/collab', 'dirty': False,
-            'file_count': 0, 'last_commit': 'def build',
-            'commits_ahead': 3,
-        }
-        result = get_collab_worktrees()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['wt_merge_status'], 'ready')
-        self.assertEqual(result[0]['commits_ahead'], 3)
-        self.assertEqual(result[0]['pending_issues'], [])
-
-
-class TestPendingStateWhenCommitsAheadButChecksFail(unittest.TestCase):
-    """Scenario: Pending State When Commits Ahead But Handoff Checks Fail.
-
-    Given a builder worktree has 2 commits ahead and has uncommitted changes,
-    Then wt_merge_status is "pending" and pending_issues contains the issue.
-    """
-
-    @patch('serve._read_feature_summary', return_value=None)
-    @patch('serve._worktree_handoff_status',
-           return_value=(False, 1, ['Uncommitted changes in working tree']))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_pending_state(self, mock_detect, mock_state, mock_handoff,
-                            mock_summary):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'build-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/build/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'build/collab', 'dirty': True,
-            'file_count': 1, 'last_commit': 'def build',
-            'commits_ahead': 2,
-        }
-        result = get_collab_worktrees()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['wt_merge_status'], 'pending')
-        self.assertIn('Uncommitted changes in working tree',
-                       result[0]['pending_issues'])
-
-
-class TestFeatureSummaryIncludedWhenCacheExists(unittest.TestCase):
-    """Scenario: Feature Summary Included When Worktree Cache Exists.
-
-    Given a worktree has .purlin/cache/status.json,
-    Then the entry contains feature_summary with total, arch_done, etc.
-    """
-
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_feature_summary_present(self, mock_detect, mock_state,
-                                      mock_handoff):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'build-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/build/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'build/collab', 'dirty': False,
-            'file_count': 0, 'last_commit': 'def build',
-            'commits_ahead': 0,
-        }
-        # Create a temp status.json in a temp worktree path
+    def test_config_propagated_to_worktrees(self):
+        """Config save writes to project root and all active worktree paths."""
         with tempfile.TemporaryDirectory() as td:
-            cache_dir = os.path.join(td, '.purlin', 'cache')
-            os.makedirs(cache_dir)
-            status_data = {
-                'features': [
-                    {'architect': 'DONE', 'builder': 'DONE', 'qa': 'CLEAN'},
-                    {'architect': 'DONE', 'builder': 'TODO', 'qa': 'N/A'},
-                ]
+            # Setup project root config
+            purlin_dir = os.path.join(td, '.purlin')
+            os.makedirs(purlin_dir)
+            config = {
+                'models': [{'id': 'claude-opus-4-6', 'label': 'Opus'}],
+                'agents': {
+                    'architect': {'model': 'claude-opus-4-6', 'effort': 'high',
+                                  'bypass_permissions': True,
+                                  'startup_sequence': True,
+                                  'recommend_next_actions': True},
+                }
             }
-            with open(os.path.join(cache_dir, 'status.json'), 'w') as f:
-                json.dump(status_data, f)
-            summary = _read_feature_summary(td)
-            self.assertIsNotNone(summary)
-            self.assertEqual(summary['total'], 2)
-            self.assertEqual(summary['arch_done'], 2)
-            self.assertEqual(summary['builder_done'], 1)
-            self.assertEqual(summary['qa_clean'], 2)  # CLEAN + N/A
+            config_path = os.path.join(purlin_dir, 'config.json')
+            with open(config_path, 'w') as f:
+                json.dump(config, f)
 
+            # Setup two worktree config dirs
+            for wt_name in ('architect-session', 'builder-session'):
+                wt_purlin = os.path.join(td, '.worktrees', wt_name, '.purlin')
+                os.makedirs(wt_purlin)
+                with open(os.path.join(wt_purlin, 'config.json'), 'w') as f:
+                    json.dump(config, f)
 
-class TestFeatureSummaryAbsentWhenNoCache(unittest.TestCase):
-    """Scenario: Feature Summary Absent When No Cache.
+            # Mock the handler
+            new_agents = {
+                'architect': {'model': 'claude-opus-4-6', 'effort': 'medium',
+                              'bypass_permissions': True,
+                              'startup_sequence': True,
+                              'recommend_next_actions': True},
+            }
+            handler = MagicMock(spec=Handler)
+            body = json.dumps(new_agents).encode('utf-8')
+            handler.headers = {'Content-Length': str(len(body))}
+            handler.rfile = io.BytesIO(body)
+            handler._send_json = MagicMock()
 
-    Given a worktree has no .purlin/cache/status.json,
-    Then the entry does not contain feature_summary.
-    """
+            mock_worktrees = [
+                {'path': os.path.join('.worktrees', 'architect-session'),
+                 'branch': 'spec/collab', 'role': 'architect',
+                 'main_diff': 'SAME', 'commits_ahead': 0,
+                 'last_commit': 'abc', 'modified': {'specs': 0, 'tests': 0, 'other': 0}},
+                {'path': os.path.join('.worktrees', 'builder-session'),
+                 'branch': 'build/collab', 'role': 'builder',
+                 'main_diff': 'SAME', 'commits_ahead': 0,
+                 'last_commit': 'def', 'modified': {'specs': 0, 'tests': 0, 'other': 0}},
+            ]
 
-    @patch('serve._worktree_handoff_status', return_value=(True, 0, []))
-    @patch('serve._worktree_state')
-    @patch('serve._detect_worktrees')
-    def test_feature_summary_absent(self, mock_detect, mock_state,
-                                     mock_handoff):
-        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'architect-session')
-        mock_detect.return_value = [
-            {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/spec/collab'},
-        ]
-        mock_state.return_value = {
-            'branch': 'spec/collab', 'dirty': False,
-            'file_count': 0, 'last_commit': 'abc spec',
-            'commits_ahead': 0,
-        }
-        result = get_collab_worktrees()
-        self.assertEqual(len(result), 1)
-        self.assertNotIn('feature_summary', result[0])
+            with patch('serve.CONFIG_PATH', config_path), \
+                 patch('serve.get_collab_worktrees', return_value=mock_worktrees), \
+                 patch('serve.PROJECT_ROOT', td):
+                handler._handle_config_agents = Handler._handle_config_agents.__get__(
+                    handler, Handler)
+                handler._handle_config_agents()
+
+            # Verify project root config updated
+            with open(config_path, 'r') as f:
+                root_config = json.load(f)
+            self.assertEqual(root_config['agents']['architect']['effort'], 'medium')
+
+            # Verify worktree configs updated
+            for wt_name in ('architect-session', 'builder-session'):
+                wt_cfg_path = os.path.join(
+                    td, '.worktrees', wt_name, '.purlin', 'config.json')
+                with open(wt_cfg_path, 'r') as f:
+                    wt_config = json.load(f)
+                self.assertEqual(wt_config['agents']['architect']['effort'], 'medium')
 
 
 # ===================================================================
