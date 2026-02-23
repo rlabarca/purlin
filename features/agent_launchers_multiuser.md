@@ -20,17 +20,16 @@ This feature extends (does not replace) `agent_launchers_common.md`. The standal
 ### 2.1 setup_worktrees.sh
 
 - **Location:** `tools/collab/setup_worktrees.sh` (framework-delivered via submodule).
-- **Consumer invocation:** `bash purlin/tools/collab/setup_worktrees.sh --feature <name>`
+- **Consumer invocation:** `bash purlin/tools/collab/setup_worktrees.sh`
 - **Purpose:** One-time setup that creates three git worktrees under `.worktrees/`.
 - **Behavior:**
   1. Check that `.worktrees/` is gitignored; if not, warn and exit.
-  2. Accept an optional `--feature <name>` argument to name the lifecycle branches. Default: `feature`.
-  3. Accept an optional `--project-root <path>` argument; defaults to CWD.
-  4. Create branch `spec/<feature>` and worktree at `.worktrees/architect-session/` (if not already present).
-  5. Create branch `impl/<feature>` and worktree at `.worktrees/builder-session/` (if not already present).
-  6. Create branch `qa/<feature>` and worktree at `.worktrees/qa-session/` (if not already present).
-  7. All three branches start from the current `HEAD` of `main`.
-  8. Print a summary of what was created and the next-steps instructions.
+  2. Accept an optional `--project-root <path>` argument; defaults to CWD.
+  3. Create branch `spec/collab` and worktree at `.worktrees/architect-session/` (if not already present).
+  4. Create branch `impl/collab` and worktree at `.worktrees/builder-session/` (if not already present).
+  5. Create branch `qa/collab` and worktree at `.worktrees/qa-session/` (if not already present).
+  6. All three branches start from the current `HEAD` of `main`.
+  7. Print a summary of what was created and the next-steps instructions.
 - **Idempotency:** Running `setup_worktrees.sh` again when worktrees already exist MUST print a status message and exit cleanly (no duplicate worktrees).
 
 ### 2.2 Worktree Session Launchers
@@ -48,11 +47,11 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 After setup:
 
 1. Architect session: `cd .worktrees/architect-session && bash run_architect.sh`
-2. Architect completes spec work, runs `/pl-handoff-check`, merges `spec/<feature>` to `main`.
+2. Architect completes spec work, runs `/pl-handoff-check`, merges `spec/collab` to `main`.
 3. Builder session: `cd .worktrees/builder-session && git merge main` (to get spec commits), then `bash run_builder.sh`.
-4. Builder completes, runs `/pl-handoff-check`, merges `impl/<feature>` to `main`.
+4. Builder completes, runs `/pl-handoff-check`, merges `impl/collab` to `main`.
 5. QA session: `cd .worktrees/qa-session && git merge main` (to get impl commits), then `bash run_qa.sh`.
-6. QA completes, runs `/pl-handoff-check`, merges `qa/<feature>` to `main`.
+6. QA completes, runs `/pl-handoff-check`, merges `qa/collab` to `main`.
 
 ### 2.4 Worktree Isolation Invariants
 
@@ -66,7 +65,7 @@ After setup:
 
 - When all phases are complete and merged to `main`, use `tools/collab/teardown_worktrees.sh` to remove worktrees safely (see Section 2.6).
 - Consumer invocation: `bash purlin/tools/collab/teardown_worktrees.sh`
-- The branches (`spec/*`, `impl/*`, `qa/*`) can be deleted after merge: `git branch -d spec/<feature>`.
+- The branches (`spec/collab`, `impl/collab`, `qa/collab`) can be deleted after merge: `git branch -d spec/collab`.
 
 ### 2.6 teardown_worktrees.sh
 
@@ -114,10 +113,10 @@ After setup:
 
     Given the project root has no worktrees under .worktrees/
     And .worktrees/ is gitignored
-    When setup_worktrees.sh --feature task-crud is run
-    Then .worktrees/architect-session/ is created on branch spec/task-crud
-    And .worktrees/builder-session/ is created on branch impl/task-crud
-    And .worktrees/qa-session/ is created on branch qa/task-crud
+    When setup_worktrees.sh is run
+    Then .worktrees/architect-session/ is created on branch spec/collab
+    And .worktrees/builder-session/ is created on branch impl/collab
+    And .worktrees/qa-session/ is created on branch qa/collab
     And all three branches start from the same HEAD as main
 
 #### Scenario: setup_worktrees Is Idempotent
@@ -150,7 +149,7 @@ After setup:
     When teardown_worktrees.sh is run
     Then the script prints a warning listing the unmerged branch and commit count
     And the worktree is removed
-    And the impl/task-crud branch still exists in the git repository
+    And the impl/collab branch still exists in the git repository
 
 ### Manual Scenarios (Human Verification Required)
 

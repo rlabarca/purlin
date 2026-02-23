@@ -39,9 +39,9 @@ When Collab Mode is active, the WORKSPACE section becomes "WORKSPACE & COLLABORA
 
 | Role | Branch | Dirty? | Last Activity |
 |------|--------|--------|---------------|
-| Architect | spec/task-crud | 2 files | 45 min ago — feat(spec): add filtering scenarios |
-| Builder | impl/task-crud | Clean | 12 min ago — feat(impl): implement CRUD handlers |
-| QA | qa/task-crud | 1 file | just now — qa: record test discovery |
+| Architect | spec/collab | 2 files | 45 min ago — feat(spec): add filtering scenarios |
+| Builder | impl/collab | Clean | 12 min ago — feat(impl): implement CRUD handlers |
+| QA | qa/collab | 1 file | just now — qa: record test discovery |
 
 "Dirty?" shows file count when modified, "Clean" when clean. "Last Activity" shows relative timestamp + last commit subject.
 
@@ -89,7 +89,7 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
   "worktrees": [
     {
       "path": ".worktrees/architect-session",
-      "branch": "spec/task-crud",
+      "branch": "spec/collab",
       "role": "architect",
       "dirty": true,
       "file_count": 2,
@@ -99,7 +99,7 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
     },
     {
       "path": ".worktrees/builder-session",
-      "branch": "impl/task-crud",
+      "branch": "impl/collab",
       "role": "builder",
       "dirty": false,
       "file_count": 0,
@@ -139,11 +139,11 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 **Start Collab Session (when Collab Mode is inactive):**
 
 - A "Start Collab Session" button appears as a footer action in the standard WORKSPACE section.
-- Clicking opens a small inline form with a feature name text input and a Start button.
-- On submit: dashboard sends `POST /start-collab` with body `{ "feature": "<name>" }`.
-- The server runs `tools/collab/setup_worktrees.sh --feature <name> --project-root <PROJECT_ROOT>`.
+- Clicking the button directly triggers `POST /start-collab` with an empty body `{}`. No text input or form is shown.
+- While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error). This is the same guard pattern used by `rcPendingSave` in the release checklist.
+- The server runs `tools/collab/setup_worktrees.sh --project-root <PROJECT_ROOT>` (no `--feature` argument).
 - On success (`{ "status": "ok" }`): dashboard refreshes; WORKSPACE becomes WORKSPACE & COLLABORATION.
-- On error: inline error message shown near the form.
+- On error: inline error message shown below the button.
 
 **End Collab Session (when Collab Mode is active):**
 
@@ -158,7 +158,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 **Server endpoints:**
 
-- `POST /start-collab` — body: `{ "feature": "..." }` — runs `setup_worktrees.sh`, returns `{ "status": "ok" }` or `{ "error": "..." }`.
+- `POST /start-collab` — body: `{}` (empty; no `feature` field required or accepted) — runs `setup_worktrees.sh`, returns `{ "status": "ok" }` or `{ "error": "..." }`.
 - `POST /end-collab` — body: `{ "dry_run": true }` or `{ "force": true }` — runs `teardown_worktrees.sh` with the appropriate flag. Returns safety status JSON for dry-run; returns `{ "status": "ok" }` for a force run.
 - Both endpoints follow the same pattern as `/run-critic` in `serve.py`.
 
@@ -177,11 +177,11 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 #### Scenario: Collab Mode Active When Worktrees Detected
 
-    Given a worktree exists at .worktrees/architect-session on branch spec/task-crud
+    Given a worktree exists at .worktrees/architect-session on branch spec/collab
     When an agent calls GET /status.json
     Then collab_mode is true
     And the worktrees array contains one entry with path ".worktrees/architect-session"
-    And the entry has branch "spec/task-crud" and role "architect"
+    And the entry has branch "spec/collab" and role "architect"
 
 #### Scenario: Role Mapped from Branch Prefix
 
@@ -213,8 +213,8 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
     Given no worktrees exist under .worktrees/
     And the CDD server is running
-    When a POST request is sent to /start-collab with body { "feature": "task-crud" }
-    Then the server runs setup_worktrees.sh --feature task-crud
+    When a POST request is sent to /start-collab with body {}
+    Then the server runs setup_worktrees.sh --project-root <PROJECT_ROOT>
     And the response contains { "status": "ok" }
     And .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session are created
 
@@ -256,7 +256,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     Given no worktrees exist under .worktrees/
     When the User opens the CDD dashboard
     Then the WORKSPACE section shows a "Start Collab Session" button in the footer
-    And clicking the button reveals an inline form with a feature name input and a Start button
+    And clicking the button directly triggers the POST /start-collab request with no inline form
 
 #### Scenario: End Collab Button Shows Safety Warning When Worktrees Are Dirty
 
@@ -289,7 +289,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 - **Reference:** N/A
 - [ ] "Start Collab Session" button is visible in the WORKSPACE section footer when no worktrees are present
-- [ ] Clicking "Start Collab Session" reveals an inline form with a feature name text input and a Start button
+- [ ] "Start Collab Session" is a single button; clicking it directly sends the POST /start-collab request (no inline form or text input)
 - [ ] "End Collab Session" button is visible in the WORKSPACE & COLLABORATION section header when collab is active
 - [ ] End Collab dirty-state modal lists dirty worktree names and uncommitted file counts; Confirm button is disabled
 - [ ] End Collab unsynced-state modal includes an "I understand, the branches still exist" checkbox; Confirm is disabled until checked

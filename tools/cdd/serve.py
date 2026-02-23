@@ -944,16 +944,9 @@ def generate_html(cache=None):
     else:
         collab_controls_html = (
             '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-            '<button class="btn" onclick="showStartCollab()" id="btn-start-collab"'
+            '<button class="btn" onclick="startCollab()" id="btn-start-collab"'
             ' style="font-size:11px">Start Collab Session</button>'
-            '<div id="start-collab-form" style="display:none;margin-top:6px">'
-            '<input type="text" id="collab-feature-name" placeholder="Feature name" '
-            'style="font-size:12px;padding:3px 6px;background:var(--purlin-bg);'
-            'color:var(--purlin-fg);border:1px solid var(--purlin-border);border-radius:3px;width:180px">'
-            '<button class="btn" onclick="startCollab()" id="btn-start-collab-go"'
-            ' style="font-size:11px;margin-left:4px">Start</button>'
             '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
-            '</div>'
             '</div>'
         )
 
@@ -1534,6 +1527,7 @@ function updateTimestamp() {{
 }}
 
 function refreshStatus() {{
+  if (rcCollabPending) return;
   return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
     .then(function(html) {{
@@ -1634,6 +1628,7 @@ function toggleSection(sectionId) {{
 // ============================
 var rcStepsCache = null;
 var rcPendingSave = false;
+var rcCollabPending = false;
 
 function loadReleaseChecklist() {{
   fetch('/release-checklist')
@@ -1899,26 +1894,20 @@ function runCritic() {{
 // ============================
 // Collab Session Controls
 // ============================
-function showStartCollab() {{
-  var form = document.getElementById('start-collab-form');
-  if (form) {{ form.style.display = ''; document.getElementById('collab-feature-name').focus(); }}
-}}
-
 function startCollab() {{
-  var nameInput = document.getElementById('collab-feature-name');
   var errEl = document.getElementById('collab-ctrl-err');
-  var btn = document.getElementById('btn-start-collab-go');
-  var name = nameInput ? nameInput.value.trim() : '';
-  if (!name) {{ if (errEl) errEl.textContent = 'Feature name is required'; return; }}
+  var btn = document.getElementById('btn-start-collab');
   if (errEl) errEl.textContent = '';
   if (btn) btn.disabled = true;
-  fetch('/start-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{feature:name}}) }})
+  rcCollabPending = true;
+  fetch('/start-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:'{{}}' }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
+      rcCollabPending = false;
       if (d.status === 'ok') {{ refreshStatus(); }}
       else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
     }})
-    .catch(function() {{ if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
+    .catch(function() {{ rcCollabPending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
 }}
 
 function endCollabPrompt() {{
@@ -3058,18 +3047,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _handle_start_collab(self):
         """POST /start-collab — run setup_worktrees.sh to create worktrees."""
-        try:
-            length = int(self.headers.get('Content-Length', 0))
-            body = json.loads(self.rfile.read(length).decode('utf-8'))
-        except (ValueError, json.JSONDecodeError) as e:
-            self._send_json(400, {'error': f'Invalid JSON: {e}'})
-            return
-
-        feature = body.get('feature', '').strip()
-        if not feature:
-            self._send_json(400, {'error': 'feature name is required'})
-            return
-
         setup_script = os.path.join(
             PROJECT_ROOT, TOOLS_ROOT, 'collab', 'setup_worktrees.sh')
         if not os.path.exists(setup_script):
@@ -3080,7 +3057,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         try:
             subprocess.run(
                 ['bash', setup_script,
-                 '--feature', feature,
                  '--project-root', PROJECT_ROOT],
                 cwd=PROJECT_ROOT,
                 capture_output=True,

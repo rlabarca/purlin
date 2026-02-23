@@ -4,18 +4,10 @@
 set -euo pipefail
 
 # Parse arguments
-FEATURE_NAME="feature"
+FEATURE_NAME="collab"
 PROJECT_ROOT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --feature)
-            if [[ -z "${2:-}" ]]; then
-                echo "Error: --feature requires a name argument." >&2
-                exit 1
-            fi
-            FEATURE_NAME="$2"
-            shift 2
-            ;;
         --project-root)
             if [[ -z "${2:-}" ]]; then
                 echo "Error: --project-root requires a path argument." >&2
@@ -25,13 +17,14 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: setup_worktrees.sh [--feature <name>] [--project-root <path>]"
+            echo "Usage: setup_worktrees.sh [--project-root <path>]"
             echo ""
             echo "Creates three git worktrees under .worktrees/ for concurrent"
             echo "Architect, Builder, and QA sessions."
             echo ""
+            echo "Branches created: spec/collab, impl/collab, qa/collab"
+            echo ""
             echo "Options:"
-            echo "  --feature <name>       Name for lifecycle branches (default: feature)"
             echo "  --project-root <path>  Project root directory (default: current directory)"
             echo "  -h, --help             Show this help message"
             exit 0

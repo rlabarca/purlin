@@ -121,7 +121,7 @@ class TestCollabModeActive(unittest.TestCase):
 
     MOCK_WORKTREES = [{
         'path': '.worktrees/architect-session',
-        'branch': 'spec/task-crud',
+        'branch': 'spec/collab',
         'role': 'architect',
         'dirty': False,
         'file_count': 0,
@@ -139,7 +139,7 @@ class TestCollabModeActive(unittest.TestCase):
         self.assertEqual(len(result['worktrees']), 1)
         wt = result['worktrees'][0]
         self.assertEqual(wt['path'], '.worktrees/architect-session')
-        self.assertEqual(wt['branch'], 'spec/task-crud')
+        self.assertEqual(wt['branch'], 'spec/collab')
         self.assertEqual(wt['role'], 'architect')
 
 
@@ -210,10 +210,10 @@ class TestDirtyStateDetected(unittest.TestCase):
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'builder-session')
         mock_detect.return_value = [
             {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/impl/task-crud'},
+             'branch_ref': 'refs/heads/impl/collab'},
         ]
         mock_state.return_value = {
-            'branch': 'impl/task-crud',
+            'branch': 'impl/collab',
             'dirty': True,
             'file_count': 3,
             'last_commit': 'def5678 feat(impl): handlers (12 min ago)',
@@ -235,10 +235,10 @@ class TestHandoffReadyWhenAutoStepsPass(unittest.TestCase):
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'builder-session')
         mock_detect.return_value = [
             {'abs_path': wt_path,
-             'branch_ref': 'refs/heads/impl/task-crud'},
+             'branch_ref': 'refs/heads/impl/collab'},
         ]
         mock_state.return_value = {
-            'branch': 'impl/task-crud',
+            'branch': 'impl/collab',
             'dirty': False,
             'file_count': 0,
             'last_commit': 'def5678 status(impl): ready (5 min ago)',
@@ -294,12 +294,10 @@ class TestHandoffStatusEvaluation(unittest.TestCase):
 class TestStartCollabEndpoint(unittest.TestCase):
     """Scenario: Start Collab Creates Worktrees via Dashboard."""
 
-    def _make_handler(self, body_dict):
+    def _make_handler(self):
         """Create a mock Handler for POST /start-collab."""
         handler = MagicMock(spec=Handler)
         handler.path = '/start-collab'
-        handler.headers = {'Content-Length': str(len(json.dumps(body_dict)))}
-        handler.rfile = io.BytesIO(json.dumps(body_dict).encode('utf-8'))
         handler._send_json = MagicMock()
         # Bind the real method
         handler._handle_start_collab = Handler._handle_start_collab.__get__(
@@ -309,20 +307,14 @@ class TestStartCollabEndpoint(unittest.TestCase):
     @patch('subprocess.run')
     @patch('os.path.exists', return_value=True)
     def test_start_collab_success(self, mock_exists, mock_run):
-        """POST /start-collab with valid feature creates worktrees."""
+        """POST /start-collab (empty body) creates worktrees on spec/collab, impl/collab, qa/collab."""
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
-        handler = self._make_handler({'feature': 'task-crud'})
+        handler = self._make_handler()
         handler._handle_start_collab()
         handler._send_json.assert_called_once_with(200, {'status': 'ok'})
-
-    def test_start_collab_missing_feature(self):
-        """POST /start-collab without feature name returns 400."""
-        handler = self._make_handler({'feature': ''})
-        handler._handle_start_collab()
-        handler._send_json.assert_called_once()
-        args = handler._send_json.call_args
-        self.assertEqual(args[0][0], 400)
-        self.assertIn('required', args[0][1]['error'])
+        # Verify --feature is not passed to the script
+        call_args = mock_run.call_args[0][0]
+        self.assertNotIn('--feature', call_args)
 
     @patch('subprocess.run')
     @patch('os.path.exists', return_value=True)
@@ -330,7 +322,7 @@ class TestStartCollabEndpoint(unittest.TestCase):
         """POST /start-collab propagates script errors."""
         mock_run.side_effect = subprocess.CalledProcessError(
             1, 'bash', stderr='not gitignored')
-        handler = self._make_handler({'feature': 'bad'})
+        handler = self._make_handler()
         handler._handle_start_collab()
         handler._send_json.assert_called_once()
         args = handler._send_json.call_args

@@ -11,9 +11,9 @@ Multi-person collaboration in Purlin uses git worktrees (local) and lifecycle br
 
 ### 2.1 Branch Naming Convention
 
-*   `spec/<feature-name>` — Architect-owned; contains spec commits
-*   `impl/<feature-name>` — Builder-owned; contains implementation commits
-*   `qa/<feature-name>` — QA-owned; contains verification commits
+*   `spec/collab` — Architect-owned; contains spec commits
+*   `impl/collab` — Builder-owned; contains implementation commits
+*   `qa/collab` — QA-owned; contains verification commits
 *   Branch prefix determines role assignment in CDD Collab Mode
 *   Branches not matching this pattern are shown in the dashboard but are role-unlabeled
 
