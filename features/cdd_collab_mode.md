@@ -317,4 +317,4 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 - **Observed Behavior:** In dark mode, the "Start Collab Session" button renders with a light background and dark text, opposite of the correct dark-mode button style.
 - **Expected Behavior:** Button should have a darker background with lighter text, matching the styling of other dashboard action buttons (e.g., "Run Critic"), consistent with the Purlin CSS token system (Section 2.7).
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED

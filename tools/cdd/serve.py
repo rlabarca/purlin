@@ -936,7 +936,7 @@ def generate_html(cache=None):
     if collab_active:
         collab_controls_html = (
             '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-            '<button class="btn" onclick="endCollabPrompt()" id="btn-end-collab"'
+            '<button class="btn-critic" onclick="endCollabPrompt()" id="btn-end-collab"'
             ' style="font-size:11px">End Collab Session</button>'
             '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
             '</div>'
@@ -944,7 +944,7 @@ def generate_html(cache=None):
     else:
         collab_controls_html = (
             '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-            '<button class="btn" onclick="startCollab()" id="btn-start-collab"'
+            '<button class="btn-critic" onclick="startCollab()" id="btn-start-collab"'
             ' style="font-size:11px">Start Collab Session</button>'
             '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
             '</div>'
