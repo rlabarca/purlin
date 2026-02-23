@@ -1,16 +1,18 @@
 """Unit tests for CDD Collab Mode.
 
-Covers all 6 automated scenarios from features/cdd_collab_mode.md.
+Covers all 8 automated scenarios from features/cdd_collab_mode.md.
 Outputs test results to tests/cdd_collab_mode/tests.json.
 """
 
 import unittest
 from unittest.mock import patch, MagicMock
 import os
+import io
 import json
 import sys
 import tempfile
 import shutil
+import http.server
 
 from serve import (
     _detect_worktrees,
@@ -20,7 +22,9 @@ from serve import (
     get_collab_worktrees,
     generate_api_status_json,
     generate_workspace_json,
+    Handler,
     PROJECT_ROOT,
+    TOOLS_ROOT,
 )
 
 
@@ -286,6 +290,109 @@ class TestHandoffStatusEvaluation(unittest.TestCase):
         self.assertFalse(ready)
         self.assertGreater(pending, 0)
 
+
+class TestStartCollabEndpoint(unittest.TestCase):
+    """Scenario: Start Collab Creates Worktrees via Dashboard."""
+
+    def _make_handler(self, body_dict):
+        """Create a mock Handler for POST /start-collab."""
+        handler = MagicMock(spec=Handler)
+        handler.path = '/start-collab'
+        handler.headers = {'Content-Length': str(len(json.dumps(body_dict)))}
+        handler.rfile = io.BytesIO(json.dumps(body_dict).encode('utf-8'))
+        handler._send_json = MagicMock()
+        # Bind the real method
+        handler._handle_start_collab = Handler._handle_start_collab.__get__(
+            handler, Handler)
+        return handler
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_start_collab_success(self, mock_exists, mock_run):
+        """POST /start-collab with valid feature creates worktrees."""
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = self._make_handler({'feature': 'task-crud'})
+        handler._handle_start_collab()
+        handler._send_json.assert_called_once_with(200, {'status': 'ok'})
+
+    def test_start_collab_missing_feature(self):
+        """POST /start-collab without feature name returns 400."""
+        handler = self._make_handler({'feature': ''})
+        handler._handle_start_collab()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 400)
+        self.assertIn('required', args[0][1]['error'])
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_start_collab_script_error(self, mock_exists, mock_run):
+        """POST /start-collab propagates script errors."""
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, 'bash', stderr='not gitignored')
+        handler = self._make_handler({'feature': 'bad'})
+        handler._handle_start_collab()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 500)
+        self.assertIn('not gitignored', args[0][1]['error'])
+
+
+class TestEndCollabEndpoint(unittest.TestCase):
+    """Scenario: End Collab Removes Worktrees via Dashboard."""
+
+    def _make_handler(self, body_dict):
+        """Create a mock Handler for POST /end-collab."""
+        handler = MagicMock(spec=Handler)
+        handler.path = '/end-collab'
+        handler.headers = {'Content-Length': str(len(json.dumps(body_dict)))}
+        handler.rfile = io.BytesIO(json.dumps(body_dict).encode('utf-8'))
+        handler._send_json = MagicMock()
+        handler._handle_end_collab = Handler._handle_end_collab.__get__(
+            handler, Handler)
+        return handler
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_end_collab_dry_run(self, mock_exists, mock_run):
+        """POST /end-collab dry_run returns safety JSON."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='{"dirty_count":0,"dirty_worktrees":[],"unsynced_count":0,"unsynced_worktrees":[]}',
+            stderr='')
+        handler = self._make_handler({'dry_run': True})
+        handler._handle_end_collab()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 200)
+        self.assertEqual(args[0][1]['dirty_count'], 0)
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_end_collab_force_success(self, mock_exists, mock_run):
+        """POST /end-collab force removes worktrees."""
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = self._make_handler({'force': True})
+        handler._handle_end_collab()
+        handler._send_json.assert_called_once_with(200, {'status': 'ok'})
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_end_collab_dirty_blocks(self, mock_exists, mock_run):
+        """POST /end-collab without force fails when dirty."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout='',
+            stderr='Error: Worktrees have uncommitted changes.')
+        handler = self._make_handler({})
+        handler._handle_end_collab()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 500)
+        self.assertIn('uncommitted', args[0][1]['error'])
+
+
+import subprocess
 
 # ===================================================================
 # Test runner with JSON result output

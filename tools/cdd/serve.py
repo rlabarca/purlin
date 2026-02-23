@@ -932,6 +932,31 @@ def generate_html(cache=None):
     if collab_active:
         collab_html = _collab_section_html(collab_worktrees)
 
+    # Collab session controls
+    if collab_active:
+        collab_controls_html = (
+            '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
+            '<button class="btn" onclick="endCollabPrompt()" id="btn-end-collab"'
+            ' style="font-size:11px">End Collab Session</button>'
+            '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
+            '</div>'
+        )
+    else:
+        collab_controls_html = (
+            '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
+            '<button class="btn" onclick="showStartCollab()" id="btn-start-collab"'
+            ' style="font-size:11px">Start Collab Session</button>'
+            '<div id="start-collab-form" style="display:none;margin-top:6px">'
+            '<input type="text" id="collab-feature-name" placeholder="Feature name" '
+            'style="font-size:12px;padding:3px 6px;background:var(--purlin-bg);'
+            'color:var(--purlin-fg);border:1px solid var(--purlin-border);border-radius:3px;width:180px">'
+            '<button class="btn" onclick="startCollab()" id="btn-start-collab-go"'
+            ' style="font-size:11px;margin-left:4px">Start</button>'
+            '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
+            '</div>'
+            '</div>'
+        )
+
     # Count badges for collapsed summary
     active_count = len(active_features)
     complete_count = len(complete_features)
@@ -1332,6 +1357,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         <h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Local (main)</h4>
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
+        {collab_controls_html}
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1375,6 +1401,24 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <button class="modal-tab" data-tab="impl" onclick="switchModalTab('impl')">Implementation Notes</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- End Collab Modal -->
+<div class="modal-overlay" id="collab-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:6px;max-width:480px;width:90%;padding:16px">
+    <h3 style="margin:0 0 10px;font-size:14px">End Collab Session</h3>
+    <div id="collab-modal-body"></div>
+    <div id="collab-modal-checkbox-row" style="display:none;margin-top:10px">
+      <label style="font-size:12px;cursor:pointer">
+        <input type="checkbox" id="collab-modal-checkbox" onchange="collabCheckboxChanged(this)">
+        I understand, the branches still exist
+      </label>
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn" onclick="endCollabCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
+      <button class="btn" id="collab-modal-confirm" onclick="endCollabConfirm()" style="font-size:11px">Confirm</button>
+    </div>
   </div>
 </div>
 
@@ -1850,6 +1894,105 @@ function runCritic() {{
       }}
     }})
     .catch(function() {{ err.textContent = 'Critic run failed'; btn.disabled = false; updateCriticLabel(); }});
+}}
+
+// ============================
+// Collab Session Controls
+// ============================
+function showStartCollab() {{
+  var form = document.getElementById('start-collab-form');
+  if (form) {{ form.style.display = ''; document.getElementById('collab-feature-name').focus(); }}
+}}
+
+function startCollab() {{
+  var nameInput = document.getElementById('collab-feature-name');
+  var errEl = document.getElementById('collab-ctrl-err');
+  var btn = document.getElementById('btn-start-collab-go');
+  var name = nameInput ? nameInput.value.trim() : '';
+  if (!name) {{ if (errEl) errEl.textContent = 'Feature name is required'; return; }}
+  if (errEl) errEl.textContent = '';
+  if (btn) btn.disabled = true;
+  fetch('/start-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{feature:name}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      if (d.status === 'ok') {{ refreshStatus(); }}
+      else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
+    }})
+    .catch(function() {{ if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
+}}
+
+function endCollabPrompt() {{
+  var errEl = document.getElementById('collab-ctrl-err');
+  var btn = document.getElementById('btn-end-collab');
+  if (errEl) errEl.textContent = '';
+  if (btn) btn.disabled = true;
+  // Dry-run to get safety status
+  fetch('/end-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{dry_run:true}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{ showEndCollabModal(d); if (btn) btn.disabled = false; }})
+    .catch(function() {{ if (errEl) errEl.textContent = 'Dry-run failed'; if (btn) btn.disabled = false; }});
+}}
+
+function showEndCollabModal(safetyData) {{
+  var overlay = document.getElementById('collab-modal-overlay');
+  if (!overlay) return;
+  var body = document.getElementById('collab-modal-body');
+  var confirmBtn = document.getElementById('collab-modal-confirm');
+  var checkbox = document.getElementById('collab-modal-checkbox');
+  var checkboxRow = document.getElementById('collab-modal-checkbox-row');
+  if (checkbox) {{ checkbox.checked = false; }}
+  if (checkboxRow) {{ checkboxRow.style.display = 'none'; }}
+  if (confirmBtn) {{ confirmBtn.disabled = false; }}
+
+  if (safetyData.dirty_count > 0) {{
+    // Dirty: list files, disable confirm
+    var html = '<p style="color:var(--purlin-status-fail);font-weight:600">Cannot end session: worktrees have uncommitted changes.</p>';
+    html += '<p style="margin-top:6px">Commit or stash changes in these worktrees before ending the session:</p><ul>';
+    (safetyData.dirty_worktrees || []).forEach(function(wt) {{
+      html += '<li><strong>' + wt.name + '</strong> &mdash; ' + wt.file_count + ' file(s)</li>';
+    }});
+    html += '</ul>';
+    if (body) body.innerHTML = html;
+    if (confirmBtn) confirmBtn.disabled = true;
+  }} else if (safetyData.unsynced_count > 0) {{
+    // Unsynced: warn, require checkbox
+    var html = '<p style="color:var(--purlin-status-warn,orange);font-weight:600">Some branches have commits not yet merged to main.</p>';
+    html += '<p style="margin-top:6px">Removing worktrees does <strong>not</strong> delete the branches &mdash; they can be re-added later.</p><ul>';
+    (safetyData.unsynced_worktrees || []).forEach(function(wt) {{
+      html += '<li><strong>' + wt.name + '</strong> (' + wt.branch + ') &mdash; ' + wt.commit_count + ' commit(s) ahead</li>';
+    }});
+    html += '</ul>';
+    if (body) body.innerHTML = html;
+    if (checkboxRow) checkboxRow.style.display = '';
+    if (confirmBtn) confirmBtn.disabled = true;
+  }} else {{
+    // Clean: simple confirm
+    if (body) body.innerHTML = '<p>All worktrees are clean and fully merged. Remove all worktrees?</p>';
+  }}
+  overlay.style.display = 'flex';
+}}
+
+function collabCheckboxChanged(cb) {{
+  var confirmBtn = document.getElementById('collab-modal-confirm');
+  if (confirmBtn) confirmBtn.disabled = !cb.checked;
+}}
+
+function endCollabConfirm() {{
+  var overlay = document.getElementById('collab-modal-overlay');
+  var errEl = document.getElementById('collab-ctrl-err');
+  if (overlay) overlay.style.display = 'none';
+  fetch('/end-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{force:true}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      if (d.status === 'ok') {{ refreshStatus(); }}
+      else {{ if (errEl) errEl.textContent = d.error || 'Teardown failed'; }}
+    }})
+    .catch(function() {{ if (errEl) errEl.textContent = 'Teardown request failed'; }});
+}}
+
+function endCollabCancel() {{
+  var overlay = document.getElementById('collab-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
 }}
 
 // ============================
@@ -2893,6 +3036,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
+        elif self.path == '/start-collab':
+            self._handle_start_collab()
+        elif self.path == '/end-collab':
+            self._handle_end_collab()
         elif self.path == '/config/agents':
             self._handle_config_agents()
         elif self.path == '/release-checklist/config':
@@ -2908,6 +3055,104 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
+
+    def _handle_start_collab(self):
+        """POST /start-collab — run setup_worktrees.sh to create worktrees."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        feature = body.get('feature', '').strip()
+        if not feature:
+            self._send_json(400, {'error': 'feature name is required'})
+            return
+
+        setup_script = os.path.join(
+            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'setup_worktrees.sh')
+        if not os.path.exists(setup_script):
+            self._send_json(500, {
+                'error': f'setup_worktrees.sh not found at {setup_script}'})
+            return
+
+        try:
+            subprocess.run(
+                ['bash', setup_script,
+                 '--feature', feature,
+                 '--project-root', PROJECT_ROOT],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30,
+            )
+            self._send_json(200, {'status': 'ok'})
+        except subprocess.CalledProcessError as exc:
+            self._send_json(500, {
+                'error': exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            })
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {'error': 'setup_worktrees.sh timed out'})
+
+    def _handle_end_collab(self):
+        """POST /end-collab — run teardown_worktrees.sh (dry-run or force)."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        teardown_script = os.path.join(
+            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'teardown_worktrees.sh')
+        if not os.path.exists(teardown_script):
+            self._send_json(500, {
+                'error': f'teardown_worktrees.sh not found at {teardown_script}'})
+            return
+
+        dry_run = body.get('dry_run', False)
+        force = body.get('force', False)
+
+        cmd = ['bash', teardown_script, '--project-root', PROJECT_ROOT]
+        if dry_run:
+            cmd.append('--dry-run')
+        elif force:
+            cmd.append('--force')
+
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if dry_run:
+                # Dry-run returns JSON on stdout
+                try:
+                    safety_data = json.loads(result.stdout)
+                    self._send_json(200, safety_data)
+                except json.JSONDecodeError:
+                    self._send_json(200, {
+                        'dirty_count': 0,
+                        'dirty_worktrees': [],
+                        'unsynced_count': 0,
+                        'unsynced_worktrees': [],
+                    })
+            else:
+                if result.returncode != 0:
+                    self._send_json(500, {
+                        'error': result.stderr.strip()
+                                 or result.stdout.strip()
+                                 or f'teardown exited with code {result.returncode}'
+                    })
+                else:
+                    self._send_json(200, {'status': 'ok'})
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {
+                'error': 'teardown_worktrees.sh timed out'})
 
     def _handle_config_agents(self):
         """POST /config/agents — update agent configuration in config.json, validated against flat models array."""
