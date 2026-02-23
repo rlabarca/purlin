@@ -80,7 +80,7 @@ EOF
 ###############################################################################
 # Scenario 1: setup_worktrees Creates Three Worktrees
 ###############################################################################
-echo "=== Scenario: setup_worktrees Creates Three Worktrees ==="
+echo "[Scenario] setup_worktrees Creates Three Worktrees"
 setup_sandbox
 
 OUTPUT=$(bash "$SANDBOX/setup_worktrees.sh" --feature task-crud 2>&1)
@@ -150,7 +150,7 @@ teardown_sandbox
 # Scenario 2: setup_worktrees Is Idempotent
 ###############################################################################
 echo ""
-echo "=== Scenario: setup_worktrees Is Idempotent ==="
+echo "[Scenario] setup_worktrees Is Idempotent"
 setup_sandbox
 
 # First run — create worktrees
@@ -196,7 +196,7 @@ teardown_sandbox
 # Scenario 3: PURLIN_PROJECT_ROOT Resolves to Worktree Path
 ###############################################################################
 echo ""
-echo "=== Scenario: PURLIN_PROJECT_ROOT Resolves to Worktree Path ==="
+echo "[Scenario] PURLIN_PROJECT_ROOT Resolves to Worktree Path"
 setup_sandbox
 
 # Create worktrees
@@ -242,7 +242,7 @@ teardown_sandbox
 # Scenario: gitignore check enforced
 ###############################################################################
 echo ""
-echo "=== Scenario: Rejects when .worktrees not gitignored ==="
+echo "[Scenario] Rejects when .worktrees not gitignored"
 SANDBOX="$(mktemp -d)"
 cd "$SANDBOX"
 git init -q
