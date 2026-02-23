@@ -310,6 +310,8 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
 
+**[DISCOVERY]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. This prevents targeted scope validation from resolving `Visual:` scope references for feature files using numbered sections. Filed as a Critic tool gap for Architect acknowledgment. (Severity: HIGH)
+
 ## User Testing Discoveries
 
 ### [BUG] Start Collab Session button has incorrect colors in dark mode (Discovered: 2026-02-22)
