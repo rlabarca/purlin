@@ -1,7 +1,7 @@
 # Feature: Workflow Handoff Checklist
 
 > Label: "Tool: Workflow Handoff Checklist"
-> Category: "Workflow Tools"
+> Category: "Coordination & Lifecycle"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/release_checklist_core.md
 

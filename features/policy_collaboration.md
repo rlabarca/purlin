@@ -1,7 +1,7 @@
 # Policy: Multi-Person Collaboration
 
 > Label: "Policy: Multi-Person Collaboration"
-> Category: "Governance"
+> Category: "Coordination & Lifecycle"
 
 ## 1. Overview
 
