@@ -102,7 +102,8 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-handoff-check          Run role handoff checklist before merging lifecycle branch
+  /pl-work-push              Push: verify handoff checks and merge branch to main
+  /pl-work-pull              Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -142,7 +143,7 @@ Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
 3.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on a `spec/*` lifecycle branch:
-    *   Run `/pl-handoff-check` to verify handoff readiness before ending.
+    *   Run `/pl-work-push` to verify handoff readiness and merge the branch to main.
     *   Check whether any commits exist that are ahead of `main` with `git log main..HEAD --oneline`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `spec/<feature>` to `main` before handing off to the Builder."
     *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
@@ -226,7 +227,8 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
 *   `/pl-override-conflicts` — compare any override file against its base for contradictions
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
-*   `/pl-handoff-check` — run the handoff checklist for the current role before merging a lifecycle branch
+*   `/pl-work-push` — verify handoff checklist and merge the current branch into main
+*   `/pl-work-pull` — pull latest commits from main into the current worktree branch
 
 **Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
 
@@ -236,17 +238,17 @@ This section applies when the Architect is working in a multi-role collaboration
 
 ### 11.1 Lifecycle Branch Conventions
 *   Architect sessions run on `spec/<feature>` branches (e.g., `spec/task-crud`).
-*   The Builder runs on `impl/<feature>`; QA runs on `qa/<feature>`.
+*   The Builder runs on `build/<feature>`; QA runs on `qa/<feature>`.
 *   Worktrees live at `.worktrees/<role>-session/` (gitignored in the consumer project).
 *   `PURLIN_PROJECT_ROOT` is set by the launcher to the worktree directory path.
 
 ### 11.2 Handoff Sequence
-1.  Architect completes spec work on `spec/<feature>`, passes `/pl-handoff-check`.
+1.  Architect completes spec work on `spec/<feature>`, runs `/pl-work-push`.
 2.  User merges `spec/<feature>` to `main` (Architect confirms this happens before handoff).
-3.  Builder pulls `main` into `impl/<feature>` worktree, then implements.
-4.  Builder completes, merges `impl/<feature>` to `main` after `/pl-handoff-check`.
+3.  Builder pulls `main` into `build/<feature>` worktree, then implements.
+4.  Builder completes, merges `build/<feature>` to `main` after `/pl-work-push`.
 5.  QA pulls `main` into `qa/<feature>` worktree, then verifies.
-6.  QA completes, merges `qa/<feature>` to `main` after `/pl-handoff-check`.
+6.  QA completes, merges `qa/<feature>` to `main` after `/pl-work-push`.
 
 ### 11.3 Collab Mode Dashboard
 When the CDD server runs from the project root with active worktrees, the dashboard enters Collab Mode (see `features/cdd_collab_mode.md`). The Architect does not need to do anything special to activate it — detection is automatic.

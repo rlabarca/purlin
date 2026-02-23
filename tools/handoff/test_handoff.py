@@ -170,7 +170,7 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
 class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
     """Scenario: Handoff CLI Exits 1 When Any Step Fails
 
-    Given the current branch is impl/task-crud,
+    Given the current branch is build/task-crud,
     And tests/task_crud/tests.json does not exist,
     When run.sh --role builder is invoked,
     Then the CLI exits with code 1,
@@ -194,7 +194,7 @@ class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "commit", "-q", "-m", "init"],
                         cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "impl/task-crud"],
+        subprocess.run(["git", "checkout", "-q", "-b", "build/task-crud"],
                         cwd=self.temp_dir, check=True)
         # Create steps with one that will fail
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
@@ -281,8 +281,8 @@ class TestRoleInferredFromBranchName(unittest.TestCase):
         role = infer_role_from_branch(self.temp_dir)
         self.assertEqual(role, "architect")
 
-    def test_impl_branch_infers_builder_role(self):
-        subprocess.run(["git", "checkout", "-q", "-b", "impl/task-crud"],
+    def test_build_branch_infers_builder_role(self):
+        subprocess.run(["git", "checkout", "-q", "-b", "build/task-crud"],
                         cwd=self.temp_dir, check=True)
         role = infer_role_from_branch(self.temp_dir)
         self.assertEqual(role, "builder")
@@ -341,6 +341,177 @@ class TestRoleInferredFromBranchName(unittest.TestCase):
         self.assertIn("Manual Scenarios Complete", result.stdout)
         # Builder-specific step should be absent
         self.assertNotIn("Tests Pass", result.stdout)
+
+
+class TestPlWorkPushMergesWhenAllChecksPass(unittest.TestCase):
+    """Scenario: pl-work-push Merges Branch When All Checks Pass
+
+    Given the current branch is build/collab
+    And tools/handoff/run.sh exits with code 0
+    And the main checkout is on branch main
+    When /pl-work-push is invoked
+    Then git merge --ff-only build/collab is executed from PROJECT_ROOT
+    And the command succeeds
+
+    Tests the underlying components: run.py exits 0 for a passing checklist,
+    and the skill file instructs the agent to perform ff-only merge.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
+        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
+        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "checkout", "-q", "-b", "build/collab"],
+                        cwd=self.temp_dir, check=True)
+        # Create a passing handoff step
+        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
+        steps_data = {"steps": [
+            {"id": "purlin.handoff.git_clean",
+             "friendly_name": "Git Clean", "description": "Clean",
+             "code": "git diff --exit-code && git diff --cached --exit-code",
+             "agent_instructions": None, "roles": ["all"]}
+        ]}
+        with open(os.path.join(self.temp_dir, "tools", "handoff",
+                               "global_steps.json"), 'w') as f:
+            json.dump(steps_data, f)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_handoff_passes_on_build_branch(self):
+        """run.py exits 0 when checklist passes on build/* branch."""
+        result = subprocess.run(
+            [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
+             "--project-root", self.temp_dir],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0,
+                         f"Expected exit 0.\nstdout: {result.stdout}\n"
+                         f"stderr: {result.stderr}")
+
+    def test_skill_file_instructs_ff_only_merge(self):
+        """The pl-work-push skill file specifies --ff-only merge."""
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-work-push.md")
+        self.assertTrue(os.path.exists(skill_path),
+                        "pl-work-push.md skill file must exist")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("--ff-only", content)
+        self.assertIn("merge", content)
+
+
+class TestPlWorkPushBlocksMergeWhenChecksFail(unittest.TestCase):
+    """Scenario: pl-work-push Blocks Merge When Handoff Checks Fail
+
+    Given the current branch is build/collab
+    And tools/handoff/run.sh exits with code 1
+    When /pl-work-push is invoked
+    Then the failing items are printed
+    And no merge is executed
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
+        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
+        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "checkout", "-q", "-b", "build/collab"],
+                        cwd=self.temp_dir, check=True)
+        # Create an uncommitted file to make git_clean fail
+        with open(os.path.join(self.temp_dir, "dirty.txt"), 'w') as f:
+            f.write("dirty\n")
+        subprocess.run(["git", "add", "dirty.txt"], cwd=self.temp_dir, check=True)
+        # Create steps
+        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
+        steps_data = {"steps": [
+            {"id": "purlin.handoff.git_clean",
+             "friendly_name": "Git Clean", "description": "Clean",
+             "code": "git diff --exit-code && git diff --cached --exit-code",
+             "agent_instructions": None, "roles": ["all"]}
+        ]}
+        with open(os.path.join(self.temp_dir, "tools", "handoff",
+                               "global_steps.json"), 'w') as f:
+            json.dump(steps_data, f)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_handoff_fails_and_exits_1(self):
+        """run.py exits 1 when checklist fails — merge should not happen."""
+        result = subprocess.run(
+            [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
+             "--project-root", self.temp_dir],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("FAIL", result.stdout)
+
+
+class TestPlWorkPullAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-work-pull Aborts When Working Tree Is Dirty
+
+    Given the current worktree has uncommitted changes
+    When /pl-work-pull is invoked
+    Then the command prints "Commit or stash changes before pulling"
+    And no git merge is executed
+    """
+
+    def test_skill_file_checks_clean_state(self):
+        """The pl-work-pull skill file instructs checking for clean state."""
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-work-pull.md")
+        self.assertTrue(os.path.exists(skill_path),
+                        "pl-work-pull.md skill file must exist")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("Commit or stash changes before pulling", content)
+        self.assertIn("git status --porcelain", content)
+
+
+class TestPlWorkPullMergesMainIntoWorktree(unittest.TestCase):
+    """Scenario: pl-work-pull Merges Main Into Worktree
+
+    Given the current worktree is clean
+    And main has 3 new commits not in the worktree
+    When /pl-work-pull is invoked
+    Then git merge main is executed
+    And the output reports commits pulled and lists changed feature files
+    """
+
+    def test_skill_file_instructs_merge_main(self):
+        """The pl-work-pull skill file instructs merging main."""
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-work-pull.md")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("git merge main", content)
+        self.assertIn("features/", content)
 
 
 def run_tests():

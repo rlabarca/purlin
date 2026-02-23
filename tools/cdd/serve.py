@@ -605,7 +605,7 @@ def generate_workspace_json():
 
 ROLE_PREFIX_MAP = {
     'spec': 'architect',
-    'impl': 'builder',
+    'build': 'builder',
     'qa': 'qa',
 }
 
@@ -680,19 +680,25 @@ def _worktree_state(wt_abs_path):
     dirty = bool(status_output)
     file_count = len(status_output.splitlines()) if dirty else 0
     last_commit = _wt_cmd("git log -1 --format='%h %s (%cr)'")
+    commits_ahead_str = _wt_cmd("git rev-list --count main..HEAD")
+    try:
+        commits_ahead = int(commits_ahead_str)
+    except (ValueError, TypeError):
+        commits_ahead = 0
 
     return {
         'branch': branch,
         'dirty': dirty,
         'file_count': file_count,
         'last_commit': last_commit,
+        'commits_ahead': commits_ahead,
     }
 
 
 def _worktree_handoff_status(wt_abs_path, role):
     """Evaluate auto-checkable handoff items for a worktree.
 
-    Returns (handoff_ready: bool, pending_count: int).
+    Returns (handoff_ready: bool, pending_count: int, issues: list[str]).
     """
     def _wt_cmd(cmd):
         try:
@@ -704,23 +710,53 @@ def _worktree_handoff_status(wt_abs_path, role):
             return ""
 
     pending = 0
+    issues = []
 
     # Check git clean
     status = _wt_cmd("git status --porcelain")
     if status:
         pending += 1
+        issues.append("Uncommitted changes in working tree")
 
     # Role-specific checks
     if role == 'builder':
         rfv = _wt_cmd("git log --grep='\\[Ready for Verification\\]' --format='%ct' -1")
         if not rfv:
             pending += 1
+            issues.append("No [Ready for Verification] commit found")
     elif role == 'qa':
         complete = _wt_cmd("git log --grep='\\[Complete ' --format='%ct' -1")
         if not complete:
             pending += 1
+            issues.append("No [Complete ...] commit found")
 
-    return (pending == 0, pending)
+    return (pending == 0, pending, issues)
+
+
+def _read_feature_summary(wt_abs_path):
+    """Read per-role feature counts from worktree's cached status.json.
+
+    Returns dict with total/arch_done/builder_done/qa_clean, or None if
+    the cache file does not exist or cannot be parsed.
+    """
+    cache_path = os.path.join(wt_abs_path, '.purlin', 'cache', 'status.json')
+    try:
+        with open(cache_path, 'r') as f:
+            data = json.load(f)
+        features = data.get('features', [])
+        total = len(features)
+        arch_done = sum(1 for feat in features if feat.get('architect') == 'DONE')
+        builder_done = sum(1 for feat in features if feat.get('builder') == 'DONE')
+        qa_clean = sum(1 for feat in features
+                       if feat.get('qa') in ('CLEAN', 'N/A'))
+        return {
+            'total': total,
+            'arch_done': arch_done,
+            'builder_done': builder_done,
+            'qa_clean': qa_clean,
+        }
+    except Exception:
+        return None
 
 
 def get_collab_worktrees():
@@ -747,19 +783,39 @@ def get_collab_worktrees():
         except ValueError:
             rel_path = abs_path
 
-        handoff_ready, pending_count = _worktree_handoff_status(
+        handoff_ready, pending_count, pending_issues = _worktree_handoff_status(
             abs_path, role)
 
-        result.append({
+        commits_ahead = state.get('commits_ahead', 0)
+
+        if commits_ahead == 0:
+            wt_merge_status = 'no_changes'
+            wt_pending_issues = []
+        elif handoff_ready:
+            wt_merge_status = 'ready'
+            wt_pending_issues = []
+        else:
+            wt_merge_status = 'pending'
+            wt_pending_issues = pending_issues
+
+        feature_summary = _read_feature_summary(abs_path)
+
+        entry = {
             'path': rel_path,
             'branch': branch,
             'role': role,
             'dirty': state['dirty'],
             'file_count': state['file_count'],
             'last_commit': state['last_commit'],
+            'commits_ahead': commits_ahead,
             'handoff_ready': handoff_ready,
             'handoff_pending_count': pending_count,
-        })
+            'wt_merge_status': wt_merge_status,
+            'pending_issues': wt_pending_issues,
+        }
+        if feature_summary is not None:
+            entry['feature_summary'] = feature_summary
+        result.append(entry)
 
     return result
 

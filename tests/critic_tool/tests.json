@@ -1,1 +1,7 @@
-{"status": "PASS", "tests": 188, "failures": 0, "tool": "critic", "runner": "unittest"}
+{
+  "status": "PASS",
+  "tests_run": 189,
+  "failures": 0,
+  "errors": 0,
+  "timestamp": "2026-02-23T13:42:25Z"
+}

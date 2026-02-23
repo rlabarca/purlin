@@ -28,7 +28,7 @@ CDD Collab Mode is a dashboard mode activated automatically when the CDD server 
 Branch prefix determines role assignment:
 
 - `spec/*` → Architect
-- `impl/*` → Builder
+- `build/*` → Builder
 - `qa/*` → QA
 - Any other prefix → Unknown (shown as a worktree but displayed as role-unlabeled)
 
@@ -68,6 +68,8 @@ CDD reads each worktree's state using read-only git commands:
   - Lines where the file path (columns 4+) starts with `features/` → Specs count.
   - Lines where the file path starts with `tests/` → Tests count.
   - All other modified/staged/untracked lines → Code/Other count.
+- `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
+- `git -C <path> rev-list --count main..HEAD` → `commits_ahead` (int).
 - `git log <worktree-branch>..main --oneline` — determine whether the worktree branch is behind main.
 
   Run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name as the range start. This is necessary because the CDD server has the full ref namespace and can evaluate `main` authoritatively. Agents running inside a worktree may not reliably resolve `main` in all configurations.
@@ -76,7 +78,6 @@ CDD reads each worktree's state using read-only git commands:
   - If output is empty → `main_diff: "SAME"`
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
-
 ### 2.6 /status.json API Extension
 
 When Collab Mode is active, the `/status.json` response includes additional fields:
@@ -90,6 +91,8 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "branch": "spec/collab",
       "role": "architect",
       "main_diff": "BEHIND",
+      "commits_ahead": 0,
+      "last_commit": "abc1234 feat(spec): add filtering scenarios (45 min ago)",
       "modified": {
         "specs": 2,
         "tests": 0,
@@ -101,6 +104,8 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "branch": "build/collab",
       "role": "builder",
       "main_diff": "SAME",
+      "commits_ahead": 3,
+      "last_commit": "def5678 feat(build): implement CRUD handlers (12 min ago)",
       "modified": {
         "specs": 0,
         "tests": 0,
@@ -119,6 +124,8 @@ Fields per worktree entry:
 - `branch` — current branch name.
 - `role` — `"architect"`, `"builder"`, `"qa"`, or `"unknown"`.
 - `main_diff` — `"SAME"` if no commits on main are missing from this worktree's branch; `"BEHIND"` otherwise. Computed via `git log <branch>..main --oneline` from the project root.
+- `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
+- `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
 - `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix.
 
 ### 2.7 Visual Design
@@ -197,7 +204,7 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 
 #### Scenario: Role Mapped from Branch Prefix
 
-    Given worktrees on branches spec/feature-a, impl/feature-a, qa/feature-a
+    Given worktrees on branches spec/feature-a, build/feature-a, qa/feature-a
     When an agent calls GET /status.json
     Then the worktrees array contains entries with roles architect, builder, and qa respectively
 
@@ -209,9 +216,15 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 
 #### Scenario: Dirty State Detected
 
-    Given a worktree at .worktrees/builder-session has uncommitted files
+    Given a worktree at .worktrees/build-session has uncommitted files
     When an agent calls GET /status.json
     Then the worktree entry's modified object has at least one non-zero field (specs, tests, or other)
+
+#### Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Main
+
+    Given a worktree at .worktrees/builder-session has 3 commits not yet merged to main
+    When an agent calls GET /status.json
+    Then the worktree entry has commits_ahead equal to 3
 
 #### Scenario: Start Collab Creates Worktrees via Dashboard
 
@@ -220,11 +233,11 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     When a POST request is sent to /start-collab with body {}
     Then the server runs setup_worktrees.sh --project-root <PROJECT_ROOT>
     And the response contains { "status": "ok" }
-    And .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session are created
+    And .worktrees/architect-session, .worktrees/build-session, .worktrees/qa-session are created
 
 #### Scenario: End Collab Removes Worktrees via Dashboard (Clean State)
 
-    Given worktrees exist at .worktrees/architect-session, .worktrees/builder-session, .worktrees/qa-session
+    Given worktrees exist at .worktrees/architect-session, .worktrees/build-session, .worktrees/qa-session
     And all worktrees have clean git status
     And no worktree branches have commits ahead of main
     When a POST request is sent to /end-collab with body { "force": true }
@@ -266,7 +279,7 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 #### Scenario: Sessions Table Displays Worktree State
 
     Given the CDD server is running from the project root
-    And three worktrees exist (architect-session, builder-session, qa-session)
+    And three worktrees exist (architect-session, build-session, qa-session)
     When the User opens the CDD dashboard
     Then the Collaboration section is visible
     And the Sessions sub-section shows a table with Role, Branch, Main Diff, and Modified columns
@@ -333,6 +346,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 **Main Diff computation:** The `main_diff` field is computed at the project root — `git log <branch>..main --oneline` — not via `git -C <worktree-path>`. This ensures `main` resolves correctly regardless of the worktree's internal git context. Agents running inside a worktree should use `/pl-work-pull` to determine their own sync state; the dashboard is the authoritative display.
 
 **[CLARIFICATION]** The Critic's `parse_visual_spec()` regex (`^##\s+Visual\s+Specification`) does not match numbered section headers like `## 4. Visual Specification`. Acknowledged by Architect — `features/critic_tool.md` Section 2.13 updated to require numbered-prefix detection, and a new Gherkin scenario was added. Builder must update the regex in `parse_visual_spec()` and add a corresponding test case.
+
+- `commits_ahead`: add `git -C <path> rev-list --count main..HEAD` to `_worktree_state()` in `tools/cdd/serve.py`.
+- `last_commit`: add `git -C <path> log -1 --format='%h %s (%cr)'` to `_worktree_state()`.
+- `ROLE_PREFIX_MAP` in `serve.py`: `'build': 'builder'` (already updated from `impl` in a prior session).
 
 ## User Testing Discoveries
 
