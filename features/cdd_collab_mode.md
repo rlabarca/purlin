@@ -308,3 +308,12 @@ The Pre-Merge Status evaluation deliberately avoids running the full handoff che
 **[CLARIFICATION]** The End Collab modal is implemented as a dedicated overlay element (`collab-modal-overlay`) rather than reusing the feature detail modal, since it has a different structure (checkbox, 3-state content, no tabs). The modal is populated by `showEndCollabModal()` based on the dry-run response JSON. (Severity: INFO)
 
 **[CLARIFICATION]** The `POST /end-collab` endpoint without `dry_run` or `force` flags runs teardown without `--force`, which means dirty worktrees will block it (the script returns exit code 1). The dashboard always does a dry-run first before showing the modal, then sends `force: true` on confirm. (Severity: INFO)
+
+## User Testing Discoveries
+
+### [BUG] Start Collab Session button has incorrect colors in dark mode (Discovered: 2026-02-22)
+- **Scenario:** Visual Specification — Screen: CDD Dashboard — Collab Session Controls
+- **Observed Behavior:** In dark mode, the "Start Collab Session" button renders with a light background and dark text, opposite of the correct dark-mode button style.
+- **Expected Behavior:** Button should have a darker background with lighter text, matching the styling of other dashboard action buttons (e.g., "Run Critic"), consistent with the Purlin CSS token system (Section 2.7).
+- **Action Required:** Builder
+- **Status:** OPEN
