@@ -58,6 +58,8 @@ There is no separate "test status" indicator. Builder status reflects test *heal
 |---|---|
 | `/pl-status` | Check CDD status and role-specific action items |
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
+| `/pl-override-edit` | Edit an override file (role-scoped: Builder/QA can only edit their own file; Architect can edit any) |
+| `/pl-override-conflicts` | Check an override file against its base layer for contradictions |
 
 ---
 
@@ -116,7 +118,7 @@ The Builder translates specifications into working code and tests. It owns the i
 ```
 /pl-delivery-plan
 → Agent: "6 TODO features. Dependency ordering suggests 3 phases:
-   Phase 1 (foundation): arch_api_contract, python_environment
+   Phase 1 (foundation): policy_critic, python_environment
    Phase 2 (core tools): critic_tool, cdd_status_monitor
    Phase 3 (release): release_checklist_core, release_checklist_ui
    Rationale: Phase 1 unblocks all Phase 2 prerequisites.
@@ -218,7 +220,7 @@ The Builder creates a delivery plan at `.purlin/cache/delivery_plan.md` when the
 /pl-delivery-plan
 → Agent assesses scope and dependency ordering
 → "6 TODO features. Dependency analysis suggests 3 phases:
-   Phase 1 (foundation): arch_api_contract, python_environment
+   Phase 1 (foundation): policy_critic, python_environment
    Phase 2 (core tools): critic_tool, cdd_status_monitor
    Phase 3 (release): release_checklist_core, release_checklist_ui
    Rationale: Phase 1 unblocks all Phase 2 prerequisites.
@@ -343,7 +345,7 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
     *   `config.json` -- Ports, `tools_root`, critic configuration, and other settings.
 *   `purlin-config-sample/` -- Override templates for new consumer projects.
 *   `features/` -- Meta-specifications for the framework's own tools.
-*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync).
+*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync, Release Step management).
 
 ## Port Allocation
 
