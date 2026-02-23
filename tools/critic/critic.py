@@ -260,7 +260,7 @@ def parse_visual_spec(content):
                    'screen_names': [str]}
     """
     match = re.search(
-        r'^##\s+Visual\s+Specification\s*$(.*?)(?=^##\s|\Z)',
+        r'^##\s+(?:\d+\.\s+)?Visual\s+Specification\s*$(.*?)(?=^##\s|\Z)',
         content, re.MULTILINE | re.DOTALL
     )
     if not match:
