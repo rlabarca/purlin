@@ -402,3 +402,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Expected Behavior:** Per spec Section 2.2, `.purlin/` files must be excluded from the clean/dirty determination. Architect and build sessions should be reported as clean (no `.purlin/`-only changes count as dirty). QA session file count should reflect only non-.purlin/ changes.
 - **Action Required:** Builder
 - **Status:** RESOLVED
+
+### [DISCOVERY] Newly-created worktrees initialize .purlin/config.json from git, not from live project root (Discovered: 2026-02-23)
+- **Scenario:** NONE — no scenario covers config.json initialization for newly-created worktrees
+- **Observed Behavior:** User enabled `startup_sequence: true` and `recommend_next_actions: true` for QA in the CDD Dashboard, then clicked "Start Collab Session". The newly created `qa-session` worktree had `startup_sequence: false` / `recommend_next_actions: false` — the old git-committed values. The main project root `.purlin/config.json` correctly had the new values, confirming the CDD write succeeded. The worktree simply received a stale copy from git.
+- **Expected Behavior:** When "Start Collab Session" creates worktrees, each worktree's `.purlin/config.json` should be initialized from the live project root `.purlin/config.json` (not from the git-committed version). Section 2.10 specifies that agents "must reflect the new settings" but only covers the push-propagation case for existing worktrees — the initialization case is unspecified.
+- **Action Required:** Architect
+- **Status:** OPEN
