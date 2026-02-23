@@ -81,6 +81,7 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-handoff-check          Run role handoff checklist before merging lifecycle branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -98,6 +99,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 3.  Read `.purlin/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
 4.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
 5.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
+6.  **Worktree Detection:** If `PURLIN_PROJECT_ROOT` is set, check whether its value resolves to a git worktree (the `.git` entry is a file pointer, not a directory: `test -f "$PURLIN_PROJECT_ROOT/.git"`). If so, print a startup banner note: `[Collab Mode] Worktree session — branch: <current-branch>`. If the current branch does not match `spec/*`, warn: "This Architect session is on a non-spec branch. Lifecycle branching convention: Architect sessions run on `spec/<feature>` branches."
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:
@@ -118,6 +120,10 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
+3.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on a `spec/*` lifecycle branch:
+    *   Run `/pl-handoff-check` to verify handoff readiness before ending.
+    *   Check whether any commits exist that are ahead of `main` with `git log main..HEAD --oneline`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `spec/<feature>` to `main` before handing off to the Builder."
+    *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Strategic Protocols
 
@@ -199,8 +205,36 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
 *   `/pl-override-conflicts` — compare any override file against its base for contradictions
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
+*   `/pl-handoff-check` — run the handoff checklist for the current role before merging a lifecycle branch
 
 **Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+## 11. Collaboration Protocol
+
+This section applies when the Architect is working in a multi-role collaboration context (git worktrees, lifecycle branches).
+
+### 11.1 Lifecycle Branch Conventions
+*   Architect sessions run on `spec/<feature>` branches (e.g., `spec/task-crud`).
+*   The Builder runs on `impl/<feature>`; QA runs on `qa/<feature>`.
+*   Worktrees live at `.worktrees/<role>-session/` (gitignored in the consumer project).
+*   `PURLIN_PROJECT_ROOT` is set by the launcher to the worktree directory path.
+
+### 11.2 Handoff Sequence
+1.  Architect completes spec work on `spec/<feature>`, passes `/pl-handoff-check`.
+2.  User merges `spec/<feature>` to `main` (Architect confirms this happens before handoff).
+3.  Builder pulls `main` into `impl/<feature>` worktree, then implements.
+4.  Builder completes, merges `impl/<feature>` to `main` after `/pl-handoff-check`.
+5.  QA pulls `main` into `qa/<feature>` worktree, then verifies.
+6.  QA completes, merges `qa/<feature>` to `main` after `/pl-handoff-check`.
+
+### 11.3 Collab Mode Dashboard
+When the CDD server runs from the project root with active worktrees, the dashboard enters Collab Mode (see `features/cdd_collab_mode.md`). The Architect does not need to do anything special to activate it — detection is automatic.
+
+### 11.4 Branch-Scope Limitation Awareness
+The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` commit on an unmerged spec branch is invisible to the Builder's branch. The merge-before-proceed rule (Section 11.2 step 2) is the only mitigation. There is no tool enforcement of this rule — it is a process discipline requirement.
+
+### 11.5 ACTIVE_EDITS.md (Multi-Architect Only)
+When `config.json` has `"collaboration": { "multi_architect": true }`, Architect sessions MUST declare their in-progress edits in `.purlin/ACTIVE_EDITS.md` (committed, not gitignored). This file prevents simultaneous edits to the same feature spec sections. Single-Architect projects do not use this file.
 
 ## 10. Prompt Suggestion Scope
 

@@ -56,6 +56,7 @@ Purlin QA — Ready
   /pl-qa-report              Summary of open discoveries and TESTING features
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-handoff-check          Run role handoff checklist before merging lifecycle branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -69,6 +70,8 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
+
+**Branch Pre-Flight (Collaboration):** If the current branch is a `qa/*` lifecycle branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, run `git merge main` to pull the merged implementation branch before starting verification. If `main` does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to `main` yet. Coordinate with the Builder before proceeding."
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. For each TESTING feature, read the `regression_scope` block from the feature's `tests/<feature_name>/critic.json` to determine the scoped verification mode. Present the user with a summary:
@@ -240,6 +243,12 @@ If you find yourself about to say "that concludes our session" or present final 
 ### Step 2 -- Commit All Changes
 Ensure all changes are committed to git. No uncommitted modifications should remain.
 
+### Step 2.5 -- Collaboration Handoff (Lifecycle Branch Sessions)
+If the current session is on a `qa/*` lifecycle branch:
+*   Run `/pl-handoff-check` to verify handoff readiness before concluding.
+*   Check `git log main..HEAD --oneline` for commits ahead of `main`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `qa/<feature>` to `main` to complete the integration cycle."
+*   Do NOT merge the branch yourself unless the user explicitly requests it.
+
 ### Step 3 -- Present Final Summary
 1.  Present a final summary: features verified, scenarios passed/failed, discoveries recorded, features marked as complete.
 2.  If there are zero discoveries, confirm that all clean features have been marked `[Complete]` and the Architect can proceed with the release.
@@ -264,6 +273,7 @@ The following `/pl-*` commands are authorized for the QA role:
 *   `/pl-qa-report` — summary of open discoveries and TESTING features
 *   `/pl-override-edit` — safely edit `QA_OVERRIDES.md` (QA may only edit own file)
 *   `/pl-override-conflicts` — compare `QA_OVERRIDES.md` against `QA_BASE.md`
+*   `/pl-handoff-check` — run the handoff checklist for the current role before merging a lifecycle branch
 
 **Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
 
