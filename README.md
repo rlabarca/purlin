@@ -378,3 +378,21 @@ Authenticate with `claude` on first run.
 
 ## Releases
 
+### v0.5.0 — 2026-02-22
+
+- Initial release of Purlin: Continuous Design-Driven Development Framework
+- CDD Dashboard with role-based status columns, release checklist UI, and software map
+- Critic coordination engine with dual-gate validation, regression scoping, and role-specific action items
+- Release checklist system with global and local steps, config-driven ordering
+- Phased delivery protocol for multi-session builder workflows
+- Submodule bootstrap and upstream sync tooling
+- Visual specification convention for UI features
+- Layered instruction architecture (base + project override layers)
+- Tombstone protocol for structured feature retirement
+
+**Known limitations:**
+
+- Built exclusively for Claude Code. Supporting additional models is a goal but model feature disparity makes that non-trivial.
+- Single-threaded, single-person, single-machine collaboration only. Next steps: local concurrent workers collaborating, then a combination of remote and local workers.
+- The release checklist is long enough to stress context windows. For now, the checklist can be interrupted and resumed with: `/pl-release-run start with step X, steps 1 through X-1 have passed`. Modularizing the checklist to reduce token cost is a planned improvement.
+
