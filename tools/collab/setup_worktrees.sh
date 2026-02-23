@@ -88,6 +88,15 @@ for role_def in "${ROLES[@]}"; do
     # Create worktree
     mkdir -p "$WORKTREES_DIR"
     git -C "$PROJECT_ROOT" worktree add "$wt_path" "$branch" > /dev/null 2>&1
+
+    # Copy live project root config into the new worktree (overwrite git-committed copy)
+    LIVE_CONFIG="$PROJECT_ROOT/.purlin/config.json"
+    WT_CONFIG="$wt_path/.purlin/config.json"
+    if [ -f "$LIVE_CONFIG" ]; then
+        mkdir -p "$wt_path/.purlin"
+        cp "$LIVE_CONFIG" "$WT_CONFIG"
+    fi
+
     echo "  CREATED: $wt_path (branch: $branch)"
     CREATED=$((CREATED + 1))
 done

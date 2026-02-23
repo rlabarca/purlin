@@ -383,6 +383,83 @@ class TestMainDiffSame(unittest.TestCase):
         self.assertEqual(result, 'SAME')
 
 
+class TestMainDiffAhead(unittest.TestCase):
+    """Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Main.
+
+    Given spec/collab has commits that are not in main
+    And main has no commits that are missing from spec/collab
+    Then the worktree entry has main_diff "AHEAD".
+    """
+
+    @patch('subprocess.run')
+    def test_ahead_when_branch_has_extra_commits(self, mock_run):
+        """_compute_main_diff returns AHEAD when branch is ahead of main."""
+        # First call (branch..main): empty — not behind
+        # Second call (main..branch): non-empty — ahead
+        mock_run.side_effect = [
+            MagicMock(stdout='', returncode=0),
+            MagicMock(stdout='def5678 feat: new work\n', returncode=0),
+        ]
+        result = _compute_main_diff('spec/collab')
+        self.assertEqual(result, 'AHEAD')
+
+    @patch('serve._compute_main_diff', return_value='AHEAD')
+    @patch('serve._worktree_state')
+    @patch('serve._detect_worktrees')
+    def test_ahead_in_worktree_entry(self, mock_detect, mock_state, mock_diff):
+        """Worktree entry surfaces main_diff AHEAD."""
+        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'architect-session')
+        mock_detect.return_value = [
+            {'abs_path': wt_path,
+             'branch_ref': 'refs/heads/spec/collab'},
+        ]
+        mock_state.return_value = {
+            'branch': 'spec/collab',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'last_commit': 'abc spec', 'commits_ahead': 2,
+        }
+        result = get_collab_worktrees()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['main_diff'], 'AHEAD')
+
+
+class TestMainDiffBehindPrecedence(unittest.TestCase):
+    """Scenario: Main Diff BEHIND Takes Precedence Over AHEAD For Diverged Branch.
+
+    Given build/collab has commits not in main AND main has commits not in build/collab
+    Then the worktree entry has main_diff "BEHIND".
+    """
+
+    @patch('subprocess.run')
+    def test_behind_takes_precedence_over_ahead(self, mock_run):
+        """_compute_main_diff returns BEHIND for a diverged branch."""
+        # First call (branch..main): non-empty — behind. Returns immediately.
+        mock_run.return_value = MagicMock(
+            stdout='abc1234 commit on main\n', returncode=0)
+        result = _compute_main_diff('build/collab')
+        self.assertEqual(result, 'BEHIND')
+        # Only one subprocess call made (returns on first query)
+        self.assertEqual(mock_run.call_count, 1)
+
+
+class TestNewWorktreeConfigInit(unittest.TestCase):
+    """Scenario: New Worktrees Initialized with Live Project Root Config.
+
+    Given the project root .purlin/config.json has startup_sequence true for qa
+    When setup_worktrees.sh creates worktrees
+    Then each worktree's .purlin/config.json matches the live project root config.
+    """
+
+    def test_setup_script_copies_config(self):
+        """Verify setup_worktrees.sh contains config copy logic."""
+        script_path = os.path.join(PROJECT_ROOT, TOOLS_ROOT, 'collab', 'setup_worktrees.sh')
+        with open(script_path, 'r') as f:
+            content = f.read()
+        # Verify the script copies the live config after worktree creation
+        self.assertIn('LIVE_CONFIG=', content)
+        self.assertIn('cp "$LIVE_CONFIG" "$WT_CONFIG"', content)
+
+
 class TestStartCollabEndpoint(unittest.TestCase):
     """Scenario: Start Collab Creates Worktrees via Dashboard."""
 
@@ -624,6 +701,40 @@ class TestRoleDisplayLabel(unittest.TestCase):
         }]
         html = _collab_section_html(worktrees)
         self.assertIn('<td>Unknown</td>', html)
+
+
+class TestMainDiffBadgeRendering(unittest.TestCase):
+    """Main Diff cell renders correct badge styling per Section 2.3/4."""
+
+    def test_ahead_badge_green(self):
+        """AHEAD renders with st-good (green) badge class."""
+        worktrees = [{
+            'role': 'architect', 'branch': 'spec/collab', 'main_diff': 'AHEAD',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('class="st-good"', html)
+        self.assertIn('AHEAD', html)
+
+    def test_behind_badge_yellow(self):
+        """BEHIND renders with st-todo (yellow/warning) badge class."""
+        worktrees = [{
+            'role': 'builder', 'branch': 'build/collab', 'main_diff': 'BEHIND',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('class="st-todo"', html)
+        self.assertIn('BEHIND', html)
+
+    def test_same_badge_dim(self):
+        """SAME renders with dim (muted) styling."""
+        worktrees = [{
+            'role': 'qa', 'branch': 'qa/collab', 'main_diff': 'SAME',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('class="dim"', html)
+        self.assertIn('SAME', html)
 
 
 class TestGetGitStatusPurlinExclusion(unittest.TestCase):

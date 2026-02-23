@@ -395,11 +395,12 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - `commits_ahead`: uses `git rev-list --count main..HEAD` in `_worktree_state()`.
 - `last_commit`: uses `git log -1 --format='%h %s (%cr)'` in `_worktree_state()`.
 - `ROLE_PREFIX_MAP` in `serve.py`: `'build': 'builder'` (already updated from `impl` in a prior session).
-- `main_diff`: computed by `_compute_main_diff(branch)` running `git log <branch>..main --oneline` from PROJECT_ROOT (not per-worktree). Returns "SAME" or "BEHIND".
+- `main_diff`: computed by `_compute_main_diff(branch)` running two `git log` range queries from PROJECT_ROOT (not per-worktree). Query 1: `git log <branch>..main --oneline` (behind check). Query 2: `git log main..<branch> --oneline` (ahead check). BEHIND takes precedence. Returns "BEHIND", "AHEAD", or "SAME".
 - `modified`: `_worktree_state()` reads raw `git status --porcelain` output (not through `_wt_cmd` which strips leading whitespace) and categorizes by path prefix: `features/` → specs, `tests/` → tests, everything else → other.
 - Pre-Merge Status sub-section and `_worktree_handoff_status()` / `_read_feature_summary()` removed — spec no longer requires handoff checks on the dashboard.
 - Agent config propagation: `_handle_config_agents()` writes updated config to all active worktree `.purlin/config.json` files after the project root write. Failures are collected as `warnings` in the response.
 
+- `setup_worktrees.sh` config initialization: after each `git worktree add`, the script copies `$PROJECT_ROOT/.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy. If the live config doesn't exist, the git-committed copy is used as-is.
 - traceability_override: "Dirty State Detected" -> test_categorizes_by_path_prefix
 
 **[CLARIFICATION]** The AGENTS heading annotation ("applies across all local worktrees") is applied server-side in `generate_html()` rather than client-side via JS. Since the dashboard's 5-second refresh fetches fresh server-rendered HTML, this is functionally equivalent to the spec's "applied client-side after each poll" phrasing — the heading updates on every refresh cycle. (Severity: INFO)
@@ -445,4 +446,4 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Observed Behavior:** User enabled `startup_sequence: true` and `recommend_next_actions: true` for QA in the CDD Dashboard, then clicked "Start Collab Session". The newly created `qa-session` worktree had `startup_sequence: false` / `recommend_next_actions: false` — the old git-committed values. The main project root `.purlin/config.json` correctly had the new values, confirming the CDD write succeeded. The worktree simply received a stale copy from git.
 - **Expected Behavior:** When "Start Collab Session" creates worktrees, each worktree's `.purlin/config.json` should be initialized from the live project root `.purlin/config.json` (not from the git-committed version). Section 2.10 specifies that agents "must reflect the new settings" but only covers the push-propagation case for existing worktrees — the initialization case is unspecified.
 - **Action Required:** Builder
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED

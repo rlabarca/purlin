@@ -726,17 +726,30 @@ def _worktree_state(wt_abs_path):
 
 
 def _compute_main_diff(branch):
-    """Determine whether a worktree branch is behind main.
+    """Determine sync state between a worktree branch and main.
 
-    Runs from PROJECT_ROOT (not per-worktree) to ensure 'main' resolves
-    correctly. Returns "SAME" or "BEHIND".
+    Runs two git log range queries from PROJECT_ROOT (not per-worktree)
+    to ensure 'main' resolves correctly. Returns "BEHIND", "AHEAD", or "SAME".
+    BEHIND takes precedence over AHEAD for diverged branches.
     """
     try:
-        result = subprocess.run(
+        # Query 1: commits on main not in branch (branch is behind)
+        behind_result = subprocess.run(
             f"git log {branch}..main --oneline",
             shell=True, capture_output=True, text=True,
             check=True, cwd=PROJECT_ROOT)
-        return "BEHIND" if result.stdout.strip() else "SAME"
+        if behind_result.stdout.strip():
+            return "BEHIND"
+
+        # Query 2: commits on branch not in main (branch is ahead)
+        ahead_result = subprocess.run(
+            f"git log main..{branch} --oneline",
+            shell=True, capture_output=True, text=True,
+            check=True, cwd=PROJECT_ROOT)
+        if ahead_result.stdout.strip():
+            return "AHEAD"
+
+        return "SAME"
     except subprocess.CalledProcessError:
         return "SAME"
 
@@ -828,6 +841,8 @@ def _collab_section_html(worktrees):
         main_diff = wt.get('main_diff', 'SAME')
         if main_diff == 'BEHIND':
             diff_html = '<span class="st-todo">BEHIND</span>'
+        elif main_diff == 'AHEAD':
+            diff_html = '<span class="st-good">AHEAD</span>'
         else:
             diff_html = '<span class="dim">SAME</span>'
 
