@@ -181,6 +181,12 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - When Collab Mode is active, the AGENTS section heading displays the annotation "(applies across all local worktrees)" appended to the title.
 - Applied client-side: after each `/status.json` poll, if `collab_mode` is true, the heading reads "AGENTS (applies across all local worktrees)". When collab mode is inactive, the heading reads "AGENTS" with no annotation.
 
+**Worktree Creation Config Initialization:**
+- When `POST /start-collab` creates worktrees via `setup_worktrees.sh`, each new worktree must receive the live project root `.purlin/config.json` — not the git-committed version.
+- Immediately after each `git worktree add` call completes, `setup_worktrees.sh` copies the project root `.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy.
+- This ensures agents launched in a new worktree start with the current dashboard-configured settings, not stale git-committed values.
+- If the project root `.purlin/config.json` does not exist at copy time, the worktree's git-committed copy is used as-is (standard `git worktree add` behavior).
+
 **Save Propagation:**
 - `POST /config/agents` writes to the project root `.purlin/config.json` first.
 - If Collab Mode is active, the handler also writes the same updated config to each active worktree's `.purlin/config.json`.
@@ -259,6 +265,14 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
     Then the project root .purlin/config.json reflects the new values
     And .worktrees/architect-session/.purlin/config.json reflects the new values
     And .worktrees/builder-session/.purlin/config.json reflects the new values
+
+#### Scenario: New Worktrees Initialized with Live Project Root Config
+
+    Given the project root .purlin/config.json has startup_sequence true for the qa role
+    And the git-committed .purlin/config.json has startup_sequence false for the qa role
+    When a POST request is sent to /start-collab with body {}
+    Then the qa-session worktree's .purlin/config.json has startup_sequence true for the qa role
+    And the value matches the live project root config, not the git-committed version
 
 #### Scenario: Modified Column Categorizes Uncommitted Files by Type
 
@@ -407,5 +421,5 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Scenario:** NONE — no scenario covers config.json initialization for newly-created worktrees
 - **Observed Behavior:** User enabled `startup_sequence: true` and `recommend_next_actions: true` for QA in the CDD Dashboard, then clicked "Start Collab Session". The newly created `qa-session` worktree had `startup_sequence: false` / `recommend_next_actions: false` — the old git-committed values. The main project root `.purlin/config.json` correctly had the new values, confirming the CDD write succeeded. The worktree simply received a stale copy from git.
 - **Expected Behavior:** When "Start Collab Session" creates worktrees, each worktree's `.purlin/config.json` should be initialized from the live project root `.purlin/config.json` (not from the git-committed version). Section 2.10 specifies that agents "must reflect the new settings" but only covers the push-propagation case for existing worktrees — the initialization case is unspecified.
-- **Action Required:** Architect
-- **Status:** OPEN
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED
