@@ -19,9 +19,9 @@
         {
             "id": "purlin.handoff.branch_naming",
             "friendly_name": "Branch Naming Convention",
-            "description": "Current branch follows the naming convention (spec/*, impl/*, or qa/*)",
+            "description": "Current branch follows the naming convention (spec/*, build/*, or qa/*)",
             "code": null,
-            "agent_instructions": "Verify the current branch name follows the convention: spec/* for Architect, impl/* for Builder, qa/* for QA. If not, consider renaming before merge.",
+            "agent_instructions": "Verify the current branch name follows the convention: spec/* for Architect, build/* for Builder, qa/* for QA. If not, consider renaming before merge.",
             "roles": ["all"]
         },
         {
@@ -75,25 +75,25 @@
         {
             "id": "purlin.handoff.scenarios_complete",
             "friendly_name": "Manual Scenarios Complete",
-            "description": "All manual scenarios for in-scope features have been verified (PASS or recorded FAIL)",
+            "description": "All manual scenarios for in-scope features have been attempted; scenarios blocked by an open BUG may be explicitly noted as deferred rather than run",
             "code": null,
-            "agent_instructions": "For each feature in your verification scope, confirm all manual scenarios have been executed and results recorded.",
+            "agent_instructions": "For each feature in your verification scope, confirm all manual scenarios have been attempted. Scenarios blocked by an open BUG may be noted as deferred. FAIL only if scenarios were not attempted and have no blocking BUG noted.",
             "roles": ["qa"]
         },
         {
             "id": "purlin.handoff.discoveries_addressed",
             "friendly_name": "Discoveries Addressed",
-            "description": "All OPEN discoveries have been recorded and committed",
+            "description": "All discoveries found during this verification cycle are committed to the branch; OPEN status is acceptable (routes to Builder); FAIL only when observed bugs are uncommitted",
             "code": null,
-            "agent_instructions": "Check the ## User Testing Discoveries section of each verified feature. All findings should be recorded with appropriate type tags and committed.",
+            "agent_instructions": "Check the ## User Testing Discoveries section of each verified feature. All findings must be written and committed. OPEN status is expected and acceptable — it routes to Builder after merge. FAIL only if bugs were observed but not committed.",
             "roles": ["qa"]
         },
         {
             "id": "purlin.handoff.complete_commit_made",
             "friendly_name": "Complete Commit Made",
-            "description": "A [Complete] commit exists for all clean features (zero discoveries)",
+            "description": "A [Complete] commit exists for every in-scope feature that is fully clean; PASS when all in-scope features have open discoveries (nothing to complete yet)",
             "code": null,
-            "agent_instructions": "For each feature with zero open discoveries, verify a [Complete features/<name>.md] status commit exists.",
+            "agent_instructions": "For each feature with zero open discoveries, verify a [Complete features/<name>.md] status commit exists. PASS if all in-scope features have open discoveries — no clean features requiring a completion commit.",
             "roles": ["qa"]
         }
     ]

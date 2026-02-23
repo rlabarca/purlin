@@ -514,6 +514,61 @@ class TestPlWorkPullMergesMainIntoWorktree(unittest.TestCase):
         self.assertIn("features/", content)
 
 
+class TestPlWorkPushAllowsQAMergeWithOpenDiscoveries(unittest.TestCase):
+    """Scenario: pl-work-push Allows QA Merge When Discoveries Are Committed But Open
+
+    Given the current branch is qa/collab
+    And features/cdd_collab_mode.md has 3 OPEN entries in ## User Testing Discoveries
+    And all discovery entries are committed to the branch
+    And all manual scenarios have been attempted (failed ones have BUG discoveries)
+    And no in-scope feature is fully clean (no [Complete] commit needed)
+    When /pl-work-push is invoked
+    Then discoveries_addressed evaluates as PASS
+    And complete_commit_made evaluates as PASS
+    And the branch is merged to main
+    """
+
+    def test_skill_file_qa_discoveries_addressed_allows_open(self):
+        """pl-work-push QA evaluation: discoveries_addressed passes when OPEN entries are committed."""
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-work-push.md")
+        with open(skill_path) as f:
+            content = f.read()
+        # The skill file must instruct that OPEN status is acceptable
+        self.assertIn("OPEN status is expected and acceptable", content,
+                       "QA discoveries_addressed must accept committed OPEN entries")
+
+    def test_skill_file_qa_complete_commit_passes_when_all_have_bugs(self):
+        """pl-work-push QA evaluation: complete_commit_made passes when no clean features exist."""
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-work-push.md")
+        with open(skill_path) as f:
+            content = f.read()
+        # The skill file must handle the case where all features have open discoveries
+        self.assertIn("PASS if all in-scope features have open discoveries", content,
+                       "QA complete_commit_made must pass when no clean features exist")
+
+    def test_global_steps_qa_descriptions_match_spec(self):
+        """global_steps.json QA step descriptions reflect push-with-bugs semantics."""
+        steps_path = os.path.join(SCRIPT_DIR, "global_steps.json")
+        with open(steps_path) as f:
+            data = json.load(f)
+        steps_by_id = {s["id"]: s for s in data["steps"]}
+
+        # scenarios_complete: allows deferred scenarios blocked by BUG
+        sc = steps_by_id["purlin.handoff.scenarios_complete"]
+        self.assertIn("BUG", sc["description"])
+
+        # discoveries_addressed: OPEN status acceptable
+        da = steps_by_id["purlin.handoff.discoveries_addressed"]
+        self.assertIn("OPEN status is acceptable", da["description"])
+
+        # complete_commit_made: PASS when all have open discoveries
+        cc = steps_by_id["purlin.handoff.complete_commit_made"]
+        self.assertIn("PASS when all in-scope features have open discoveries",
+                       cc["description"])
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()
