@@ -369,6 +369,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 
 **[CLARIFICATION]** The `git status --porcelain` output is now read with raw `result.stdout` (no `.strip()`) to preserve the position-dependent XY status columns. The previous approach of using `_wt_cmd()` (which strips the entire output) would corrupt the first line's status columns, causing incorrect file categorization. (Severity: INFO)
 
+- **BUG FIX: Modal button styling:** End Collab modal buttons (Confirm/Cancel) used `class="btn"` which has no CSS definition, causing them to fall back to browser defaults (light background in dark mode). Changed to `class="btn-critic"` to match all other dashboard buttons.
+- **BUG FIX: Modified column empty on lock contention:** `_worktree_state()` used `check=True` on the `git status --porcelain` subprocess call. When a concurrent git operation in the worktree (running agent) held a lock file, git exited non-zero, the `CalledProcessError` was caught, and `status_output` was silently set to `""` — zeroing the Modified column. Removed `check=True`; `git status --porcelain` writes useful stdout regardless of exit code.
+- **BUG FIX: Teardown .purlin/ exclusion:** `teardown_worktrees.sh` did not exclude `.purlin/` files from the dirty detection, counting auto-propagated `config.json` changes as "dirty". Added `grep -v '\.purlin/'` filter to both Phase 1 dirty detection and dry-run JSON output, matching the exclusion already present in `_worktree_state()` and `get_git_status()`.
+
 ## User Testing Discoveries
 
 ### [BUG] Start Collab Session button has incorrect colors in dark mode (Discovered: 2026-02-22)
@@ -383,18 +387,18 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Observed Behavior:** In dark mode, the End Collab modal buttons (Confirm/Cancel) render with a light background and dark text, when they should be the opposite — matching the styling of other dashboard action buttons (e.g., "Run Critic").
 - **Expected Behavior:** Modal buttons should use dark-mode-compliant styling consistent with the Purlin CSS token system (design_visual_standards.md Section 2.7), same as other dashboard action buttons.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [BUG] Modified column shows empty for qa-session worktree despite uncommitted file changes (Discovered: 2026-02-23)
 - **Scenario:** Sessions Table Displays Worktree State; Visual Specification — Screen: CDD Dashboard — Collaboration Section
 - **Observed Behavior:** The Modified column in the Sessions table shows empty for the qa-session worktree while non-.purlin/ files (e.g., features/cdd_collab_mode.md) were actively modified and uncommitted in that worktree.
 - **Expected Behavior:** Modified column should show category counts (e.g., "1 Specs") when non-.purlin/ files are dirty in the worktree, per spec Section 2 and visual spec checklist.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [BUG] End Collab dirty-state detection includes .purlin/ files and miscounts QA changes (Discovered: 2026-02-23)
 - **Scenario:** End Collab Button Shows Safety Warning When Worktrees Are Dirty
 - **Observed Behavior:** Clicking "End Collab Session" showed the dirty-state modal with "1 file uncommitted changes" for the architect-session and build-session worktrees — which the user never touched. Only `.purlin/config.json` was modified in those worktrees (auto-propagated by agent config). The qa-session also showed "1 file" despite having more than 1 non-.purlin/ file modified.
 - **Expected Behavior:** Per spec Section 2.2, `.purlin/` files must be excluded from the clean/dirty determination. Architect and build sessions should be reported as clean (no `.purlin/`-only changes count as dirty). QA session file count should reflect only non-.purlin/ changes.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED

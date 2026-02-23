@@ -679,13 +679,14 @@ def _worktree_state(wt_abs_path):
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
 
     # Get raw status output (not stripped) — XY columns are position-dependent
-    try:
-        _status_result = subprocess.run(
-            "git status --porcelain", shell=True, capture_output=True,
-            text=True, check=True, cwd=wt_abs_path)
-        status_output = _status_result.stdout
-    except subprocess.CalledProcessError:
-        status_output = ""
+    # Note: do NOT use check=True here. If a concurrent git process holds a
+    # lock (e.g., a running agent session), git status can exit non-zero while
+    # still producing useful stdout. Swallowing the error would silently zero
+    # the Modified column count.
+    _status_result = subprocess.run(
+        "git status --porcelain", shell=True, capture_output=True,
+        text=True, cwd=wt_abs_path)
+    status_output = _status_result.stdout
 
     # Categorize modified files by path prefix (Section 2.4 of cdd_collab_mode)
     specs = 0
@@ -1422,8 +1423,8 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </label>
     </div>
     <div style="margin-top:12px;text-align:right">
-      <button class="btn" onclick="endCollabCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
-      <button class="btn" id="collab-modal-confirm" onclick="endCollabConfirm()" style="font-size:11px">Confirm</button>
+      <button class="btn-critic" onclick="endCollabCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
+      <button class="btn-critic" id="collab-modal-confirm" onclick="endCollabConfirm()" style="font-size:11px">Confirm</button>
     </div>
   </div>
 </div>

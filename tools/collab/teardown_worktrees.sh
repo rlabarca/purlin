@@ -70,11 +70,15 @@ if [ ${#SESSIONS[@]} -eq 0 ]; then
 fi
 
 # Phase 1: Check for dirty worktrees (HARD BLOCK unless --force)
+# Exclude .purlin/ files from dirty detection — they are environment-specific
+# config propagated by agent config saves, not user-modified files.
 DIRTY_WORKTREES=()
 DIRTY_FILES_OUTPUT=""
 for session in "${SESSIONS[@]}"; do
     session_name="$(basename "$session")"
-    porcelain_output=$(git -C "$session" status --porcelain 2>/dev/null || echo "")
+    raw_output=$(git -C "$session" status --porcelain 2>/dev/null || echo "")
+    # Filter out .purlin/ files — path starts at column 3, safe to match anywhere
+    porcelain_output=$(echo "$raw_output" | grep -v '\.purlin/' || true)
     if [ -n "$porcelain_output" ]; then
         DIRTY_WORKTREES+=("$session_name")
         file_count=$(echo "$porcelain_output" | wc -l | tr -d ' ')
@@ -108,7 +112,8 @@ if [ "$DRY_RUN" = true ]; then
         first=true
         for session in "${SESSIONS[@]}"; do
             session_name="$(basename "$session")"
-            porcelain_output=$(git -C "$session" status --porcelain 2>/dev/null || echo "")
+            raw_output=$(git -C "$session" status --porcelain 2>/dev/null || echo "")
+            porcelain_output=$(echo "$raw_output" | grep -v '\.purlin/' || true)
             if [ -n "$porcelain_output" ]; then
                 file_count=$(echo "$porcelain_output" | wc -l | tr -d ' ')
                 files_json="["
