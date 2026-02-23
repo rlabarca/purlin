@@ -1,0 +1,100 @@
+{
+    "steps": [
+        {
+            "id": "purlin.handoff.git_clean",
+            "friendly_name": "Git Working Directory Clean",
+            "description": "No uncommitted changes in the worktree",
+            "code": "git diff --exit-code && git diff --cached --exit-code",
+            "agent_instructions": "Run git status. If any files are staged or modified, commit or stash them before proceeding.",
+            "roles": ["all"]
+        },
+        {
+            "id": "purlin.handoff.run_critic",
+            "friendly_name": "Critic Report Current",
+            "description": "Critic report has been generated recently",
+            "code": null,
+            "agent_instructions": "Run tools/cdd/status.sh to ensure the Critic report is current. Check CRITIC_REPORT.md for any unresolved action items for your role.",
+            "roles": ["all"]
+        },
+        {
+            "id": "purlin.handoff.branch_naming",
+            "friendly_name": "Branch Naming Convention",
+            "description": "Current branch follows the naming convention (spec/*, impl/*, or qa/*)",
+            "code": null,
+            "agent_instructions": "Verify the current branch name follows the convention: spec/* for Architect, impl/* for Builder, qa/* for QA. If not, consider renaming before merge.",
+            "roles": ["all"]
+        },
+        {
+            "id": "purlin.handoff.spec_gate_pass",
+            "friendly_name": "Spec Gate Pass",
+            "description": "All modified feature specs pass the Critic Spec Gate (architect=DONE)",
+            "code": null,
+            "agent_instructions": "Check CRITIC_REPORT.md for any Architect action items. All modified feature specs should have architect=DONE in the CDD status.",
+            "roles": ["architect"]
+        },
+        {
+            "id": "purlin.handoff.impl_notes_stub",
+            "friendly_name": "Implementation Notes Stub",
+            "description": "All new feature files have an Implementation Notes section or companion file stub",
+            "code": null,
+            "agent_instructions": "For each new feature file created in this session, verify it has either an ## Implementation Notes section or a companion .impl.md file stub.",
+            "roles": ["architect"]
+        },
+        {
+            "id": "purlin.handoff.visual_spec_complete",
+            "friendly_name": "Visual Specification Complete",
+            "description": "If the feature has a Visual Specification section, all required fields are present",
+            "code": null,
+            "agent_instructions": "For each feature with a ## Visual Specification section, verify all screens have a Reference field and at least one checklist item.",
+            "roles": ["architect"]
+        },
+        {
+            "id": "purlin.handoff.tests_pass",
+            "friendly_name": "Tests Pass",
+            "description": "tests/<feature>/tests.json exists with status PASS for all modified features",
+            "code": null,
+            "agent_instructions": "For each feature you implemented, verify tests/<feature>/tests.json exists and contains status PASS. Run the test suite if needed.",
+            "roles": ["builder"]
+        },
+        {
+            "id": "purlin.handoff.impl_notes_updated",
+            "friendly_name": "Implementation Notes Updated",
+            "description": "Implementation Notes section updated with any DEVIATION or DISCOVERY entries",
+            "code": null,
+            "agent_instructions": "Review your implementation decisions. Any non-trivial choices should be documented with [DEVIATION] or [DISCOVERY] tags in the feature's Implementation Notes or companion file.",
+            "roles": ["builder"]
+        },
+        {
+            "id": "purlin.handoff.status_commit_made",
+            "friendly_name": "Status Commit Made",
+            "description": "A [Ready for Verification] or [Complete] status commit exists for all implemented features",
+            "code": null,
+            "agent_instructions": "For each feature you implemented, verify a status tag commit exists: [Ready for Verification features/<name>.md] or [Complete features/<name>.md].",
+            "roles": ["builder"]
+        },
+        {
+            "id": "purlin.handoff.scenarios_complete",
+            "friendly_name": "Manual Scenarios Complete",
+            "description": "All manual scenarios for in-scope features have been verified (PASS or recorded FAIL)",
+            "code": null,
+            "agent_instructions": "For each feature in your verification scope, confirm all manual scenarios have been executed and results recorded.",
+            "roles": ["qa"]
+        },
+        {
+            "id": "purlin.handoff.discoveries_addressed",
+            "friendly_name": "Discoveries Addressed",
+            "description": "All OPEN discoveries have been recorded and committed",
+            "code": null,
+            "agent_instructions": "Check the ## User Testing Discoveries section of each verified feature. All findings should be recorded with appropriate type tags and committed.",
+            "roles": ["qa"]
+        },
+        {
+            "id": "purlin.handoff.complete_commit_made",
+            "friendly_name": "Complete Commit Made",
+            "description": "A [Complete] commit exists for all clean features (zero discoveries)",
+            "code": null,
+            "agent_instructions": "For each feature with zero open discoveries, verify a [Complete features/<name>.md] status commit exists.",
+            "roles": ["qa"]
+        }
+    ]
+}

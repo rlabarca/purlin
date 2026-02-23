@@ -1,0 +1,365 @@
+"""Automated tests for the handoff checklist system.
+
+Tests all 4 automated scenarios from features/workflow_checklist_system.md.
+Results written to tests/workflow_checklist_system/tests.json.
+"""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+
+# Add tools directories to path
+sys.path.insert(0, SCRIPT_DIR)
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'release'))
+
+from run import filter_by_role, evaluate_step, infer_role_from_branch, run_handoff
+from resolve import resolve_checklist
+
+
+class TestHandoffCLIFiltersStepsByRole(unittest.TestCase):
+    """Scenario: Handoff CLI Filters Steps by Role
+
+    Given the handoff global_steps.json contains steps with roles: ["all"],
+          ["architect"], ["builder"], and ["qa"],
+    When run.sh --role architect is invoked,
+    Then only steps with roles: ["all"] or ["architect"] are included,
+    And steps with roles: ["builder"] or ["qa"] are excluded.
+    """
+
+    def setUp(self):
+        """Load global_steps.json and resolve all steps."""
+        self.resolved, _, _ = resolve_checklist(checklist_type="handoff")
+        # Verify we have steps for all roles in the source data
+        all_roles_seen = set()
+        for step in self.resolved:
+            roles = step.get("roles") or []
+            for r in roles:
+                all_roles_seen.add(r)
+        self.assertIn("all", all_roles_seen)
+        self.assertIn("architect", all_roles_seen)
+        self.assertIn("builder", all_roles_seen)
+        self.assertIn("qa", all_roles_seen)
+
+    def test_architect_gets_only_all_and_architect_steps(self):
+        steps = filter_by_role(self.resolved, "architect")
+        for step in steps:
+            roles = step.get("roles", [])
+            self.assertTrue(
+                "all" in roles or "architect" in roles,
+                f"Step {step['id']} has roles={roles}, expected 'all' or 'architect'"
+            )
+
+    def test_architect_excludes_builder_and_qa_steps(self):
+        steps = filter_by_role(self.resolved, "architect")
+        step_ids = {s["id"] for s in steps}
+        # These should NOT be in architect's list
+        self.assertNotIn("purlin.handoff.tests_pass", step_ids)
+        self.assertNotIn("purlin.handoff.impl_notes_updated", step_ids)
+        self.assertNotIn("purlin.handoff.status_commit_made", step_ids)
+        self.assertNotIn("purlin.handoff.scenarios_complete", step_ids)
+        self.assertNotIn("purlin.handoff.discoveries_addressed", step_ids)
+        self.assertNotIn("purlin.handoff.complete_commit_made", step_ids)
+
+    def test_builder_gets_only_all_and_builder_steps(self):
+        steps = filter_by_role(self.resolved, "builder")
+        for step in steps:
+            roles = step.get("roles", [])
+            self.assertTrue(
+                "all" in roles or "builder" in roles,
+                f"Step {step['id']} has roles={roles}, expected 'all' or 'builder'"
+            )
+
+    def test_qa_gets_only_all_and_qa_steps(self):
+        steps = filter_by_role(self.resolved, "qa")
+        for step in steps:
+            roles = step.get("roles", [])
+            self.assertTrue(
+                "all" in roles or "qa" in roles,
+                f"Step {step['id']} has roles={roles}, expected 'all' or 'qa'"
+            )
+
+    def test_each_role_gets_correct_count(self):
+        # 3 shared + 3 role-specific = 6 per role
+        for role in ("architect", "builder", "qa"):
+            steps = filter_by_role(self.resolved, role)
+            self.assertEqual(len(steps), 6,
+                             f"{role} should have 6 steps, got {len(steps)}")
+
+
+class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
+    """Scenario: Handoff CLI Passes When All Auto-Steps Pass
+
+    Given the current branch is spec/task-crud,
+    And the working directory is clean,
+    And all modified features pass the Critic Spec Gate,
+    When run.sh --role architect is invoked,
+    Then the CLI exits with code 0,
+    And prints a summary with all steps PASS.
+    """
+
+    def setUp(self):
+        """Create a temp project where all auto steps pass."""
+        self.temp_dir = tempfile.mkdtemp()
+        # Initialize git repo
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        # Create project structure
+        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
+        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
+        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
+            f.write("# Test\n")
+        # Create branch and commit
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "checkout", "-q", "-b", "spec/task-crud"],
+                        cwd=self.temp_dir, check=True)
+        # Create a custom global_steps.json with only passing code steps
+        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
+        steps_data = {"steps": [
+            {
+                "id": "purlin.handoff.git_clean",
+                "friendly_name": "Git Working Directory Clean",
+                "description": "No uncommitted changes",
+                "code": "git diff --exit-code && git diff --cached --exit-code",
+                "agent_instructions": None,
+                "roles": ["all"]
+            },
+            {
+                "id": "purlin.handoff.spec_gate_pass",
+                "friendly_name": "Spec Gate Pass",
+                "description": "All specs pass",
+                "code": "true",
+                "agent_instructions": None,
+                "roles": ["architect"]
+            }
+        ]}
+        with open(os.path.join(self.temp_dir, "tools", "handoff",
+                               "global_steps.json"), 'w') as f:
+            json.dump(steps_data, f)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_all_auto_steps_pass_exits_0(self):
+        result = subprocess.run(
+            [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
+             "--role", "architect",
+             "--project-root", self.temp_dir],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0,
+                         f"Expected exit 0 but got {result.returncode}.\n"
+                         f"stdout: {result.stdout}\nstderr: {result.stderr}")
+        self.assertIn("PASS", result.stdout)
+        self.assertNotIn("FAIL", result.stdout)
+        self.assertNotIn("PENDING", result.stdout)
+
+
+class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
+    """Scenario: Handoff CLI Exits 1 When Any Step Fails
+
+    Given the current branch is impl/task-crud,
+    And tests/task_crud/tests.json does not exist,
+    When run.sh --role builder is invoked,
+    Then the CLI exits with code 1,
+    And reports the failing step (purlin.handoff.tests_pass) as FAIL.
+    """
+
+    def setUp(self):
+        """Create a temp project with a step that fails."""
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
+        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
+        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "checkout", "-q", "-b", "impl/task-crud"],
+                        cwd=self.temp_dir, check=True)
+        # Create steps with one that will fail
+        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
+        steps_data = {"steps": [
+            {
+                "id": "purlin.handoff.git_clean",
+                "friendly_name": "Git Working Directory Clean",
+                "description": "No uncommitted changes",
+                "code": "git diff --exit-code && git diff --cached --exit-code",
+                "agent_instructions": None,
+                "roles": ["all"]
+            },
+            {
+                "id": "purlin.handoff.tests_pass",
+                "friendly_name": "Tests Pass",
+                "description": "Tests must exist and pass",
+                "code": "test -f tests/task_crud/tests.json",
+                "agent_instructions": "Verify tests.json exists.",
+                "roles": ["builder"]
+            }
+        ]}
+        with open(os.path.join(self.temp_dir, "tools", "handoff",
+                               "global_steps.json"), 'w') as f:
+            json.dump(steps_data, f)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_failing_step_exits_1(self):
+        result = subprocess.run(
+            [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
+             "--role", "builder",
+             "--project-root", self.temp_dir],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 1,
+                         f"Expected exit 1 but got {result.returncode}.\n"
+                         f"stdout: {result.stdout}")
+        self.assertIn("FAIL", result.stdout)
+        self.assertIn("Tests Pass", result.stdout)
+
+
+class TestRoleInferredFromBranchName(unittest.TestCase):
+    """Scenario: Role Inferred from Branch Name
+
+    Given the current branch is qa/task-filtering,
+    When /pl-handoff-check is invoked without a --role argument,
+    Then the checklist runs with role="qa",
+    And only QA-specific and shared steps are included.
+    """
+
+    def setUp(self):
+        """Create temp git repos on different branches."""
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
+        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
+        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_qa_branch_infers_qa_role(self):
+        subprocess.run(["git", "checkout", "-q", "-b", "qa/task-filtering"],
+                        cwd=self.temp_dir, check=True)
+        role = infer_role_from_branch(self.temp_dir)
+        self.assertEqual(role, "qa")
+
+    def test_spec_branch_infers_architect_role(self):
+        subprocess.run(["git", "checkout", "-q", "-b", "spec/task-crud"],
+                        cwd=self.temp_dir, check=True)
+        role = infer_role_from_branch(self.temp_dir)
+        self.assertEqual(role, "architect")
+
+    def test_impl_branch_infers_builder_role(self):
+        subprocess.run(["git", "checkout", "-q", "-b", "impl/task-crud"],
+                        cwd=self.temp_dir, check=True)
+        role = infer_role_from_branch(self.temp_dir)
+        self.assertEqual(role, "builder")
+
+    def test_main_branch_returns_none(self):
+        role = infer_role_from_branch(self.temp_dir)
+        self.assertIsNone(role)
+
+    def test_qa_branch_cli_runs_qa_checklist(self):
+        """Full integration: run without --role on qa/ branch."""
+        subprocess.run(["git", "checkout", "-q", "-b", "qa/task-filtering"],
+                        cwd=self.temp_dir, check=True)
+        # Create steps with a QA step that passes
+        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"),
+                    exist_ok=True)
+        steps_data = {"steps": [
+            {
+                "id": "purlin.handoff.git_clean",
+                "friendly_name": "Git Working Directory Clean",
+                "description": "No uncommitted changes",
+                "code": "git diff --exit-code && git diff --cached --exit-code",
+                "agent_instructions": None,
+                "roles": ["all"]
+            },
+            {
+                "id": "purlin.handoff.scenarios_complete",
+                "friendly_name": "Manual Scenarios Complete",
+                "description": "All scenarios verified",
+                "code": "true",
+                "agent_instructions": None,
+                "roles": ["qa"]
+            },
+            {
+                "id": "purlin.handoff.tests_pass",
+                "friendly_name": "Tests Pass",
+                "description": "Builder step — should be excluded",
+                "code": "true",
+                "agent_instructions": None,
+                "roles": ["builder"]
+            }
+        ]}
+        with open(os.path.join(self.temp_dir, "tools", "handoff",
+                               "global_steps.json"), 'w') as f:
+            json.dump(steps_data, f)
+
+        # Run without --role flag
+        result = subprocess.run(
+            [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
+             "--project-root", self.temp_dir],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0,
+                         f"Expected exit 0.\nstdout: {result.stdout}\n"
+                         f"stderr: {result.stderr}")
+        # QA-specific step should be present
+        self.assertIn("Manual Scenarios Complete", result.stdout)
+        # Builder-specific step should be absent
+        self.assertNotIn("Tests Pass", result.stdout)
+
+
+def run_tests():
+    """Run all tests and write results."""
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+
+    # Write tests.json
+    tests_dir = os.path.join(PROJECT_ROOT, "tests", "workflow_checklist_system")
+    os.makedirs(tests_dir, exist_ok=True)
+    status = "PASS" if result.wasSuccessful() else "FAIL"
+    with open(os.path.join(tests_dir, "tests.json"), 'w') as f:
+        json.dump({"status": status}, f)
+
+    print(f"\ntests.json: {status}")
+    return 0 if result.wasSuccessful() else 1
+
+
+if __name__ == "__main__":
+    sys.exit(run_tests())

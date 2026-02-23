@@ -37,6 +37,9 @@ GLOBAL_STEPS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "release", "global_st
 LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "local_steps.json")
 LOCAL_CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "config.json")
 
+HANDOFF_GLOBAL_STEPS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "handoff", "global_steps.json")
+HANDOFF_LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "handoff", "local_steps.json")
+
 RESERVED_PREFIX = "purlin."
 
 
@@ -91,10 +94,15 @@ def load_config(path=None):
     return data.get("steps", None)
 
 
-def resolve_checklist(global_path=None, local_path=None, config_path=None):
-    """Resolve the full ordered release checklist.
+def resolve_checklist(global_path=None, local_path=None, config_path=None,
+                      checklist_type="release"):
+    """Resolve the full ordered checklist.
 
     Implements the algorithm from release_checklist_core.md Section 2.5.
+
+    Args:
+        checklist_type: "release" or "handoff" — determines default file paths.
+            For handoff, config_path must be passed explicitly (per-role configs).
 
     Returns:
         (resolved_steps, warnings, errors)
@@ -102,9 +110,19 @@ def resolve_checklist(global_path=None, local_path=None, config_path=None):
         - warnings: list of warning strings (orphaned config entries)
         - errors: list of error strings (reserved prefix violations)
     """
+    # Route default paths based on checklist_type
+    if checklist_type == "handoff":
+        eff_global = global_path or HANDOFF_GLOBAL_STEPS_PATH
+        eff_local = local_path or HANDOFF_LOCAL_STEPS_PATH
+        eff_config = config_path  # Per-role; caller must specify or None
+    else:
+        eff_global = global_path or GLOBAL_STEPS_PATH
+        eff_local = local_path or LOCAL_STEPS_PATH
+        eff_config = config_path or LOCAL_CONFIG_PATH
+
     # Step 1-2: Load definitions
-    global_steps = load_global_steps(global_path)
-    local_steps, errors = load_local_steps(local_path)
+    global_steps = load_global_steps(eff_global)
+    local_steps, errors = load_local_steps(eff_local)
 
     # Step 3: Build merged registry
     registry = {}
@@ -121,7 +139,20 @@ def resolve_checklist(global_path=None, local_path=None, config_path=None):
             source_map[sid] = "local"
 
     # Step 4: Load config
-    config_entries = load_config(config_path)
+    config_entries = load_config(eff_config) if eff_config else None
+
+    def _make_entry(step_def, source, enabled):
+        """Build a resolved step entry from a step definition."""
+        return {
+            "id": step_def.get("id", ""),
+            "friendly_name": step_def.get("friendly_name", ""),
+            "description": step_def.get("description", ""),
+            "code": step_def.get("code"),
+            "agent_instructions": step_def.get("agent_instructions"),
+            "roles": step_def.get("roles"),
+            "source": source,
+            "enabled": enabled,
+        }
 
     warnings = []
     resolved = []
@@ -142,68 +173,27 @@ def resolve_checklist(global_path=None, local_path=None, config_path=None):
                 warnings.append(f"Unknown step ID '{sid}' in config; skipping")
                 continue
 
-            step_def = registry[sid]
-            resolved.append({
-                "id": sid,
-                "friendly_name": step_def.get("friendly_name", ""),
-                "description": step_def.get("description", ""),
-                "code": step_def.get("code"),
-                "agent_instructions": step_def.get("agent_instructions"),
-                "source": source_map[sid],
-                "enabled": enabled,
-            })
+            resolved.append(_make_entry(registry[sid], source_map[sid], enabled))
 
         # Step 6: Auto-discover new steps not in config
         for step in global_steps:
             sid = step.get("id", "")
             if sid and sid not in seen_ids:
-                resolved.append({
-                    "id": sid,
-                    "friendly_name": step.get("friendly_name", ""),
-                    "description": step.get("description", ""),
-                    "code": step.get("code"),
-                    "agent_instructions": step.get("agent_instructions"),
-                    "source": "global",
-                    "enabled": True,
-                })
+                resolved.append(_make_entry(step, "global", True))
         for step in local_steps:
             sid = step.get("id", "")
             if sid and sid not in seen_ids:
-                resolved.append({
-                    "id": sid,
-                    "friendly_name": step.get("friendly_name", ""),
-                    "description": step.get("description", ""),
-                    "code": step.get("code"),
-                    "agent_instructions": step.get("agent_instructions"),
-                    "source": "local",
-                    "enabled": True,
-                })
+                resolved.append(_make_entry(step, "local", True))
     else:
         # No config: all steps enabled in declaration order (global first, then local)
         for step in global_steps:
             sid = step.get("id", "")
             if sid:
-                resolved.append({
-                    "id": sid,
-                    "friendly_name": step.get("friendly_name", ""),
-                    "description": step.get("description", ""),
-                    "code": step.get("code"),
-                    "agent_instructions": step.get("agent_instructions"),
-                    "source": "global",
-                    "enabled": True,
-                })
+                resolved.append(_make_entry(step, "global", True))
         for step in local_steps:
             sid = step.get("id", "")
             if sid:
-                resolved.append({
-                    "id": sid,
-                    "friendly_name": step.get("friendly_name", ""),
-                    "description": step.get("description", ""),
-                    "code": step.get("code"),
-                    "agent_instructions": step.get("agent_instructions"),
-                    "source": "local",
-                    "enabled": True,
-                })
+                resolved.append(_make_entry(step, "local", True))
 
     # Add 1-based order
     for i, step in enumerate(resolved):
