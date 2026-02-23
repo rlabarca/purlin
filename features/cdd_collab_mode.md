@@ -384,3 +384,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Expected Behavior:** Modal buttons should use dark-mode-compliant styling consistent with the Purlin CSS token system (design_visual_standards.md Section 2.7), same as other dashboard action buttons.
 - **Action Required:** Builder
 - **Status:** OPEN
+
+### [BUG] Modified column shows empty for qa-session worktree despite uncommitted file changes (Discovered: 2026-02-23)
+- **Scenario:** Sessions Table Displays Worktree State; Visual Specification — Screen: CDD Dashboard — Collaboration Section
+- **Observed Behavior:** The Modified column in the Sessions table shows empty for the qa-session worktree while non-.purlin/ files (e.g., features/cdd_collab_mode.md) were actively modified and uncommitted in that worktree.
+- **Expected Behavior:** Modified column should show category counts (e.g., "1 Specs") when non-.purlin/ files are dirty in the worktree, per spec Section 2 and visual spec checklist.
+- **Action Required:** Builder
+- **Status:** OPEN
