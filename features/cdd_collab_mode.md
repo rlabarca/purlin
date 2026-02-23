@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Collab Mode is a dashboard mode activated automatically when the CDD server runs from a project root that has active git worktrees under `.worktrees/`. In Collab Mode, the WORKSPACE section of the dashboard extends to become "WORKSPACE & COLLABORATION", showing what each agent role session is doing and surfacing per-role pre-merge checklists.
+CDD Collab Mode is a dashboard mode activated automatically when the CDD server runs from a project root that has active git worktrees under `.worktrees/`. In Collab Mode, the Workspace section of the dashboard becomes "Collaboration", showing what each agent role session is doing and surfacing per-role pre-merge checklists.
 
 ---
 
@@ -32,19 +32,19 @@ Branch prefix determines role assignment:
 - `qa/*` → QA
 - Any other prefix → Unknown (shown as a worktree but displayed as role-unlabeled)
 
-### 2.3 WORKSPACE & COLLABORATION Section
+### 2.3 Collaboration Section
 
-When Collab Mode is active, the WORKSPACE section becomes "WORKSPACE & COLLABORATION". It contains three sub-sections:
+When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It contains three sub-sections:
 
 **Sessions sub-section:** A table listing all active worktrees:
 
-| Role | Branch | Dirty? | Last Activity |
-|------|--------|--------|---------------|
-| Architect | spec/collab | 2 files | 45 min ago — feat(spec): add filtering scenarios |
-| Builder | impl/collab | Clean | 12 min ago — feat(impl): implement CRUD handlers |
-| QA | qa/collab | 1 file | just now — qa: record test discovery |
+| Role | Branch | Modified |
+|------|--------|----------|
+| Architect | spec/collab | 2 Specs 1 Code/Other |
+| Builder | impl/collab | |
+| QA | qa/collab | 1 Tests |
 
-"Dirty?" shows file count when modified, "Clean" when clean. "Last Activity" shows relative timestamp + last commit subject.
+"Modified" is empty when the worktree is clean. When uncommitted changes exist, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`.
 
 **Pre-Merge Status sub-section:** Per-worktree handoff readiness:
 
@@ -64,8 +64,10 @@ CDD reads each worktree's state using read-only git commands:
 
 - `git worktree list --porcelain` — all worktree paths and HEAD commits.
 - `git -C <path> rev-parse --abbrev-ref HEAD` — branch name per worktree.
-- `git -C <path> status --porcelain` — dirty/clean per worktree.
-- `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
+- `git -C <path> status --porcelain` — modified/staged/untracked files per worktree. Output is parsed by path prefix to count per-category modified files:
+  - Lines where the file path (columns 4+) starts with `features/` → Specs count.
+  - Lines where the file path starts with `tests/` → Tests count.
+  - All other modified/staged/untracked lines → Code/Other count.
 - `git -C <path> log --grep='\[Ready for Verification\]' --format=%ct` — check for status commit.
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
@@ -92,9 +94,11 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "path": ".worktrees/architect-session",
       "branch": "spec/collab",
       "role": "architect",
-      "dirty": true,
-      "file_count": 2,
-      "last_commit": "abc1234 feat(spec): add filtering scenarios (45 min ago)",
+      "modified": {
+        "specs": 2,
+        "tests": 0,
+        "other": 1
+      },
       "handoff_ready": false,
       "handoff_pending_count": 1
     },
@@ -102,9 +106,11 @@ When Collab Mode is active, the `/status.json` response includes additional fiel
       "path": ".worktrees/builder-session",
       "branch": "impl/collab",
       "role": "builder",
-      "dirty": false,
-      "file_count": 0,
-      "last_commit": "def5678 feat(impl): implement CRUD handlers (12 min ago)",
+      "modified": {
+        "specs": 0,
+        "tests": 0,
+        "other": 0
+      },
       "handoff_ready": true,
       "handoff_pending_count": 0
     }
@@ -119,15 +125,13 @@ Fields per worktree entry:
 - `path` — relative path from project root.
 - `branch` — current branch name.
 - `role` — `"architect"`, `"builder"`, `"qa"`, or `"unknown"`.
-- `dirty` — true if any uncommitted changes.
-- `file_count` — count of modified/staged files (0 when clean).
-- `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
+- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). A worktree is clean when all three are zero. Counts are derived from `git status --porcelain` output parsed by path prefix.
 - `handoff_ready` — true if all auto-evaluable handoff items pass.
 - `handoff_pending_count` — count of pending items (0 when ready).
 
 ### 2.7 Visual Design
 
-The WORKSPACE & COLLABORATION section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The section heading changes from "WORKSPACE" to "WORKSPACE & COLLABORATION" when Collab Mode is active. Sub-section labels ("Sessions", "Pre-Merge Status", "Local (main)") use the same section header typography.
+The Collaboration section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The section heading changes from "Workspace" to "Collaboration" when Collab Mode is active. Sub-section labels ("Sessions", "Pre-Merge Status", "Local (main)") use the same section header typography.
 
 ### 2.8 No Collab Mode During Main Checkout
 
@@ -139,29 +143,44 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 **Start Collab Session (when Collab Mode is inactive):**
 
-- A "Start Collab Session" button appears as a footer action in the standard WORKSPACE section.
+- A "Start Collab Session" button appears as a footer action in the standard Workspace section.
 - Clicking the button directly triggers `POST /start-collab` with an empty body `{}`. No text input or form is shown.
 - While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error). This is the same guard pattern used by `rcPendingSave` in the release checklist.
 - The server runs `tools/collab/setup_worktrees.sh --project-root <PROJECT_ROOT>` (no `--feature` argument).
-- On success (`{ "status": "ok" }`): dashboard refreshes; WORKSPACE becomes WORKSPACE & COLLABORATION.
+- On success (`{ "status": "ok" }`): dashboard refreshes; Workspace becomes Collaboration.
 - On error: inline error message shown below the button.
 
 **End Collab Session (when Collab Mode is active):**
 
-- An "End Collab Session" button appears in the WORKSPACE & COLLABORATION section header.
+- An "End Collab Session" button appears in the Collaboration section header.
 - On click: dashboard sends `POST /end-collab` with body `{ "dry_run": true }`. The server runs `tools/collab/teardown_worktrees.sh --dry-run` and returns the safety status.
 - The dashboard shows a modal based on the dry-run result:
   - **Dirty worktrees present:** Modal lists the dirty worktrees and their uncommitted files. Instructs the user to commit or stash before ending the session. Confirm button is disabled. No force path is offered.
   - **Unsynced commits present (no dirty):** Modal shows a warning listing unmerged branches and commit counts, with a note that branches survive worktree removal. User must check "I understand, the branches still exist" before the Confirm button is enabled.
   - **Clean state:** Simple confirmation dialog with Confirm and Cancel buttons.
 - On confirm: dashboard sends `POST /end-collab` with body `{ "force": true }`. Server runs `tools/collab/teardown_worktrees.sh --force`.
-- On success: dashboard refreshes; WORKSPACE & COLLABORATION becomes standard WORKSPACE.
+- On success: dashboard refreshes; Collaboration becomes standard Workspace.
 
 **Server endpoints:**
 
 - `POST /start-collab` — body: `{}` (empty; no `feature` field required or accepted) — runs `setup_worktrees.sh`, returns `{ "status": "ok" }` or `{ "error": "..." }`.
 - `POST /end-collab` — body: `{ "dry_run": true }` or `{ "force": true }` — runs `teardown_worktrees.sh` with the appropriate flag. Returns safety status JSON for dry-run; returns `{ "status": "ok" }` for a force run.
 - Both endpoints follow the same pattern as `/run-critic` in `serve.py`.
+
+### 2.10 Agent Config Propagation in Collab Mode
+
+Agent configs in `.purlin/config.json` apply to ALL local instances of each agent role — not just the agent launched from the project root. In Collab Mode, worktrees each hold their own committed copy of `.purlin/config.json`. Changes made via the dashboard must be propagated to every active worktree so that all agent sessions reflect the new settings.
+
+**AGENTS Section Heading:**
+- When Collab Mode is active, the AGENTS section heading displays the annotation "(applies across all local worktrees)" appended to the title.
+- Applied client-side: after each `/status.json` poll, if `collab_mode` is true, the heading reads "AGENTS (applies across all local worktrees)". When collab mode is inactive, the heading reads "AGENTS" with no annotation.
+
+**Save Propagation:**
+- `POST /config/agents` writes to the project root `.purlin/config.json` first.
+- If Collab Mode is active, the handler also writes the same updated config to each active worktree's `.purlin/config.json`.
+- Propagation is best-effort per-worktree: a failure to write one worktree is logged server-side and included in the response as `{ "warnings": ["..."] }`, but does not roll back the project root write or block the response.
+- Worktree list determined by `get_collab_worktrees()` — no new detection mechanism.
+- This is a push model: agents in worktrees do NOT search up the directory tree for a parent config. Each worktree reads its own `.purlin/config.json` only.
 
 ---
 
@@ -200,7 +219,7 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
     Given a worktree at .worktrees/builder-session has uncommitted files
     When an agent calls GET /status.json
-    Then the worktree entry has dirty true and file_count greater than 0
+    Then the worktree entry's modified object has at least one non-zero field (specs, tests, or other)
 
 #### Scenario: Handoff Ready When Auto-Steps Pass
 
@@ -229,6 +248,21 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     And the response contains { "status": "ok" }
     And no worktrees remain under .worktrees/
 
+#### Scenario: Agent Config Save Propagates to All Active Worktrees
+
+    Given collab mode is active with two worktrees: architect-session and builder-session
+    When a POST request is sent to /config/agents with updated model and startup_sequence values
+    Then the project root .purlin/config.json reflects the new values
+    And .worktrees/architect-session/.purlin/config.json reflects the new values
+    And .worktrees/builder-session/.purlin/config.json reflects the new values
+
+#### Scenario: Modified Column Categorizes Uncommitted Files by Type
+
+    Given a worktree at .worktrees/architect-session has two modified files under features/
+    And one modified file outside features/ and tests/
+    When an agent calls GET /status.json
+    Then the worktree entry's modified field has specs=2, tests=0, other=1
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Sessions Table Displays Worktree State
@@ -236,8 +270,8 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
     Given the CDD server is running from the project root
     And three worktrees exist (architect-session, builder-session, qa-session)
     When the User opens the CDD dashboard
-    Then the WORKSPACE & COLLABORATION section is visible
-    And the Sessions sub-section shows a table with Role, Branch, Dirty, and Last Activity columns
+    Then the Collaboration section is visible
+    And the Sessions sub-section shows a table with Role, Branch, and Modified columns
     And each worktree appears as a row with correct role and branch information
 
 #### Scenario: Pre-Merge Status Shows Ready Indicator
@@ -271,16 +305,17 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 
 ## 4. Visual Specification
 
-### Screen: CDD Dashboard — WORKSPACE & COLLABORATION Section
+### Screen: CDD Dashboard — Collaboration Section
 
 - **Reference:** N/A
-- [ ] Section heading reads "WORKSPACE & COLLABORATION" when collab mode is active (vs "WORKSPACE" when not)
+- [ ] Section heading reads "Collaboration" when collab mode is active (vs "Workspace" when not)
 - [ ] "Sessions" sub-label is visible above the worktree table
-- [ ] Sessions table has columns: Role, Branch, Dirty?, Last Activity
+- [ ] Sessions table has columns: Role, Branch, Modified
 - [ ] Each active worktree appears as a row
 - [ ] Role badges use same styling as status badges (no new colors needed)
-- [ ] Dirty indicator shows file count (e.g., "2 files") or "Clean"
-- [ ] Last Activity shows relative timestamp + last commit subject
+- [ ] Modified cell is empty when worktree is clean
+- [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when dirty
+- [ ] Multiple categories appear in order: Specs, Tests, Code/Other; zero-count categories omitted
 - [ ] "Pre-Merge Status" sub-label is visible below the Sessions table
 - [ ] Ready worktrees show a check mark ("Ready to merge")
 - [ ] Pending worktrees show a circle indicator ("N items pending")
@@ -289,12 +324,14 @@ The dashboard exposes UI controls to start and stop Collab Sessions, complementi
 ### Screen: CDD Dashboard — Collab Session Controls
 
 - **Reference:** N/A
-- [ ] "Start Collab Session" button is visible in the WORKSPACE section footer when no worktrees are present
+- [ ] "Start Collab Session" button is visible in the Workspace section footer when no worktrees are present
 - [ ] "Start Collab Session" is a single button; clicking it directly sends the POST /start-collab request (no inline form or text input)
-- [ ] "End Collab Session" button is visible in the WORKSPACE & COLLABORATION section header when collab is active
+- [ ] "End Collab Session" button is visible in the Collaboration section header when collab is active
 - [ ] End Collab dirty-state modal lists dirty worktree names and uncommitted file counts; Confirm button is disabled
 - [ ] End Collab unsynced-state modal includes an "I understand, the branches still exist" checkbox; Confirm is disabled until checked
 - [ ] End Collab clean-state modal shows a simple Confirm/Cancel dialog
+- [ ] AGENTS section heading reads "AGENTS (applies across all local worktrees)" when collab mode is active
+- [ ] AGENTS section heading reads "AGENTS" (no annotation) when collab mode is inactive
 
 ---
 
