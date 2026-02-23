@@ -557,6 +557,12 @@ def generate_api_status_json(cache=None):
     if delivery_phase:
         result["delivery_phase"] = delivery_phase
 
+    # Collab Mode: worktree data (Section 2.6 of cdd_collab_mode spec)
+    collab_worktrees = get_collab_worktrees()
+    if collab_worktrees:
+        result["collab_mode"] = True
+        result["worktrees"] = collab_worktrees
+
     return result
 
 
@@ -581,11 +587,181 @@ def generate_workspace_json():
     """
     git_status = get_git_status()
     last_commit = get_last_commit()
-    return {
+    result = {
         "clean": not bool(git_status),
         "files": git_status.splitlines() if git_status else [],
         "last_commit": last_commit,
     }
+    collab = get_collab_worktrees()
+    if collab:
+        result["collab_mode"] = True
+        result["worktrees"] = collab
+    return result
+
+
+# ===================================================================
+# Collab Mode: worktree detection and state reading
+# ===================================================================
+
+ROLE_PREFIX_MAP = {
+    'spec': 'architect',
+    'impl': 'builder',
+    'qa': 'qa',
+}
+
+
+def _detect_worktrees():
+    """Detect active git worktrees under .worktrees/ relative to PROJECT_ROOT.
+
+    Returns list of dicts: [{"path": str, "head": str}] for worktrees
+    whose path is under .worktrees/.
+    """
+    output = run_command("git worktree list --porcelain")
+    if not output:
+        return []
+
+    worktrees = []
+    current = {}
+    worktrees_prefix = os.path.join(PROJECT_ROOT, '.worktrees')
+
+    for line in output.splitlines():
+        if line.startswith('worktree '):
+            if current:
+                worktrees.append(current)
+            current = {'abs_path': line[len('worktree '):].strip()}
+        elif line.startswith('HEAD '):
+            current['head'] = line[len('HEAD '):].strip()
+        elif line.startswith('branch '):
+            current['branch_ref'] = line[len('branch '):].strip()
+        elif line == '' and current:
+            worktrees.append(current)
+            current = {}
+
+    if current:
+        worktrees.append(current)
+
+    # Filter to worktrees under .worktrees/
+    result = []
+    for wt in worktrees:
+        abs_path = wt.get('abs_path', '')
+        if abs_path.startswith(worktrees_prefix + os.sep) or abs_path.startswith(worktrees_prefix + '/'):
+            result.append(wt)
+
+    return result
+
+
+def _role_from_branch(branch_name):
+    """Map branch name to role using prefix convention.
+
+    spec/* -> architect, impl/* -> builder, qa/* -> qa, else -> unknown
+    """
+    if '/' in branch_name:
+        prefix = branch_name.split('/')[0]
+        return ROLE_PREFIX_MAP.get(prefix, 'unknown')
+    return 'unknown'
+
+
+def _worktree_state(wt_abs_path):
+    """Read state of a single worktree using git -C commands.
+
+    Returns dict with dirty, file_count, branch, last_commit.
+    """
+    def _wt_cmd(cmd):
+        try:
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True,
+                check=True, cwd=wt_abs_path)
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return ""
+
+    branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
+    status_output = _wt_cmd("git status --porcelain")
+    dirty = bool(status_output)
+    file_count = len(status_output.splitlines()) if dirty else 0
+    last_commit = _wt_cmd("git log -1 --format='%h %s (%cr)'")
+
+    return {
+        'branch': branch,
+        'dirty': dirty,
+        'file_count': file_count,
+        'last_commit': last_commit,
+    }
+
+
+def _worktree_handoff_status(wt_abs_path, role):
+    """Evaluate auto-checkable handoff items for a worktree.
+
+    Returns (handoff_ready: bool, pending_count: int).
+    """
+    def _wt_cmd(cmd):
+        try:
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True,
+                check=True, cwd=wt_abs_path)
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return ""
+
+    pending = 0
+
+    # Check git clean
+    status = _wt_cmd("git status --porcelain")
+    if status:
+        pending += 1
+
+    # Role-specific checks
+    if role == 'builder':
+        rfv = _wt_cmd("git log --grep='\\[Ready for Verification\\]' --format='%ct' -1")
+        if not rfv:
+            pending += 1
+    elif role == 'qa':
+        complete = _wt_cmd("git log --grep='\\[Complete ' --format='%ct' -1")
+        if not complete:
+            pending += 1
+
+    return (pending == 0, pending)
+
+
+def get_collab_worktrees():
+    """Get collab mode worktree data for API and dashboard.
+
+    Returns list of worktree info dicts, or empty list if collab mode
+    is not active. Collab mode is active when at least one worktree
+    exists under .worktrees/.
+    """
+    worktrees = _detect_worktrees()
+    if not worktrees:
+        return []
+
+    result = []
+    for wt in worktrees:
+        abs_path = wt.get('abs_path', '')
+        state = _worktree_state(abs_path)
+        branch = state['branch']
+        role = _role_from_branch(branch)
+
+        # Relative path from project root
+        try:
+            rel_path = os.path.relpath(abs_path, PROJECT_ROOT)
+        except ValueError:
+            rel_path = abs_path
+
+        handoff_ready, pending_count = _worktree_handoff_status(
+            abs_path, role)
+
+        result.append({
+            'path': rel_path,
+            'branch': branch,
+            'role': role,
+            'dirty': state['dirty'],
+            'file_count': state['file_count'],
+            'last_commit': state['last_commit'],
+            'handoff_ready': handoff_ready,
+            'handoff_pending_count': pending_count,
+        })
+
+    return result
 
 
 # Badge CSS class mapping for role statuses
@@ -615,6 +791,63 @@ def _role_badge_html(status):
         return '<span class="st-na">??</span>'
     css = ROLE_BADGE_CSS.get(status, "st-na")
     return f'<span class="{css}">{status}</span>'
+
+
+def _collab_section_html(worktrees):
+    """Generate HTML for the Collab Mode sub-sections (Sessions + Pre-Merge)."""
+    if not worktrees:
+        return ""
+
+    # Sessions table
+    rows = ""
+    for wt in worktrees:
+        role = wt.get('role', 'unknown').capitalize()
+        branch = wt.get('branch', '')
+        if wt.get('dirty'):
+            dirty_text = f'{wt["file_count"]} file{"s" if wt["file_count"] != 1 else ""}'
+            dirty_cls = 'st-todo'
+        else:
+            dirty_text = 'Clean'
+            dirty_cls = 'st-done'
+        last = wt.get('last_commit', '')
+        rows += (
+            f'<tr><td>{role}</td><td><code>{branch}</code></td>'
+            f'<td><span class="{dirty_cls}">{dirty_text}</span></td>'
+            f'<td class="dim">{last}</td></tr>'
+        )
+
+    sessions_html = (
+        '<h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;'
+        'text-transform:uppercase;letter-spacing:0.5px">Sessions</h4>'
+        '<table class="ft" style="width:100%"><thead><tr>'
+        '<th>Role</th><th>Branch</th><th>Dirty?</th><th>Last Activity</th>'
+        '</tr></thead><tbody>' + rows + '</tbody></table>'
+    )
+
+    # Pre-Merge Status
+    merge_rows = ""
+    for wt in worktrees:
+        role = wt.get('role', 'unknown').capitalize()
+        branch = wt.get('branch', '')
+        if wt.get('handoff_ready'):
+            status_text = '<span class="st-done">&#10003; Ready to merge</span>'
+        else:
+            n = wt.get('handoff_pending_count', 0)
+            status_text = f'<span class="st-todo">{n} item{"s" if n != 1 else ""} pending</span>'
+        merge_rows += (
+            f'<tr><td>{role}</td><td><code>{branch}</code></td>'
+            f'<td>{status_text}</td></tr>'
+        )
+
+    merge_html = (
+        '<h4 style="margin:12px 0 4px;color:var(--purlin-muted);font-size:11px;'
+        'text-transform:uppercase;letter-spacing:0.5px">Pre-Merge Status</h4>'
+        '<table class="ft" style="width:100%"><thead><tr>'
+        '<th>Role</th><th>Branch</th><th>Status</th>'
+        '</tr></thead><tbody>' + merge_rows + '</tbody></table>'
+    )
+
+    return sessions_html + merge_html
 
 
 def _feature_urgency(entry):
@@ -690,6 +923,14 @@ def generate_html(cache=None):
         git_html = '<p class="clean">Clean State <span class="dim">(Ready for next task)</span></p>'
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
+
+    # Collab Mode detection for dashboard
+    collab_worktrees = get_collab_worktrees()
+    collab_active = bool(collab_worktrees)
+    workspace_heading = "Workspace &amp; Collaboration" if collab_active else "Workspace"
+    collab_html = ""
+    if collab_active:
+        collab_html = _collab_section_html(collab_worktrees)
 
     # Count badges for collapsed summary
     active_count = len(active_features)
@@ -1083,10 +1324,12 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
         <span class="chevron" id="workspace-section-chevron">&#9654;</span>
-        <h3>Workspace</h3>
+        <h3>{workspace_heading}</h3>
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">
+        {collab_html}
+        <h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Local (main)</h4>
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
       </div>
