@@ -1,70 +1,82 @@
-# Policy: Multi-Person Collaboration
+# Policy: Isolated Agent Collaboration
 
-> Label: "Policy: Multi-Person Collaboration"
+> Label: "Policy: Isolated Agent Collaboration"
 > Category: "Coordination & Lifecycle"
 
 ## Purpose
 
-Multi-person collaboration in Purlin uses git worktrees (local) and lifecycle branches (remote) to allow Architect, Builder, and QA agents to work concurrently without interfering with each other. This policy defines the invariants that keep concurrent work safe and coordinated.
+Purlin uses named git worktrees (local isolations) to allow any number of agent sessions to work concurrently without interfering with each other. Each isolation is a user-named, independent workspace on a dedicated branch. This policy defines the invariants that keep concurrent work safe and coordinated.
 
 ## 2. Collaboration Invariants
 
-### 2.1 Branch Naming Convention
+### 2.1 Isolation Naming Convention
 
-*   `spec/collab` — Architect-owned; contains spec commits
-*   `build/collab` — Builder-owned; contains implementation commits
-*   `qa/collab` — QA-owned; contains verification commits
-*   Branch prefix determines role assignment in CDD Collab Mode
-*   Branches not matching this pattern are shown in the dashboard but are role-unlabeled
+*   Isolation names MUST be 1–8 characters.
+*   Names MUST match `[a-zA-Z0-9_-]+` (alphanumeric, hyphen, underscore; no spaces).
+*   Branch naming: `isolated/<name>` — e.g., `isolated/feat1`, `isolated/ui`.
+*   Worktree path: `.worktrees/<name>/` relative to the project root.
+*   No role assignment is associated with the name. Any agent type may use any isolation name.
 
 ### 2.2 Merge-Before-Proceed Rule
 
-*   Each role's phase MUST merge to `main` before the next agent role starts
-*   The Critic uses `git log` without a branch specifier; it only sees commits reachable from HEAD
-*   A COMPLETE status commit on a role branch is invisible to agents on other branches until merged
-*   This is enforced by the handoff protocol, not by tooling (no code enforcement needed)
-*   Process rule: merge to `main` → confirm status is visible → hand off to next role
+*   Each isolation MUST merge to `main` before another session that depends on its changes can start or continue.
+*   The Critic uses `git log` without a branch specifier; it only sees commits reachable from HEAD.
+*   A COMPLETE status commit on an unmerged isolation branch is invisible to agents on other branches until merged.
+*   This is enforced by the handoff protocol, not by tooling (no code enforcement needed).
+*   Process rule: merge to `main` → confirm status is visible → hand off to next agent.
 
 ### 2.3 PURLIN_PROJECT_ROOT in Worktrees
 
-*   In a git worktree, the `.git` entry is a file (gitdir: pointer), not a directory
-*   Path-climbing fallback may skip the worktree root and land on the parent repo root
-*   Each agent session in a worktree MUST set `PURLIN_PROJECT_ROOT` to the worktree directory path
-*   The launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are responsible for this export
-*   Without this, `features/` scanning and cache writes target the wrong root
+*   In a git worktree, the `.git` entry is a file (gitdir: pointer), not a directory.
+*   Path-climbing fallback may skip the worktree root and land on the parent repo root.
+*   Each agent session in a worktree MUST set `PURLIN_PROJECT_ROOT` to the worktree directory path.
+*   The launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are responsible for this export.
+*   Without this, `features/` scanning and cache writes target the wrong root.
 
 ### 2.4 Integration Moment Protocol
 
-*   The "integration moment" is when a role branch merges to `main`
-*   Who merges: the agent that completed the role's phase (before shutting down)
-*   What it triggers: the next agent role's pre-flight check can now see the merged commits
-*   For remote collaboration, the merge is followed by `git push origin main`
-*   `/pl-work-push` verifies readiness and performs the merge in one step
+*   The "integration moment" is when an isolation branch merges to `main`.
+*   Who merges: the agent that completed the session's work (before shutting down).
+*   What it triggers: the next agent that needs the merged work can now see the commits.
+*   For remote collaboration, the merge is followed by `git push origin main`.
+*   `/pl-local-push` verifies readiness and performs the merge in one step.
 
 ### 2.5 Worktree Location Convention
 
-*   Worktrees MUST live at `.worktrees/<role>-session/` relative to the project root
-*   This path MUST be gitignored in the consumer project
-*   The Purlin CDD tools detect worktrees at this location to activate Collab Mode
-*   Worktrees are created by `setup_worktrees.sh` and are never committed to git
+*   Worktrees MUST live at `.worktrees/<name>/` relative to the project root.
+*   This path MUST be gitignored in the consumer project.
+*   The Purlin CDD tools detect worktrees at `.worktrees/` to activate Isolated Agents Mode.
+*   Worktrees are created by `create_isolation.sh` and are never committed to git.
 
-### 2.6 Critic Branch-Scope Limitation (Known Constraint)
+### 2.6 ff-only Merge Invariant
 
-*   The Critic uses `git log -1 --grep='[status tag]'` with no branch specifier
-*   `git log` only searches commits reachable from HEAD
-*   A status commit (TESTING or COMPLETE) on an unmerged branch is invisible to other branches
-*   This is a known, documented limitation — not a bug
-*   Workaround: CDD Collab Mode queries each worktree's HEAD directly using `git -C <path> log`
+*   All merges from isolation branches to `main` use `git merge --ff-only`.
+*   If the branch cannot be fast-forwarded (DIVERGED state), the agent must rebase first via `/pl-local-pull`.
+*   This prevents merge commits on `main` and keeps history linear.
 
-### 2.7 ACTIVE_EDITS.md Protocol (Multi-Architect Only)
+### 2.7 .purlin/ Exclusion from Dirty Detection
 
-*   Only applies when `config.json` has `"collaboration": { "multi_architect": true }`
-*   When active, each Architect session MUST create `.purlin/ACTIVE_EDITS.md` on start (committed)
-*   The file declares which feature files are currently being edited (one per line, with author and timestamp)
-*   Other Architect sessions MUST read this file before editing and check for conflicts
-*   On session end, the Architect removes their entries and commits the update
-*   This file MUST NOT be gitignored — it is the coordination signal
-*   For single-Architect workflows (the default), this file does not exist and is not needed
+*   `.purlin/` files are excluded from dirty detection in all isolation scripts and commands.
+*   Auto-propagated `config.json` changes must not trigger false dirty blocks.
+*   This applies in `kill_isolation.sh`, `/pl-local-push`, and any other dirty check in the collab toolchain.
+
+### 2.8 Critic Branch-Scope Limitation (Known Constraint)
+
+*   The Critic uses `git log -1 --grep='[status tag]'` with no branch specifier.
+*   `git log` only searches commits reachable from HEAD.
+*   A status commit (TESTING or COMPLETE) on an unmerged isolation branch is invisible to other branches.
+*   This is a known, documented limitation — not a bug.
+*   Workaround: CDD Isolated Agents Mode queries each worktree's HEAD directly using `git -C <path> log`.
+
+### 2.9 ACTIVE_EDITS.md Protocol (Multi-Architect Only)
+
+*   Only applies when `config.json` has `"collaboration": { "multi_architect": true }`.
+*   When active, each Architect session MUST create `.purlin/ACTIVE_EDITS.md` on start (committed).
+*   The file declares which feature files are currently being edited (one per line, with author and timestamp).
+*   Other Architect sessions MUST read this file before editing and check for conflicts.
+*   On session end, the Architect removes their entries and commits the update.
+*   This file MUST NOT be gitignored — it is the coordination signal.
+*   For single-Architect workflows (the default), this file does not exist and is not needed.
 
 ## 3. Section-Level Ownership Reference
 
@@ -78,9 +90,9 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 
 ## 4. Local vs. Remote Collaboration
 
-**Local Collaboration:** Single machine, multiple git worktrees (one per role), CDD dashboard runs at project root.
+**Local Isolation:** Single machine, multiple named git worktrees, CDD dashboard runs at project root.
 
-**Remote Collaboration:** Multiple machines, lifecycle branches pushed to origin, CDD Collab Mode shows remote branch status via `git branch -r`.
+**Remote Collaboration:** Multiple machines, lifecycle branches pushed to origin, CDD Isolated Agents Mode shows remote branch status via `git branch -r`.
 
 ## Scenarios
 

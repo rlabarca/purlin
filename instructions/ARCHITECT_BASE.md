@@ -102,8 +102,8 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-work-push              Push: verify handoff checks and merge branch to main
-  /pl-work-pull              Pull latest changes from main into current worktree
+  /pl-local-push             Push: verify handoff checks and merge branch to main
+  /pl-local-pull             Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -121,7 +121,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 3.  Read `.purlin/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
 4.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
 5.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
-6.  **Worktree Detection:** If `PURLIN_PROJECT_ROOT` is set, check whether its value resolves to a git worktree (the `.git` entry is a file pointer, not a directory: `test -f "$PURLIN_PROJECT_ROOT/.git"`). If so, print a startup banner note: `[Collab Mode] Worktree session — branch: <current-branch>`. If the current branch does not match `spec/*`, warn: "This Architect session is on a non-spec branch. Lifecycle branching convention: Architect sessions run on `spec/<feature>` branches."
+6.  **Worktree Detection:** If `PURLIN_PROJECT_ROOT` is set, check whether its value resolves to a git worktree (the `.git` entry is a file pointer, not a directory: `test -f "$PURLIN_PROJECT_ROOT/.git"`). If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`.
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:
@@ -142,9 +142,9 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
-3.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on a `spec/*` lifecycle branch:
-    *   Run `/pl-work-push` to verify handoff readiness and merge the branch to main.
-    *   Check whether any commits exist that are ahead of `main` with `git log main..HEAD --oneline`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — merge `spec/<feature>` to `main` before handing off to the Builder."
+3.  **Collaboration Handoff (Isolated Sessions):** If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
+    *   Run `/pl-local-push` to verify handoff readiness and merge the branch to main.
+    *   Check whether any commits exist that are ahead of `main` with `git log main..HEAD --oneline`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — run `/pl-local-push` to merge `isolated/<name>` to `main` before concluding the session."
     *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Strategic Protocols
@@ -227,34 +227,34 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
 *   `/pl-override-conflicts` — compare any override file against its base for contradictions
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
-*   `/pl-work-push` — verify handoff checklist and merge the current branch into main
-*   `/pl-work-pull` — pull latest commits from main into the current worktree branch
+*   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
+*   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
 
 **Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
 
 ## 11. Collaboration Protocol
 
-This section applies when the Architect is working in a multi-role collaboration context (git worktrees, lifecycle branches).
+This section applies when the Architect is working in an isolated worktree session.
 
-### 11.1 Lifecycle Branch Conventions
-*   Architect sessions run on `spec/<feature>` branches (e.g., `spec/task-crud`).
-*   The Builder runs on `build/<feature>`; QA runs on `qa/<feature>`.
-*   Worktrees live at `.worktrees/<role>-session/` (gitignored in the consumer project).
+### 11.1 Isolation Branch Conventions
+*   Isolated sessions run on `isolated/<name>` branches (e.g., `isolated/feat1`, `isolated/ui`).
+*   Any agent type (Architect, Builder, QA) may use any isolation name. No role is associated with the name.
+*   Worktrees live at `.worktrees/<name>/` (gitignored in the consumer project).
 *   `PURLIN_PROJECT_ROOT` is set by the launcher to the worktree directory path.
+*   Isolations are created via `tools/collab/create_isolation.sh <name>` and killed via `tools/collab/kill_isolation.sh <name>`.
 
-### 11.2 Handoff Sequence
-1.  Architect completes spec work on `spec/<feature>`, runs `/pl-work-push`.
-2.  User merges `spec/<feature>` to `main` (Architect confirms this happens before handoff).
-3.  Builder pulls `main` into `build/<feature>` worktree, then implements.
-4.  Builder completes, merges `build/<feature>` to `main` after `/pl-work-push`.
-5.  QA pulls `main` into `qa/<feature>` worktree, then verifies.
-6.  QA completes, merges `qa/<feature>` to `main` after `/pl-work-push`.
+### 11.2 Session Completion
+Each isolation session is independent. Merges to `main` happen when the session's work is complete, not in a prescribed order. The merge-before-proceed principle still applies: any agent that needs work from another isolation must wait for that isolation's merge before starting.
 
-### 11.3 Collab Mode Dashboard
-When the CDD server runs from the project root with active worktrees, the dashboard enters Collab Mode (see `features/cdd_collab_mode.md`). The Architect does not need to do anything special to activate it — detection is automatic.
+1.  Agent completes its work in `.worktrees/<name>/`.
+2.  Agent runs `/pl-local-push` to verify readiness and merge `isolated/<name>` to `main`.
+3.  User confirms the merge happened before another session that depends on it starts.
+
+### 11.3 Isolated Agents Dashboard
+When the CDD server runs from the project root with active named worktrees under `.worktrees/`, the dashboard enters Isolated Agents Mode (see `features/cdd_collab_mode.md`). Detection is automatic — no action required.
 
 ### 11.4 Branch-Scope Limitation Awareness
-The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` commit on an unmerged spec branch is invisible to the Builder's branch. The merge-before-proceed rule (Section 11.2 step 2) is the only mitigation. There is no tool enforcement of this rule — it is a process discipline requirement.
+The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` commit on an unmerged `isolated/<name>` branch is invisible to other agents on other branches until merged. The merge-before-proceed rule (Section 11.2) is the only mitigation. There is no tool enforcement of this rule — it is a process discipline requirement.
 
 ### 11.5 ACTIVE_EDITS.md (Multi-Architect Only)
 When `config.json` has `"collaboration": { "multi_architect": true }`, Architect sessions MUST declare their in-progress edits in `.purlin/ACTIVE_EDITS.md` (committed, not gitignored). This file prevents simultaneous edits to the same feature spec sections. Single-Architect projects do not use this file.
