@@ -1439,18 +1439,19 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">
-        <div class="section-hdr subsection-hdr" onclick="toggleSection('isolation-subsection')">
-          <span class="chevron expanded" id="isolation-subsection-chevron">&#9654;</span>
-          <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" data-collapsed-class="{iso_badge_css}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-muted)">ISOLATED AGENTS</span>
-          <span class="section-badge" id="isolation-subsection-badge" style="display:none">{isolation_badge}</span>
-        </div>
-        <div class="section-body" id="isolation-subsection">
-          {creation_row_html}
-          {isolation_html}
-        </div>
-        <h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Local (main)</h4>
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
+      </div>
+    </div>
+    <div class="ctx" style="margin-top:10px">
+      <div class="section-hdr" onclick="toggleSection('isolation-section')">
+        <span class="chevron" id="isolation-section-chevron">&#9654;</span>
+        <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" data-collapsed-class="{iso_badge_css}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">ISOLATED AGENTS</span>
+        <span class="section-badge" id="isolation-section-badge" style="display:none">{isolation_badge}</span>
+      </div>
+      <div class="section-body collapsed" id="isolation-section">
+        {creation_row_html}
+        {isolation_html}
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1694,7 +1695,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-subsection'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1703,7 +1704,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-subsection'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1740,7 +1741,7 @@ function toggleSection(sectionId) {{
     if (badge) badge.style.display = '';
   }}
   // Isolation sub-heading: swap heading text on collapse/expand
-  if (sectionId === 'isolation-subsection') {{
+  if (sectionId === 'isolation-section') {{
     applyIsolationHeadingState();
   }}
   saveSectionStates();
@@ -1748,7 +1749,7 @@ function toggleSection(sectionId) {{
 
 function applyIsolationHeadingState() {{
   var heading = document.getElementById('isolation-heading');
-  var body = document.getElementById('isolation-subsection');
+  var body = document.getElementById('isolation-section');
   if (!heading || !body) return;
   var isCollapsed = body.classList.contains('collapsed');
   if (isCollapsed) {{
@@ -1770,7 +1771,7 @@ function applyIsolationHeadingState() {{
     heading.style.fontWeight = '700';
     heading.style.letterSpacing = '0.1em';
     heading.style.textTransform = 'uppercase';
-    heading.style.color = 'var(--purlin-muted)';
+    heading.style.color = 'var(--purlin-dim)';
   }}
 }}
 
