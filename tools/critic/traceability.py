@@ -38,15 +38,15 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
       1. tests/<feature_stem>/ directory
       2. Tool directories under tools_root matching the feature
 
-    Discovers both test_*.py (Python) and test_*.sh (Bash) files.
+    Discovers any file whose name starts with 'test' (case-sensitive),
+    regardless of file extension.
 
     Returns list of absolute file paths.
     """
     test_files = []
 
     def _is_test_file(fname):
-        return fname.startswith('test') and (
-            fname.endswith('.py') or fname.endswith('.sh'))
+        return fname.startswith('test')
 
     # Primary: tests/<feature_stem>/
     tests_dir = os.path.join(project_root, 'tests', feature_stem)
@@ -143,11 +143,31 @@ def extract_bash_test_scenarios(filepath):
     return entries
 
 
-def extract_test_entries(filepath):
-    """Dispatch test entry extraction based on file type.
+def extract_generic_test_entry(filepath):
+    """Generic fallback extractor for non-Python, non-Bash test files.
 
-    .py files -> extract_test_functions (Python)
-    .sh files -> extract_bash_test_scenarios (Bash)
+    Produces a single test entry per file. The entry name is the file
+    basename (without extension), and the entry body is the full file
+    content.
+
+    Returns list of dicts: [{"name": str, "body": str}]
+    """
+    try:
+        with open(filepath, 'r') as f:
+            content = f.read()
+    except (IOError, OSError):
+        return []
+
+    basename = os.path.splitext(os.path.basename(filepath))[0]
+    return [{'name': basename, 'body': content}]
+
+
+def extract_test_entries(filepath):
+    """Dispatch test entry extraction based on file type (tiered).
+
+    Tier 1: .py files -> extract_test_functions (Python)
+    Tier 2: .sh files -> extract_bash_test_scenarios (Bash)
+    Tier 3: all other files -> extract_generic_test_entry (fallback)
 
     Returns list of dicts: [{"name": str, "body": str}]
     """
@@ -155,7 +175,7 @@ def extract_test_entries(filepath):
         return extract_test_functions(filepath)
     elif filepath.endswith('.sh'):
         return extract_bash_test_scenarios(filepath)
-    return []
+    return extract_generic_test_entry(filepath)
 
 
 def match_scenario_to_tests(scenario_keywords, test_functions):

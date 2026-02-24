@@ -22,6 +22,7 @@ from traceability import (
     extract_test_functions,
     extract_bash_test_scenarios,
     extract_test_entries,
+    extract_generic_test_entry,
     match_scenario_to_tests,
     parse_traceability_overrides,
     run_traceability,
@@ -679,7 +680,7 @@ class TestCheckLogicDriftEnabled(unittest.TestCase):
     """Integration test: check_logic_drift when LLM is enabled."""
 
     @patch('critic.discover_test_files')
-    @patch('critic.extract_test_functions')
+    @patch('critic.extract_test_entries')
     @patch('critic.run_logic_drift')
     def test_enabled_calls_run_logic_drift(self, mock_drift,
                                            mock_extract, mock_discover):
@@ -1294,11 +1295,11 @@ class TestPolicyAnchoringMissingPrereqFile(unittest.TestCase):
 
 
 # ===================================================================
-# Bash Test File Discovery and Scenario Parsing Tests
+# Language-Agnostic Test File Discovery and Scenario Parsing Tests
 # ===================================================================
 
-class TestBashTestFileDiscovery(unittest.TestCase):
-    """Scenario: Bash Test File Discovery"""
+class TestLanguageAgnosticTestFileDiscovery(unittest.TestCase):
+    """Scenario: Language-Agnostic Test File Discovery"""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -1308,15 +1309,20 @@ class TestBashTestFileDiscovery(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_discovers_both_py_and_sh(self):
+    def test_discovers_py_sh_and_ts(self):
+        """Discovery includes .py, .sh, and .ts files based on 'test' prefix."""
         with open(os.path.join(self.test_dir, 'test_feature.py'), 'w') as f:
             f.write('def test_something(): pass\n')
         with open(os.path.join(self.test_dir, 'test_feature.sh'), 'w') as f:
             f.write('echo "[Scenario] Test Something"\n')
+        with open(os.path.join(self.test_dir, 'test_feature.ts'), 'w') as f:
+            f.write('describe("feature", () => { it("works", () => {}); });\n')
         files = discover_test_files(self.root, 'my_feature', tools_root='tools')
         extensions = {os.path.splitext(f)[1] for f in files}
         self.assertIn('.py', extensions)
         self.assertIn('.sh', extensions)
+        self.assertIn('.ts', extensions)
+        self.assertEqual(len(files), 3)
 
     def test_discovers_sh_only(self):
         with open(os.path.join(self.test_dir, 'test_feature.sh'), 'w') as f:
@@ -1324,6 +1330,20 @@ class TestBashTestFileDiscovery(unittest.TestCase):
         files = discover_test_files(self.root, 'my_feature', tools_root='tools')
         self.assertEqual(len(files), 1)
         self.assertTrue(files[0].endswith('.sh'))
+
+    def test_discovery_based_on_prefix_not_extension(self):
+        """Any file starting with 'test' is discovered, regardless of extension."""
+        with open(os.path.join(self.test_dir, 'test_feature.go'), 'w') as f:
+            f.write('package main\n')
+        with open(os.path.join(self.test_dir, 'test_feature.rs'), 'w') as f:
+            f.write('#[test]\nfn it_works() {}\n')
+        with open(os.path.join(self.test_dir, 'helper.py'), 'w') as f:
+            f.write('# not a test file\n')
+        files = discover_test_files(self.root, 'my_feature', tools_root='tools')
+        basenames = {os.path.basename(f) for f in files}
+        self.assertIn('test_feature.go', basenames)
+        self.assertIn('test_feature.rs', basenames)
+        self.assertNotIn('helper.py', basenames)
 
 
 class TestBashScenarioExtraction(unittest.TestCase):
@@ -1414,11 +1434,41 @@ class TestExtractTestEntries(unittest.TestCase):
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0]['name'], 'Alpha Test')
 
-    def test_unknown_extension(self):
+    def test_generic_fallback_for_unknown_extension(self):
+        """Generic fallback produces single entry with basename and full content."""
         path = os.path.join(self.test_dir, 'test_sample.rb')
         with open(path, 'w') as f:
-            f.write('# ruby test\n')
+            f.write('# ruby test\nRSpec.describe "feature" do\n  it "works" do\n  end\nend\n')
         entries = extract_test_entries(path)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]['name'], 'test_sample')
+        self.assertIn('ruby test', entries[0]['body'])
+        self.assertIn('RSpec.describe', entries[0]['body'])
+
+    def test_generic_fallback_ts_file(self):
+        """Scenario: Generic Fallback Test Extraction — .ts file."""
+        content = 'describe("feature", () => {\n  it("bootstrap consumer project", () => {\n    expect(true).toBe(true);\n  });\n});\n'
+        path = os.path.join(self.test_dir, 'test_feature.ts')
+        with open(path, 'w') as f:
+            f.write(content)
+        entries = extract_test_entries(path)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]['name'], 'test_feature')
+        self.assertEqual(entries[0]['body'], content)
+
+    def test_generic_fallback_keyword_matching(self):
+        """Generic fallback entries participate in keyword matching."""
+        content = 'describe("bootstrap consumer project", () => { it("works", () => {}); });\n'
+        path = os.path.join(self.test_dir, 'test_feature.ts')
+        with open(path, 'w') as f:
+            f.write(content)
+        entries = extract_test_entries(path)
+        keywords = {'bootstrap', 'consumer', 'project'}
+        matches = match_scenario_to_tests(keywords, entries)
+        self.assertEqual(len(matches), 1)
+
+    def test_generic_fallback_nonexistent_file(self):
+        entries = extract_generic_test_entry('/nonexistent/file.ts')
         self.assertEqual(entries, [])
 
 

@@ -59,7 +59,6 @@ from traceability import (  # noqa: E402
     run_traceability,
     extract_keywords,
     discover_test_files,
-    extract_test_functions,
     extract_test_entries,
 )
 from policy_check import (  # noqa: E402
@@ -684,7 +683,7 @@ def check_logic_drift(scenarios=None, traceability_result=None,
     test_files = discover_test_files(PROJECT_ROOT, feature_stem, TOOLS_ROOT)
     all_functions = []
     for tf in test_files:
-        all_functions.extend(extract_test_functions(tf))
+        all_functions.extend(extract_test_entries(tf))
     func_lookup = {f['name']: f for f in all_functions}
 
     # Assemble pairs from traceability matched data
