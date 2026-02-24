@@ -1056,17 +1056,27 @@ def generate_action_items(feature_result, cdd_status=None):
                     })
                 elif declared_scope.startswith('targeted:'):
                     targeted = regression_scope.get('scenarios', [])
-                    names = ', '.join(targeted)
-                    qa_items.append({
-                        'priority': 'MEDIUM',
-                        'category': 'testing_status',
-                        'feature': feature_name,
-                        'description': (
-                            f'Verify {feature_name}: '
-                            f'{len(targeted)} targeted scenario(s) '
-                            f'[{names}]'
-                        ),
-                    })
+                    # Filter to manual scenarios only (§2.12)
+                    manual_titles = {
+                        s['title'] for s in scenarios
+                        if s.get('is_manual', False)
+                    }
+                    manual_targeted = [
+                        t for t in targeted if t in manual_titles
+                    ]
+                    if manual_targeted:
+                        names = ', '.join(manual_targeted)
+                        qa_items.append({
+                            'priority': 'MEDIUM',
+                            'category': 'testing_status',
+                            'feature': feature_name,
+                            'description': (
+                                f'Verify {feature_name}: '
+                                f'{len(manual_targeted)} targeted '
+                                f'scenario(s) '
+                                f'[{names}]'
+                            ),
+                        })
                 elif declared_scope == 'dependency-only':
                     dep_count = len(regression_scope.get('scenarios', []))
                     qa_items.append({

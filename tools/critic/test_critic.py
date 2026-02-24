@@ -3671,6 +3671,198 @@ class TestBuilderActionItemsFromInvalidTargetedScopeNames(unittest.TestCase):
         ]
         self.assertEqual(len(scope_items), 0)
 
+class TestNoQAActionItemForTargetedScopeNamingOnlyAutomatedScenarios(
+        unittest.TestCase):
+    """Scenario: No QA Action Item for Targeted Scope Naming Only Automated
+    Scenarios
+
+    When a targeted scope names only automated scenarios (no manual ones),
+    no QA verification action item should be generated for the feature.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Feature with ONLY automated scenarios (0 manual)
+        feature_content = """\
+# Feature: AutoOnly
+
+> Label: "Tool: AutoOnly"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Automated Scenario
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios
+
+None. All scenarios for this feature are fully automated.
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'autoonly.md'), 'w') as f:
+            f.write(feature_content)
+        # Feature with mix of automated and manual scenarios
+        mixed_content = """\
+# Feature: Mixed
+
+> Label: "Tool: Mixed"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto One
+    Given X When Y Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual One
+    Given A When B Then C
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'mixed.md'), 'w') as f:
+            f.write(mixed_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_targeted_automated_only_no_qa_item(self):
+        """Targeted scope naming only automated scenarios generates no QA item."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/autoonly.md',
+                                 'label': 'AutoOnly'}],
+                    'todo': [],
+                    'complete': [],
+                },
+            }
+            result = {
+                'feature_file': 'features/autoonly.md',
+                'spec_gate': {'status': 'PASS', 'checks': {}},
+                'implementation_gate': {
+                    'status': 'PASS',
+                    'checks': {
+                        'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                         'detail': 'OK'},
+                        'policy_adherence': {'status': 'PASS',
+                                             'violations': [],
+                                             'detail': 'OK'},
+                        'structural_completeness': {'status': 'PASS',
+                                                    'detail': 'OK'},
+                        'builder_decisions': {
+                            'status': 'PASS',
+                            'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                        'DEVIATION': 0, 'DISCOVERY': 0},
+                            'detail': 'OK',
+                        },
+                        'logic_drift': {'status': 'PASS', 'pairs': [],
+                                        'detail': 'OK'},
+                    },
+                },
+                'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                                 'discoveries': 0, 'intent_drifts': 0},
+                'regression_scope': {
+                    'declared': 'targeted:Some Automated Scenario',
+                    'scenarios': ['Some Automated Scenario'],
+                    'visual_items': 0,
+                    'cross_validation_warnings': [],
+                },
+            }
+            items = generate_action_items(result, cdd_status=cdd_status)
+            qa_testing_items = [
+                i for i in items['qa']
+                if i['category'] == 'testing_status'
+            ]
+            self.assertEqual(len(qa_testing_items), 0,
+                             'No QA item should be generated when all '
+                             'targeted scenarios are automated')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_targeted_mixed_keeps_only_manual_in_qa_item(self):
+        """Targeted scope with mix of auto+manual keeps only manual in QA."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/mixed.md',
+                                 'label': 'Mixed'}],
+                    'todo': [],
+                    'complete': [],
+                },
+            }
+            result = {
+                'feature_file': 'features/mixed.md',
+                'spec_gate': {'status': 'PASS', 'checks': {}},
+                'implementation_gate': {
+                    'status': 'PASS',
+                    'checks': {
+                        'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                         'detail': 'OK'},
+                        'policy_adherence': {'status': 'PASS',
+                                             'violations': [],
+                                             'detail': 'OK'},
+                        'structural_completeness': {'status': 'PASS',
+                                                    'detail': 'OK'},
+                        'builder_decisions': {
+                            'status': 'PASS',
+                            'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                        'DEVIATION': 0, 'DISCOVERY': 0},
+                            'detail': 'OK',
+                        },
+                        'logic_drift': {'status': 'PASS', 'pairs': [],
+                                        'detail': 'OK'},
+                    },
+                },
+                'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                                 'discoveries': 0, 'intent_drifts': 0},
+                'regression_scope': {
+                    'declared': 'targeted:Auto One,Manual One',
+                    'scenarios': ['Auto One', 'Manual One'],
+                    'visual_items': 0,
+                    'cross_validation_warnings': [],
+                },
+            }
+            items = generate_action_items(result, cdd_status=cdd_status)
+            qa_testing_items = [
+                i for i in items['qa']
+                if i['category'] == 'testing_status'
+            ]
+            self.assertEqual(len(qa_testing_items), 1)
+            desc = qa_testing_items[0]['description']
+            self.assertIn('1 targeted scenario(s)', desc)
+            self.assertIn('Manual One', desc)
+            self.assertNotIn('Auto One', desc)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
 
 # ===================================================================
 # Visual Specification Tests (Section 2.13)
