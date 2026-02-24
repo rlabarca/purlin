@@ -34,6 +34,9 @@ The framework defines three distinct agent roles:
 ### 3. Knowledge Colocation
 Instead of separate documentation or global logs, implementation discoveries, hardware constraints, and design decisions are stored directly within the feature specifications they pertain to.
 
+*   **Companion files (`*.impl.md`):** When a feature's Implementation Notes grow large, they can be extracted to a `<name>.impl.md` file alongside the spec. The spec is reduced to a one-line stub linking to the companion. Knowledge stays colocated -- one directory listing away from its requirements -- without bloating the spec file.
+*   **Visual Specifications:** Features with UI components may include a `## Visual Specification` section with per-screen checklists and design asset references (Figma URLs, local mockups). These are Architect-owned and exempt from Gherkin traceability. They give the QA Agent a separate verification track for static appearance checks -- layout, color, typography -- distinct from interactive scenario execution.
+
 ### 4. Layered Instruction Architecture
 The framework separates **framework rules** (base layer) from **project-specific context** (override layer):
 *   **Base Layer** (`purlin/instructions/` in your project): Core rules, protocols, and philosophies. Stays inside the Purlin submodule -- never copied to your project. Consumed directly by the launcher scripts at runtime.
@@ -240,6 +243,38 @@ Builder (Phase 1)
 
 ---
 
+## Isolated Teams
+
+Purlin supports multiple concurrent agent sessions through named git worktrees -- **isolated teams**. Each isolation is an independent workspace on a dedicated branch where any agent (Architect, Builder, or QA) can work without interfering with other running sessions.
+
+### How It Works
+
+A single command creates one isolated team:
+
+```bash
+tools/collab/create_isolation.sh <name>
+```
+
+This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-local-push` to run the pre-merge handoff checklist and merge the branch back to `main`.
+
+```
+Architect (isolated/design)          Builder (isolated/feat1)
+  → designs new specs                  → implements existing backlog
+  → /pl-local-push                     → /pl-local-push
+       ↓ merge to main                      ↓ merge to main
+                    → QA verifies combined result
+```
+
+### Rules
+
+*   **Merge-before-proceed:** Each isolation must merge to `main` before another session that depends on its changes can start. The Critic only sees commits reachable from HEAD -- a `[Complete]` status on an unmerged branch is invisible to other agents until merged.
+*   **No role assignment:** The isolation name is the identifier. `feat1`, `ui`, `hotfix` are all valid -- any agent type may use any name.
+*   **Name constraints:** 1--12 characters, matching `[a-zA-Z0-9_-]+`.
+*   **Dashboard visibility:** Active isolations appear in the **ISOLATED TEAMS** section of the CDD Dashboard, showing branch name, sync state relative to `main` (AHEAD / BEHIND / SAME / DIVERGED), and a file change summary by category (Specs, Tests, Code). Create and kill isolations directly from the dashboard.
+*   **Agent config propagation:** When Isolated Teams Mode is active, saving agent config changes via the dashboard propagates the update to all active worktrees simultaneously.
+
+---
+
 ## Setup & Configuration For Your Project
 
 ### 1. Install Claude Code
@@ -280,7 +315,21 @@ Your Architect agent will guide you through customizing the overrides for your p
 ./purlin/tools/cdd/start.sh
 ```
 
-Open **http://localhost:8086** in your browser. The dashboard shows real-time feature status by role (Architect, Builder, QA) and the release checklist.
+Open **http://localhost:8086** in your browser. The dashboard has two modes:
+
+*   **Status view:** Real-time feature status by role (Architect, Builder, QA), the release checklist, and workspace / isolated team state. The **Agent Config** panel lets you configure model, effort, permissions, and startup behavior for each agent directly from the browser -- changes are written to `.purlin/config.json` and committed automatically.
+*   **Spec Map view:** An interactive dependency graph of all feature files, showing prerequisite chains and category groupings. Toggle between Status and Spec Map using the view mode controls in the dashboard header.
+
+### 6. Startup Controls (Optional)
+
+Each agent's session behavior is governed by two per-agent flags in `.purlin/config.json`:
+
+| Flag | Default | Behavior |
+|---|---|---|
+| `startup_sequence` | `true` | Runs full orientation on launch (Critic report, dependency graph, action items). Set to `false` to skip straight to the command table. |
+| `recommend_next_actions` | `true` | After orientation, presents a prioritized work plan and asks for approval. Requires `startup_sequence: true`. Set to `false` to orient silently then await direction. |
+
+Both `false` activates expert mode: the command table is printed and the agent waits for a direct instruction. The **Agent Config** panel in the CDD Dashboard provides UI toggles for these flags without editing `config.json` directly.
 
 ### Python Environment (Optional)
 
@@ -351,6 +400,6 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 **Known limitations:**
 
 - Built exclusively for Claude Code. Supporting additional models is a goal but model feature disparity makes that non-trivial.
-- Single-threaded, single-person, single-machine collaboration only. Next steps: local concurrent workers collaborating, then a combination of remote and local workers.
+- Local concurrent collaboration is supported via Isolated Teams (named worktrees). Cross-machine and remote worker support is a planned future direction.
 - The release checklist is long enough to stress context windows. For now, the checklist can be interrupted and resumed with: `/pl-release-run start with step X, steps 1 through X-1 have passed`. Modularizing the checklist to reduce token cost is a planned improvement.
 
