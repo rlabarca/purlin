@@ -154,10 +154,10 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
 *   **Tombstone Role Status:** Tombstone files at `features/tombstones/<name>.md` do not have associated `critic.json` files. The dashboard MUST hardcode their role status: `architect=DONE`, `builder=TODO`, `qa=N/A`. This is a fixed invariant, not a computed value. The No Direct Computation rule applies only to regular feature files.
 
-### 2.5a Collab Mode Integration
-When git worktrees are detected under `.worktrees/` at the project root, the `/status.json` response is extended with `collab_mode: true` and a `worktrees` array. See `features/cdd_agent_isolation.md` for the full specification of the WORKSPACE & COLLABORATION dashboard section and the complete `worktrees` field schema.
+### 2.5a Isolated Agents Mode Integration
+When git worktrees are detected under `.worktrees/` at the project root, the `/status.json` response is extended with `isolations_active: true` and a `worktrees` array. See `features/cdd_agent_isolation.md` for the full specification of the ISOLATED AGENTS dashboard section and the complete `worktrees` field schema.
 
-The WORKSPACE section of the dashboard becomes "WORKSPACE & COLLABORATION" when Collab Mode is active. All existing WORKSPACE behavior is preserved and the new Sessions, Pre-Merge Status, and Local (main) sub-sections are added. This extension is purely additive — the standard status view, role columns, and feature table are unchanged.
+The ISOLATED AGENTS section is a peer section rendered directly below WORKSPACE at the same indent level. It is always present in the dashboard; when Isolated Agents Mode is active, it is populated with the Sessions table. This extension is purely additive — the standard status view, role columns, and feature table are unchanged.
 
 ### 2.6 CLI Status Tool (Agent Interface)
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.

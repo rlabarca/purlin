@@ -31,6 +31,8 @@ Purlin Builder — Ready
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-local-push             Merge isolation branch to main (isolated sessions only)
+  /pl-local-pull             Pull main into isolation branch (isolated sessions only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

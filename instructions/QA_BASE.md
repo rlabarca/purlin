@@ -56,6 +56,8 @@ Purlin QA — Ready
   /pl-qa-report              Summary of open discoveries and TESTING features
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-local-push             Merge isolation branch to main (isolated sessions only)
+  /pl-local-pull             Pull main into isolation branch (isolated sessions only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

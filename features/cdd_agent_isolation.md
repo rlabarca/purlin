@@ -173,11 +173,11 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 **Creation Row (always the first item in the expanded Isolated Agents sub-section):**
 
 - The row is prepended with the label "Create An Isolated Agent".
-- The label is followed by a text input (max 8 characters, validated) and a "Create" button.
+- The label is followed by a text input (max 12 characters, validated) and a "Create" button.
 - The creation row is never hidden — it is visible whether or not any worktrees are active, and it always appears above the Sessions table.
 - **Input value persistence:** The name input value is preserved across auto-refreshes. The dashboard JavaScript saves the input's current value to a module-level variable before each DOM update and restores it immediately after. The user's in-progress text is never wiped by the 5-second polling cycle.
 - **Input visual style:** The name text input uses the same color scheme as the dashboard header's search/filter input: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder text color, and `--purlin-primary` foreground text color. This ensures consistent theme adaptation between Blueprint (dark) and Architect (light) modes.
-- Client-side validation: name must match `[a-zA-Z0-9_-]+` and be ≤8 characters. The Create button is disabled until the name is valid.
+- Client-side validation: name must match `[a-zA-Z0-9_-]+` and be ≤12 characters. The Create button is disabled until the name is valid.
 - Clicking Create sends `POST /isolate/create` with body `{ "name": "<name>" }`.
 - While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error).
 - The server runs `tools/collab/create_isolation.sh <name> --project-root <PROJECT_ROOT>`.
@@ -290,7 +290,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 #### Scenario: Create Isolation Rejected When Name Is Invalid
 
     Given the CDD server is running
-    When a POST request is sent to /isolate/create with body {"name": "toolong12"}
+    When a POST request is sent to /isolate/create with body {"name": "toolongname123"}
     Then the server returns { "error": "..." }
     And no worktree is created
 
@@ -392,7 +392,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 #### Scenario: New Isolation Input Rejects Invalid Names
 
     Given the CDD dashboard is open
-    When the User types "toolong12" (9 chars) into the New Isolation input
+    When the User types "toolongname123" (14 chars) into the New Isolation input
     Then the Create button remains disabled
     And an inline validation message is shown
 
@@ -431,6 +431,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Given the CDD dashboard is open
     And the Isolated Agents sub-section is expanded
     And no worktrees are active
+    When the User views the Isolated Agents section content
     Then the creation row "Create An Isolated Agent [input] [Create]" is visible
     And no Sessions table rows are shown
 
@@ -441,6 +442,14 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When the 5-second auto-refresh cycle triggers a DOM update
     Then the name input still contains "feat3"
     And the Create button state is unchanged
+
+#### Scenario: Name Input Focus Restored After Auto-refresh
+
+    Given the CDD dashboard is open
+    And the User has clicked into the name input and typed "feat3"
+    When the 5-second auto-refresh cycle triggers a DOM update
+    Then the name input still contains "feat3"
+    And the name input retains keyboard focus without requiring a click to resume typing
 
 ---
 
@@ -472,6 +481,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 
 - **Reference:** N/A
 - [ ] The creation row ("Create An Isolated Agent [input] [Create]") is always the first item when the ISOLATED AGENTS section is expanded, regardless of whether any worktrees are active
+- [ ] The creation row has sufficient top padding that a focused input's focus ring is fully visible and does not clip under any section header or divider element
 - [ ] The name input uses the same color scheme as the header filter box: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder, `--purlin-primary` text color
 - [ ] The text input preserves its value across auto-refreshes (typing a name and waiting for the 5-second cycle does not erase the text)
 - [ ] The Create button is disabled when the input is empty or contains an invalid name
@@ -539,18 +549,18 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - **Observed Behavior:** The name input loses keyboard focus when the 5-second auto-refresh cycle fires a DOM update, even though the typed value is correctly preserved. The user must click back into the field to resume typing.
 - **Expected Behavior:** The spec says to preserve the input value across refreshes, but the intent is clearly to preserve the full in-progress state — including focus. After a DOM update, focus should be restored to the input if it was focused before the refresh.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED — New scenario "Name Input Focus Restored After Auto-refresh" added to Manual Scenarios.
 
 ### [DISCOVERY] Name input focus highlight clips under header; creation row needs more padding (Discovered: 2026-02-23)
 - **Scenario:** NONE
 - **Observed Behavior:** When the name input is focused/selected, its focus highlight ring clips beneath the section header dividing line. The creation row has insufficient vertical padding, causing the focused input to visually overlap with the header above it.
 - **Expected Behavior:** The creation row should have enough top padding that a focused input's highlight ring is fully visible and does not clip under any header or divider element. No scenario or visual spec checklist item currently covers row padding or focus ring visibility.
-- **Action Required:** Architect
-- **Status:** OPEN
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED — Visual spec checklist item added to Screen: CDD Dashboard — Isolation Controls covering creation row padding and focus ring visibility.
 
 ### [SPEC_DISPUTE] 8-character isolation name limit is too restrictive; user wants 12 (Discovered: 2026-02-23)
 - **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
 - **Observed Behavior:** The name input enforces an 8-character maximum, rejecting names longer than 8 characters (e.g., "toolong12" at 9 chars is rejected).
 - **Expected Behavior:** User believes the limit should be 12 characters to allow more meaningful isolation names.
-- **Action Required:** Architect
-- **Status:** OPEN
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED — Limit changed to 12 characters throughout Section 2.8. Scenario updated to test a 14-character name ("toolongname123"). Scenario unsuspended.
