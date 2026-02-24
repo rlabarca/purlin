@@ -236,14 +236,14 @@ class TestModifiedColumnCategorization(unittest.TestCase):
 
 
 class TestWorktreeStateFileCategories(unittest.TestCase):
-    """Test _worktree_state() parses git diff main..<branch> --name-only into categories."""
+    """Test _worktree_state() parses git diff main...<branch> --name-only (three-dot) into categories."""
 
     def _mock_subprocess(self, responses):
         """Create mock for subprocess.run returning CompletedProcess-like objects.
 
         _worktree_state calls subprocess.run 4 times:
           0: git rev-parse --abbrev-ref HEAD (via _wt_cmd, cwd=wt_abs_path)
-          1: git diff main..<branch> --name-only (direct, cwd=PROJECT_ROOT)
+          1: git diff main...<branch> --name-only (three-dot, cwd=PROJECT_ROOT)
           2: git log -1 (via _wt_cmd, cwd=wt_abs_path)
           3: git rev-list --count (via _wt_cmd, cwd=wt_abs_path)
         """

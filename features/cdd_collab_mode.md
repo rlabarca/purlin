@@ -418,14 +418,14 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Observed Behavior:** QA worktree shows `AHEAD` in Main Diff but the Modified column is empty. The branch has 2 commits ahead of main (both `--allow-empty` QA status commits), so `git diff main..qa/collab --name-only` returns nothing.
 - **Expected Behavior:** Per Section 2.3 and 2.6, "Modified will always be non-empty when `main_diff` is `AHEAD` or `DIVERGED`." The spec invariant is violated when the only commits ahead of main are `--allow-empty` commits (QA status commits touch no files).
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED — Invariant relaxed: "Modified may be empty even when AHEAD or DIVERGED if the branch's commits contain no file changes." Sections 2.3, 2.4, and 2.6 updated. Builder must switch `git diff main..<branch>` to `git diff main...<branch>` (three-dot) — the two fixes share the same implementation change.
+- **Status:** RESOLVED — Implementation updated: `_worktree_state()` in `serve.py` now uses `git diff main...<branch> --name-only` (three-dot). Three-dot diffs against common ancestor, so SAME/BEHIND always produce empty Modified; AHEAD/DIVERGED may be empty if commits are `--allow-empty`.
 
 ### [BUG] BEHIND state shows non-empty Modified due to wrong git diff semantics (Discovered: 2026-02-23)
 - **Scenario:** Sessions Table Displays Worktree State
 - **Observed Behavior:** Builder worktree shows `BEHIND` with "1 Specs" in the Modified column. After main was updated (by QA merging a discovery commit to `features/cdd_collab_mode.md`), build/collab moved to BEHIND and the Modified column showed the file that MAIN changed — not anything the builder branch changed.
 - **Expected Behavior:** Per Section 2.3, "Modified will always be empty when `main_diff` is `SAME` or `BEHIND`." Root cause: the spec specifies `git diff main..<branch> --name-only` (two-dot), but two-dot git diff is a simple diff between two tips — it shows ALL file differences in both directions. For a BEHIND branch, this shows files that main added, not files the branch changed. The correct command is `git diff main...<branch> --name-only` (three-dot), which shows only what the branch changed from the common ancestor (empty for BEHIND, matching the stated invariant).
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED — All references to `git diff main..<branch>` updated to `git diff main...<branch>` (three-dot) in Sections 2.3, 2.4, and 2.6. Builder must update the implementation accordingly.
+- **Status:** RESOLVED — Implementation updated: `_worktree_state()` in `serve.py` now uses `git diff main...{branch} --name-only` (three-dot). Two-dot showed all differences between tips (both directions); three-dot shows only what the branch changed from the common ancestor (empty for BEHIND).
 
 ### [SPEC_DISPUTE] "Modified" column name is misleading — suggest renaming to "Differences" (Discovered: 2026-02-23)
 - **Scenario:** Sessions Table Displays Worktree State

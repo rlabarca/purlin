@@ -679,14 +679,15 @@ def _worktree_state(wt_abs_path):
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
 
     # Modified: files changed in this branch's commits relative to main
-    # Uses git diff main..<branch> --name-only from PROJECT_ROOT (not per-worktree)
-    # This tracks committed changes vs main, not uncommitted changes.
+    # Uses git diff main...<branch> --name-only (three-dot) from PROJECT_ROOT
+    # Three-dot diffs the branch against common ancestor — always empty for
+    # SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED.
     specs = 0
     tests = 0
     other = 0
     try:
         diff_result = subprocess.run(
-            f"git diff main..{branch} --name-only",
+            f"git diff main...{branch} --name-only",
             shell=True, capture_output=True, text=True,
             cwd=PROJECT_ROOT)
         for line in diff_result.stdout.splitlines():
