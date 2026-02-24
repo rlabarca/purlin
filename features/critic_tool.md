@@ -260,6 +260,12 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then section_completeness reports FAIL
     And the overall spec_gate status is FAIL
 
+#### Scenario: Stub With Companion Reference Not Flagged as Empty
+    Given a feature file has a stub Implementation Notes section referencing a companion .impl.md file
+    When the Critic tool runs the Spec Gate
+    Then section_completeness reports PASS
+    And the stub is not treated as empty Implementation Notes
+
 #### Scenario: Spec Gate Policy Anchoring
     Given a feature file has a Prerequisite link to policy_critic.md
     When the Critic tool runs the Spec Gate
