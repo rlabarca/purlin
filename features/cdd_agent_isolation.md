@@ -533,3 +533,17 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - **Expected Behavior:** `pl-local-push` and `pl-local-pull` should appear in the startup command table when the agent is running inside an isolated worktree. They should not be surfaced (via autocomplete or command table) to agents running on the main branch.
 - **Action Required:** Architect
 - **Status:** OPEN
+
+### [INTENT_DRIFT] Name input loses focus on auto-refresh (Discovered: 2026-02-23)
+- **Scenario:** Scenario: Name Input Preserved Across Auto-refresh
+- **Observed Behavior:** The name input loses keyboard focus when the 5-second auto-refresh cycle fires a DOM update, even though the typed value is correctly preserved. The user must click back into the field to resume typing.
+- **Expected Behavior:** The spec says to preserve the input value across refreshes, but the intent is clearly to preserve the full in-progress state — including focus. After a DOM update, focus should be restored to the input if it was focused before the refresh.
+- **Action Required:** Builder
+- **Status:** OPEN
+
+### [DISCOVERY] Name input focus highlight clips under header; creation row needs more padding (Discovered: 2026-02-23)
+- **Scenario:** NONE
+- **Observed Behavior:** When the name input is focused/selected, its focus highlight ring clips beneath the section header dividing line. The creation row has insufficient vertical padding, causing the focused input to visually overlap with the header above it.
+- **Expected Behavior:** The creation row should have enough top padding that a focused input's highlight ring is fully visible and does not clip under any header or divider element. No scenario or visual spec checklist item currently covers row padding or focus ring visibility.
+- **Action Required:** Architect
+- **Status:** OPEN
