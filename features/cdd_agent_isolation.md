@@ -178,6 +178,7 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 - **Input value persistence:** The name input value is preserved across auto-refreshes. The dashboard JavaScript saves the input's current value to a module-level variable before each DOM update and restores it immediately after. The user's in-progress text is never wiped by the 5-second polling cycle.
 - **Input visual style:** The name text input uses the same color scheme as the dashboard header's search/filter input: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder text color, and `--purlin-primary` foreground text color. This ensures consistent theme adaptation between Blueprint (dark) and Architect (light) modes.
 - Client-side validation: name must match `[a-zA-Z0-9_-]+` and be ≤12 characters. The Create button is disabled until the name is valid.
+- The name input MUST include `autocapitalize="none"` and `autocorrect="off"` HTML attributes to suppress browser auto-capitalization and autocorrect on mobile and desktop browsers.
 - Clicking Create sends `POST /isolate/create` with body `{ "name": "<name>" }`.
 - While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error).
 - The server runs `tools/collab/create_isolation.sh <name> --project-root <PROJECT_ROOT>`.
@@ -483,6 +484,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] The creation row ("Create An Isolated Agent [input] [Create]") is always the first item when the ISOLATED AGENTS section is expanded, regardless of whether any worktrees are active
 - [ ] The creation row has sufficient top padding that a focused input's focus ring is fully visible and does not clip under any section header or divider element
 - [ ] The name input uses the same color scheme as the header filter box: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder, `--purlin-primary` text color
+- [ ] The name input does not auto-capitalize on first keystroke (no browser autocapitalize behavior)
 - [ ] The text input preserves its value across auto-refreshes (typing a name and waiting for the 5-second cycle does not erase the text)
 - [ ] The Create button is disabled when the input is empty or contains an invalid name
 - [ ] An inline validation message appears for names that are too long or contain invalid characters
