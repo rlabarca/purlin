@@ -1,7 +1,7 @@
-"""Unit tests for the CDD Software Map graph generation.
+"""Unit tests for the CDD Spec Map graph generation.
 
-Covers automated scenarios from features/cdd_software_map.md.
-Outputs test results to tests/cdd_software_map/tests.json.
+Covers automated scenarios from features/cdd_spec_map.md.
+Outputs test results to tests/cdd_spec_map/tests.json.
 """
 
 import unittest
@@ -350,10 +350,10 @@ class TestMermaidGeneration(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # Run tests and produce tests/cdd_software_map/tests.json
+    # Run tests and produce tests/cdd_spec_map/tests.json
     project_root = os.path.abspath(
         os.path.join(os.path.dirname(__file__), '../../'))
-    tests_out_dir = os.path.join(project_root, "tests", "cdd_software_map")
+    tests_out_dir = os.path.join(project_root, "tests", "cdd_spec_map")
     os.makedirs(tests_out_dir, exist_ok=True)
     status_file = os.path.join(tests_out_dir, "tests.json")
 
@@ -368,7 +368,7 @@ if __name__ == '__main__':
             "status": status,
             "tests": result.testsRun,
             "failures": len(result.failures) + len(result.errors),
-            "tool": "cdd_software_map",
+            "tool": "cdd_spec_map",
             "runner": "unittest"
         }, f)
     print(f"\n{status_file}: {status}")
