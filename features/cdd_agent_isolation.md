@@ -525,8 +525,6 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - `modified` uses three-dot diff (`git diff main...<branch>`) not two-dot — three-dot shows only branch-side changes from common ancestor; two-dot shows all differences between tips (including main-side changes, which was a bug for BEHIND state).
 - Auto-refresh timer paused during create/kill requests to prevent error messages being wiped.
 
----
-
 ## User Testing Discoveries
 
 ### [BUG] pl-local-push/pull not shown in isolation startup table; appear in autocomplete on main (Discovered: 2026-02-23)
