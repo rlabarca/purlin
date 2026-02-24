@@ -26,17 +26,18 @@ Specifications are not static blueprints written once and handed off. They are c
 
 ### The Architect Agent
 *   **Focus:** "The What and The Why".
-*   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and DevOps process scripts (launcher scripts, shell wrappers, bootstrap tooling).
+*   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and process configuration (`.purlin/release/*.json`, `.purlin/config.json`).
+*   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of executable files.
 *   **Key Duty:** Designing rigorous, unambiguous specifications and enforcing architectural invariants.
 
 ### The Builder Agent
 *   **Focus:** "The How".
-*   **Ownership:** Implementation code, tests, and DevOps tool implementation (Python logic, test suites).
+*   **Ownership:** ALL implementation artifacts -- application code, DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), configuration files, and automated tests. The Builder is the sole author of all executable files regardless of domain.
 *   **Key Duty:** Translating specifications into high-quality, verified code and documenting implementation discoveries.
 
 ### The QA Agent
 *   **Focus:** "The Verification and The Feedback".
-*   **Ownership:** `## User Testing Discoveries` section in feature files (exclusive write access), manual verification execution, discovery lifecycle management.
+*   **Ownership:** `## User Testing Discoveries` section in feature files (exclusive lifecycle management), QA verification scripts (`tests/qa/`), manual verification execution, and discovery lifecycle management.
 *   **Key Duty:** Executing manual Gherkin scenarios, recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle.
 *   **Does NOT:** Write or modify application/tool code (Builder), or modify Gherkin scenarios or requirements (Architect).
 *   **Status Commits:** QA makes `[Complete]` status commits for features that have manual scenarios, after all manual scenarios pass with zero discoveries. Features with no manual scenarios are completed by the Builder.
