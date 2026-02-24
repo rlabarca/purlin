@@ -155,7 +155,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 *   **Tombstone Role Status:** Tombstone files at `features/tombstones/<name>.md` do not have associated `critic.json` files. The dashboard MUST hardcode their role status: `architect=DONE`, `builder=TODO`, `qa=N/A`. This is a fixed invariant, not a computed value. The No Direct Computation rule applies only to regular feature files.
 
 ### 2.5a Collab Mode Integration
-When git worktrees are detected under `.worktrees/` at the project root, the `/status.json` response is extended with `collab_mode: true` and a `worktrees` array. See `features/cdd_collab_mode.md` for the full specification of the WORKSPACE & COLLABORATION dashboard section and the complete `worktrees` field schema.
+When git worktrees are detected under `.worktrees/` at the project root, the `/status.json` response is extended with `collab_mode: true` and a `worktrees` array. See `features/cdd_agent_isolation.md` for the full specification of the WORKSPACE & COLLABORATION dashboard section and the complete `worktrees` field schema.
 
 The WORKSPACE section of the dashboard becomes "WORKSPACE & COLLABORATION" when Collab Mode is active. All existing WORKSPACE behavior is preserved and the new Sessions, Pre-Merge Status, and Local (main) sub-sections are added. This extension is purely additive — the standard status view, role columns, and feature table are unchanged.
 
