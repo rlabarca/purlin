@@ -419,3 +419,17 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Expected Behavior:** Per Section 2.3 and 2.6, "Modified will always be non-empty when `main_diff` is `AHEAD` or `DIVERGED`." The spec invariant is violated when the only commits ahead of main are `--allow-empty` commits (QA status commits touch no files).
 - **Action Required:** Architect
 - **Status:** OPEN
+
+### [BUG] BEHIND state shows non-empty Modified due to wrong git diff semantics (Discovered: 2026-02-23)
+- **Scenario:** Sessions Table Displays Worktree State
+- **Observed Behavior:** Builder worktree shows `BEHIND` with "1 Specs" in the Modified column. After main was updated (by QA merging a discovery commit to `features/cdd_collab_mode.md`), build/collab moved to BEHIND and the Modified column showed the file that MAIN changed — not anything the builder branch changed.
+- **Expected Behavior:** Per Section 2.3, "Modified will always be empty when `main_diff` is `SAME` or `BEHIND`." Root cause: the spec specifies `git diff main..<branch> --name-only` (two-dot), but two-dot git diff is a simple diff between two tips — it shows ALL file differences in both directions. For a BEHIND branch, this shows files that main added, not files the branch changed. The correct command is `git diff main...<branch> --name-only` (three-dot), which shows only what the branch changed from the common ancestor (empty for BEHIND, matching the stated invariant).
+- **Action Required:** Architect
+- **Status:** OPEN
+
+### [SPEC_DISPUTE] "Modified" column name is misleading — suggest renaming to "Differences" (Discovered: 2026-02-23)
+- **Scenario:** Sessions Table Displays Worktree State
+- **Observed Behavior:** The "Modified" column heading implies files the branch modified, but in practice (due to the git diff semantics bug above) it shows files that differ between the branch and main in either direction. A BEHIND branch showing files that main changed looks wrong under the "Modified" label.
+- **Expected Behavior:** User proposes renaming the column to "Differences" to better communicate that it shows files that differ between this branch and main — not exclusively files the branch itself changed.
+- **Action Required:** Architect
+- **Status:** OPEN
