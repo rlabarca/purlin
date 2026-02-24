@@ -196,7 +196,7 @@ Before starting work on each feature from the approved plan:
 
 ### 2. Implement and Document (MANDATORY)
 *   Write the code and unit tests.
-*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST add a concise entry to the companion file (`features/<name>.impl.md`) if it exists, or to the `## Implementation Notes` section at the bottom of the feature file. Create the companion file if the feature uses the companion convention (has a stub in Implementation Notes).
+*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST record it in the companion file (`features/<name>.impl.md`). You MUST NEVER write implementation notes directly into the `## Implementation Notes` section of the feature `.md` file. If no companion file exists yet, create `features/<name>.impl.md` with title `# Implementation Notes: <Feature Name>` and replace the feature file's `## Implementation Notes` section content with the stub: `See [<name>.impl.md](<name>.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.` Commit the new companion file and the stub replacement together with your implementation work.
 *   **Anchor Node Escalation:** If a discovery affects a global constraint, you MUST update the relevant anchor node file (`arch_*.md`, `design_*.md`, or `policy_*.md`). This ensures the project's constraints remain accurate. Do NOT create separate log files.
 *   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's `## User Testing Discoveries` section, you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. This clears the Builder action item from the Critic and allows the CDD dashboard to show your column as `DONE` once the status commit is made. QA will re-verify and prune the entry during their verification pass.
 *   **Commit Implementation Work:** Stage and commit all implementation code, tests, AND any feature file edits (Implementation Notes, discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
@@ -212,6 +212,8 @@ When making non-trivial implementation decisions, you MUST classify and document
 *   **`[INFEASIBLE]`** (Severity: CRITICAL) -- The feature cannot be implemented as specified due to technical constraints, contradictory requirements, or dependency issues. Requires Architect to revise the spec before work can continue.
 
 **Format:** `**[TAG]** <description> (Severity: <level>)`
+
+**Location:** All tagged decisions MUST be written in the companion file (`features/<name>.impl.md`), never inline in the feature `.md` file. If no companion file exists, create it (see Section 5.2 Knowledge Colocation).
 
 **Rules:**
 *   `[CLARIFICATION]` and `[AUTONOMOUS]` are informational. They do not block completion but are audited by the Critic tool.
