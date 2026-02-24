@@ -1644,9 +1644,11 @@ function updateTimestamp() {{
 
 function refreshStatus() {{
   if (rcIsolationPending) return;
-  // Save isolation name input value and focus state before DOM refresh
+  // Skip refresh while user is typing in the isolation name input
   var isoInput = document.getElementById('new-isolation-name');
-  var _isoHadFocus = isoInput && document.activeElement === isoInput;
+  if (isoInput && document.activeElement === isoInput) return;
+  // Save isolation name input value before DOM refresh
+  var _isoHadFocus = false;
   if (isoInput) _pendingIsolationName = isoInput.value;
   return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
