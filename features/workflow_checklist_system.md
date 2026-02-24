@@ -234,3 +234,12 @@ The handoff checklist system reuses the resolver infrastructure from the release
 *   **PROJECT_ROOT detection:** `/pl-local-push` uses `PURLIN_PROJECT_ROOT` if set, falls back to `git worktree list --porcelain` to locate the main checkout path.
 
 *   **Command rename (pl-work-* → pl-local-*):** When `agent_launchers_multiuser` was retired, `/pl-work-push` and `/pl-work-pull` were renamed to `/pl-local-push` and `/pl-local-pull`. Both `BUILDER_BASE.md` and `QA_BASE.md` were updated (commit `ba68a76`) to reflect the new names in the startup command table, shutdown protocol, and authorized slash commands sections.
+
+## User Testing Discoveries
+
+### [BUG] critic_report handoff step always blocks push (Discovered: 2026-02-24)
+- **Scenario:** Scenario: pl-local-push Merges Branch When All Checks Pass
+- **Observed Behavior:** `tools/handoff/run.sh` always exits with code 1 due to the `purlin.handoff.critic_report` step reporting PENDING, even after `tools/cdd/status.sh` has been successfully run and `CRITIC_REPORT.md` is current. The step has `"code": null` in `global_steps.json`, so `evaluate_step()` unconditionally returns `("PENDING", None)`. There is no code path by which this step can ever PASS. Every `/pl-local-push` invocation is permanently blocked by the handoff checklist.
+- **Expected Behavior:** The step should report PASS when `CRITIC_REPORT.md` exists and has been generated more recently than the most recent git commit (i.e., the agent has run `tools/cdd/status.sh` since their last commit).
+- **Action Required:** Builder
+- **Status:** OPEN
