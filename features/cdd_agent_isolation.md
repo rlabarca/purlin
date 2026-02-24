@@ -547,3 +547,10 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - **Expected Behavior:** The creation row should have enough top padding that a focused input's highlight ring is fully visible and does not clip under any header or divider element. No scenario or visual spec checklist item currently covers row padding or focus ring visibility.
 - **Action Required:** Architect
 - **Status:** OPEN
+
+### [SPEC_DISPUTE] 8-character isolation name limit is too restrictive; user wants 12 (Discovered: 2026-02-23)
+- **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
+- **Observed Behavior:** The name input enforces an 8-character maximum, rejecting names longer than 8 characters (e.g., "toolong12" at 9 chars is rejected).
+- **Expected Behavior:** User believes the limit should be 12 characters to allow more meaningful isolation names.
+- **Action Required:** Architect
+- **Status:** OPEN
