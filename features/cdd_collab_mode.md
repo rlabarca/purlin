@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Isolated Agents Mode is activated automatically when the CDD server detects active named isolations (git worktrees under `.worktrees/`) in the project root. In this mode, the WORKSPACE section of the dashboard becomes "Isolated Agents", showing what each named isolation is doing — its branch, sync state, and in-flight changes relative to `main`.
+CDD Isolated Agents Mode is activated automatically when the CDD server detects active named isolations (git worktrees under `.worktrees/`) in the project root. The WORKSPACE section of the dashboard always contains a collapsible "Isolated Agents" sub-section; when Isolated Agents Mode is active, that sub-section is populated with a Sessions table showing each named isolation's branch, sync state, and in-flight changes relative to `main`.
 
 ---
 
@@ -20,8 +20,9 @@ CDD Isolated Agents Mode is activated automatically when the CDD server detects 
 
 - On each status refresh, `serve.py` runs `git worktree list --porcelain` from the project root.
 - Isolated Agents Mode is active when: at least one worktree other than the main checkout is listed AND its path is under `.worktrees/` relative to the project root.
-- When Isolated Agents Mode is not active, the WORKSPACE section behaves as before (no change).
+- When Isolated Agents Mode is not active, the Isolated Agents sub-section renders with no Sessions table rows; only the creation row is shown.
 - Detection is read-only. CDD never writes to worktree paths.
+- Detection governs the `/status.json` API fields (`isolations_active`, `worktrees`), the AGENTS heading annotation (Section 2.9), and config propagation behavior (Section 2.9). The Isolated Agents sub-section within the WORKSPACE dashboard section is always rendered, regardless of detection state — see Section 2.3.
 
 ### 2.2 Isolation Name from Worktree Path
 
@@ -31,26 +32,41 @@ CDD Isolated Agents Mode is activated automatically when the CDD server detects 
 
 ### 2.3 Isolated Agents Section
 
-When Isolated Agents Mode is active, the WORKSPACE section becomes "Isolated Agents". It contains two sub-sections:
+The WORKSPACE section retains its heading at all times. Within the WORKSPACE section, an **Isolated Agents** sub-section is always rendered, above the **Local (main)** content. This sub-section has its own collapsible heading, styled similarly to the WORKSPACE heading but visually nested within the WORKSPACE container.
 
-**Sessions sub-section:** A table listing all active worktrees:
+**Isolated Agents sub-heading collapse behavior:**
 
-| Name | Branch | Main Diff | Modified |
-|------|--------|-----------|----------|
-| feat1 | isolated/feat1 | AHEAD | 2 Specs |
-| ui | isolated/ui | SAME | |
+- **Collapsed, no active worktrees:** The sub-heading label reads "ISOLATED AGENTS" with no annotation.
+- **Collapsed, N active worktrees:** The sub-heading label reads "N Isolated Agents" (e.g., "2 Isolated Agents"), displayed in the color corresponding to the highest-severity `main_diff` state across all active worktrees. Severity ordering and color tokens (highest to lowest):
+  1. `DIVERGED` → `--purlin-status-warning` (orange)
+  2. `BEHIND` → `--purlin-status-todo` (yellow)
+  3. `AHEAD` → `--purlin-status-todo` (yellow)
+  4. `SAME` → `--purlin-status-good` (green)
 
-Each row also has a "Kill" button (see Section 2.9).
+  The sub-heading takes the color of the most severe state present. If any worktree is DIVERGED, the label is orange. If none are DIVERGED but at least one is BEHIND, the label is yellow. If none are DIVERGED or BEHIND but at least one is AHEAD, the label is yellow. If all worktrees are SAME, the label is green.
 
-"Main Diff" shows the sync state between the worktree's branch and main:
+**Isolated Agents sub-section expanded content (in order):**
+
+1. **Creation row:** Always the first item when the sub-section is expanded. Never hidden, regardless of whether any worktrees are active. See Section 2.8 for full creation controls detail.
+
+2. **Sessions table:** A table listing all active worktrees, appearing below the creation row. When no worktrees are active, only the creation row is shown.
+
+   | Name | Branch | Main Diff | Modified |
+   |------|--------|-----------|----------|
+   | feat1 | isolated/feat1 | AHEAD | 2 Specs |
+   | ui | isolated/ui | SAME | |
+
+   Each row also has a "Kill" button (see Section 2.8).
+
+**Main Diff** shows the sync state between the worktree's branch and main:
 - `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Modified reflects files the branch changed since its common ancestor with main.
 - `SAME` — branch and main are at identical commit positions. Modified will always be empty.
 - `BEHIND` — only main has moved: it has commits not yet in this branch; this branch has no commits ahead of main. Run `/pl-local-pull` before pushing. Modified will always be empty.
 - `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Modified reflects files the branch changed since the common ancestor.
 
-"Modified" shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot), not from uncommitted changes in the worktree. Modified is always empty when `main_diff` is `SAME` or `BEHIND`. Modified may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+**Modified** shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot), not from uncommitted changes in the worktree. Modified is always empty when `main_diff` is `SAME` or `BEHIND`. Modified may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
 
-**Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content):
+**Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content), rendered below the Isolated Agents sub-section:
 
 - Branch name, ahead/behind status.
 - Clean/dirty state.
@@ -143,7 +159,7 @@ Fields per worktree entry:
 
 ### 2.6 Visual Design
 
-The Isolated Agents section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The section heading changes from "Workspace" to "Isolated Agents" when Isolated Agents Mode is active. Sub-section labels ("Sessions", "Local (main)") use the same section header typography.
+The Isolated Agents sub-section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. The WORKSPACE section heading is unchanged regardless of Isolated Agents Mode state. The Isolated Agents sub-heading is styled similarly to the WORKSPACE heading but visually nested within the WORKSPACE container. Sub-section labels ("Local (main)") use the same section header typography.
 
 ### 2.7 No Isolated Agents Mode During Main Checkout
 
@@ -153,14 +169,17 @@ When the CDD server is run from within a worktree (not the project root), Isolat
 
 The dashboard exposes UI controls to create and remove isolations, complementing the CLI scripts in `tools/collab/`.
 
-**New Isolation input (always available in WORKSPACE / Isolated Agents section footer):**
+**Creation Row (always the first item in the expanded Isolated Agents sub-section):**
 
-- A text input (max 8 characters, validated) and a "Create" button.
+- The row is prepended with the label "Create An Isolated Agent".
+- The label is followed by a text input (max 8 characters, validated) and a "Create" button.
+- The creation row is never hidden — it is visible whether or not any worktrees are active, and it always appears above the Sessions table.
+- **Input value persistence:** The name input value is preserved across auto-refreshes. The dashboard JavaScript saves the input's current value to a module-level variable before each DOM update and restores it immediately after. The user's in-progress text is never wiped by the 5-second polling cycle.
 - Client-side validation: name must match `[a-zA-Z0-9_-]+` and be ≤8 characters. The Create button is disabled until the name is valid.
 - Clicking Create sends `POST /isolate/create` with body `{ "name": "<name>" }`.
 - While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error).
 - The server runs `tools/collab/create_isolation.sh <name> --project-root <PROJECT_ROOT>`.
-- On success (`{ "status": "ok" }`): dashboard refreshes; new isolation appears in the Sessions table.
+- On success (`{ "status": "ok" }`): dashboard refreshes; new isolation appears in the Sessions table. The input is cleared on success.
 - On error: inline error message shown below the input.
 
 **Kill button (per-row, Sessions table):**
@@ -390,6 +409,37 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then the feat1 row's Name cell shows "feat1 (Phase 1/2)"
     And the badge text is rendered in orange (--purlin-status-warning)
 
+#### Scenario: Isolated Agents Sub-heading Collapsed With No Active Worktrees
+
+    Given the CDD dashboard is open
+    And no worktrees are active under .worktrees/
+    When the User collapses the Isolated Agents sub-heading
+    Then the collapsed label reads "ISOLATED AGENTS" with no annotation
+
+#### Scenario: Isolated Agents Sub-heading Shows Highest Severity Color When Collapsed
+
+    Given the CDD dashboard is open
+    And two worktrees are active: one with main_diff DIVERGED and one with main_diff AHEAD
+    When the User collapses the Isolated Agents sub-heading
+    Then the collapsed label reads "2 Isolated Agents"
+    And the label color is orange (--purlin-status-warning) because DIVERGED is the highest severity
+
+#### Scenario: Creation Row Always Visible When Sub-section Is Expanded With No Agents
+
+    Given the CDD dashboard is open
+    And the Isolated Agents sub-section is expanded
+    And no worktrees are active
+    Then the creation row "Create An Isolated Agent [input] [Create]" is visible
+    And no Sessions table rows are shown
+
+#### Scenario: Name Input Preserved Across Auto-refresh
+
+    Given the CDD dashboard is open
+    And the User has typed "feat3" into the name input
+    When the 5-second auto-refresh cycle triggers a DOM update
+    Then the name input still contains "feat3"
+    And the Create button state is unchanged
+
 ---
 
 ## 4. Visual Specification
@@ -397,8 +447,13 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 ### Screen: CDD Dashboard — Isolated Agents Section
 
 - **Reference:** N/A
-- [ ] Section heading reads "Isolated Agents" when isolations are active (vs "Workspace" when not)
-- [ ] "Sessions" sub-label is visible above the worktree table
+- [ ] WORKSPACE section heading is unchanged regardless of Isolated Agents Mode state
+- [ ] A collapsible "ISOLATED AGENTS" sub-heading is always rendered within the WORKSPACE section, above the Local (main) content
+- [ ] Collapsed sub-heading with no active worktrees reads "ISOLATED AGENTS" with no annotation
+- [ ] Collapsed sub-heading with N active worktrees reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the highest-severity color
+- [ ] Highest-severity color mapping: DIVERGED → orange (`--purlin-status-warning`); BEHIND → yellow (`--purlin-status-todo`); AHEAD → yellow (`--purlin-status-todo`); SAME → green (`--purlin-status-good`)
+- [ ] When expanded, the creation row "Create An Isolated Agent [input] [Create]" is always the first item
+- [ ] Sessions table appears below the creation row
 - [ ] Sessions table has columns: Name, Branch, Main Diff, Modified (no Role column)
 - [ ] Each active worktree appears as a row
 - [ ] Each row has a "Kill" button aligned to the right
@@ -408,16 +463,18 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] Main Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange)
 - [ ] Modified cell is empty when main_diff is SAME or BEHIND
 - [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when AHEAD or DIVERGED
-- [ ] "Local (main)" sub-label introduces the existing workspace content
+- [ ] "Local (main)" sub-label introduces the existing workspace content below the Isolated Agents sub-section
 - [ ] When delivery_phase is present, Name cell shows "name (Phase N/M)" with orange badge text
 
 ### Screen: CDD Dashboard — Isolation Controls
 
 - **Reference:** N/A
-- [ ] A text input (max 8 chars) and "Create" button are visible in the section footer
+- [ ] The creation row ("Create An Isolated Agent [input] [Create]") is always the first item when the Isolated Agents sub-section is expanded, regardless of whether any worktrees are active
+- [ ] The text input preserves its value across auto-refreshes (typing a name and waiting for the 5-second cycle does not erase the text)
 - [ ] The Create button is disabled when the input is empty or contains an invalid name
 - [ ] An inline validation message appears for names that are too long or contain invalid characters
 - [ ] Clicking Create while valid sends the request and shows a success or error response
+- [ ] On success, the name input is cleared
 - [ ] Each Sessions row has a "Kill" button; clicking it triggers the dry-run safety check modal
 - [ ] Kill dirty-state modal lists dirty files; Confirm button is disabled
 - [ ] Kill unsynced-state modal includes "I understand, the branch still exists" checkbox; Confirm disabled until checked
@@ -449,6 +506,10 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.json` files after the project root write. Failures collected as `warnings`.
 - AGENTS heading annotation applied server-side in `generate_html()`.
 - Kill modal: dedicated overlay element (`kill-modal-overlay`) with 3-state content (dirty / unsynced / clean) and per-isolation name scoping. Populated by `showKillModal(name, dryRunResponse)`.
+
+**Input value persistence:** The name input's value is saved to a JS module-level variable (e.g., `let _pendingIsolationName = ""`) immediately before any DOM refresh. After the DOM update, the value is written back to the input element and the Create button's disabled state is re-evaluated. On successful create, the module-level variable is cleared. This avoids any localStorage dependency and works within the existing polling cycle.
+
+**Collapsed sub-heading severity logic:** `_collapsed_label(worktrees)` computes the severity order: DIVERGED → BEHIND → AHEAD → SAME. It iterates the list once, tracking the highest-severity state seen, then returns the CSS class and label string. If `worktrees` is empty, it returns `("", "ISOLATED AGENTS")`.
 
 **Bug fixes preserved from prior implementation (do not regress):**
 - Modal button styling uses `btn-critic` class (not `btn` — no CSS definition).
