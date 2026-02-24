@@ -246,9 +246,9 @@ LAUNCHER_EOF
     chmod +x "$OUTPUT_FILE"
 }
 
-generate_launcher "$PROJECT_ROOT/run_claude_architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
-generate_launcher "$PROJECT_ROOT/run_claude_builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
-generate_launcher "$PROJECT_ROOT/run_claude_qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
+generate_launcher "$PROJECT_ROOT/run_architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
+generate_launcher "$PROJECT_ROOT/run_builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
+generate_launcher "$PROJECT_ROOT/run_qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
 
 ###############################################################################
 # 5b. Command File Distribution (Section 2.18)
@@ -356,18 +356,18 @@ echo "Created:"
 echo "  .purlin/              (override directory)"
 echo "  .purlin/config.json   (tools_root: $TOOLS_ROOT_VALUE)"
 echo "  .purlin/.upstream_sha (submodule SHA: ${CURRENT_SHA:0:12}...)"
-echo "  run_claude_architect.sh       (launcher)"
-echo "  run_claude_builder.sh         (launcher)"
-echo "  run_claude_qa.sh              (launcher)"
+echo "  run_architect.sh              (launcher)"
+echo "  run_builder.sh               (launcher)"
+echo "  run_qa.sh                    (launcher)"
 [ "$CMD_COPIED" -gt 0 ] && echo "  .claude/commands/             ($CMD_COPIED pl-* command file(s))"
 [ "$CMD_SKIPPED" -gt 0 ] && echo "  .claude/commands/             ($CMD_SKIPPED file(s) skipped — consumer version newer)"
 [ ! -d "$PROJECT_ROOT/features" ] || echo "  features/                     (feature specs directory)"
 echo ""
 echo "Next steps:"
 echo "  1. Review and customize .purlin/ override files."
-echo "  2. Run ./run_claude_architect.sh to start the Architect agent."
-echo "  3. Run ./run_claude_builder.sh to start the Builder agent."
-echo "  4. Run ./run_claude_qa.sh to start the QA agent."
+echo "  2. Run ./run_architect.sh to start the Architect agent."
+echo "  3. Run ./run_builder.sh to start the Builder agent."
+echo "  4. Run ./run_qa.sh to start the QA agent."
 echo ""
 
 ###############################################################################

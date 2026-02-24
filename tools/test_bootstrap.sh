@@ -96,8 +96,8 @@ if [ -f "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" ]; then log_pass "ARCHITECT_OV
 if [ -f "$PROJECT/.purlin/BUILDER_OVERRIDES.md" ]; then log_pass "BUILDER_OVERRIDES.md copied"; else log_fail "BUILDER_OVERRIDES.md missing"; fi
 if [ -f "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then log_pass "HOW_WE_WORK_OVERRIDES.md copied"; else log_fail "HOW_WE_WORK_OVERRIDES.md missing"; fi
 
-if [ -x "$PROJECT/run_claude_architect.sh" ]; then log_pass "run_claude_architect.sh executable"; else log_fail "run_claude_architect.sh not executable"; fi
-if [ -x "$PROJECT/run_claude_builder.sh" ]; then log_pass "run_claude_builder.sh executable"; else log_fail "run_claude_builder.sh not executable"; fi
+if [ -x "$PROJECT/run_architect.sh" ]; then log_pass "run_architect.sh executable"; else log_fail "run_architect.sh not executable"; fi
+if [ -x "$PROJECT/run_builder.sh" ]; then log_pass "run_builder.sh executable"; else log_fail "run_builder.sh not executable"; fi
 
 if [ -d "$PROJECT/features" ]; then log_pass "features/ created"; else log_fail "features/ missing"; fi
 cleanup_sandbox
@@ -123,7 +123,7 @@ setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
 # Check that architect launcher references the correct files in order
-ARCHITECT_CONTENT=$(cat "$PROJECT/run_claude_architect.sh")
+ARCHITECT_CONTENT=$(cat "$PROJECT/run_architect.sh")
 if echo "$ARCHITECT_CONTENT" | grep -q 'HOW_WE_WORK_BASE.md.*>.*PROMPT_FILE'; then
     log_pass "Architect: HOW_WE_WORK_BASE.md written first"
 else
@@ -146,7 +146,7 @@ else
 fi
 
 # Check builder launcher
-BUILDER_CONTENT=$(cat "$PROJECT/run_claude_builder.sh")
+BUILDER_CONTENT=$(cat "$PROJECT/run_builder.sh")
 if echo "$BUILDER_CONTENT" | grep -q 'dangerously-skip-permissions'; then
     log_pass "Builder: --dangerously-skip-permissions flag present"
 else
@@ -161,7 +161,7 @@ echo "[Scenario] QA Launcher Script Concatenation Order"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
-QA_CONTENT=$(cat "$PROJECT/run_claude_qa.sh")
+QA_CONTENT=$(cat "$PROJECT/run_qa.sh")
 if echo "$QA_CONTENT" | grep -q 'HOW_WE_WORK_BASE.md.*>.*PROMPT_FILE'; then
     log_pass "QA: HOW_WE_WORK_BASE.md written first"
 else
@@ -466,7 +466,7 @@ echo "[Scenario] Launcher Scripts Export PURLIN_PROJECT_ROOT"
 setup_sandbox
 "$BOOTSTRAP" > /dev/null 2>&1
 
-for LAUNCHER in run_claude_architect.sh run_claude_builder.sh run_claude_qa.sh; do
+for LAUNCHER in run_architect.sh run_builder.sh run_qa.sh; do
     if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/$LAUNCHER"; then
         log_pass "$LAUNCHER exports PURLIN_PROJECT_ROOT"
     else
