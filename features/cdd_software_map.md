@@ -36,7 +36,12 @@ The SW Map view is activated via the view mode toggle in the dashboard shell (de
 *   **Zoom-to-Fit on Load:** On initial page load (or when switching to the SW Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
     *   If the user has NOT modified zoom or pan since the last fit (initial load, view switch, or Recenter), auto-refresh cycles MUST re-fit the graph to the viewable area.
     *   If the user HAS modified zoom or pan, auto-refresh cycles MUST preserve the current zoom level and pan position.
-*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the SW Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, and (2) reset the interaction state to "unmodified" so that subsequent auto-refresh cycles re-fit rather than preserve position.
+*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the SW Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the auto-layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
+*   **Node Position Persistence:** The graph tracks whether the user has manually dragged any node (category group box or individual feature node). Node positions are persisted to `localStorage`, keyed by a content hash derived from the current set of nodes and their category assignments.
+    *   If the user has NOT manually moved any node, auto-refresh cycles re-run the layout algorithm normally.
+    *   If the user HAS manually moved one or more nodes, auto-refresh cycles restore the saved positions. Existing nodes retain their saved coordinates; any newly-added nodes are placed by the layout algorithm.
+    *   **Substantive Change Invalidation:** Saved positions are discarded when any node is added, removed, or reassigned to a different category since the positions were last persisted. The graph runs a fresh full layout, and the position interaction state resets to "unmodified."
+*   **Inactivity Timeout:** After a continuous period of 5 minutes with no user interaction on the graph (no drag, pan, zoom, or node interaction), both node positions and zoom/pan are reset to auto-layout and auto-fit state. Both interaction states reset to "unmodified."
 *   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
 
 ### 2.4 Cytoscape.js Theme Integration
@@ -131,6 +136,32 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     When the dashboard next auto-refreshes
     Then the graph is re-fitted to the viewable area rather than preserving the previous zoom/pan
 
+#### Scenario: Node Position Preserved on Refresh When Manually Moved
+    Given the User has dragged one or more nodes to new positions in the SW Map view
+    When the dashboard auto-refreshes and the graph has not changed substantively
+    Then each moved node is restored to its saved position
+
+#### Scenario: Node Positions Discarded When Graph Changes Substantively
+    Given the User has manually moved one or more nodes
+    When a feature file is added, removed, or a node's category assignment changes
+    Then the saved node positions are discarded
+    And the graph re-runs the full auto-layout algorithm
+    And the position interaction state resets to unmodified
+
+#### Scenario: Recenter Graph Button Resets Node Positions
+    Given the User has manually moved one or more nodes
+    When the User clicks the Recenter Graph button
+    Then all node positions are reset to the auto-layout positions
+    And the position interaction state resets to unmodified
+    And subsequent auto-refresh cycles re-layout rather than restore saved positions
+
+#### Scenario: Inactivity Timeout Redraws Graph and Resets Zoom
+    Given the User has manually moved nodes or modified zoom and pan
+    When 5 minutes pass with no user interaction on the graph
+    Then all node positions are reset to the auto-layout positions
+    And zoom and pan are reset to fit the graph in the viewable area
+    And both position and zoom interaction states reset to unmodified
+
 ## 4. Implementation Notes
 See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
@@ -151,5 +182,7 @@ See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation know
 - [ ] SVG node labels update text colors on theme switch
 - [ ] Theme persists across auto-refresh cycles
 - [ ] Search/filter input (in dashboard header) filters graph nodes by label or filename
+- [ ] Manually-moved node positions persist across page refresh when the graph has not changed substantively
+- [ ] "Recenter Graph" button resets manually-moved node positions to auto-layout in addition to resetting zoom
 
 ## User Testing Discoveries
