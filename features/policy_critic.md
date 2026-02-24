@@ -36,6 +36,8 @@ The Builder MUST classify every non-trivial implementation decision using struct
 
 **Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
 
+**Scope:** The Builder Decision Audit MUST scan ALL files that contain a `## Implementation Notes` section — including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`). Builders may leave `[DISCOVERY]` or `[DEVIATION]` notes in anchor node Implementation Notes when they find anchor-level constraint gaps during implementation. These entries MUST be surfaced as HIGH-priority Architect action items just as they would be in regular feature files. Skipping anchor nodes in this scan is a Critic bug.
+
 ### 2.4 User Testing Feedback Loop
 Any agent may record findings in the `## User Testing Discoveries` section when they encounter bugs or unexpected behavior. The QA Agent owns lifecycle management (verification, resolution, pruning). Discovery types:
 
@@ -115,6 +117,15 @@ The Critic tool MUST produce:
 
 *   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, and `role_status` sections.
 *   **Aggregate:** `CRITIC_REPORT.md` at the project root summarizing all features.
+
+## User Testing Discoveries
+
+### [DISCOVERY] Builder Decision Audit skips anchor node Implementation Notes (Discovered: 2026-02-24)
+- **Scenario:** NONE (no scenario covers anchor node scanning in the Builder Decision Audit)
+- **Observed Behavior:** A Builder `[DISCOVERY][SPEC_PROPOSAL]` entry in `policy_collaboration.md`'s `## Implementation Notes` was not surfaced as an Architect action item by the Critic. The Builder Decision Audit reported "No AUTONOMOUS, DEVIATION, or DISCOVERY entries found" despite an active entry in an anchor node.
+- **Expected Behavior:** The Builder Decision Audit should scan ALL files containing `## Implementation Notes`, including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`).
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED — Section 2.3 updated to explicitly require anchor node scanning in the Builder Decision Audit.
 
 ## Implementation Notes
 *   This policy governs buildable tooling constraints (the Critic tool itself), not process rules. It is valid under the Feature Scope Restriction mandate.
