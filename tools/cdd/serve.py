@@ -679,11 +679,38 @@ def _read_delivery_phase(worktree_abs_path):
     return None
 
 
+def _categorize_files(lines):
+    """Categorize file paths into specs/tests/other counts.
+
+    Excludes .purlin/ files entirely. Categorizes features/ as specs,
+    tests/ as tests, everything else as other.
+    """
+    specs = 0
+    tests = 0
+    other = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('.purlin/'):
+            continue
+        if line.startswith('features/'):
+            specs += 1
+        elif line.startswith('tests/'):
+            tests += 1
+        else:
+            other += 1
+    return {'specs': specs, 'tests': tests, 'other': other}
+
+
 def _worktree_state(wt_abs_path):
     """Read state of a single worktree using git -C commands.
 
-    Returns dict with branch, last_commit, commits_ahead, and modified
-    (object with specs, tests, other integer counts).
+    Returns dict with branch, last_commit, commits_ahead, committed
+    (files changed in branch commits vs main), and uncommitted
+    (files with uncommitted changes in the working tree).
+    Both committed and uncommitted are objects with specs, tests, other
+    integer counts.
     """
     def _wt_cmd(cmd):
         try:
@@ -696,31 +723,42 @@ def _worktree_state(wt_abs_path):
 
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
 
-    # Modified: files changed in this branch's commits relative to main
+    # Committed: files changed in this branch's commits relative to main
     # Uses git diff main...<branch> --name-only (three-dot) from PROJECT_ROOT
     # Three-dot diffs the branch against common ancestor — always empty for
     # SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED.
-    specs = 0
-    tests = 0
-    other = 0
+    committed = {'specs': 0, 'tests': 0, 'other': 0}
     try:
         diff_result = subprocess.run(
             f"git diff main...{branch} --name-only",
             shell=True, capture_output=True, text=True,
             cwd=PROJECT_ROOT)
-        for line in diff_result.stdout.splitlines():
-            line = line.strip()
-            if not line:
+        committed = _categorize_files(diff_result.stdout.splitlines())
+    except Exception:
+        pass
+
+    # Uncommitted: files in the worktree's working tree not yet committed
+    # Uses git status --porcelain from the worktree directory.
+    # Captures staged, unstaged, and untracked changes.
+    # Format: XY filename (filename starts at column 3)
+    # For renames: XY old -> new (use the new path)
+    uncommitted = {'specs': 0, 'tests': 0, 'other': 0}
+    try:
+        status_result = subprocess.run(
+            "git status --porcelain",
+            shell=True, capture_output=True, text=True,
+            cwd=wt_abs_path)
+        file_paths = []
+        for line in status_result.stdout.splitlines():
+            if len(line) < 4:
                 continue
-            # Exclude .purlin/ files entirely (Section 2.4)
-            if line.startswith('.purlin/'):
-                continue
-            if line.startswith('features/'):
-                specs += 1
-            elif line.startswith('tests/'):
-                tests += 1
-            else:
-                other += 1
+            # Extract filename from column 3 onwards
+            path = line[3:]
+            # For renames (XY old -> new), use the new path
+            if ' -> ' in path:
+                path = path.split(' -> ', 1)[1]
+            file_paths.append(path)
+        uncommitted = _categorize_files(file_paths)
     except Exception:
         pass
 
@@ -733,7 +771,8 @@ def _worktree_state(wt_abs_path):
 
     return {
         'branch': branch,
-        'modified': {'specs': specs, 'tests': tests, 'other': other},
+        'committed': committed,
+        'uncommitted': uncommitted,
         'last_commit': last_commit,
         'commits_ahead': commits_ahead,
     }
@@ -807,7 +846,8 @@ def get_isolation_worktrees():
             'main_diff': main_diff,
             'commits_ahead': state.get('commits_ahead', 0),
             'last_commit': state['last_commit'],
-            'modified': state['modified'],
+            'committed': state['committed'],
+            'uncommitted': state['uncommitted'],
         }
 
         # Delivery phase badge (Section 2.10)
@@ -849,12 +889,32 @@ def _role_badge_html(status):
     return f'<span class="{css}">{status}</span>'
 
 
+def _format_category_counts(counts):
+    """Format a {specs, tests, other} dict as space-separated category counts.
+
+    Returns empty string when all zeros. Zero-count categories are omitted.
+    """
+    specs = counts.get('specs', 0)
+    tests_count = counts.get('tests', 0)
+    other = counts.get('other', 0)
+    if specs == 0 and tests_count == 0 and other == 0:
+        return ''
+    parts = []
+    if specs > 0:
+        parts.append(f'{specs} Specs')
+    if tests_count > 0:
+        parts.append(f'{tests_count} Tests')
+    if other > 0:
+        parts.append(f'{other} Code/Other')
+    return ' '.join(parts)
+
+
 def _isolation_section_html(worktrees):
     """Generate HTML for the Isolated Teams Sessions table (no heading)."""
     if not worktrees:
         return ""
 
-    # Sessions table: Name, Branch, Main Diff, Modified, Kill
+    # Sessions table: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified, Kill
     rows = ""
     for wt in worktrees:
         name = wt.get('name', '')
@@ -880,22 +940,11 @@ def _isolation_section_html(worktrees):
         else:
             diff_html = '<span class="st-good">SAME</span>'
 
-        # Modified column: empty when clean, categorized counts otherwise
-        mod = wt.get('modified', {})
-        specs = mod.get('specs', 0)
-        tests_count = mod.get('tests', 0)
-        other = mod.get('other', 0)
-        if specs == 0 and tests_count == 0 and other == 0:
-            mod_text = ''
-        else:
-            parts = []
-            if specs > 0:
-                parts.append(f'{specs} Specs')
-            if tests_count > 0:
-                parts.append(f'{tests_count} Tests')
-            if other > 0:
-                parts.append(f'{other} Code/Other')
-            mod_text = ' '.join(parts)
+        # Committed Modified column
+        committed_text = _format_category_counts(wt.get('committed', {}))
+
+        # Uncommitted Modified column
+        uncommitted_text = _format_category_counts(wt.get('uncommitted', {}))
 
         # Kill button per row
         kill_btn = (
@@ -906,13 +955,15 @@ def _isolation_section_html(worktrees):
         rows += (
             f'<tr><td>{name_html}</td><td><code>{branch}</code></td>'
             f'<td>{diff_html}</td>'
-            f'<td class="dim">{mod_text}</td>'
+            f'<td class="dim">{committed_text}</td>'
+            f'<td class="dim">{uncommitted_text}</td>'
             f'<td style="text-align:right">{kill_btn}</td></tr>'
         )
 
     return (
         '<table class="ft" style="width:100%"><thead><tr>'
-        '<th>Name</th><th>Branch</th><th>Main Diff</th><th>Modified</th><th></th>'
+        '<th>Name</th><th>Branch</th><th>Main Diff</th>'
+        '<th>Committed<br>Modified</th><th>Uncommitted<br>Modified</th><th></th>'
         '</tr></thead><tbody>' + rows + '</tbody></table>'
     )
 

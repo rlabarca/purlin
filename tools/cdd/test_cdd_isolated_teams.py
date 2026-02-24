@@ -16,7 +16,9 @@ import subprocess
 import http.server
 
 from serve import (
+    _categorize_files,
     _detect_worktrees,
+    _format_category_counts,
     _name_from_path,
     _worktree_state,
     _compute_main_diff,
@@ -126,7 +128,8 @@ class TestIsolationsActive(unittest.TestCase):
         'main_diff': 'SAME',
         'commits_ahead': 0,
         'last_commit': 'abc1234 feat: add scenarios (45 min ago)',
-        'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        'committed': {'specs': 0, 'tests': 0, 'other': 0},
+        'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
     }]
 
     @patch('serve.get_isolation_worktrees')
@@ -163,7 +166,8 @@ class TestIsolationNameParsedFromPath(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'isolated/ui',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'abc ui', 'commits_ahead': 0,
         }
         result = get_isolation_worktrees()
@@ -190,7 +194,8 @@ class TestNonIsolatedBranchNoRoleAssignment(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'hotfix/urgent',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'xyz hotfix', 'commits_ahead': 0,
         }
         result = get_isolation_worktrees()
@@ -199,18 +204,18 @@ class TestNonIsolatedBranchNoRoleAssignment(unittest.TestCase):
         self.assertNotIn('role', result[0])
 
 
-class TestModifiedColumnCategorization(unittest.TestCase):
-    """Scenario: Modified Column Categorizes Files Changed Against Main by Type.
+class TestCommittedModifiedCategorization(unittest.TestCase):
+    """Scenario: Committed Modified Categorizes Files Changed Against Main by Type.
 
     Given a worktree on a branch AHEAD of main with commits that modified
     two files under features/ and one file outside features/ and tests/
-    Then the modified field has specs=2, tests=0, other=1.
+    Then the committed field has specs=2, tests=0, other=1.
     """
 
     @patch('serve._compute_main_diff', return_value='AHEAD')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
-    def test_modified_categorized(self, mock_detect, mock_state, mock_diff):
+    def test_committed_categorized(self, mock_detect, mock_state, mock_diff):
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'feat1')
         mock_detect.return_value = [
             {'abs_path': wt_path,
@@ -218,28 +223,30 @@ class TestModifiedColumnCategorization(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'isolated/feat1',
-            'modified': {'specs': 2, 'tests': 0, 'other': 1},
+            'committed': {'specs': 2, 'tests': 0, 'other': 1},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'abc feat', 'commits_ahead': 2,
         }
         result = get_isolation_worktrees()
         self.assertEqual(len(result), 1)
-        mod = result[0]['modified']
-        self.assertEqual(mod['specs'], 2)
-        self.assertEqual(mod['tests'], 0)
-        self.assertEqual(mod['other'], 1)
+        committed = result[0]['committed']
+        self.assertEqual(committed['specs'], 2)
+        self.assertEqual(committed['tests'], 0)
+        self.assertEqual(committed['other'], 1)
 
 
 class TestWorktreeStateFileCategories(unittest.TestCase):
-    """Test _worktree_state() parses git diff main...<branch> --name-only (three-dot) into categories."""
+    """Test _worktree_state() parses committed and uncommitted file categories."""
 
     def _mock_subprocess(self, responses):
         """Create mock for subprocess.run returning CompletedProcess-like objects.
 
-        _worktree_state calls subprocess.run 4 times:
+        _worktree_state calls subprocess.run 5 times:
           0: git rev-parse --abbrev-ref HEAD (via _wt_cmd, cwd=wt_abs_path)
           1: git diff main...<branch> --name-only (three-dot, cwd=PROJECT_ROOT)
-          2: git log -1 (via _wt_cmd, cwd=wt_abs_path)
-          3: git rev-list --count (via _wt_cmd, cwd=wt_abs_path)
+          2: git status --porcelain (cwd=wt_abs_path)
+          3: git log -1 (via _wt_cmd, cwd=wt_abs_path)
+          4: git rev-list --count (via _wt_cmd, cwd=wt_abs_path)
         """
         call_count = [0]
 
@@ -254,43 +261,101 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
         return _side_effect
 
     @patch('subprocess.run')
-    def test_categorizes_by_path_prefix(self, mock_run):
-        """Files under features/ count as specs, tests/ as tests, rest as other."""
+    def test_categorizes_committed_by_path_prefix(self, mock_run):
+        """Committed: features/ count as specs, tests/ as tests, rest as other."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/feat1',    # git rev-parse (via _wt_cmd)
             'features/foo.md\nfeatures/bar.md\ntools/thing.py\n',  # git diff --name-only
+            '',                  # git status --porcelain (no uncommitted)
             'abc1234 commit (5m ago)',  # git log (via _wt_cmd)
             '2',              # git rev-list (via _wt_cmd)
         ])
         state = _worktree_state('/tmp/fake-wt')
-        self.assertEqual(state['modified'], {'specs': 2, 'tests': 0, 'other': 1})
+        self.assertEqual(state['committed'], {'specs': 2, 'tests': 0, 'other': 1})
+        self.assertEqual(state['uncommitted'], {'specs': 0, 'tests': 0, 'other': 0})
         self.assertEqual(state['commits_ahead'], 2)
 
     @patch('subprocess.run')
     def test_clean_worktree(self, mock_run):
-        """Branch at same position as main has all zeros in modified."""
+        """Branch at same position as main has all zeros in both committed and uncommitted."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/feat1',   # branch (via _wt_cmd)
             '',               # git diff --name-only (no changes vs main)
+            '',               # git status --porcelain (no uncommitted)
             'def5678 commit (3m ago)',  # git log (via _wt_cmd)
             '0',              # commits ahead (via _wt_cmd)
         ])
         state = _worktree_state('/tmp/fake-wt')
-        self.assertEqual(state['modified'], {'specs': 0, 'tests': 0, 'other': 0})
+        self.assertEqual(state['committed'], {'specs': 0, 'tests': 0, 'other': 0})
+        self.assertEqual(state['uncommitted'], {'specs': 0, 'tests': 0, 'other': 0})
 
     @patch('subprocess.run')
-    def test_tests_directory_counted(self, mock_run):
-        """Files under tests/ count in the tests category."""
+    def test_committed_tests_directory_counted(self, mock_run):
+        """Committed files under tests/ count in the tests category."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/feat1',     # branch (via _wt_cmd)
             'tests/foo/tests.json\ntests/bar/critic.json\n',  # git diff --name-only
+            '',                   # git status --porcelain (no uncommitted)
             'ghi9012 commit (1m ago)',  # git log (via _wt_cmd)
             '1',             # commits ahead (via _wt_cmd)
         ])
         state = _worktree_state('/tmp/fake-wt')
-        self.assertEqual(state['modified']['tests'], 2)
-        self.assertEqual(state['modified']['specs'], 0)
-        self.assertEqual(state['modified']['other'], 0)
+        self.assertEqual(state['committed']['tests'], 2)
+        self.assertEqual(state['committed']['specs'], 0)
+        self.assertEqual(state['committed']['other'], 0)
+
+    @patch('subprocess.run')
+    def test_uncommitted_categorized(self, mock_run):
+        """Scenario: Uncommitted Modified Categorizes Working Tree Changes by Type."""
+        mock_run.side_effect = self._mock_subprocess([
+            'isolated/feat1',     # branch
+            '',                   # git diff --name-only (no committed changes)
+            ' M features/foo.md\n M tools/bar.py\n M tools/baz.py\n',  # git status --porcelain
+            'abc1234 commit (5m ago)',
+            '0',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['uncommitted'], {'specs': 1, 'tests': 0, 'other': 2})
+
+    @patch('subprocess.run')
+    def test_uncommitted_nonempty_when_same(self, mock_run):
+        """Scenario: Uncommitted Modified Non-Empty When Main Diff Is SAME."""
+        mock_run.side_effect = self._mock_subprocess([
+            'isolated/ui',        # branch
+            '',                   # git diff --name-only (SAME = no committed changes)
+            ' M features/a.md\n M features/b.md\n M features/c.md\n',  # git status --porcelain
+            'def5678 commit (3m ago)',
+            '0',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['committed'], {'specs': 0, 'tests': 0, 'other': 0})
+        self.assertEqual(state['uncommitted'], {'specs': 3, 'tests': 0, 'other': 0})
+
+    @patch('subprocess.run')
+    def test_uncommitted_rename_uses_new_path(self, mock_run):
+        """Renames in git status --porcelain use the new path for categorization."""
+        mock_run.side_effect = self._mock_subprocess([
+            'isolated/feat1',
+            '',
+            'R  tools/old.py -> features/new.md\n',  # rename: new path under features/
+            'abc1234 commit (5m ago)',
+            '0',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['uncommitted'], {'specs': 1, 'tests': 0, 'other': 0})
+
+    @patch('subprocess.run')
+    def test_uncommitted_excludes_purlin(self, mock_run):
+        """Uncommitted .purlin/ files are excluded from all categories."""
+        mock_run.side_effect = self._mock_subprocess([
+            'isolated/feat1',
+            '',
+            ' M .purlin/config.json\n M features/foo.md\n',  # git status --porcelain
+            'abc1234 commit (5m ago)',
+            '0',
+        ])
+        state = _worktree_state('/tmp/fake-wt')
+        self.assertEqual(state['uncommitted'], {'specs': 1, 'tests': 0, 'other': 0})
 
 
 class TestCommitsAheadReported(unittest.TestCase):
@@ -311,7 +376,8 @@ class TestCommitsAheadReported(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'isolated/feat1',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'def5678 feat: handlers (12 min ago)',
             'commits_ahead': 3,
         }
@@ -352,7 +418,8 @@ class TestMainDiffBehind(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'isolated/feat1',
-            'modified': {'specs': 2, 'tests': 0, 'other': 1},
+            'committed': {'specs': 2, 'tests': 0, 'other': 1},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'abc feat', 'commits_ahead': 0,
         }
         result = get_isolation_worktrees()
@@ -414,7 +481,8 @@ class TestMainDiffAhead(unittest.TestCase):
         ]
         mock_state.return_value = {
             'branch': 'isolated/feat1',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'last_commit': 'abc feat', 'commits_ahead': 2,
         }
         result = get_isolation_worktrees()
@@ -617,12 +685,16 @@ class TestAgentConfigPropagation(unittest.TestCase):
                  'path': os.path.join('.worktrees', 'feat1'),
                  'branch': 'isolated/feat1',
                  'main_diff': 'SAME', 'commits_ahead': 0,
-                 'last_commit': 'abc', 'modified': {'specs': 0, 'tests': 0, 'other': 0}},
+                 'last_commit': 'abc',
+                 'committed': {'specs': 0, 'tests': 0, 'other': 0},
+                 'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
                 {'name': 'ui',
                  'path': os.path.join('.worktrees', 'ui'),
                  'branch': 'isolated/ui',
                  'main_diff': 'SAME', 'commits_ahead': 0,
-                 'last_commit': 'def', 'modified': {'specs': 0, 'tests': 0, 'other': 0}},
+                 'last_commit': 'def',
+                 'committed': {'specs': 0, 'tests': 0, 'other': 0},
+                 'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
             ]
 
             with patch('serve.CONFIG_PATH', config_path), \
@@ -647,7 +719,7 @@ class TestAgentConfigPropagation(unittest.TestCase):
 
 
 class TestWorktreeStatePurlinExclusion(unittest.TestCase):
-    """Files under .purlin/ are excluded from all Modified counts (Section 2.4)."""
+    """Files under .purlin/ are excluded from all committed and uncommitted counts (Section 2.4)."""
 
     def _mock_subprocess(self, responses):
         call_count = [0]
@@ -663,28 +735,30 @@ class TestWorktreeStatePurlinExclusion(unittest.TestCase):
         return _side_effect
 
     @patch('subprocess.run')
-    def test_purlin_files_excluded(self, mock_run):
-        """Files under .purlin/ do not count in specs, tests, or other."""
+    def test_purlin_files_excluded_from_committed(self, mock_run):
+        """Files under .purlin/ do not count in committed specs, tests, or other."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/feat1',    # git rev-parse
             '.purlin/config.json\nfeatures/foo.md\ntools/bar.py\n',  # git diff --name-only
+            '',                  # git status --porcelain
             'abc1234 commit (5m ago)',
             '1',
         ])
         state = _worktree_state('/tmp/fake-wt')
-        self.assertEqual(state['modified'], {'specs': 1, 'tests': 0, 'other': 1})
+        self.assertEqual(state['committed'], {'specs': 1, 'tests': 0, 'other': 1})
 
     @patch('subprocess.run')
     def test_purlin_only_changes_appear_clean(self, mock_run):
-        """Branch with only .purlin/ changes has all-zero modified counts."""
+        """Branch with only .purlin/ committed changes has all-zero counts."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/feat1',
             '.purlin/config.json\n.purlin/cache/status.json\n',  # git diff --name-only
+            '',  # git status --porcelain
             'def5678 commit (3m ago)',
             '0',
         ])
         state = _worktree_state('/tmp/fake-wt')
-        self.assertEqual(state['modified'], {'specs': 0, 'tests': 0, 'other': 0})
+        self.assertEqual(state['committed'], {'specs': 0, 'tests': 0, 'other': 0})
 
 
 class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
@@ -693,7 +767,8 @@ class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
     def test_name_rendered_in_table(self):
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertIn('<th>Name</th>', html)
@@ -704,13 +779,28 @@ class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
     def test_multiple_isolations(self):
         worktrees = [
             {'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
-             'modified': {'specs': 2, 'tests': 0, 'other': 0}},
+             'committed': {'specs': 2, 'tests': 0, 'other': 0},
+             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
             {'name': 'ui', 'branch': 'isolated/ui', 'main_diff': 'SAME',
-             'modified': {'specs': 0, 'tests': 0, 'other': 0}},
+             'committed': {'specs': 0, 'tests': 0, 'other': 0},
+             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
         ]
         html = _isolation_section_html(worktrees)
         self.assertIn('feat1', html)
         self.assertIn('ui', html)
+
+    def test_two_line_column_headers(self):
+        """Column headers use two-line rendering for Committed/Uncommitted Modified."""
+        worktrees = [{
+            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _isolation_section_html(worktrees)
+        self.assertIn('Committed<br>Modified', html)
+        self.assertIn('Uncommitted<br>Modified', html)
+        # Old single "Modified" header should not be present
+        self.assertNotIn('<th>Modified</th>', html)
 
 
 class TestMainDiffBadgeRendering(unittest.TestCase):
@@ -720,7 +810,8 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
         """SAME renders with st-good (green) badge class."""
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertIn('class="st-good"', html)
@@ -730,7 +821,8 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
         """AHEAD renders with st-todo (yellow) badge class."""
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
-            'modified': {'specs': 2, 'tests': 0, 'other': 0},
+            'committed': {'specs': 2, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertIn('class="st-todo"', html)
@@ -740,7 +832,8 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
         """BEHIND renders with st-todo (yellow) badge class."""
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'BEHIND',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertIn('class="st-todo"', html)
@@ -750,7 +843,8 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
         """DIVERGED renders with st-disputed (orange/warning) badge class."""
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'DIVERGED',
-            'modified': {'specs': 1, 'tests': 0, 'other': 2},
+            'committed': {'specs': 1, 'tests': 0, 'other': 2},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertIn('class="st-disputed"', html)
@@ -764,7 +858,8 @@ class TestDeliveryPhaseBadgeInHtml(unittest.TestCase):
         """Name cell shows delivery phase badge when present."""
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
-            'modified': {'specs': 2, 'tests': 0, 'other': 0},
+            'committed': {'specs': 2, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'delivery_phase': {'current': 2, 'total': 3},
         }]
         html = _isolation_section_html(worktrees)
@@ -775,7 +870,8 @@ class TestDeliveryPhaseBadgeInHtml(unittest.TestCase):
         """Name cell has no phase badge when delivery_phase is absent."""
         worktrees = [{
             'name': 'ui', 'branch': 'isolated/ui', 'main_diff': 'SAME',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertNotIn('Phase', html)
@@ -850,7 +946,8 @@ class TestIsolationSectionNoSessionsHeader(unittest.TestCase):
     def test_no_h4_sessions_header(self):
         worktrees = [{
             'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _isolation_section_html(worktrees)
         self.assertNotIn('<h4', html)
