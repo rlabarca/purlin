@@ -40,7 +40,10 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 
 ### 2.2 Dashboard API Endpoints
 
-*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object. Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically (temp file + rename). Returns updated config on success, 400 on validation failure.
+*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically (temp file + rename). Returns updated config on success, 400 on validation failure.
+    *   **Completeness check:** The backend MUST reject any request that is missing one or more of the three expected roles (`architect`, `builder`, `qa`) with a 400 error: `"agents payload must include all three roles: architect, builder, qa"`. Partial saves that silently drop roles are not permitted.
+    *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
+    *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all three roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present — it MUST NOT send a partial payload.
 
 
 ## 3. Scenarios

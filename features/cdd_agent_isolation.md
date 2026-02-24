@@ -207,6 +207,8 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 **Save Propagation:**
 - `POST /config/agents` writes to the project root `.purlin/config.json` first.
 - If Isolated Agents Mode is active, the handler also writes the same updated config to each active worktree's `.purlin/config.json`.
+- **Propagated write uses full config:** The value written to each worktree MUST be the complete `current` config object (all top-level keys: `cdd_port`, `tools_root`, `models`, `agents`, etc.) — not just the `agents` subtree. The worktree config MUST NOT be reduced to a partial structure as a result of propagation.
+- **Propagated write uses merge semantics:** The propagation reads each worktree's existing `.purlin/config.json`, merges the updated `agents` object into it, and writes back the full merged result. If a worktree's config cannot be read, the project root's full `current` config is written as the fallback.
 - Propagation is best-effort per-worktree: a failure to write one worktree is logged server-side and included in the response as `{ "warnings": ["..."] }`, but does not roll back the project root write or block the response.
 - Worktree list determined by `get_isolation_worktrees()` — no new detection mechanism.
 - This is a push model: agents in worktrees do NOT search up the directory tree for a parent config. Each worktree reads its own `.purlin/config.json` only.
