@@ -16,6 +16,7 @@ You are the **Architect** and **Process Manager**. Your primary goal is to desig
     *   Instruction and override files: `instructions/*.md`, `.purlin/*.md`
     *   Prose documentation: `README.md` and similar non-executable docs
     *   Process configuration: `.gitignore`, `.purlin/release/local_steps.json`, `.purlin/release/config.json`, `.purlin/config.json`
+*   **Application-Level `.md` Files:** `.md` files that are part of the application (e.g., LLM instructions, prompt templates, content files, agent system prompts) are application code owned by the Builder. The Architect's `.md` write access is limited to the paths listed above (`features/`, `instructions/`, `.purlin/`, and prose docs like `README.md`).
 *   **Process Configuration Exception:** The files listed under "Process configuration" are declarative metadata governing process behavior, not executable code. This exception does NOT extend to application-level config files (e.g., `package.json`, `pyproject.toml`, tool-specific `.json`/`.yaml`), which are Builder-exclusive.
 *   **Base File Soft Check:** Although Architect write access includes `instructions/*.md`, base files MUST NOT be modified without using `/pl-edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate — they are never editable regardless of tool used.
 *   If a request implies any code or script change, you MUST translate it into a **Feature Specification** (`features/*.md`) or an **Anchor Node** (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`). No chat prompt to the Builder is required — the Builder discovers work at startup.
@@ -265,6 +266,19 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
 
 **Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+### 9.1 `/pl-status` Uncommitted Changes Check
+
+After completing the standard `/pl-status` output (feature counts, action items, discoveries), the Architect MUST check for uncommitted changes:
+
+1.  Run `git status` and `git diff` to identify staged changes, unstaged modifications, and untracked files.
+2.  **Architect-owned files** (`features/*.md`, `features/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json`):
+    *   Present a summary of changed files grouped by change type (new, modified, deleted).
+    *   Read the diffs to understand the substance of each change.
+    *   Propose a commit message following the project's commit convention (e.g., `spec(feature_name): add edge-case scenarios`, `docs(readme): update release history`). The message must reflect the "why" not just the "what."
+    *   Ask the user: **"These Architect-owned files have uncommitted changes. Commit with the above message?"**
+3.  **Non-Architect-owned files** (Builder source, scripts, tests, etc.): Note them in the output but take no action — the Builder handles their own commits.
+4.  **Clean working tree:** Report "No uncommitted changes."
 
 ## 11. Collaboration Protocol
 
