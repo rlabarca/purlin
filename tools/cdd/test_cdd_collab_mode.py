@@ -21,6 +21,7 @@ from serve import (
     _worktree_state,
     _compute_main_diff,
     _isolation_section_html,
+    _collapsed_isolation_label,
     get_isolation_worktrees,
     get_git_status,
     generate_api_status_json,
@@ -775,6 +776,62 @@ class TestGetGitStatusPurlinExclusion(unittest.TestCase):
         cmd_arg = mock_cmd.call_args[0][0]
         self.assertIn('.purlin/', cmd_arg)
         self.assertIn('grep -v', cmd_arg)
+
+
+class TestCollapsedIsolationLabel(unittest.TestCase):
+    """_collapsed_isolation_label returns (css, text) for sub-heading (Section 2.3)."""
+
+    def test_no_worktrees_returns_isolated_agents(self):
+        css, text = _collapsed_isolation_label([])
+        self.assertEqual(css, "")
+        self.assertEqual(text, "ISOLATED AGENTS")
+
+    def test_one_worktree_same(self):
+        wts = [{'main_diff': 'SAME'}]
+        css, text = _collapsed_isolation_label(wts)
+        self.assertEqual(css, "st-good")
+        self.assertEqual(text, "1 Isolated Agent")
+
+    def test_two_worktrees_all_same(self):
+        wts = [{'main_diff': 'SAME'}, {'main_diff': 'SAME'}]
+        css, text = _collapsed_isolation_label(wts)
+        self.assertEqual(css, "st-good")
+        self.assertEqual(text, "2 Isolated Agents")
+
+    def test_diverged_highest_severity(self):
+        wts = [{'main_diff': 'SAME'}, {'main_diff': 'DIVERGED'}]
+        css, text = _collapsed_isolation_label(wts)
+        self.assertEqual(css, "st-disputed")
+        self.assertEqual(text, "2 Isolated Agents")
+
+    def test_behind_higher_than_ahead(self):
+        wts = [{'main_diff': 'AHEAD'}, {'main_diff': 'BEHIND'}]
+        css, text = _collapsed_isolation_label(wts)
+        self.assertEqual(css, "st-todo")
+        self.assertEqual(text, "2 Isolated Agents")
+
+    def test_ahead_only(self):
+        wts = [{'main_diff': 'AHEAD'}]
+        css, text = _collapsed_isolation_label(wts)
+        self.assertEqual(css, "st-todo")
+        self.assertEqual(text, "1 Isolated Agent")
+
+
+class TestIsolationSectionNoSessionsHeader(unittest.TestCase):
+    """_isolation_section_html returns table with no Sessions h4 header."""
+
+    def test_no_h4_sessions_header(self):
+        worktrees = [{
+            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _isolation_section_html(worktrees)
+        self.assertNotIn('<h4', html)
+        self.assertIn('<table', html)
+
+    def test_empty_worktrees_returns_empty(self):
+        html = _isolation_section_html([])
+        self.assertEqual(html, "")
 
 
 # ===================================================================

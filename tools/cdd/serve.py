@@ -850,7 +850,7 @@ def _role_badge_html(status):
 
 
 def _isolation_section_html(worktrees):
-    """Generate HTML for the Isolated Agents Sessions sub-section."""
+    """Generate HTML for the Isolated Agents Sessions table (no heading)."""
     if not worktrees:
         return ""
 
@@ -911,12 +911,32 @@ def _isolation_section_html(worktrees):
         )
 
     return (
-        '<h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;'
-        'text-transform:uppercase;letter-spacing:0.5px">Sessions</h4>'
         '<table class="ft" style="width:100%"><thead><tr>'
         '<th>Name</th><th>Branch</th><th>Main Diff</th><th>Modified</th><th></th>'
         '</tr></thead><tbody>' + rows + '</tbody></table>'
     )
+
+
+def _collapsed_isolation_label(worktrees):
+    """Compute collapsed sub-heading label and CSS class for Isolated Agents.
+
+    Returns (css_class, label_text) tuple.
+    """
+    if not worktrees:
+        return ("", "ISOLATED AGENTS")
+    n = len(worktrees)
+    severity = {"DIVERGED": 3, "BEHIND": 2, "AHEAD": 1, "SAME": 0}
+    max_sev = 0
+    for wt in worktrees:
+        md = wt.get("main_diff", "SAME")
+        max_sev = max(max_sev, severity.get(md, 0))
+    if max_sev >= 3:
+        css = "st-disputed"  # orange
+    elif max_sev >= 1:
+        css = "st-todo"  # yellow
+    else:
+        css = "st-good"  # green
+    return (css, f"{n} Isolated Agent{'s' if n != 1 else ''}")
 
 
 def _feature_urgency(entry):
@@ -996,15 +1016,20 @@ def generate_html(cache=None):
     # Isolated Agents detection for dashboard
     isolation_worktrees = get_isolation_worktrees()
     isolations_active = bool(isolation_worktrees)
-    workspace_heading = "Isolated Agents" if isolations_active else "Workspace"
-    isolation_html = ""
-    if isolations_active:
-        isolation_html = _isolation_section_html(isolation_worktrees)
+    isolation_html = _isolation_section_html(isolation_worktrees)
 
-    # Isolation controls: New Isolation input (always shown in section footer)
-    isolation_controls_html = (
-        '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-        '<div style="display:flex;align-items:center;gap:6px">'
+    # Collapsed sub-heading label for Isolated Agents
+    iso_badge_css, iso_badge_text = _collapsed_isolation_label(isolation_worktrees)
+    if iso_badge_css:
+        isolation_badge = f'<span class="{iso_badge_css}">{iso_badge_text}</span>'
+    else:
+        isolation_badge = ''
+
+    # Creation row (always first item in Isolated Agents sub-section)
+    creation_row_html = (
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+        '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
+        'Create An Isolated Agent</span>'
         '<input type="text" id="new-isolation-name" maxlength="8" placeholder="name"'
         ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
         'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
@@ -1014,7 +1039,6 @@ def generate_html(cache=None):
         '<span id="isolation-ctrl-err" style="color:var(--purlin-status-error);font-size:11px;margin-left:4px"></span>'
         '</div>'
         '<span id="isolation-name-hint" style="color:var(--purlin-muted);font-size:10px;display:none"></span>'
-        '</div>'
     )
 
     # Count badges for collapsed summary
@@ -1263,6 +1287,7 @@ h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purl
 }}
 .chevron.expanded{{transform:rotate(90deg)}}
 .section-badge{{font-size:10px;margin-left:4px;flex-shrink:0}}
+.subsection-hdr{{padding-left:12px}}
 .section-body{{overflow:hidden;transition:max-height 0.2s ease}}
 .section-body.collapsed{{max-height:0 !important;overflow:hidden}}
 .features{{background:var(--purlin-surface);border-radius:4px;padding:8px 10px;margin-bottom:10px}}
@@ -1410,15 +1435,22 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
         <span class="chevron" id="workspace-section-chevron">&#9654;</span>
-        <h3>{workspace_heading}</h3>
+        <h3>Workspace</h3>
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">
-        {isolation_html}
+        <div class="section-hdr subsection-hdr" onclick="toggleSection('isolation-subsection')">
+          <span class="chevron expanded" id="isolation-subsection-chevron">&#9654;</span>
+          <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" data-collapsed-class="{iso_badge_css}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-muted)">ISOLATED AGENTS</span>
+          <span class="section-badge" id="isolation-subsection-badge" style="display:none">{isolation_badge}</span>
+        </div>
+        <div class="section-body" id="isolation-subsection">
+          {creation_row_html}
+          {isolation_html}
+        </div>
         <h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Local (main)</h4>
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
-        {isolation_controls_html}
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1604,6 +1636,9 @@ function updateTimestamp() {{
 
 function refreshStatus() {{
   if (rcIsolationPending) return;
+  // Save isolation name input value before DOM refresh
+  var isoInput = document.getElementById('new-isolation-name');
+  if (isoInput) _pendingIsolationName = isoInput.value;
   return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
     .then(function(html) {{
@@ -1633,6 +1668,12 @@ function refreshStatus() {{
         refreshReleaseChecklist();
         // Update Run Critic button annotation (Section 2.7)
         updateCriticLabel();
+        // Restore isolation name input value after DOM refresh
+        var restoredInput = document.getElementById('new-isolation-name');
+        if (restoredInput && _pendingIsolationName) {{
+          restoredInput.value = _pendingIsolationName;
+          validateIsolationName(restoredInput);
+        }}
       }}
       updateTimestamp();
     }})
@@ -1653,7 +1694,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-subsection'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1662,7 +1703,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-subsection'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1679,6 +1720,8 @@ function applySectionStates() {{
       if (badge) badge.style.display = 'none';
     }}
   }});
+  // Apply isolation sub-heading label swap
+  applyIsolationHeadingState();
 }}
 
 function toggleSection(sectionId) {{
@@ -1696,7 +1739,39 @@ function toggleSection(sectionId) {{
     if (chevron) chevron.classList.remove('expanded');
     if (badge) badge.style.display = '';
   }}
+  // Isolation sub-heading: swap heading text on collapse/expand
+  if (sectionId === 'isolation-subsection') {{
+    applyIsolationHeadingState();
+  }}
   saveSectionStates();
+}}
+
+function applyIsolationHeadingState() {{
+  var heading = document.getElementById('isolation-heading');
+  var body = document.getElementById('isolation-subsection');
+  if (!heading || !body) return;
+  var isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {{
+    var collapsedText = heading.getAttribute('data-collapsed-text');
+    var collapsedCls = heading.getAttribute('data-collapsed-class');
+    if (collapsedText && collapsedCls) {{
+      heading.textContent = collapsedText;
+      heading.className = collapsedCls;
+      heading.style.fontSize = '11px';
+      heading.style.fontWeight = '700';
+      heading.style.letterSpacing = '0.1em';
+      heading.style.textTransform = 'uppercase';
+      heading.style.color = '';
+    }}
+  }} else {{
+    heading.textContent = heading.getAttribute('data-expanded') || 'ISOLATED AGENTS';
+    heading.className = '';
+    heading.style.fontSize = '11px';
+    heading.style.fontWeight = '700';
+    heading.style.letterSpacing = '0.1em';
+    heading.style.textTransform = 'uppercase';
+    heading.style.color = 'var(--purlin-muted)';
+  }}
 }}
 
 // ============================
@@ -1971,6 +2046,7 @@ function runCritic() {{
 // Isolation Controls
 // ============================
 var _killTargetName = '';
+var _pendingIsolationName = '';
 
 function validateIsolationName(input) {{
   var btn = document.getElementById('btn-create-isolation');
@@ -2002,7 +2078,7 @@ function createIsolation() {{
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
       rcIsolationPending = false;
-      if (d.status === 'ok') {{ input.value = ''; refreshStatus(); }}
+      if (d.status === 'ok') {{ input.value = ''; _pendingIsolationName = ''; refreshStatus(); }}
       else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
     }})
     .catch(function() {{ rcIsolationPending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
