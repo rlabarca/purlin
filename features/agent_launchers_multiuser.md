@@ -137,7 +137,9 @@ After setup:
 
 #### Scenario: setup_worktrees Removes .claude/commands/ From Each Worktree
 
-    Given setup_worktrees.sh has created all three worktrees under .worktrees/
+    Given the project root has no worktrees under .worktrees/
+    And .worktrees/ is gitignored
+    When setup_worktrees.sh is run
     Then .worktrees/architect-session/.claude/commands/ does not exist
     And .worktrees/build-session/.claude/commands/ does not exist
     And .worktrees/qa-session/.claude/commands/ does not exist
