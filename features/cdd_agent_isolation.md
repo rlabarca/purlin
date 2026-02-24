@@ -48,13 +48,7 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 **ISOLATED AGENTS heading collapse behavior:**
 
 - **Collapsed, no active worktrees:** The heading label reads "ISOLATED AGENTS" with no annotation.
-- **Collapsed, N active worktrees:** The heading label reads "N Isolated Agents" (e.g., "2 Isolated Agents"), displayed in the color corresponding to the highest-severity `main_diff` state across all active worktrees. Severity ordering and color tokens (highest to lowest):
-  1. `DIVERGED` → `--purlin-status-warning` (orange)
-  2. `BEHIND` → `--purlin-status-todo` (yellow)
-  3. `AHEAD` → `--purlin-status-todo` (yellow)
-  4. `SAME` → `--purlin-status-good` (green)
-
-  The heading takes the color of the most severe state present. If any worktree is DIVERGED, the label is orange. If none are DIVERGED but at least one is BEHIND, the label is yellow. If none are DIVERGED or BEHIND but at least one is AHEAD, the label is yellow. If all worktrees are SAME, the label is green.
+- **Collapsed, N active worktrees:** The heading label reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the normal section heading color (`--purlin-muted`). The heading text MUST NOT change color based on worktree severity state — it always renders in the same color as any other collapsed section heading.
 
 **ISOLATED AGENTS section expanded content (in order):**
 
@@ -419,13 +413,13 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When the User collapses the Isolated Agents sub-heading
     Then the collapsed label reads "ISOLATED AGENTS" with no annotation
 
-#### Scenario: Isolated Agents Sub-heading Shows Highest Severity Color When Collapsed
+#### Scenario: Isolated Agents Sub-heading Shows Count When Collapsed With Active Worktrees
 
     Given the CDD dashboard is open
     And two worktrees are active: one with main_diff DIVERGED and one with main_diff AHEAD
     When the User collapses the Isolated Agents sub-heading
     Then the collapsed label reads "2 Isolated Agents"
-    And the label color is orange (--purlin-status-warning) because DIVERGED is the highest severity
+    And the label color is the normal section heading color (--purlin-muted), not orange or any severity color
 
 #### Scenario: Creation Row Always Visible When Sub-section Is Expanded With No Agents
 
@@ -463,8 +457,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] ISOLATED AGENTS section appears directly below the WORKSPACE section at the same indent level (peer sections, not nested)
 - [ ] ISOLATED AGENTS section uses the same collapsible heading style as WORKSPACE
 - [ ] Collapsed heading with no active worktrees reads "ISOLATED AGENTS" with no annotation
-- [ ] Collapsed heading with N active worktrees reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the highest-severity color
-- [ ] Highest-severity color mapping: DIVERGED → orange (`--purlin-status-warning`); BEHIND → yellow (`--purlin-status-todo`); AHEAD → yellow (`--purlin-status-todo`); SAME → green (`--purlin-status-good`)
+- [ ] Collapsed heading with N active worktrees reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
 - [ ] When expanded, the creation row "Create An Isolated Agent [input] [Create]" is always the first item
 - [ ] Sessions table appears below the creation row
 - [ ] Sessions table has columns: Name, Branch, Main Diff, Modified (no Role column)
