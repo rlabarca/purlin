@@ -46,7 +46,7 @@ The Status view is the default view (`/#status`).
         - `TODO` (yellow) if any feature has a TODO state without any FAIL/WARN states.
         - Most severe status badge otherwise (FAIL > INFEASIBLE > DISPUTED > TODO).
     *   **Collapsed Summary (Complete):** When the Complete section is collapsed, the section heading displays no summary badge. Complete implies all roles are satisfied; a badge is redundant.
-    *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean State" or a brief status indicator.
+    *   **Collapsed Summary (Workspace):** When collapsed, displays "Clean Slate" when the working tree is clean, or a brief status indicator when it is not. No annotation or parenthetical (e.g., "(ready for next task)") MUST be appended after "Clean Slate".
     *   **Default State:** Active section is expanded by default. Workspace and Complete sections are collapsed by default. The Active section shows its summary badge when collapsed; the Workspace section shows its status indicator; the Complete section shows nothing.
     *   **State Persistence:** Section expanded/collapsed states MUST be persisted to `localStorage` (key: `purlin-section-states`). On page load, saved states are restored, overriding the defaults above. This ensures the user's preferred section layout survives page reloads and browser restarts. Each toggle updates the stored state immediately.
 *   **Matched Column Widths:** The Active and Complete tables MUST have matching column widths, computed as if they were a single table. This ensures the columns align visually when both sections are expanded.
@@ -589,7 +589,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Collapsed Active section shows no badge when empty; shows TODO/most-severe badge when non-empty; Complete section shows no badge when collapsed
 - [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
 - [ ] Section collapse/expand states persist across page reloads via localStorage
-- [ ] Workspace section shows "Clean State" or status summary in its collapsed form
+- [ ] Workspace section shows "Clean Slate" (no annotation) in its collapsed form when the working tree is clean
 - [ ] URL hash reads `#status` when Status view is active and `#map` when SW Map view is active
 - [ ] Switching views updates the URL hash immediately
 - [ ] Loading the page with `#map` in the URL activates the SW Map view
@@ -599,7 +599,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] At viewport widths ≤600px, ARCHITECT and BUILDER column headers abbreviate to ARCH and BUILD
 - [ ] At viewport widths >600px, ARCHITECT and BUILDER column headers display full text (Architect, Builder)
 - [ ] Workspace section visible between Active and Complete sections (or at its collapsible position)
-- [ ] Workspace shows "Clean State" or "Work in Progress" with file list
+- [ ] Workspace shows "Clean Slate" (no annotation) when all files are committed, or "Work in Progress" with file list when dirty
 - [ ] Workspace shows last commit summary (hash, message, relative timestamp)
 - [ ] Workspace updates on each 5-second refresh cycle without full page reload
 - [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
