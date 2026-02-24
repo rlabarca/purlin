@@ -211,7 +211,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 
 #### Scenario: Generated Artifacts Written Outside Submodule
     Given the project uses agentic-dev-core as a submodule at "agentic-dev/"
-    When CDD Monitor, Software Map, or Critic tools produce runtime artifacts
+    When CDD Monitor, Spec Map, or Critic tools produce runtime artifacts
     Then log files and PID files are written to <project_root>/.purlin/runtime/
     And data caches are written to <project_root>/.purlin/cache/
     And no generated files are written inside the agentic-dev/ submodule directory

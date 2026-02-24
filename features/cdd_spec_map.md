@@ -1,15 +1,15 @@
-# Feature: CDD Software Map View
+# Feature: CDD Spec Map View
 
-> Label: "Tool: CDD Software Map"
+> Label: "Tool: CDD Spec Map"
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 
 
 ## 1. Overview
-The Software Map view within the CDD Dashboard renders an interactive dependency graph of all feature files. It provides visual exploration of the project's feature relationships, category groupings, and prerequisite chains. This feature absorbs all visualization and generation requirements from the retired `software_map_generator.md`.
+The Spec Map view within the CDD Dashboard renders an interactive dependency graph of all feature files. It provides visual exploration of the project's feature relationships, category groupings, and prerequisite chains. This feature absorbs all visualization and generation requirements from the retired `software_map_generator.md`.
 
-The SW Map view is activated via the view mode toggle in the dashboard shell (defined in `cdd_status_monitor.md` Section 2.2.1). The dashboard shell owns the unified header, search box, theme system, and feature detail modal; this feature owns the graph rendering, generation, and reactive update logic.
+The Spec Map view is activated via the view mode toggle in the dashboard shell (defined in `cdd_status_monitor.md` Section 2.2.1). The dashboard shell owns the unified header, search box, theme system, and feature detail modal; this feature owns the graph rendering, generation, and reactive update logic.
 
 ## 2. Requirements
 
@@ -33,10 +33,10 @@ The SW Map view is activated via the view mode toggle in the dashboard shell (de
 *   **Label Non-Overlap:** Node labels (both friendly name and filename) MUST NOT visually overlap with labels of neighboring nodes or with each other. The layout engine must provide sufficient spacing, padding, or collision avoidance to ensure all text remains fully legible at the default zoom-to-fit level.
 *   **Label Wrapping:** Long labels MUST wrap within their containing node box rather than being clipped. The full text of both the friendly name and filename MUST remain visible at the default zoom-to-fit level.
 *   **No Legend:** The graph MUST NOT display a legend overlay. Node semantics are conveyed through category grouping and direct labeling.
-*   **Zoom-to-Fit on Load:** On initial page load (or when switching to the SW Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
+*   **Zoom-to-Fit on Load:** On initial page load (or when switching to the Spec Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
     *   If the user has NOT modified zoom or pan since the last fit (initial load, view switch, or Recenter), auto-refresh cycles MUST re-fit the graph to the viewable area.
     *   If the user HAS modified zoom or pan, auto-refresh cycles MUST preserve the current zoom level and pan position.
-*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the SW Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the auto-layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
+*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the Spec Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the auto-layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
 *   **Node Position Persistence:** The graph tracks whether the user has manually dragged any node (category group box or individual feature node). Node positions are persisted to `localStorage`, keyed by a content hash derived from the current set of nodes and their category assignments.
     *   If the user has NOT manually moved any node, auto-refresh cycles re-run the layout algorithm normally.
     *   If the user HAS manually moved one or more nodes, auto-refresh cycles restore the saved positions. Existing nodes retain their saved coordinates; any newly-added nodes are placed by the layout algorithm.
@@ -99,13 +99,13 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 
 #### Scenario: Reactive Update on Feature Change
     Given the CDD Dashboard server is running
-    And the SW Map view is active
+    And the Spec Map view is active
     When a feature file is created, modified, or deleted
     Then the tool automatically regenerates the Mermaid exports
     And the tool automatically regenerates dependency_graph.json
 
 #### Scenario: Feature Detail Modal via Graph Node
-    Given the User is viewing the SW Map view
+    Given the User is viewing the Spec Map view
     When the User clicks a feature node
     Then the shared feature detail modal opens showing the rendered markdown content
     And the modal has an X button in the top-right corner
@@ -113,13 +113,13 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the modal closes
 
 #### Scenario: Hover Highlighting
-    Given the User is viewing the SW Map view
+    Given the User is viewing the Spec Map view
     When the User hovers over a feature node
     Then the node's direct prerequisites and direct dependents are highlighted
     And non-adjacent nodes are visually de-emphasized
 
 #### Scenario: Zoom Preserved on Refresh When Modified
-    Given the User has zoomed or panned the graph in the SW Map view
+    Given the User has zoomed or panned the graph in the Spec Map view
     When the dashboard auto-refreshes
     Then the current zoom level and pan position are preserved
 
@@ -137,7 +137,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the graph is re-fitted to the viewable area rather than preserving the previous zoom/pan
 
 #### Scenario: Node Position Preserved on Refresh When Manually Moved
-    Given the User has dragged one or more nodes to new positions in the SW Map view
+    Given the User has dragged one or more nodes to new positions in the Spec Map view
     When the dashboard auto-refreshes and the graph has not changed substantively
     Then each moved node is restored to its saved position
 
@@ -163,11 +163,11 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And both position and zoom interaction states reset to unmodified
 
 ## 4. Implementation Notes
-See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
+See [cdd_spec_map.impl.md](cdd_spec_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
 ## Visual Specification
 
-### Screen: CDD Dashboard -- SW Map View
+### Screen: CDD Dashboard -- Spec Map View
 - **Reference:** N/A
 - [ ] Dependency graph rendered with feature nodes and directed edges
 - [ ] Feature nodes visually grouped by Category metadata with clear delineation
@@ -177,7 +177,7 @@ See [cdd_software_map.impl.md](cdd_software_map.impl.md) for implementation know
 - [ ] Long labels wrap within node boxes without clipping (all text visible at default zoom)
 - [ ] No legend overlay displayed
 - [ ] Graph is zoomed and centered to fit the viewable page area on initial load
-- [ ] "Recenter Graph" button is displayed in the bottom-right corner of the SW Map canvas
+- [ ] "Recenter Graph" button is displayed in the bottom-right corner of the Spec Map canvas
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch
 - [ ] Theme persists across auto-refresh cycles

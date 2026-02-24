@@ -21,8 +21,8 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
 #### 2.2.1 Dashboard Shell
 
 *   **Header:** A two-row header bar (per Section 2.9) is always visible. Row 1 contains the logo, title, timestamp, and theme toggle. Row 2 contains the view mode toggle buttons, Run Critic button, and the search box. A subtle border separates the two rows.
-*   **Content Area:** Below the header, the content area renders either the Status view or the SW Map view.
-*   **URL Hash Routing:** The URL hash MUST reflect the active view at all times. Switching to the Status view sets the hash to `#status`. Switching to the SW Map view sets the hash to `#map`. On page load, the dashboard MUST read the current URL hash and activate the corresponding view (`#map` activates SW Map; any other value or no hash defaults to Status). Browser back/forward navigation MUST switch views via the `hashchange` event.
+*   **Content Area:** Below the header, the content area renders either the Status view or the Spec Map view.
+*   **URL Hash Routing:** The URL hash MUST reflect the active view at all times. Switching to the Status view sets the hash to `#status`. Switching to the Spec Map view sets the hash to `#map`. On page load, the dashboard MUST read the current URL hash and activate the corresponding view (`#map` activates Spec Map; any other value or no hash defaults to Status). Browser back/forward navigation MUST switch views via the `hashchange` event.
 
 #### 2.2.2 Status View
 The Status view is the default view (`/#status`).
@@ -223,7 +223,7 @@ Row 1 uses CSS flexbox (`justify-content: space-between`) to position its left a
 **Row 2** (sub-header, directly below Row 1):
 
 *   **Left side** (left-justified):
-    1.  View mode toggle buttons ("Status" / "SW Map"). These buttons MUST be left-aligned below the logo/title block.
+    1.  View mode toggle buttons ("Status" / "Spec Map"). These buttons MUST be left-aligned below the logo/title block.
 *   **Right side** (right-justified, in this order from the right edge inward):
     1.  Search/filter text input -- rightmost element
     2.  "Run Critic" button (and its error indicator) -- immediately left of the search input
@@ -568,7 +568,7 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Project name color switches correctly between dark and light themes
 - [ ] Project name shows config value when `project_name` is set; falls back to project directory name otherwise
 - [ ] Header Row 1 left side: Logo + Title + project name; right side: timestamp, theme toggle
-- [ ] Header Row 2 left side: "Status" / "SW Map" toggle buttons below the logo; right side: Run Critic button, search input
+- [ ] Header Row 2 left side: "Status" / "Spec Map" toggle buttons below the logo; right side: Run Critic button, search input
 - [ ] Run Critic button shows a relative last-run annotation: "(Xm)", "(Xh)", or "(Xd)" — no annotation when never run or run less than 60 seconds ago
 - [ ] A subtle 1px border separates Row 1 from Row 2
 - [ ] View mode toggle buttons are left-justified below the logo/title block (Row 2)
@@ -590,9 +590,9 @@ See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation 
 - [ ] Active section expanded by default; Workspace and Complete sections collapsed by default
 - [ ] Section collapse/expand states persist across page reloads via localStorage
 - [ ] Workspace section shows "Clean Slate" (no annotation) in its collapsed form when the working tree is clean
-- [ ] URL hash reads `#status` when Status view is active and `#map` when SW Map view is active
+- [ ] URL hash reads `#status` when Status view is active and `#map` when Spec Map view is active
 - [ ] Switching views updates the URL hash immediately
-- [ ] Loading the page with `#map` in the URL activates the SW Map view
+- [ ] Loading the page with `#map` in the URL activates the Spec Map view
 - [ ] Active and Complete tables have matching column widths
 - [ ] Status column headers (Architect, Builder, QA) are centered
 - [ ] Feature column header is left-justified
