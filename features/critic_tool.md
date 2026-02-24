@@ -199,9 +199,9 @@ The Critic MUST compute a regression set for each TESTING feature based on the B
     *   `dependency-only` -- Scenarios referencing the changed prerequisite's surface area. Determined by cross-referencing the feature's prerequisite links with the dependency graph.
 *   **Cross-Validation:** If the declared scope is `cosmetic` but the status commit modifies files that are referenced by manual scenarios (detected via git diff of the commit), the Critic MUST emit a WARNING in the report and in the feature's `critic.json`.
 *   **Scope Name Validation Action Items:** Cross-validation warnings from `targeted:` scope name validation (names not matching any `#### Scenario:` or `### Screen:` title per `policy_critic.md` Section 2.8 naming contract) MUST be surfaced as MEDIUM-priority Builder action items with category `scope_validation`. These appear in both the per-feature `critic.json` action items and the aggregate `CRITIC_REPORT.md` under the Builder section. **First-pass guard escalation warnings and cosmetic cross-file validation warnings are informational only and MUST NOT generate Builder action items.** The guard conditions these items exclusively on the original declared scope being `targeted:` — if `regression_scope.declared` does not start with `targeted:`, no `scope_validation` Builder items are generated regardless of the content of `cross_validation_warnings`.
-*   **Scoped QA Action Items:** The Critic MUST modify QA action item generation to use the regression set:
+*   **Scoped QA Action Items:** The Critic MUST modify QA action item generation to use the regression set. The §2.10 manual-scenario-only filter applies to ALL scope types: only manual scenarios in the regression set produce QA action items. If after filtering, zero manual scenarios remain, no QA verification action item is generated for that feature (regardless of scope type).
     *   `full` -- `"Verify X: N manual scenario(s), M visual item(s)"`
-    *   `targeted` -- `"Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"`
+    *   `targeted` -- `"Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"` (only manual scenarios from the targeted list; if all targeted scenarios are automated, no QA action item is generated)
     *   `cosmetic` -- `"QA skip (cosmetic change) -- 0 scenarios queued"`
     *   `dependency-only` -- `"Verify X: N scenario(s) touching changed dependency surface"`
 *   **Per-Feature Output:** Include a `regression_scope` block in `tests/<feature_name>/critic.json`:
@@ -649,6 +649,14 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then the QA action item reads "Verify X: 2 targeted scenario(s) [Scenario A, Scenario B]"
     And scenarios not in the target list are not included in the action item
 
+#### Scenario: No QA Action Item for Targeted Scope Naming Only Automated Scenarios
+    Given a feature is in TESTING state with 0 manual scenarios
+    And the regression scope is targeted:Some Automated Scenario
+    And "Some Automated Scenario" is an automated scenario (not manual)
+    When the Critic generates QA action items
+    Then no QA verification action item is generated for the feature
+    And role_status.qa is CLEAN (not TODO)
+
 #### Scenario: Builder Action Items from Invalid Targeted Scope Names
     Given a feature is in TESTING state
     And the most recent status commit contains [Scope: targeted:Nonexistent Scenario]
@@ -686,4 +694,4 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 - **Observed Behavior:** When a feature in TESTING state has a `targeted:<name>` regression scope where the named scenario is an **automated** scenario (not a manual one), the Critic still generates a QA verification action item ("Verify X: 1 targeted scenario(s) [...]"). The feature has 0 manual scenarios and `role_status.qa` is correctly computed as CLEAN, but the action item is contradictory — it says there is work to do while role_status says there is not.
 - **Expected Behavior:** Per §2.10, QA verification items are only generated when the feature has at least one manual scenario. The targeted scope filter should respect the manual-scenario-only constraint: if all named scenarios in a `targeted:` scope are automated, no QA action item should be generated.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
