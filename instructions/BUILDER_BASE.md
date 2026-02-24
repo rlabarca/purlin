@@ -230,13 +230,26 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
     3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
+    4.  **STOP THE SESSION.** Do NOT continue to the next PENDING phase. Output the phase handoff message and end work immediately:
+        ```
+        ✓ Phase N of M complete — [short label]
+        Recommended next step: run QA to verify Phase N features.
+        Relaunch Builder (new session) to continue with Phase N+1.
+        ```
+        This rule has no exceptions. Even if the context window is fresh or the next phase seems small — halt.
 
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
-3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain, include a phase completion message: "Phase N of M complete. Launch Builder again to continue with Phase N+1." If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
+3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain: **you reached this shutdown because a phase just completed and you halted as required.** Output:
+    ```
+    ✓ Phase N of M complete — [short label]
+    Recommended next step: run QA to verify Phase N features.
+    Relaunch Builder (new session) to continue with Phase N+1.
+    ```
+    If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 4.  **Collaboration Handoff (Lifecycle Branch Sessions):** If the current session is on a `build/*` lifecycle branch:
     *   Run `/pl-work-push` to verify handoff readiness and merge the branch to main.
     *   If `/pl-work-push` reports issues, fix them and re-run before ending the session.

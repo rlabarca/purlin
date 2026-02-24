@@ -301,6 +301,8 @@ When the Architect introduces large-scale changes (multiple new feature files, m
 *   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
 
 ### 10.3 Cross-Session Resumption
+Each phase MUST be a separate Builder session. The Builder MUST NOT auto-advance to the next PENDING phase after completing the current one — it halts and waits for the user to relaunch.
+
 When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
 
 ### 10.4 QA Interaction
