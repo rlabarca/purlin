@@ -1035,7 +1035,7 @@ def generate_html(cache=None):
     creation_row_html = (
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
         '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
-        'Create An Isolated Agent</span>'
+        'Create An Isolated Team</span>'
         '<input type="text" id="new-isolation-name" maxlength="12" placeholder="name"'
         ' autocapitalize="none" autocorrect="off"'
         ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
