@@ -412,3 +412,10 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Four-state main_diff + theme colors (2026-02-23):** Added DIVERGED state to `_compute_main_diff()` — both range queries non-empty returns "DIVERGED" instead of "BEHIND". Dashboard badge colors updated: SAME → `st-good` (green), AHEAD → `st-todo` (yellow), BEHIND → `st-todo` (yellow), DIVERGED → `st-disputed` (orange/`--purlin-status-warning`). Modified column now uses `git diff main..<branch> --name-only` from PROJECT_ROOT instead of `git status --porcelain` per-worktree — tracks committed changes vs main, not uncommitted changes. The XY-column parsing and lock contention concerns from the old porcelain approach no longer apply.
 
 ## User Testing Discoveries
+
+### [BUG] AHEAD state with empty Modified when only --allow-empty commits exist (Discovered: 2026-02-23)
+- **Scenario:** Sessions Table Displays Worktree State
+- **Observed Behavior:** QA worktree shows `AHEAD` in Main Diff but the Modified column is empty. The branch has 2 commits ahead of main (both `--allow-empty` QA status commits), so `git diff main..qa/collab --name-only` returns nothing.
+- **Expected Behavior:** Per Section 2.3 and 2.6, "Modified will always be non-empty when `main_diff` is `AHEAD` or `DIVERGED`." The spec invariant is violated when the only commits ahead of main are `--allow-empty` commits (QA status commits touch no files).
+- **Action Required:** Architect
+- **Status:** OPEN
