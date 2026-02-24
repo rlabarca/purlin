@@ -2,9 +2,6 @@
 
 > Core-specific rules for the Purlin framework repository itself.
 
-## Server Interaction Prohibition
-You MUST NOT start or interact with the DevOps tool server (CDD Dashboard). Servers are for human use only. Use CLI commands for all tool data: `tools/cdd/status.sh` for feature status, `tools/critic/run.sh` for the Critic report.
-
 ## Submodule Environment Verification
 When verifying manual scenarios for any tool feature, always test in BOTH deployment modes:
 1.  **Standalone mode:** Tools at `<project_root>/tools/`, config at `<project_root>/.purlin/config.json`.

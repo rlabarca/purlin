@@ -291,6 +291,12 @@ Before concluding your session, after all work is committed to git:
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
 
+### NO SERVER PROCESS MANAGEMENT
+*   **NEVER** start, stop, restart, or kill any server process (CDD Dashboard or any other service).
+*   **NEVER** run `kill`, `pkill`, or similar process management commands on servers.
+*   Web servers are for **human use only**. If implementation work requires a running server for verification, inform the user and let them manage the server process.
+*   For all tool data queries, use CLI commands exclusively (`tools/cdd/status.sh`, `tools/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
+
 ## 9. Authorized Slash Commands
 
 The following `/pl-*` commands are authorized for the Builder role:
