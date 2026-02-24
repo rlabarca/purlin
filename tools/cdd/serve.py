@@ -557,7 +557,7 @@ def generate_api_status_json(cache=None):
     if delivery_phase:
         result["delivery_phase"] = delivery_phase
 
-    # Isolated Agents: worktree data (Section 2.5 of cdd_collab_mode spec)
+    # Isolated Agents: worktree data (Section 2.5 of cdd_agent_isolation spec)
     isolation_worktrees = get_isolation_worktrees()
     if isolation_worktrees:
         result["isolations_active"] = True
@@ -797,7 +797,7 @@ def get_isolation_worktrees():
         except ValueError:
             rel_path = abs_path
 
-        # Main diff: run from project root (Section 2.4 of cdd_collab_mode)
+        # Main diff: run from project root (Section 2.4 of cdd_agent_isolation)
         main_diff = _compute_main_diff(branch)
 
         entry = {

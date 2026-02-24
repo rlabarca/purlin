@@ -1,7 +1,7 @@
 """Unit tests for CDD Isolated Agents Mode.
 
-Covers automated scenarios from features/cdd_collab_mode.md.
-Outputs test results to tests/cdd_collab_mode/tests.json.
+Covers automated scenarios from features/cdd_agent_isolation.md.
+Outputs test results to tests/cdd_agent_isolation/tests.json.
 """
 
 import unittest
@@ -842,7 +842,7 @@ if __name__ == '__main__':
     # Discover project root for writing test results
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-    tests_dir = os.path.join(project_root, 'tests', 'cdd_collab_mode')
+    tests_dir = os.path.join(project_root, 'tests', 'cdd_agent_isolation')
     os.makedirs(tests_dir, exist_ok=True)
 
     loader = unittest.TestLoader()
