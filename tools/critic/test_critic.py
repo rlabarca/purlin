@@ -3983,6 +3983,108 @@ Some requirements.
         self.assertIn('empty', result['detail'].lower())
 
 
+class TestCompanionFileOnDiskSuppressesWarning(unittest.TestCase):
+    """Scenario: Feature With No Implementation Notes Section But Companion On Disk
+
+    When a feature file has no ## Implementation Notes section at all,
+    but a companion .impl.md file exists on disk, check_section_completeness
+    should return PASS (not WARN) when given the feature_path.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_companion_on_disk_returns_pass(self):
+        """Feature with no impl notes section but companion file → PASS."""
+        feature_path = os.path.join(self.tmpdir, 'my_feature.md')
+        companion_path = os.path.join(self.tmpdir, 'my_feature.impl.md')
+        content = """\
+# Feature: My Feature
+
+## Overview
+A feature.
+
+## 2. Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+"""
+        with open(feature_path, 'w') as f:
+            f.write(content)
+        with open(companion_path, 'w') as f:
+            f.write('# Implementation Notes: My Feature\nSome notes.\n')
+
+        sections = parse_sections(content)
+        result = check_section_completeness(content, sections,
+                                            feature_path=feature_path)
+        self.assertEqual(result['status'], 'PASS')
+
+    def test_no_companion_no_section_warns(self):
+        """Feature with no impl notes section and no companion file → WARN."""
+        feature_path = os.path.join(self.tmpdir, 'lonely_feature.md')
+        content = """\
+# Feature: Lonely
+
+## Overview
+A feature.
+
+## 2. Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+"""
+        with open(feature_path, 'w') as f:
+            f.write(content)
+
+        sections = parse_sections(content)
+        result = check_section_completeness(content, sections,
+                                            feature_path=feature_path)
+        self.assertEqual(result['status'], 'WARN')
+        self.assertIn('empty', result['detail'].lower())
+
+    def test_no_feature_path_still_warns(self):
+        """Without feature_path, missing impl notes still warns (backward compat)."""
+        content = """\
+# Feature: NoPath
+
+## Overview
+A feature.
+
+## 2. Requirements
+Some requirements.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test
+    Given X
+    When Y
+    Then Z
+"""
+        sections = parse_sections(content)
+        result = check_section_completeness(content, sections)
+        self.assertEqual(result['status'], 'WARN')
+        self.assertIn('empty', result['detail'].lower())
+
+
 class TestFeatureScanExcludesCompanionFiles(unittest.TestCase):
     """Scenario: Feature Scanning Excludes Companion Files
 

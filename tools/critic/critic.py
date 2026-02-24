@@ -294,11 +294,15 @@ def get_feature_stem(filepath):
 # Spec Gate checks (Section 2.1)
 # ===================================================================
 
-def check_section_completeness(content, sections, policy_file=False):
+def check_section_completeness(content, sections, policy_file=False,
+                               feature_path=None):
     """Check that required sections exist.
 
     For anchor nodes (arch_*.md, design_*.md, policy_*.md), checks for
     Purpose and Invariants instead of Overview/Requirements/Scenarios.
+
+    When feature_path is provided and Implementation Notes are empty,
+    checks for a companion sidecar file (<name>.impl.md) on disk.
     """
     if policy_file:
         has_purpose = any('purpose' in k for k in sections)
@@ -327,6 +331,12 @@ def check_section_completeness(content, sections, policy_file=False):
 
     impl_notes = get_implementation_notes(content)
     has_impl_notes = bool(impl_notes.strip())
+
+    # Check for companion sidecar file on disk when notes appear empty
+    if not has_impl_notes and feature_path:
+        companion_path = os.path.splitext(feature_path)[0] + '.impl.md'
+        if os.path.isfile(companion_path):
+            has_impl_notes = True
 
     if has_overview and has_requirements and has_scenarios:
         if not has_impl_notes:
@@ -538,7 +548,9 @@ def run_spec_gate(content, filename, features_dir):
         }
     else:
         checks = {
-            'section_completeness': check_section_completeness(content, sections),
+            'section_completeness': check_section_completeness(
+                content, sections,
+                feature_path=os.path.join(features_dir, filename)),
             'scenario_classification': check_scenario_classification(scenarios, content),
             'policy_anchoring': check_policy_anchoring(content, filename),
             'prerequisite_integrity': check_prerequisite_integrity(
