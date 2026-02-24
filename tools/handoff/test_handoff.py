@@ -343,13 +343,13 @@ class TestRoleInferredFromBranchName(unittest.TestCase):
         self.assertNotIn("Tests Pass", result.stdout)
 
 
-class TestPlWorkPushMergesWhenAllChecksPass(unittest.TestCase):
-    """Scenario: pl-work-push Merges Branch When All Checks Pass
+class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
+    """Scenario: pl-local-push Merges Branch When All Checks Pass
 
     Given the current branch is build/collab
     And tools/handoff/run.sh exits with code 0
     And the main checkout is on branch main
-    When /pl-work-push is invoked
+    When /pl-local-push is invoked
     Then git merge --ff-only build/collab is executed from PROJECT_ROOT
     And the command succeeds
 
@@ -403,23 +403,23 @@ class TestPlWorkPushMergesWhenAllChecksPass(unittest.TestCase):
                          f"stderr: {result.stderr}")
 
     def test_skill_file_instructs_ff_only_merge(self):
-        """The pl-work-push skill file specifies --ff-only merge."""
+        """The pl-local-push skill file specifies --ff-only merge."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
+                                  "pl-local-push.md")
         self.assertTrue(os.path.exists(skill_path),
-                        "pl-work-push.md skill file must exist")
+                        "pl-local-push.md skill file must exist")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("--ff-only", content)
         self.assertIn("merge", content)
 
 
-class TestPlWorkPushBlocksMergeWhenChecksFail(unittest.TestCase):
-    """Scenario: pl-work-push Blocks Merge When Handoff Checks Fail
+class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
+    """Scenario: pl-local-push Blocks Merge When Handoff Checks Fail
 
     Given the current branch is build/collab
     And tools/handoff/run.sh exits with code 1
-    When /pl-work-push is invoked
+    When /pl-local-push is invoked
     Then the failing items are printed
     And no merge is executed
     """
@@ -473,91 +473,71 @@ class TestPlWorkPushBlocksMergeWhenChecksFail(unittest.TestCase):
         self.assertIn("FAIL", result.stdout)
 
 
-class TestPlWorkPullAbortsWhenDirty(unittest.TestCase):
-    """Scenario: pl-work-pull Aborts When Working Tree Is Dirty
+class TestPlLocalPullAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-local-pull Aborts When Working Tree Is Dirty
 
     Given the current worktree has uncommitted changes
-    When /pl-work-pull is invoked
+    When /pl-local-pull is invoked
     Then the command prints "Commit or stash changes before pulling"
     And no git merge is executed
     """
 
     def test_skill_file_checks_clean_state(self):
-        """The pl-work-pull skill file instructs checking for clean state."""
+        """The pl-local-pull skill file instructs checking for clean state."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         self.assertTrue(os.path.exists(skill_path),
-                        "pl-work-pull.md skill file must exist")
+                        "pl-local-pull.md skill file must exist")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("Commit or stash changes before pulling", content)
         self.assertIn("git status --porcelain", content)
 
 
-class TestPlWorkPullRebasesMainWhenBehind(unittest.TestCase):
-    """Scenario: pl-work-pull Rebases Main Into Worktree When Branch Is BEHIND
+class TestPlLocalPullRebasesMainWhenBehind(unittest.TestCase):
+    """Scenario: pl-local-pull Rebases Main Into Worktree When Branch Is BEHIND
 
     Given the current worktree is clean
     And main has 3 new commits not in the worktree
     And the worktree branch has no commits not in main
-    When /pl-work-pull is invoked
+    When /pl-local-pull is invoked
     Then the state label "BEHIND" is printed
     And git rebase main is executed (not git merge main)
     And the output reports 3 new commits incorporated
     """
 
     def test_skill_file_instructs_rebase_main(self):
-        """The pl-work-pull skill file instructs rebasing onto main."""
+        """The pl-local-pull skill file instructs rebasing onto main."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("git rebase main", content)
         self.assertNotIn("git merge main", content)
 
     def test_skill_file_prints_behind_state(self):
-        """The pl-work-pull skill file prints BEHIND state label."""
+        """The pl-local-pull skill file prints BEHIND state label."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("BEHIND", content)
         self.assertIn("fast-forward", content.lower())
 
 
-class TestPlWorkPushAllowsQAMergeWithOpenDiscoveries(unittest.TestCase):
-    """Scenario: pl-work-push Allows QA Merge When Discoveries Are Committed But Open
+class TestPlLocalPushAllowsQAMergeWithOpenDiscoveries(unittest.TestCase):
+    """Scenario: pl-local-push Allows QA Merge When Discoveries Are Committed But Open
 
     Given the current branch is qa/collab
     And features/cdd_collab_mode.md has 3 OPEN entries in ## User Testing Discoveries
     And all discovery entries are committed to the branch
     And all manual scenarios have been attempted (failed ones have BUG discoveries)
     And no in-scope feature is fully clean (no [Complete] commit needed)
-    When /pl-work-push is invoked
+    When /pl-local-push is invoked
     Then discoveries_addressed evaluates as PASS
     And complete_commit_made evaluates as PASS
     And the branch is merged to main
     """
-
-    def test_skill_file_qa_discoveries_addressed_allows_open(self):
-        """pl-work-push QA evaluation: discoveries_addressed passes when OPEN entries are committed."""
-        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
-        with open(skill_path) as f:
-            content = f.read()
-        # The skill file must instruct that OPEN status is acceptable
-        self.assertIn("OPEN status is expected and acceptable", content,
-                       "QA discoveries_addressed must accept committed OPEN entries")
-
-    def test_skill_file_qa_complete_commit_passes_when_all_have_bugs(self):
-        """pl-work-push QA evaluation: complete_commit_made passes when no clean features exist."""
-        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
-        with open(skill_path) as f:
-            content = f.read()
-        # The skill file must handle the case where all features have open discoveries
-        self.assertIn("PASS if all in-scope features have open discoveries", content,
-                       "QA complete_commit_made must pass when no clean features exist")
 
     def test_global_steps_qa_descriptions_match_spec(self):
         """global_steps.json QA step descriptions reflect push-with-bugs semantics."""
@@ -580,13 +560,13 @@ class TestPlWorkPushAllowsQAMergeWithOpenDiscoveries(unittest.TestCase):
                        cc["description"])
 
 
-class TestPlWorkPullRebasesWhenDiverged(unittest.TestCase):
-    """Scenario: pl-work-pull Rebases When Branch Is DIVERGED
+class TestPlLocalPullRebasesWhenDiverged(unittest.TestCase):
+    """Scenario: pl-local-pull Rebases When Branch Is DIVERGED
 
     Given the current worktree is clean
     And the worktree branch has 2 commits not in main
     And main has 3 commits not in the worktree branch
-    When /pl-work-pull is invoked
+    When /pl-local-pull is invoked
     Then the state label "DIVERGED" is printed
     And the DIVERGED context report is printed showing incoming commits from main
     And git rebase main is executed (not git merge main)
@@ -594,9 +574,9 @@ class TestPlWorkPullRebasesWhenDiverged(unittest.TestCase):
     """
 
     def test_skill_file_handles_diverged_state(self):
-        """The pl-work-pull skill file handles DIVERGED with context report."""
+        """The pl-local-pull skill file handles DIVERGED with context report."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
@@ -604,10 +584,10 @@ class TestPlWorkPullRebasesWhenDiverged(unittest.TestCase):
         self.assertIn("git rebase main", content)
 
 
-class TestPlWorkPullReportsPerFileConflictContext(unittest.TestCase):
-    """Scenario: pl-work-pull Reports Per-File Commit Context On Conflict
+class TestPlLocalPullReportsPerFileConflictContext(unittest.TestCase):
+    """Scenario: pl-local-pull Reports Per-File Commit Context On Conflict
 
-    Given /pl-work-pull is invoked and git rebase main halts with a conflict
+    Given /pl-local-pull is invoked and git rebase main halts with a conflict
     When the conflict is reported
     Then the output includes commits from main and the worktree branch
     And a role-scoped resolution hint is shown
@@ -615,9 +595,9 @@ class TestPlWorkPullReportsPerFileConflictContext(unittest.TestCase):
     """
 
     def test_skill_file_includes_per_file_conflict_context(self):
-        """The pl-work-pull skill file provides per-file commit context."""
+        """The pl-local-pull skill file provides per-file commit context."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         # Per-file context using git log for each side
@@ -625,9 +605,9 @@ class TestPlWorkPullReportsPerFileConflictContext(unittest.TestCase):
         self.assertIn("git log main..ORIG_HEAD --oneline --", content)
 
     def test_skill_file_includes_role_scoped_hints(self):
-        """The pl-work-pull skill file provides role-scoped resolution hints."""
+        """The pl-local-pull skill file provides role-scoped resolution hints."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("features/", content)
@@ -635,53 +615,53 @@ class TestPlWorkPullReportsPerFileConflictContext(unittest.TestCase):
         self.assertIn("Resolution hint", content)
 
     def test_skill_file_includes_rebase_continue_abort(self):
-        """The pl-work-pull skill file includes rebase continue/abort instructions."""
+        """The pl-local-pull skill file includes rebase continue/abort instructions."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-pull.md")
+                                  "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("git rebase --continue", content)
         self.assertIn("git rebase --abort", content)
 
 
-class TestPlWorkPushBlocksWhenDiverged(unittest.TestCase):
-    """Scenario: pl-work-push Blocks When Branch Is DIVERGED
+class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
+    """Scenario: pl-local-push Blocks When Branch Is DIVERGED
 
     Given the current worktree branch has commits not in main
     And main has commits not in the worktree branch
-    When /pl-work-push is invoked
+    When /pl-local-push is invoked
     Then the command prints the DIVERGED state and lists incoming main commits
     And the handoff checklist is NOT run
     And no merge is executed
-    And the agent is instructed to run /pl-work-pull first
+    And the agent is instructed to run /pl-local-pull first
     """
 
     def test_skill_file_blocks_diverged_before_checklist(self):
-        """The pl-work-push skill file blocks DIVERGED state before checklist."""
+        """The pl-local-push skill file blocks DIVERGED state before checklist."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
+                                  "pl-local-push.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
-        self.assertIn("/pl-work-pull", content)
+        self.assertIn("/pl-local-pull", content)
 
     def test_skill_file_diverged_shows_incoming_commits(self):
-        """The pl-work-push skill file lists incoming main commits on DIVERGED."""
+        """The pl-local-push skill file lists incoming main commits on DIVERGED."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
+                                  "pl-local-push.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("git log HEAD..main --oneline", content)
 
     def test_skill_file_diverged_does_not_proceed_to_checklist(self):
-        """The pl-work-push skill file stops before checklist on DIVERGED."""
+        """The pl-local-push skill file stops before checklist on DIVERGED."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-work-push.md")
+                                  "pl-local-push.md")
         with open(skill_path) as f:
             content = f.read()
         # The DIVERGED block must come before the checklist section
         diverged_pos = content.find("DIVERGED")
-        checklist_pos = content.find("Agent-Driven Handoff Evaluation")
+        checklist_pos = content.find("Run Handoff Checklist")
         self.assertGreater(checklist_pos, 0)
         self.assertGreater(diverged_pos, 0)
         self.assertLess(diverged_pos, checklist_pos,

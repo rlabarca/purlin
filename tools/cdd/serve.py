@@ -557,11 +557,11 @@ def generate_api_status_json(cache=None):
     if delivery_phase:
         result["delivery_phase"] = delivery_phase
 
-    # Collab Mode: worktree data (Section 2.6 of cdd_collab_mode spec)
-    collab_worktrees = get_collab_worktrees()
-    if collab_worktrees:
-        result["collab_mode"] = True
-        result["worktrees"] = collab_worktrees
+    # Isolated Agents: worktree data (Section 2.5 of cdd_collab_mode spec)
+    isolation_worktrees = get_isolation_worktrees()
+    if isolation_worktrees:
+        result["isolations_active"] = True
+        result["worktrees"] = isolation_worktrees
 
     return result
 
@@ -592,22 +592,16 @@ def generate_workspace_json():
         "files": git_status.splitlines() if git_status else [],
         "last_commit": last_commit,
     }
-    collab = get_collab_worktrees()
-    if collab:
-        result["collab_mode"] = True
-        result["worktrees"] = collab
+    isolation = get_isolation_worktrees()
+    if isolation:
+        result["isolations_active"] = True
+        result["worktrees"] = isolation
     return result
 
 
 # ===================================================================
-# Collab Mode: worktree detection and state reading
+# Isolated Agents: worktree detection and state reading
 # ===================================================================
-
-ROLE_PREFIX_MAP = {
-    'spec': 'architect',
-    'build': 'builder',
-    'qa': 'qa',
-}
 
 
 def _detect_worktrees():
@@ -650,15 +644,39 @@ def _detect_worktrees():
     return result
 
 
-def _role_from_branch(branch_name):
-    """Map branch name to role using prefix convention.
+def _name_from_path(worktree_abs_path):
+    """Extract isolation name from worktree path.
 
-    spec/* -> architect, impl/* -> builder, qa/* -> qa, else -> unknown
+    .worktrees/feat1 -> "feat1"
     """
-    if '/' in branch_name:
-        prefix = branch_name.split('/')[0]
-        return ROLE_PREFIX_MAP.get(prefix, 'unknown')
-    return 'unknown'
+    return os.path.basename(worktree_abs_path)
+
+
+def _read_delivery_phase(worktree_abs_path):
+    """Read delivery phase from worktree's delivery plan, if any.
+
+    Returns dict {"current": N, "total": M} or None.
+    """
+    plan_path = os.path.join(worktree_abs_path, '.purlin', 'cache', 'delivery_plan.md')
+    if not os.path.isfile(plan_path):
+        return None
+    try:
+        with open(plan_path, 'r') as f:
+            content = f.read()
+        # Parse total phases
+        total = 0
+        current = 0
+        import re
+        phase_pattern = re.compile(r'^## Phase (\d+)\b.*\[(IN_PROGRESS|PENDING|COMPLETE)\]', re.MULTILINE)
+        for m in phase_pattern.finditer(content):
+            total += 1
+            if m.group(2) == 'IN_PROGRESS':
+                current = int(m.group(1))
+        if current > 0 and total > 0:
+            return {"current": current, "total": total}
+    except Exception:
+        pass
+    return None
 
 
 def _worktree_state(wt_abs_path):
@@ -755,12 +773,12 @@ def _compute_main_diff(branch):
         return "SAME"
 
 
-def get_collab_worktrees():
-    """Get collab mode worktree data for API and dashboard.
+def get_isolation_worktrees():
+    """Get isolation worktree data for API and dashboard.
 
-    Returns list of worktree info dicts, or empty list if collab mode
-    is not active. Collab mode is active when at least one worktree
-    exists under .worktrees/.
+    Returns list of worktree info dicts, or empty list if no isolations
+    are active. Isolations are active when at least one worktree exists
+    under .worktrees/.
     """
     worktrees = _detect_worktrees()
     if not worktrees:
@@ -771,7 +789,7 @@ def get_collab_worktrees():
         abs_path = wt.get('abs_path', '')
         state = _worktree_state(abs_path)
         branch = state['branch']
-        role = _role_from_branch(branch)
+        name = _name_from_path(abs_path)
 
         # Relative path from project root
         try:
@@ -783,14 +801,20 @@ def get_collab_worktrees():
         main_diff = _compute_main_diff(branch)
 
         entry = {
+            'name': name,
             'path': rel_path,
             'branch': branch,
-            'role': role,
             'main_diff': main_diff,
             'commits_ahead': state.get('commits_ahead', 0),
             'last_commit': state['last_commit'],
             'modified': state['modified'],
         }
+
+        # Delivery phase badge (Section 2.10)
+        delivery_phase = _read_delivery_phase(abs_path)
+        if delivery_phase:
+            entry['delivery_phase'] = delivery_phase
+
         result.append(entry)
 
     return result
@@ -825,20 +849,27 @@ def _role_badge_html(status):
     return f'<span class="{css}">{status}</span>'
 
 
-def _collab_section_html(worktrees):
-    """Generate HTML for the Collab Mode Sessions sub-section."""
+def _isolation_section_html(worktrees):
+    """Generate HTML for the Isolated Agents Sessions sub-section."""
     if not worktrees:
         return ""
 
-    # Sessions table: Role, Branch, Main Diff, Modified
+    # Sessions table: Name, Branch, Main Diff, Modified, Kill
     rows = ""
     for wt in worktrees:
-        role_raw = wt.get('role', 'unknown')
-        role = {'architect': 'Architect', 'builder': 'Builder',
-                'qa': 'QA', 'unknown': 'Unknown'}.get(role_raw, role_raw.capitalize())
+        name = wt.get('name', '')
         branch = wt.get('branch', '')
 
-        # Main Diff badge (Section 2.7 Visual Design)
+        # Name cell with optional delivery phase badge
+        name_html = name
+        delivery_phase = wt.get('delivery_phase')
+        if delivery_phase:
+            name_html += (
+                f' <span style="color:var(--purlin-status-warning);font-size:11px">'
+                f'(Phase {delivery_phase["current"]}/{delivery_phase["total"]})</span>'
+            )
+
+        # Main Diff badge (Section 2.6 Visual Design)
         main_diff = wt.get('main_diff', 'SAME')
         if main_diff == 'DIVERGED':
             diff_html = '<span class="st-disputed">DIVERGED</span>'
@@ -866,17 +897,24 @@ def _collab_section_html(worktrees):
                 parts.append(f'{other} Code/Other')
             mod_text = ' '.join(parts)
 
+        # Kill button per row
+        kill_btn = (
+            f'<button class="btn-critic" onclick="killIsolationPrompt(\'{name}\')"'
+            f' style="font-size:10px;padding:2px 8px">Kill</button>'
+        )
+
         rows += (
-            f'<tr><td>{role}</td><td><code>{branch}</code></td>'
+            f'<tr><td>{name_html}</td><td><code>{branch}</code></td>'
             f'<td>{diff_html}</td>'
-            f'<td class="dim">{mod_text}</td></tr>'
+            f'<td class="dim">{mod_text}</td>'
+            f'<td style="text-align:right">{kill_btn}</td></tr>'
         )
 
     return (
         '<h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;'
         'text-transform:uppercase;letter-spacing:0.5px">Sessions</h4>'
         '<table class="ft" style="width:100%"><thead><tr>'
-        '<th>Role</th><th>Branch</th><th>Main Diff</th><th>Modified</th>'
+        '<th>Name</th><th>Branch</th><th>Main Diff</th><th>Modified</th><th></th>'
         '</tr></thead><tbody>' + rows + '</tbody></table>'
     )
 
@@ -955,31 +993,29 @@ def generate_html(cache=None):
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
-    # Collab Mode detection for dashboard
-    collab_worktrees = get_collab_worktrees()
-    collab_active = bool(collab_worktrees)
-    workspace_heading = "Collaboration" if collab_active else "Workspace"
-    collab_html = ""
-    if collab_active:
-        collab_html = _collab_section_html(collab_worktrees)
+    # Isolated Agents detection for dashboard
+    isolation_worktrees = get_isolation_worktrees()
+    isolations_active = bool(isolation_worktrees)
+    workspace_heading = "Isolated Agents" if isolations_active else "Workspace"
+    isolation_html = ""
+    if isolations_active:
+        isolation_html = _isolation_section_html(isolation_worktrees)
 
-    # Collab session controls
-    if collab_active:
-        collab_controls_html = (
-            '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-            '<button class="btn-critic" onclick="endCollabPrompt()" id="btn-end-collab"'
-            ' style="font-size:11px">End Collab Session</button>'
-            '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
-            '</div>'
-        )
-    else:
-        collab_controls_html = (
-            '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
-            '<button class="btn-critic" onclick="startCollab()" id="btn-start-collab"'
-            ' style="font-size:11px">Start Collab Session</button>'
-            '<span id="collab-ctrl-err" style="color:var(--purlin-status-fail);font-size:11px;margin-left:8px"></span>'
-            '</div>'
-        )
+    # Isolation controls: New Isolation input (always shown in section footer)
+    isolation_controls_html = (
+        '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--purlin-border)">'
+        '<div style="display:flex;align-items:center;gap:6px">'
+        '<input type="text" id="new-isolation-name" maxlength="8" placeholder="name"'
+        ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
+        'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
+        ' oninput="validateIsolationName(this)">'
+        '<button class="btn-critic" onclick="createIsolation()" id="btn-create-isolation"'
+        ' style="font-size:11px" disabled>Create</button>'
+        '<span id="isolation-ctrl-err" style="color:var(--purlin-status-error);font-size:11px;margin-left:4px"></span>'
+        '</div>'
+        '<span id="isolation-name-hint" style="color:var(--purlin-muted);font-size:10px;display:none"></span>'
+        '</div>'
+    )
 
     # Count badges for collapsed summary
     active_count = len(active_features)
@@ -1015,7 +1051,7 @@ def generate_html(cache=None):
         return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
     agents_badge = _agents_badge(CONFIG)
-    agents_heading = "Agents (applies across all local worktrees)" if collab_active else "Agents"
+    agents_heading = "Agents (applies across all local isolations)" if isolations_active else "Agents"
 
     # Release checklist badge
     rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
@@ -1378,11 +1414,11 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">
-        {collab_html}
+        {isolation_html}
         <h4 style="margin:8px 0 4px;color:var(--purlin-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Local (main)</h4>
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
-        {collab_controls_html}
+        {isolation_controls_html}
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1430,20 +1466,20 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   </div>
 </div>
 
-<!-- End Collab Modal -->
-<div class="modal-overlay" id="collab-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center">
+<!-- Kill Isolation Modal -->
+<div class="modal-overlay" id="kill-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center">
   <div style="background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:6px;max-width:480px;width:90%;padding:16px">
-    <h3 style="margin:0 0 10px;font-size:14px">End Collab Session</h3>
-    <div id="collab-modal-body"></div>
-    <div id="collab-modal-checkbox-row" style="display:none;margin-top:10px">
+    <h3 style="margin:0 0 10px;font-size:14px" id="kill-modal-title">Kill Isolation</h3>
+    <div id="kill-modal-body"></div>
+    <div id="kill-modal-checkbox-row" style="display:none;margin-top:10px">
       <label style="font-size:12px;cursor:pointer">
-        <input type="checkbox" id="collab-modal-checkbox" onchange="collabCheckboxChanged(this)">
-        I understand, the branches still exist
+        <input type="checkbox" id="kill-modal-checkbox" onchange="killCheckboxChanged(this)">
+        I understand, the branch still exists
       </label>
     </div>
     <div style="margin-top:12px;text-align:right">
-      <button class="btn-critic" onclick="endCollabCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
-      <button class="btn-critic" id="collab-modal-confirm" onclick="endCollabConfirm()" style="font-size:11px">Confirm</button>
+      <button class="btn-critic" onclick="killModalCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
+      <button class="btn-critic" id="kill-modal-confirm" onclick="killModalConfirm()" style="font-size:11px">Confirm</button>
     </div>
   </div>
 </div>
@@ -1567,7 +1603,7 @@ function updateTimestamp() {{
 }}
 
 function refreshStatus() {{
-  if (rcCollabPending) return;
+  if (rcIsolationPending) return;
   return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
     .then(function(html) {{
@@ -1668,7 +1704,7 @@ function toggleSection(sectionId) {{
 // ============================
 var rcStepsCache = null;
 var rcPendingSave = false;
-var rcCollabPending = false;
+var rcIsolationPending = false;
 
 function loadReleaseChecklist() {{
   fetch('/release-checklist')
@@ -1932,95 +1968,114 @@ function runCritic() {{
 }}
 
 // ============================
-// Collab Session Controls
+// Isolation Controls
 // ============================
-function startCollab() {{
-  var errEl = document.getElementById('collab-ctrl-err');
-  var btn = document.getElementById('btn-start-collab');
+var _killTargetName = '';
+
+function validateIsolationName(input) {{
+  var btn = document.getElementById('btn-create-isolation');
+  var hint = document.getElementById('isolation-name-hint');
+  var val = input.value;
+  var valid = /^[a-zA-Z0-9_-]+$/.test(val) && val.length >= 1 && val.length <= 8;
+  if (btn) btn.disabled = !valid;
+  if (hint) {{
+    if (val.length > 0 && !valid) {{
+      hint.style.display = '';
+      if (val.length > 8) hint.textContent = 'Max 8 characters';
+      else hint.textContent = 'Only letters, numbers, hyphens, underscores';
+    }} else {{
+      hint.style.display = 'none';
+    }}
+  }}
+}}
+
+function createIsolation() {{
+  var input = document.getElementById('new-isolation-name');
+  var errEl = document.getElementById('isolation-ctrl-err');
+  var btn = document.getElementById('btn-create-isolation');
+  if (!input || !input.value) return;
+  var name = input.value;
   if (errEl) errEl.textContent = '';
   if (btn) btn.disabled = true;
-  rcCollabPending = true;
-  fetch('/start-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:'{{}}' }})
+  rcIsolationPending = true;
+  fetch('/isolate/create', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      rcCollabPending = false;
-      if (d.status === 'ok') {{ refreshStatus(); }}
+      rcIsolationPending = false;
+      if (d.status === 'ok') {{ input.value = ''; refreshStatus(); }}
       else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
     }})
-    .catch(function() {{ rcCollabPending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
+    .catch(function() {{ rcIsolationPending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
 }}
 
-function endCollabPrompt() {{
-  var errEl = document.getElementById('collab-ctrl-err');
-  var btn = document.getElementById('btn-end-collab');
-  if (errEl) errEl.textContent = '';
-  if (btn) btn.disabled = true;
-  // Dry-run to get safety status
-  fetch('/end-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{dry_run:true}}) }})
+function killIsolationPrompt(name) {{
+  _killTargetName = name;
+  rcIsolationPending = true;
+  fetch('/isolate/kill', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:name, dry_run:true}}) }})
     .then(function(r) {{ return r.json(); }})
-    .then(function(d) {{ showEndCollabModal(d); if (btn) btn.disabled = false; }})
-    .catch(function() {{ if (errEl) errEl.textContent = 'Dry-run failed'; if (btn) btn.disabled = false; }});
+    .then(function(d) {{ rcIsolationPending = false; showKillModal(name, d); }})
+    .catch(function() {{ rcIsolationPending = false; }});
 }}
 
-function showEndCollabModal(safetyData) {{
-  var overlay = document.getElementById('collab-modal-overlay');
+function showKillModal(name, dryRunData) {{
+  var overlay = document.getElementById('kill-modal-overlay');
   if (!overlay) return;
-  var body = document.getElementById('collab-modal-body');
-  var confirmBtn = document.getElementById('collab-modal-confirm');
-  var checkbox = document.getElementById('collab-modal-checkbox');
-  var checkboxRow = document.getElementById('collab-modal-checkbox-row');
+  var title = document.getElementById('kill-modal-title');
+  var body = document.getElementById('kill-modal-body');
+  var confirmBtn = document.getElementById('kill-modal-confirm');
+  var checkbox = document.getElementById('kill-modal-checkbox');
+  var checkboxRow = document.getElementById('kill-modal-checkbox-row');
+  if (title) title.textContent = 'Kill Isolation: ' + name;
   if (checkbox) {{ checkbox.checked = false; }}
   if (checkboxRow) {{ checkboxRow.style.display = 'none'; }}
   if (confirmBtn) {{ confirmBtn.disabled = false; }}
 
-  if (safetyData.dirty_count > 0) {{
+  if (dryRunData.dirty) {{
     // Dirty: list files, disable confirm
-    var html = '<p style="color:var(--purlin-status-fail);font-weight:600">Cannot end session: worktrees have uncommitted changes.</p>';
-    html += '<p style="margin-top:6px">Commit or stash changes in these worktrees before ending the session:</p><ul>';
-    (safetyData.dirty_worktrees || []).forEach(function(wt) {{
-      html += '<li><strong>' + wt.name + '</strong> &mdash; ' + wt.file_count + ' file(s)</li>';
+    var html = '<p style="color:var(--purlin-status-error);font-weight:600">Cannot kill: uncommitted changes.</p>';
+    html += '<p style="margin-top:6px">Commit or stash changes before killing this isolation:</p><ul>';
+    (dryRunData.dirty_files || []).forEach(function(f) {{
+      html += '<li>' + f + '</li>';
     }});
     html += '</ul>';
     if (body) body.innerHTML = html;
     if (confirmBtn) confirmBtn.disabled = true;
-  }} else if (safetyData.unsynced_count > 0) {{
+  }} else if (dryRunData.unsynced) {{
     // Unsynced: warn, require checkbox
-    var html = '<p style="color:var(--purlin-status-warn,orange);font-weight:600">Some branches have commits not yet merged to main.</p>';
-    html += '<p style="margin-top:6px">Removing worktrees does <strong>not</strong> delete the branches &mdash; they can be re-added later.</p><ul>';
-    (safetyData.unsynced_worktrees || []).forEach(function(wt) {{
-      html += '<li><strong>' + wt.name + '</strong> (' + wt.branch + ') &mdash; ' + wt.commit_count + ' commit(s) ahead</li>';
-    }});
-    html += '</ul>';
+    var html = '<p style="color:var(--purlin-status-warning);font-weight:600">Branch has ' + dryRunData.unsynced_commits + ' commit(s) not merged to main.</p>';
+    html += '<p style="margin-top:6px">Removing the worktree does <strong>not</strong> delete the branch &mdash; it can be re-added later.</p>';
     if (body) body.innerHTML = html;
     if (checkboxRow) checkboxRow.style.display = '';
     if (confirmBtn) confirmBtn.disabled = true;
   }} else {{
     // Clean: simple confirm
-    if (body) body.innerHTML = '<p>All worktrees are clean and fully merged. Remove all worktrees?</p>';
+    if (body) body.innerHTML = '<p>Remove isolation <strong>' + name + '</strong>?</p>';
   }}
   overlay.style.display = 'flex';
 }}
 
-function collabCheckboxChanged(cb) {{
-  var confirmBtn = document.getElementById('collab-modal-confirm');
+function killCheckboxChanged(cb) {{
+  var confirmBtn = document.getElementById('kill-modal-confirm');
   if (confirmBtn) confirmBtn.disabled = !cb.checked;
 }}
 
-function endCollabConfirm() {{
-  var overlay = document.getElementById('collab-modal-overlay');
-  var errEl = document.getElementById('collab-ctrl-err');
+function killModalConfirm() {{
+  var overlay = document.getElementById('kill-modal-overlay');
+  var errEl = document.getElementById('isolation-ctrl-err');
   if (overlay) overlay.style.display = 'none';
-  fetch('/end-collab', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{force:true}}) }})
+  rcIsolationPending = true;
+  fetch('/isolate/kill', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:_killTargetName, force:true}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
+      rcIsolationPending = false;
       if (d.status === 'ok') {{ refreshStatus(); }}
-      else {{ if (errEl) errEl.textContent = d.error || 'Teardown failed'; }}
+      else {{ if (errEl) errEl.textContent = d.error || 'Kill failed'; }}
     }})
-    .catch(function() {{ if (errEl) errEl.textContent = 'Teardown request failed'; }});
+    .catch(function() {{ rcIsolationPending = false; if (errEl) errEl.textContent = 'Kill request failed'; }});
 }}
 
-function endCollabCancel() {{
-  var overlay = document.getElementById('collab-modal-overlay');
+function killModalCancel() {{
+  var overlay = document.getElementById('kill-modal-overlay');
   if (overlay) overlay.style.display = 'none';
 }}
 
@@ -3176,10 +3231,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
-        elif self.path == '/start-collab':
-            self._handle_start_collab()
-        elif self.path == '/end-collab':
-            self._handle_end_collab()
+        elif self.path == '/isolate/create':
+            self._handle_isolate_create()
+        elif self.path == '/isolate/kill':
+            self._handle_isolate_kill()
         elif self.path == '/config/agents':
             self._handle_config_agents()
         elif self.path == '/release-checklist/config':
@@ -3196,18 +3251,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _handle_start_collab(self):
-        """POST /start-collab — run setup_worktrees.sh to create worktrees."""
-        setup_script = os.path.join(
-            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'setup_worktrees.sh')
-        if not os.path.exists(setup_script):
+    def _handle_isolate_create(self):
+        """POST /isolate/create — run create_isolation.sh <name>."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        name = body.get('name', '').strip()
+        if not name:
+            self._send_json(400, {'error': 'Name is required'})
+            return
+
+        create_script = os.path.join(
+            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'create_isolation.sh')
+        if not os.path.exists(create_script):
             self._send_json(500, {
-                'error': f'setup_worktrees.sh not found at {setup_script}'})
+                'error': f'create_isolation.sh not found at {create_script}'})
             return
 
         try:
             subprocess.run(
-                ['bash', setup_script,
+                ['bash', create_script, name,
                  '--project-root', PROJECT_ROOT],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
@@ -3221,10 +3288,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 'error': exc.stderr.strip() or exc.stdout.strip() or str(exc)
             })
         except subprocess.TimeoutExpired:
-            self._send_json(500, {'error': 'setup_worktrees.sh timed out'})
+            self._send_json(500, {'error': 'create_isolation.sh timed out'})
 
-    def _handle_end_collab(self):
-        """POST /end-collab — run teardown_worktrees.sh (dry-run or force)."""
+    def _handle_isolate_kill(self):
+        """POST /isolate/kill — run kill_isolation.sh <name> (dry-run or force)."""
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(length).decode('utf-8'))
@@ -3232,17 +3299,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': f'Invalid JSON: {e}'})
             return
 
-        teardown_script = os.path.join(
-            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'teardown_worktrees.sh')
-        if not os.path.exists(teardown_script):
+        name = body.get('name', '').strip()
+        if not name:
+            self._send_json(400, {'error': 'Name is required'})
+            return
+
+        kill_script = os.path.join(
+            PROJECT_ROOT, TOOLS_ROOT, 'collab', 'kill_isolation.sh')
+        if not os.path.exists(kill_script):
             self._send_json(500, {
-                'error': f'teardown_worktrees.sh not found at {teardown_script}'})
+                'error': f'kill_isolation.sh not found at {kill_script}'})
             return
 
         dry_run = body.get('dry_run', False)
         force = body.get('force', False)
 
-        cmd = ['bash', teardown_script, '--project-root', PROJECT_ROOT]
+        cmd = ['bash', kill_script, name, '--project-root', PROJECT_ROOT]
         if dry_run:
             cmd.append('--dry-run')
         elif force:
@@ -3257,29 +3329,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 timeout=30,
             )
             if dry_run:
-                # Dry-run returns JSON on stdout
                 try:
                     safety_data = json.loads(result.stdout)
                     self._send_json(200, safety_data)
                 except json.JSONDecodeError:
                     self._send_json(200, {
-                        'dirty_count': 0,
-                        'dirty_worktrees': [],
-                        'unsynced_count': 0,
-                        'unsynced_worktrees': [],
+                        'name': name,
+                        'dirty': False,
+                        'dirty_files': [],
+                        'unsynced': False,
+                        'unsynced_branch': '',
+                        'unsynced_commits': 0,
                     })
             else:
                 if result.returncode != 0:
                     self._send_json(500, {
                         'error': result.stderr.strip()
                                  or result.stdout.strip()
-                                 or f'teardown exited with code {result.returncode}'
+                                 or f'kill_isolation exited with code {result.returncode}'
                     })
                 else:
                     self._send_json(200, {'status': 'ok'})
         except subprocess.TimeoutExpired:
             self._send_json(500, {
-                'error': 'teardown_worktrees.sh timed out'})
+                'error': 'kill_isolation.sh timed out'})
 
     def _handle_config_agents(self):
         """POST /config/agents — update agent configuration in config.json, validated against flat models array."""
@@ -3351,11 +3424,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         response = {'agents': current['agents']}
 
-        # Collab Mode: propagate config to all active worktrees (Section 2.10)
-        collab_worktrees = get_collab_worktrees()
-        if collab_worktrees:
+        # Isolated Agents: propagate config to all active worktrees (Section 2.9)
+        isolation_wts = get_isolation_worktrees()
+        if isolation_wts:
             warnings = []
-            for wt in collab_worktrees:
+            for wt in isolation_wts:
                 wt_config_path = os.path.join(
                     PROJECT_ROOT, wt['path'], '.purlin', 'config.json')
                 try:
