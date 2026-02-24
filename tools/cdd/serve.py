@@ -1470,7 +1470,11 @@ var currentView = 'status';
 var cy = null;
 var graphData = null;
 var userModifiedView = false;
+var userModifiedNodes = false;
+var lastContentHash = null;
 var mapRefreshTimer = null;
+var inactivityTimer = null;
+var INACTIVITY_TIMEOUT = 300000; // 5 minutes
 var statusRefreshTimer = null;
 var modalCache = {{}};
 
@@ -1525,11 +1529,13 @@ function switchView(view) {{
 
   if (view === 'map') {{
     userModifiedView = false;
+    userModifiedNodes = false;
     startMapRefresh();
     if (!graphData) loadGraph();
     else {{ renderGraph(); }}
   }} else {{
     stopMapRefresh();
+    if (inactivityTimer) {{ clearTimeout(inactivityTimer); inactivityTimer = null; }}
   }}
 
   applySearchFilter();
@@ -2320,6 +2326,61 @@ function buildCytoscapeElements(features, colors) {{
   return {{ nodes: nodes, edges: edges }};
 }}
 
+// ============================
+// Node Position Persistence
+// ============================
+function computeContentHash(features) {{
+  var parts = features.map(function(f) {{ return f.file + ':' + (f.category || ''); }});
+  parts.sort();
+  var str = parts.join('|');
+  var hash = 5381;
+  for (var i = 0; i < str.length; i++) {{
+    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash = hash & hash;
+  }}
+  return 'purlin-node-pos-' + Math.abs(hash).toString(36);
+}}
+
+function saveNodePositions(key) {{
+  if (!cy) return;
+  var positions = {{}};
+  cy.nodes().forEach(function(node) {{
+    var pos = node.position();
+    positions[node.id()] = {{ x: pos.x, y: pos.y }};
+  }});
+  localStorage.setItem(key, JSON.stringify(positions));
+}}
+
+function restoreNodePositions(key) {{
+  if (!cy) return false;
+  try {{
+    var raw = localStorage.getItem(key);
+    if (!raw) return false;
+    var positions = JSON.parse(raw);
+    var restored = false;
+    cy.nodes().forEach(function(node) {{
+      var saved = positions[node.id()];
+      if (saved) {{
+        node.position(saved);
+        restored = true;
+      }}
+    }});
+    return restored;
+  }} catch(e) {{ return false; }}
+}}
+
+function resetInactivityTimer() {{
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(function() {{
+    if (currentView === 'map') {{
+      userModifiedView = false;
+      userModifiedNodes = false;
+      if (lastContentHash) localStorage.removeItem(lastContentHash);
+      renderGraph();
+    }}
+  }}, INACTIVITY_TIMEOUT);
+}}
+
 function createCytoscape(elements, colors) {{
   var c = colors || getThemeColors();
   var instance = cytoscape({{
@@ -2451,6 +2512,14 @@ function createCytoscape(elements, colors) {{
     var file = evt.target.data('file');
     var label = evt.target.data('friendlyName');
     if (file) openModal(file, label);
+    resetInactivityTimer();
+  }});
+
+  // Node drag — track position modification and persist
+  instance.on('dragfree', 'node', function() {{
+    userModifiedNodes = true;
+    if (lastContentHash) saveNodePositions(lastContentHash);
+    resetInactivityTimer();
   }});
 
   return instance;
@@ -2463,11 +2532,27 @@ function renderGraph() {{
   var colors = getThemeColors();
   var elements = buildCytoscapeElements(graphData.features, colors);
 
+  // Compute content hash for position persistence
+  var newHash = computeContentHash(graphData.features);
+  var hashChanged = (lastContentHash !== null && newHash !== lastContentHash);
+  if (hashChanged) {{
+    // Substantive change: discard saved positions, reset node interaction state
+    if (lastContentHash) localStorage.removeItem(lastContentHash);
+    userModifiedNodes = false;
+  }}
+  lastContentHash = newHash;
+
   if (cy) {{
     var zoom = cy.zoom();
     var pan = cy.pan();
     cy.destroy();
     cy = createCytoscape(elements, colors);
+
+    // Restore node positions if user has moved nodes and graph hasn't changed
+    if (userModifiedNodes && !hashChanged) {{
+      restoreNodePositions(newHash);
+    }}
+
     if (userModifiedView) {{
       programmaticViewport = true;
       cy.zoom(zoom);
@@ -2480,13 +2565,20 @@ function renderGraph() {{
     }}
   }} else {{
     cy = createCytoscape(elements, colors);
+    // Restore node positions on initial load if saved
+    if (userModifiedNodes) {{
+      restoreNodePositions(newHash);
+    }}
     programmaticViewport = true;
     cy.fit(undefined, 40);
     programmaticViewport = false;
   }}
 
   cy.on('viewport', function() {{
-    if (!programmaticViewport) userModifiedView = true;
+    if (!programmaticViewport) {{
+      userModifiedView = true;
+      resetInactivityTimer();
+    }}
   }});
 
   applySearchFilter();
@@ -2495,6 +2587,12 @@ function renderGraph() {{
 function recenterGraph() {{
   if (cy) {{
     userModifiedView = false;
+    userModifiedNodes = false;
+    if (lastContentHash) localStorage.removeItem(lastContentHash);
+    // Re-run layout to reset node positions to auto-layout
+    cy.layout({{
+      name: 'dagre', rankDir: 'TB', nodeSep: 80, rankSep: 100, padding: 50,
+    }}).run();
     programmaticViewport = true;
     cy.fit(undefined, 40);
     programmaticViewport = false;
