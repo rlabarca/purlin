@@ -948,7 +948,7 @@ def generate_html(cache=None):
     )
 
     if not git_status:
-        git_html = '<p class="clean">Clean State <span class="dim">(Ready for next task)</span></p>'
+        git_html = '<p class="clean">Clean Slate</p>'
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
@@ -1087,7 +1087,7 @@ def generate_html(cache=None):
 
     # Workspace collapsed summary
     if not git_status:
-        workspace_summary = '<span class="st-done">Clean State</span>'
+        workspace_summary = '<span class="st-done">Clean Slate</span>'
     else:
         file_count = len(git_status.strip().splitlines())
         workspace_summary = f'<span class="st-todo">{file_count} file{"s" if file_count != 1 else ""} changed</span>'
