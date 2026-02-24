@@ -433,10 +433,18 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
     def test_accepts_expert_mode(self):
         """startup=false + recommend=false (expert mode) -> HTTP 200."""
         payload = {
+            'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
+                          'bypass_permissions': True,
+                          'startup_sequence': True,
+                          'recommend_next_actions': False},
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                         'bypass_permissions': True,
                         'startup_sequence': False,
-                        'recommend_next_actions': False}
+                        'recommend_next_actions': False},
+            'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
+                   'bypass_permissions': True,
+                   'startup_sequence': True,
+                   'recommend_next_actions': False}
         }
         handler = self._make_handler(payload)
         status_code = handler._send_json.call_args[0][0]
