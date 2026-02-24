@@ -49,8 +49,8 @@
             "model": "claude-sonnet-4-6",
             "effort": "medium",
             "bypass_permissions": true,
-            "startup_sequence": false,
-            "recommend_next_actions": false
+            "startup_sequence": true,
+            "recommend_next_actions": true
         }
     }
 }
