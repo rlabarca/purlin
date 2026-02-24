@@ -50,8 +50,20 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
                         cwd=self.temp_dir, check=True)
         subprocess.run(["git", "checkout", "-q", "-b", "isolated/feat1"],
                         cwd=self.temp_dir, check=True)
-        # Create global_steps.json with only passing code steps (no roles field)
+        # Create CRITIC_REPORT.md after commit so it's newer than HEAD
+        import time
+        time.sleep(0.1)
+        with open(os.path.join(self.temp_dir, "CRITIC_REPORT.md"), 'w') as f:
+            f.write("# Critic Report\n")
+        # Create global_steps.json with both handoff steps (no roles field)
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
+        critic_code = (
+            "python3 -c \"import os,subprocess;"
+            "r='CRITIC_REPORT.md';"
+            "exit(0 if os.path.exists(r) and "
+            "os.path.getmtime(r)>=float(subprocess.check_output("
+            "['git','log','-1','--format=%ct']).strip()) else 1)\""
+        )
         steps_data = {"steps": [
             {
                 "id": "purlin.handoff.git_clean",
@@ -59,6 +71,13 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
                 "description": "No uncommitted changes",
                 "code": "git diff --exit-code && git diff --cached --exit-code",
                 "agent_instructions": "Run git status."
+            },
+            {
+                "id": "purlin.handoff.critic_report",
+                "friendly_name": "Critic Report Current",
+                "description": "Critic report has been generated recently",
+                "code": critic_code,
+                "agent_instructions": "Run tools/cdd/status.sh."
             }
         ]}
         with open(os.path.join(self.temp_dir, "tools", "handoff",
@@ -140,6 +159,130 @@ class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
                          f"stdout: {result.stdout}")
         self.assertIn("FAIL", result.stdout)
         self.assertIn("Git Working Directory Clean", result.stdout)
+
+
+class TestCriticReportStepPassesWhenCurrent(unittest.TestCase):
+    """The critic_report step evaluates to PASS when CRITIC_REPORT.md
+    exists and is newer than the latest git commit."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        with open(os.path.join(self.temp_dir, "README.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        # Create CRITIC_REPORT.md after the commit so mtime > commit time
+        import time
+        time.sleep(0.1)
+        with open(os.path.join(self.temp_dir, "CRITIC_REPORT.md"), 'w') as f:
+            f.write("# Critic Report\n")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_critic_report_step_passes(self):
+        step = {
+            "id": "purlin.handoff.critic_report",
+            "code": (
+                "python3 -c \"import os,subprocess;"
+                "r='CRITIC_REPORT.md';"
+                "exit(0 if os.path.exists(r) and "
+                "os.path.getmtime(r)>=float(subprocess.check_output("
+                "['git','log','-1','--format=%ct']).strip()) else 1)\""
+            )
+        }
+        status, err = evaluate_step(step, self.temp_dir)
+        self.assertEqual(status, "PASS",
+                         f"Expected PASS but got {status}: {err}")
+
+
+class TestCriticReportStepFailsWhenMissing(unittest.TestCase):
+    """The critic_report step evaluates to FAIL when CRITIC_REPORT.md
+    does not exist."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        with open(os.path.join(self.temp_dir, "README.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        # No CRITIC_REPORT.md created
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_critic_report_step_fails_when_missing(self):
+        step = {
+            "id": "purlin.handoff.critic_report",
+            "code": (
+                "python3 -c \"import os,subprocess;"
+                "r='CRITIC_REPORT.md';"
+                "exit(0 if os.path.exists(r) and "
+                "os.path.getmtime(r)>=float(subprocess.check_output("
+                "['git','log','-1','--format=%ct']).strip()) else 1)\""
+            )
+        }
+        status, err = evaluate_step(step, self.temp_dir)
+        self.assertEqual(status, "FAIL",
+                         f"Expected FAIL but got {status}: {err}")
+
+
+class TestCriticReportStepFailsWhenStale(unittest.TestCase):
+    """The critic_report step evaluates to FAIL when CRITIC_REPORT.md
+    is older than the latest git commit."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"],
+                        cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"],
+                        cwd=self.temp_dir, check=True)
+        with open(os.path.join(self.temp_dir, "README.md"), 'w') as f:
+            f.write("# Test\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"],
+                        cwd=self.temp_dir, check=True)
+        # Create CRITIC_REPORT.md and backdate its mtime to 1 hour ago
+        import time
+        report_path = os.path.join(self.temp_dir, "CRITIC_REPORT.md")
+        with open(report_path, 'w') as f:
+            f.write("# Critic Report\n")
+        past = time.time() - 3600
+        os.utime(report_path, (past, past))
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_critic_report_step_fails_when_stale(self):
+        step = {
+            "id": "purlin.handoff.critic_report",
+            "code": (
+                "python3 -c \"import os,subprocess;"
+                "r='CRITIC_REPORT.md';"
+                "exit(0 if os.path.exists(r) and "
+                "os.path.getmtime(r)>=float(subprocess.check_output("
+                "['git','log','-1','--format=%ct']).strip()) else 1)\""
+            )
+        }
+        status, err = evaluate_step(step, self.temp_dir)
+        self.assertEqual(status, "FAIL",
+                         f"Expected FAIL but got {status}: {err}")
 
 
 class TestNoRoleFilteringInHandoff(unittest.TestCase):

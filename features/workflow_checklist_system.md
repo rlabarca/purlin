@@ -242,4 +242,4 @@ The handoff checklist system reuses the resolver infrastructure from the release
 - **Observed Behavior:** `tools/handoff/run.sh` always exits with code 1 due to the `purlin.handoff.critic_report` step reporting PENDING, even after `tools/cdd/status.sh` has been successfully run and `CRITIC_REPORT.md` is current. The step has `"code": null` in `global_steps.json`, so `evaluate_step()` unconditionally returns `("PENDING", None)`. There is no code path by which this step can ever PASS. Every `/pl-local-push` invocation is permanently blocked by the handoff checklist.
 - **Expected Behavior:** The step should report PASS when `CRITIC_REPORT.md` exists and has been generated more recently than the most recent git commit (i.e., the agent has run `tools/cdd/status.sh` since their last commit).
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED

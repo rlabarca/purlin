@@ -11,7 +11,7 @@
             "id": "purlin.handoff.critic_report",
             "friendly_name": "Critic Report Current",
             "description": "Critic report has been generated recently",
-            "code": null,
+            "code": "${AGENTIC_PYTHON:-python3} -c \"import os,subprocess;r='CRITIC_REPORT.md';exit(0 if os.path.exists(r) and os.path.getmtime(r)>=float(subprocess.check_output(['git','log','-1','--format=%ct']).strip()) else 1)\"",
             "agent_instructions": "Run tools/cdd/status.sh to ensure the Critic report is current. Check CRITIC_REPORT.md for any unresolved action items for your role."
         }
     ]
