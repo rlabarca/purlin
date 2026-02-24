@@ -4,6 +4,20 @@ Push: run handoff checks and merge current isolation branch to main.
 
 ## Steps
 
+### 0. Isolation Guard
+
+Run: `git rev-parse --abbrev-ref HEAD`
+
+If the result does NOT start with `isolated/`, abort immediately:
+
+```
+This command is only valid inside an isolated session.
+Current branch: <branch>. Run /pl-local-push from a worktree
+on an isolated/* branch.
+```
+
+Do NOT proceed to Step 1.
+
 ### 1. Resolve PROJECT_ROOT
 
 Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --porcelain` and identify the main checkout: the entry whose `branch` field is `refs/heads/main`, or the first worktree entry. Extract its absolute path.

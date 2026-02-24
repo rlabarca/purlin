@@ -41,9 +41,18 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 ### 3.0 Startup Print Sequence (Always-On)
 
-Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
 
 **CRITICAL:** Printing the command table means outputting the pre-formatted text block below **verbatim**. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool during this step. Any tool or skill invocation before Section 3.0.1 is complete is a protocol violation.
+
+**Step 1 — Detect isolation state:**
+Run: `git rev-parse --abbrev-ref HEAD`
+
+If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
+
+**Step 2 — Print the appropriate table:**
+
+**If NOT in an isolated session** (branch does not start with `isolated/`), print:
 
 ```
 Purlin QA — Ready
@@ -56,8 +65,24 @@ Purlin QA — Ready
   /pl-qa-report              Summary of open discoveries and TESTING features
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-local-push             Merge isolation branch to main (isolated sessions only)
-  /pl-local-pull             Pull main into isolation branch (isolated sessions only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
+
+```
+Purlin QA — Ready  [Isolated: <name>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-verify <name>          Run interactive verification for a feature
+  /pl-discovery <name>       Record a structured discovery
+  /pl-complete <name>        Mark a verified feature as complete
+  /pl-qa-report              Summary of open discoveries and TESTING features
+  /pl-override-edit          Safely edit QA_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-local-push             Merge isolation branch to main
+  /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

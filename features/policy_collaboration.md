@@ -68,6 +68,26 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 *   This is a known, documented limitation — not a bug.
 *   Workaround: CDD Isolated Agents Mode queries each worktree's HEAD directly using `git -C <path> log`.
 
+### 2.10 Canonical Isolation Detection
+
+The authoritative method for detecting an isolated session is the current branch name:
+
+```
+git rev-parse --abbrev-ref HEAD
+```
+
+If the result starts with `isolated/`, the session is isolated. The isolation name is the substring after `isolated/`.
+
+This check is preferred over environment variable checks (`PURLIN_PROJECT_ROOT`) and `.git` file pointer tests because:
+*   It works regardless of whether `PURLIN_PROJECT_ROOT` is set.
+*   It does not depend on launcher script behavior.
+*   It is semantically unambiguous: the branch name directly encodes isolation state.
+
+**Application:** Use this check in:
+*   Startup print sequences — to determine which table variant to display.
+*   Command guards — to abort commands that are only valid inside isolated sessions.
+*   Worktree detection steps — as the primary check; the `.git` file pointer test (`test -f "$PURLIN_PROJECT_ROOT/.git"`) is a valid secondary confirmation when `PURLIN_PROJECT_ROOT` is set.
+
 ### 2.9 ACTIVE_EDITS.md Protocol (Multi-Architect Only)
 
 *   Only applies when `config.json` has `"collaboration": { "multi_architect": true }`.

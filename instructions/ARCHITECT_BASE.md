@@ -87,7 +87,16 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 ### 5.0 Startup Print Sequence (Always-On)
 
-Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+
+**Step 1 — Detect isolation state:**
+Run: `git rev-parse --abbrev-ref HEAD`
+
+If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
+
+**Step 2 — Print the appropriate table:**
+
+**If NOT in an isolated session** (branch does not start with `isolated/`), print:
 
 ```
 Purlin Architect — Ready
@@ -102,8 +111,26 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-local-push             Merge isolation branch to main (isolated sessions only)
-  /pl-local-pull             Pull main into isolation branch (isolated sessions only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
+
+```
+Purlin Architect — Ready  [Isolated: <name>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-spec <topic>           Add or refine a feature spec
+  /pl-anchor <topic>         Create or update an anchor node
+  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-release-check          Execute the CDD release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a local release step
+  /pl-override-edit          Safely edit an override file
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-local-push             Merge isolation branch to main
+  /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -121,7 +148,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 3.  Read `.purlin/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
 4.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
 5.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
-6.  **Worktree Detection:** If `PURLIN_PROJECT_ROOT` is set, check whether its value resolves to a git worktree (the `.git` entry is a file pointer, not a directory: `test -f "$PURLIN_PROJECT_ROOT/.git"`). If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`.
+6.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`. (When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` is a valid secondary confirmation — in a git worktree, the `.git` entry is a file pointer rather than a directory.)
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:

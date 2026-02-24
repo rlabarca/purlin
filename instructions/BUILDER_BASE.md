@@ -18,7 +18,16 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 ### 2.0 Startup Print Sequence (Always-On)
 
-Before executing any other step in this startup protocol, print the following command vocabulary table as your very first output. This is unconditional — it runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+
+**Step 1 — Detect isolation state:**
+Run: `git rev-parse --abbrev-ref HEAD`
+
+If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
+
+**Step 2 — Print the appropriate table:**
+
+**If NOT in an isolated session** (branch does not start with `isolated/`), print:
 
 ```
 Purlin Builder — Ready
@@ -31,8 +40,24 @@ Purlin Builder — Ready
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-local-push             Merge isolation branch to main (isolated sessions only)
-  /pl-local-pull             Pull main into isolation branch (isolated sessions only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
+
+```
+Purlin Builder — Ready  [Isolated: <name>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-build [name]           Implement pending work or a specific feature
+  /pl-delivery-plan          Create or review phased delivery plan
+  /pl-infeasible <name>      Escalate a feature as unimplementable
+  /pl-propose <topic>        Surface a spec change suggestion to the Architect
+  /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-local-push             Merge isolation branch to main
+  /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -54,7 +79,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
     *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
-7.  **Worktree Detection:** If `PURLIN_PROJECT_ROOT` is set, check whether its value resolves to a git worktree (the `.git` entry is a file pointer, not a directory: `test -f "$PURLIN_PROJECT_ROOT/.git"`). If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`.
+7.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`. (When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` is a valid secondary confirmation — in a git worktree, the `.git` entry is a file pointer rather than a directory.)
 
 ### 2.2 Propose a Work Plan
 
