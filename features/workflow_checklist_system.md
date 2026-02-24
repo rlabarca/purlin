@@ -228,6 +228,15 @@ And only QA-specific and shared steps are included.
     And .claude/commands/ no longer exists in the worktree directory
     And .claude/commands/ at the project root is unaffected
 
+#### Scenario: pl-work-pull Post-Rebase Cleanup Leaves Working Tree Clean
+
+    Given the current worktree is clean
+    And main has 1 new commit not in the worktree branch
+    When /pl-work-pull is invoked
+    Then git rebase main succeeds
+    And .claude/commands/ does not exist in the worktree
+    And git status --porcelain reports no file changes in the worktree
+
 #### Scenario: pl-work-pull Does Not Delete .claude/commands/ When Already Absent
 
     Given the current worktree is clean
@@ -276,4 +285,4 @@ The handoff checklist system reuses the resolver infrastructure from the release
 - **Expected Behavior:** The post-rebase cleanup should leave the working tree in a clean state for subsequent git operations. Bare deletion of tracked files creates persistent dirty state.
 - **Recommended Fix:** After deleting `.claude/commands/`, run `git update-index --skip-worktree` on each deleted file. This tells git to ignore the absence in worktree checks — the deletion is invisible to `git status`, `git rebase`, and `git merge --ff-only`, while the files remain absent on disk (no duplicate command completions). The `--skip-worktree` flag survives across sessions and does not affect what is committed to the branch.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED — Added scenario "pl-work-pull Post-Rebase Cleanup Leaves Working Tree Clean" requiring git status reports clean after the deletion. Builder must pair deletion with `git update-index --skip-worktree` on each deleted file.
