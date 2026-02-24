@@ -1,4 +1,4 @@
-"""Graph generation for the CDD Software Map view.
+"""Graph generation for the CDD Spec Map view.
 
 Provides dependency graph generation, cycle detection, orphan detection,
 Mermaid export, and JSON output for the CDD Dashboard. Ported from

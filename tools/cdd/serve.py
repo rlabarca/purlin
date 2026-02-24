@@ -975,7 +975,7 @@ def _is_feature_complete(entry):
 
 def generate_html(cache=None):
     """Generates the full dashboard HTML with role-based columns,
-    view toggle (Status/SW Map), search, collapsible sections,
+    view toggle (Status/Spec Map), search, collapsible sections,
     feature detail modal, and Cytoscape.js graph view."""
     git_status = get_git_status()
     last_commit = get_last_commit()
@@ -1399,7 +1399,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="hdr-row2-left">
       <div class="view-toggle">
         <button class="view-btn active" id="btn-status" onclick="switchView('status')">Status</button>
-        <button class="view-btn" id="btn-map" onclick="switchView('map')">SW Map</button>
+        <button class="view-btn" id="btn-map" onclick="switchView('map')">Spec Map</button>
       </div>
     </div>
     <div class="hdr-row2-right">
@@ -1476,7 +1476,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
     </div>
   </div>
-  <!-- SW Map View -->
+  <!-- Spec Map View -->
   <div class="view-panel" id="map-view">
     <div id="cy"></div>
     <button id="recenter-btn" class="btn-critic" style="position:absolute;bottom:12px;right:12px;font-size:11px;padding:4px 10px;z-index:10" onclick="recenterGraph()">Recenter Graph</button>
@@ -2189,7 +2189,7 @@ function applySearchFilter() {{
     }});
   }}
 
-  // SW Map view: filter graph nodes
+  // Spec Map view: filter graph nodes
   if (currentView === 'map' && cy) {{
     if (!query) {{
       cy.elements().removeClass('search-hidden');
@@ -2339,7 +2339,7 @@ document.addEventListener('keydown', function(e) {{
 }});
 
 // ============================
-// Cytoscape.js SW Map View
+// Cytoscape.js Spec Map View
 // ============================
 var SVG_WIDTH = 200;
 var LABEL_FONT_SIZE = 14;
@@ -3105,7 +3105,7 @@ def _role_table_html(features):
 
 
 # ===================================================================
-# File Watcher for Reactive Graph Generation (cdd_software_map)
+# File Watcher for Reactive Graph Generation (cdd_spec_map)
 # ===================================================================
 
 def _get_features_snapshot(directory):
