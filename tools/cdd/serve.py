@@ -918,16 +918,30 @@ def _isolation_section_html(worktrees):
 
 
 def _collapsed_isolation_label(worktrees):
-    """Compute collapsed sub-heading label and CSS class for Isolated Agents.
+    """Compute collapsed sub-heading label and severity badge for Isolated Agents.
 
-    Returns (css_class, label_text) tuple.
-    The heading always uses the normal section heading color (--purlin-muted),
-    never severity-based coloring.
+    Returns (badge_css, heading_text, badge_text) tuple.
+    - badge_css: severity CSS class for the badge only (not the heading)
+    - heading_text: text shown in the heading when collapsed (always --purlin-muted)
+    - badge_text: worst severity state name shown in the badge to the right
     """
     if not worktrees:
-        return ("", "ISOLATED AGENTS")
+        return ("", "ISOLATED AGENTS", "")
     n = len(worktrees)
-    return ("", f"{n} Isolated Agent{'s' if n != 1 else ''}")
+    severity_order = {"DIVERGED": 3, "BEHIND": 2, "AHEAD": 1, "SAME": 0}
+    severity_names = {3: "DIVERGED", 2: "BEHIND", 1: "AHEAD", 0: "SAME"}
+    max_sev = 0
+    for wt in worktrees:
+        md = wt.get("main_diff", "SAME")
+        max_sev = max(max_sev, severity_order.get(md, 0))
+    if max_sev >= 3:
+        css = "st-disputed"  # orange
+    elif max_sev >= 1:
+        css = "st-todo"  # yellow
+    else:
+        css = "st-good"  # green
+    sev_name = severity_names.get(max_sev, "SAME")
+    return (css, f"{n} Isolated Agent{'s' if n != 1 else ''}", sev_name)
 
 
 def _feature_urgency(entry):
@@ -1010,9 +1024,10 @@ def generate_html(cache=None):
     isolation_html = _isolation_section_html(isolation_worktrees)
 
     # Collapsed sub-heading label for Isolated Agents
-    iso_badge_css, iso_badge_text = _collapsed_isolation_label(isolation_worktrees)
-    if iso_badge_css:
-        isolation_badge = f'<span class="{iso_badge_css}">{iso_badge_text}</span>'
+    iso_badge_css, iso_badge_text, iso_sev_text = _collapsed_isolation_label(
+        isolation_worktrees)
+    if iso_badge_css and iso_sev_text:
+        isolation_badge = f'<span class="{iso_badge_css}">{iso_sev_text}</span>'
     else:
         isolation_badge = ''
 
@@ -1438,7 +1453,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('isolation-section')">
         <span class="chevron" id="isolation-section-chevron">&#9654;</span>
-        <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" data-collapsed-class="{iso_badge_css}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">ISOLATED AGENTS</span>
+        <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">ISOLATED AGENTS</span>
         <span class="section-badge" id="isolation-section-badge" style="display:none">{isolation_badge}</span>
       </div>
       <div class="section-body collapsed" id="isolation-section">
@@ -1750,15 +1765,14 @@ function applyIsolationHeadingState() {{
   var isCollapsed = body.classList.contains('collapsed');
   if (isCollapsed) {{
     var collapsedText = heading.getAttribute('data-collapsed-text');
-    var collapsedCls = heading.getAttribute('data-collapsed-class');
-    if (collapsedText && collapsedCls) {{
+    if (collapsedText) {{
       heading.textContent = collapsedText;
-      heading.className = collapsedCls;
+      heading.className = '';
       heading.style.fontSize = '11px';
       heading.style.fontWeight = '700';
       heading.style.letterSpacing = '0.1em';
       heading.style.textTransform = 'uppercase';
-      heading.style.color = '';
+      heading.style.color = 'var(--purlin-muted)';
     }}
   }} else {{
     heading.textContent = heading.getAttribute('data-expanded') || 'ISOLATED AGENTS';
