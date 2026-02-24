@@ -40,9 +40,9 @@ fi
 PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
 
 # --- Name validation (Section 2.1) ---
-# Must be 1-8 characters, alphanumeric + hyphen + underscore only
-if [[ ${#NAME} -gt 8 ]]; then
-    echo "Error: Name '$NAME' is too long (${#NAME} chars). Maximum is 8 characters." >&2
+# Must be 1-12 characters, alphanumeric + hyphen + underscore only
+if [[ ${#NAME} -gt 12 ]]; then
+    echo "Error: Name '$NAME' is too long (${#NAME} chars). Maximum is 12 characters." >&2
     exit 1
 fi
 

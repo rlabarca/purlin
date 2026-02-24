@@ -1027,10 +1027,10 @@ def generate_html(cache=None):
 
     # Creation row (always first item in Isolated Agents sub-section)
     creation_row_html = (
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
         '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
         'Create An Isolated Agent</span>'
-        '<input type="text" id="new-isolation-name" maxlength="8" placeholder="name"'
+        '<input type="text" id="new-isolation-name" maxlength="12" placeholder="name"'
         ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
         'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
         ' oninput="validateIsolationName(this)">'
@@ -1637,8 +1637,9 @@ function updateTimestamp() {{
 
 function refreshStatus() {{
   if (rcIsolationPending) return;
-  // Save isolation name input value before DOM refresh
+  // Save isolation name input value and focus state before DOM refresh
   var isoInput = document.getElementById('new-isolation-name');
+  var _isoHadFocus = isoInput && document.activeElement === isoInput;
   if (isoInput) _pendingIsolationName = isoInput.value;
   return fetch('/?_t=' + Date.now())
     .then(function(r) {{ return r.text(); }})
@@ -1669,11 +1670,14 @@ function refreshStatus() {{
         refreshReleaseChecklist();
         // Update Run Critic button annotation (Section 2.7)
         updateCriticLabel();
-        // Restore isolation name input value after DOM refresh
+        // Restore isolation name input value and focus after DOM refresh
         var restoredInput = document.getElementById('new-isolation-name');
         if (restoredInput && _pendingIsolationName) {{
           restoredInput.value = _pendingIsolationName;
           validateIsolationName(restoredInput);
+        }}
+        if (restoredInput && _isoHadFocus) {{
+          restoredInput.focus();
         }}
       }}
       updateTimestamp();
@@ -2053,12 +2057,12 @@ function validateIsolationName(input) {{
   var btn = document.getElementById('btn-create-isolation');
   var hint = document.getElementById('isolation-name-hint');
   var val = input.value;
-  var valid = /^[a-zA-Z0-9_-]+$/.test(val) && val.length >= 1 && val.length <= 8;
+  var valid = /^[a-zA-Z0-9_-]+$/.test(val) && val.length >= 1 && val.length <= 12;
   if (btn) btn.disabled = !valid;
   if (hint) {{
     if (val.length > 0 && !valid) {{
       hint.style.display = '';
-      if (val.length > 8) hint.textContent = 'Max 8 characters';
+      if (val.length > 12) hint.textContent = 'Max 12 characters';
       else hint.textContent = 'Only letters, numbers, hyphens, underscores';
     }} else {{
       hint.style.display = 'none';

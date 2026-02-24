@@ -549,18 +549,18 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - **Observed Behavior:** The name input loses keyboard focus when the 5-second auto-refresh cycle fires a DOM update, even though the typed value is correctly preserved. The user must click back into the field to resume typing.
 - **Expected Behavior:** The spec says to preserve the input value across refreshes, but the intent is clearly to preserve the full in-progress state — including focus. After a DOM update, focus should be restored to the input if it was focused before the refresh.
 - **Action Required:** Builder
-- **Status:** SPEC_UPDATED — New scenario "Name Input Focus Restored After Auto-refresh" added to Manual Scenarios.
+- **Status:** RESOLVED — Focus restoration implemented: `refreshStatus()` now saves `document.activeElement === isoInput` before DOM refresh and calls `restoredInput.focus()` after value restore.
 
 ### [DISCOVERY] Name input focus highlight clips under header; creation row needs more padding (Discovered: 2026-02-23)
 - **Scenario:** NONE
 - **Observed Behavior:** When the name input is focused/selected, its focus highlight ring clips beneath the section header dividing line. The creation row has insufficient vertical padding, causing the focused input to visually overlap with the header above it.
 - **Expected Behavior:** The creation row should have enough top padding that a focused input's highlight ring is fully visible and does not clip under any header or divider element. No scenario or visual spec checklist item currently covers row padding or focus ring visibility.
 - **Action Required:** Builder
-- **Status:** SPEC_UPDATED — Visual spec checklist item added to Screen: CDD Dashboard — Isolation Controls covering creation row padding and focus ring visibility.
+- **Status:** RESOLVED — Added `padding-top:4px` to the creation row container div, providing clearance for the input focus ring.
 
 ### [SPEC_DISPUTE] 8-character isolation name limit is too restrictive; user wants 12 (Discovered: 2026-02-23)
 - **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
 - **Observed Behavior:** The name input enforces an 8-character maximum, rejecting names longer than 8 characters (e.g., "toolong12" at 9 chars is rejected).
 - **Expected Behavior:** User believes the limit should be 12 characters to allow more meaningful isolation names.
 - **Action Required:** Builder
-- **Status:** SPEC_UPDATED — Limit changed to 12 characters throughout Section 2.8. Scenario updated to test a 14-character name ("toolongname123"). Scenario unsuspended.
+- **Status:** RESOLVED — Updated to 12-char limit in: HTML `maxlength`, JS `validateIsolationName()`, hint text, and `create_isolation.sh` server-side validation.
