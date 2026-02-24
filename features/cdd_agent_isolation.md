@@ -542,7 +542,7 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - **Observed Behavior:** (1) When an agent is launched inside an isolated worktree, `pl-local-push` and `pl-local-pull` do not appear in the printed startup command table (Section 3.0 of role instructions), even though Section 8 of QA_BASE lists them as authorized isolation commands. (2) Both skills appear in Claude Code autocomplete regardless of context — they are suggested even when the agent is running on the main branch where they have no applicable purpose.
 - **Expected Behavior:** `pl-local-push` and `pl-local-pull` should appear in the startup command table when the agent is running inside an isolated worktree. They should not be surfaced (via autocomplete or command table) to agents running on the main branch.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED — Added `pl-local-push` and `pl-local-pull` to the startup command table in ARCHITECT_BASE.md, BUILDER_BASE.md, and QA_BASE.md with "(isolated sessions only)" annotation. Autocomplete visibility on main is a platform limitation outside instruction-file control.
 
 ### [INTENT_DRIFT] Name input loses focus on auto-refresh (Discovered: 2026-02-23)
 - **Scenario:** Scenario: Name Input Preserved Across Auto-refresh
