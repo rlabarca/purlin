@@ -56,20 +56,24 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
 2. **Sessions table:** A table listing all active worktrees, appearing below the creation row. When no worktrees are active, only the creation row is shown.
 
-   | Name | Branch | Main Diff | Modified |
-   |------|--------|-----------|----------|
-   | feat1 | isolated/feat1 | AHEAD | 2 Specs |
-   | ui | isolated/ui | SAME | |
+   | Name | Branch | Main Diff | Committed Modified | Uncommitted Modified |
+   |------|--------|-----------|--------------------|-----------------------|
+   | feat1 | isolated/feat1 | AHEAD | 2 Specs | 1 Code/Other |
+   | ui | isolated/ui | SAME | | 3 Specs |
 
    Each row also has a "Kill" button (see Section 2.8).
 
-**Main Diff** shows the sync state between the worktree's branch and main:
-- `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Modified reflects files the branch changed since its common ancestor with main.
-- `SAME` — branch and main are at identical commit positions. Modified will always be empty.
-- `BEHIND` — only main has moved: it has commits not yet in this branch; this branch has no commits ahead of main. Run `/pl-local-pull` before pushing. Modified will always be empty.
-- `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Modified reflects files the branch changed since the common ancestor.
+   Column headers use two-line rendering (`Committed<br>Modified`, `Uncommitted<br>Modified`) to save horizontal space.
 
-**Modified** shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot), not from uncommitted changes in the worktree. Modified is always empty when `main_diff` is `SAME` or `BEHIND`. Modified may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+**Main Diff** shows the sync state between the worktree's branch and main:
+- `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Committed Modified reflects files the branch changed since its common ancestor with main.
+- `SAME` — branch and main are at identical commit positions. Committed Modified will always be empty.
+- `BEHIND` — only main has moved: it has commits not yet in this branch; this branch has no commits ahead of main. Run `/pl-local-pull` before pushing. Committed Modified will always be empty.
+- `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
+
+**Committed Modified** shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `main_diff` is `SAME` or `BEHIND`. It may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+
+**Uncommitted Modified** shows files in the worktree's working tree that have not yet been committed — derived from `git -C <path> status --porcelain` run from the worktree directory. This includes staged, unstaged, and untracked files. The column is independent of `main_diff` state: a worktree at `SAME` can still have uncommitted changes. When non-empty, it uses the same category format as Committed Modified. Files under `.purlin/` are excluded from all categories.
 
 ### 2.4 Worktree State Reading
 
@@ -77,11 +81,12 @@ CDD reads each worktree's state using read-only git commands:
 
 - `git worktree list --porcelain` — all worktree paths and HEAD commits.
 - `git -C <path> rev-parse --abbrev-ref HEAD` — branch name per worktree.
-- `git diff main...<branch> --name-only` — files the branch changed since its common ancestor with main (three-dot diff), run from the **project root**. This is always empty for `SAME` and `BEHIND` states; may be empty for `AHEAD` or `DIVERGED` if the branch's commits touch no files. Output is one filename per line, parsed by path prefix to count per-category modified files:
+- `git diff main...<branch> --name-only` — committed files the branch changed since its common ancestor with main (three-dot diff), run from the **project root**. This is always empty for `SAME` and `BEHIND` states; may be empty for `AHEAD` or `DIVERGED` if the branch's commits touch no files. Output is one filename per line, parsed by path prefix to count per-category modified files:
   - Lines starting with `.purlin/` → **excluded entirely** (not counted in any category).
   - Lines starting with `features/` → Specs count.
   - Lines starting with `tests/` → Tests count.
   - All other lines → Code/Other count.
+- `git -C <path> status --porcelain` — uncommitted files in the worktree's working tree. Captures staged, unstaged, and untracked changes. Output format: `XY filename` where the filename starts at column 3. For renames, the format is `XY old -> new`; the new path is used. Parsed by the same path-prefix categorization as committed (`.purlin/` excluded, `features/` → Specs, `tests/` → Tests, rest → Code/Other).
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
 - `git -C <path> rev-list --count main..HEAD` → `commits_ahead` (int).
 - Two `git log` range queries to determine `main_diff` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name:
@@ -112,8 +117,13 @@ When Isolated Teams Mode is active, the `/status.json` response includes additio
       "main_diff": "AHEAD",
       "commits_ahead": 3,
       "last_commit": "abc1234 feat: add filtering scenarios (45 min ago)",
-      "modified": {
+      "committed": {
         "specs": 2,
+        "tests": 0,
+        "other": 1
+      },
+      "uncommitted": {
+        "specs": 0,
         "tests": 0,
         "other": 1
       },
@@ -129,8 +139,13 @@ When Isolated Teams Mode is active, the `/status.json` response includes additio
       "main_diff": "SAME",
       "commits_ahead": 0,
       "last_commit": "def5678 feat(ui): implement dashboard component (12 min ago)",
-      "modified": {
+      "committed": {
         "specs": 0,
+        "tests": 0,
+        "other": 0
+      },
+      "uncommitted": {
+        "specs": 3,
         "tests": 0,
         "other": 0
       }
@@ -149,7 +164,8 @@ Fields per worktree entry:
 - `main_diff` — four-state sync indicator (`"SAME"`, `"AHEAD"`, `"BEHIND"`, `"DIVERGED"`). Computed via two `git log` range queries from the project root.
 - `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
-- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git diff main...<branch> --name-only` (three-dot) run from project root. Files under `.purlin/` are excluded.
+- `committed` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git diff main...<branch> --name-only` (three-dot) run from project root. Files under `.purlin/` are excluded.
+- `uncommitted` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git -C <path> status --porcelain` run from the worktree directory. Files under `.purlin/` are excluded.
 - `delivery_phase` — optional object with `current` (int) and `total` (int). Present only when the worktree's `.purlin/cache/delivery_plan.md` exists and has an IN_PROGRESS phase. Absent when no delivery plan exists or all phases are COMPLETE.
 
 ### 2.6 Visual Design
@@ -263,11 +279,11 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then the worktree entry has name "hotfix" and branch "hotfix/urgent"
     And no role field is present in the entry
 
-#### Scenario: Modified Non-Empty When Branch Is AHEAD Of Main
+#### Scenario: Committed Modified Non-Empty When Branch Is AHEAD Of Main
 
     Given a worktree at .worktrees/feat1 is AHEAD of main with commits that modified files
     When an agent calls GET /status.json
-    Then the worktree entry's modified object has at least one non-zero field (specs, tests, or other)
+    Then the worktree entry's committed object has at least one non-zero field (specs, tests, or other)
 
 #### Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Main
 
@@ -315,12 +331,27 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And .worktrees/feat1/.purlin/config.json reflects the new values
     And .worktrees/ui/.purlin/config.json reflects the new values
 
-#### Scenario: Modified Column Categorizes Files Changed Against Main by Type
+#### Scenario: Committed Modified Categorizes Files Changed Against Main by Type
 
     Given a worktree at .worktrees/feat1 on a branch AHEAD of main
     And the branch's commits modified two files under features/ and one file outside features/ and tests/
     When an agent calls GET /status.json
-    Then the worktree entry's modified field has specs=2, tests=0, other=1
+    Then the worktree entry's committed field has specs=2, tests=0, other=1
+
+#### Scenario: Uncommitted Modified Categorizes Working Tree Changes by Type
+
+    Given a worktree at .worktrees/feat1 has uncommitted changes to one file under features/ and two files under tools/
+    When an agent calls GET /status.json
+    Then the worktree entry's uncommitted field has specs=1, tests=0, other=2
+
+#### Scenario: Uncommitted Modified Non-Empty When Main Diff Is SAME
+
+    Given a worktree at .worktrees/ui on a branch at SAME position as main
+    And the worktree has uncommitted changes to three files under features/
+    When an agent calls GET /status.json
+    Then the worktree entry's main_diff is "SAME"
+    And the worktree entry's committed field has specs=0, tests=0, other=0
+    And the worktree entry's uncommitted field has specs=3, tests=0, other=0
 
 #### Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits
 
@@ -374,7 +405,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And two worktrees exist (.worktrees/feat1 and .worktrees/ui)
     When the User opens the CDD dashboard
     Then the Isolated Teams section is visible
-    And the Sessions sub-section shows a table with Name, Branch, Main Diff, and Modified columns
+    And the Sessions sub-section shows a table with Name, Branch, Main Diff, Committed Modified, and Uncommitted Modified columns
     And each worktree appears as a row with its isolation name and branch
     And no Role column is present
 
@@ -462,15 +493,18 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] Collapsed heading with N active worktrees reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
 - [ ] When expanded, the creation row "Create An Isolated Team [input] [Create]" is always the first item
 - [ ] Sessions table appears below the creation row
-- [ ] Sessions table has columns: Name, Branch, Main Diff, Modified (no Role column)
+- [ ] Sessions table has columns: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified (no Role column)
+- [ ] Committed Modified and Uncommitted Modified column headers render as two lines ("Committed" / "Modified" and "Uncommitted" / "Modified") to save horizontal space
 - [ ] Each active worktree appears as a row
 - [ ] Each row has a "Kill" button aligned to the right
 - [ ] Main Diff cell shows "SAME" in `--purlin-status-good` (green)
 - [ ] Main Diff cell shows "AHEAD" in `--purlin-status-todo` (yellow)
 - [ ] Main Diff cell shows "BEHIND" in `--purlin-status-todo` (yellow)
 - [ ] Main Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange)
-- [ ] Modified cell is empty when main_diff is SAME or BEHIND
-- [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when AHEAD or DIVERGED
+- [ ] Committed Modified cell is empty when main_diff is SAME or BEHIND
+- [ ] Committed Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when AHEAD or DIVERGED
+- [ ] Uncommitted Modified cell shows category counts when the worktree has uncommitted changes, regardless of main_diff state
+- [ ] Uncommitted Modified cell is empty when the worktree has no uncommitted changes
 - [ ] When delivery_phase is present, Name cell shows "name (Phase N/M)" with orange badge text
 
 ### Screen: CDD Dashboard — Isolation Controls
