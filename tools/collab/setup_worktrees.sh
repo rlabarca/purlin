@@ -97,6 +97,13 @@ for role_def in "${ROLES[@]}"; do
         cp "$LIVE_CONFIG" "$WT_CONFIG"
     fi
 
+    # Remove .claude/commands/ from worktree to prevent duplicate /pl-* completions.
+    # Claude Code climbs the directory tree and discovers the main repo's commands
+    # automatically; the per-worktree copy is redundant.
+    if [ -d "$wt_path/.claude/commands" ]; then
+        rm -rf "$wt_path/.claude/commands"
+    fi
+
     echo "  CREATED: $wt_path (branch: $branch)"
     CREATED=$((CREATED + 1))
 done

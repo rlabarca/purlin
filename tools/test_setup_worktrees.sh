@@ -498,6 +498,47 @@ fi
 rm -rf "$SANDBOX" "$EXTERNAL_DIR"
 
 ###############################################################################
+# Scenario: setup_worktrees Removes .claude/commands/ From Each Worktree
+###############################################################################
+echo ""
+echo "[Scenario] setup_worktrees Removes .claude/commands/ From Each Worktree"
+setup_sandbox
+
+# Add .claude/commands/ to the repo so worktrees inherit it
+mkdir -p "$SANDBOX/.claude/commands"
+echo "# stub command" > "$SANDBOX/.claude/commands/pl-status.md"
+echo "# stub command" > "$SANDBOX/.claude/commands/pl-build.md"
+git -C "$SANDBOX" add -A && git -C "$SANDBOX" commit -q -m "add .claude/commands"
+
+# Create worktrees — each will initially have .claude/commands/ from git
+bash "$SANDBOX/tools/collab/setup_worktrees.sh" --project-root "$SANDBOX" > /dev/null 2>&1
+
+# Verify .claude/commands/ is removed from each worktree
+for wt_dir in architect-session build-session qa-session; do
+    if [ ! -d "$SANDBOX/.worktrees/$wt_dir/.claude/commands" ]; then
+        log_pass "$wt_dir: .claude/commands/ removed"
+    else
+        log_fail "$wt_dir: .claude/commands/ still exists (should be removed)"
+    fi
+done
+
+# Verify .claude/commands/ at project root is unaffected
+if [ -d "$SANDBOX/.claude/commands" ]; then
+    log_pass "Project root .claude/commands/ still exists"
+else
+    log_fail "Project root .claude/commands/ was removed (should be preserved)"
+fi
+
+# Verify command files still exist at project root
+if [ -f "$SANDBOX/.claude/commands/pl-status.md" ] && [ -f "$SANDBOX/.claude/commands/pl-build.md" ]; then
+    log_pass "Project root command files intact"
+else
+    log_fail "Project root command files missing"
+fi
+
+teardown_sandbox
+
+###############################################################################
 # Write results
 ###############################################################################
 echo ""
