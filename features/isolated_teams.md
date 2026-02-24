@@ -244,7 +244,9 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 
 #### Scenario: create_isolation Generates All Three Launcher Scripts
 
-    Given create_isolation.sh feat1 is run successfully
+    Given the project root has no worktree at .worktrees/feat1/
+    And .worktrees/ is gitignored
+    When create_isolation.sh feat1 is run
     Then run_feat1_architect.sh exists at $PROJECT_ROOT/ and is executable
     And run_feat1_builder.sh exists at $PROJECT_ROOT/ and is executable
     And run_feat1_qa.sh exists at $PROJECT_ROOT/ and is executable
@@ -259,6 +261,7 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 #### Scenario: Generated Launcher Scripts Delegate to Correct Worktree Launcher Per Role
 
     Given create_isolation.sh feat1 is run successfully
+    When each generated launcher script is inspected
     Then run_feat1_architect.sh delegates to .worktrees/feat1/run_architect.sh
     And run_feat1_builder.sh delegates to .worktrees/feat1/run_builder.sh
     And run_feat1_qa.sh delegates to .worktrees/feat1/run_qa.sh

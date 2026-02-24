@@ -16,7 +16,7 @@ Anchor node files (`arch_*.md`, `design_*.md`, `policy_*.md`) receive a REDUCED 
 
 | Check | PASS | WARN | FAIL |
 |-------|------|------|------|
-| Section completeness | All required sections present (Overview, Requirements, Scenarios) | Implementation Notes empty | Missing Overview, Requirements, or Scenarios |
+| Section completeness | All required sections present (Overview, Requirements, Scenarios) | Implementation Notes empty (a companion file stub referencing `<name>.impl.md` is NOT considered empty — see `impl_notes_companion.md` §2.6) | Missing Overview, Requirements, or Scenarios |
 | Scenario classification | Both subsections present (with content or explicit "None" declaration) | Only one subsection with no explicit opt-out for the other | No scenarios at all |
 | Policy anchoring | Has `> Prerequisite:` linking to an anchor node (`arch_*.md`, `design_*.md`, `policy_*.md`); OR has prerequisite to non-anchor-node file (feature is grounded) | No prerequisite (unless IS an anchor node) | Referenced prerequisite file missing on disk |
 | Prerequisite integrity | All referenced prerequisite files exist on disk | N/A | Referenced file missing |
