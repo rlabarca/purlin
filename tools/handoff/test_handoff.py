@@ -17,114 +17,40 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
 sys.path.insert(0, SCRIPT_DIR)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'release'))
 
-from run import filter_by_role, evaluate_step, infer_role_from_branch, run_handoff
-from resolve import resolve_checklist
-
-
-class TestHandoffCLIFiltersStepsByRole(unittest.TestCase):
-    """Scenario: Handoff CLI Filters Steps by Role
-
-    Given the handoff global_steps.json contains steps with roles: ["all"],
-          ["architect"], ["builder"], and ["qa"],
-    When run.sh --role architect is invoked,
-    Then only steps with roles: ["all"] or ["architect"] are included,
-    And steps with roles: ["builder"] or ["qa"] are excluded.
-    """
-
-    def setUp(self):
-        """Load global_steps.json and resolve all steps."""
-        self.resolved, _, _ = resolve_checklist(checklist_type="handoff")
-        # Verify we have steps for all roles in the source data
-        all_roles_seen = set()
-        for step in self.resolved:
-            roles = step.get("roles") or []
-            for r in roles:
-                all_roles_seen.add(r)
-        self.assertIn("all", all_roles_seen)
-        self.assertIn("architect", all_roles_seen)
-        self.assertIn("builder", all_roles_seen)
-        self.assertIn("qa", all_roles_seen)
-
-    def test_architect_gets_only_all_and_architect_steps(self):
-        steps = filter_by_role(self.resolved, "architect")
-        for step in steps:
-            roles = step.get("roles", [])
-            self.assertTrue(
-                "all" in roles or "architect" in roles,
-                f"Step {step['id']} has roles={roles}, expected 'all' or 'architect'"
-            )
-
-    def test_architect_excludes_builder_and_qa_steps(self):
-        steps = filter_by_role(self.resolved, "architect")
-        step_ids = {s["id"] for s in steps}
-        # These should NOT be in architect's list
-        self.assertNotIn("purlin.handoff.tests_pass", step_ids)
-        self.assertNotIn("purlin.handoff.impl_notes_updated", step_ids)
-        self.assertNotIn("purlin.handoff.status_commit_made", step_ids)
-        self.assertNotIn("purlin.handoff.scenarios_complete", step_ids)
-        self.assertNotIn("purlin.handoff.discoveries_addressed", step_ids)
-        self.assertNotIn("purlin.handoff.complete_commit_made", step_ids)
-
-    def test_builder_gets_only_all_and_builder_steps(self):
-        steps = filter_by_role(self.resolved, "builder")
-        for step in steps:
-            roles = step.get("roles", [])
-            self.assertTrue(
-                "all" in roles or "builder" in roles,
-                f"Step {step['id']} has roles={roles}, expected 'all' or 'builder'"
-            )
-
-    def test_qa_gets_only_all_and_qa_steps(self):
-        steps = filter_by_role(self.resolved, "qa")
-        for step in steps:
-            roles = step.get("roles", [])
-            self.assertTrue(
-                "all" in roles or "qa" in roles,
-                f"Step {step['id']} has roles={roles}, expected 'all' or 'qa'"
-            )
-
-    def test_each_role_gets_correct_count(self):
-        # 3 shared + 3 role-specific = 6 per role
-        for role in ("architect", "builder", "qa"):
-            steps = filter_by_role(self.resolved, role)
-            self.assertEqual(len(steps), 6,
-                             f"{role} should have 6 steps, got {len(steps)}")
+from run import evaluate_step, run_handoff
 
 
 class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
     """Scenario: Handoff CLI Passes When All Auto-Steps Pass
 
-    Given the current branch is spec/task-crud,
-    And the working directory is clean,
-    And all modified features pass the Critic Spec Gate,
-    When run.sh --role architect is invoked,
-    Then the CLI exits with code 0,
-    And prints a summary with all steps PASS.
+    Given the current worktree is on branch isolated/feat1
+    And the working directory is clean
+    And the critic report is current
+    When run.sh is invoked
+    Then the CLI exits with code 0
+    And prints a summary with all steps PASS
     """
 
     def setUp(self):
         """Create a temp project where all auto steps pass."""
         self.temp_dir = tempfile.mkdtemp()
-        # Initialize git repo
         subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "config", "user.email", "test@test.com"],
                         cwd=self.temp_dir, check=True)
         subprocess.run(["git", "config", "user.name", "Test"],
                         cwd=self.temp_dir, check=True)
-        # Create project structure
         os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
         os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
         with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
             json.dump({"tools_root": "tools"}, f)
         with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
             f.write("# Test\n")
-        # Create branch and commit
         subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "commit", "-q", "-m", "init"],
                         cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "spec/task-crud"],
+        subprocess.run(["git", "checkout", "-q", "-b", "isolated/feat1"],
                         cwd=self.temp_dir, check=True)
-        # Create a custom global_steps.json with only passing code steps
+        # Create global_steps.json with only passing code steps (no roles field)
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
         steps_data = {"steps": [
             {
@@ -132,16 +58,7 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
                 "friendly_name": "Git Working Directory Clean",
                 "description": "No uncommitted changes",
                 "code": "git diff --exit-code && git diff --cached --exit-code",
-                "agent_instructions": None,
-                "roles": ["all"]
-            },
-            {
-                "id": "purlin.handoff.spec_gate_pass",
-                "friendly_name": "Spec Gate Pass",
-                "description": "All specs pass",
-                "code": "true",
-                "agent_instructions": None,
-                "roles": ["architect"]
+                "agent_instructions": "Run git status."
             }
         ]}
         with open(os.path.join(self.temp_dir, "tools", "handoff",
@@ -155,7 +72,6 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
     def test_all_auto_steps_pass_exits_0(self):
         result = subprocess.run(
             [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
-             "--role", "architect",
              "--project-root", self.temp_dir],
             capture_output=True, text=True
         )
@@ -170,15 +86,13 @@ class TestHandoffCLIPassesWhenAllAutoStepsPass(unittest.TestCase):
 class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
     """Scenario: Handoff CLI Exits 1 When Any Step Fails
 
-    Given the current branch is build/task-crud,
-    And tests/task_crud/tests.json does not exist,
-    When run.sh --role builder is invoked,
-    Then the CLI exits with code 1,
-    And reports the failing step (purlin.handoff.tests_pass) as FAIL.
+    Given the working directory has uncommitted changes
+    When run.sh is invoked
+    Then the CLI exits with code 1
+    And reports the failing step (purlin.handoff.git_clean) as FAIL
     """
 
     def setUp(self):
-        """Create a temp project with a step that fails."""
         self.temp_dir = tempfile.mkdtemp()
         subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "config", "user.email", "test@test.com"],
@@ -194,27 +108,18 @@ class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "commit", "-q", "-m", "init"],
                         cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "build/task-crud"],
-                        cwd=self.temp_dir, check=True)
-        # Create steps with one that will fail
+        # Create an uncommitted file to make git_clean fail
+        with open(os.path.join(self.temp_dir, "dirty.txt"), 'w') as f:
+            f.write("dirty\n")
+        subprocess.run(["git", "add", "dirty.txt"], cwd=self.temp_dir, check=True)
+        # Create steps (no roles field)
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
         steps_data = {"steps": [
-            {
-                "id": "purlin.handoff.git_clean",
-                "friendly_name": "Git Working Directory Clean",
-                "description": "No uncommitted changes",
-                "code": "git diff --exit-code && git diff --cached --exit-code",
-                "agent_instructions": None,
-                "roles": ["all"]
-            },
-            {
-                "id": "purlin.handoff.tests_pass",
-                "friendly_name": "Tests Pass",
-                "description": "Tests must exist and pass",
-                "code": "test -f tests/task_crud/tests.json",
-                "agent_instructions": "Verify tests.json exists.",
-                "roles": ["builder"]
-            }
+            {"id": "purlin.handoff.git_clean",
+             "friendly_name": "Git Working Directory Clean",
+             "description": "No uncommitted changes",
+             "code": "git diff --exit-code && git diff --cached --exit-code",
+             "agent_instructions": "Run git status."}
         ]}
         with open(os.path.join(self.temp_dir, "tools", "handoff",
                                "global_steps.json"), 'w') as f:
@@ -227,7 +132,6 @@ class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
     def test_failing_step_exits_1(self):
         result = subprocess.run(
             [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
-             "--role", "builder",
              "--project-root", self.temp_dir],
             capture_output=True, text=True
         )
@@ -235,126 +139,57 @@ class TestHandoffCLIExits1WhenAnyStepFails(unittest.TestCase):
                          f"Expected exit 1 but got {result.returncode}.\n"
                          f"stdout: {result.stdout}")
         self.assertIn("FAIL", result.stdout)
-        self.assertIn("Tests Pass", result.stdout)
+        self.assertIn("Git Working Directory Clean", result.stdout)
 
 
-class TestRoleInferredFromBranchName(unittest.TestCase):
-    """Scenario: Role Inferred from Branch Name
+class TestNoRoleFilteringInHandoff(unittest.TestCase):
+    """Verify that the handoff system has no role-based filtering.
 
-    Given the current branch is qa/task-filtering,
-    When /pl-handoff-check is invoked without a --role argument,
-    Then the checklist runs with role="qa",
-    And only QA-specific and shared steps are included.
+    The spec (Section 2.1) states: 'The roles field is removed — all steps
+    apply to all agents.' This test ensures run.py has no role parameter
+    and global_steps.json has no roles field.
     """
 
-    def setUp(self):
-        """Create temp git repos on different branches."""
-        self.temp_dir = tempfile.mkdtemp()
-        subprocess.run(["git", "init", "-q"], cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "config", "user.email", "test@test.com"],
-                        cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"],
-                        cwd=self.temp_dir, check=True)
-        os.makedirs(os.path.join(self.temp_dir, ".purlin"), exist_ok=True)
-        os.makedirs(os.path.join(self.temp_dir, "features"), exist_ok=True)
-        with open(os.path.join(self.temp_dir, ".purlin", "config.json"), 'w') as f:
-            json.dump({"tools_root": "tools"}, f)
-        with open(os.path.join(self.temp_dir, "features", "test.md"), 'w') as f:
-            f.write("# Test\n")
-        subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "init"],
-                        cwd=self.temp_dir, check=True)
-
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-    def test_qa_branch_infers_qa_role(self):
-        subprocess.run(["git", "checkout", "-q", "-b", "qa/task-filtering"],
-                        cwd=self.temp_dir, check=True)
-        role = infer_role_from_branch(self.temp_dir)
-        self.assertEqual(role, "qa")
-
-    def test_spec_branch_infers_architect_role(self):
-        subprocess.run(["git", "checkout", "-q", "-b", "spec/task-crud"],
-                        cwd=self.temp_dir, check=True)
-        role = infer_role_from_branch(self.temp_dir)
-        self.assertEqual(role, "architect")
-
-    def test_build_branch_infers_builder_role(self):
-        subprocess.run(["git", "checkout", "-q", "-b", "build/task-crud"],
-                        cwd=self.temp_dir, check=True)
-        role = infer_role_from_branch(self.temp_dir)
-        self.assertEqual(role, "builder")
-
-    def test_main_branch_returns_none(self):
-        role = infer_role_from_branch(self.temp_dir)
-        self.assertIsNone(role)
-
-    def test_qa_branch_cli_runs_qa_checklist(self):
-        """Full integration: run without --role on qa/ branch."""
-        subprocess.run(["git", "checkout", "-q", "-b", "qa/task-filtering"],
-                        cwd=self.temp_dir, check=True)
-        # Create steps with a QA step that passes
-        os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"),
-                    exist_ok=True)
-        steps_data = {"steps": [
-            {
-                "id": "purlin.handoff.git_clean",
-                "friendly_name": "Git Working Directory Clean",
-                "description": "No uncommitted changes",
-                "code": "git diff --exit-code && git diff --cached --exit-code",
-                "agent_instructions": None,
-                "roles": ["all"]
-            },
-            {
-                "id": "purlin.handoff.scenarios_complete",
-                "friendly_name": "Manual Scenarios Complete",
-                "description": "All scenarios verified",
-                "code": "true",
-                "agent_instructions": None,
-                "roles": ["qa"]
-            },
-            {
-                "id": "purlin.handoff.tests_pass",
-                "friendly_name": "Tests Pass",
-                "description": "Builder step — should be excluded",
-                "code": "true",
-                "agent_instructions": None,
-                "roles": ["builder"]
-            }
-        ]}
-        with open(os.path.join(self.temp_dir, "tools", "handoff",
-                               "global_steps.json"), 'w') as f:
-            json.dump(steps_data, f)
-
-        # Run without --role flag
+    def test_run_py_has_no_role_argument(self):
+        """run.py should not accept --role."""
         result = subprocess.run(
             [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
-             "--project-root", self.temp_dir],
+             "--role", "builder", "--project-root", "/tmp"],
             capture_output=True, text=True
         )
-        self.assertEqual(result.returncode, 0,
-                         f"Expected exit 0.\nstdout: {result.stdout}\n"
-                         f"stderr: {result.stderr}")
-        # QA-specific step should be present
-        self.assertIn("Manual Scenarios Complete", result.stdout)
-        # Builder-specific step should be absent
-        self.assertNotIn("Tests Pass", result.stdout)
+        self.assertNotEqual(result.returncode, 0,
+                            "run.py should reject --role argument")
+        self.assertIn("unrecognized arguments", result.stderr)
+
+    def test_global_steps_have_no_roles_field(self):
+        """global_steps.json entries should not have a roles field."""
+        steps_path = os.path.join(SCRIPT_DIR, "global_steps.json")
+        with open(steps_path) as f:
+            data = json.load(f)
+        for step in data["steps"]:
+            self.assertNotIn("roles", step,
+                             f"Step {step['id']} should not have 'roles' field")
+
+    def test_global_steps_match_spec_section_2_5(self):
+        """global_steps.json should contain exactly the 2 steps from Section 2.5."""
+        steps_path = os.path.join(SCRIPT_DIR, "global_steps.json")
+        with open(steps_path) as f:
+            data = json.load(f)
+        step_ids = [s["id"] for s in data["steps"]]
+        self.assertEqual(step_ids,
+                         ["purlin.handoff.git_clean",
+                          "purlin.handoff.critic_report"])
 
 
 class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
     """Scenario: pl-local-push Merges Branch When All Checks Pass
 
-    Given the current branch is build/collab
+    Given the current branch is isolated/feat1
     And tools/handoff/run.sh exits with code 0
     And the main checkout is on branch main
     When /pl-local-push is invoked
-    Then git merge --ff-only build/collab is executed from PROJECT_ROOT
+    Then git merge --ff-only isolated/feat1 is executed from PROJECT_ROOT
     And the command succeeds
-
-    Tests the underlying components: run.py exits 0 for a passing checklist,
-    and the skill file instructs the agent to perform ff-only merge.
     """
 
     def setUp(self):
@@ -373,7 +208,7 @@ class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "commit", "-q", "-m", "init"],
                         cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "build/collab"],
+        subprocess.run(["git", "checkout", "-q", "-b", "isolated/feat1"],
                         cwd=self.temp_dir, check=True)
         # Create a passing handoff step
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
@@ -381,7 +216,7 @@ class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
             {"id": "purlin.handoff.git_clean",
              "friendly_name": "Git Clean", "description": "Clean",
              "code": "git diff --exit-code && git diff --cached --exit-code",
-             "agent_instructions": None, "roles": ["all"]}
+             "agent_instructions": "Run git status."}
         ]}
         with open(os.path.join(self.temp_dir, "tools", "handoff",
                                "global_steps.json"), 'w') as f:
@@ -391,8 +226,8 @@ class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_handoff_passes_on_build_branch(self):
-        """run.py exits 0 when checklist passes on build/* branch."""
+    def test_handoff_passes_exits_0(self):
+        """run.py exits 0 when checklist passes."""
         result = subprocess.run(
             [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
              "--project-root", self.temp_dir],
@@ -417,7 +252,7 @@ class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
 class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
     """Scenario: pl-local-push Blocks Merge When Handoff Checks Fail
 
-    Given the current branch is build/collab
+    Given the current branch is isolated/feat1
     And tools/handoff/run.sh exits with code 1
     When /pl-local-push is invoked
     Then the failing items are printed
@@ -440,19 +275,18 @@ class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], cwd=self.temp_dir, check=True)
         subprocess.run(["git", "commit", "-q", "-m", "init"],
                         cwd=self.temp_dir, check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "build/collab"],
+        subprocess.run(["git", "checkout", "-q", "-b", "isolated/feat1"],
                         cwd=self.temp_dir, check=True)
         # Create an uncommitted file to make git_clean fail
         with open(os.path.join(self.temp_dir, "dirty.txt"), 'w') as f:
             f.write("dirty\n")
         subprocess.run(["git", "add", "dirty.txt"], cwd=self.temp_dir, check=True)
-        # Create steps
         os.makedirs(os.path.join(self.temp_dir, "tools", "handoff"), exist_ok=True)
         steps_data = {"steps": [
             {"id": "purlin.handoff.git_clean",
              "friendly_name": "Git Clean", "description": "Clean",
              "code": "git diff --exit-code && git diff --cached --exit-code",
-             "agent_instructions": None, "roles": ["all"]}
+             "agent_instructions": "Run git status."}
         ]}
         with open(os.path.join(self.temp_dir, "tools", "handoff",
                                "global_steps.json"), 'w') as f:
@@ -463,7 +297,6 @@ class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_handoff_fails_and_exits_1(self):
-        """run.py exits 1 when checklist fails — merge should not happen."""
         result = subprocess.run(
             [sys.executable, os.path.join(SCRIPT_DIR, "run.py"),
              "--project-root", self.temp_dir],
@@ -479,11 +312,10 @@ class TestPlLocalPullAbortsWhenDirty(unittest.TestCase):
     Given the current worktree has uncommitted changes
     When /pl-local-pull is invoked
     Then the command prints "Commit or stash changes before pulling"
-    And no git merge is executed
+    And no git rebase is executed
     """
 
     def test_skill_file_checks_clean_state(self):
-        """The pl-local-pull skill file instructs checking for clean state."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         self.assertTrue(os.path.exists(skill_path),
@@ -498,16 +330,15 @@ class TestPlLocalPullRebasesMainWhenBehind(unittest.TestCase):
     """Scenario: pl-local-pull Rebases Main Into Worktree When Branch Is BEHIND
 
     Given the current worktree is clean
-    And main has 3 new commits not in the worktree
+    And main has 3 new commits not in the worktree branch
     And the worktree branch has no commits not in main
     When /pl-local-pull is invoked
     Then the state label "BEHIND" is printed
-    And git rebase main is executed (not git merge main)
+    And git rebase main is executed
     And the output reports 3 new commits incorporated
     """
 
     def test_skill_file_instructs_rebase_main(self):
-        """The pl-local-pull skill file instructs rebasing onto main."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
@@ -516,48 +347,12 @@ class TestPlLocalPullRebasesMainWhenBehind(unittest.TestCase):
         self.assertNotIn("git merge main", content)
 
     def test_skill_file_prints_behind_state(self):
-        """The pl-local-pull skill file prints BEHIND state label."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("BEHIND", content)
         self.assertIn("fast-forward", content.lower())
-
-
-class TestPlLocalPushAllowsQAMergeWithOpenDiscoveries(unittest.TestCase):
-    """Scenario: pl-local-push Allows QA Merge When Discoveries Are Committed But Open
-
-    Given the current branch is qa/collab
-    And features/cdd_collab_mode.md has 3 OPEN entries in ## User Testing Discoveries
-    And all discovery entries are committed to the branch
-    And all manual scenarios have been attempted (failed ones have BUG discoveries)
-    And no in-scope feature is fully clean (no [Complete] commit needed)
-    When /pl-local-push is invoked
-    Then discoveries_addressed evaluates as PASS
-    And complete_commit_made evaluates as PASS
-    And the branch is merged to main
-    """
-
-    def test_global_steps_qa_descriptions_match_spec(self):
-        """global_steps.json QA step descriptions reflect push-with-bugs semantics."""
-        steps_path = os.path.join(SCRIPT_DIR, "global_steps.json")
-        with open(steps_path) as f:
-            data = json.load(f)
-        steps_by_id = {s["id"]: s for s in data["steps"]}
-
-        # scenarios_complete: allows deferred scenarios blocked by BUG
-        sc = steps_by_id["purlin.handoff.scenarios_complete"]
-        self.assertIn("BUG", sc["description"])
-
-        # discoveries_addressed: OPEN status acceptable
-        da = steps_by_id["purlin.handoff.discoveries_addressed"]
-        self.assertIn("OPEN status is acceptable", da["description"])
-
-        # complete_commit_made: PASS when all have open discoveries
-        cc = steps_by_id["purlin.handoff.complete_commit_made"]
-        self.assertIn("PASS when all in-scope features have open discoveries",
-                       cc["description"])
 
 
 class TestPlLocalPullRebasesWhenDiverged(unittest.TestCase):
@@ -568,13 +363,12 @@ class TestPlLocalPullRebasesWhenDiverged(unittest.TestCase):
     And main has 3 commits not in the worktree branch
     When /pl-local-pull is invoked
     Then the state label "DIVERGED" is printed
-    And the DIVERGED context report is printed showing incoming commits from main
-    And git rebase main is executed (not git merge main)
+    And the DIVERGED context report is printed showing incoming commits
+    And git rebase main is executed
     And on success the branch is AHEAD of main by 2 commits
     """
 
     def test_skill_file_handles_diverged_state(self):
-        """The pl-local-pull skill file handles DIVERGED with context report."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
@@ -590,22 +384,19 @@ class TestPlLocalPullReportsPerFileConflictContext(unittest.TestCase):
     Given /pl-local-pull is invoked and git rebase main halts with a conflict
     When the conflict is reported
     Then the output includes commits from main and the worktree branch
-    And a role-scoped resolution hint is shown
+    And a resolution hint is shown for features/ files
     And the output includes instructions to git rebase --continue or --abort
     """
 
     def test_skill_file_includes_per_file_conflict_context(self):
-        """The pl-local-pull skill file provides per-file commit context."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
             content = f.read()
-        # Per-file context using git log for each side
         self.assertIn("git log HEAD..main --oneline --", content)
         self.assertIn("git log main..ORIG_HEAD --oneline --", content)
 
-    def test_skill_file_includes_role_scoped_hints(self):
-        """The pl-local-pull skill file provides role-scoped resolution hints."""
+    def test_skill_file_includes_resolution_hints(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
@@ -615,7 +406,6 @@ class TestPlLocalPullReportsPerFileConflictContext(unittest.TestCase):
         self.assertIn("Resolution hint", content)
 
     def test_skill_file_includes_rebase_continue_abort(self):
-        """The pl-local-pull skill file includes rebase continue/abort instructions."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-pull.md")
         with open(skill_path) as f:
@@ -637,7 +427,6 @@ class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
     """
 
     def test_skill_file_blocks_diverged_before_checklist(self):
-        """The pl-local-push skill file blocks DIVERGED state before checklist."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-push.md")
         with open(skill_path) as f:
@@ -646,7 +435,6 @@ class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
         self.assertIn("/pl-local-pull", content)
 
     def test_skill_file_diverged_shows_incoming_commits(self):
-        """The pl-local-push skill file lists incoming main commits on DIVERGED."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-push.md")
         with open(skill_path) as f:
@@ -654,18 +442,78 @@ class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
         self.assertIn("git log HEAD..main --oneline", content)
 
     def test_skill_file_diverged_does_not_proceed_to_checklist(self):
-        """The pl-local-push skill file stops before checklist on DIVERGED."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
                                   "pl-local-push.md")
         with open(skill_path) as f:
             content = f.read()
-        # The DIVERGED block must come before the checklist section
         diverged_pos = content.find("DIVERGED")
         checklist_pos = content.find("Run Handoff Checklist")
         self.assertGreater(checklist_pos, 0)
         self.assertGreater(diverged_pos, 0)
         self.assertLess(diverged_pos, checklist_pos,
                         "DIVERGED block must appear before the handoff checklist")
+
+
+class TestPlLocalPullReSyncsCommandFilesAfterRebase(unittest.TestCase):
+    """Scenario: pl-local-pull Re-Syncs Command Files After Rebase
+
+    Given the current worktree is clean
+    And main has 2 new commits not in the worktree branch
+    And .claude/commands/ in the worktree contains extra files restored by rebase
+    When /pl-local-pull is invoked
+    Then git rebase main succeeds
+    And extra command files are deleted from the worktree
+    And pl-local-push.md and pl-local-pull.md still exist
+    """
+
+    def test_skill_file_instructs_command_resync(self):
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-local-pull.md")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("skip-worktree", content)
+        self.assertIn("pl-local-push.md", content)
+        self.assertIn("pl-local-pull.md", content)
+
+
+class TestPostRebaseSyncLeavesWorkingTreeClean(unittest.TestCase):
+    """Scenario: Post-Rebase Sync Leaves Working Tree Clean
+
+    Given the current worktree is clean
+    And main has 1 new commit not in the worktree branch
+    And rebase restores extra command files to .claude/commands/
+    When /pl-local-pull is invoked
+    Then git rebase main succeeds
+    And git status --porcelain reports no file changes
+    """
+
+    def test_skill_file_uses_skip_worktree_for_clean_status(self):
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-local-pull.md")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("git update-index --skip-worktree", content)
+
+
+class TestPlLocalPullNoFailWhenExtraFilesAbsent(unittest.TestCase):
+    """Scenario: pl-local-pull Does Not Fail When Extra Command Files Are Already Absent
+
+    Given the current worktree is clean
+    And main has 2 new commits not in the worktree branch
+    And .claude/commands/ contains only pl-local-push.md and pl-local-pull.md
+    When /pl-local-pull is invoked
+    Then git rebase main succeeds
+    And no error is raised
+    """
+
+    def test_skill_file_handles_absent_extra_files_gracefully(self):
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-local-pull.md")
+        with open(skill_path) as f:
+            content = f.read()
+        # The command re-sync section should not fail when files don't exist
+        self.assertIn("pl-local-push.md", content)
+        self.assertIn("pl-local-pull.md", content)
 
 
 def run_tests():

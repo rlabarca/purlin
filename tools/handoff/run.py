@@ -1,7 +1,8 @@
 """Handoff checklist runner.
 
-Resolves and evaluates handoff steps for a specific role.
+Resolves and evaluates handoff steps for the current worktree.
 Uses tools/release/resolve.py with checklist_type="handoff".
+No role filtering — all steps apply to all agents.
 """
 import argparse
 import json
@@ -27,18 +28,6 @@ else:
         if os.path.exists(os.path.join(candidate, '.purlin')):
             PROJECT_ROOT = candidate
             break
-
-
-def filter_by_role(steps, role):
-    """Filter steps to only those applicable to the given role."""
-    result = []
-    for step in steps:
-        roles = step.get("roles")
-        if roles is None:
-            continue
-        if "all" in roles or role in roles:
-            result.append(step)
-    return result
 
 
 def evaluate_step(step, project_root):
@@ -67,28 +56,8 @@ def evaluate_step(step, project_root):
         return "FAIL", str(e)
 
 
-def infer_role_from_branch(project_root):
-    """Infer the agent role from the current git branch name."""
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, cwd=project_root
-        )
-        branch = result.stdout.strip()
-    except Exception:
-        return None
-
-    if branch.startswith("spec/"):
-        return "architect"
-    elif branch.startswith("build/"):
-        return "builder"
-    elif branch.startswith("qa/"):
-        return "qa"
-    return None
-
-
-def run_handoff(role, project_root):
-    """Run the handoff checklist for a role. Returns exit code."""
+def run_handoff(project_root):
+    """Run the handoff checklist. Returns exit code."""
     from resolve import resolve_checklist
 
     # Compute explicit paths relative to the given project root
@@ -97,7 +66,7 @@ def run_handoff(role, project_root):
     local_path = os.path.join(
         project_root, ".purlin", "handoff", "local_steps.json")
     config_path = os.path.join(
-        project_root, ".purlin", "handoff", role, "config.json")
+        project_root, ".purlin", "handoff", "config.json")
     if not os.path.exists(config_path):
         config_path = None
 
@@ -113,14 +82,13 @@ def run_handoff(role, project_root):
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
 
-    # Filter by role
-    steps = filter_by_role(resolved, role)
+    steps = resolved
 
     if not steps:
-        print(f"No handoff steps found for role: {role}")
+        print("No handoff steps found.")
         return 0
 
-    print(f"Handoff checklist for {role} ({len(steps)} steps):\n")
+    print(f"Handoff checklist ({len(steps)} steps):\n")
 
     # Evaluate each step
     results = []
@@ -156,22 +124,12 @@ def run_handoff(role, project_root):
 
 def main():
     parser = argparse.ArgumentParser(description="Handoff checklist runner")
-    parser.add_argument("--role", choices=["architect", "builder", "qa"],
-                        default=None)
     parser.add_argument("--project-root", default=None)
     args = parser.parse_args()
 
     project_root = args.project_root or PROJECT_ROOT
 
-    role = args.role
-    if role is None:
-        role = infer_role_from_branch(project_root)
-        if role is None:
-            print("Error: Cannot infer role from branch name. "
-                  "Use --role <architect|builder|qa>", file=sys.stderr)
-            sys.exit(1)
-
-    sys.exit(run_handoff(role, project_root))
+    sys.exit(run_handoff(project_root))
 
 
 if __name__ == "__main__":

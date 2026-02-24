@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Handoff checklist CLI entry point.
-# Usage: tools/handoff/run.sh --role <architect|builder|qa>
-# If --role is omitted, the role is inferred from the current branch name.
+# Usage: tools/handoff/run.sh
+# All steps apply to all agents — no role filtering.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
