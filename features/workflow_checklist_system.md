@@ -267,3 +267,13 @@ The handoff checklist system reuses the resolver infrastructure from the release
 - **DIVERGED early block in `/pl-work-push`:** Step 3b now checks both N (behind) and M (ahead). When both are nonzero (DIVERGED), push is blocked before the checklist runs — there is no safe auto-resolution. The agent must run `/pl-work-pull` to rebase and resolve any conflicts manually, then retry `/pl-work-push`.
 - **Per-file conflict context:** When `/pl-work-pull` hits a rebase conflict, it shows commits from each side that touched the conflicting file (using `git log HEAD..main -- <file>` and `git log main..ORIG_HEAD -- <file>`). This replaces the previous "list filenames only" approach and gives the agent enough context to resolve without external investigation.
 - **PROJECT_ROOT detection:** `/pl-work-push` uses `PURLIN_PROJECT_ROOT` if set, falls back to `git worktree list --porcelain` to locate the main checkout path.
+
+## User Testing Discoveries
+
+### [DISCOVERY] Post-rebase .claude/commands/ deletion creates dirty state that blocks subsequent git operations (Discovered: 2026-02-24)
+- **Scenario:** pl-work-pull Post-Rebase Command Cleanup (Section 2.6 step 5)
+- **Observed Behavior:** After `/pl-work-pull` deletes `.claude/commands/` from the worktree, `git status --porcelain` reports 21 ` D` (unstaged deletion) entries — one per command file. This dirty state causes the next `/pl-work-push` dirty check to abort with "Commit or stash changes before pushing." Restoring the files with `git checkout -- .claude/commands/` is required to unblock the push.
+- **Expected Behavior:** The post-rebase cleanup should leave the working tree in a clean state for subsequent git operations. Bare deletion of tracked files creates persistent dirty state.
+- **Recommended Fix:** After deleting `.claude/commands/`, run `git update-index --skip-worktree` on each deleted file. This tells git to ignore the absence in worktree checks — the deletion is invisible to `git status`, `git rebase`, and `git merge --ff-only`, while the files remain absent on disk (no duplicate command completions). The `--skip-worktree` flag survives across sessions and does not affect what is committed to the branch.
+- **Action Required:** Builder
+- **Status:** OPEN
