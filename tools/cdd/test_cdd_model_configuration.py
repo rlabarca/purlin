@@ -269,6 +269,14 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'architect': {
                 'model': 'claude-opus-4-6',
                 'effort': 'high', 'bypass_permissions': False
+            },
+            'builder': {
+                'model': 'claude-opus-4-6',
+                'effort': 'high', 'bypass_permissions': True
+            },
+            'qa': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': False
             }
         })
         handler.do_POST()
@@ -282,6 +290,33 @@ class TestConfigModelsEndpoint(unittest.TestCase):
 
         # Cleanup
         os.remove('/tmp/test_cdd_model_cfg.json')
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_cdd_model_cfg_partial.json')
+    def test_partial_payload_rejected(self):
+        """Completeness check: payload missing roles returns 400."""
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6', 'label': 'Opus 4.6',
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_cdd_model_cfg_partial.json', 'w') as f:
+            json.dump(config, f)
+
+        handler, _ = self._make_handler({
+            'architect': {
+                'model': 'claude-opus-4-6',
+                'effort': 'high', 'bypass_permissions': False
+            }
+        })
+        handler.do_POST()
+        handler.send_response.assert_called_with(400)
+        body = handler.wfile.getvalue()
+        data = json.loads(body)
+        self.assertIn('all three roles', data.get('error', ''))
+
+        os.remove('/tmp/test_cdd_model_cfg_partial.json')
 
     @patch('serve.CONFIG_PATH', '/tmp/test_cdd_model_cfg2.json')
     def test_invalid_effort_returns_400(self):
@@ -299,6 +334,14 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'architect': {
                 'model': 'claude-opus-4-6',
                 'effort': 'extreme', 'bypass_permissions': False
+            },
+            'builder': {
+                'model': 'claude-opus-4-6',
+                'effort': 'high', 'bypass_permissions': True
+            },
+            'qa': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': False
             }
         })
         handler.do_POST()
@@ -322,6 +365,14 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'architect': {
                 'model': 'nonexistent-model',
                 'effort': 'high', 'bypass_permissions': False
+            },
+            'builder': {
+                'model': 'claude-opus-4-6',
+                'effort': 'high', 'bypass_permissions': True
+            },
+            'qa': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': False
             }
         })
         handler.do_POST()

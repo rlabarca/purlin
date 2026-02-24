@@ -3456,6 +3456,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'agents must be an object'})
             return
 
+        # Completeness check: all three roles must be present
+        required_roles = {'architect', 'builder', 'qa'}
+        if not required_roles.issubset(agents_data.keys()):
+            self._send_json(400, {'error': 'agents payload must include all three roles: architect, builder, qa'})
+            return
+
         # Load current config
         current = {}
         if os.path.exists(CONFIG_PATH):
@@ -3495,8 +3501,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': '; '.join(errors)})
             return
 
-        # Atomic write
-        current['agents'] = agents_data
+        # Merge semantics: merge incoming roles into existing agents, preserving absent roles
+        existing_agents = current.get('agents', {})
+        existing_agents.update(agents_data)
+        current['agents'] = existing_agents
 
         tmp = CONFIG_PATH + '.tmp'
         try:
@@ -3519,9 +3527,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 wt_config_path = os.path.join(
                     PROJECT_ROOT, wt['path'], '.purlin', 'config.json')
                 try:
+                    # Merge semantics: read worktree config, merge agents, write back
+                    wt_current = dict(current)
+                    if os.path.exists(wt_config_path):
+                        try:
+                            with open(wt_config_path, 'r') as f:
+                                wt_current = json.load(f)
+                            wt_existing = wt_current.get('agents', {})
+                            wt_existing.update(current['agents'])
+                            wt_current['agents'] = wt_existing
+                        except (json.JSONDecodeError, IOError, OSError):
+                            wt_current = dict(current)
                     wt_tmp = wt_config_path + '.tmp'
                     with open(wt_tmp, 'w') as f:
-                        json.dump(current, f, indent=4)
+                        json.dump(wt_current, f, indent=4)
                     os.replace(wt_tmp, wt_config_path)
                 except Exception as e:
                     warnings.append(
