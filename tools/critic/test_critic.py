@@ -1174,23 +1174,76 @@ class TestImplementationGatePolicyFileExempt(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def test_exempt_gate_returns_pass(self):
-        gate = _policy_exempt_implementation_gate()
+    def test_exempt_gate_returns_pass_no_decisions(self):
+        gate = _policy_exempt_implementation_gate(
+            POLICY_FILE_CONTENT, self.policy_path)
         self.assertEqual(gate['status'], 'PASS')
 
-    def test_exempt_gate_all_checks_pass(self):
-        gate = _policy_exempt_implementation_gate()
+    def test_exempt_gate_non_decision_checks_pass(self):
+        gate = _policy_exempt_implementation_gate(
+            POLICY_FILE_CONTENT, self.policy_path)
         for check_name, check_result in gate['checks'].items():
+            if check_name == 'builder_decisions':
+                continue  # builder_decisions is audited, not exempt
             self.assertEqual(
                 check_result['status'], 'PASS',
                 f'{check_name} should be PASS for anchor node')
 
-    def test_exempt_gate_detail_says_exempt(self):
-        gate = _policy_exempt_implementation_gate()
+    def test_exempt_gate_non_decision_detail_says_exempt(self):
+        gate = _policy_exempt_implementation_gate(
+            POLICY_FILE_CONTENT, self.policy_path)
         for check_name, check_result in gate['checks'].items():
+            if check_name == 'builder_decisions':
+                continue  # builder_decisions is audited, not exempt
             self.assertIn(
                 'N/A - anchor node exempt', check_result['detail'],
                 f'{check_name} detail should say exempt')
+
+    def test_exempt_gate_builder_decisions_audited(self):
+        """Builder Decision Audit runs on anchor nodes (Section 2.3)."""
+        gate = _policy_exempt_implementation_gate(
+            POLICY_FILE_CONTENT, self.policy_path)
+        bd = gate['checks']['builder_decisions']
+        # No decision tags in POLICY_FILE_CONTENT → PASS with zero counts
+        self.assertEqual(bd['status'], 'PASS')
+        self.assertEqual(bd['summary']['DEVIATION'], 0)
+        self.assertEqual(bd['summary']['DISCOVERY'], 0)
+
+    def test_exempt_gate_detects_deviation_in_anchor_node(self):
+        """Anchor node with [DEVIATION] entry → FAIL builder_decisions."""
+        content = POLICY_FILE_CONTENT.rstrip() + \
+            '\n* **[DEVIATION]** Test deviation (Severity: HIGH)\n'
+        with open(self.policy_path, 'w') as f:
+            f.write(content)
+        gate = _policy_exempt_implementation_gate(content, self.policy_path)
+        bd = gate['checks']['builder_decisions']
+        self.assertEqual(bd['status'], 'FAIL')
+        self.assertEqual(bd['summary']['DEVIATION'], 1)
+        # Overall gate FAIL when builder_decisions FAIL
+        self.assertEqual(gate['status'], 'FAIL')
+
+    def test_exempt_gate_detects_discovery_in_anchor_node(self):
+        """Anchor node with [DISCOVERY] entry → FAIL builder_decisions."""
+        content = POLICY_FILE_CONTENT.rstrip() + \
+            '\n* **[DISCOVERY]** Found unstated req (Severity: HIGH)\n'
+        with open(self.policy_path, 'w') as f:
+            f.write(content)
+        gate = _policy_exempt_implementation_gate(content, self.policy_path)
+        bd = gate['checks']['builder_decisions']
+        self.assertEqual(bd['status'], 'FAIL')
+        self.assertEqual(bd['summary']['DISCOVERY'], 1)
+
+    def test_exempt_gate_autonomous_returns_warn(self):
+        """Anchor node with [AUTONOMOUS] entry → WARN builder_decisions."""
+        content = POLICY_FILE_CONTENT.rstrip() + \
+            '\n* **[AUTONOMOUS]** Gap fill (Severity: WARN)\n'
+        with open(self.policy_path, 'w') as f:
+            f.write(content)
+        gate = _policy_exempt_implementation_gate(content, self.policy_path)
+        bd = gate['checks']['builder_decisions']
+        self.assertEqual(bd['status'], 'WARN')
+        # Overall gate still PASS (WARN doesn't escalate for anchor nodes)
+        self.assertEqual(gate['status'], 'PASS')
 
     def test_generate_critic_json_uses_exempt_for_policy(self):
         import critic

@@ -1522,11 +1522,30 @@ def compute_role_status(feature_result, cdd_status=None):
 # Output generation
 # ===================================================================
 
-def _policy_exempt_implementation_gate():
-    """Return an Implementation Gate result for anchor nodes (all PASS)."""
+def _policy_exempt_implementation_gate(content=None, feature_path=None):
+    """Return an Implementation Gate result for anchor nodes.
+
+    Most checks are exempt (traceability, policy adherence, structural
+    completeness, logic drift). However, the Builder Decision Audit MUST
+    scan anchor node Implementation Notes for [DEVIATION], [DISCOVERY],
+    etc. tags per policy_critic.md Section 2.3.
+    """
     exempt = 'N/A - anchor node exempt'
+
+    # Builder Decision Audit: scan anchor node impl notes (not exempt)
+    if content and feature_path:
+        impl_notes = resolve_impl_notes(content, feature_path)
+    elif content:
+        impl_notes = get_implementation_notes(content)
+    else:
+        impl_notes = ''
+    builder_decisions = check_builder_decisions(impl_notes)
+
+    # Overall status driven only by builder_decisions (other checks exempt)
+    overall = builder_decisions['status'] if builder_decisions['status'] == 'FAIL' else 'PASS'
+
     return {
-        'status': 'PASS',
+        'status': overall,
         'checks': {
             'traceability': {
                 'status': 'PASS', 'coverage': 1.0, 'detail': exempt},
@@ -1534,11 +1553,7 @@ def _policy_exempt_implementation_gate():
                 'status': 'PASS', 'violations': [], 'detail': exempt},
             'structural_completeness': {
                 'status': 'PASS', 'detail': exempt},
-            'builder_decisions': {
-                'status': 'PASS',
-                'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
-                            'DEVIATION': 0, 'DISCOVERY': 0},
-                'detail': exempt},
+            'builder_decisions': builder_decisions,
             'logic_drift': {
                 'status': 'PASS', 'pairs': [], 'detail': exempt},
         },
@@ -1559,7 +1574,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     spec_gate = run_spec_gate(content, filename, FEATURES_DIR)
 
     if is_policy_file(filename):
-        impl_gate = _policy_exempt_implementation_gate()
+        impl_gate = _policy_exempt_implementation_gate(content, feature_path)
     else:
         impl_gate = run_implementation_gate(content, feature_stem, filename, feature_path=feature_path)
 
