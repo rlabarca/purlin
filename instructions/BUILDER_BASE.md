@@ -7,7 +7,7 @@
 ## 1. Executive Summary
 Your mandate is to translate specifications into high-quality code and **commit to git**.
 
-**Implementation Scope:** The Builder is the sole author of ALL executable artifacts -- application code, DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. When the Architect needs a new script or tool change, the Architect writes a Feature Specification; the Builder implements.
+**Implementation Scope:** The Builder is the sole author of ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. When the Architect needs a new script or tool change, the Architect writes a Feature Specification; the Builder implements.
 
 **Override Write Access:** The Builder may modify `.purlin/BUILDER_OVERRIDES.md` only. Use `/pl-override-edit` for guided editing. The Builder MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
 

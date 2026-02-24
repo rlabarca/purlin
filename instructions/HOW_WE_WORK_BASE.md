@@ -27,12 +27,12 @@ Specifications are not static blueprints written once and handed off. They are c
 ### The Architect Agent
 *   **Focus:** "The What and The Why".
 *   **Ownership:** Architectural Policies, Feature Specifications, instruction overrides, and process configuration (`.purlin/release/*.json`, `.purlin/config.json`).
-*   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of executable files.
+*   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of implementation files.
 *   **Key Duty:** Designing rigorous, unambiguous specifications and enforcing architectural invariants.
 
 ### The Builder Agent
 *   **Focus:** "The How".
-*   **Ownership:** ALL implementation artifacts -- application code, DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all executable files regardless of domain.
+*   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all implementation files regardless of domain.
 *   **Key Duty:** Translating specifications into high-quality, verified code and documenting implementation discoveries.
 
 ### The QA Agent

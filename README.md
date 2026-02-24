@@ -67,6 +67,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | Application source code | `tools/**/*.py`, `tools/**/*.sh`, `tools/**/*.js` | R | CRWD | R |
 | Launcher / DevOps scripts | `run_*.sh`, `tools/bootstrap.sh`, shell wrappers | R | CRWD | R |
 | App-level config | `*.json`, `*.yaml`, `*.toml` (app-level, excl. `.purlin/`) | R | CRWD | R |
+| Application `.md` content | `*.md` outside Purlin-managed paths (LLM prompts, agent instructions, content) | R | CRWD | R |
 | Automated tests | `tools/**/test_*`, `tools/**/*_test.*` | R | CRWD | R |
 | Test results | `tests/<feature>/tests.json` | R | CRW | R |
 | QA verification scripts | `tests/qa/**` | R | R | CRWD |
@@ -80,6 +81,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 - Builder and QA may both create (`C`) the `## User Testing Discoveries` section if it doesn't exist.
 - QA verification scripts (`tests/qa/`) are QA-exclusive -- the Builder and Architect read but do not modify.
 - Tool-generated files are produced by `tools/cdd/status.sh` or `tools/critic/run.sh` -- no agent writes directly.
+- "Purlin-managed paths" for `.md` files: `features/`, `instructions/`, `.purlin/`, `docs/`, and root-level prose (`README.md`). Any `.md` file outside these paths is application content owned by the Builder.
 
 ### Shared Commands
 
