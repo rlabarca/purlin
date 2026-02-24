@@ -32,7 +32,7 @@ Specifications are not static blueprints written once and handed off. They are c
 
 ### The Builder Agent
 *   **Focus:** "The How".
-*   **Ownership:** ALL implementation artifacts -- application code, DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), configuration files, and automated tests. The Builder is the sole author of all executable files regardless of domain.
+*   **Ownership:** ALL implementation artifacts -- application code, DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all executable files regardless of domain.
 *   **Key Duty:** Translating specifications into high-quality, verified code and documenting implementation discoveries.
 
 ### The QA Agent
@@ -45,6 +45,9 @@ Specifications are not static blueprints written once and handed off. They are c
 ### The Human Executive
 *   **Focus:** "The Intent and The Review".
 *   **Duty:** Providing high-level goals, performing final verification (e.g., Hardware-in-the-Loop), and managing the Agentic Evolution.
+
+### Commit Discipline (All Roles)
+Agents MUST commit immediately after completing each discrete change -- not at session end, not in batches. Commits are cheap, fully reversible, and provide save points the user can inspect or revert. Uncommitted work is invisible and unrecoverable. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
 1.  **Design:** Architect creates/refines a feature file in `features/`.
