@@ -206,14 +206,14 @@ class TestUnknownRoleForNonStandardBranch(unittest.TestCase):
 
 
 class TestModifiedColumnCategorization(unittest.TestCase):
-    """Scenario: Modified Column Categorizes Uncommitted Files by Type.
+    """Scenario: Modified Column Categorizes Files Changed Against Main by Type.
 
-    Given a worktree has two modified files under features/
-    And one modified file outside features/ and tests/
+    Given a worktree on a branch AHEAD of main with commits that modified
+    two files under features/ and one file outside features/ and tests/
     Then the modified field has specs=2, tests=0, other=1.
     """
 
-    @patch('serve._compute_main_diff', return_value='SAME')
+    @patch('serve._compute_main_diff', return_value='AHEAD')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_modified_categorized(self, mock_detect, mock_state, mock_diff):
@@ -225,7 +225,7 @@ class TestModifiedColumnCategorization(unittest.TestCase):
         mock_state.return_value = {
             'branch': 'spec/collab',
             'modified': {'specs': 2, 'tests': 0, 'other': 1},
-            'last_commit': 'abc spec', 'commits_ahead': 0,
+            'last_commit': 'abc spec', 'commits_ahead': 2,
         }
         result = get_collab_worktrees()
         self.assertEqual(len(result), 1)
@@ -236,16 +236,16 @@ class TestModifiedColumnCategorization(unittest.TestCase):
 
 
 class TestWorktreeStateFileCategories(unittest.TestCase):
-    """Test _worktree_state() parses git status --porcelain into categories."""
+    """Test _worktree_state() parses git diff main..<branch> --name-only into categories."""
 
     def _mock_subprocess(self, responses):
         """Create mock for subprocess.run returning CompletedProcess-like objects.
 
         _worktree_state calls subprocess.run 4 times:
-          0: git rev-parse --abbrev-ref HEAD (via _wt_cmd, .strip())
-          1: git status --porcelain (direct, raw stdout)
-          2: git log -1 (via _wt_cmd, .strip())
-          3: git rev-list --count (via _wt_cmd, .strip())
+          0: git rev-parse --abbrev-ref HEAD (via _wt_cmd, cwd=wt_abs_path)
+          1: git diff main..<branch> --name-only (direct, cwd=PROJECT_ROOT)
+          2: git log -1 (via _wt_cmd, cwd=wt_abs_path)
+          3: git rev-list --count (via _wt_cmd, cwd=wt_abs_path)
         """
         call_count = [0]
 
@@ -264,7 +264,7 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
         """Files under features/ count as specs, tests/ as tests, rest as other."""
         mock_run.side_effect = self._mock_subprocess([
             'spec/collab',    # git rev-parse (via _wt_cmd)
-            ' M features/foo.md\n M features/bar.md\n M tools/thing.py\n',  # git status (raw)
+            'features/foo.md\nfeatures/bar.md\ntools/thing.py\n',  # git diff --name-only
             'abc1234 commit (5m ago)',  # git log (via _wt_cmd)
             '2',              # git rev-list (via _wt_cmd)
         ])
@@ -274,10 +274,10 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
 
     @patch('subprocess.run')
     def test_clean_worktree(self, mock_run):
-        """Clean worktree has all zeros in modified."""
+        """Branch at same position as main has all zeros in modified."""
         mock_run.side_effect = self._mock_subprocess([
             'build/collab',   # branch (via _wt_cmd)
-            '',               # git status (raw, clean)
+            '',               # git diff --name-only (no changes vs main)
             'def5678 commit (3m ago)',  # git log (via _wt_cmd)
             '0',              # commits ahead (via _wt_cmd)
         ])
@@ -289,7 +289,7 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
         """Files under tests/ count in the tests category."""
         mock_run.side_effect = self._mock_subprocess([
             'qa/collab',     # branch (via _wt_cmd)
-            ' M tests/foo/tests.json\nA  tests/bar/critic.json\n',  # git status (raw)
+            'tests/foo/tests.json\ntests/bar/critic.json\n',  # git diff --name-only
             'ghi9012 commit (1m ago)',  # git log (via _wt_cmd)
             '1',             # commits ahead (via _wt_cmd)
         ])
@@ -330,14 +330,19 @@ class TestMainDiffBehind(unittest.TestCase):
     """Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits.
 
     Given main has commits that are not in spec/collab
+    And spec/collab has no commits not in main
     Then the worktree entry has main_diff "BEHIND".
     """
 
     @patch('subprocess.run')
     def test_behind_when_main_has_extra_commits(self, mock_run):
-        """_compute_main_diff returns BEHIND when git log shows output."""
-        mock_run.return_value = MagicMock(
-            stdout='abc1234 some commit on main\n', returncode=0)
+        """_compute_main_diff returns BEHIND when only main has moved."""
+        # Query 1 (branch..main): non-empty — behind
+        # Query 2 (main..branch): empty — not ahead
+        mock_run.side_effect = [
+            MagicMock(stdout='abc1234 some commit on main\n', returncode=0),
+            MagicMock(stdout='', returncode=0),
+        ]
         result = _compute_main_diff('spec/collab')
         self.assertEqual(result, 'BEHIND')
 
@@ -423,23 +428,25 @@ class TestMainDiffAhead(unittest.TestCase):
         self.assertEqual(result[0]['main_diff'], 'AHEAD')
 
 
-class TestMainDiffBehindPrecedence(unittest.TestCase):
-    """Scenario: Main Diff BEHIND Takes Precedence Over AHEAD For Diverged Branch.
+class TestMainDiffDiverged(unittest.TestCase):
+    """Scenario: Main Diff DIVERGED When Both Main And Branch Have Commits Beyond Common Ancestor.
 
     Given build/collab has commits not in main AND main has commits not in build/collab
-    Then the worktree entry has main_diff "BEHIND".
+    Then the worktree entry has main_diff "DIVERGED".
     """
 
     @patch('subprocess.run')
-    def test_behind_takes_precedence_over_ahead(self, mock_run):
-        """_compute_main_diff returns BEHIND for a diverged branch."""
-        # First call (branch..main): non-empty — behind. Returns immediately.
-        mock_run.return_value = MagicMock(
-            stdout='abc1234 commit on main\n', returncode=0)
+    def test_diverged_when_both_have_commits(self, mock_run):
+        """_compute_main_diff returns DIVERGED when both sides have moved."""
+        # Query 1 (branch..main): non-empty — behind
+        # Query 2 (main..branch): non-empty — ahead
+        mock_run.side_effect = [
+            MagicMock(stdout='abc1234 commit on main\n', returncode=0),
+            MagicMock(stdout='def5678 commit on branch\n', returncode=0),
+        ]
         result = _compute_main_diff('build/collab')
-        self.assertEqual(result, 'BEHIND')
-        # Only one subprocess call made (returns on first query)
-        self.assertEqual(mock_run.call_count, 1)
+        self.assertEqual(result, 'DIVERGED')
+        self.assertEqual(mock_run.call_count, 2)
 
 
 class TestNewWorktreeConfigInit(unittest.TestCase):
@@ -653,7 +660,7 @@ class TestWorktreeStatePurlinExclusion(unittest.TestCase):
         """Files under .purlin/ do not count in specs, tests, or other."""
         mock_run.side_effect = self._mock_subprocess([
             'spec/collab',    # git rev-parse
-            ' M .purlin/config.json\n M features/foo.md\n M tools/bar.py\n',
+            '.purlin/config.json\nfeatures/foo.md\ntools/bar.py\n',  # git diff --name-only
             'abc1234 commit (5m ago)',
             '1',
         ])
@@ -662,10 +669,10 @@ class TestWorktreeStatePurlinExclusion(unittest.TestCase):
 
     @patch('subprocess.run')
     def test_purlin_only_changes_appear_clean(self, mock_run):
-        """Worktree with only .purlin/ changes has all-zero modified counts."""
+        """Branch with only .purlin/ changes has all-zero modified counts."""
         mock_run.side_effect = self._mock_subprocess([
             'build/collab',
-            ' M .purlin/config.json\n M .purlin/cache/status.json\n',
+            '.purlin/config.json\n.purlin/cache/status.json\n',  # git diff --name-only
             'def5678 commit (3m ago)',
             '0',
         ])
@@ -704,20 +711,30 @@ class TestRoleDisplayLabel(unittest.TestCase):
 
 
 class TestMainDiffBadgeRendering(unittest.TestCase):
-    """Main Diff cell renders correct badge styling per Section 2.3/4."""
+    """Main Diff cell renders correct badge styling per Visual Spec Section 4."""
 
-    def test_ahead_badge_green(self):
-        """AHEAD renders with st-good (green) badge class."""
+    def test_same_badge_green(self):
+        """SAME renders with st-good (green) badge class."""
         worktrees = [{
-            'role': 'architect', 'branch': 'spec/collab', 'main_diff': 'AHEAD',
+            'role': 'qa', 'branch': 'qa/collab', 'main_diff': 'SAME',
             'modified': {'specs': 0, 'tests': 0, 'other': 0},
         }]
         html = _collab_section_html(worktrees)
         self.assertIn('class="st-good"', html)
+        self.assertIn('SAME', html)
+
+    def test_ahead_badge_yellow(self):
+        """AHEAD renders with st-todo (yellow) badge class."""
+        worktrees = [{
+            'role': 'architect', 'branch': 'spec/collab', 'main_diff': 'AHEAD',
+            'modified': {'specs': 2, 'tests': 0, 'other': 0},
+        }]
+        html = _collab_section_html(worktrees)
+        self.assertIn('class="st-todo"', html)
         self.assertIn('AHEAD', html)
 
     def test_behind_badge_yellow(self):
-        """BEHIND renders with st-todo (yellow/warning) badge class."""
+        """BEHIND renders with st-todo (yellow) badge class."""
         worktrees = [{
             'role': 'builder', 'branch': 'build/collab', 'main_diff': 'BEHIND',
             'modified': {'specs': 0, 'tests': 0, 'other': 0},
@@ -726,15 +743,15 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
         self.assertIn('class="st-todo"', html)
         self.assertIn('BEHIND', html)
 
-    def test_same_badge_dim(self):
-        """SAME renders with dim (muted) styling."""
+    def test_diverged_badge_orange(self):
+        """DIVERGED renders with st-disputed (orange/warning) badge class."""
         worktrees = [{
-            'role': 'qa', 'branch': 'qa/collab', 'main_diff': 'SAME',
-            'modified': {'specs': 0, 'tests': 0, 'other': 0},
+            'role': 'builder', 'branch': 'build/collab', 'main_diff': 'DIVERGED',
+            'modified': {'specs': 1, 'tests': 0, 'other': 2},
         }]
         html = _collab_section_html(worktrees)
-        self.assertIn('class="dim"', html)
-        self.assertIn('SAME', html)
+        self.assertIn('class="st-disputed"', html)
+        self.assertIn('DIVERGED', html)
 
 
 class TestGetGitStatusPurlinExclusion(unittest.TestCase):

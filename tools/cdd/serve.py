@@ -678,37 +678,32 @@ def _worktree_state(wt_abs_path):
 
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
 
-    # Get raw status output (not stripped) — XY columns are position-dependent
-    # Note: do NOT use check=True here. If a concurrent git process holds a
-    # lock (e.g., a running agent session), git status can exit non-zero while
-    # still producing useful stdout. Swallowing the error would silently zero
-    # the Modified column count.
-    _status_result = subprocess.run(
-        "git status --porcelain", shell=True, capture_output=True,
-        text=True, cwd=wt_abs_path)
-    status_output = _status_result.stdout
-
-    # Categorize modified files by path prefix (Section 2.4 of cdd_collab_mode)
+    # Modified: files changed in this branch's commits relative to main
+    # Uses git diff main..<branch> --name-only from PROJECT_ROOT (not per-worktree)
+    # This tracks committed changes vs main, not uncommitted changes.
     specs = 0
     tests = 0
     other = 0
-    for line in status_output.splitlines():
-        if not line:
-            continue
-        # git status --porcelain format: XY <path> (columns 0-1 status, 3+ path)
-        file_path = line[3:] if len(line) > 3 else ''
-        # Handle renamed files: "R  old -> new" — use the new path
-        if ' -> ' in file_path:
-            file_path = file_path.split(' -> ')[-1]
-        # Exclude .purlin/ files entirely (Section 2.4)
-        if file_path.startswith('.purlin/'):
-            continue
-        if file_path.startswith('features/'):
-            specs += 1
-        elif file_path.startswith('tests/'):
-            tests += 1
-        else:
-            other += 1
+    try:
+        diff_result = subprocess.run(
+            f"git diff main..{branch} --name-only",
+            shell=True, capture_output=True, text=True,
+            cwd=PROJECT_ROOT)
+        for line in diff_result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            # Exclude .purlin/ files entirely (Section 2.4)
+            if line.startswith('.purlin/'):
+                continue
+            if line.startswith('features/'):
+                specs += 1
+            elif line.startswith('tests/'):
+                tests += 1
+            else:
+                other += 1
+    except Exception:
+        pass
 
     last_commit = _wt_cmd("git log -1 --format='%h %s (%cr)'")
     commits_ahead_str = _wt_cmd("git rev-list --count main..HEAD")
@@ -729,8 +724,8 @@ def _compute_main_diff(branch):
     """Determine sync state between a worktree branch and main.
 
     Runs two git log range queries from PROJECT_ROOT (not per-worktree)
-    to ensure 'main' resolves correctly. Returns "BEHIND", "AHEAD", or "SAME".
-    BEHIND takes precedence over AHEAD for diverged branches.
+    to ensure 'main' resolves correctly. Returns one of four states:
+    "DIVERGED", "BEHIND", "AHEAD", or "SAME".
     """
     try:
         # Query 1: commits on main not in branch (branch is behind)
@@ -738,18 +733,23 @@ def _compute_main_diff(branch):
             f"git log {branch}..main --oneline",
             shell=True, capture_output=True, text=True,
             check=True, cwd=PROJECT_ROOT)
-        if behind_result.stdout.strip():
-            return "BEHIND"
+        is_behind = bool(behind_result.stdout.strip())
 
         # Query 2: commits on branch not in main (branch is ahead)
         ahead_result = subprocess.run(
             f"git log main..{branch} --oneline",
             shell=True, capture_output=True, text=True,
             check=True, cwd=PROJECT_ROOT)
-        if ahead_result.stdout.strip():
-            return "AHEAD"
+        is_ahead = bool(ahead_result.stdout.strip())
 
-        return "SAME"
+        if is_behind and is_ahead:
+            return "DIVERGED"
+        elif is_behind:
+            return "BEHIND"
+        elif is_ahead:
+            return "AHEAD"
+        else:
+            return "SAME"
     except subprocess.CalledProcessError:
         return "SAME"
 
@@ -837,14 +837,16 @@ def _collab_section_html(worktrees):
                 'qa': 'QA', 'unknown': 'Unknown'}.get(role_raw, role_raw.capitalize())
         branch = wt.get('branch', '')
 
-        # Main Diff badge
+        # Main Diff badge (Section 2.7 Visual Design)
         main_diff = wt.get('main_diff', 'SAME')
-        if main_diff == 'BEHIND':
+        if main_diff == 'DIVERGED':
+            diff_html = '<span class="st-disputed">DIVERGED</span>'
+        elif main_diff == 'BEHIND':
             diff_html = '<span class="st-todo">BEHIND</span>'
         elif main_diff == 'AHEAD':
-            diff_html = '<span class="st-good">AHEAD</span>'
+            diff_html = '<span class="st-todo">AHEAD</span>'
         else:
-            diff_html = '<span class="dim">SAME</span>'
+            diff_html = '<span class="st-good">SAME</span>'
 
         # Modified column: empty when clean, categorized counts otherwise
         mod = wt.get('modified', {})
