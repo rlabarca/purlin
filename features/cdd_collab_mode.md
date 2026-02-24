@@ -356,10 +356,10 @@ Agent configs in `.purlin/config.json` apply to ALL local instances of each agen
 - [ ] Each active worktree appears as a row
 - [ ] Role column renders "QA" (all caps) for the qa role; "Architect", "Builder", "Unknown" for other roles
 - [ ] Role badges use same styling as status badges (no new colors needed)
-- [ ] Main Diff cell shows "AHEAD" (green or info badge) when the branch has commits not yet in main
-- [ ] Main Diff cell shows "SAME" (neutral/muted style) when branch and main are at identical positions
-- [ ] Main Diff cell shows "BEHIND" (warning badge, yellow/orange) when only main has moved (branch must pull before pushing)
-- [ ] Main Diff cell shows "DIVERGED" (danger badge, red or orange-red) when both main and branch have commits beyond their common ancestor
+- [ ] Main Diff cell shows "SAME" in `--purlin-status-good` (green) when branch and main are at identical positions
+- [ ] Main Diff cell shows "AHEAD" in `--purlin-status-todo` (yellow) when the branch has commits not yet in main
+- [ ] Main Diff cell shows "BEHIND" in `--purlin-status-todo` (yellow) when only main has moved (branch must pull before pushing)
+- [ ] Main Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange) when both main and branch have commits beyond their common ancestor
 - [ ] Modified cell is empty when main_diff is SAME or BEHIND
 - [ ] Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when main_diff is AHEAD or DIVERGED
 - [ ] Multiple categories appear in order: Specs, Tests, Code/Other; zero-count categories omitted
