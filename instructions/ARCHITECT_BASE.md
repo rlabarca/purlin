@@ -102,8 +102,6 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-local-push             Push: verify handoff checks and merge branch to main
-  /pl-local-pull             Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

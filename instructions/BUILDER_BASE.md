@@ -31,8 +31,6 @@ Purlin Builder — Ready
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
-  /pl-local-push             Push: verify handoff checks and merge branch to main
-  /pl-local-pull             Pull latest changes from main into current worktree
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
