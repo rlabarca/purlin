@@ -9,6 +9,10 @@
       "enabled": true
     },
     {
+      "id": "override_promotion_audit",
+      "enabled": false
+    },
+    {
       "id": "purlin.verify_dependency_integrity",
       "enabled": true
     },
@@ -21,11 +25,11 @@
       "enabled": true
     },
     {
-      "id": "critic_consistency_check",
+      "id": "purlin.doc_consistency_check",
       "enabled": true
     },
     {
-      "id": "purlin.doc_consistency_check",
+      "id": "critic_consistency_check",
       "enabled": true
     },
     {

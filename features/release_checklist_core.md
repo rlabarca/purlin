@@ -130,6 +130,14 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 
 The following steps are defined in Purlin's `.purlin/release/local_steps.json`. They are specific to the Purlin framework repository and do NOT appear in consumer project checklists.
 
+**`override_promotion_audit`**
+- Friendly Name: "Override-to-Base Promotion Audit"
+- Description: "Audits `.purlin/` override files for instructions that are framework-level rules and should be promoted to base instruction files. Complements `purlin.instruction_audit` (which checks for contradictions) by catching rules that accidentally landed in overrides when they belong in the base layer. Purlin-specific: only meaningful in the framework repository where base files are editable."
+- Code: null
+- Agent Instructions: Reads all four override/base pairs, extracts and numbers every discrete rule, classifies each as PROMOTE (universal contracts applicable to all consumer projects) or KEEP (Purlin-repo-specific), presents a numbered audit table, and interactively promotes user-selected rules to base files via `/pl-edit-base` with conflict checking. Post-promotion, runs `/pl-override-conflicts` on modified overrides to catch unmasked latent conflicts.
+
+This step is positioned in Purlin's `.purlin/release/config.json` immediately after `purlin.instruction_audit`, forming a complete "instruction layer health" block. It must run before the documentation consistency steps because promotions modify base files that those later steps cross-reference.
+
 **`doc_consistency_framework`**
 - Friendly Name: "Framework Documentation Consistency"
 - Description: "Verifies that Purlin instruction files are internally consistent with each other and with the framework's README. Purlin-specific: consumer projects do not own instruction files."
