@@ -22,7 +22,7 @@ CDD Isolated Agents Mode is activated automatically when the CDD server detects 
 - Isolated Agents Mode is active when: at least one worktree other than the main checkout is listed AND its path is under `.worktrees/` relative to the project root.
 - When Isolated Agents Mode is not active, the ISOLATED AGENTS section renders with no Sessions table rows; only the creation row is shown.
 - Detection is read-only. CDD never writes to worktree paths.
-- Detection governs the `/status.json` API fields (`isolations_active`, `worktrees`), the AGENTS heading annotation (Section 2.9), and config propagation behavior (Section 2.9). The ISOLATED AGENTS section is always rendered in the dashboard, regardless of detection state — see Section 2.3.
+- Detection governs the `/status.json` API fields (`isolations_active`, `worktrees`), the Agent Config heading annotation (Section 2.9), and config propagation behavior (Section 2.9). The ISOLATED AGENTS section is always rendered in the dashboard, regardless of detection state — see Section 2.3.
 
 ### 2.2 Isolation Name from Worktree Path
 
@@ -205,8 +205,8 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 
 Agent configs in `.purlin/config.json` apply to ALL local instances of each agent role — not just the agent launched from the project root. In Isolated Agents Mode, worktrees each hold their own committed copy of `.purlin/config.json`. Changes made via the dashboard must be propagated to every active isolation so that all agent sessions reflect the new settings.
 
-**AGENTS Section Heading:**
-- When Isolated Agents Mode is active, the AGENTS section heading displays the annotation "(applies across all local isolations)" appended to the title.
+**Agent Config Section Heading:**
+- When Isolated Agents Mode is active, the Agent Config section heading displays the annotation "(applies across all local isolations)" appended to the title.
 - Applied server-side in `generate_html()`. Since the dashboard refreshes every 5 seconds, the heading updates on every refresh cycle.
 
 **Save Propagation:**
@@ -492,8 +492,8 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] Kill dirty-state modal lists dirty files; Confirm button is disabled
 - [ ] Kill unsynced-state modal includes "I understand, the branch still exists" checkbox; Confirm disabled until checked
 - [ ] Kill clean-state modal shows a simple Confirm/Cancel dialog
-- [ ] AGENTS section heading reads "AGENTS (applies across all local isolations)" when isolated agents mode is active
-- [ ] AGENTS section heading reads "AGENTS" (no annotation) when isolated agents mode is inactive
+- [ ] Agent Config section heading reads "Agent Config (applies across all local isolations)" when isolated agents mode is active
+- [ ] Agent Config section heading reads "Agent Config" (no annotation) when isolated agents mode is inactive
 
 ---
 
@@ -517,7 +517,7 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - `main_diff`: computed by `_compute_main_diff(branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..main --oneline` (behind check). Query 2: `git log main..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
 - `modified`: computed via `git diff main...<branch> --name-only` (three-dot) run from PROJECT_ROOT. Three-dot diffs against common ancestor — always empty for SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED. May be all-zero for AHEAD/DIVERGED if commits are `--allow-empty`.
 - `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.json` files after the project root write. Failures collected as `warnings`.
-- AGENTS heading annotation applied server-side in `generate_html()`.
+- Agent Config heading annotation applied server-side in `generate_html()`.
 - Kill modal: dedicated overlay element (`kill-modal-overlay`) with 3-state content (dirty / unsynced / clean) and per-isolation name scoping. Populated by `showKillModal(name, dryRunResponse)`.
 
 **Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, WORKSPACE, ISOLATED AGENTS. WORKSPACE and ISOLATED AGENTS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED AGENTS is NOT a child of WORKSPACE. WORKSPACE expands to show Local (main) git status; ISOLATED AGENTS expands to show the creation row and Sessions table.

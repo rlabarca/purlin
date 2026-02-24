@@ -101,9 +101,9 @@ These scenarios require the running CDD Dashboard server and human interaction t
 
 ## Visual Specification
 
-### Screen: CDD Dashboard -- Agents Section
+### Screen: CDD Dashboard -- Agent Config Section
 - **Reference:** N/A
-- [ ] Agents section heading ("AGENTS") has a visible underline separator matching Active/Complete/Workspace headings
+- [ ] Agents section heading ("Agent Config") has a visible underline separator matching Active/Complete/Workspace headings
 - [ ] A visible vertical gap separates the bottom of the Workspace box from the top of the Agents section, matching the gap between Active/Complete sections and Workspace
 - [ ] Agents section has a chevron indicator (right=collapsed, down=expanded)
 - [ ] Collapsed state shows grouped model badge (e.g., "3x Sonnet 4.6" or "1x Opus 4.6 | 2x Sonnet 4.6")
