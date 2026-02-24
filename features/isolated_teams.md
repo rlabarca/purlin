@@ -307,7 +307,7 @@ The `create_isolation.sh` approach avoids modifying the main checkout during set
 
 ## User Testing Discoveries
 
-**[BUG] OPEN — Generated launcher scripts do not cd into worktree before exec** (Severity: HIGH)
+**[BUG] RESOLVED — Generated launcher scripts do not cd into worktree before exec** (Severity: HIGH)
 - **Observed:** Running `./run_<team>_architect.sh` from the project root does not print `/pl-local-push` and `/pl-local-pull` in the Architect startup command table. Running the same session by cd-ing into the worktree and running `./run_architect.sh` directly does show them.
 - **Root cause:** The generated scripts delegate via `exec` without first `cd`-ing into the worktree. Claude inherits the caller's CWD (project root, branch `main`), so `git rev-parse --abbrev-ref HEAD` returns `main` instead of `isolated/<name>`, causing the startup protocol to skip the isolation command table variant.
 - **Fix required (Builder):** In `tools/collab/create_isolation.sh`, change the generated script's delegation line from `exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"` to `cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"`. The `cd` occurs in the child subshell; `exec` replaces it — the user's interactive shell CWD is unaffected.

@@ -269,10 +269,10 @@ class TestLauncherScripts(IsolationTestBase):
             with open(script_path, "r") as f:
                 content = f.read()
 
-            # Must exec the worktree's role launcher
+            # Must cd into worktree then exec the role launcher
             self.assertIn(
-                f'exec "$WORKTREE_PATH/run_{role}.sh" "$@"', content,
-                f"run_ui_{role}.sh should exec the worktree's run_{role}.sh")
+                f'cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_{role}.sh" "$@"', content,
+                f"run_ui_{role}.sh should cd into worktree then exec run_{role}.sh")
             # Must reference the correct worktree path
             self.assertIn(
                 '.worktrees/ui', content,

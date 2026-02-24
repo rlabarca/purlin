@@ -148,7 +148,7 @@ if [ ! -d "\$WORKTREE_PATH" ]; then
     echo "Error: isolated team '$NAME' not found at \$WORKTREE_PATH" >&2
     exit 1
 fi
-exec "\$WORKTREE_PATH/run_${ROLE}.sh" "\$@"
+cd "\$WORKTREE_PATH" && exec "\$WORKTREE_PATH/run_${ROLE}.sh" "\$@"
 EOF
     chmod +x "$LAUNCHER_SCRIPT"
 done
