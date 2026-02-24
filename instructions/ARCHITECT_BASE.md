@@ -111,6 +111,7 @@ Purlin Architect — Ready
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-spec-gap-analysis      Full spec-code gap analysis (plan mode)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -129,6 +130,7 @@ Purlin Architect — Ready  [Isolated: <name>]
   /pl-release-step           Create, modify, or delete a local release step
   /pl-override-edit          Safely edit an override file
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-spec-gap-analysis      Full spec-code gap analysis (plan mode)
   /pl-local-push             Merge isolation branch to main
   /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -253,6 +255,7 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-release-step [create|modify|delete] [<step-id>]` — create, modify, or delete a local release step in `.purlin/release/local_steps.json`
 *   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
 *   `/pl-override-conflicts` — compare any override file against its base for contradictions
+*   `/pl-spec-gap-analysis` — scan all features and their prerequisite chains for spec-code gaps; produces a prioritized, numbered gap table in plan mode for human review before any remediation begins
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
 *   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
 *   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
