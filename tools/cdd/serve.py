@@ -1408,6 +1408,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   <!-- SW Map View -->
   <div class="view-panel" id="map-view">
     <div id="cy"></div>
+    <button id="recenter-btn" class="btn-critic" style="position:absolute;bottom:12px;right:12px;font-size:11px;padding:4px 10px;z-index:10" onclick="recenterGraph()">Recenter Graph</button>
   </div>
 </div>
 
@@ -1465,7 +1466,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 var currentView = 'status';
 var cy = null;
 var graphData = null;
-var isInitialLoad = true;
+var userModifiedView = false;
 var mapRefreshTimer = null;
 var statusRefreshTimer = null;
 var modalCache = {{}};
@@ -1520,9 +1521,10 @@ function switchView(view) {{
   window.location.hash = '#' + view;
 
   if (view === 'map') {{
+    userModifiedView = false;
     startMapRefresh();
     if (!graphData) loadGraph();
-    else if (cy) cy.resize();
+    else {{ renderGraph(); }}
   }} else {{
     stopMapRefresh();
   }}
@@ -2451,6 +2453,8 @@ function createCytoscape(elements, colors) {{
   return instance;
 }}
 
+var programmaticViewport = false;
+
 function renderGraph() {{
   if (!graphData || !graphData.features) return;
   var colors = getThemeColors();
@@ -2461,20 +2465,37 @@ function renderGraph() {{
     var pan = cy.pan();
     cy.destroy();
     cy = createCytoscape(elements, colors);
-    if (!isInitialLoad) {{
+    if (userModifiedView) {{
+      programmaticViewport = true;
       cy.zoom(zoom);
       cy.pan(pan);
+      programmaticViewport = false;
     }} else {{
+      programmaticViewport = true;
       cy.fit(undefined, 40);
-      isInitialLoad = false;
+      programmaticViewport = false;
     }}
   }} else {{
     cy = createCytoscape(elements, colors);
+    programmaticViewport = true;
     cy.fit(undefined, 40);
-    isInitialLoad = false;
+    programmaticViewport = false;
   }}
 
+  cy.on('viewport', function() {{
+    if (!programmaticViewport) userModifiedView = true;
+  }});
+
   applySearchFilter();
+}}
+
+function recenterGraph() {{
+  if (cy) {{
+    userModifiedView = false;
+    programmaticViewport = true;
+    cy.fit(undefined, 40);
+    programmaticViewport = false;
+  }}
 }}
 
 function loadGraph() {{
