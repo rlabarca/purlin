@@ -1,6 +1,6 @@
-Pull: merge latest commits from main into the current worktree branch.
+Pull: merge latest commits from main into the current isolation branch.
 
-**Owner: All roles** (architect, builder, qa)
+**Owner: All roles** (no role inference — generic pull)
 
 ## Steps
 
@@ -43,7 +43,7 @@ Determine and print the state label:
 Print: "Already up to date — nothing to pull or push." Stop.
 
 **AHEAD (N=0, M>0):**
-Print: "N commits ahead, nothing to pull. Run /pl-work-push when ready." Stop.
+Print: "M commits ahead, nothing to pull. Run /pl-local-push when ready." Stop.
 
 **BEHIND (N>0, M=0):**
 Run:
@@ -81,12 +81,12 @@ CONFLICT: <filepath>
   What your branch changed in this file:
     <git log main..ORIG_HEAD --oneline -- <filepath>>
 
-  Resolution hint: <role-scoped guidance>
+  Resolution hint: <path-scoped guidance>
 ```
 
-Role-scoped guidance (derived from file path prefix):
-- `features/` → "As Architect: your spec changes take priority. Accept yours, incorporate any non-conflicting additions from main."
-- `tests/` → "As Builder/QA: review both sides. Preserve all passing test cases."
+Path-scoped guidance (derived from file path prefix):
+- `features/` → "Architect priority: accept spec changes, incorporate non-conflicting additions from main."
+- `tests/` → "Preserve all passing test cases. Review both sides."
 - Everything else → "Review both sides carefully. If unsure, run `git rebase --abort` and ask for help."
 
 After printing all per-file conflict blocks, print:
@@ -95,9 +95,22 @@ Resolve each conflict, then run `git add <file>` and `git rebase --continue`.
 To abandon: `git rebase --abort` (restores your branch to its pre-rebase state).
 ```
 
+### 6. Post-Rebase Command Re-Sync
+
+**Only runs after a successful rebase (BEHIND or DIVERGED states). Skipped for SAME and AHEAD.**
+
+After rebase, the git checkout may restore command files that were intentionally removed from this worktree. Re-apply the isolation command file setup:
+
+a. List all files in `.claude/commands/`. For each file that is NOT `pl-local-push.md` and NOT `pl-local-pull.md`:
+   - Delete the file from disk: `rm .claude/commands/<file>`
+   - Mark the deletion as intentional: `git update-index --skip-worktree .claude/commands/<file>`
+
+b. Ensure `pl-local-push.md` and `pl-local-pull.md` are present in `.claude/commands/`. If missing, copy from the project root's `.claude/commands/`.
+
+c. After re-sync, verify `git status --porcelain` reports no file changes in `.claude/commands/`.
+
 ## Notes
 
 - This command pulls from the local `main` ref only — it does not fetch from remote. Run `git fetch origin main` first if you need remote changes.
-- Use this when another role has merged their branch to `main` and you want those changes before continuing your work.
-- Example: After Architect merges `spec/collab` to `main`, Builder runs `/pl-work-pull` to get the new specs before implementing.
-- `/pl-work-push` auto-rebases if the branch is BEHIND main (safe, no conflicts). If the branch is DIVERGED, `/pl-work-push` blocks and instructs you to run `/pl-work-pull` manually.
+- Use this when another agent has merged their branch to `main` and you want those changes before continuing your work.
+- `/pl-local-push` auto-rebases if the branch is BEHIND main (safe, no conflicts). If the branch is DIVERGED, `/pl-local-push` blocks and instructs you to run `/pl-local-pull` manually.
