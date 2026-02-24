@@ -35,10 +35,10 @@ Gather both counts before taking any action:
 
 ```
 # Commits on main that this branch is missing:
-git -C <PROJECT_ROOT> log HEAD..main --oneline
+git log HEAD..main --oneline
 
 # Commits on this branch not yet on main:
-git -C <PROJECT_ROOT> log main..HEAD --oneline
+git log main..HEAD --oneline
 ```
 
 Let N = number of commits behind, M = number of commits ahead.

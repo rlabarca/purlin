@@ -36,8 +36,8 @@ If any non-.purlin/ output remains, abort: "Commit or stash changes before pushi
 
 **b. Behind-main check:**
 ```
-git -C <PROJECT_ROOT> log HEAD..main --oneline
-git -C <PROJECT_ROOT> log main..HEAD --oneline
+git log HEAD..main --oneline
+git log main..HEAD --oneline
 ```
 Count N = commits behind main, M = commits ahead of main.
 
