@@ -46,7 +46,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Critical Constraint:** The script MUST NOT add `.purlin` to `.gitignore`.
 
 ### 2.8 Summary Output
-*   **Completion Message:** On success, print a summary listing all files and directories created, and next steps (e.g., "Run `./run_claude_architect.sh` to start the Architect agent").
+*   **Completion Message:** On success, print a summary listing all files and directories created, and next steps (e.g., "Run `./run_architect.sh` to start the Architect agent").
 
 ### 2.9 Tool Start Script Config Discovery (Submodule-Aware)
 *   **Scope:** `tools/cdd/start.sh` MUST be updated to support the submodule directory layout.

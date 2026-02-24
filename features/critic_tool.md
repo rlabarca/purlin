@@ -37,11 +37,15 @@ The Implementation Gate validates that the implementation aligns with the specif
 
 ### 2.3 Traceability Engine
 *   **Keyword Extraction:** Extract keywords from automated scenario titles by stripping articles (a, an, the), prepositions (in, on, at, to, for, of, by, with, from, via), and conjunctions (and, or, but).
-*   **Matching Algorithm:** For each automated scenario, search test entries (function names + bodies for Python, scenario markers + surrounding context for Bash) for matching keywords. A match requires 2 or more keywords present in the test entry.
+*   **Matching Algorithm:** For each automated scenario, search test entries for matching keywords. Test entries are produced by the tiered extraction system (see Test Entry Extraction below). A match requires 2 or more keywords present in the test entry.
 *   **Manual Scenario Handling:** Manual scenarios are EXEMPT from traceability. If a manual scenario has matching automated tests, flag it as informational (not a failure).
 *   **Traceability Overrides:** Feature files MAY include explicit `traceability_overrides` mappings in their Implementation Notes section to handle cases where keyword matching is insufficient. Format: `- traceability_override: "Scenario Title" -> test_function_name`.
-*   **Test Discovery:** Tests are located at `tests/<feature_name>/` and within the tool directory specified by `tools_root` in config. The engine discovers both `test_*.py` (Python) and `test_*.sh` (Bash) test files.
-*   **Bash Test File Support:** Bash test files (`test_*.sh`) use `[Scenario]` markers to delineate test entries. The engine parses lines matching `echo "[Scenario] <title>"` as scenario entry points. Each `[Scenario]` marker and its surrounding context (up to the next marker or end of file) form a test entry for keyword matching.
+*   **Test Discovery:** Tests are located at `tests/<feature_name>/` and within the tool directory specified by `tools_root` in config. The engine discovers test files by filename prefix: any file whose name starts with `test` (case-sensitive) is included, regardless of file extension. There is no hardcoded extension whitelist.
+*   **Test Entry Extraction (Tiered):** The engine uses a three-tier extraction system to convert discovered test files into test entries for keyword matching:
+    1. **Python extractor (`.py` files):** Parses function definitions (`def test_*`) and extracts function name + body as individual test entries.
+    2. **Bash extractor (`.sh` files):** Parses `[Scenario]` markers (`echo "[Scenario] <title>"`) and extracts each marker + surrounding context (up to the next marker or end of file) as individual test entries.
+    3. **Generic fallback (all other extensions):** Produces a single test entry per file. The entry name is the file basename (without extension), and the entry body is the full file content. Keyword matching operates on the body text regardless of the source language.
+*   **Extractor Extensibility:** Adding specialized extractors for additional languages (e.g., TypeScript, Go) is a Builder implementation decision and does not require a spec change. The generic fallback guarantees that test files in any language participate in traceability matching from the moment they are discovered.
 
 ### 2.4 Logic Drift Engine (LLM-Based)
 *   **Input:** Gherkin scenario text + mapped test function body (from traceability).
@@ -346,17 +350,26 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then logic_drift is skipped with a WARN note
     And the overall implementation_gate status is not affected by the skip
 
-#### Scenario: Bash Test File Discovery
+#### Scenario: Language-Agnostic Test File Discovery
     Given a feature has test files at tests/<feature_name>/
-    And both test_feature.py and test_feature.sh exist
+    And test_feature.py, test_feature.sh, and test_feature.ts exist
     When the Critic tool discovers test files
-    Then both Python and Bash test files are included in the test file list
+    Then all three test files are included in the test file list
+    And discovery is based on the "test" filename prefix, not file extension
 
 #### Scenario: Bash Scenario Keyword Matching
     Given a Bash test file contains echo "[Scenario] Bootstrap Consumer Project"
     And a feature has an automated scenario titled "Bootstrap Consumer Project Setup"
     When the Critic tool runs the traceability check
     Then the scenario is matched to the Bash test entry via keyword matching
+
+#### Scenario: Generic Fallback Test Extraction
+    Given a feature has a test file test_feature.ts at tests/<feature_name>/
+    And the file is not a Python (.py) or Bash (.sh) file
+    When the Critic tool extracts test entries from the file
+    Then a single test entry is produced with the file basename as the entry name
+    And the entry body is the full file content
+    And keyword matching operates on the body text to match automated scenarios
 
 #### Scenario: Architect Action Items from Spec Gaps
     Given a feature has spec_gate.status FAIL due to missing Requirements section
