@@ -110,7 +110,7 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('<h3>Agents</h3>', html)
+        self.assertIn('<h3>Agent Config</h3>', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')

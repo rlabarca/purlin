@@ -1075,7 +1075,7 @@ def generate_html(cache=None):
         return ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
 
     agents_badge = _agents_badge(CONFIG)
-    agents_heading = "Agents (applies across all local isolations)" if isolations_active else "Agents"
+    agents_heading = "Agent Config (applies across all local isolations)" if isolations_active else "Agent Config"
 
     # Release checklist badge
     rc_steps, _rc_warnings, _rc_errors = get_release_checklist()
