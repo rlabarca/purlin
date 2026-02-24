@@ -36,14 +36,25 @@ If any non-.purlin/ output remains, abort: "Commit or stash changes before pushi
 **b. Behind-main check:**
 ```
 git -C <PROJECT_ROOT> log HEAD..main --oneline
+git -C <PROJECT_ROOT> log main..HEAD --oneline
 ```
-Count N = number of lines.
+Count N = commits behind main, M = commits ahead of main.
 
-If N > 0:
-- Print: "Branch is N commit(s) behind main — auto-pulling before merge check."
-- Run: `git merge main`
-- If merge fails (conflict), abort: "Auto-pull failed — resolve conflicts manually, then retry."
-- After merge, re-run dirty check (step 3a) to confirm clean state.
+If N > 0 AND M == 0 (BEHIND):
+- Print: "Branch is N commit(s) behind main — auto-rebasing before merge check."
+- Run: `git rebase main` (fast-forward — no commits to replay, no conflict risk)
+- If rebase fails, abort: "Auto-rebase failed — resolve conflicts manually, then retry."
+- After rebase, re-run dirty check (step 3a) to confirm clean state.
+
+If N > 0 AND M > 0 (DIVERGED):
+- Block immediately. Print:
+  ```
+  Branch is DIVERGED from main — cannot auto-resolve.
+  Main has N commit(s) this branch is missing:
+    <git log HEAD..main --oneline>
+  Run /pl-work-pull to rebase and resolve before retrying /pl-work-push.
+  ```
+- Stop here. Do NOT proceed to handoff checklist.
 
 ### 4. Agent-Driven Handoff Evaluation
 
@@ -106,7 +117,7 @@ Handoff Checklist — <role> / <branch>
 
 **If all items are PASS (or WARNING only):**
 - Run: `git -C <PROJECT_ROOT> merge --ff-only <current-branch>`
-- If `--ff-only` fails (diverged despite pre-flight): print "Branches diverged — run /pl-work-pull to rebase, then retry." Do NOT force merge.
+- If `--ff-only` fails (diverged despite pre-flight): print "Branches diverged — run /pl-work-pull to rebase, then retry." Do NOT force merge. (This should be rare since Step 3b now catches DIVERGED up front.)
 
 ### 7. Report
 
@@ -118,5 +129,5 @@ Merged <branch> into main (N commits).
 ## Notes
 
 - Does NOT push to remote. Use `git push origin main` separately if needed.
-- Auto-pull uses `git merge main` (not rebase) to preserve commit history in the worktree branch.
+- Auto-pull uses `git rebase main` to preserve linear history required by `--ff-only` merge to main.
 - The agent evaluates all checklist items directly from file contents and git output — no shell script is invoked.

@@ -97,18 +97,26 @@ Behavior:
 **`/pl-work-push`** (replaces `/pl-handoff-check`; available to all roles):
 
 1. Infers the current role from the branch name (`spec/*` → architect, `build/*` → builder, `qa/*` → qa)
-2. Runs `tools/handoff/run.sh` for the current role
-3. If ALL steps PASS: merges the current branch into `main` using `git merge --ff-only <current-branch>` from the project root
-4. If any steps FAIL or PENDING: prints the list of issues and does NOT merge
-5. Safety check: verifies the main checkout (`PROJECT_ROOT`) is on `main` before merging; aborts with a clear error if not
-6. Does NOT push to remote — that remains a separate explicit user action
+2. Pre-flight sync check (Step 3b): computes N (behind) and M (ahead):
+   - **BEHIND (N>0, M=0):** Auto-rebases onto main (fast-forward, no conflict risk) before running checklist
+   - **DIVERGED (N>0, M>0):** Blocks immediately — prints the incoming main commits and instructs the agent to run `/pl-work-pull` first; does NOT proceed to the handoff checklist
+3. Runs `tools/handoff/run.sh` for the current role
+4. If ALL steps PASS: merges the current branch into `main` using `git merge --ff-only <current-branch>` from the project root
+5. If any steps FAIL or PENDING: prints the list of issues and does NOT merge
+6. Safety check: verifies the main checkout (`PROJECT_ROOT`) is on `main` before merging; aborts with a clear error if not
+7. Does NOT push to remote — that remains a separate explicit user action
 
 **`/pl-work-pull`** (new; available to all roles):
 
 1. Checks that the working tree is clean; aborts with message "Commit or stash changes before pulling" if dirty
-2. Runs `git merge main` from within the worktree
-3. Reports: N commits pulled, list of new/changed feature files
-4. Use case: agent wants updated specs or code from main without pushing own work first
+2. Computes N (commits behind main) and M (commits ahead of main); prints both counts and a state label: SAME / AHEAD / BEHIND / DIVERGED
+3. Dispatches on state:
+   - **SAME:** Already up to date. Stop.
+   - **AHEAD:** Nothing to pull. Prints "N commits ahead, nothing to pull. Run /pl-work-push when ready." Stop.
+   - **BEHIND:** Runs `git rebase main` (fast-forward — no conflict risk). Reports commits incorporated.
+   - **DIVERGED:** Prints a pre-rebase context report (`git log HEAD..main --stat --oneline`) showing all commits coming in from main with per-file stats. Runs `git rebase main`. On success reports the branch is now AHEAD by M commits.
+4. On rebase conflict: for each conflicting file prints the commits from main that touched it, the commits from the worktree branch that touched it, and a role-scoped resolution hint (`features/` → Architect priority; `tests/` → preserve passing tests; other → review carefully). Ends with instructions to `git add` and `git rebase --continue`, or `git rebase --abort` to abandon.
+5. Use case: agent wants updated specs or code from main without pushing own work first
 
 ### 2.7 Integration with CDD Collab Mode
 
@@ -169,13 +177,45 @@ And only QA-specific and shared steps are included.
     Then the command prints "Commit or stash changes before pulling"
     And no git merge is executed
 
-#### Scenario: pl-work-pull Merges Main Into Worktree
+#### Scenario: pl-work-pull Rebases Main Into Worktree When Branch Is BEHIND
 
     Given the current worktree is clean
     And main has 3 new commits not in the worktree
+    And the worktree branch has no commits not in main
     When /pl-work-pull is invoked
-    Then git merge main is executed
-    And the output reports commits pulled and lists changed feature files
+    Then the state label "BEHIND" is printed
+    And git rebase main is executed (not git merge main)
+    And the output reports 3 new commits incorporated
+
+#### Scenario: pl-work-pull Rebases When Branch Is DIVERGED
+
+    Given the current worktree is clean
+    And the worktree branch has 2 commits not in main
+    And main has 3 commits not in the worktree branch
+    When /pl-work-pull is invoked
+    Then the state label "DIVERGED" is printed
+    And the DIVERGED context report is printed showing incoming commits from main with file stats
+    And git rebase main is executed (not git merge main)
+    And on success the branch is AHEAD of main by 2 commits
+
+#### Scenario: pl-work-pull Reports Per-File Commit Context On Conflict
+
+    Given /pl-work-pull is invoked and git rebase main halts with a conflict on features/foo.md
+    When the conflict is reported
+    Then the output includes commits from main that touched features/foo.md
+    And the output includes commits from the worktree branch that touched features/foo.md
+    And a role-scoped resolution hint is shown for features/ files
+    And the output includes instructions to git add and git rebase --continue or git rebase --abort
+
+#### Scenario: pl-work-push Blocks When Branch Is DIVERGED
+
+    Given the current worktree branch has commits not in main
+    And main has commits not in the worktree branch
+    When /pl-work-push is invoked
+    Then the command prints the DIVERGED state and lists incoming main commits
+    And the handoff checklist is NOT run
+    And no merge is executed
+    And the agent is instructed to run /pl-work-pull first
 
 #### Scenario: pl-work-push Allows QA Merge When Discoveries Are Committed But Open
 
@@ -203,4 +243,7 @@ The handoff checklist system reuses the resolver infrastructure from the release
 *   **Branch inference:** `infer_role_from_branch()` maps `spec/*` → architect, `build/*` → builder, `qa/*` → qa. Returns None for unrecognized branches, causing the CLI to exit with an error message.
 - **Branch naming:** `/pl-work-push` and `/pl-work-pull` infer role from branch using same prefix map as `serve.py` (`spec/*` → architect, `build/*` → builder, `qa/*` → qa). `infer_role_from_branch()` updated to map `build/*` → builder (was `impl/*`).
 - **`--ff-only` rationale:** Fast-forward only merge prevents accidental merge commits on `main`. If the branch cannot be fast-forwarded, the user must rebase first.
+- **Rebase-not-merge for auto-pull:** `/pl-work-pull` and `/pl-work-push` Step 3b both use `git rebase main` instead of `git merge main`. A merge commit on the worktree branch makes `--ff-only` fail; a rebase produces linear history that fast-forward accepts cleanly. Fast-forward rebases (BEHIND state) carry no conflict risk since there are no local commits to replay.
+- **DIVERGED early block in `/pl-work-push`:** Step 3b now checks both N (behind) and M (ahead). When both are nonzero (DIVERGED), push is blocked before the checklist runs — there is no safe auto-resolution. The agent must run `/pl-work-pull` to rebase and resolve any conflicts manually, then retry `/pl-work-push`.
+- **Per-file conflict context:** When `/pl-work-pull` hits a rebase conflict, it shows commits from each side that touched the conflicting file (using `git log HEAD..main -- <file>` and `git log main..ORIG_HEAD -- <file>`). This replaces the previous "list filenames only" approach and gives the agent enough context to resolve without external investigation.
 - **PROJECT_ROOT detection:** `/pl-work-push` uses `PURLIN_PROJECT_ROOT` if set, falls back to `git worktree list --porcelain` to locate the main checkout path.
