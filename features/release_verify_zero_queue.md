@@ -73,6 +73,4 @@ And halts without proceeding to subsequent release steps.
 
 ## Implementation Notes
 
-This step is a pre-condition gate and does not modify any files. The only outcome is pass (proceed) or fail (halt with report).
-
-The zero-queue mandate is defined in `policy_release.md`. This step operationalizes that policy at release time.
+See [release_verify_zero_queue.impl.md](release_verify_zero_queue.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

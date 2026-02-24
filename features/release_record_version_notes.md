@@ -91,6 +91,4 @@ And inserts the new entry beneath it.
 
 ## Implementation Notes
 
-This step is positioned last in Purlin's release checklist. Recording version notes after all verification steps ensures the notes reflect the actual final state of the release.
-
-The `## Releases` section is a running log. New entries are prepended (most recent at top). The Architect does not delete or modify previous entries.
+See [release_record_version_notes.impl.md](release_record_version_notes.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

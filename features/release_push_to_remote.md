@@ -76,6 +76,4 @@ And the release is considered complete at the prior step.
 
 ## Implementation Notes
 
-This is the only global release step with a non-null `code` field. The shell command `git push && git push --tags` is the canonical execution path. However, the Architect always verifies pre-push conditions (Sections 2.1–2.2) before invoking it.
-
-In Purlin's own `.purlin/release/config.json`, this step is `enabled: true`.
+See [release_push_to_remote.impl.md](release_push_to_remote.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

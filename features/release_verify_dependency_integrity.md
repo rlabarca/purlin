@@ -69,6 +69,4 @@ And halts the release until the link is corrected.
 
 ## Implementation Notes
 
-This step is a structural read-only check. The Architect does not modify feature files as part of this step. Regenerating the dependency cache via `tools/cdd/status.sh --graph` is permissible and does not count as a spec modification.
-
-The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Manual graph file edits are not supported; the cache is always regenerated from source feature files.
+See [release_verify_dependency_integrity.impl.md](release_verify_dependency_integrity.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

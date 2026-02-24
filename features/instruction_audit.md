@@ -86,6 +86,4 @@ And the release does not proceed until the conflict is resolved.
 
 ## Implementation Notes
 
-This feature has no automated test coverage. Verification is performed by the Architect during the release process per the scenarios above. The QA column for this feature will always be `N/A`.
-
-The audit scope covers only the four standard override files. Other files in `.purlin/` (e.g., `config.json`, `runtime/`, `cache/`) are out of scope for this step.
+See [instruction_audit.impl.md](instruction_audit.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

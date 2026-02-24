@@ -120,4 +120,4 @@ No automated or manual scenarios. This is a policy anchor node — its "scenario
 
 ## Implementation Notes
 
-This anchor node defines process invariants. There is no buildable implementation. Compliance is enforced through instruction files, handoff checklists, and git branching discipline.
+See [policy_collaboration.impl.md](policy_collaboration.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
