@@ -557,7 +557,7 @@ def generate_api_status_json(cache=None):
     if delivery_phase:
         result["delivery_phase"] = delivery_phase
 
-    # Isolated Agents: worktree data (Section 2.5 of cdd_agent_isolation spec)
+    # Isolated Teams: worktree data (Section 2.5 of cdd_isolated_teams spec)
     isolation_worktrees = get_isolation_worktrees()
     if isolation_worktrees:
         result["isolations_active"] = True
@@ -600,7 +600,7 @@ def generate_workspace_json():
 
 
 # ===================================================================
-# Isolated Agents: worktree detection and state reading
+# Isolated Teams: worktree detection and state reading
 # ===================================================================
 
 
@@ -797,7 +797,7 @@ def get_isolation_worktrees():
         except ValueError:
             rel_path = abs_path
 
-        # Main diff: run from project root (Section 2.4 of cdd_agent_isolation)
+        # Main diff: run from project root (Section 2.4 of cdd_isolated_teams)
         main_diff = _compute_main_diff(branch)
 
         entry = {
@@ -850,7 +850,7 @@ def _role_badge_html(status):
 
 
 def _isolation_section_html(worktrees):
-    """Generate HTML for the Isolated Agents Sessions table (no heading)."""
+    """Generate HTML for the Isolated Teams Sessions table (no heading)."""
     if not worktrees:
         return ""
 
@@ -918,7 +918,7 @@ def _isolation_section_html(worktrees):
 
 
 def _collapsed_isolation_label(worktrees):
-    """Compute collapsed sub-heading label and severity badge for Isolated Agents.
+    """Compute collapsed sub-heading label and severity badge for Isolated Teams.
 
     Returns (badge_css, heading_text, badge_text) tuple.
     - badge_css: severity CSS class for the badge only (not the heading)
@@ -926,7 +926,7 @@ def _collapsed_isolation_label(worktrees):
     - badge_text: worst severity state name shown in the badge to the right
     """
     if not worktrees:
-        return ("", "ISOLATED AGENTS", "")
+        return ("", "ISOLATED TEAMS", "")
     n = len(worktrees)
     severity_order = {"DIVERGED": 3, "BEHIND": 2, "AHEAD": 1, "SAME": 0}
     severity_names = {3: "DIVERGED", 2: "BEHIND", 1: "AHEAD", 0: "SAME"}
@@ -941,7 +941,7 @@ def _collapsed_isolation_label(worktrees):
     else:
         css = "st-good"  # green
     sev_name = severity_names.get(max_sev, "SAME")
-    return (css, f"{n} Isolated Agent{'s' if n != 1 else ''}", sev_name)
+    return (css, f"{n} Isolated Team{'s' if n != 1 else ''}", sev_name)
 
 
 def _feature_urgency(entry):
@@ -1018,12 +1018,12 @@ def generate_html(cache=None):
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
-    # Isolated Agents detection for dashboard
+    # Isolated Teams detection for dashboard
     isolation_worktrees = get_isolation_worktrees()
     isolations_active = bool(isolation_worktrees)
     isolation_html = _isolation_section_html(isolation_worktrees)
 
-    # Collapsed sub-heading label for Isolated Agents
+    # Collapsed sub-heading label for Isolated Teams
     iso_badge_css, iso_badge_text, iso_sev_text = _collapsed_isolation_label(
         isolation_worktrees)
     if iso_badge_css and iso_sev_text:
@@ -1031,7 +1031,7 @@ def generate_html(cache=None):
     else:
         isolation_badge = ''
 
-    # Creation row (always first item in Isolated Agents sub-section)
+    # Creation row (always first item in Isolated Teams sub-section)
     creation_row_html = (
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
         '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
@@ -1453,7 +1453,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('isolation-section')">
         <span class="chevron" id="isolation-section-chevron">&#9654;</span>
-        <span id="isolation-heading" data-expanded="ISOLATED AGENTS" data-collapsed-text="{iso_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">ISOLATED AGENTS</span>
+        <span id="isolation-heading" data-expanded="ISOLATED TEAMS" data-collapsed-text="{iso_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">ISOLATED TEAMS</span>
         <span class="section-badge" id="isolation-section-badge" style="display:none">{isolation_badge}</span>
       </div>
       <div class="section-body collapsed" id="isolation-section">
@@ -1775,7 +1775,7 @@ function applyIsolationHeadingState() {{
       heading.style.color = 'var(--purlin-muted)';
     }}
   }} else {{
-    heading.textContent = heading.getAttribute('data-expanded') || 'ISOLATED AGENTS';
+    heading.textContent = heading.getAttribute('data-expanded') || 'ISOLATED TEAMS';
     heading.className = '';
     heading.style.fontSize = '11px';
     heading.style.fontWeight = '700';
@@ -3519,7 +3519,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         response = {'agents': current['agents']}
 
-        # Isolated Agents: propagate config to all active worktrees (Section 2.9)
+        # Isolated Teams: propagate config to all active worktrees (Section 2.9)
         isolation_wts = get_isolation_worktrees()
         if isolation_wts:
             warnings = []

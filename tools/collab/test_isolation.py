@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for create_isolation.sh and kill_isolation.sh.
 
-Covers all 13 automated scenarios from features/isolated_agents.md.
+Covers all 13 automated scenarios from features/isolated_teams.md.
 Each test creates a temporary git repo to avoid polluting the real project.
 """
 
@@ -395,7 +395,7 @@ def write_test_results(results):
             d = os.path.dirname(d)
 
     if project_root:
-        tests_dir = os.path.join(project_root, "tests", "isolated_agents")
+        tests_dir = os.path.join(project_root, "tests", "isolated_teams")
         os.makedirs(tests_dir, exist_ok=True)
         tests_json = os.path.join(tests_dir, "tests.json")
         with open(tests_json, "w") as f:

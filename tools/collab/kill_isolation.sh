@@ -50,8 +50,8 @@ fi
 PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
 
 # --- Name validation (Section 2.1) ---
-if [[ ${#NAME} -gt 8 ]]; then
-    echo "Error: Name '$NAME' is too long (${#NAME} chars). Maximum is 8 characters." >&2
+if [[ ${#NAME} -gt 12 ]]; then
+    echo "Error: Name '$NAME' is too long (${#NAME} chars). Maximum is 12 characters." >&2
     exit 1
 fi
 
@@ -150,6 +150,11 @@ if $IS_UNSYNCED; then
     echo "  git worktree add .worktrees/$NAME $BRANCH_NAME"
     echo ""
 fi
+
+# --- Remove per-team launcher scripts (Section 2.6) ---
+rm -f "$PROJECT_ROOT/run_${NAME}_architect.sh"
+rm -f "$PROJECT_ROOT/run_${NAME}_builder.sh"
+rm -f "$PROJECT_ROOT/run_${NAME}_qa.sh"
 
 # --- Remove worktree ---
 git -C "$PROJECT_ROOT" worktree remove "$WORKTREE_PATH" --force 2>/dev/null || \

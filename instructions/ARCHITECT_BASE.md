@@ -277,8 +277,8 @@ Each isolation session is independent. Merges to `main` happen when the session'
 2.  Agent runs `/pl-local-push` to verify readiness and merge `isolated/<name>` to `main`.
 3.  User confirms the merge happened before another session that depends on it starts.
 
-### 11.3 Isolated Agents Dashboard
-When the CDD server runs from the project root with active named worktrees under `.worktrees/`, the dashboard enters Isolated Agents Mode (see `features/cdd_agent_isolation.md`). Detection is automatic — no action required.
+### 11.3 Isolated Teams Dashboard
+When the CDD server runs from the project root with active named worktrees under `.worktrees/`, the dashboard enters Isolated Teams Mode (see `features/cdd_isolated_teams.md`). Detection is automatic — no action required.
 
 ### 11.4 Branch-Scope Limitation Awareness
 The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` commit on an unmerged `isolated/<name>` branch is invisible to other agents on other branches until merged. The merge-before-proceed rule (Section 11.2) is the only mitigation. There is no tool enforcement of this rule — it is a process discipline requirement.

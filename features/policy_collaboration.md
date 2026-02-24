@@ -45,7 +45,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 
 *   Worktrees MUST live at `.worktrees/<name>/` relative to the project root.
 *   This path MUST be gitignored in the consumer project.
-*   The Purlin CDD tools detect worktrees at `.worktrees/` to activate Isolated Agents Mode.
+*   The Purlin CDD tools detect worktrees at `.worktrees/` to activate Isolated Teams Mode.
 *   Worktrees are created by `create_isolation.sh` and are never committed to git.
 
 ### 2.6 ff-only Merge Invariant
@@ -66,7 +66,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 *   `git log` only searches commits reachable from HEAD.
 *   A status commit (TESTING or COMPLETE) on an unmerged isolation branch is invisible to other branches.
 *   This is a known, documented limitation — not a bug.
-*   Workaround: CDD Isolated Agents Mode queries each worktree's HEAD directly using `git -C <path> log`.
+*   Workaround: CDD Isolated Teams Mode queries each worktree's HEAD directly using `git -C <path> log`.
 
 ### 2.10 Canonical Isolation Detection
 
@@ -112,7 +112,7 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 
 **Local Isolation:** Single machine, multiple named git worktrees, CDD dashboard runs at project root.
 
-**Remote Collaboration:** Multiple machines, lifecycle branches pushed to origin, CDD Isolated Agents Mode shows remote branch status via `git branch -r`.
+**Remote Collaboration:** Multiple machines, lifecycle branches pushed to origin, CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
 
 ## Scenarios
 

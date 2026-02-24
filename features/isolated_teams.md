@@ -1,6 +1,6 @@
-# Feature: Isolated Agents
+# Feature: Isolated Teams
 
-> Label: "Tool: Isolated Agents"
+> Label: "Tool: Isolated Teams"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/agent_launchers_common.md
@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Isolated Agents provides a flexible, named worktree system where any agent or combination of agents can run in any number of user-named isolated workspaces. A single call to `create_isolation.sh <name>` creates one isolation: a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation is independent — it has its own branch, its own `.purlin/` state, and its own view of `features/`. Multiple simultaneous isolations are fully supported.
+Isolated Teams provides a flexible, named worktree system where any agent or combination of agents can run in any number of user-named isolated workspaces. A single call to `create_isolation.sh <name>` creates one isolated team: a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolated team is independent — it has its own branch, its own `.purlin/` state, and its own view of `features/`. Multiple simultaneous isolated teams are fully supported.
 
 This replaces the rigid three-role setup of the retired `agent_launchers_multiuser.md`. No role assignment is assumed or enforced — the name is the identifier.
 
@@ -19,7 +19,7 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 
 ### 2.1 Name Validation
 
-- Names MUST be 1–8 characters.
+- Names MUST be 1–12 characters.
 - Names MUST match the pattern `[a-zA-Z0-9_-]+` (alphanumeric, hyphen, underscore; no spaces, no dots, no slashes).
 - Names are case-sensitive. `Feat1` and `feat1` are distinct isolations.
 - Validation is enforced by both `create_isolation.sh` and `kill_isolation.sh`.
@@ -28,7 +28,7 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 
 - **Location:** `tools/collab/create_isolation.sh`
 - **Invocation:** `tools/collab/create_isolation.sh <name>`
-- **Purpose:** Creates a single named git worktree isolation.
+- **Purpose:** Creates a single named git worktree isolated team.
 
 **Behavior:**
 
@@ -73,9 +73,10 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 2. Check dirty (hard block), then unsynced (soft warn).
 3. If dirty and `--force` is not set: exit code 1, list files, instruct user to commit/stash first.
 4. If unsynced (but not dirty, or `--force` is set): list branch + commit count with a warning, then proceed.
-5. Remove the worktree: `git worktree remove .worktrees/<name>`.
-6. Remove the `isolated/<name>` branch: `git branch -d isolated/<name>` (skip if unsynced commits exist — branch has unmerged work).
-7. Remove `.worktrees/` directory if now empty.
+5. Delete the three generated launcher scripts from `$PROJECT_ROOT/` if they exist: `run_<name>_architect.sh`, `run_<name>_builder.sh`, `run_<name>_qa.sh`.
+6. Remove the worktree: `git worktree remove .worktrees/<name>`.
+7. Remove the `isolated/<name>` branch: `git branch -d isolated/<name>` (skip if unsynced commits exist — branch has unmerged work).
+8. Remove `.worktrees/` directory if now empty.
 
 **Flags:**
 
@@ -95,6 +96,24 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
   "unsynced_commits": 3
 }
 ```
+
+### 2.6 Per-Team Launcher Scripts
+
+When `create_isolation.sh <name>` succeeds, it MUST generate three scripts in `$PROJECT_ROOT/`:
+- `run_<name>_architect.sh`
+- `run_<name>_builder.sh`
+- `run_<name>_qa.sh`
+
+**Script contract:**
+- Each script uses `exec` to call the corresponding launcher inside the worktree (`$WORKTREE_PATH/run_architect.sh` etc.), passing through any arguments with `"$@"`.
+- Each script sets `PURLIN_PROJECT_ROOT` indirectly: `exec` replaces the wrapper subshell with the worktree's launcher, which sets `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` (resolved to the worktree path). No explicit `PURLIN_PROJECT_ROOT` override is needed.
+- **CWD preservation:** The scripts MUST NOT change the user's working directory. Because `exec` replaces only the child subshell (not the user's interactive shell), the user's working directory is always the project root both before and after the agent exits. A comment in each generated script MUST document this guarantee.
+- If the worktree does not exist at execution time, the script exits with code 1 and a descriptive error message.
+- Generated scripts MUST NOT be tracked by git. `.gitignore` MUST contain patterns `run_*_architect.sh`, `run_*_builder.sh`, `run_*_qa.sh`.
+
+**On kill:** `kill_isolation.sh <name>` MUST delete these three scripts (if they exist) from `$PROJECT_ROOT/` as part of its cleanup sequence, before removing the worktree.
+
+**Idempotency:** If the scripts already exist (e.g., from a prior interrupted run), overwrite them silently.
 
 ### 2.4 Worktree Isolation Invariants
 
@@ -136,12 +155,12 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
     Then the script prints a status message and exits with code 0
     And no duplicate worktree or branch is created
 
-#### Scenario: create_isolation Rejects Name Longer Than 8 Characters
+#### Scenario: create_isolation Rejects Name Longer Than 12 Characters
 
-    Given the name "toolong12" (9 characters)
-    When create_isolation.sh toolong12 is run
+    Given the name "toolongname123" (14 characters)
+    When create_isolation.sh toolongname123 is run
     Then the script exits with code 1
-    And the output describes the name validation rule (max 8 chars)
+    And the output describes the name validation rule (max 12 chars)
 
 #### Scenario: create_isolation Rejects Name With Invalid Characters
 
@@ -241,4 +260,6 @@ The `create_isolation.sh` approach avoids modifying the main checkout during set
 
 **Dry-run JSON:** The `--dry-run` flag outputs structured JSON consumed by the dashboard Kill modal. The schema is scoped to a single named worktree (unlike the old teardown, which covered all three worktrees simultaneously).
 
-**`.worktrees/` detection:** The `.worktrees/` directory convention is required for the CDD Isolated Agents dashboard to detect active isolations. The dashboard uses `git worktree list --porcelain` and filters to paths under `.worktrees/` relative to the project root.
+**`.worktrees/` detection:** The `.worktrees/` directory convention is required for the CDD Isolated Teams dashboard to detect active isolated teams. The dashboard uses `git worktree list --porcelain` and filters to paths under `.worktrees/` relative to the project root.
+
+**Per-team launcher scripts:** `create_isolation.sh` generates `run_<name>_architect.sh`, `run_<name>_builder.sh`, and `run_<name>_qa.sh` in `$PROJECT_ROOT/` using `exec` to delegate to the corresponding launchers inside the worktree. The `exec` approach replaces the child subshell's process — `PURLIN_PROJECT_ROOT` is resolved correctly by the worktree's own launcher (`SCRIPT_DIR` → worktree path), and the user's working directory at the project root is preserved when the agent exits (exec does not `cd`). These scripts are gitignored and removed by `kill_isolation.sh` before worktree removal.

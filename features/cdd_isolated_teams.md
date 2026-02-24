@@ -1,6 +1,6 @@
-# Feature: CDD Isolated Agents Mode
+# Feature: CDD Isolated Teams Mode
 
-> Label: "Tool: CDD Isolated Agents Mode"
+> Label: "Tool: CDD Isolated Teams Mode"
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_status_monitor.md
@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Isolated Agents Mode is activated automatically when the CDD server detects active named isolations (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED AGENTS section, positioned below the WORKSPACE section at the same visual level. When Isolated Agents Mode is active, that section is populated with a Sessions table showing each named isolation's branch, sync state, and in-flight changes relative to `main`.
+CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to `main`.
 
 ---
 
@@ -19,10 +19,10 @@ CDD Isolated Agents Mode is activated automatically when the CDD server detects 
 ### 2.1 Detection Mechanism
 
 - On each status refresh, `serve.py` runs `git worktree list --porcelain` from the project root.
-- Isolated Agents Mode is active when: at least one worktree other than the main checkout is listed AND its path is under `.worktrees/` relative to the project root.
-- When Isolated Agents Mode is not active, the ISOLATED AGENTS section renders with no Sessions table rows; only the creation row is shown.
+- Isolated Teams Mode is active when: at least one worktree other than the main checkout is listed AND its path is under `.worktrees/` relative to the project root.
+- When Isolated Teams Mode is not active, the ISOLATED TEAMS section renders with no Sessions table rows; only the creation row is shown.
 - Detection is read-only. CDD never writes to worktree paths.
-- Detection governs the `/status.json` API fields (`isolations_active`, `worktrees`), the Agent Config heading annotation (Section 2.9), and config propagation behavior (Section 2.9). The ISOLATED AGENTS section is always rendered in the dashboard, regardless of detection state — see Section 2.3.
+- Detection governs the `/status.json` API fields (`isolations_active`, `worktrees`), the Agent Config heading annotation (Section 2.9), and config propagation behavior (Section 2.9). The ISOLATED TEAMS section is always rendered in the dashboard, regardless of detection state — see Section 2.3.
 
 ### 2.2 Isolation Name from Worktree Path
 
@@ -32,7 +32,7 @@ CDD Isolated Agents Mode is activated automatically when the CDD server detects 
 
 ### 2.3 Dashboard Section Layout
 
-The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, WORKSPACE, ISOLATED AGENTS. WORKSPACE and ISOLATED AGENTS are peers — they appear at the same indent level, one after the other. ISOLATED AGENTS is never nested inside WORKSPACE.
+The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, WORKSPACE, ISOLATED TEAMS. WORKSPACE and ISOLATED TEAMS are peers — they appear at the same indent level, one after the other. ISOLATED TEAMS is never nested inside WORKSPACE.
 
 **WORKSPACE section:**
 - Collapsible heading labeled "WORKSPACE".
@@ -41,16 +41,16 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 - When the main checkout has no uncommitted changes, the expanded content carries no additional annotations. Text such as "Ready for specs" MUST NOT be appended when the checkout is clean.
 - Files under `.purlin/` are excluded from the clean/dirty determination.
 
-**ISOLATED AGENTS section:**
-- Collapsible heading labeled "ISOLATED AGENTS", positioned directly below the WORKSPACE section at the same visual indent level.
+**ISOLATED TEAMS section:**
+- Collapsible heading labeled "ISOLATED TEAMS", positioned directly below the WORKSPACE section at the same visual indent level.
 - Always rendered, regardless of whether any worktrees are active.
 
-**ISOLATED AGENTS heading collapse behavior:**
+**ISOLATED TEAMS heading collapse behavior:**
 
-- **Collapsed, no active worktrees:** The heading label reads "ISOLATED AGENTS" with no annotation.
-- **Collapsed, N active worktrees:** The heading label reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the normal section heading color (`--purlin-muted`). The heading text MUST NOT change color based on worktree severity state — it always renders in the same color as any other collapsed section heading.
+- **Collapsed, no active worktrees:** The heading label reads "ISOLATED TEAMS" with no annotation.
+- **Collapsed, N active worktrees:** The heading label reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`). The heading text MUST NOT change color based on worktree severity state — it always renders in the same color as any other collapsed section heading.
 
-**ISOLATED AGENTS section expanded content (in order):**
+**ISOLATED TEAMS section expanded content (in order):**
 
 1. **Creation row:** Always the first item when the section is expanded. Never hidden, regardless of whether any worktrees are active. See Section 2.8 for full creation controls detail.
 
@@ -99,7 +99,7 @@ CDD writes nothing to worktree paths. No interference with running agent session
 
 ### 2.5 /status.json API Extension
 
-When Isolated Agents Mode is active, the `/status.json` response includes additional fields:
+When Isolated Teams Mode is active, the `/status.json` response includes additional fields:
 
 ```json
 {
@@ -139,7 +139,7 @@ When Isolated Agents Mode is active, the `/status.json` response includes additi
 }
 ```
 
-When Isolated Agents Mode is not active: `isolations_active` is false (or omitted) and `worktrees` is absent.
+When Isolated Teams Mode is not active: `isolations_active` is false (or omitted) and `worktrees` is absent.
 
 Fields per worktree entry:
 
@@ -154,19 +154,19 @@ Fields per worktree entry:
 
 ### 2.6 Visual Design
 
-The ISOLATED AGENTS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. WORKSPACE and ISOLATED AGENTS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The WORKSPACE heading is unchanged regardless of Isolated Agents Mode state.
+The ISOLATED TEAMS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. WORKSPACE and ISOLATED TEAMS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The WORKSPACE heading is unchanged regardless of Isolated Teams Mode state.
 
-### 2.7 No Isolated Agents Mode During Main Checkout
+### 2.7 No Isolated Teams Mode During Main Checkout
 
-When the CDD server is run from within a worktree (not the project root), Isolated Agents Mode is not available. The dashboard operates in standard mode. Only the project root has visibility into all worktrees.
+When the CDD server is run from within a worktree (not the project root), Isolated Teams Mode is not available. The dashboard operates in standard mode. Only the project root has visibility into all worktrees.
 
 ### 2.8 New Isolation Controls
 
 The dashboard exposes UI controls to create and remove isolations, complementing the CLI scripts in `tools/collab/`.
 
-**Creation Row (always the first item in the expanded Isolated Agents sub-section):**
+**Creation Row (always the first item in the expanded Isolated Teams sub-section):**
 
-- The row is prepended with the label "Create An Isolated Agent".
+- The row is prepended with the label "Create An Isolated Team".
 - The label is followed by a text input (max 12 characters, validated) and a "Create" button.
 - The creation row is never hidden — it is visible whether or not any worktrees are active, and it always appears above the Sessions table.
 - **Input value persistence:** The name input value is preserved across auto-refreshes. The dashboard JavaScript saves the input's current value to a module-level variable before each DOM update and restores it immediately after. The user's in-progress text is never wiped by the 5-second polling cycle.
@@ -198,15 +198,15 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 
 ### 2.9 Agent Config Propagation
 
-Agent configs in `.purlin/config.json` apply to ALL local instances of each agent role — not just the agent launched from the project root. In Isolated Agents Mode, worktrees each hold their own committed copy of `.purlin/config.json`. Changes made via the dashboard must be propagated to every active isolation so that all agent sessions reflect the new settings.
+Agent configs in `.purlin/config.json` apply to ALL local instances of each agent role — not just the agent launched from the project root. In Isolated Teams Mode, worktrees each hold their own committed copy of `.purlin/config.json`. Changes made via the dashboard must be propagated to every active isolation so that all agent sessions reflect the new settings.
 
 **Agent Config Section Heading:**
-- When Isolated Agents Mode is active, the Agent Config section heading displays the annotation "(applies across all local isolations)" appended to the title.
+- When Isolated Teams Mode is active, the Agent Config section heading displays the annotation "(applies across all local isolations)" appended to the title.
 - Applied server-side in `generate_html()`. Since the dashboard refreshes every 5 seconds, the heading updates on every refresh cycle.
 
 **Save Propagation:**
 - `POST /config/agents` writes to the project root `.purlin/config.json` first.
-- If Isolated Agents Mode is active, the handler also writes the same updated config to each active worktree's `.purlin/config.json`.
+- If Isolated Teams Mode is active, the handler also writes the same updated config to each active worktree's `.purlin/config.json`.
 - **Propagated write uses full config:** The value written to each worktree MUST be the complete `current` config object (all top-level keys: `cdd_port`, `tools_root`, `models`, `agents`, etc.) — not just the `agents` subtree. The worktree config MUST NOT be reduced to a partial structure as a result of propagation.
 - **Propagated write uses merge semantics:** The propagation reads each worktree's existing `.purlin/config.json`, merges the updated `agents` object into it, and writes back the full merged result. If a worktree's config cannot be read, the project root's full `current` config is written as the fallback.
 - Propagation is best-effort per-worktree: a failure to write one worktree is logged server-side and included in the response as `{ "warnings": ["..."] }`, but does not roll back the project root write or block the response.
@@ -373,7 +373,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Given the CDD server is running from the project root
     And two worktrees exist (.worktrees/feat1 and .worktrees/ui)
     When the User opens the CDD dashboard
-    Then the Isolated Agents section is visible
+    Then the Isolated Teams section is visible
     And the Sessions sub-section shows a table with Name, Branch, Main Diff, and Modified columns
     And each worktree appears as a row with its isolation name and branch
     And no Role column is present
@@ -408,28 +408,28 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then the feat1 row's Name cell shows "feat1 (Phase 1/2)"
     And the badge text is rendered in orange (--purlin-status-warning)
 
-#### Scenario: Isolated Agents Sub-heading Collapsed With No Active Worktrees
+#### Scenario: Isolated Teams Sub-heading Collapsed With No Active Worktrees
 
     Given the CDD dashboard is open
     And no worktrees are active under .worktrees/
-    When the User collapses the Isolated Agents sub-heading
-    Then the collapsed label reads "ISOLATED AGENTS" with no annotation
+    When the User collapses the Isolated Teams sub-heading
+    Then the collapsed label reads "ISOLATED TEAMS" with no annotation
 
-#### Scenario: Isolated Agents Sub-heading Shows Count When Collapsed With Active Worktrees
+#### Scenario: Isolated Teams Sub-heading Shows Count When Collapsed With Active Worktrees
 
     Given the CDD dashboard is open
     And two worktrees are active: one with main_diff DIVERGED and one with main_diff AHEAD
-    When the User collapses the Isolated Agents sub-heading
-    Then the collapsed label reads "2 Isolated Agents"
+    When the User collapses the Isolated Teams sub-heading
+    Then the collapsed label reads "2 Isolated Teams"
     And the label color is the normal section heading color (--purlin-muted), not orange or any severity color
 
 #### Scenario: Creation Row Always Visible When Sub-section Is Expanded With No Agents
 
     Given the CDD dashboard is open
-    And the Isolated Agents sub-section is expanded
+    And the Isolated Teams sub-section is expanded
     And no worktrees are active
-    When the User views the Isolated Agents section content
-    Then the creation row "Create An Isolated Agent [input] [Create]" is visible
+    When the User views the Isolated Teams section content
+    Then the creation row "Create An Isolated Team [input] [Create]" is visible
     And no Sessions table rows are shown
 
 #### Scenario: Name Input Preserved Across Auto-refresh
@@ -452,15 +452,15 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 
 ## 4. Visual Specification
 
-### Screen: CDD Dashboard — Isolated Agents Section
+### Screen: CDD Dashboard — Isolated Teams Section
 
 - **Reference:** N/A
-- [ ] WORKSPACE section heading is unchanged regardless of Isolated Agents Mode state
-- [ ] ISOLATED AGENTS section appears directly below the WORKSPACE section at the same indent level (peer sections, not nested)
-- [ ] ISOLATED AGENTS section uses the same collapsible heading style as WORKSPACE
-- [ ] Collapsed heading with no active worktrees reads "ISOLATED AGENTS" with no annotation
-- [ ] Collapsed heading with N active worktrees reads "N Isolated Agents" (e.g., "2 Isolated Agents") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
-- [ ] When expanded, the creation row "Create An Isolated Agent [input] [Create]" is always the first item
+- [ ] WORKSPACE section heading is unchanged regardless of Isolated Teams Mode state
+- [ ] ISOLATED TEAMS section appears directly below the WORKSPACE section at the same indent level (peer sections, not nested)
+- [ ] ISOLATED TEAMS section uses the same collapsible heading style as WORKSPACE
+- [ ] Collapsed heading with no active worktrees reads "ISOLATED TEAMS" with no annotation
+- [ ] Collapsed heading with N active worktrees reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
+- [ ] When expanded, the creation row "Create An Isolated Team [input] [Create]" is always the first item
 - [ ] Sessions table appears below the creation row
 - [ ] Sessions table has columns: Name, Branch, Main Diff, Modified (no Role column)
 - [ ] Each active worktree appears as a row
@@ -476,7 +476,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 ### Screen: CDD Dashboard — Isolation Controls
 
 - **Reference:** N/A
-- [ ] The creation row ("Create An Isolated Agent [input] [Create]") is always the first item when the ISOLATED AGENTS section is expanded, regardless of whether any worktrees are active
+- [ ] The creation row ("Create An Isolated Team [input] [Create]") is always the first item when the ISOLATED TEAMS section is expanded, regardless of whether any worktrees are active
 - [ ] The creation row has sufficient top padding that a focused input's focus ring is fully visible and does not clip under any section header or divider element
 - [ ] The name input uses the same color scheme as the header filter box: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder, `--purlin-primary` text color
 - [ ] The name input does not auto-capitalize on first keystroke (no browser autocapitalize behavior)
@@ -489,14 +489,14 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] Kill dirty-state modal lists dirty files; Confirm button is disabled
 - [ ] Kill unsynced-state modal includes "I understand, the branch still exists" checkbox; Confirm disabled until checked
 - [ ] Kill clean-state modal shows a simple Confirm/Cancel dialog
-- [ ] Agent Config section heading reads "Agent Config (applies across all local isolations)" when isolated agents mode is active
-- [ ] Agent Config section heading reads "Agent Config" (no annotation) when isolated agents mode is inactive
+- [ ] Agent Config section heading reads "Agent Config (applies across all local isolations)" when isolated teams mode is active
+- [ ] Agent Config section heading reads "Agent Config" (no annotation) when isolated teams mode is inactive
 
 ---
 
 ## 5. Implementation Notes
 
-The CDD dashboard is read-only with respect to worktree monitoring — it uses `git -C <path>` to query state without modifying anything, and Isolated Agents Mode detection happens on every `/status.json` call.
+The CDD dashboard is read-only with respect to worktree monitoring — it uses `git -C <path>` to query state without modifying anything, and Isolated Teams Mode detection happens on every `/status.json` call.
 
 The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions to the read-only pattern: they delegate to `tools/collab/create_isolation.sh` and `tools/collab/kill_isolation.sh` respectively. These endpoints are explicit write operations initiated by the user; they are not invoked automatically by the dashboard's status polling.
 
@@ -517,13 +517,13 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - Agent Config heading annotation applied server-side in `generate_html()`.
 - Kill modal: dedicated overlay element (`kill-modal-overlay`) with 3-state content (dirty / unsynced / clean) and per-isolation name scoping. Populated by `showKillModal(name, dryRunResponse)`.
 
-**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, WORKSPACE, ISOLATED AGENTS. WORKSPACE and ISOLATED AGENTS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED AGENTS is NOT a child of WORKSPACE. WORKSPACE expands to show Local (main) git status; ISOLATED AGENTS expands to show the creation row and Sessions table.
+**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, WORKSPACE, ISOLATED TEAMS. WORKSPACE and ISOLATED TEAMS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED TEAMS is NOT a child of WORKSPACE. WORKSPACE expands to show Local (main) git status; ISOLATED TEAMS expands to show the creation row and Sessions table.
 
 **Input value persistence:** The name input's value is saved to a JS module-level variable (e.g., `let _pendingIsolationName = ""`) immediately before any DOM refresh. After the DOM update, the value is written back to the input element and the Create button's disabled state is re-evaluated. On successful create, the module-level variable is cleared. This avoids any localStorage dependency and works within the existing polling cycle.
 
 **Name input styling:** Inherits the same CSS class or inline styles as the header filter input. Key tokens: `background: var(--purlin-surface)`, `border: 1px solid var(--purlin-border)`, `color: var(--purlin-primary)`, `placeholder color: var(--purlin-dim)`. This ensures correct theme switching without additional CSS.
 
-**Collapsed section label severity logic:** `_collapsed_label(worktrees)` computes the severity order: DIVERGED → BEHIND → AHEAD → SAME. It iterates the list once, tracking the highest-severity state seen, then returns the CSS class and label string. If `worktrees` is empty, it returns `("", "ISOLATED AGENTS")`.
+**Collapsed section label severity logic:** `_collapsed_label(worktrees)` computes the severity order: DIVERGED → BEHIND → AHEAD → SAME. It iterates the list once, tracking the highest-severity state seen, then returns the CSS class and label string. If `worktrees` is empty, it returns `("", "ISOLATED TEAMS")`.
 
 **Bug fixes preserved from prior implementation (do not regress):**
 - Modal button styling uses `btn-critic` class (not `btn` — no CSS definition).
