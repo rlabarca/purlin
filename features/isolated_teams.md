@@ -42,8 +42,9 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
    b. Copy `pl-local-push.md` and `pl-local-pull.md` from the project root's `.claude/commands/` into the worktree's `.claude/commands/`.
    c. Delete all OTHER files from the worktree's `.claude/commands/` (any file that is NOT `pl-local-push.md` or `pl-local-pull.md`).
    d. Net result: the worktree's `.claude/commands/` contains ONLY `pl-local-push.md` and `pl-local-pull.md`. All other `/pl-*` commands are discovered via directory tree climbing from the parent repo.
-7. **Config propagation:** After `git worktree add` completes, copy the live project root `.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy. If the live config does not exist, the git-committed copy is used as-is.
-8. Print a summary of what was created and next-steps instructions.
+7. **Config propagation:** After `git worktree add` completes, copy the live project root `.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy. If the live config does not exist, the git-committed copy is used as-is. After copying, run `git update-index --skip-worktree .purlin/config.json` inside the worktree so that any session-local modifications to the config are never reported as dirty by `git status` and cannot be accidentally committed. Print a note: `"Note: .purlin/config.json is marked skip-worktree. Use /pl-agent-config to make persistent changes."`.
+8. **Config is ephemeral by design:** The worktree config is a snapshot of the MAIN config at creation time. It diverges from MAIN over the session's lifetime (e.g., agents may change settings locally). It is destroyed when `kill_isolation.sh` removes the worktree. To make a persistent config change from a worktree, use `/pl-agent-config`, which always routes changes to the MAIN config.
+9. Print a summary of what was created and next-steps instructions.
 
 ### 2.3 kill_isolation.sh
 

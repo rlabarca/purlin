@@ -116,6 +116,13 @@ if [[ -f "$LIVE_CONFIG" ]]; then
     cp "$LIVE_CONFIG" "$WORKTREE_CONFIG"
 fi
 
+# Mark config.json as skip-worktree so git never reports it as dirty in the worktree.
+# The worktree config is ephemeral — it diverges from MAIN over the session and is
+# destroyed at kill time. skip-worktree prevents accidental commits.
+# To make persistent changes, use /pl-agent-config (routes to MAIN config).
+git -C "$WORKTREE_PATH" update-index --skip-worktree .purlin/config.json 2>/dev/null || true
+echo "Note: .purlin/config.json is marked skip-worktree. Use /pl-agent-config to make persistent changes."
+
 # --- Per-team launcher scripts (Section 2.6) ---
 # Generate run_<name>_architect.sh, run_<name>_builder.sh, run_<name>_qa.sh in $PROJECT_ROOT.
 # Each uses exec to delegate to the corresponding launcher inside the worktree, so PURLIN_PROJECT_ROOT

@@ -25,9 +25,9 @@ The handoff step schema is identical to the release checklist step schema. The `
 {
   "id": "purlin.handoff.git_clean",
   "friendly_name": "Git Working Directory Clean",
-  "description": "No uncommitted changes in the worktree",
-  "code": "git diff --exit-code && git diff --cached --exit-code",
-  "agent_instructions": "Run git status. If any files are staged or modified, commit or stash them before proceeding."
+  "description": "No uncommitted changes in the worktree (excluding .purlin/)",
+  "code": "git diff --exit-code -- ':!.purlin/' && git diff --cached --exit-code -- ':!.purlin/'",
+  "agent_instructions": "Run git status. If any files are staged or modified (outside .purlin/), commit or stash them before proceeding. .purlin/ config files are excluded — they are ephemeral in worktrees and must not be committed."
 }
 ```
 
