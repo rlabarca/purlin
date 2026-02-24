@@ -47,14 +47,14 @@ When Collab Mode is active, the WORKSPACE section becomes "Collaboration". It co
 | QA | qa/collab | DIVERGED | 1 Specs |
 
 "Main Diff" shows the sync state between the worktree's branch and main:
-- `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Modified will always be non-empty.
+- `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Modified reflects files the branch changed since its common ancestor with main.
 - `SAME` — branch and main are at identical commit positions. Modified will always be empty.
 - `BEHIND` — only main has moved: it has commits not yet in this branch; this branch has no commits ahead of main. Run `/pl-work-pull` before pushing. Modified will always be empty.
-- `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-work-pull` before pushing. Modified will always be non-empty.
+- `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-work-pull` before pushing. Modified reflects files the branch changed since the common ancestor.
 
-Combined interpretation: AHEAD + Modified = commits ready to merge; Modified lists the files those commits touched relative to main. SAME + empty Modified = no work in progress, aligned with main. BEHIND + empty Modified = main has moved ahead; pull required before this branch can push. DIVERGED + Modified = both sides have moved; pull and resolve before pushing; Modified lists the files the branch changed since the common ancestor.
+Combined interpretation: AHEAD + Modified = commits ready to merge; Modified lists the files the branch changed since the common ancestor. SAME + empty Modified = no work in progress, aligned with main. BEHIND + empty Modified = main has moved ahead; pull required before this branch can push. DIVERGED + Modified = both sides have moved; pull and resolve before pushing; Modified lists the files the branch changed since the common ancestor.
 
-"Modified" shows files changed in this branch's commits relative to main — derived from `git diff main..<branch> --name-only`, not from uncommitted changes in the worktree. Modified is always empty when `main_diff` is `SAME` or `BEHIND`. Modified always has entries when `main_diff` is `AHEAD` or `DIVERGED`. When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+"Modified" shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot), not from uncommitted changes in the worktree. Modified is always empty when `main_diff` is `SAME` or `BEHIND`. Modified may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
 
 **Local (main) sub-section:** Current state of the main checkout (existing WORKSPACE content):
 
@@ -72,7 +72,7 @@ CDD reads each worktree's state using read-only git commands:
 
 - `git worktree list --porcelain` — all worktree paths and HEAD commits.
 - `git -C <path> rev-parse --abbrev-ref HEAD` — branch name per worktree.
-- `git diff main..<branch> --name-only` — files changed in the branch's commits relative to main, run from the **project root** (same mechanism as `main_diff`). Output is one filename per line, parsed by path prefix to count per-category modified files:
+- `git diff main...<branch> --name-only` — files the branch changed since its common ancestor with main (three-dot diff), run from the **project root** (same mechanism as `main_diff`). This is always empty for `SAME` and `BEHIND` states; may be empty for `AHEAD` or `DIVERGED` if the branch's commits touch no files. Output is one filename per line, parsed by path prefix to count per-category modified files:
   - Lines starting with `.purlin/` → **excluded entirely** (not counted in any category).
   - Lines starting with `features/` → Specs count.
   - Lines starting with `tests/` → Tests count.
@@ -139,7 +139,7 @@ Fields per worktree entry:
 - `main_diff` — four-state sync indicator. `"SAME"` if branch and main are at identical positions. `"AHEAD"` if only the branch has moved (commits not yet in main; ready to merge). `"BEHIND"` if only main has moved (branch must pull before pushing). `"DIVERGED"` if both main and branch have commits beyond their common ancestor (pull and resolve required). Computed via two `git log` range queries from the project root.
 - `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
-- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Counts are derived from `git diff main..<branch> --name-only` output parsed by path prefix (run from project root). Always all-zero when `main_diff` is `"SAME"` or `"BEHIND"`. Always at least one non-zero sub-field when `main_diff` is `"AHEAD"` or `"DIVERGED"`. Files under `.purlin/` are excluded.
+- `modified` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Counts are derived from `git diff main...<branch> --name-only` (three-dot) output parsed by path prefix (run from project root). Always all-zero when `main_diff` is `"SAME"` or `"BEHIND"`. May be all-zero when `main_diff` is `"AHEAD"` or `"DIVERGED"` if the branch's commits contain no file changes. Files under `.purlin/` are excluded.
 
 ### 2.7 Visual Design
 
@@ -397,7 +397,7 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - `last_commit`: uses `git log -1 --format='%h %s (%cr)'` in `_worktree_state()`.
 - `ROLE_PREFIX_MAP` in `serve.py`: `'build': 'builder'` (already updated from `impl` in a prior session).
 - `main_diff`: computed by `_compute_main_diff(branch)` running two `git log` range queries from PROJECT_ROOT (not per-worktree). Query 1: `git log <branch>..main --oneline` (behind check). Query 2: `git log main..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
-- `modified`: computed via `git diff main..<branch> --name-only` run from PROJECT_ROOT (not per-worktree, same call site as `main_diff`). Output is one filename per line; categorized by path prefix: `.purlin/` → excluded, `features/` → specs, `tests/` → tests, everything else → other. This replaces the previous `git status --porcelain` approach (which tracked uncommitted changes); the new semantic tracks committed changes vs main. The XY-column parsing concern from the old porcelain approach no longer applies.
+- `modified`: computed via `git diff main...<branch> --name-only` (three-dot) run from PROJECT_ROOT (not per-worktree, same call site as `main_diff`). Three-dot diffs the branch against the common ancestor — always empty for SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED. Output is one filename per line; categorized by path prefix: `.purlin/` → excluded, `features/` → specs, `tests/` → tests, everything else → other. This replaces the previous `git status --porcelain` approach (which tracked uncommitted changes); the new semantic tracks committed changes vs main. The XY-column parsing concern from the old porcelain approach no longer applies. Note: AHEAD/DIVERGED may still have all-zero modified counts if the branch's commits are `--allow-empty` (spec invariant relaxed).
 - Pre-Merge Status sub-section and `_worktree_handoff_status()` / `_read_feature_summary()` removed — spec no longer requires handoff checks on the dashboard.
 - Agent config propagation: `_handle_config_agents()` writes updated config to all active worktree `.purlin/config.json` files after the project root write. Failures are collected as `warnings` in the response.
 
@@ -418,18 +418,18 @@ The `/start-collab` and `/end-collab` endpoints are intentional exceptions to th
 - **Observed Behavior:** QA worktree shows `AHEAD` in Main Diff but the Modified column is empty. The branch has 2 commits ahead of main (both `--allow-empty` QA status commits), so `git diff main..qa/collab --name-only` returns nothing.
 - **Expected Behavior:** Per Section 2.3 and 2.6, "Modified will always be non-empty when `main_diff` is `AHEAD` or `DIVERGED`." The spec invariant is violated when the only commits ahead of main are `--allow-empty` commits (QA status commits touch no files).
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED — Invariant relaxed: "Modified may be empty even when AHEAD or DIVERGED if the branch's commits contain no file changes." Sections 2.3, 2.4, and 2.6 updated. Builder must switch `git diff main..<branch>` to `git diff main...<branch>` (three-dot) — the two fixes share the same implementation change.
 
 ### [BUG] BEHIND state shows non-empty Modified due to wrong git diff semantics (Discovered: 2026-02-23)
 - **Scenario:** Sessions Table Displays Worktree State
 - **Observed Behavior:** Builder worktree shows `BEHIND` with "1 Specs" in the Modified column. After main was updated (by QA merging a discovery commit to `features/cdd_collab_mode.md`), build/collab moved to BEHIND and the Modified column showed the file that MAIN changed — not anything the builder branch changed.
 - **Expected Behavior:** Per Section 2.3, "Modified will always be empty when `main_diff` is `SAME` or `BEHIND`." Root cause: the spec specifies `git diff main..<branch> --name-only` (two-dot), but two-dot git diff is a simple diff between two tips — it shows ALL file differences in both directions. For a BEHIND branch, this shows files that main added, not files the branch changed. The correct command is `git diff main...<branch> --name-only` (three-dot), which shows only what the branch changed from the common ancestor (empty for BEHIND, matching the stated invariant).
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED — All references to `git diff main..<branch>` updated to `git diff main...<branch>` (three-dot) in Sections 2.3, 2.4, and 2.6. Builder must update the implementation accordingly.
 
 ### [SPEC_DISPUTE] "Modified" column name is misleading — suggest renaming to "Differences" (Discovered: 2026-02-23)
 - **Scenario:** Sessions Table Displays Worktree State
 - **Observed Behavior:** The "Modified" column heading implies files the branch modified, but in practice (due to the git diff semantics bug above) it shows files that differ between the branch and main in either direction. A BEHIND branch showing files that main changed looks wrong under the "Modified" label.
 - **Expected Behavior:** User proposes renaming the column to "Differences" to better communicate that it shows files that differ between this branch and main — not exclusively files the branch itself changed.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** RESOLVED — Reaffirmed. The "Modified" label is accurate once the three-dot fix (BUG above) is applied: the column exclusively shows files the branch changed since its common ancestor with main — never files that main changed. "Differences" implies bidirectionality, which the column does not have. "Modified" remains the correct label.
