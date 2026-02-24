@@ -338,7 +338,7 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 ### v0.5.0 — 2026-02-22
 
-- Initial release of Purlin: Continuous Design-Driven Development Framework
+- Initial release of Purlin: Collaborative Design-Driven Agentic Development Framework
 - CDD Dashboard with role-based status columns, release checklist UI, and software map
 - Critic coordination engine with dual-gate validation, regression scoping, and role-specific action items
 - Release checklist system with global and local steps, config-driven ordering
