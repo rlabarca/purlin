@@ -214,7 +214,3 @@ And stderr identifies `--code` and `--clear-code` as mutually exclusive.
 
 ### Manual Scenarios
 None. All verification is automated.
-
-## Implementation Notes
-
-See [release_step_management.impl.md](release_step_management.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

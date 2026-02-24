@@ -88,7 +88,3 @@ Given README.md does not contain a `## Releases` section,
 When the Architect records the version notes,
 Then the Architect creates the `## Releases` heading in README.md,
 And inserts the new entry beneath it.
-
-## Implementation Notes
-
-See [release_record_version_notes.impl.md](release_record_version_notes.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

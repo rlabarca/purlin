@@ -70,7 +70,3 @@ Given at least one feature has `architect: "TODO"`,
 When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
-
-## Implementation Notes
-
-See [release_verify_zero_queue.impl.md](release_verify_zero_queue.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

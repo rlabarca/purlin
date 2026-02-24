@@ -117,7 +117,3 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 ## Scenarios
 
 No automated or manual scenarios. This is a policy anchor node — its "scenarios" are process invariants enforced by the handoff protocol and instruction files.
-
-## Implementation Notes
-
-See [policy_collaboration.impl.md](policy_collaboration.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

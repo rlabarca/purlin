@@ -231,7 +231,3 @@ And rows whose content did not change appear visually undisturbed.
 - [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
 
 ## User Testing Discoveries
-
-## Implementation Notes
-
-See [release_checklist_ui.impl.md](release_checklist_ui.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

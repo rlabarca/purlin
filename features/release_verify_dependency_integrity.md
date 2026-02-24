@@ -66,7 +66,3 @@ Given a feature file declares a `> Prerequisite:` link to a file that does not e
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the specific broken link (source file and missing target path),
 And halts the release until the link is corrected.
-
-## Implementation Notes
-
-See [release_verify_dependency_integrity.impl.md](release_verify_dependency_integrity.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

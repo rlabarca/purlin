@@ -126,8 +126,3 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Changing a control value does not cause it to visibly revert and re-apply while the config write is in-flight
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Section collapse/expand state persists across page reloads via localStorage
-
-
-## Implementation Notes
-
-See [cdd_agent_configuration.impl.md](cdd_agent_configuration.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

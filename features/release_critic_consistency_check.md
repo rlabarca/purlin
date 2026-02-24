@@ -83,7 +83,3 @@ Given a finding is classified as WARNING (non-critical inconsistency),
 When the Architect completes Phase 1,
 Then the Architect proceeds to Phase 2 (README update) after reporting the warning,
 And notes the warning in the README update commit message.
-
-## Implementation Notes
-
-See [release_critic_consistency_check.impl.md](release_critic_consistency_check.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

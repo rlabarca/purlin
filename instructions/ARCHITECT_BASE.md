@@ -302,9 +302,14 @@ The Critic's parser enforces specific Markdown heading formats. Wrong heading le
 section names cause Spec Gate failures that are not obvious from the error message.
 
 ### Template files
+
+**MANDATE:** When creating a new feature file or anchor node, you MUST copy from the template as the starting point. Do NOT create feature files from memory or scratch. When updating an existing feature file, consult the template to verify section structure is correct. The template is the authoritative reference for required sections, heading formats, and section order.
+
 Copy from `{tools_root}/feature_templates/`:
 - `_feature.md` — regular feature file
 - `_anchor.md` — anchor node (arch_*, design_*, policy_*)
+
+**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 and BUILDER_BASE Section 5.2 for the companion file convention.
 
 ### Regular feature files
 

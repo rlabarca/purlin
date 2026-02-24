@@ -69,8 +69,3 @@ Session messages are passed as the trailing positional argument to the Claude CL
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
-
-
-## Implementation Notes
-
-See [agent_launchers_common.impl.md](agent_launchers_common.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

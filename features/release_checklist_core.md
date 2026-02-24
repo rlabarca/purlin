@@ -181,7 +181,3 @@ And that step is excluded from the resolved list.
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated (unit tests against the data loading and resolution logic).
-
-## Implementation Notes
-
-See [release_checklist_core.impl.md](release_checklist_core.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

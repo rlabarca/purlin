@@ -73,7 +73,3 @@ Given `.purlin/release/config.json` has `purlin.push_to_remote` set to `enabled:
 When the Architect executes the release checklist,
 Then the `purlin.push_to_remote` step is skipped entirely,
 And the release is considered complete at the prior step.
-
-## Implementation Notes
-
-See [release_push_to_remote.impl.md](release_push_to_remote.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

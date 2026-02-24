@@ -80,7 +80,3 @@ When the Architect executes the `doc_consistency_framework` step,
 Then the Architect identifies the specific discrepancy,
 And updates README.md to match the current instruction content,
 And commits the correction.
-
-## Implementation Notes
-
-See [release_framework_doc_consistency.impl.md](release_framework_doc_consistency.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

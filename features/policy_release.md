@@ -44,7 +44,3 @@ This policy establishes the governance rules and invariants for the Purlin relea
 ## 3. FORBIDDEN Patterns
 
 *   `purlin.` prefix in local step IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"purlin\.[^"]*"` in `.purlin/release/local_steps.json`.
-
-## Implementation Notes
-
-See [policy_release.impl.md](policy_release.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

@@ -110,7 +110,3 @@ Given the consistency pass reveals a documentation gap that seems to warrant a n
 When the Architect has not received explicit user confirmation for the section name and placement,
 Then the Architect MUST NOT create the new `##` heading,
 And MUST present the gap in the coverage table and await user direction.
-
-## Implementation Notes
-
-See [release_doc_consistency_check.impl.md](release_doc_consistency_check.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

@@ -18,7 +18,3 @@
 No automated or manual scenarios. This is a policy anchor node — its "scenarios" are
 process invariants enforced by instruction files and tooling.
 
-## Implementation Notes
-
-This anchor node defines <process/architectural/design> invariants. There is no buildable
-implementation. Compliance is enforced through <describe enforcement mechanism>.

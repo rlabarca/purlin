@@ -270,5 +270,3 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## 4. Implementation Notes
-See [submodule_bootstrap.impl.md](submodule_bootstrap.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

@@ -102,5 +102,3 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## 4. Implementation Notes
-See [submodule_sync.impl.md](submodule_sync.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

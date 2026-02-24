@@ -162,9 +162,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And zoom and pan are reset to fit the graph in the viewable area
     And both position and zoom interaction states reset to unmodified
 
-## 4. Implementation Notes
-See [cdd_spec_map.impl.md](cdd_spec_map.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
-
 ## Visual Specification
 
 ### Screen: CDD Dashboard -- Spec Map View

@@ -83,7 +83,3 @@ When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect halts the step and documents the base-layer conflict,
 And uses `/pl-edit-base` (Purlin repo) or reports to the framework maintainer (consumer project),
 And the release does not proceed until the conflict is resolved.
-
-## Implementation Notes
-
-See [instruction_audit.impl.md](instruction_audit.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

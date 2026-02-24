@@ -555,9 +555,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And a "READY FOR DELETION" banner is prominently displayed at the top of the content area
     And no tabs are shown in the tombstone modal
 
-## 4. Implementation Notes
-See [cdd_status_monitor.impl.md](cdd_status_monitor.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
-
 ## Visual Specification
 
 ### Screen: CDD Dashboard -- Status View

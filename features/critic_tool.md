@@ -673,7 +673,4 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then each feature entry shows Architect, Builder, and QA columns with role status badges
     And features without critic.json show "??" in all role columns
 
-## 4. Implementation Notes
-See [critic_tool.impl.md](critic_tool.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
-
 ## User Testing Discoveries

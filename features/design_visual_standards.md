@@ -107,5 +107,3 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   Hardcoded hex colors in tool CSS (MUST use `var(--purlin-*)` custom properties).
 *   Inline style color values that bypass the token system.
 
-## 3. Implementation Notes
-See [design_visual_standards.impl.md](design_visual_standards.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

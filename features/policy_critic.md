@@ -126,7 +126,3 @@ The Critic tool MUST produce:
 - **Expected Behavior:** The Builder Decision Audit should scan ALL files containing `## Implementation Notes`, including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`).
 - **Action Required:** Builder
 - **Status:** RESOLVED — `_policy_exempt_implementation_gate()` now runs `check_builder_decisions()` on anchor node Implementation Notes instead of hardcoding zero counts. Tests added for DEVIATION, DISCOVERY, and AUTONOMOUS tags in anchor nodes.
-
-## Implementation Notes
-
-See [policy_critic.impl.md](policy_critic.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

@@ -95,6 +95,3 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-
-## Implementation Notes
-See [models_configuration.impl.md](models_configuration.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

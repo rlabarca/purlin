@@ -35,8 +35,4 @@
 
 None.
 
----
 
-## 4. Implementation Notes
-
-<Bootstrap with key technical approach, constraints, and "why" behind decisions. Builder updates this section during implementation.>

@@ -212,7 +212,3 @@ Then the Architect identifies the file and line number and reports a WARNING in 
 And presents the warning to the user for explicit confirmation,
 And if the user confirms, the Architect records the known limitation in the affected feature's
 Implementation Notes and proceeds to the next release step.
-
-## Implementation Notes
-
-See [release_submodule_safety_audit.impl.md](release_submodule_safety_audit.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

@@ -174,5 +174,3 @@ Example output:
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## 4. Implementation Notes
-See [python_environment.impl.md](python_environment.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.

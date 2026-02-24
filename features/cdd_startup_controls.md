@@ -174,8 +174,4 @@ Purlin Builder — Ready
     And POST /config/agents is called with startup_sequence false and recommend_next_actions false for that agent
 
 
-## Implementation Notes
-
-See [cdd_startup_controls.impl.md](cdd_startup_controls.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
-
 ## User Testing Discoveries
