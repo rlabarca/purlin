@@ -570,6 +570,14 @@ class TestAgentConfigPropagation(unittest.TestCase):
                                   'bypass_permissions': True,
                                   'startup_sequence': True,
                                   'recommend_next_actions': True},
+                    'builder': {'model': 'claude-opus-4-6', 'effort': 'high',
+                                'bypass_permissions': True,
+                                'startup_sequence': True,
+                                'recommend_next_actions': True},
+                    'qa': {'model': 'claude-opus-4-6', 'effort': 'medium',
+                           'bypass_permissions': True,
+                           'startup_sequence': False,
+                           'recommend_next_actions': False},
                 }
             }
             config_path = os.path.join(purlin_dir, 'config.json')
@@ -583,12 +591,20 @@ class TestAgentConfigPropagation(unittest.TestCase):
                 with open(os.path.join(wt_purlin, 'config.json'), 'w') as f:
                     json.dump(config, f)
 
-            # Mock the handler
+            # Mock the handler — all 3 roles required per completeness check
             new_agents = {
                 'architect': {'model': 'claude-opus-4-6', 'effort': 'medium',
                               'bypass_permissions': True,
                               'startup_sequence': True,
                               'recommend_next_actions': True},
+                'builder': {'model': 'claude-opus-4-6', 'effort': 'high',
+                            'bypass_permissions': True,
+                            'startup_sequence': True,
+                            'recommend_next_actions': True},
+                'qa': {'model': 'claude-opus-4-6', 'effort': 'medium',
+                       'bypass_permissions': True,
+                       'startup_sequence': False,
+                       'recommend_next_actions': False},
             }
             handler = MagicMock(spec=Handler)
             body = json.dumps(new_agents).encode('utf-8')

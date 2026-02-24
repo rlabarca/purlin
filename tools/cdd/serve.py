@@ -1269,7 +1269,7 @@ body{{
   font-size:11px;width:180px;font-family:inherit;outline:none;
 }}
 #search-input:focus{{border-color:var(--purlin-accent)}}
-#search-input::placeholder{{color:var(--purlin-dim)}}
+#search-input::placeholder,#new-isolation-name::placeholder{{color:var(--purlin-dim)}}
 .dim{{color:var(--purlin-dim);font-size:0.9em}}
 .content-area{{flex:1;overflow:hidden;display:flex;flex-direction:column}}
 .view-panel{{display:none;flex:1;overflow:hidden;flex-direction:column}}
