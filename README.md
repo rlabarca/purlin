@@ -2,7 +2,7 @@
 
 ![Purlin Logo](assets/purlin-logo.svg)
 
-**Continuous Design-Driven Development Framework**
+**Collaborative Design-Driven Agentic Development Framework**
 
 ## Overview
 

@@ -10,7 +10,7 @@ Defines the visual language for all Purlin-branded web tools (CDD Dashboard). Th
 
 ### 2.1 Brand Identity
 *   **Name:** Purlin
-*   **Tagline:** Continuous Design-Driven Development Framework
+*   **Tagline:** Collaborative Design-Driven Agentic Development Framework
 *   **Logo:** `assets/purlin-logo.svg` -- standalone SVG with dark-theme defaults. When embedded inline in tools, uses CSS classes for theme-responsive fills.
 
 ### 2.2 Color Token System
