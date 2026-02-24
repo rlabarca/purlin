@@ -11,7 +11,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 
 ### 2.1 Isolation Naming Convention
 
-*   Isolation names MUST be 1–8 characters.
+*   Isolation names MUST be 1–12 characters.
 *   Names MUST match `[a-zA-Z0-9_-]+` (alphanumeric, hyphen, underscore; no spaces).
 *   Branch naming: `isolated/<name>` — e.g., `isolated/feat1`, `isolated/ui`.
 *   Worktree path: `.worktrees/<name>/` relative to the project root.
@@ -101,5 +101,3 @@ No automated or manual scenarios. This is a policy anchor node — its "scenario
 ## Implementation Notes
 
 This anchor node defines process invariants. There is no buildable implementation. Compliance is enforced through instruction files, handoff checklists, and git branching discipline.
-
-*   **[DISCOVERY] [SPEC_PROPOSAL] Section 2.1 name length constraint stale (2026-02-24):** Section 2.1 states "Isolation names MUST be 1–8 characters" but the dependent feature `cdd_agent_isolation.md` was updated to a 12-character limit per a resolved SPEC_DISPUTE (user found 8 chars too restrictive). The implementation (`serve.py` JS/HTML validation, `create_isolation.sh` bash validation) now enforces 12 chars. The anchor node constraint is inconsistent with both the feature spec and the implementation. **Proposal:** Architect should update Section 2.1 from "1–8 characters" to "1–12 characters" to match the resolved SPEC_DISPUTE. (Severity: HIGH)
