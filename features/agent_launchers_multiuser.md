@@ -29,7 +29,8 @@ This feature extends (does not replace) `agent_launchers_common.md`. The standal
   4. Create branch `build/collab` and worktree at `.worktrees/build-session/` (if not already present).
   5. Create branch `qa/collab` and worktree at `.worktrees/qa-session/` (if not already present).
   6. All three branches start from the current `HEAD` of `main`.
-  7. Print a summary of what was created and the next-steps instructions.
+  7. **Worktree Command Deduplication:** After each `git worktree add`, remove `.claude/commands/` from the newly created worktree directory. The worktree lives inside the main repo directory tree; Claude Code climbs the directory tree and discovers the main repo's `.claude/commands/` automatically. The per-worktree copy is redundant and causes all `/pl-*` slash commands to appear multiple times in the Claude Code completion UI. This deletion is safe: no agent functionality depends on the worktree having its own copy of the commands directory.
+  8. Print a summary of what was created and the next-steps instructions.
 - **Idempotency:** Running `setup_worktrees.sh` again when worktrees already exist MUST print a status message and exit cleanly (no duplicate worktrees).
 
 ### 2.2 Worktree Session Launchers
@@ -133,6 +134,14 @@ After setup:
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of the worktree directory
     And features/ scanning targets the worktree's features/ directory
     And .purlin/cache/ writes target the worktree's .purlin/cache/
+
+#### Scenario: setup_worktrees Removes .claude/commands/ From Each Worktree
+
+    Given setup_worktrees.sh has created all three worktrees under .worktrees/
+    Then .worktrees/architect-session/.claude/commands/ does not exist
+    And .worktrees/build-session/.claude/commands/ does not exist
+    And .worktrees/qa-session/.claude/commands/ does not exist
+    And .claude/commands/ at the project root still exists with all command files
 
 #### Scenario: Teardown Is Blocked When Worktree Has Uncommitted Changes
 

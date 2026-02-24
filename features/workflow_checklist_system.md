@@ -116,7 +116,8 @@ Behavior:
    - **BEHIND:** Runs `git rebase main` (fast-forward — no conflict risk). Reports commits incorporated.
    - **DIVERGED:** Prints a pre-rebase context report (`git log HEAD..main --stat --oneline`) showing all commits coming in from main with per-file stats. Runs `git rebase main`. On success reports the branch is now AHEAD by M commits.
 4. On rebase conflict: for each conflicting file prints the commits from main that touched it, the commits from the worktree branch that touched it, and a role-scoped resolution hint (`features/` → Architect priority; `tests/` → preserve passing tests; other → review carefully). Ends with instructions to `git add` and `git rebase --continue`, or `git rebase --abort` to abandon.
-5. Use case: agent wants updated specs or code from main without pushing own work first
+5. **Post-Rebase Command Cleanup:** After a successful rebase (BEHIND or DIVERGED states), re-delete `.claude/commands/` from the current worktree directory if it exists. `git rebase` restores git-tracked files, including `.claude/commands/`, which would re-introduce duplicate `/pl-*` command completions in Claude Code. This step is skipped for SAME and AHEAD states (no rebase occurs).
+6. Use case: agent wants updated specs or code from main without pushing own work first
 
 ### 2.7 Integration with CDD Collab Mode
 
@@ -216,6 +217,25 @@ And only QA-specific and shared steps are included.
     And the handoff checklist is NOT run
     And no merge is executed
     And the agent is instructed to run /pl-work-pull first
+
+#### Scenario: pl-work-pull Re-Deletes .claude/commands/ After Rebase
+
+    Given the current worktree is clean
+    And main has 2 new commits not in the worktree branch
+    And .claude/commands/ exists in the worktree (restored by a previous rebase)
+    When /pl-work-pull is invoked
+    Then git rebase main succeeds
+    And .claude/commands/ no longer exists in the worktree directory
+    And .claude/commands/ at the project root is unaffected
+
+#### Scenario: pl-work-pull Does Not Delete .claude/commands/ When Already Absent
+
+    Given the current worktree is clean
+    And main has 2 new commits not in the worktree branch
+    And .claude/commands/ does not exist in the worktree
+    When /pl-work-pull is invoked
+    Then git rebase main succeeds
+    And no error is raised for the absent .claude/commands/ directory
 
 #### Scenario: pl-work-push Allows QA Merge When Discoveries Are Committed But Open
 
