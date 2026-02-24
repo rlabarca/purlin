@@ -524,3 +524,14 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - Four-state `main_diff` + theme colors: SAME → `st-good` (green), AHEAD → `st-todo` (yellow), BEHIND → `st-todo` (yellow), DIVERGED → `st-disputed` (orange/`--purlin-status-warning`).
 - `modified` uses three-dot diff (`git diff main...<branch>`) not two-dot — three-dot shows only branch-side changes from common ancestor; two-dot shows all differences between tips (including main-side changes, which was a bug for BEHIND state).
 - Auto-refresh timer paused during create/kill requests to prevent error messages being wiped.
+
+---
+
+## User Testing Discoveries
+
+### [BUG] pl-local-push/pull not shown in isolation startup table; appear in autocomplete on main (Discovered: 2026-02-23)
+- **Scenario:** NONE (no scenario covers agent command vocabulary in isolation vs. main context)
+- **Observed Behavior:** (1) When an agent is launched inside an isolated worktree, `pl-local-push` and `pl-local-pull` do not appear in the printed startup command table (Section 3.0 of role instructions), even though Section 8 of QA_BASE lists them as authorized isolation commands. (2) Both skills appear in Claude Code autocomplete regardless of context — they are suggested even when the agent is running on the main branch where they have no applicable purpose.
+- **Expected Behavior:** `pl-local-push` and `pl-local-pull` should appear in the startup command table when the agent is running inside an isolated worktree. They should not be surfaced (via autocomplete or command table) to agents running on the main branch.
+- **Action Required:** Architect
+- **Status:** OPEN
