@@ -921,22 +921,13 @@ def _collapsed_isolation_label(worktrees):
     """Compute collapsed sub-heading label and CSS class for Isolated Agents.
 
     Returns (css_class, label_text) tuple.
+    The heading always uses the normal section heading color (--purlin-muted),
+    never severity-based coloring.
     """
     if not worktrees:
         return ("", "ISOLATED AGENTS")
     n = len(worktrees)
-    severity = {"DIVERGED": 3, "BEHIND": 2, "AHEAD": 1, "SAME": 0}
-    max_sev = 0
-    for wt in worktrees:
-        md = wt.get("main_diff", "SAME")
-        max_sev = max(max_sev, severity.get(md, 0))
-    if max_sev >= 3:
-        css = "st-disputed"  # orange
-    elif max_sev >= 1:
-        css = "st-todo"  # yellow
-    else:
-        css = "st-good"  # green
-    return (css, f"{n} Isolated Agent{'s' if n != 1 else ''}")
+    return ("", f"{n} Isolated Agent{'s' if n != 1 else ''}")
 
 
 def _feature_urgency(entry):
@@ -1031,6 +1022,7 @@ def generate_html(cache=None):
         '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
         'Create An Isolated Agent</span>'
         '<input type="text" id="new-isolation-name" maxlength="12" placeholder="name"'
+        ' autocapitalize="none" autocorrect="off"'
         ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
         'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
         ' oninput="validateIsolationName(this)">'
