@@ -232,14 +232,8 @@ The handoff checklist system reuses the resolver infrastructure from the release
 *   **Post-rebase command re-sync:** After a successful rebase, extra command files restored by git are deleted and marked with `git update-index --skip-worktree` to keep the working tree clean. This addresses the prior bug where deleting all `.claude/commands/` left 21 unstaged deletion entries in `git status`. The `--skip-worktree` flag survives across sessions and does not affect what is committed to the branch.
 *   **Physical command placement:** `pl-local-push.md` and `pl-local-pull.md` are placed in the worktree's `.claude/commands/` by `create_isolation.sh`. They are NOT present in the project root's `.claude/commands/`. This ensures the commands are only discoverable inside a worktree session. No runtime guard is needed.
 *   **PROJECT_ROOT detection:** `/pl-local-push` uses `PURLIN_PROJECT_ROOT` if set, falls back to `git worktree list --porcelain` to locate the main checkout path.
+*   **[RESOLVED BUG 2026-02-24]** `purlin.handoff.critic_report` step had `"code": null`, causing permanent PENDING/FAIL on every `/pl-local-push`. Fixed: step now evaluates `CRITIC_REPORT.md` freshness against last git commit timestamp.
 
 *   **Command rename (pl-work-* → pl-local-*):** When `agent_launchers_multiuser` was retired, `/pl-work-push` and `/pl-work-pull` were renamed to `/pl-local-push` and `/pl-local-pull`. Both `BUILDER_BASE.md` and `QA_BASE.md` were updated (commit `ba68a76`) to reflect the new names in the startup command table, shutdown protocol, and authorized slash commands sections.
 
 ## User Testing Discoveries
-
-### [BUG] critic_report handoff step always blocks push (Discovered: 2026-02-24)
-- **Scenario:** Scenario: pl-local-push Merges Branch When All Checks Pass
-- **Observed Behavior:** `tools/handoff/run.sh` always exits with code 1 due to the `purlin.handoff.critic_report` step reporting PENDING, even after `tools/cdd/status.sh` has been successfully run and `CRITIC_REPORT.md` is current. The step has `"code": null` in `global_steps.json`, so `evaluate_step()` unconditionally returns `("PENDING", None)`. There is no code path by which this step can ever PASS. Every `/pl-local-push` invocation is permanently blocked by the handoff checklist.
-- **Expected Behavior:** The step should report PASS when `CRITIC_REPORT.md` exists and has been generated more recently than the most recent git commit (i.e., the agent has run `tools/cdd/status.sh` since their last commit).
-- **Action Required:** Builder
-- **Status:** RESOLVED
