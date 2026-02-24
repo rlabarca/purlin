@@ -143,7 +143,8 @@ The commit is made in the MAIN checkout (not the worktree), using `git -C <PROJE
 
 #### Scenario: Invalid Key Rejected
 
-    Given the user runs /pl-agent-config builder unknown_key value
+    Given a valid .purlin/config.json exists at the project root
+    When /pl-agent-config builder unknown_key value is invoked
     Then the skill exits with an error listing valid keys
     And no config file is modified
 
