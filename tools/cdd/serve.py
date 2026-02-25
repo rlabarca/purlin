@@ -1368,31 +1368,33 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     commits_ahead = sync_data.get('commits_ahead', 0)
     commits_behind = sync_data.get('commits_behind', 0)
 
-    # Sync state badge
+    # Sync state badge + count details (remote perspective per spec Section 2.3)
+    # compute_remote_sync_state returns from local perspective; flip AHEAD<->BEHIND for display
+    count_detail = ''
     if sync_state is None:
         sync_badge = ('<span class="dim" style="font-size:11px">'
                       'Run Check Remote to see sync state</span>')
+    elif sync_state == 'AHEAD':
+        # Local is ahead -> remote is behind
+        sync_badge = '<span class="st-todo">BEHIND</span>'
+        annotation = f'Remote is {commits_ahead} behind local main'
+        count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
+                        f'({annotation})</span>')
+    elif sync_state == 'BEHIND':
+        # Local is behind -> remote is ahead
+        sync_badge = '<span class="st-todo">AHEAD</span>'
+        annotation = f'Remote is {commits_behind} ahead of local main'
+        count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
+                        f'({annotation})</span>')
     elif sync_state == 'DIVERGED':
-        sync_badge = f'<span class="st-disputed">{sync_state}</span>'
-    elif sync_state in ('AHEAD', 'BEHIND'):
-        sync_badge = f'<span class="st-todo">{sync_state}</span>'
+        sync_badge = '<span class="st-disputed">DIVERGED</span>'
+        annotation = f'Remote is {commits_behind} ahead, {commits_ahead} behind local main'
+        count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
+                        f'({annotation})</span>')
+    elif sync_state == 'SAME':
+        sync_badge = '<span class="st-good">SAME</span>'
     else:
         sync_badge = f'<span class="st-good">{sync_state}</span>'
-
-    # Count details (remote perspective per spec Section 2.3)
-    count_detail = ''
-    if sync_state and sync_state != 'SAME':
-        if sync_state == 'AHEAD':
-            annotation = f'Remote is {commits_ahead} behind local main'
-        elif sync_state == 'BEHIND':
-            annotation = f'Remote is {commits_behind} ahead of local main'
-        elif sync_state == 'DIVERGED':
-            annotation = f'Remote is {commits_behind} ahead, {commits_ahead} behind local main'
-        else:
-            annotation = ''
-        if annotation:
-            count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
-                            f'({annotation})</span>')
 
     # Last check
     if last_fetch:
@@ -1493,11 +1495,12 @@ def _collapsed_remote_collab_label(active_session, sync_data, sessions):
     commits_behind = sync_data.get('commits_behind', 0)
     if state is None:
         return ("st-todo", active_session, "?")
+    # Flip AHEAD<->BEHIND: compute_remote_sync_state uses local perspective, display uses remote
     if state == 'AHEAD':
-        annotation = f'AHEAD (Remote is {commits_ahead} behind local main)'
+        annotation = f'BEHIND (Remote is {commits_ahead} behind local main)'
         return ("st-todo", active_session, annotation)
     elif state == 'BEHIND':
-        annotation = f'BEHIND (Remote is {commits_behind} ahead of local main)'
+        annotation = f'AHEAD (Remote is {commits_behind} ahead of local main)'
         return ("st-todo", active_session, annotation)
     elif state == 'DIVERGED':
         annotation = f'DIVERGED (Remote is {commits_behind} ahead, {commits_ahead} behind local main)'
