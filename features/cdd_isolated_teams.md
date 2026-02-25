@@ -533,6 +533,13 @@ See [cdd_isolated_teams.impl.md](cdd_isolated_teams.impl.md) for implementation 
 
 ## User Testing Discoveries
 
+### [SPEC_DISPUTE] Scenario "New Isolation Input Rejects Invalid Names" tests unreachable state (Discovered: 2026-02-25)
+- **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
+- **Observed Behavior:** The name input enforces a 12-character maximum via the HTML `maxlength` attribute, making it impossible to type more than 12 characters. The scenario attempts to type "toolongname123" (14 chars) and expects the Create button to be disabled and an inline validation message to appear — but these conditions can never be triggered for the length case because the browser prevents over-limit input entirely.
+- **Expected Behavior:** User wants the scenario updated to reflect the actual `maxlength` enforcement behavior: the input simply does not accept more than 12 characters. The button graying out and inline validation message should be scoped to invalid character input (non-alphanumeric/non-dash/non-underscore), not to over-length input.
+- **Action Required:** Architect
+- **Status:** OPEN
+
 ### [BUG] pl-local-push/pull not shown in isolation startup table; appear in autocomplete on main (Discovered: 2026-02-23)
 - **Scenario:** NONE (no scenario covers agent command vocabulary in isolation vs. main context)
 - **Observed Behavior:** (1) When an agent is launched inside an isolated worktree, `pl-local-push` and `pl-local-pull` do not appear in the printed startup command table (Section 3.0 of role instructions), even though Section 8 of QA_BASE lists them as authorized isolation commands. (2) Both skills appear in Claude Code autocomplete regardless of context — they are suggested even when the agent is running on the main branch where they have no applicable purpose.
