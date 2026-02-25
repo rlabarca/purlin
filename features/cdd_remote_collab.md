@@ -53,13 +53,13 @@ When `.purlin/runtime/active_remote_session` is absent or empty:
 
 When `.purlin/runtime/active_remote_session` contains a session name:
 
-**Collapsed badge:** `"<session-name> <STATE>"` where STATE is the sync state. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`). Same tokens as ISOLATED TEAMS.
+**Collapsed badge:** `"<session-name> <STATE annotation>"` where STATE is the sync state, framed from the remote's perspective. Annotation format: SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local main)"`, BEHIND -> `"BEHIND (Remote is N ahead of local main)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local main)"`. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`). Same tokens as ISOLATED TEAMS.
 
 **Expanded content (in order):**
 
 1. **Active session panel** (replaces creation row):
    - Session name + branch displayed prominently.
-   - Sync state row: SAME/AHEAD/BEHIND/DIVERGED badge + "Last check: N min ago" (or "Never").
+   - Sync state row: badge with remote-perspective annotation (same format as collapsed badge) + "Last check: N min ago" (or "Never").
    - "Check Remote" button (right-aligned): `POST /remote-collab/fetch`.
    - "Switch Session" dropdown: `<select>` populated with all known sessions from remote. Changing selection -> `POST /remote-collab/switch`.
    - "Disconnect" button: clears active session -> `POST /remote-collab/disconnect`. Does NOT delete any branches. Session remains joinable.
@@ -392,5 +392,5 @@ When an active session exists, the `/status.json` response includes:
 - **Observed Behavior:** The sync state row shows `AHEAD (1 ahead)` when local main has 1 commit not yet pushed to the remote collab branch. The annotation "(1 ahead)" is ambiguous — ahead of what?
 - **Expected Behavior:** The annotation should explicitly frame the relationship from the remote's perspective relative to local main. Examples: `AHEAD (Remote is 1 behind local main)`, `BEHIND (Remote is 2 ahead of local main)`, `DIVERGED (Remote is diverged from local main)`. This makes the directionality unambiguous at a glance.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
 
