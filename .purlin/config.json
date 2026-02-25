@@ -35,8 +35,8 @@
             "model": "claude-opus-4-6",
             "effort": "high",
             "bypass_permissions": true,
-            "startup_sequence": true,
-            "recommend_next_actions": true
+            "startup_sequence": false,
+            "recommend_next_actions": false
         },
         "builder": {
             "model": "claude-opus-4-6",
