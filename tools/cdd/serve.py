@@ -2116,13 +2116,13 @@ function validateIsolationName(input) {{
   var btn = document.getElementById('btn-create-isolation');
   var hint = document.getElementById('isolation-name-hint');
   var val = input.value;
-  var valid = /^[a-zA-Z0-9_-]+$/.test(val) && val.length >= 1 && val.length <= 12;
+  var validChars = /^[a-zA-Z0-9_-]+$/.test(val);
+  var valid = val.length >= 1 && validChars;
   if (btn) btn.disabled = !valid;
   if (hint) {{
-    if (val.length > 0 && !valid) {{
+    if (val.length > 0 && !validChars) {{
       hint.style.display = '';
-      if (val.length > 12) hint.textContent = 'Max 12 characters';
-      else hint.textContent = 'Only letters, numbers, hyphens, underscores';
+      hint.textContent = 'Only letters, numbers, hyphens, underscores';
     }} else {{
       hint.style.display = 'none';
     }}
