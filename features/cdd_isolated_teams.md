@@ -6,7 +6,7 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
@@ -531,40 +531,3 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 ## 5. Implementation Notes
 See [cdd_isolated_teams.impl.md](cdd_isolated_teams.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.
 
-## User Testing Discoveries
-
-### [SPEC_DISPUTE] Scenario "New Isolation Input Rejects Invalid Names" tests unreachable state (Discovered: 2026-02-25)
-- **Scenario:** Scenario: New Isolation Input Rejects Invalid Characters (was: "New Isolation Input Rejects Invalid Names")
-- **Observed Behavior:** The name input enforces a 12-character maximum via the HTML `maxlength` attribute, making it impossible to type more than 12 characters. The original scenario attempted to type "toolongname123" (14 chars) and expected the Create button to be disabled and an inline validation message to appear — but these conditions can never be triggered for the length case because the browser prevents over-limit input entirely.
-- **Expected Behavior:** User wants the scenario updated to reflect the actual `maxlength` enforcement behavior: the input simply does not accept more than 12 characters. The button graying out and inline validation message should be scoped to invalid character input (non-alphanumeric/non-dash/non-underscore), not to over-length input.
-- **Resolution:** Scenario renamed to "New Isolation Input Rejects Invalid Characters" and test input changed from "toolongname123" to "feat@1". Requirements Section 2.8 updated to distinguish length enforcement (maxlength attribute, no message) from character validation (disabled button + inline message). Automated scenario "Create Isolation Rejected When Name Is Invalid" unchanged — it tests the server API directly where over-length names are still a valid rejection case.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
-
-### [BUG] pl-local-push/pull not shown in isolation startup table; appear in autocomplete on main (Discovered: 2026-02-23)
-- **Scenario:** NONE (no scenario covers agent command vocabulary in isolation vs. main context)
-- **Observed Behavior:** (1) When an agent is launched inside an isolated worktree, `pl-local-push` and `pl-local-pull` do not appear in the printed startup command table (Section 3.0 of role instructions), even though Section 8 of QA_BASE lists them as authorized isolation commands. (2) Both skills appear in Claude Code autocomplete regardless of context — they are suggested even when the agent is running on the main branch where they have no applicable purpose.
-- **Expected Behavior:** `pl-local-push` and `pl-local-pull` should appear in the startup command table when the agent is running inside an isolated worktree. They should not be surfaced (via autocomplete or command table) to agents running on the main branch.
-- **Action Required:** Architect
-- **Status:** RESOLVED — Added `pl-local-push` and `pl-local-pull` to the startup command table in ARCHITECT_BASE.md, BUILDER_BASE.md, and QA_BASE.md. Autocomplete visibility on main is a platform limitation outside instruction-file control.
-
-### [INTENT_DRIFT] Name input loses focus on auto-refresh (Discovered: 2026-02-23)
-- **Scenario:** Scenario: Name Input Preserved Across Auto-refresh
-- **Observed Behavior:** The name input loses keyboard focus when the 5-second auto-refresh cycle fires a DOM update, even though the typed value is correctly preserved. The user must click back into the field to resume typing.
-- **Expected Behavior:** The spec says to preserve the input value across refreshes, but the intent is clearly to preserve the full in-progress state — including focus. After a DOM update, focus should be restored to the input if it was focused before the refresh.
-- **Action Required:** Builder
-- **Status:** RESOLVED — Focus restoration implemented: `refreshStatus()` now saves `document.activeElement === isoInput` before DOM refresh and calls `restoredInput.focus()` after value restore.
-
-### [DISCOVERY] Name input focus highlight clips under header; creation row needs more padding (Discovered: 2026-02-23)
-- **Scenario:** NONE
-- **Observed Behavior:** When the name input is focused/selected, its focus highlight ring clips beneath the section header dividing line. The creation row has insufficient vertical padding, causing the focused input to visually overlap with the header above it.
-- **Expected Behavior:** The creation row should have enough top padding that a focused input's highlight ring is fully visible and does not clip under any header or divider element. No scenario or visual spec checklist item currently covers row padding or focus ring visibility.
-- **Action Required:** Builder
-- **Status:** RESOLVED — Added `padding-top:4px` to the creation row container div, providing clearance for the input focus ring.
-
-### [SPEC_DISPUTE] 8-character isolation name limit is too restrictive; user wants 12 (Discovered: 2026-02-23)
-- **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
-- **Observed Behavior:** The name input enforces an 8-character maximum, rejecting names longer than 8 characters (e.g., "toolong12" at 9 chars is rejected).
-- **Expected Behavior:** User believes the limit should be 12 characters to allow more meaningful isolation names.
-- **Action Required:** Builder
-- **Status:** RESOLVED — Updated to 12-char limit in: HTML `maxlength`, JS `validateIsolationName()`, hint text, and `create_isolation.sh` server-side validation.

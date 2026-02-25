@@ -32,6 +32,13 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 
 **Collapsed section label severity logic:** `_collapsed_label(worktrees)` computes the severity order: DIVERGED > BEHIND > AHEAD > SAME. It iterates the list once, tracking the highest-severity state seen, then returns the CSS class and label string. If `worktrees` is empty, it returns `("", "ISOLATED TEAMS")`.
 
+**Resolved discoveries (pruned from User Testing Discoveries):**
+- [SPEC_DISPUTE] Length validation: `maxlength` attribute prevents over-length input at the browser level; no inline message needed. Character validation (non-`[a-zA-Z0-9_-]`) still shows disabled button + inline message. Scenario renamed to "New Isolation Input Rejects Invalid Characters" (feat@1 test input). Verified 2026-02-24.
+- [SPEC_DISPUTE] Name length limit raised from 8 to 12 characters: updated HTML `maxlength`, JS `validateIsolationName()`, hint text, and `create_isolation.sh` server-side validation.
+- [INTENT_DRIFT] Focus restoration on auto-refresh: `refreshStatus()` saves `document.activeElement === isoInput` before DOM refresh and calls `restoredInput.focus()` after value restore.
+- [DISCOVERY] Creation row padding: added `padding-top:4px` to creation row container div so the input focus ring doesn't clip under the section header.
+- [BUG] `pl-local-push`/`pl-local-pull` isolation startup table: added both commands to startup table in ARCHITECT_BASE.md, BUILDER_BASE.md, and QA_BASE.md. Autocomplete visibility on main is a platform limitation outside instruction-file control.
+
 **Bug fixes preserved from prior implementation (do not regress):**
 - Modal button styling uses `btn-critic` class (not `btn` — no CSS definition).
 - Dirty detection in `kill_isolation.sh` excludes `.purlin/` files (grep -v filter).
