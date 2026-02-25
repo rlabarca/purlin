@@ -449,6 +449,52 @@ The sync script shows a changelog of what changed in `instructions/` and `tools/
 
 ## Releases
 
+### v0.6.0 — 2026-02-24
+
+**Isolated Teams**
+- Named git worktrees for concurrent agent sessions (`tools/collab/create_isolation.sh`, `tools/collab/kill_isolation.sh`)
+- Dashboard section with per-isolation state tracking (AHEAD/BEHIND/SAME/DIVERGED), file change summary, and create/kill controls
+- `/pl-local-push` and `/pl-local-pull` commands for merge-before-proceed workflow
+- Agent config propagation to active worktrees
+
+**Agent Configuration**
+- Dashboard panel for per-agent model, effort, permissions, and startup behavior settings
+- `/pl-agent-config` skill for worktree-safe config modification from agent sessions
+- Per-agent `startup_sequence` and `recommend_next_actions` startup control flags (expert mode: both false)
+
+**Spec Map (renamed from Software Map)**
+- Interactive dependency graph with node position persistence and conditional zoom/pan preservation
+- Recenter Graph button and inactivity timeout for auto-redraw
+
+**Critic Enhancements**
+- Language-agnostic test file discovery with tiered extraction (Python, JS/TS, shell, generic fallback)
+- Companion `.impl.md` file detection in section completeness checks
+- Builder Decision Audit extended to scan anchor node companion files
+- Visual specification detection supports numbered section headers
+- Targeted scope filters QA action items to manual scenarios only
+- Structured status detection and RESOLVED discovery pruning signal
+
+**Companion File Convention**
+- All implementation notes migrated from inline `## Implementation Notes` to standalone `*.impl.md` companion files
+- Feature files no longer contain implementation notes; companion files are standalone (no cross-links)
+- Companion file edits exempt from lifecycle status resets
+
+**Process & Documentation**
+- File access permissions formalized across all roles (README permissions table)
+- Bidirectional spec-code audit (`/pl-spec-code-audit`) shared between Architect and Builder
+- `/pl-status` uncommitted changes check added to Architect protocol
+- Complete QA verification pass across all 31 features
+
+**Getting started:**
+
+This is tested to be started with a new project right now. You can ask the architect to scan your code and build an initial feature map but the behavior will be undefined. It would be an interesting experiment though!
+
+**Known limitations:**
+
+- Built exclusively for Claude Code. Supporting additional models is a goal but model feature disparity makes that non-trivial.
+- Local concurrent collaboration is supported via Isolated Teams (named worktrees). Cross-machine and remote worker support is a planned future direction.
+- The release checklist is long enough to stress context windows. For now, the checklist can be interrupted and resumed with: `/pl-release-run start with step X, steps 1 through X-1 have passed`. Modularizing the checklist to reduce token cost is a planned improvement.
+
 ### v0.5.0 — 2026-02-22
 
 - Initial release of Purlin: Collaborative Design-Driven Agentic Development Framework
