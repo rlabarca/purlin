@@ -383,7 +383,8 @@ When an active session exists, the `/status.json` response includes:
 - **Root Cause:** `compute_remote_sync_state()` runs `git log origin/collab/<session>..main --oneline`. When checked out from the collab branch, local `main` does not exist, so the git command fails. The exception is silently caught and `sync_state: None` is returned, causing the dashboard to remain in the pre-check state indefinitely with no error message.
 - **Expected Behavior:** When local `main` does not exist, the server should detect this condition and return a meaningful error or guidance (e.g., "local main branch not found — check out main to enable sync tracking") rather than silently returning `sync_state: None` and leaving the user with no actionable feedback.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** `compute_remote_sync_state()` now verifies local `main` ref exists before running log comparisons. Returns `sync_state: "NO_MAIN"` when absent, and the dashboard displays "Local main branch not found (check out main to enable sync tracking)" instead of silently showing no badge.
 
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls

@@ -7,6 +7,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -301,6 +302,37 @@ class TestSwitchSessionUpdatesActiveSession(unittest.TestCase):
                                'active_remote_session')
         with open(rt_path) as f:
             self.assertEqual(f.read().strip(), 'hotfix-auth')
+
+
+class TestSyncStateNoMain(unittest.TestCase):
+    """When local main branch does not exist, sync state returns NO_MAIN.
+
+    Given an active session "v0.5-sprint" is set
+    And the remote tracking ref origin/collab/v0.5-sprint exists
+    But local branch "main" does not exist
+    When compute_remote_sync_state is called
+    Then sync_state is "NO_MAIN"
+    """
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_no_main_state(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                ref = cmd[-1] if cmd else ''
+                if ref == 'main':
+                    raise subprocess.CalledProcessError(128, cmd)
+                result.stdout = 'abc1234'
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("v0.5-sprint")
+        self.assertEqual(state['sync_state'], 'NO_MAIN')
+        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['commits_behind'], 0)
 
 
 class TestSyncStateSame(unittest.TestCase):

@@ -1004,6 +1004,16 @@ def compute_remote_sync_state(session_name):
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
 
+    # Check if local main branch exists (may be absent if cloned from collab branch)
+    try:
+        subprocess.run(
+            ['git', 'rev-parse', '--verify', 'main'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return {'sync_state': 'NO_MAIN', 'commits_ahead': 0,
+                'commits_behind': 0}
+
     try:
         ahead_result = subprocess.run(
             ['git', 'log', f'{ref}..main', '--oneline'],
@@ -1315,6 +1325,11 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     if sync_state is None:
         sync_badge = ('<span class="dim" style="font-size:11px">'
                       'Run Check Remote to see sync state</span>')
+    elif sync_state == 'NO_MAIN':
+        sync_badge = ('<span class="st-disputed" style="font-size:11px">'
+                      'Local main branch not found</span>')
+        count_detail = ('<span style="color:var(--purlin-muted);font-size:11px">'
+                        '(check out main to enable sync tracking)</span>')
     elif sync_state == 'AHEAD':
         # Local is ahead -> remote is behind
         sync_badge = '<span class="st-todo">BEHIND</span>'
@@ -1420,6 +1435,8 @@ def _collapsed_remote_collab_label(active_session, sync_data, sessions):
     commits_behind = sync_data.get('commits_behind', 0)
     if state is None:
         return ("st-todo", active_session, "?")
+    if state == 'NO_MAIN':
+        return ("st-disputed", active_session, "NO MAIN")
     # Flip AHEAD<->BEHIND: compute_remote_sync_state uses local perspective, display uses remote
     if state == 'AHEAD':
         annotation = f'BEHIND (Remote is {commits_ahead} behind local main)'
