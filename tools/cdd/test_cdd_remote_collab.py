@@ -484,44 +484,6 @@ class TestContributorsDerivedFromGitLog(unittest.TestCase):
             self.assertIn(field, entry)
 
 
-class TestInFlightBranchesShowOnlyIsolated(unittest.TestCase):
-    """Scenario: In-Flight Branches Show Only Remote Isolated Branches
-
-    Given an active session "v0.5-sprint" is set
-    And remote has branch isolated/feat1 not merged into origin/collab/v0.5-sprint
-    And remote has branch feature/other not merged into origin/collab/v0.5-sprint
-    When an agent calls GET /status.json
-    Then remote_collab.in_flight_branches contains an entry for isolated/feat1
-    And remote_collab.in_flight_branches does not contain an entry for feature/other
-    """
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_only_isolated_branches(self, mock_config, mock_run):
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if '--no-merged' in cmd_str:
-                result.stdout = (
-                    "  origin/isolated/feat1\n"
-                    "  origin/feature/other\n"
-                    "  origin/isolated/feat2\n"
-                )
-            elif 'log' in cmd_str:
-                result.stdout = 'abc commit1\n'
-            else:
-                result.stdout = ''
-            return result
-        mock_run.side_effect = run_side_effect
-
-        in_flight = serve.get_remote_in_flight("v0.5-sprint")
-
-        branch_names = [b['branch'] for b in in_flight]
-        self.assertIn('isolated/feat1', branch_names)
-        self.assertIn('isolated/feat2', branch_names)
-        self.assertNotIn('feature/other', branch_names)
-
-
 class TestManualCheckUpdatesLastFetch(unittest.TestCase):
     """Scenario: Manual Check Updates last_fetch Timestamp
 

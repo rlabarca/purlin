@@ -574,7 +574,6 @@ def generate_api_status_json(cache=None):
         rc_config = get_remote_config()
         sync = compute_remote_sync_state(active_session)
         contributors = get_remote_contributors(active_session)
-        in_flight = get_remote_in_flight(active_session)
         result["remote_collab"] = {
             "active_session": active_session,
             "branch": f"collab/{active_session}",
@@ -584,7 +583,6 @@ def generate_api_status_json(cache=None):
             "commits_behind": sync['commits_behind'],
             "last_fetch": _remote_collab_last_fetch,
             "contributors": contributors,
-            "in_flight_branches": in_flight,
         }
 
     # remote_collab_sessions: always present (may be empty array)
@@ -1080,62 +1078,6 @@ def get_remote_contributors(session_name, max_entries=10):
     return ordered
 
 
-def get_remote_in_flight(session_name):
-    """Get remote isolated/* branches not yet merged into the collab branch.
-
-    Returns list of dicts: [{branch, commits_ahead, last_commit}].
-    """
-    rc = get_remote_config()
-    remote = rc['remote']
-    ref = f'{remote}/collab/{session_name}'
-
-    try:
-        result = subprocess.run(
-            ['git', 'branch', '-r', '--no-merged', ref],
-            capture_output=True, text=True, check=True,
-            cwd=PROJECT_ROOT, timeout=10)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return []
-
-    branches = []
-    for line in result.stdout.strip().splitlines():
-        branch_ref = line.strip()
-        # Filter to isolated/* branches on the same remote
-        prefix = f'{remote}/isolated/'
-        if not branch_ref.startswith(prefix):
-            continue
-
-        branch_name = branch_ref[len(f'{remote}/'):]  # "isolated/feat1"
-
-        # Commits ahead of collab branch
-        try:
-            ahead = subprocess.run(
-                ['git', 'log', f'{ref}..{branch_ref}', '--oneline'],
-                capture_output=True, text=True, check=True,
-                cwd=PROJECT_ROOT, timeout=5)
-            ahead_lines = [l for l in ahead.stdout.strip().splitlines() if l]
-            commits_ahead = len(ahead_lines)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            commits_ahead = 0
-
-        # Last commit
-        try:
-            lc = subprocess.run(
-                ['git', 'log', '-1', branch_ref, '--format=%h %s (%cr)'],
-                capture_output=True, text=True, check=True,
-                cwd=PROJECT_ROOT, timeout=5)
-            last_commit = lc.stdout.strip()
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            last_commit = ''
-
-        branches.append({
-            'branch': branch_name,
-            'commits_ahead': commits_ahead,
-            'last_commit': last_commit,
-        })
-
-    return branches
-
 
 def _auto_fetch_worker():
     """Background thread: periodically fetch the active remote collab branch."""
@@ -1314,8 +1256,7 @@ def _collapsed_isolation_label(worktrees):
 
 
 def _remote_collab_section_html(active_session, sync_data, sessions,
-                                contributors, in_flight, last_fetch,
-                                has_remote):
+                                contributors, last_fetch, has_remote):
     """Generate the REMOTE COLLABORATION section body HTML.
 
     Two modes: setup (no active session) and active (session selected).
@@ -1459,22 +1400,6 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         html += '</tbody></table></div>'
     else:
         html += '<p class="dim" style="margin-top:6px">(no commits on this session yet)</p>'
-
-    # In-flight table (always render label and headers per spec Section 2.3)
-    html += ('<div style="margin-top:6px"><span style="color:var(--purlin-dim);'
-             'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">'
-             'IN FLIGHT</span>'
-             '<table class="ft" style="width:100%;margin-top:4px"><thead><tr>'
-             '<th>Branch</th><th>Commits Ahead</th><th>Last Commit</th>'
-             '</tr></thead><tbody>')
-    if in_flight:
-        for b in in_flight:
-            html += (f'<tr><td><code>{b["branch"]}</code></td>'
-                     f'<td>{b["commits_ahead"]}</td>'
-                     f'<td class="dim">{b["last_commit"]}</td></tr>')
-    else:
-        html += '<tr><td colspan="3" class="dim" style="text-align:center">(none)</td></tr>'
-    html += '</tbody></table></div>'
 
     return html
 
@@ -1620,15 +1545,13 @@ def generate_html(cache=None):
     if rc_active_session:
         rc_sync = compute_remote_sync_state(rc_active_session)
         rc_contributors = get_remote_contributors(rc_active_session)
-        rc_in_flight = get_remote_in_flight(rc_active_session)
     else:
         rc_sync = {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
         rc_contributors = []
-        rc_in_flight = []
 
     rc_section_html = _remote_collab_section_html(
         rc_active_session, rc_sync, rc_sessions, rc_contributors,
-        rc_in_flight, _remote_collab_last_fetch, rc_has_remote)
+        _remote_collab_last_fetch, rc_has_remote)
 
     rc_badge_css, rc_badge_text, rc_badge_sev = _collapsed_remote_collab_label(
         rc_active_session, rc_sync, rc_sessions)

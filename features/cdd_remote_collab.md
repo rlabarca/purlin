@@ -382,5 +382,6 @@ When an active session exists, the `/status.json` response includes:
 - **Observed Behavior:** The sync state row shows `AHEAD (1 ahead)` when local main has 1 commit not yet pushed to the remote collab branch. The annotation "(1 ahead)" is ambiguous — ahead of what?
 - **Expected Behavior:** The annotation should explicitly frame the relationship from the remote's perspective relative to local main. Examples: `AHEAD (Remote is 1 behind local main)`, `BEHIND (Remote is 2 ahead of local main)`, `DIVERGED (Remote is diverged from local main)`. This makes the directionality unambiguous at a glance.
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED
+- **Resolution:** Code already updated in commit 65d5f19 to use remote-perspective framing. Annotation now shows "Remote is N behind/ahead of local main" matching the spec update.
 
