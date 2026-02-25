@@ -377,6 +377,14 @@ When an active session exists, the `/status.json` response includes:
 - **Status:** RESOLVED
 - **Resolution:** Accepted. IN FLIGHT table removed from spec (Section 2.3, /status.json schema, automated scenario, visual spec). Policy invariant 2.5 explicitly states isolation branches remain local and are never pushed to remote, making the table perpetually empty under normal workflow. CONTRIBUTORS + sync badge already provide the meaningful collaboration signals.
 
+### [BUG] Sync badge never appears when local main branch does not exist (Discovered: 2026-02-25)
+- **Scenario:** Active-Session State Shows Sync Badge and Controls
+- **Observed Behavior:** A collaborator cloned the repo directly from the collab branch (`collab/test1`) and started the CDD server. After clicking "Check Remote", the dashboard shows "Run Check Remote to see sync state" with "Last check: just now" — no sync badge is ever displayed. The check ran, but the badge never appeared.
+- **Root Cause:** `compute_remote_sync_state()` runs `git log origin/collab/<session>..main --oneline`. When checked out from the collab branch, local `main` does not exist, so the git command fails. The exception is silently caught and `sync_state: None` is returned, causing the dashboard to remain in the pre-check state indefinitely with no error message.
+- **Expected Behavior:** When local `main` does not exist, the server should detect this condition and return a meaningful error or guidance (e.g., "local main branch not found — check out main to enable sync tracking") rather than silently returning `sync_state: None` and leaving the user with no actionable feedback.
+- **Action Required:** Builder
+- **Status:** OPEN
+
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls
 - **Observed Behavior:** The sync state row shows `AHEAD (1 ahead)` when local main has 1 commit not yet pushed to the remote collab branch. The annotation "(1 ahead)" is ambiguous — ahead of what?
