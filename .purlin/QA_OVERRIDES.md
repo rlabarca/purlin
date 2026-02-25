@@ -13,3 +13,6 @@ For each scenario, verify:
 *   Tool does not crash if `config.json` is malformed -- it should fall back to defaults with a warning.
 
 Report any submodule-specific failures as `[BUG]` with the tag "submodule-compat" in the description.
+
+## Application Code Location
+In this repository, Builder-owned application code lives in `tools/` (consumer-facing framework tools) and `dev/` (Purlin-dev maintenance scripts).

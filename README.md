@@ -71,30 +71,28 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | Anchor nodes | `features/arch_*.md`, `design_*.md`, `policy_*.md` | CRWD | RW | R |
 | Companion files | `features/*.impl.md` | CR | CRWD | RW |
 | Tombstone files | `features/tombstones/*.md` | CRD | RD | R |
-| Instruction files | `instructions/*.md` | RW | R | R |
 | Override: HOW_WE_WORK, ARCHITECT | `.purlin/HOW_WE_WORK_OVERRIDES.md`, `ARCHITECT_OVERRIDES.md` | RW | R | R |
 | Override: BUILDER | `.purlin/BUILDER_OVERRIDES.md` | RW | RW | R |
 | Override: QA | `.purlin/QA_OVERRIDES.md` | RW | R | RW |
 | README / prose docs | `README.md`, `docs/**/*.md` | RW | R | R |
 | Process config | `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json` | RW | R | R |
-| Application source code | `tools/**/*.py`, `tools/**/*.sh`, `tools/**/*.js` | R | CRWD | R |
-| Launcher / DevOps scripts | `run_*.sh`, `tools/bootstrap.sh`, shell wrappers | R | CRWD | R |
-| App-level config | `*.json`, `*.yaml`, `*.toml` (app-level, excl. `.purlin/`) | R | CRWD | R |
-| Application `.md` content | `*.md` outside Purlin-managed paths (LLM prompts, agent instructions, content) | R | CRWD | R |
-| Automated tests | `tools/**/test_*`, `tools/**/*_test.*` | R | CRWD | R |
 | Test results | `tests/<feature>/tests.json` | R | CRW | R |
 | QA verification scripts | `tests/qa/**` | R | R | CRWD |
 | Tool-generated files | `critic.json`, `CRITIC_REPORT.md`, `dependency_graph.json` | R | R | R |
 | Delivery plan | `.purlin/cache/delivery_plan.md` | R | CRWD | R |
 | Discovery sections | `## User Testing Discoveries` in feature files | RW | CRW | CRW |
+| Your project code | All files outside Purlin-managed paths | R | CRWD | R |
+| Purlin submodule | `purlin/**` | — | — | — |
 
 **Notes:**
+- **Purlin-managed paths:** `features/`, `.purlin/`, `tests/`, `purlin/` (submodule), and root-level prose docs (`README.md`, `docs/`). Everything outside these paths is "your project code."
+- **Your project code** covers all source files, scripts, configuration files, automated tests, and other artifacts regardless of language, location, or file extension. The Builder has full ownership; the Architect and QA have read access.
+- **Instruction files** (`instructions/*.md`) live inside the Purlin submodule and are read-only for consumer projects. In the Purlin framework repository itself, the Architect has write access via `/pl-edit-base`.
 - Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files.
 - QA companion file writes are limited to pruning one-liners.
 - Builder and QA may both create (`C`) the `## User Testing Discoveries` section if it doesn't exist.
 - QA verification scripts (`tests/qa/`) are QA-exclusive -- the Builder and Architect read but do not modify.
 - Tool-generated files are produced by `tools/cdd/status.sh` or `tools/critic/run.sh` -- no agent writes directly.
-- "Purlin-managed paths" for `.md` files: `features/`, `instructions/`, `.purlin/`, `docs/`, and root-level prose (`README.md`). Any `.md` file outside these paths is application content owned by the Builder.
 
 ### Shared Commands
 

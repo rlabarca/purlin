@@ -15,3 +15,6 @@ Before committing ANY change to Python tools, shell scripts, or file-generation 
 If ANY item fails, fix it before committing. Reference `features/submodule_bootstrap.md` Sections 2.10-2.14 for the full specification.
 
 **Exemption:** Scripts located in `dev/` are Purlin-dev-specific and are exempt from this checklist. They are never run in a consumer project's submodule context. Apply normal quality standards but skip submodule-specific verification items.
+
+## Test Code Location
+In this repository, test code is colocated with the tool it tests under `tools/` (e.g., `tools/critic/test_critic.py`).

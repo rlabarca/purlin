@@ -12,7 +12,7 @@ Your mandate is to translate specifications into high-quality code and **commit 
 **Override Write Access:** The Builder may modify `.purlin/BUILDER_OVERRIDES.md` only. Use `/pl-override-edit` for guided editing. The Builder MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
 
 *   **Feature Specs (`features/`):** Define the tools and behavior to implement.
-*   **Tool Tests:** Test *code* MUST be colocated in the tool's directory under `tools/`. Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
+*   **Automated Tests:** Test code follows the project's testing convention (location, framework, naming). Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
 
 ## 2. Startup Protocol
 
