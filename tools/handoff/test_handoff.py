@@ -659,6 +659,393 @@ class TestPlLocalPullNoFailWhenExtraFilesAbsent(unittest.TestCase):
         self.assertIn("pl-local-pull.md", content)
 
 
+# =============================================================================
+# Remote Push/Pull Scenarios (Section 2.8 of workflow_checklist_system.md)
+# =============================================================================
+
+REMOTE_PUSH_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                "pl-remote-push.md")
+REMOTE_PULL_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                "pl-remote-pull.md")
+
+
+class TestPlRemotePushExitsWhenNotMain(unittest.TestCase):
+    """Scenario: pl-remote-push Exits When Current Branch Is Not Main
+
+    Given the current branch is isolated/feat1
+    When /pl-remote-push is invoked
+    Then the command prints "This command is only valid from the main checkout"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_main_branch_guard(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
+        self.assertIn("This command is only valid from the main checkout", content)
+
+    def test_skill_file_guard_is_step_0(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        guard_pos = content.find("Main Branch Guard")
+        session_pos = content.find("Session Guard")
+        self.assertGreater(guard_pos, 0)
+        self.assertGreater(session_pos, guard_pos,
+                           "Main Branch Guard must appear before Session Guard")
+
+
+class TestPlRemotePullExitsWhenNotMain(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits When Current Branch Is Not Main
+
+    Given the current branch is isolated/feat1
+    When /pl-remote-pull is invoked
+    Then the command prints "This command is only valid from the main checkout"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_main_branch_guard(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
+        self.assertIn("This command is only valid from the main checkout", content)
+
+    def test_skill_file_guard_is_step_0(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        guard_pos = content.find("Main Branch Guard")
+        session_pos = content.find("Session Guard")
+        self.assertGreater(guard_pos, 0)
+        self.assertGreater(session_pos, guard_pos,
+                           "Main Branch Guard must appear before Session Guard")
+
+
+class TestPlRemotePushExitsWhenNoActiveSession(unittest.TestCase):
+    """Scenario: pl-remote-push Exits When No Active Session
+
+    Given the current branch is main
+    And .purlin/runtime/active_remote_session is absent
+    When /pl-remote-push is invoked
+    Then the command prints "No active remote session"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_session_guard(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("active_remote_session", content)
+        self.assertIn("No active remote session", content)
+
+    def test_skill_file_directs_to_dashboard(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("CDD dashboard", content)
+
+
+class TestPlRemotePullExitsWhenNoActiveSession(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits When No Active Session
+
+    Given the current branch is main
+    And .purlin/runtime/active_remote_session is absent
+    When /pl-remote-pull is invoked
+    Then the command prints "No active remote session"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_session_guard(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("active_remote_session", content)
+        self.assertIn("No active remote session", content)
+
+    def test_skill_file_directs_to_dashboard(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("CDD dashboard", content)
+
+
+class TestPlRemotePushAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-remote-push Aborts When Working Tree Is Dirty
+
+    Given the current branch is main
+    And an active remote session exists
+    And the working tree has uncommitted changes outside .purlin/
+    When /pl-remote-push is invoked
+    Then the command prints "Commit or stash changes before pushing"
+    And no git push is executed
+    """
+
+    def test_skill_file_checks_dirty_state(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("git status --porcelain", content)
+        self.assertIn("Commit or stash changes before pushing", content)
+
+    def test_skill_file_excludes_purlin_from_dirty(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn(".purlin/", content)
+
+
+class TestPlRemotePullAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-remote-pull Aborts When Working Tree Is Dirty
+
+    Given the current branch is main
+    And an active remote session exists
+    And the working tree has uncommitted changes outside .purlin/
+    When /pl-remote-pull is invoked
+    Then the command prints "Commit or stash changes before pulling"
+    And no git merge is executed
+    """
+
+    def test_skill_file_checks_dirty_state(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git status --porcelain", content)
+        self.assertIn("Commit or stash changes before pulling", content)
+
+    def test_skill_file_excludes_purlin_from_dirty(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn(".purlin/", content)
+
+
+class TestPlRemotePushBlockedWhenBehind(unittest.TestCase):
+    """Scenario: pl-remote-push Blocked When Local Main Is BEHIND Remote
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And local main has no commits not in origin/collab/v0.5-sprint
+    When /pl-remote-push is invoked
+    Then the command prints "Local main is BEHIND" and instructs /pl-remote-pull
+    And exits with code 1
+    """
+
+    def test_skill_file_blocks_behind_state(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("BEHIND", content)
+        self.assertIn("/pl-remote-pull", content)
+
+    def test_skill_file_uses_two_range_query(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("git log origin/collab/<session>..main --oneline", content)
+        self.assertIn("git log main..origin/collab/<session> --oneline", content)
+
+
+class TestPlRemotePushBlockedWhenDiverged(unittest.TestCase):
+    """Scenario: pl-remote-push Blocked When Local Main Is DIVERGED
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main has 1 commit not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    When /pl-remote-push is invoked
+    Then the command prints the incoming commits from remote
+    And instructs to run /pl-remote-pull
+    And exits with code 1
+    """
+
+    def test_skill_file_blocks_diverged_state(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("DIVERGED", content)
+        self.assertIn("/pl-remote-pull", content)
+
+    def test_skill_file_shows_incoming_commits_on_diverged(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("git log main..origin/collab/<session> --oneline", content)
+
+
+class TestPlRemotePushSucceedsWhenAhead(unittest.TestCase):
+    """Scenario: pl-remote-push Succeeds When AHEAD
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main has 3 commits not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has no commits not in local main
+    When /pl-remote-push is invoked
+    Then git push origin main:collab/v0.5-sprint is executed
+    And the command reports "Pushed N commits"
+    """
+
+    def test_skill_file_pushes_on_ahead(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("git push", content)
+        self.assertIn("main:collab/<session>", content)
+
+    def test_skill_file_reports_pushed_commits(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("Pushed", content)
+        self.assertIn("commits", content)
+
+
+class TestPlRemotePushNoOpWhenSame(unittest.TestCase):
+    """Scenario: pl-remote-push Is No-Op When SAME
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main and origin/collab/v0.5-sprint point to the same commit
+    When /pl-remote-push is invoked
+    Then the command prints "Already in sync. Nothing to push."
+    And no git push is executed
+    """
+
+    def test_skill_file_noop_on_same(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("Already in sync. Nothing to push.", content)
+
+
+class TestPlRemotePushAutoCreatesRemoteBranch(unittest.TestCase):
+    """Scenario: pl-remote-push Auto-Creates Remote Branch When It Does Not Exist
+
+    Given the current branch is main with an active session "new-session"
+    And no collab/new-session branch exists on origin
+    When /pl-remote-push is invoked
+    Then git push origin main:collab/new-session creates the branch
+    And the command reports success
+    """
+
+    def test_skill_file_handles_nonexistent_remote_branch(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        # The command should mention that git push creates the branch automatically
+        self.assertIn("git push", content)
+        # The fetch step should handle non-existent branch gracefully
+        self.assertIn("git fetch", content)
+
+
+class TestPlRemotePullFastForwardsWhenBehind(unittest.TestCase):
+    """Scenario: pl-remote-pull Fast-Forwards Main When BEHIND
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And origin/collab/v0.5-sprint has 3 commits not in local main
+    And local main has no commits not in origin/collab/v0.5-sprint
+    When /pl-remote-pull is invoked
+    Then git merge --ff-only origin/collab/<session> is executed
+    And the command reports "Fast-forwarded local main by N commits"
+    """
+
+    def test_skill_file_fast_forwards_on_behind(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("--ff-only", content)
+        self.assertIn("Fast-forwarded", content)
+
+    def test_skill_file_uses_merge_not_rebase(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git merge", content)
+        # Remote pull uses merge on main (shared branch), never rebase
+        self.assertNotIn("git rebase", content)
+
+
+class TestPlRemotePullMergesWhenDivergedNoConflicts(unittest.TestCase):
+    """Scenario: pl-remote-pull Creates Merge Commit When DIVERGED No Conflicts
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main has 1 commit not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And the changes do not conflict
+    When /pl-remote-pull is invoked
+    Then git merge origin/collab/<session> creates a merge commit
+    And the command reports success
+    """
+
+    def test_skill_file_merges_on_diverged(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("DIVERGED", content)
+        self.assertIn("git merge origin/collab/<session>", content)
+
+    def test_skill_file_shows_pre_merge_context(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git log main..origin/collab/<session> --stat --oneline",
+                       content)
+
+
+class TestPlRemotePullExitsOnConflictWithContext(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits On Conflict With Per-File Context
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main and origin/collab/v0.5-sprint have conflicting changes
+    When /pl-remote-pull is invoked
+    Then git merge halts with conflicts
+    And the command prints commits from each side for each conflicting file
+    And provides instructions for git merge --continue or --abort
+    And exits with code 1
+    """
+
+    def test_skill_file_shows_per_file_conflict_context(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("CONFLICT", content)
+        self.assertIn("git log main..origin/collab/<session> --oneline --",
+                       content)
+        self.assertIn("git log origin/collab/<session>..main --oneline --",
+                       content)
+
+    def test_skill_file_instructs_merge_continue_or_abort(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git merge --continue", content)
+        self.assertIn("git merge --abort", content)
+
+
+class TestPlRemotePullNoOpWhenAhead(unittest.TestCase):
+    """Scenario: pl-remote-pull Is No-Op When AHEAD
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main has 2 commits not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has no commits not in local main
+    When /pl-remote-pull is invoked
+    Then the command prints "Local main is AHEAD by N commits. Nothing to pull"
+    And no git merge is executed
+    """
+
+    def test_skill_file_noop_on_ahead(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("AHEAD", content)
+        self.assertIn("Nothing to pull", content)
+
+
+class TestPlRemotePullNoOpWhenSame(unittest.TestCase):
+    """Scenario: pl-remote-pull Is No-Op When SAME
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And local main and origin/collab/v0.5-sprint point to the same commit
+    When /pl-remote-pull is invoked
+    Then the command prints "Local main is already in sync with remote"
+    And no git merge is executed
+    """
+
+    def test_skill_file_noop_on_same(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("Local main is already in sync with remote", content)
+
+
+class TestPlRemotePullDoesNotCascade(unittest.TestCase):
+    """Scenario: pl-remote-pull Does Not Cascade To Isolated Team Worktrees
+
+    Given the current branch is main with an active session "v0.5-sprint"
+    And an isolated worktree exists at .worktrees/feat1
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    When /pl-remote-pull is invoked and fast-forwards main
+    Then the isolated worktree at .worktrees/feat1 is not modified
+    And .worktrees/feat1 shows BEHIND in subsequent status checks
+    """
+
+    def test_skill_file_documents_no_cascade(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("No cascade", content)
+        self.assertIn("/pl-local-pull", content)
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()
