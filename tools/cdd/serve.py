@@ -568,6 +568,28 @@ def generate_api_status_json(cache=None):
         result["isolations_active"] = True
         result["worktrees"] = isolation_worktrees
 
+    # Remote Collaboration (cdd_remote_collab spec Section 2.7)
+    active_session = get_active_remote_session()
+    if active_session:
+        rc_config = get_remote_config()
+        sync = compute_remote_sync_state(active_session)
+        contributors = get_remote_contributors(active_session)
+        in_flight = get_remote_in_flight(active_session)
+        result["remote_collab"] = {
+            "active_session": active_session,
+            "branch": f"collab/{active_session}",
+            "remote": rc_config['remote'],
+            "sync_state": sync['sync_state'] or "SAME",
+            "commits_ahead": sync['commits_ahead'],
+            "commits_behind": sync['commits_behind'],
+            "last_fetch": _remote_collab_last_fetch,
+            "contributors": contributors,
+            "in_flight_branches": in_flight,
+        }
+
+    # remote_collab_sessions: always present (may be empty array)
+    result["remote_collab_sessions"] = get_remote_collab_sessions()
+
     return result
 
 
@@ -865,6 +887,297 @@ def get_isolation_worktrees():
     return result
 
 
+# ===================================================================
+# Remote Collaboration Data (cdd_remote_collab spec)
+# ===================================================================
+
+# In-memory last_fetch timestamp; resets to None on server restart (spec 2.4.6)
+_remote_collab_last_fetch = None
+_remote_collab_fetch_lock = threading.Lock()
+
+
+def get_remote_config():
+    """Read remote_collab config from .purlin/config.json with defaults."""
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            cfg = json.load(f)
+        rc = cfg.get('remote_collab', {})
+        return {
+            'remote': rc.get('remote', 'origin'),
+            'auto_fetch_interval': rc.get('auto_fetch_interval', 300),
+        }
+    except (json.JSONDecodeError, IOError, OSError):
+        return {'remote': 'origin', 'auto_fetch_interval': 300}
+
+
+def get_active_remote_session():
+    """Read the active remote session name from runtime file.
+
+    Returns session name string, or None if absent/empty.
+    """
+    runtime_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                'active_remote_session')
+    try:
+        with open(runtime_path, 'r') as f:
+            name = f.read().strip()
+        return name if name else None
+    except (IOError, OSError):
+        return None
+
+
+def _write_active_remote_session(name):
+    """Write the active remote session name to runtime file."""
+    runtime_dir = os.path.join(PROJECT_ROOT, '.purlin', 'runtime')
+    os.makedirs(runtime_dir, exist_ok=True)
+    path = os.path.join(runtime_dir, 'active_remote_session')
+    with open(path, 'w') as f:
+        f.write(name)
+
+
+def _clear_active_remote_session():
+    """Remove/truncate the active remote session file."""
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                        'active_remote_session')
+    try:
+        with open(path, 'w') as f:
+            f.write('')
+    except (IOError, OSError):
+        pass
+
+
+def _has_git_remote():
+    """Check if any git remote is configured."""
+    try:
+        result = subprocess.run(
+            ['git', 'remote'], capture_output=True, text=True,
+            check=True, cwd=PROJECT_ROOT, timeout=5)
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
+
+
+def get_remote_collab_sessions():
+    """List all collab/* sessions from remote tracking refs.
+
+    Returns list of dicts: [{name, branch, active}].
+    Uses locally cached refs (no network fetch).
+    """
+    active = get_active_remote_session()
+    rc = get_remote_config()
+    remote = rc['remote']
+    try:
+        result = subprocess.run(
+            ['git', 'branch', '-r', '--list', f'{remote}/collab/*'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        sessions = []
+        for line in result.stdout.strip().splitlines():
+            ref = line.strip()
+            # ref looks like "origin/collab/v0.5-sprint"
+            prefix = f'{remote}/collab/'
+            if ref.startswith(prefix):
+                name = ref[len(prefix):]
+                sessions.append({
+                    'name': name,
+                    'branch': f'collab/{name}',
+                    'active': name == active,
+                })
+        return sessions
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+
+
+def compute_remote_sync_state(session_name):
+    """Compute SAME/AHEAD/BEHIND/DIVERGED between local main and remote collab branch.
+
+    Returns dict with sync_state, commits_ahead, commits_behind.
+    Uses locally cached refs (no network fetch during polling).
+    """
+    rc = get_remote_config()
+    remote = rc['remote']
+    ref = f'{remote}/collab/{session_name}'
+
+    # Check if the remote tracking ref exists
+    try:
+        subprocess.run(
+            ['git', 'rev-parse', '--verify', ref],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
+
+    try:
+        ahead_result = subprocess.run(
+            ['git', 'log', f'{ref}..main', '--oneline'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        ahead_lines = [l for l in ahead_result.stdout.strip().splitlines() if l]
+        commits_ahead = len(ahead_lines)
+
+        behind_result = subprocess.run(
+            ['git', 'log', f'main..{ref}', '--oneline'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        behind_lines = [l for l in behind_result.stdout.strip().splitlines() if l]
+        commits_behind = len(behind_lines)
+
+        if commits_ahead == 0 and commits_behind == 0:
+            state = 'SAME'
+        elif commits_ahead > 0 and commits_behind == 0:
+            state = 'AHEAD'
+        elif commits_ahead == 0 and commits_behind > 0:
+            state = 'BEHIND'
+        else:
+            state = 'DIVERGED'
+
+        return {
+            'sync_state': state,
+            'commits_ahead': commits_ahead,
+            'commits_behind': commits_behind,
+        }
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
+
+
+def get_remote_contributors(session_name, max_entries=10):
+    """Get contributor list from collab branch git log.
+
+    Returns list of dicts sorted most-recent-first, max 10 entries.
+    """
+    rc = get_remote_config()
+    remote = rc['remote']
+    ref = f'{remote}/collab/{session_name}'
+
+    try:
+        result = subprocess.run(
+            ['git', 'log', ref, '--format=%ae|%an|%cr|%s'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=10)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+
+    # Aggregate by email (most recent first)
+    contributors = {}  # email -> {name, commits, last_active, last_subject}
+    for line in result.stdout.strip().splitlines():
+        if not line:
+            continue
+        parts = line.split('|', 3)
+        if len(parts) < 4:
+            continue
+        email, name, cr, subject = parts
+        if email not in contributors:
+            contributors[email] = {
+                'email': email,
+                'name': name,
+                'commits': 0,
+                'last_active': cr,
+                'last_subject': subject,
+            }
+        contributors[email]['commits'] += 1
+
+    # Sort by first appearance order (most recent first, as git log returns)
+    ordered = list(contributors.values())[:max_entries]
+    return ordered
+
+
+def get_remote_in_flight(session_name):
+    """Get remote isolated/* branches not yet merged into the collab branch.
+
+    Returns list of dicts: [{branch, commits_ahead, last_commit}].
+    """
+    rc = get_remote_config()
+    remote = rc['remote']
+    ref = f'{remote}/collab/{session_name}'
+
+    try:
+        result = subprocess.run(
+            ['git', 'branch', '-r', '--no-merged', ref],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=10)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+
+    branches = []
+    for line in result.stdout.strip().splitlines():
+        branch_ref = line.strip()
+        # Filter to isolated/* branches on the same remote
+        prefix = f'{remote}/isolated/'
+        if not branch_ref.startswith(prefix):
+            continue
+
+        branch_name = branch_ref[len(f'{remote}/'):]  # "isolated/feat1"
+
+        # Commits ahead of collab branch
+        try:
+            ahead = subprocess.run(
+                ['git', 'log', f'{ref}..{branch_ref}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            ahead_lines = [l for l in ahead.stdout.strip().splitlines() if l]
+            commits_ahead = len(ahead_lines)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            commits_ahead = 0
+
+        # Last commit
+        try:
+            lc = subprocess.run(
+                ['git', 'log', '-1', branch_ref, '--format=%h %s (%cr)'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            last_commit = lc.stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            last_commit = ''
+
+        branches.append({
+            'branch': branch_name,
+            'commits_ahead': commits_ahead,
+            'last_commit': last_commit,
+        })
+
+    return branches
+
+
+def _auto_fetch_worker():
+    """Background thread: periodically fetch the active remote collab branch."""
+    global _remote_collab_last_fetch
+    rc = get_remote_config()
+    interval = rc.get('auto_fetch_interval', 300)
+    if interval <= 0:
+        return  # Auto-fetch disabled
+
+    # Wait for first interval before first fetch (spec 2.4.5)
+    time.sleep(interval)
+
+    while True:
+        session = get_active_remote_session()
+        if session and not _remote_collab_fetch_lock.locked():
+            with _remote_collab_fetch_lock:
+                remote = get_remote_config()['remote']
+                try:
+                    subprocess.run(
+                        ['git', 'fetch', remote, f'collab/{session}'],
+                        capture_output=True, text=True, check=True,
+                        cwd=PROJECT_ROOT, timeout=30)
+                    _remote_collab_last_fetch = datetime.now(
+                        timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                except (subprocess.CalledProcessError,
+                        subprocess.TimeoutExpired) as e:
+                    print(f"[auto-fetch] Failed: {e}", file=sys.stderr)
+        time.sleep(interval)
+
+
+def start_auto_fetch():
+    """Start the auto-fetch background daemon thread."""
+    t = threading.Thread(target=_auto_fetch_worker, daemon=True)
+    t.start()
+    rc = get_remote_config()
+    interval = rc.get('auto_fetch_interval', 300)
+    if interval > 0:
+        print(f"[auto-fetch] Active (interval: {interval}s)")
+    else:
+        print("[auto-fetch] Disabled (interval=0)")
+
+
 # Badge CSS class mapping for role statuses
 ROLE_BADGE_CSS = {
     "DONE": "st-done",
@@ -1000,6 +1313,190 @@ def _collapsed_isolation_label(worktrees):
     return (css, f"{n} Isolated Team{'s' if n != 1 else ''}", sev_name)
 
 
+def _remote_collab_section_html(active_session, sync_data, sessions,
+                                contributors, in_flight, last_fetch,
+                                has_remote):
+    """Generate the REMOTE COLLABORATION section body HTML.
+
+    Two modes: setup (no active session) and active (session selected).
+    """
+    if not has_remote:
+        return ('<p class="dim">No git remote configured. '
+                'Add a remote to enable remote collaboration.</p>')
+
+    if not active_session:
+        # --- Setup Mode (State A) ---
+        # Creation row
+        html = (
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
+            '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
+            'Start Remote Session</span>'
+            '<input type="text" id="new-session-name" maxlength="30" placeholder="session name"'
+            ' autocapitalize="none" autocorrect="off"'
+            ' style="width:140px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
+            'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
+            ' oninput="validateSessionName(this)">'
+            '<button class="btn-critic" onclick="createRemoteSession()" id="btn-create-session"'
+            ' style="font-size:11px" disabled>Create</button>'
+            '<span id="session-ctrl-err" style="color:var(--purlin-status-error);font-size:11px;margin-left:4px"></span>'
+            '</div>'
+        )
+
+        # Known sessions table
+        if sessions:
+            html += ('<table class="ft" style="width:100%"><thead><tr>'
+                     '<th>Session</th><th>Branch</th><th></th>'
+                     '</tr></thead><tbody>')
+            for s in sessions:
+                name_esc = s['name'].replace("'", "\\'")
+                html += (
+                    f'<tr><td>{s["name"]}</td>'
+                    f'<td><code>{s["branch"]}</code></td>'
+                    f'<td style="text-align:right">'
+                    f'<button class="btn-critic" onclick="joinRemoteSession(\'{name_esc}\')"'
+                    f' style="font-size:10px;padding:2px 8px">Join</button>'
+                    f'</td></tr>'
+                )
+            html += '</tbody></table>'
+        else:
+            html += '<p class="dim">No remote collab sessions found.</p>'
+
+        return html
+
+    # --- Active Mode (State B) ---
+    sync_state = sync_data.get('sync_state')
+    commits_ahead = sync_data.get('commits_ahead', 0)
+    commits_behind = sync_data.get('commits_behind', 0)
+
+    # Sync state badge
+    if sync_state is None:
+        sync_badge = ('<span class="dim" style="font-size:11px">'
+                      'Run Check Remote to see sync state</span>')
+    elif sync_state == 'DIVERGED':
+        sync_badge = f'<span class="st-disputed">{sync_state}</span>'
+    elif sync_state in ('AHEAD', 'BEHIND'):
+        sync_badge = f'<span class="st-todo">{sync_state}</span>'
+    else:
+        sync_badge = f'<span class="st-good">{sync_state}</span>'
+
+    # Count details
+    count_detail = ''
+    if sync_state and sync_state != 'SAME':
+        parts = []
+        if commits_ahead > 0:
+            parts.append(f'{commits_ahead} ahead')
+        if commits_behind > 0:
+            parts.append(f'{commits_behind} behind')
+        if parts:
+            count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
+                            f'({", ".join(parts)})</span>')
+
+    # Last check
+    if last_fetch:
+        try:
+            ft = datetime.fromisoformat(last_fetch.replace('Z', '+00:00'))
+            delta = (datetime.now(timezone.utc) - ft).total_seconds()
+            if delta < 60:
+                last_check = 'just now'
+            elif delta < 3600:
+                last_check = f'{int(delta // 60)} min ago'
+            else:
+                last_check = f'{int(delta // 3600)}h ago'
+        except (ValueError, TypeError):
+            last_check = 'Unknown'
+    else:
+        last_check = 'Never'
+
+    # Active session panel
+    html = (
+        f'<div style="padding-top:4px">'
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+        f'<span style="color:var(--purlin-primary);font-weight:600;font-size:12px">'
+        f'{active_session}</span>'
+        f'<code style="color:var(--purlin-muted);font-size:11px">collab/{active_session}</code>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        f'{sync_badge} {count_detail}'
+        f'<span style="color:var(--purlin-dim);font-size:10px">Last check: {last_check}</span>'
+        f'<button class="btn-critic" onclick="fetchRemoteSession()" id="btn-check-remote"'
+        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Check Remote</button>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    )
+
+    # Switch session dropdown
+    if sessions:
+        html += '<select id="rc-switch-select" onchange="switchRemoteSession(this.value)" style="font-size:11px;padding:2px 6px;background:var(--purlin-surface);color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px">'
+        for s in sessions:
+            selected = ' selected' if s['name'] == active_session else ''
+            html += f'<option value="{s["name"]}"{selected}>{s["name"]}</option>'
+        html += '</select>'
+
+    name_esc = active_session.replace("'", "\\'")
+    html += (
+        f'<button class="btn-critic" onclick="disconnectRemoteSession()"'
+        f' style="font-size:10px;padding:2px 8px">Disconnect</button>'
+        f'</div></div>'
+    )
+
+    # Contributors table
+    if contributors:
+        html += ('<div style="margin-top:6px"><span style="color:var(--purlin-dim);'
+                 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">'
+                 'CONTRIBUTORS</span>'
+                 '<table class="ft" style="width:100%;margin-top:4px"><thead><tr>'
+                 '<th>Name</th><th>Commits</th><th>Last Active</th><th>Last Commit Subject</th>'
+                 '</tr></thead><tbody>')
+        for c in contributors:
+            html += (f'<tr><td>{c["name"]}</td><td>{c["commits"]}</td>'
+                     f'<td class="dim">{c["last_active"]}</td>'
+                     f'<td class="dim">{c["last_subject"]}</td></tr>')
+        html += '</tbody></table></div>'
+    else:
+        html += '<p class="dim" style="margin-top:6px">(no commits on this session yet)</p>'
+
+    # In-flight table
+    if in_flight:
+        html += ('<div style="margin-top:6px"><span style="color:var(--purlin-dim);'
+                 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">'
+                 'IN FLIGHT</span>'
+                 '<table class="ft" style="width:100%;margin-top:4px"><thead><tr>'
+                 '<th>Branch</th><th>Commits Ahead</th><th>Last Commit</th>'
+                 '</tr></thead><tbody>')
+        for b in in_flight:
+            html += (f'<tr><td><code>{b["branch"]}</code></td>'
+                     f'<td>{b["commits_ahead"]}</td>'
+                     f'<td class="dim">{b["last_commit"]}</td></tr>')
+        html += '</tbody></table></div>'
+    else:
+        html += '<p class="dim" style="margin-top:6px">(none)</p>'
+
+    return html
+
+
+def _collapsed_remote_collab_label(active_session, sync_data, sessions):
+    """Compute collapsed badge text for REMOTE COLLABORATION section.
+
+    Returns (badge_css, heading_text, badge_text) tuple.
+    """
+    if not active_session:
+        n = len(sessions)
+        if n > 0:
+            return ("", f"{n} Remote Session{'s' if n != 1 else ''}", "")
+        return ("", "REMOTE COLLABORATION", "")
+
+    state = sync_data.get('sync_state')
+    if state is None:
+        return ("st-todo", active_session, "?")
+    if state == 'DIVERGED':
+        css = "st-disputed"
+    elif state in ('AHEAD', 'BEHIND'):
+        css = "st-todo"
+    else:
+        css = "st-good"
+    return (css, active_session, state)
+
+
 def _feature_urgency(entry):
     """Compute urgency score for sorting Active features.
 
@@ -1103,6 +1600,53 @@ def generate_html(cache=None):
         '</div>'
         '<span id="isolation-name-hint" style="color:var(--purlin-muted);font-size:10px;display:none"></span>'
     )
+
+    # Remote Collaboration section data
+    rc_active_session = get_active_remote_session()
+    rc_has_remote = _has_git_remote()
+    rc_sessions = get_remote_collab_sessions() if rc_has_remote else []
+    if rc_active_session:
+        rc_sync = compute_remote_sync_state(rc_active_session)
+        rc_contributors = get_remote_contributors(rc_active_session)
+        rc_in_flight = get_remote_in_flight(rc_active_session)
+    else:
+        rc_sync = {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
+        rc_contributors = []
+        rc_in_flight = []
+
+    rc_section_html = _remote_collab_section_html(
+        rc_active_session, rc_sync, rc_sessions, rc_contributors,
+        rc_in_flight, _remote_collab_last_fetch, rc_has_remote)
+
+    rc_badge_css, rc_badge_text, rc_badge_sev = _collapsed_remote_collab_label(
+        rc_active_session, rc_sync, rc_sessions)
+    if rc_badge_css and rc_badge_sev:
+        rc_collab_badge = f'<span class="{rc_badge_css}">{rc_badge_sev}</span>'
+    else:
+        rc_collab_badge = ''
+
+    # Cross-section annotation in MAIN WORKSPACE body (spec 2.6)
+    workspace_remote_sync = ''
+    if rc_active_session:
+        if _remote_collab_last_fetch:
+            try:
+                ft = datetime.fromisoformat(
+                    _remote_collab_last_fetch.replace('Z', '+00:00'))
+                delta = (datetime.now(timezone.utc) - ft).total_seconds()
+                if delta < 60:
+                    sync_ago = 'just now'
+                elif delta < 3600:
+                    sync_ago = f'{int(delta // 60)} min ago'
+                else:
+                    sync_ago = f'{int(delta // 3600)}h ago'
+            except (ValueError, TypeError):
+                sync_ago = 'Unknown'
+        else:
+            sync_ago = 'Never synced'
+        workspace_remote_sync = (
+            f'<p class="dim" style="margin-top:2px;font-size:11px">'
+            f'Last remote sync: {sync_ago}</p>'
+        )
 
     # Count badges for collapsed summary
     active_count = len(active_features)
@@ -1498,12 +2042,23 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
         <span class="chevron" id="workspace-section-chevron">&#9654;</span>
-        <h3>Workspace</h3>
+        <h3>Main Workspace</h3>
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">
         {git_html}
         <p class="dim" style="margin-top:4px">{last_commit}</p>
+        {workspace_remote_sync}
+      </div>
+    </div>
+    <div class="ctx" style="margin-top:10px">
+      <div class="section-hdr" onclick="toggleSection('remote-collab-section')">
+        <span class="chevron" id="remote-collab-section-chevron">&#9654;</span>
+        <span id="rc-heading" data-expanded="REMOTE COLLABORATION" data-collapsed-text="{rc_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">REMOTE COLLABORATION</span>
+        <span class="section-badge" id="remote-collab-section-badge" style="display:none">{rc_collab_badge}</span>
+      </div>
+      <div class="section-body collapsed" id="remote-collab-section">
+        {rc_section_html}
       </div>
     </div>
     <div class="ctx" style="margin-top:10px">
@@ -1699,10 +2254,12 @@ function updateTimestamp() {{
 }}
 
 function refreshStatus() {{
-  if (rcIsolationPending) return;
-  // Skip refresh while user is typing in the isolation name input
+  if (rcIsolationPending || rcRemotePending) return;
+  // Skip refresh while user is typing in the isolation name or session name input
   var isoInput = document.getElementById('new-isolation-name');
   if (isoInput && document.activeElement === isoInput) return;
+  var sesInput = document.getElementById('new-session-name');
+  if (sesInput && document.activeElement === sesInput) return;
   // Save isolation name input value before DOM refresh
   var _isoHadFocus = false;
   if (isoInput) _pendingIsolationName = isoInput.value;
@@ -1764,7 +2321,7 @@ function getSectionStates() {{
 
 function saveSectionStates() {{
   var states = {{}};
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'remote-collab-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
     var el = document.getElementById(id);
     if (el) states[id] = el.classList.contains('collapsed') ? 'collapsed' : 'expanded';
   }});
@@ -1773,7 +2330,7 @@ function saveSectionStates() {{
 
 function applySectionStates() {{
   var states = getSectionStates();
-  ['active-section', 'complete-section', 'workspace-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
+  ['active-section', 'complete-section', 'workspace-section', 'remote-collab-section', 'agents-section', 'release-checklist', 'isolation-section'].forEach(function(id) {{
     var saved = states[id];
     if (!saved) return;
     var body = document.getElementById(id);
@@ -1792,6 +2349,7 @@ function applySectionStates() {{
   }});
   // Apply isolation sub-heading label swap
   applyIsolationHeadingState();
+  applyRCHeadingState();
 }}
 
 function toggleSection(sectionId) {{
@@ -1812,6 +2370,10 @@ function toggleSection(sectionId) {{
   // Isolation sub-heading: swap heading text on collapse/expand
   if (sectionId === 'isolation-section') {{
     applyIsolationHeadingState();
+  }}
+  // Remote Collab sub-heading: swap heading text on collapse/expand
+  if (sectionId === 'remote-collab-section') {{
+    applyRCHeadingState();
   }}
   saveSectionStates();
 }}
@@ -1834,6 +2396,33 @@ function applyIsolationHeadingState() {{
     }}
   }} else {{
     heading.textContent = heading.getAttribute('data-expanded') || 'ISOLATED TEAMS';
+    heading.className = '';
+    heading.style.fontSize = '11px';
+    heading.style.fontWeight = '700';
+    heading.style.letterSpacing = '0.1em';
+    heading.style.textTransform = 'uppercase';
+    heading.style.color = 'var(--purlin-dim)';
+  }}
+}}
+
+function applyRCHeadingState() {{
+  var heading = document.getElementById('rc-heading');
+  var body = document.getElementById('remote-collab-section');
+  if (!heading || !body) return;
+  var isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {{
+    var collapsedText = heading.getAttribute('data-collapsed-text');
+    if (collapsedText) {{
+      heading.textContent = collapsedText;
+      heading.className = '';
+      heading.style.fontSize = '11px';
+      heading.style.fontWeight = '700';
+      heading.style.letterSpacing = '0.1em';
+      heading.style.textTransform = 'uppercase';
+      heading.style.color = 'var(--purlin-muted)';
+    }}
+  }} else {{
+    heading.textContent = heading.getAttribute('data-expanded') || 'REMOTE COLLABORATION';
     heading.className = '';
     heading.style.fontSize = '11px';
     heading.style.fontWeight = '700';
@@ -2222,6 +2811,91 @@ function killModalConfirm() {{
 function killModalCancel() {{
   var overlay = document.getElementById('kill-modal-overlay');
   if (overlay) overlay.style.display = 'none';
+}}
+
+// ============================
+// Remote Collaboration
+// ============================
+var rcRemotePending = false;
+
+function validateSessionName(input) {{
+  var btn = document.getElementById('btn-create-session');
+  var re = /^[a-zA-Z0-9_.\\-]+$/;
+  var val = input.value;
+  if (!val || !re.test(val) || val.length > 30 || val.startsWith('.') || val.startsWith('-') || val.endsWith('.') || val.endsWith('-') || val.indexOf('..') !== -1) {{
+    if (btn) btn.disabled = true;
+  }} else {{
+    if (btn) btn.disabled = false;
+  }}
+}}
+
+function createRemoteSession() {{
+  var input = document.getElementById('new-session-name');
+  var errEl = document.getElementById('session-ctrl-err');
+  var btn = document.getElementById('btn-create-session');
+  if (!input || !input.value) return;
+  var name = input.value;
+  if (errEl) errEl.textContent = '';
+  if (btn) btn.disabled = true;
+  rcRemotePending = true;
+  fetch('/remote-collab/create', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:name}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (d.status === 'ok') {{ input.value = ''; refreshStatus(); }}
+      else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
+    }})
+    .catch(function() {{ rcRemotePending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
+}}
+
+function joinRemoteSession(name) {{
+  rcRemotePending = true;
+  fetch('/remote-collab/switch', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:name}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (d.status === 'ok') {{ refreshStatus(); }}
+    }})
+    .catch(function() {{ rcRemotePending = false; }});
+}}
+
+function switchRemoteSession(name) {{
+  rcRemotePending = true;
+  fetch('/remote-collab/switch', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:name}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (d.status === 'ok') {{ refreshStatus(); }}
+    }})
+    .catch(function() {{ rcRemotePending = false; }});
+}}
+
+function disconnectRemoteSession() {{
+  rcRemotePending = true;
+  fetch('/remote-collab/disconnect', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (d.status === 'ok') {{ refreshStatus(); }}
+    }})
+    .catch(function() {{ rcRemotePending = false; }});
+}}
+
+function fetchRemoteSession() {{
+  var btn = document.getElementById('btn-check-remote');
+  if (btn) {{ btn.textContent = 'Checking...'; btn.disabled = true; }}
+  rcRemotePending = true;
+  fetch('/remote-collab/fetch', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (btn) {{ btn.textContent = 'Check Remote'; btn.disabled = false; }}
+      if (d.status === 'ok') {{ refreshStatus(); }}
+    }})
+    .catch(function() {{
+      rcRemotePending = false;
+      if (btn) {{ btn.textContent = 'Check Remote'; btn.disabled = false; }}
+    }});
 }}
 
 // ============================
@@ -3384,6 +4058,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_config_agents()
         elif self.path == '/release-checklist/config':
             self._handle_release_config()
+        elif self.path == '/remote-collab/create':
+            self._handle_remote_collab_create()
+        elif self.path == '/remote-collab/switch':
+            self._handle_remote_collab_switch()
+        elif self.path == '/remote-collab/disconnect':
+            self._handle_remote_collab_disconnect()
+        elif self.path == '/remote-collab/fetch':
+            self._handle_remote_collab_fetch()
         else:
             self.send_response(404)
             self.end_headers()
@@ -3654,6 +4336,150 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except (IOError, OSError) as e:
             self._send_json(500, {"ok": False, "error": str(e)})
 
+    def _handle_remote_collab_create(self):
+        """POST /remote-collab/create — create a new collab session."""
+        global _remote_collab_last_fetch
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        name = body.get('name', '').strip()
+        if not name:
+            self._send_json(400, {'error': 'Name is required'})
+            return
+
+        # Validate: [a-zA-Z0-9_.-]+, 1-30 chars, no leading/trailing dots/hyphens, no ..
+        import re
+        if (len(name) > 30 or not re.match(r'^[a-zA-Z0-9_.\-]+$', name) or
+                name.startswith('.') or name.startswith('-') or
+                name.endswith('.') or name.endswith('-') or '..' in name):
+            self._send_json(400, {'error': 'Invalid session name'})
+            return
+
+        rc = get_remote_config()
+        remote = rc['remote']
+        branch = f'collab/{name}'
+
+        try:
+            # Create local branch from main HEAD
+            subprocess.run(
+                ['git', 'branch', branch, 'main'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
+
+            # Push to remote
+            subprocess.run(
+                ['git', 'push', remote, branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=30)
+
+            # Write runtime file
+            _write_active_remote_session(name)
+            _remote_collab_last_fetch = datetime.now(
+                timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+            self._send_json(200, {
+                'status': 'ok',
+                'session': name,
+                'branch': branch,
+            })
+        except subprocess.CalledProcessError as exc:
+            # Cleanup: remove local branch if push failed
+            subprocess.run(
+                ['git', 'branch', '-D', branch],
+                capture_output=True, text=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            self._send_json(500, {
+                'error': exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            })
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {'error': 'Operation timed out'})
+
+    def _handle_remote_collab_switch(self):
+        """POST /remote-collab/switch — switch to a different session."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        name = body.get('name', '').strip()
+        if not name:
+            self._send_json(400, {'error': 'Name is required'})
+            return
+
+        rc = get_remote_config()
+        remote = rc['remote']
+        ref = f'{remote}/collab/{name}'
+
+        # Verify remote tracking ref exists, or fetch it
+        try:
+            subprocess.run(
+                ['git', 'rev-parse', '--verify', ref],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except subprocess.CalledProcessError:
+            # Try fetching
+            try:
+                subprocess.run(
+                    ['git', 'fetch', remote, f'collab/{name}'],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                self._send_json(400, {
+                    'error': f'Session "{name}" not found on remote'
+                })
+                return
+
+        _write_active_remote_session(name)
+        self._send_json(200, {'status': 'ok', 'session': name})
+
+    def _handle_remote_collab_disconnect(self):
+        """POST /remote-collab/disconnect — clear active session."""
+        _clear_active_remote_session()
+        self._send_json(200, {'status': 'ok'})
+
+    def _handle_remote_collab_fetch(self):
+        """POST /remote-collab/fetch — fetch active session from remote."""
+        global _remote_collab_last_fetch
+        session = get_active_remote_session()
+        if not session:
+            self._send_json(400, {'error': 'No active remote session'})
+            return
+
+        rc = get_remote_config()
+        remote = rc['remote']
+
+        if _remote_collab_fetch_lock.locked():
+            self._send_json(200, {
+                'status': 'ok',
+                'fetched_at': _remote_collab_last_fetch,
+            })
+            return
+
+        with _remote_collab_fetch_lock:
+            try:
+                subprocess.run(
+                    ['git', 'fetch', remote, f'collab/{session}'],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+                _remote_collab_last_fetch = datetime.now(
+                    timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                self._send_json(200, {
+                    'status': 'ok',
+                    'fetched_at': _remote_collab_last_fetch,
+                })
+            except subprocess.CalledProcessError as exc:
+                self._send_json(500, {
+                    'error': exc.stderr.strip() or str(exc)
+                })
+            except subprocess.TimeoutExpired:
+                self._send_json(500, {'error': 'Fetch timed out'})
+
     def log_message(self, format, *args):
         pass  # Suppress request logging noise
 
@@ -3687,6 +4513,7 @@ if __name__ == "__main__":
                   file=sys.stderr)
 
         start_file_watcher()
+        start_auto_fetch()
 
         socketserver.TCPServer.allow_reuse_address = True
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
