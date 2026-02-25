@@ -181,9 +181,11 @@ Feature files MAY contain a `## User Testing Discoveries` section as the last se
 ### 7.3 Discovery Lifecycle
 Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
+**Shortcut — No Spec Change Needed:** When the Architect (for DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE) or Builder (for BUG) reviews an OPEN entry and confirms no specification or implementation change is required, the entry moves directly to `RESOLVED` with a resolution note explaining why no change was needed. The SPEC_UPDATED step is skipped. QA prunes it normally.
+
 *   **OPEN:** Any agent records the finding.
 *   **SPEC_UPDATED:** Architect updates Gherkin scenarios to address it.
-*   **RESOLVED:** Builder re-implements, QA re-verifies and confirms fix.
+*   **RESOLVED:** The fix is complete (or no fix was needed). QA prunes the entry — this is unconditional regardless of the `Action Required` field value.
 *   **PRUNED:** QA removes entry from Discoveries, adds one-liner to Implementation Notes. Git history preserves full record.
 
 ### 7.4 Queue Hygiene
