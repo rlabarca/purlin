@@ -320,6 +320,14 @@ Architect (isolated/design)          Builder (isolated/feat1)
 
 ### 2. Add Purlin as a Submodule
 
+Your project must be an initialized git repository. If it isn't already:
+
+```bash
+git init
+```
+
+Then add Purlin as a submodule:
+
 ```bash
 git submodule add https://github.com/rlabarca/purlin purlin
 git submodule update --init
