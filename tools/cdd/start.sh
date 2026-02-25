@@ -32,7 +32,7 @@ fi
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
 
-nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
+PURLIN_PROJECT_ROOT="$PROJECT_ROOT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
 echo $! > "$RUNTIME_DIR/cdd.pid"
 SERVER_PID=$(cat "$RUNTIME_DIR/cdd.pid")
 

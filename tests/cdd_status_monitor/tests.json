@@ -1,1 +1,1 @@
-{"status": "PASS", "tests": 6, "failures": 0, "tool": "cdd_lifecycle", "runner": "bash"}
+{"status": "PASS", "test_count": 68, "passed": 68, "failed": 0, "runner": "pytest + lifecycle", "timestamp": "2026-02-25"}

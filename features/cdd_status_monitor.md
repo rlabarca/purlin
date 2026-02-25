@@ -625,4 +625,4 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** ACTIVE header shows only `ACTIVE (N)` with no `[PHASE (X/Y)]` annotation, even though the delivery plan is present at `.purlin/cache/delivery_plan.md` and the Builder is actively working a phase.
 - **Expected Behavior:** When a delivery plan exists and has at least one non-COMPLETE phase, the ACTIVE section heading should display `ACTIVE (<count>) [PHASE (<current>/<total>)]` with the phase annotation styled in `--purlin-warn` (yellow).
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED

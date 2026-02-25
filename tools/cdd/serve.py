@@ -350,7 +350,9 @@ def get_delivery_phase():
     try:
         with open(plan_path, 'r') as f:
             content = f.read()
-    except (IOError, OSError):
+    except (IOError, OSError) as e:
+        print(f"Warning: Failed to read delivery plan at {plan_path}: {e}",
+              file=sys.stderr)
         return None
 
     # Match canonical format: ## Phase N — Label [STATUS]
@@ -360,6 +362,9 @@ def get_delivery_phase():
     )
     matches = phase_pattern.findall(content)
     if not matches:
+        print(f"Warning: delivery plan exists at {plan_path} but no phase "
+              f"headings matched (expected '## Phase N — Label [STATUS]')",
+              file=sys.stderr)
         return None
 
     total = len(matches)

@@ -1088,6 +1088,96 @@ class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
             serve.CACHE_DIR = orig_cache
 
 
+class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
+    """Scenario: Delivery Phase Annotation in ACTIVE Header.
+
+    Verifies that when a delivery plan exists with an active phase,
+    the generated HTML includes the [PHASE (N/M)] annotation in the
+    ACTIVE section heading.
+    """
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    @patch('serve.get_git_status', return_value='')
+    @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_active_heading_includes_phase_annotation(self, *mocks):
+        """ACTIVE heading shows [PHASE (2/3)] when delivery plan has active phase."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 — Foundation [COMPLETE]\n\n"
+            "## Phase 2 — Core [IN_PROGRESS]\n\n"
+            "## Phase 3 — Polish [PENDING]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        features_dir = os.path.join(self.test_dir, "features")
+        tests_dir = os.path.join(self.test_dir, "tests")
+        os.makedirs(features_dir)
+        os.makedirs(tests_dir)
+        with open(os.path.join(features_dir, "test_feat.md"), "w") as f:
+            f.write('# Feature\n\n> Label: "Test Feature"\n')
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        orig_abs = serve.FEATURES_ABS
+        orig_tests = serve.TESTS_DIR
+        orig_root = serve.PROJECT_ROOT
+        serve.CACHE_DIR = self.cache_dir
+        serve.FEATURES_ABS = features_dir
+        serve.TESTS_DIR = tests_dir
+        serve.PROJECT_ROOT = self.test_dir
+        try:
+            html = serve.generate_html()
+            self.assertIn('[PHASE (2/3)]', html,
+                          "ACTIVE heading must include [PHASE (2/3)] annotation")
+        finally:
+            serve.CACHE_DIR = orig_cache
+            serve.FEATURES_ABS = orig_abs
+            serve.TESTS_DIR = orig_tests
+            serve.PROJECT_ROOT = orig_root
+
+    @patch('serve.get_git_status', return_value='')
+    @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_active_heading_no_phase_when_no_plan(self, *mocks):
+        """ACTIVE heading has no [PHASE] annotation when no delivery plan exists."""
+        features_dir = os.path.join(self.test_dir, "features")
+        tests_dir = os.path.join(self.test_dir, "tests")
+        os.makedirs(features_dir)
+        os.makedirs(tests_dir)
+        with open(os.path.join(features_dir, "test_feat.md"), "w") as f:
+            f.write('# Feature\n\n> Label: "Test Feature"\n')
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        orig_abs = serve.FEATURES_ABS
+        orig_tests = serve.TESTS_DIR
+        orig_root = serve.PROJECT_ROOT
+        serve.CACHE_DIR = self.cache_dir
+        serve.FEATURES_ABS = features_dir
+        serve.TESTS_DIR = tests_dir
+        serve.PROJECT_ROOT = self.test_dir
+        try:
+            html = serve.generate_html()
+            self.assertNotIn('[PHASE', html,
+                             "ACTIVE heading must NOT include [PHASE] when no plan")
+        finally:
+            serve.CACHE_DIR = orig_cache
+            serve.FEATURES_ABS = orig_abs
+            serve.TESTS_DIR = orig_tests
+            serve.PROJECT_ROOT = orig_root
+
+
 # ===================================================================
 # Tombstone Entry Tests
 # ===================================================================
