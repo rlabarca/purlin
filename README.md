@@ -17,6 +17,19 @@ The framework is built on four goals:
 
 By colocating technical implementation knowledge with behavioral specifications (Gherkin), the framework ensures that system context is never lost and that codebases can be reliably rebuilt or refactored by AI agents with minimal human intervention.
 
+## Screenshots
+
+*(From v0.6.0)*
+
+**CDD Dashboard**
+![CDD Dashboard](assets/PurlinCDDV0.6.0.png)
+
+**CDD Spec Map**
+![CDD Spec Map](assets/PurlinSpecMapV0.6.0.png)
+
+**Purlin Example Workspace**
+![Purlin Example Workspace](assets/PurlinWorkspaceV0.6.0.png)
+
 ## Core Concepts
 
 ### 1. Continuous Design-Driven (CDD)
