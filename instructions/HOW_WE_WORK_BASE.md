@@ -186,7 +186,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 *   **OPEN:** Any agent records the finding.
 *   **SPEC_UPDATED:** Architect updates Gherkin scenarios to address it.
 *   **RESOLVED:** The fix is complete (or no fix was needed). QA prunes the entry — this is unconditional regardless of the `Action Required` field value.
-*   **PRUNED:** QA removes entry from Discoveries, adds one-liner to Implementation Notes. Git history preserves full record.
+*   **PRUNED:** QA removes entry from Discoveries, adds one-liner to Implementation Notes. Git history preserves full record. **Format:** Pruned one-liners MUST use unbracketed type labels (e.g., `BUG —`, `DISCOVERY —`), never bracket-style tags (`[BUG]`, `[DISCOVERY]`). Bracket tags in Implementation Notes are reserved for Builder Decisions (see policy_critic.md Section 2.3).
 
 ### 7.4 Queue Hygiene
 *   The section only contains OPEN and SPEC_UPDATED entries (active work).

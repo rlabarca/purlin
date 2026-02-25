@@ -163,7 +163,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 ### 4.5 Pruning Protocol
 When an entry reaches RESOLVED status:
 1.  Remove the entry from `## User Testing Discoveries`.
-2.  Add a concise one-liner to the companion file (`features/<name>.impl.md`) if it exists, or to `## Implementation Notes`, summarizing what was found and how it was resolved.
+2.  Add a concise one-liner to the companion file (`features/<name>.impl.md`) if it exists, or to `## Implementation Notes`, summarizing what was found and how it was resolved. **Format:** `<TYPE> — <summary>` (e.g., `DISCOVERY — Creation row padding fixed with 4px top margin`). Do NOT use bracket-style tags like `[DISCOVERY]` or `[BUG]` — bracket tags in Implementation Notes are reserved for Builder Decisions and will trigger false positives in the Critic's Builder Decision Audit.
 3.  Git commit the pruning.
 
 ## 5. Interactive Verification Workflow
