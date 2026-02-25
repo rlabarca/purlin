@@ -11,9 +11,9 @@ Five TODO features spanning a BUG fix, a new policy anchor, spec-update verifica
 **Completion Commit:** 79fbe23
 **QA Bugs Addressed:** —
 
-## Phase 2 — Remote Collaboration [PENDING]
+## Phase 2 — Remote Collaboration [COMPLETE]
 **Features:** workflow_checklist_system.md, cdd_remote_collab.md
-**Completion Commit:** —
+**Completion Commit:** 92d95bd
 **QA Bugs Addressed:** —
 
 ## Plan Amendments
