@@ -772,6 +772,11 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
 def run_user_testing_audit(content):
     """Parse User Testing Discoveries section and count entries.
 
+    Uses structured field parsing (parse_discovery_entries) to detect
+    statuses from the ``- **Status:** <VALUE>`` field line only — not
+    from free-text prose.  See policy_critic.md Section 2.4 "Status
+    Detection Constraint".
+
     Returns dict with 'status', 'bugs', 'discoveries', 'intent_drifts',
     'spec_disputes'.
     """
@@ -786,23 +791,19 @@ def run_user_testing_audit(content):
             'spec_disputes': 0,
         }
 
-    # Count by type
-    bugs = len(re.findall(r'\[BUG\]', section_text))
-    discoveries = len(re.findall(r'\[DISCOVERY\]', section_text))
-    intent_drifts = len(re.findall(r'\[INTENT_DRIFT\]', section_text))
-    spec_disputes = len(re.findall(r'\[SPEC_DISPUTE\]', section_text))
+    entries = parse_discovery_entries(section_text)
 
-    # Check for OPEN or SPEC_UPDATED items
-    open_count = len(re.findall(r'\bOPEN\b', section_text))
-    spec_updated_count = len(re.findall(r'\bSPEC_UPDATED\b', section_text))
+    bugs = sum(1 for e in entries if e['type'] == 'BUG')
+    discoveries = sum(1 for e in entries if e['type'] == 'DISCOVERY')
+    intent_drifts = sum(1 for e in entries if e['type'] == 'INTENT_DRIFT')
+    spec_disputes = sum(1 for e in entries if e['type'] == 'SPEC_DISPUTE')
 
-    if open_count > 0 or spec_updated_count > 0:
-        status = 'HAS_OPEN_ITEMS'
-    else:
-        status = 'CLEAN'
+    # Status detection via structured field parsing only (Section 2.4)
+    has_open = any(
+        e['status'] in ('OPEN', 'SPEC_UPDATED') for e in entries)
 
     return {
-        'status': status,
+        'status': 'HAS_OPEN_ITEMS' if has_open else 'CLEAN',
         'bugs': bugs,
         'discoveries': discoveries,
         'intent_drifts': intent_drifts,
@@ -906,8 +907,14 @@ def generate_action_items(feature_result, cdd_status=None):
         })
 
     # Pre-parse User Testing discovery entries (block-level parsing)
+    # Parse whenever any entries exist (not just HAS_OPEN_ITEMS) so that
+    # RESOLVED entries are available for the pruning signal (Section 2.4).
     ut_entries = []
-    if user_testing['status'] == 'HAS_OPEN_ITEMS':
+    _has_any_entries = (
+        user_testing.get('bugs', 0) + user_testing.get('discoveries', 0)
+        + user_testing.get('intent_drifts', 0)
+        + user_testing.get('spec_disputes', 0)) > 0
+    if _has_any_entries:
         _ut_content = read_feature_file(
             os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
         _ut_section = get_user_testing_section(_ut_content)
@@ -1139,6 +1146,21 @@ def generate_action_items(feature_result, cdd_status=None):
                         f'Re-verify {feature_name}: {entry["heading"]}'
                     ),
                 })
+
+    # RESOLVED pruning signal -> LOW QA (Section 2.4)
+    # Unpruned RESOLVED entries should be surfaced so QA cleans them up.
+    resolved_count = sum(
+        1 for e in ut_entries if e['status'] == 'RESOLVED')
+    if resolved_count > 0:
+        qa_items.append({
+            'priority': 'LOW',
+            'category': 'user_testing',
+            'feature': feature_name,
+            'description': (
+                f'Prune {resolved_count} RESOLVED discovery(ies) '
+                f'in {feature_name}'
+            ),
+        })
 
     return {
         'architect': architect_items,

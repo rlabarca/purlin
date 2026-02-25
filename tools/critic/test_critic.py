@@ -739,8 +739,12 @@ class TestUserTestingAudit(unittest.TestCase):
     def test_open_items(self):
         content = """\
 ## User Testing Discoveries
-- [BUG] (OPEN) Something broken
-- [DISCOVERY] (SPEC_UPDATED) New behavior found
+
+### [BUG] Something broken (Discovered: 2026-01-01)
+- **Status:** OPEN
+
+### [DISCOVERY] New behavior found (Discovered: 2026-01-02)
+- **Status:** SPEC_UPDATED
 """
         result = run_user_testing_audit(content)
         self.assertEqual(result['status'], 'HAS_OPEN_ITEMS')
@@ -765,7 +769,9 @@ class TestUserTestingAudit(unittest.TestCase):
     def test_resolved_items_clean(self):
         content = """\
 ## User Testing Discoveries
-- [BUG] (RESOLVED) Fixed the thing
+
+### [BUG] Fixed the thing (Discovered: 2026-01-01)
+- **Status:** RESOLVED
 """
         result = run_user_testing_audit(content)
         self.assertEqual(result['status'], 'CLEAN')
@@ -774,11 +780,26 @@ class TestUserTestingAudit(unittest.TestCase):
     def test_intent_drift_open(self):
         content = """\
 ## User Testing Discoveries
-- [INTENT_DRIFT] (OPEN) Behavior is technically correct but misses intent
+
+### [INTENT_DRIFT] Behavior is technically correct but misses intent (Discovered: 2026-01-01)
+- **Status:** OPEN
 """
         result = run_user_testing_audit(content)
         self.assertEqual(result['status'], 'HAS_OPEN_ITEMS')
         self.assertEqual(result['intent_drifts'], 1)
+
+    def test_status_keyword_in_prose_ignored(self):
+        """Status Detection Constraint: OPEN in prose must not trigger HAS_OPEN_ITEMS."""
+        content = """\
+## User Testing Discoveries
+
+### [BUG] Was open, now fixed (Discovered: 2026-01-01)
+- **Observed Behavior:** This was OPEN for a while and SPEC_UPDATED too.
+- **Status:** RESOLVED
+"""
+        result = run_user_testing_audit(content)
+        self.assertEqual(result['status'], 'CLEAN')
+        self.assertEqual(result['bugs'], 1)
 
 
 # ===================================================================
@@ -2242,7 +2263,9 @@ class TestSpecDisputeCounted(unittest.TestCase):
     def test_open_spec_dispute_counted(self):
         content = """\
 ## User Testing Discoveries
-- [SPEC_DISPUTE] (OPEN) User disagrees with expected behavior
+
+### [SPEC_DISPUTE] User disagrees with expected behavior (Discovered: 2026-01-01)
+- **Status:** OPEN
 """
         result = run_user_testing_audit(content)
         self.assertEqual(result['status'], 'HAS_OPEN_ITEMS')
@@ -2266,9 +2289,15 @@ class TestSpecDisputeCounted(unittest.TestCase):
     def test_multiple_spec_disputes(self):
         content = """\
 ## User Testing Discoveries
-- [SPEC_DISPUTE] (OPEN) First dispute
-- [SPEC_DISPUTE] (OPEN) Second dispute
-- [BUG] (OPEN) A bug too
+
+### [SPEC_DISPUTE] First dispute (Discovered: 2026-01-01)
+- **Status:** OPEN
+
+### [SPEC_DISPUTE] Second dispute (Discovered: 2026-01-02)
+- **Status:** OPEN
+
+### [BUG] A bug too (Discovered: 2026-01-03)
+- **Status:** OPEN
 """
         result = run_user_testing_audit(content)
         self.assertEqual(result['spec_disputes'], 2)
@@ -3225,6 +3254,86 @@ Overview.
             status = compute_role_status(result, cdd_status)
             self.assertEqual(status['qa'], 'CLEAN')
             self.assertEqual(status['architect'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestResolvedPruningSignal(unittest.TestCase):
+    """Scenario: RESOLVED Pruning Signal generates LOW QA action item."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Resolved Items
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [BUG] Fixed bug one (Discovered: 2026-01-01)
+- **Status:** RESOLVED
+
+### [DISCOVERY] Resolved finding (Discovered: 2026-01-02)
+- **Status:** RESOLVED
+"""
+        with open(os.path.join(self.features_dir, 'resolved.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_resolved_entries_generate_low_qa_prune_item(self):
+        """RESOLVED entries generate LOW QA action item to prune."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved.md'
+            result['user_testing'] = {
+                'status': 'CLEAN',
+                'bugs': 1, 'discoveries': 1,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'testing': [{'file': 'features/resolved.md'}],
+                    'todo': [], 'complete': [],
+                },
+            }
+            items = generate_action_items(result, cdd_status=cdd_status)
+            prune_items = [
+                i for i in items['qa']
+                if 'Prune' in i['description']
+            ]
+            self.assertEqual(len(prune_items), 1)
+            self.assertEqual(prune_items[0]['priority'], 'LOW')
+            self.assertIn('2 RESOLVED', prune_items[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_no_prune_item_when_no_resolved(self):
+        """No pruning signal when no RESOLVED entries exist."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved.md'
+            result['user_testing'] = {
+                'status': 'CLEAN',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result, cdd_status=None)
+            prune_items = [
+                i for i in items['qa']
+                if 'Prune' in i['description']
+            ]
+            self.assertEqual(len(prune_items), 0)
         finally:
             critic.FEATURES_DIR = orig_features
 
