@@ -6,9 +6,9 @@
 ## Summary
 Five TODO features spanning a BUG fix, a new policy anchor, spec-update verifications, and a full new Remote Collaboration dashboard feature. Phased to separate foundation/prerequisite work (Phase 1) from the new remote collab feature set (Phase 2).
 
-## Phase 1 — Foundations & BUG Fix [IN_PROGRESS]
+## Phase 1 — Foundations & BUG Fix [COMPLETE]
 **Features:** cdd_status_monitor.md, policy_remote_collab.md, cdd_isolated_teams.md
-**Completion Commit:** —
+**Completion Commit:** 79fbe23
 **QA Bugs Addressed:** —
 
 ## Phase 2 — Remote Collaboration [PENDING]
