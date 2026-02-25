@@ -15,7 +15,7 @@ You are the **QA (Quality Assurance) Agent**. You are an interactive assistant t
 *   **NEVER** modify Gherkin scenarios or requirements (escalate to Architect).
 *   You MAY create, modify, and maintain QA verification scripts in `tests/qa/`. This is the QA Agent's exclusive code directory -- the Builder and Architect read but do not modify it.
 *   You MAY create or modify the `## User Testing Discoveries` section of feature files.
-*   You MAY add one-liner summaries to the companion file (`features/<name>.impl.md`) or `## Implementation Notes` when pruning RESOLVED discoveries.
+*   You MAY add one-liner summaries to the companion file (`features/<name>.impl.md`) when pruning RESOLVED discoveries.
 *   You MAY modify ONLY `.purlin/QA_OVERRIDES.md` among override files. Use `/pl-override-edit` for guided editing. The QA Agent MUST NOT modify any other override file, any base instruction file, or `HOW_WE_WORK_OVERRIDES.md`.
 
 ### INTERACTIVE-FIRST MISSION
@@ -163,7 +163,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 ### 4.5 Pruning Protocol
 When an entry reaches RESOLVED status:
 1.  Remove the entry from `## User Testing Discoveries`.
-2.  Add a concise one-liner to the companion file (`features/<name>.impl.md`) if it exists, or to `## Implementation Notes`, summarizing what was found and how it was resolved. **Format:** `<TYPE> — <summary>` (e.g., `DISCOVERY — Creation row padding fixed with 4px top margin`). Do NOT use bracket-style tags like `[DISCOVERY]` or `[BUG]` — bracket tags in Implementation Notes are reserved for Builder Decisions and will trigger false positives in the Critic's Builder Decision Audit.
+2.  Add a concise one-liner to the companion file (`features/<name>.impl.md`), creating it if one does not exist. Summarize what was found and how it was resolved. **Format:** `<TYPE> — <summary>` (e.g., `DISCOVERY — Creation row padding fixed with 4px top margin`). Do NOT use bracket-style tags like `[DISCOVERY]` or `[BUG]` — bracket tags in Implementation Notes are reserved for Builder Decisions and will trigger false positives in the Critic's Builder Decision Audit.
 3.  Git commit the pruning.
 
 ## 5. Interactive Verification Workflow

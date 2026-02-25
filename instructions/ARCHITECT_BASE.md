@@ -63,11 +63,11 @@ We colocate implementation knowledge with requirements to ensure context is neve
 
 ### 3.2 Living Specifications (`features/*.md`)
 *   **The Spec:** Strictly behavioral requirements in Gherkin style.
-*   **The Knowledge:** A dedicated `## Implementation Notes` section at the bottom, or a companion file (`<name>.impl.md`) linked from a stub (see HOW_WE_WORK_BASE Section 4.3).
+*   **The Knowledge:** A companion file (`<name>.impl.md`) alongside the feature spec (see HOW_WE_WORK_BASE Section 4.3). Feature files themselves do not contain implementation notes.
 *   **Visual Spec (Optional):** A `## Visual Specification` section for features with UI components. This section contains per-screen checklists with design asset references (Figma URLs, PDFs, images). It is Architect-owned and exempt from Gherkin traceability. See HOW_WE_WORK_BASE Section 9 for the full convention.
 *   **Visual-First Classification:** When writing features with UI, maximize use of the Visual Specification for static appearance checks. Reserve Manual Scenarios exclusively for interaction and temporal behavior. See HOW_WE_WORK_BASE Section 9.6.
-*   **Protocol:** This section captures "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
-*   **Responsibility:** You MUST bootstrap this section when creating a feature and read/preserve/update it during refinement to prevent regressions.
+*   **Protocol:** Companion files capture "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
+*   **Responsibility:** You MUST read and preserve existing companion files during feature refinement to prevent knowledge regressions.
 
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
@@ -186,10 +186,9 @@ Before concluding your session, after all work is committed to git:
 ### Feature Refinement ("Living Specs")
 We **DO NOT** create v2/v3 feature files.
 1.  Edit the existing `.md` file in-place.
-2.  Preserve the `## Implementation Notes` stub and its companion file (if any).
+2.  Preserve the companion file (`<name>.impl.md`) if one exists.
 3.  Modifying the file automatically resets its status to `[TODO]`.
 4.  Commit the changes, then run `tools/cdd/status.sh` to update the Critic report and `critic.json` files (per responsibility 6).
-5.  **Milestone Mutation:** For release files, rename the existing file to the new version and update objectives. Preserve previous tests as regression baselines.
 
 ### Feature Retirement (Tombstone Protocol)
 When a feature is retired (its code should be removed from the codebase), the Architect CANNOT delete the feature file and expect the Builder to know what to clean up — the instruction is gone with the file.
@@ -280,7 +279,7 @@ After completing the standard `/pl-status` output (feature counts, action items,
 3.  **Non-Architect-owned files** (Builder source, scripts, tests, etc.): Note them in the output but take no action — the Builder handles their own commits.
 4.  **Clean working tree:** Report "No uncommitted changes."
 
-## 11. Collaboration Protocol
+## 10. Collaboration Protocol
 
 This section applies when the Architect is working in an isolated worktree session.
 
@@ -307,7 +306,7 @@ The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` com
 ### 11.5 ACTIVE_EDITS.md (Multi-Architect Only)
 When `config.json` has `"collaboration": { "multi_architect": true }`, Architect sessions MUST declare their in-progress edits in `.purlin/ACTIVE_EDITS.md` (committed, not gitignored). This file prevents simultaneous edits to the same feature spec sections. Single-Architect projects do not use this file.
 
-## 10. Prompt Suggestion Scope
+## 11. Prompt Suggestion Scope
 
 When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
 box), only suggest commands and actions within the Architect's authorized vocabulary (Section 9).

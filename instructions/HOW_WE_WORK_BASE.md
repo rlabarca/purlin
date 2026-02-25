@@ -57,7 +57,7 @@ Agents MUST commit immediately after completing each discrete change -- not at s
 5.  **Synchronization:** Architect updates documentation and regenerates the dependency graph.
 
 ## 4. Knowledge Colocation
-We do not use a global implementation log. Tribal knowledge, technical "gotchas," and lessons learned are stored directly in the `## Implementation Notes` section at the bottom of each feature file.
+We do not use a global implementation log. Tribal knowledge, technical "gotchas," and lessons learned are stored in **companion files** (`features/<name>.impl.md`) alongside each feature specification. Feature files themselves do not contain implementation notes.
 
 ### 4.1 Anchor Node Taxonomy
 The dependency graph uses three types of anchor nodes, distinguished by filename prefix. All three function identically in the dependency system -- they cascade status resets to dependent features and are detected by the Critic for missing prerequisite links. The distinction is semantic, helping agents and humans quickly identify the domain a constraint belongs to.
@@ -80,23 +80,15 @@ When a project has cross-cutting standards that constrain multiple features (vis
 This structure ensures that constraint changes cascade correctly: editing an anchor node file resets all dependent features to `[TODO]`, triggering re-validation across the entire domain. The Critic detects missing prerequisite links, so consumer features that omit the dependency get flagged.
 
 ### 4.3 Companion File Convention
-Implementation Notes may be extracted to a separate **companion file** to reduce feature file size and context window usage.
+Implementation knowledge is stored in **companion files** separate from the feature specification.
 
 *   **File naming:** `features/<name>.impl.md` alongside `features/<name>.md`.
-*   **Stub format:** When a companion file exists, the feature file's `## Implementation Notes` section is reduced to: `See [<name>.impl.md](<name>.impl.md) for implementation knowledge, builder decisions, and tribal knowledge.`
+*   **Standalone:** Companion files are standalone -- feature files do NOT reference or link to them. The naming convention provides discoverability.
 *   **Not a feature file:** Companion files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle.
 *   **Status reset exemption:** Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO. Only edits to the feature spec (`<name>.md`) trigger resets. This ensures Builder decisions and tribal knowledge updates do not invalidate completed features.
-*   **Backward compatibility:** Features with inline Implementation Notes (no companion file) continue to work unchanged.
 
 ## 5. The Release Protocol
 Releases are synchronization points where the entire project state -- Specs, Architecture, Code, and Process -- is validated and pushed to the remote repository.
-
-### 5.1 Milestone Mutation (The "Single Release File" Rule)
-We do not maintain a history of release files in the project's features directory.
-1. There is exactly ONE active Release Specification file.
-2. When moving to a new release, the Architect **renames** the existing release file to the new version and updates the objectives.
-3. The previous release's tests are preserved as **Regression Tests** in the new file.
-4. Historical release data is tracked via the project's root `README.md`.
 
 ## 6. Layered Instruction Architecture
 
@@ -254,7 +246,7 @@ In short: Builder `DONE` implies automated tests passed. QA `CLEAN` vs `N/A` sig
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
 
 ### 9.2 Section Format
-The section is placed between `## Implementation Notes` (or its stub -- see Section 4.3) and `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
+The section is placed before `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
 
 ```markdown
 ## Visual Specification
