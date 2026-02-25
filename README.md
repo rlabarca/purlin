@@ -4,6 +4,8 @@
 
 **Collaborative Design-Driven Agentic Development Framework**
 
+[![Watch the video](https://img.youtube.com/vi/ob7_RzriVdI/maxresdefault.jpg)](https://youtu.be/ob7_RzriVdI)
+
 ## Overview
 
 Purlin is a **Collaborative Design-Driven** development framework. Designs evolve in sync with code -- never ahead of it, never behind it. Specifications are living documents that are continuously refined as implementation reveals new constraints and insights.
