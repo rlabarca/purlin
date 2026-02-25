@@ -187,7 +187,7 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 - The creation row is never hidden — it is visible whether or not any worktrees are active, and it always appears above the Sessions table.
 - **Input value persistence:** The name input value is preserved across auto-refreshes. The dashboard JavaScript saves the input's current value to a module-level variable before each DOM update and restores it immediately after. The user's in-progress text is never wiped by the 5-second polling cycle.
 - **Input visual style:** The name text input uses the same color scheme as the dashboard header's search/filter input: `--purlin-surface` background, `--purlin-border` border, `--purlin-dim` placeholder text color, and `--purlin-primary` foreground text color. This ensures consistent theme adaptation between Blueprint (dark) and Architect (light) modes.
-- Client-side validation: name must match `[a-zA-Z0-9_-]+` and be ≤12 characters. The Create button is disabled until the name is valid.
+- Client-side validation enforces two constraints: (1) **Length:** the input's `maxlength` attribute is set to 12, preventing the browser from accepting more than 12 characters — no validation message is needed for over-length input. (2) **Characters:** the name must match `[a-zA-Z0-9_-]+`; the Create button is disabled and an inline validation message is shown when the input contains invalid characters. The Create button is also disabled when the input is empty.
 - The name input MUST include `autocapitalize="none"` and `autocorrect="off"` HTML attributes to suppress browser auto-capitalization and autocorrect on mobile and desktop browsers.
 - Clicking Create sends `POST /isolate/create` with body `{ "name": "<name>" }`.
 - While the request is in flight, the 5-second auto-refresh timer MUST be paused to prevent the error message from being wiped before the user sees it. The timer is resumed after the response is received (success or error).
@@ -417,12 +417,12 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then a new row appears in the Sessions table with name "feat2"
     And .worktrees/feat2/ exists in the project root
 
-#### Scenario: New Isolation Input Rejects Invalid Names
+#### Scenario: New Isolation Input Rejects Invalid Characters
 
     Given the CDD dashboard is open
-    When the User types "toolongname123" (14 chars) into the New Isolation input
+    When the User types "feat@1" into the New Isolation input
     Then the Create button remains disabled
-    And an inline validation message is shown
+    And an inline validation message indicates invalid characters
 
 #### Scenario: Kill Button Shows Safety Modal for Named Worktree
 
@@ -516,7 +516,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] The name input does not auto-capitalize on first keystroke (no browser autocapitalize behavior)
 - [ ] The text input preserves its value across auto-refreshes (typing a name and waiting for the 5-second cycle does not erase the text)
 - [ ] The Create button is disabled when the input is empty or contains an invalid name
-- [ ] An inline validation message appears for names that are too long or contain invalid characters
+- [ ] An inline validation message appears for names that contain invalid characters (length is enforced by `maxlength` — no validation message needed for over-length)
 - [ ] Clicking Create while valid sends the request and shows a success or error response
 - [ ] On success, the name input is cleared
 - [ ] Each Sessions row has a "Kill" button; clicking it triggers the dry-run safety check modal
@@ -534,11 +534,12 @@ See [cdd_isolated_teams.impl.md](cdd_isolated_teams.impl.md) for implementation 
 ## User Testing Discoveries
 
 ### [SPEC_DISPUTE] Scenario "New Isolation Input Rejects Invalid Names" tests unreachable state (Discovered: 2026-02-25)
-- **Scenario:** Scenario: New Isolation Input Rejects Invalid Names (SUSPENDED)
-- **Observed Behavior:** The name input enforces a 12-character maximum via the HTML `maxlength` attribute, making it impossible to type more than 12 characters. The scenario attempts to type "toolongname123" (14 chars) and expects the Create button to be disabled and an inline validation message to appear — but these conditions can never be triggered for the length case because the browser prevents over-limit input entirely.
+- **Scenario:** Scenario: New Isolation Input Rejects Invalid Characters (was: "New Isolation Input Rejects Invalid Names")
+- **Observed Behavior:** The name input enforces a 12-character maximum via the HTML `maxlength` attribute, making it impossible to type more than 12 characters. The original scenario attempted to type "toolongname123" (14 chars) and expected the Create button to be disabled and an inline validation message to appear — but these conditions can never be triggered for the length case because the browser prevents over-limit input entirely.
 - **Expected Behavior:** User wants the scenario updated to reflect the actual `maxlength` enforcement behavior: the input simply does not accept more than 12 characters. The button graying out and inline validation message should be scoped to invalid character input (non-alphanumeric/non-dash/non-underscore), not to over-length input.
+- **Resolution:** Scenario renamed to "New Isolation Input Rejects Invalid Characters" and test input changed from "toolongname123" to "feat@1". Requirements Section 2.8 updated to distinguish length enforcement (maxlength attribute, no message) from character validation (disabled button + inline message). Automated scenario "Create Isolation Rejected When Name Is Invalid" unchanged — it tests the server API directly where over-length names are still a valid rejection case.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
 
 ### [BUG] pl-local-push/pull not shown in isolation startup table; appear in autocomplete on main (Discovered: 2026-02-23)
 - **Scenario:** NONE (no scenario covers agent command vocabulary in isolation vs. main context)
