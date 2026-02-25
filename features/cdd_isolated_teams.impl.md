@@ -24,7 +24,7 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 
 **Shared helpers:** `_categorize_files(lines)` categorizes a list of file paths into `{specs, tests, other}` counts (shared by committed and uncommitted parsing). `_format_category_counts(counts)` renders a counts dict as space-separated category text for the HTML table cells.
 
-**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, WORKSPACE, ISOLATED TEAMS. WORKSPACE and ISOLATED TEAMS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED TEAMS is NOT a child of WORKSPACE. WORKSPACE expands to show Local (main) git status; ISOLATED TEAMS expands to show the creation row and Sessions table.
+**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, MAIN WORKSPACE, ISOLATED TEAMS. MAIN WORKSPACE and ISOLATED TEAMS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED TEAMS is NOT a child of MAIN WORKSPACE. MAIN WORKSPACE expands to show Local (main) git status; ISOLATED TEAMS expands to show the creation row and Sessions table.
 
 **Input value persistence:** The name input's value is saved to a JS module-level variable (e.g., `let _pendingIsolationName = ""`) immediately before any DOM refresh. After the DOM update, the value is written back to the input element and the Create button's disabled state is re-evaluated. On successful create, the module-level variable is cleared. This avoids any localStorage dependency and works within the existing polling cycle.
 

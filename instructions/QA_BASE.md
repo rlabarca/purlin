@@ -66,6 +66,8 @@ Purlin QA — Ready
   /pl-qa-report              Summary of open discoveries and TESTING features
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
+  /pl-remote-push            Push local main to remote collab branch (main only)
+  /pl-remote-pull            Pull remote collab branch into local main (main only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -300,6 +302,8 @@ The following `/pl-*` commands are authorized for the QA role:
 *   `/pl-qa-report` — summary of open discoveries and TESTING features
 *   `/pl-override-edit` — safely edit `QA_OVERRIDES.md` (QA may only edit own file)
 *   `/pl-override-conflicts` — compare `QA_OVERRIDES.md` against `QA_BASE.md`
+*   `/pl-remote-push` — push local main to the remote collab branch (available from main checkout only)
+*   `/pl-remote-pull` — pull remote collab branch into local main (available from main checkout only)
 *   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
 *   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
 

@@ -6,11 +6,11 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
-CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to `main`.
+CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the MAIN WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to `main`.
 
 ---
 
@@ -32,17 +32,17 @@ CDD Isolated Teams Mode is activated automatically when the CDD server detects a
 
 ### 2.3 Dashboard Section Layout
 
-The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, WORKSPACE, ISOLATED TEAMS. WORKSPACE and ISOLATED TEAMS are peers — they appear at the same indent level, one after the other. ISOLATED TEAMS is never nested inside WORKSPACE.
+The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, MAIN WORKSPACE, ISOLATED TEAMS. MAIN WORKSPACE and ISOLATED TEAMS are peers — they appear at the same indent level, one after the other. ISOLATED TEAMS is never nested inside MAIN WORKSPACE.
 
-**WORKSPACE section:**
-- Collapsible heading labeled "WORKSPACE".
+**MAIN WORKSPACE section:**
+- Collapsible heading labeled "MAIN WORKSPACE".
 - When expanded, shows the Local (main) git status content: branch name, ahead/behind status, clean/dirty state, and last commit summary.
 - When collapsed, shows just the section heading.
 - When the main checkout has no uncommitted changes, the expanded content carries no additional annotations. Text such as "Ready for specs" MUST NOT be appended when the checkout is clean.
 - Files under `.purlin/` are excluded from the clean/dirty determination.
 
 **ISOLATED TEAMS section:**
-- Collapsible heading labeled "ISOLATED TEAMS", positioned directly below the WORKSPACE section at the same visual indent level.
+- Collapsible heading labeled "ISOLATED TEAMS", positioned directly below the MAIN WORKSPACE section at the same visual indent level.
 - Always rendered, regardless of whether any worktrees are active.
 
 **ISOLATED TEAMS heading collapse behavior:**
@@ -170,7 +170,7 @@ Fields per worktree entry:
 
 ### 2.6 Visual Design
 
-The ISOLATED TEAMS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. WORKSPACE and ISOLATED TEAMS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The WORKSPACE heading is unchanged regardless of Isolated Teams Mode state.
+The ISOLATED TEAMS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. MAIN WORKSPACE and ISOLATED TEAMS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The MAIN WORKSPACE heading is unchanged regardless of Isolated Teams Mode state.
 
 ### 2.7 No Isolated Teams Mode During Main Checkout
 
@@ -486,9 +486,9 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 ### Screen: CDD Dashboard — Isolated Teams Section
 
 - **Reference:** N/A
-- [ ] WORKSPACE section heading is unchanged regardless of Isolated Teams Mode state
-- [ ] ISOLATED TEAMS section appears directly below the WORKSPACE section at the same indent level (peer sections, not nested)
-- [ ] ISOLATED TEAMS section uses the same collapsible heading style as WORKSPACE
+- [ ] MAIN WORKSPACE section heading is unchanged regardless of Isolated Teams Mode state
+- [ ] ISOLATED TEAMS section appears directly below the MAIN WORKSPACE section at the same indent level (peer sections, not nested)
+- [ ] ISOLATED TEAMS section uses the same collapsible heading style as MAIN WORKSPACE
 - [ ] Collapsed heading with no active worktrees reads "ISOLATED TEAMS" with no annotation
 - [ ] Collapsed heading with N active worktrees reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
 - [ ] When expanded, the creation row "Create An Isolated Team [input] [Create]" is always the first item
