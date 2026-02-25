@@ -47,7 +47,7 @@ The framework defines three distinct agent roles:
 ### 3. Knowledge Colocation
 Instead of separate documentation or global logs, implementation discoveries, hardware constraints, and design decisions are stored directly within the feature specifications they pertain to.
 
-*   **Companion files (`*.impl.md`):** When a feature's Implementation Notes grow large, they can be extracted to a `<name>.impl.md` file alongside the spec. The spec is reduced to a one-line stub linking to the companion. Knowledge stays colocated -- one directory listing away from its requirements -- without bloating the spec file.
+*   **Companion files (`*.impl.md`):** Implementation knowledge is stored in companion files (`<name>.impl.md`) alongside the feature spec. Companion files are standalone -- the naming convention provides discoverability without requiring links from the spec. Knowledge stays colocated -- one directory listing away from its requirements -- without bloating the spec file.
 *   **Visual Specifications:** Features with UI components may include a `## Visual Specification` section with per-screen checklists and design asset references (Figma URLs, local mockups). These are Architect-owned and exempt from Gherkin traceability. They give the QA Agent a separate verification track for static appearance checks -- layout, color, typography -- distinct from interactive scenario execution.
 
 ### 4. Layered Instruction Architecture
@@ -89,7 +89,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | Discovery sections | `## User Testing Discoveries` in feature files | RW | CRW | CRW |
 
 **Notes:**
-- Builder anchor node writes are limited to `[DISCOVERY]` tags in Implementation Notes.
+- Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files.
 - QA companion file writes are limited to pruning one-liners.
 - Builder and QA may both create (`C`) the `## User Testing Discoveries` section if it doesn't exist.
 - QA verification scripts (`tests/qa/`) are QA-exclusive -- the Builder and Architect read but do not modify.
