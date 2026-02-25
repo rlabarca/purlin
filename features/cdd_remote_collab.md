@@ -387,3 +387,10 @@ When an active session exists, the `/status.json` response includes:
 - **Action Required:** Builder
 - **Status:** OPEN
 
+### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
+- **Scenario:** Active-Session State Shows Sync Badge and Controls
+- **Observed Behavior:** The sync state row shows `AHEAD (1 ahead)` when local main has 1 commit not yet pushed to the remote collab branch. The annotation "(1 ahead)" is ambiguous — ahead of what?
+- **Expected Behavior:** The annotation should explicitly frame the relationship from the remote's perspective relative to local main. Examples: `AHEAD (Remote is 1 behind local main)`, `BEHIND (Remote is 2 ahead of local main)`, `DIVERGED (Remote is diverged from local main)`. This makes the directionality unambiguous at a glance.
+- **Action Required:** Architect
+- **Status:** OPEN
+
