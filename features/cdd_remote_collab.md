@@ -69,11 +69,6 @@ When `.purlin/runtime/active_remote_session` contains a session name:
    - Derived from `git log origin/collab/<session> --format="%ae|%an|%cr|%s"`.
    - Empty state: "(no commits on this session yet)"
 
-3. **IN FLIGHT table:**
-   - Branch | Commits Ahead | Last Commit -- remote `isolated/*` branches not yet merged to the collab branch. Derived from `git branch -r --no-merged origin/collab/<session>` filtered to `isolated/` prefix.
-   - No Role column -- isolation names have no role assignment.
-   - Empty state: "(none)"
-
 ### 2.4 Server Endpoints
 
 Four new POST endpoints, following the existing `/isolate/*` pattern:
@@ -139,9 +134,6 @@ When an active session exists, the `/status.json` response includes:
     "last_fetch": "2026-02-23T14:30:00Z",
     "contributors": [
       { "email": "bob@example.com", "name": "Bob Ramos", "commits": 5, "last_active": "2h ago", "last_subject": "implement task CRUD handlers" }
-    ],
-    "in_flight_branches": [
-      { "branch": "isolated/feat1", "commits_ahead": 3, "last_commit": "abc1234 add sort scenarios (45 min ago)" }
     ]
   },
   "remote_collab_sessions": [
@@ -269,15 +261,6 @@ When an active session exists, the `/status.json` response includes:
     And each entry has email, name, commits, last_active, and last_subject fields
     And the contributors list has at most 10 entries
 
-#### Scenario: In-Flight Branches Show Only Remote Isolated Branches
-
-    Given an active session "v0.5-sprint" is set
-    And remote has branch isolated/feat1 not merged into origin/collab/v0.5-sprint
-    And remote has branch feature/other not merged into origin/collab/v0.5-sprint
-    When an agent calls GET /status.json
-    Then remote_collab.in_flight_branches contains an entry for isolated/feat1
-    And remote_collab.in_flight_branches does not contain an entry for feature/other
-
 #### Scenario: Manual Check Updates last_fetch Timestamp
 
     Given an active session "v0.5-sprint" is set
@@ -374,8 +357,7 @@ When an active session exists, the `/status.json` response includes:
 - [ ] Four sync state badge colors (matching ISOLATED TEAMS color scheme: SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange)
 - [ ] Last check "Never" on server start; "N min ago" after manual check
 - [ ] CONTRIBUTORS table columns: Name, Commits, Last Active, Last Commit Subject (no Role)
-- [ ] IN FLIGHT table columns: Branch, Commits Ahead, Last Commit (no Role)
-- [ ] Empty state messages for both tables
+- [ ] CONTRIBUTORS empty state: "(no commits on this session yet)"
 - [ ] "Last remote sync: N min ago" annotation in MAIN WORKSPACE body (not heading), only when active
 
 ## User Testing Discoveries
@@ -392,7 +374,8 @@ When an active session exists, the `/status.json` response includes:
 - **Observed Behavior:** The IN FLIGHT table shows remote `isolated/*` branches not yet merged into the collab branch.
 - **Expected Behavior:** The IN FLIGHT table serves no useful purpose in this view. Each collaborator's work-in-progress lives in their own `main` branch and is reflected in the CONTRIBUTORS table. Remote isolated branches are private to each collaborator — there is no need to expose them in the shared Remote Collaboration section. The only meaningful comparison is local `main` vs. the remote collab branch head, which is already surfaced by the sync badge.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Accepted. IN FLIGHT table removed from spec (Section 2.3, /status.json schema, automated scenario, visual spec). Policy invariant 2.5 explicitly states isolation branches remain local and are never pushed to remote, making the table perpetually empty under normal workflow. CONTRIBUTORS + sync badge already provide the meaningful collaboration signals.
 
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls
