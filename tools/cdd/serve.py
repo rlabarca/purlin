@@ -1379,17 +1379,20 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     else:
         sync_badge = f'<span class="st-good">{sync_state}</span>'
 
-    # Count details
+    # Count details (remote perspective per spec Section 2.3)
     count_detail = ''
     if sync_state and sync_state != 'SAME':
-        parts = []
-        if commits_ahead > 0:
-            parts.append(f'{commits_ahead} ahead')
-        if commits_behind > 0:
-            parts.append(f'{commits_behind} behind')
-        if parts:
+        if sync_state == 'AHEAD':
+            annotation = f'Remote is {commits_ahead} behind local main'
+        elif sync_state == 'BEHIND':
+            annotation = f'Remote is {commits_behind} ahead of local main'
+        elif sync_state == 'DIVERGED':
+            annotation = f'Remote is {commits_behind} ahead, {commits_ahead} behind local main'
+        else:
+            annotation = ''
+        if annotation:
             count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
-                            f'({", ".join(parts)})</span>')
+                            f'({annotation})</span>')
 
     # Last check
     if last_fetch:
@@ -1455,21 +1458,21 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     else:
         html += '<p class="dim" style="margin-top:6px">(no commits on this session yet)</p>'
 
-    # In-flight table
+    # In-flight table (always render label and headers per spec Section 2.3)
+    html += ('<div style="margin-top:6px"><span style="color:var(--purlin-dim);'
+             'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">'
+             'IN FLIGHT</span>'
+             '<table class="ft" style="width:100%;margin-top:4px"><thead><tr>'
+             '<th>Branch</th><th>Commits Ahead</th><th>Last Commit</th>'
+             '</tr></thead><tbody>')
     if in_flight:
-        html += ('<div style="margin-top:6px"><span style="color:var(--purlin-dim);'
-                 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">'
-                 'IN FLIGHT</span>'
-                 '<table class="ft" style="width:100%;margin-top:4px"><thead><tr>'
-                 '<th>Branch</th><th>Commits Ahead</th><th>Last Commit</th>'
-                 '</tr></thead><tbody>')
         for b in in_flight:
             html += (f'<tr><td><code>{b["branch"]}</code></td>'
                      f'<td>{b["commits_ahead"]}</td>'
                      f'<td class="dim">{b["last_commit"]}</td></tr>')
-        html += '</tbody></table></div>'
     else:
-        html += '<p class="dim" style="margin-top:6px">(none)</p>'
+        html += '<tr><td colspan="3" class="dim" style="text-align:center">(none)</td></tr>'
+    html += '</tbody></table></div>'
 
     return html
 
@@ -1486,15 +1489,21 @@ def _collapsed_remote_collab_label(active_session, sync_data, sessions):
         return ("", "REMOTE COLLABORATION", "")
 
     state = sync_data.get('sync_state')
+    commits_ahead = sync_data.get('commits_ahead', 0)
+    commits_behind = sync_data.get('commits_behind', 0)
     if state is None:
         return ("st-todo", active_session, "?")
-    if state == 'DIVERGED':
-        css = "st-disputed"
-    elif state in ('AHEAD', 'BEHIND'):
-        css = "st-todo"
+    if state == 'AHEAD':
+        annotation = f'AHEAD (Remote is {commits_ahead} behind local main)'
+        return ("st-todo", active_session, annotation)
+    elif state == 'BEHIND':
+        annotation = f'BEHIND (Remote is {commits_behind} ahead of local main)'
+        return ("st-todo", active_session, annotation)
+    elif state == 'DIVERGED':
+        annotation = f'DIVERGED (Remote is {commits_behind} ahead, {commits_ahead} behind local main)'
+        return ("st-disputed", active_session, annotation)
     else:
-        css = "st-good"
-    return (css, active_session, state)
+        return ("st-good", active_session, state)
 
 
 def _feature_urgency(entry):

@@ -385,7 +385,7 @@ When an active session exists, the `/status.json` response includes:
 - **Observed Behavior:** In the active session view, the IN FLIGHT empty state `(none)` appears directly below the CONTRIBUTORS table row with no "IN FLIGHT" section label and no column headers (Branch, Commits Ahead, Last Commit). It looks like a stray element with no context.
 - **Expected Behavior:** The IN FLIGHT section should always render its label and column headers. The `(none)` empty state should appear within the labeled table, not as a bare floating text element.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls
