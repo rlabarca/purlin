@@ -387,6 +387,13 @@ When an active session exists, the `/status.json` response includes:
 - **Action Required:** Builder
 - **Status:** RESOLVED
 
+### [SPEC_DISPUTE] IN FLIGHT table should be removed from Remote Collaboration section (Discovered: 2026-02-25)
+- **Scenario:** In-Flight Branches Show Only Remote Isolated Branches
+- **Observed Behavior:** The IN FLIGHT table shows remote `isolated/*` branches not yet merged into the collab branch.
+- **Expected Behavior:** The IN FLIGHT table serves no useful purpose in this view. Each collaborator's work-in-progress lives in their own `main` branch and is reflected in the CONTRIBUTORS table. Remote isolated branches are private to each collaborator — there is no need to expose them in the shared Remote Collaboration section. The only meaningful comparison is local `main` vs. the remote collab branch head, which is already surfaced by the sync badge.
+- **Action Required:** Architect
+- **Status:** OPEN
+
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls
 - **Observed Behavior:** The sync state row shows `AHEAD (1 ahead)` when local main has 1 commit not yet pushed to the remote collab branch. The annotation "(1 ahead)" is ambiguous — ahead of what?
