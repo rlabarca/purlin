@@ -270,13 +270,3 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## User Testing Discoveries
-
-### [BUG] Bootstrap generates run_claude_*.sh instead of run_*.sh (Discovered: 2026-02-24)
-- **Scenario:** Scenario: Bootstrap a Fresh Consumer Project (and Launcher Script Concatenation Order, QA Launcher Script Concatenation Order, Launcher Scripts Export Project Root)
-- **Observed Behavior:** `tools/bootstrap.sh` generates launcher scripts named `run_claude_architect.sh`, `run_claude_builder.sh`, and `run_claude_qa.sh` at the consumer project root.
-- **Expected Behavior:** Per §2.5 (line 30), §2.11 (line 63), and all related scenarios (lines 138, 150, 158, 193), the generated files should be named `run_architect.sh`, `run_builder.sh`, and `run_qa.sh`.
-- **Secondary Issue:** §2.8 completion message example (line 49) contains a typo referencing `./run_claude_architect.sh`, contradicting the rest of the spec. Architect should correct this.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-- **Resolution (2026-02-24):** Fixed `tools/bootstrap.sh` to generate `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (removing `_claude_` infix). Updated all test assertions in `tools/test_bootstrap.sh` to match. All 55 tests pass.

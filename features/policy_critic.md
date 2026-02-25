@@ -122,11 +122,3 @@ The Critic tool MUST produce:
 *   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, and `role_status` sections.
 *   **Aggregate:** `CRITIC_REPORT.md` at the project root summarizing all features.
 
-## User Testing Discoveries
-
-### [DISCOVERY] Builder Decision Audit skips anchor node Implementation Notes (Discovered: 2026-02-24)
-- **Scenario:** NONE (no scenario covers anchor node scanning in the Builder Decision Audit)
-- **Observed Behavior:** A Builder `[DISCOVERY][SPEC_PROPOSAL]` entry in `policy_collaboration.md`'s `## Implementation Notes` was not surfaced as an Architect action item by the Critic. The Builder Decision Audit reported "No AUTONOMOUS, DEVIATION, or DISCOVERY entries found" despite an active entry in an anchor node.
-- **Expected Behavior:** The Builder Decision Audit should scan ALL files containing `## Implementation Notes`, including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`).
-- **Action Required:** Builder
-- **Status:** RESOLVED — `_policy_exempt_implementation_gate()` now runs `check_builder_decisions()` on anchor node Implementation Notes instead of hardcoding zero counts. Tests added for DEVIATION, DISCOVERY, and AUTONOMOUS tags in anchor nodes.

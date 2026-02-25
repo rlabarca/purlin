@@ -102,12 +102,3 @@ After a consumer project updates its Purlin submodule (`git submodule update`), 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## User Testing Discoveries
-
-### [DISCOVERY] No cross-validation coverage for sync_upstream.sh spec-vs-implementation consistency (Discovered: 2026-02-24)
-- **Scenario:** NONE
-- **Observed Behavior:** Following the discovery of a launcher naming bug in `bootstrap.sh` (where generated scripts are named `run_claude_*.sh` instead of `run_*.sh`), it is unknown whether `sync_upstream.sh` contains similar discrepancies between its spec and implementation. Neither tool has been subjected to a comprehensive spec-vs-implementation audit pass.
-- **Expected Behavior:** The bootstrap and sync tools should be fully cross-validated against their specs. Any references to launcher script names, paths, or output conventions in `sync_upstream.sh` should match the canonical names defined in `submodule_bootstrap.md`.
-- **Action Required:** Architect
-- **Status:** RESOLVED
-- **Resolution (2026-02-24):** Cross-validation audit performed. All spec requirements (SHA handling, changelog display, command file sync, pl-edit-base exclusion, project root detection) match implementation. No launcher naming or path reference discrepancies found. No spec changes required -- resolving without SPEC_UPDATED (nothing to update).

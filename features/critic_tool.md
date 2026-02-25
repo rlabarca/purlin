@@ -700,11 +700,3 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     Then each feature entry shows Architect, Builder, and QA columns with role status badges
     And features without critic.json show "??" in all role columns
 
-## User Testing Discoveries
-
-### [DISCOVERY] QA action item generated for targeted scope naming automated-only scenario (Discovered: 2026-02-24)
-- **Scenario:** NONE (behavior not covered by existing scenarios)
-- **Observed Behavior:** When a feature in TESTING state has a `targeted:<name>` regression scope where the named scenario is an **automated** scenario (not a manual one), the Critic still generates a QA verification action item ("Verify X: 1 targeted scenario(s) [...]"). The feature has 0 manual scenarios and `role_status.qa` is correctly computed as CLEAN, but the action item is contradictory — it says there is work to do while role_status says there is not.
-- **Expected Behavior:** Per §2.10, QA verification items are only generated when the feature has at least one manual scenario. The targeted scope filter should respect the manual-scenario-only constraint: if all named scenarios in a `targeted:` scope are automated, no QA action item should be generated.
-- **Action Required:** Architect
-- **Status:** RESOLVED
