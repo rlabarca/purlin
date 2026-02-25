@@ -104,6 +104,9 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
 | `/pl-override-edit` | Edit an override file (role-scoped: Builder/QA can only edit their own file; Architect can edit any) |
 | `/pl-override-conflicts` | Check an override file against its base layer for contradictions |
+| `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
+| `/pl-local-push` | Merge isolation branch to main -- runs pre-merge handoff checklist (isolated sessions only) |
+| `/pl-local-pull` | Pull latest commits from main into the current isolation branch (isolated sessions only) |
 
 ---
 
@@ -119,6 +122,8 @@ The Architect owns the specification system. All feature requirements, architect
 | `/pl-release-check` | Execute the CDD-controlled release checklist step by step |
 | `/pl-release-run [<step>]` | Run a single release step by name without the full checklist |
 | `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
+| `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
+| `/pl-edit-base` | Modify a base instruction file (Purlin repo only -- not distributed to consumer projects) |
 
 **Workflow examples:**
 
@@ -149,6 +154,7 @@ The Builder translates specifications into working code and tests. It owns the i
 | `/pl-delivery-plan` | Create or review a phased delivery plan for large backlogs |
 | `/pl-infeasible <name>` | Escalate a feature as unimplementable -- pauses work, notifies Architect |
 | `/pl-propose <topic>` | Surface a spec change suggestion to the Architect as a structured proposal |
+| `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
 
 **Workflow examples:**
 
