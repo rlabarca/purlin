@@ -6,7 +6,7 @@
 
 ## Overview
 
-Purlin is a **Continuous Design-Driven (CDD)** development framework. Designs evolve in sync with code -- never ahead of it, never behind it. Specifications are living documents that are continuously refined as implementation reveals new constraints and insights.
+Purlin is a **Collaborative Design-Driven** development framework. Designs evolve in sync with code -- never ahead of it, never behind it. Specifications are living documents that are continuously refined as implementation reveals new constraints and insights.
 
 The framework is built on four goals:
 
@@ -32,7 +32,7 @@ By colocating technical implementation knowledge with behavioral specifications 
 
 ## Core Concepts
 
-### 1. Continuous Design-Driven (CDD)
+### 1. Collaborative Design-Driven
 The project's state is defined 100% by specification files, and those specifications evolve continuously with the code:
 *   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** Define the constraints of the system -- technical architecture, design standards, and governance policies. Changes cascade to all dependent features.
 *   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) coupled with Implementation Notes (Tribal Knowledge). Refined through every implementation cycle -- not written once and handed off.
