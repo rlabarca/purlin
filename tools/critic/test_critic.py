@@ -60,6 +60,7 @@ from critic import (
     compute_role_status,
     parse_builder_decisions,
     parse_visual_spec,
+    validate_visual_references,
     compute_regression_set,
     _extract_scope_from_commit,
 )
@@ -4146,7 +4147,7 @@ Reqs.
             cdd = self._make_cdd_status('todo', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
-                          if i['category'] == 'scope_completeness']
+                          if i['category'] == 'targeted_scope_gap']
             self.assertEqual(len(arch_scope), 1)
             desc = arch_scope[0]['description']
             # Unscoped scenarios: Auto Beta, Manual Delta
@@ -4169,7 +4170,7 @@ Reqs.
             cdd = self._make_cdd_status('todo', 'full')
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
-                          if i['category'] == 'scope_completeness']
+                          if i['category'] == 'targeted_scope_gap']
             self.assertEqual(len(arch_scope), 0)
         finally:
             critic.FEATURES_DIR = orig_features
@@ -4185,7 +4186,7 @@ Reqs.
             cdd = self._make_cdd_status('testing', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
-                          if i['category'] == 'scope_completeness']
+                          if i['category'] == 'targeted_scope_gap']
             self.assertEqual(len(arch_scope), 0)
         finally:
             critic.FEATURES_DIR = orig_features
@@ -4203,7 +4204,7 @@ Reqs.
             cdd = self._make_cdd_status('todo', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
-                          if i['category'] == 'scope_completeness']
+                          if i['category'] == 'targeted_scope_gap']
             self.assertEqual(len(arch_scope), 0)
         finally:
             critic.FEATURES_DIR = orig_features
@@ -4220,7 +4221,7 @@ Reqs.
             cdd = self._make_cdd_status('todo', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
-                          if i['category'] == 'scope_completeness']
+                          if i['category'] == 'targeted_scope_gap']
             self.assertEqual(len(arch_scope), 1)
             desc = arch_scope[0]['description']
             # Only visual screens should be flagged
@@ -4673,6 +4674,329 @@ class TestFeatureScanExcludesCompanionFiles(unittest.TestCase):
         ])
         self.assertEqual(feature_files, ['another.md', 'my_feature.md'])
         self.assertNotIn('my_feature.impl.md', feature_files)
+
+
+# ===================================================================
+# Visual Specification Reference Extraction Tests (Section 2.13)
+# ===================================================================
+
+class TestVisualSpecReferenceExtraction(unittest.TestCase):
+    """Test parse_visual_spec() extracts per-screen reference metadata."""
+
+    def test_local_reference(self):
+        content = """\
+# Feature: Ref Test
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
+### Screen: Dashboard
+- **Reference:** `features/design/my_feature/dashboard-layout.png`
+- **Processed:** 2026-02-15
+- **Description:** A structured description of the dashboard layout.
+- [ ] Layout correct
+- [ ] Colors match
+"""
+        result = parse_visual_spec(content)
+        self.assertTrue(result['present'])
+        self.assertEqual(result['screens'], 1)
+        self.assertEqual(len(result['references']), 1)
+        ref = result['references'][0]
+        self.assertEqual(ref['screen_name'], 'Dashboard')
+        self.assertEqual(ref['reference_path'],
+                         'features/design/my_feature/dashboard-layout.png')
+        self.assertEqual(ref['reference_type'], 'local')
+        self.assertEqual(ref['processed_date'], '2026-02-15')
+        self.assertTrue(ref['has_description'])
+        self.assertEqual(result['unprocessed_count'], 0)
+
+    def test_figma_reference(self):
+        content = """\
+# Feature: Figma Test
+
+## Visual Specification
+
+### Screen: Settings
+- **Reference:** [Figma](https://figma.com/file/abc123)
+- **Processed:** N/A
+- **Description:** The settings panel design.
+- [ ] Check layout
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertEqual(ref['reference_type'], 'figma')
+        self.assertEqual(ref['reference_path'],
+                         'https://figma.com/file/abc123')
+        self.assertIsNone(ref['processed_date'])
+        self.assertTrue(ref['has_description'])
+
+    def test_live_reference(self):
+        content = """\
+# Feature: Live Test
+
+## Visual Specification
+
+### Screen: Current UI
+- **Reference:** [Live](https://example.com/dashboard)
+- **Processed:** 2026-01-01
+- **Description:** Current dashboard state.
+- [ ] Matches design
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertEqual(ref['reference_type'], 'live')
+        self.assertEqual(ref['reference_path'],
+                         'https://example.com/dashboard')
+
+    def test_no_reference(self):
+        content = """\
+# Feature: NA Test
+
+## Visual Specification
+
+### Screen: Conceptual
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** Conceptual design based on requirements.
+- [ ] Layout follows convention
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertEqual(ref['reference_type'], 'none')
+        self.assertIsNone(ref['reference_path'])
+
+    def test_unprocessed_artifact_count(self):
+        content = """\
+# Feature: Unprocessed
+
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** `features/design/my_feature/mockup.png`
+- **Processed:** N/A
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertFalse(ref['has_description'])
+        self.assertEqual(result['unprocessed_count'], 1)
+
+    def test_multiple_screens_mixed(self):
+        content = """\
+# Feature: Multi Screen
+
+## Visual Specification
+
+### Screen: Home
+- **Reference:** `features/design/multi/home.png`
+- **Processed:** 2026-01-01
+- **Description:** Home page layout.
+- [ ] Header visible
+
+### Screen: Profile
+- **Reference:** [Figma](https://figma.com/file/xyz)
+- **Processed:** N/A
+- [ ] Avatar renders
+"""
+        result = parse_visual_spec(content)
+        self.assertEqual(result['screens'], 2)
+        self.assertEqual(len(result['references']), 2)
+        home = result['references'][0]
+        profile = result['references'][1]
+        self.assertEqual(home['reference_type'], 'local')
+        self.assertTrue(home['has_description'])
+        self.assertEqual(profile['reference_type'], 'figma')
+        self.assertFalse(profile['has_description'])
+        self.assertEqual(result['unprocessed_count'], 1)
+
+    def test_no_visual_spec_returns_empty_references(self):
+        content = """\
+# Feature: Plain
+
+## Overview
+Just a feature.
+"""
+        result = parse_visual_spec(content)
+        self.assertFalse(result['present'])
+        self.assertEqual(result['references'], [])
+        self.assertEqual(result['unprocessed_count'], 0)
+        self.assertEqual(result['stale_count'], 0)
+        self.assertEqual(result['missing_reference_count'], 0)
+
+
+class TestValidateVisualReferences(unittest.TestCase):
+    """Test validate_visual_references() for integrity, staleness,
+    and unprocessed artifact detection."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_missing_local_reference(self):
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 2,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/my_feature/missing.png',
+                'reference_type': 'local',
+                'processed_date': '2026-01-01',
+                'has_description': True,
+            }],
+            'unprocessed_count': 0, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        missing = [i for i in items
+                   if i['category'] == 'missing_design_reference']
+        self.assertEqual(len(missing), 1)
+        self.assertEqual(missing[0]['priority'], 'MEDIUM')
+        self.assertEqual(visual_spec['missing_reference_count'], 1)
+
+    def test_unprocessed_artifact(self):
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 0,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/test/mockup.png',
+                'reference_type': 'local',
+                'processed_date': None,
+                'has_description': False,
+            }],
+            'unprocessed_count': 1, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        unprocessed = [i for i in items
+                       if i['category'] == 'unprocessed_artifact']
+        self.assertEqual(len(unprocessed), 1)
+        self.assertEqual(unprocessed[0]['priority'], 'HIGH')
+
+    def test_stale_description(self):
+        # Create a local artifact file with a recent mtime
+        artifact_dir = os.path.join(
+            self.tmpdir, 'features', 'design', 'test')
+        os.makedirs(artifact_dir, exist_ok=True)
+        artifact_path = os.path.join(artifact_dir, 'layout.png')
+        with open(artifact_path, 'w') as f:
+            f.write('fake image')
+        # Set file mtime to Feb 2026 (well after the processed date)
+        import time
+        future_ts = time.mktime((2026, 3, 15, 0, 0, 0, 0, 0, 0))
+        os.utime(artifact_path, (future_ts, future_ts))
+
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 2,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/test/layout.png',
+                'reference_type': 'local',
+                'processed_date': '2026-01-01',
+                'has_description': True,
+            }],
+            'unprocessed_count': 0, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        stale = [i for i in items
+                 if i['category'] == 'stale_design_description']
+        self.assertEqual(len(stale), 1)
+        self.assertEqual(stale[0]['priority'], 'LOW')
+        self.assertEqual(visual_spec['stale_count'], 1)
+
+    def test_current_description_not_stale(self):
+        # Create a local artifact file
+        artifact_dir = os.path.join(
+            self.tmpdir, 'features', 'design', 'test')
+        os.makedirs(artifact_dir, exist_ok=True)
+        artifact_path = os.path.join(artifact_dir, 'layout.png')
+        with open(artifact_path, 'w') as f:
+            f.write('fake image')
+        # Set file mtime to Jan 1, 2026
+        import time
+        old_ts = time.mktime((2026, 1, 1, 0, 0, 0, 0, 0, 0))
+        os.utime(artifact_path, (old_ts, old_ts))
+
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 1,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/test/layout.png',
+                'reference_type': 'local',
+                'processed_date': '2026-02-01',
+                'has_description': True,
+            }],
+            'unprocessed_count': 0, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        stale = [i for i in items
+                 if i['category'] == 'stale_design_description']
+        self.assertEqual(len(stale), 0)
+        self.assertEqual(visual_spec['stale_count'], 0)
+
+    def test_url_references_skip_integrity_check(self):
+        visual_spec = {
+            'present': True, 'screens': 2, 'items': 4,
+            'screen_names': ['Figma View', 'Live View'],
+            'references': [
+                {
+                    'screen_name': 'Figma View',
+                    'reference_path': 'https://figma.com/file/abc',
+                    'reference_type': 'figma',
+                    'processed_date': None,
+                    'has_description': True,
+                },
+                {
+                    'screen_name': 'Live View',
+                    'reference_path': 'https://example.com',
+                    'reference_type': 'live',
+                    'processed_date': '2026-01-01',
+                    'has_description': True,
+                },
+            ],
+            'unprocessed_count': 0, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        # No integrity issues for URL references
+        self.assertEqual(len(items), 0)
+
+    def test_clean_visual_spec_no_items(self):
+        # Create a valid local artifact
+        artifact_dir = os.path.join(
+            self.tmpdir, 'features', 'design', 'test')
+        os.makedirs(artifact_dir, exist_ok=True)
+        artifact_path = os.path.join(artifact_dir, 'layout.png')
+        with open(artifact_path, 'w') as f:
+            f.write('fake image')
+        import time
+        old_ts = time.mktime((2026, 1, 1, 0, 0, 0, 0, 0, 0))
+        os.utime(artifact_path, (old_ts, old_ts))
+
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 2,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/test/layout.png',
+                'reference_type': 'local',
+                'processed_date': '2026-02-01',
+                'has_description': True,
+            }],
+            'unprocessed_count': 0, 'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(visual_spec, self.tmpdir)
+        self.assertEqual(len(items), 0)
+        self.assertEqual(visual_spec['stale_count'], 0)
+        self.assertEqual(visual_spec['missing_reference_count'], 0)
 
 
 # ===================================================================
