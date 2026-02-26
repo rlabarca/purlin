@@ -3249,13 +3249,22 @@ function scheduleUpdateCategoryLabels() {{
 // ============================
 // Two-Level Category Packing Layout
 // ============================
-function findNonOverlapping(cx, centerY, w, h, placed, allBounds, gap) {{
+function findNonOverlapping(cx, centerY, w, h, placed, allBounds, gap, minY) {{
   var step = 50;
   var angle = 0;
   var radius = 0;
+  // Apply minY constraint: ensure the top edge of this box is at or below minY
+  var effectiveMinCenterY = (typeof minY === 'number') ? minY + h / 2 : -Infinity;
+  if (centerY < effectiveMinCenterY) centerY = effectiveMinCenterY;
   for (var i = 0; i < 500; i++) {{
     var x = cx + radius * Math.cos(angle);
     var y = centerY + radius * Math.sin(angle);
+    // Enforce minY: skip positions where top edge would be above minY
+    if (y - h / 2 < effectiveMinCenterY - h / 2) {{
+      angle += 0.5;
+      radius += step / (2 * Math.PI);
+      continue;
+    }}
     var overlaps = false;
     var keys = Object.keys(placed);
     for (var j = 0; j < keys.length; j++) {{
@@ -3272,7 +3281,7 @@ function findNonOverlapping(cx, centerY, w, h, placed, allBounds, gap) {{
     angle += 0.5;
     radius += step / (2 * Math.PI);
   }}
-  return {{ x: cx + radius, y: centerY }};
+  return {{ x: cx + radius, y: Math.max(centerY, effectiveMinCenterY) }};
 }}
 
 function runPackedLayout() {{
@@ -3338,15 +3347,55 @@ function runPackedLayout() {{
     }};
   }});
 
-  // Compute inter-category edge weights
+  // Compute inter-category edge weights (undirected, for connectivity ranking)
   var edgeWeights = {{}};
+  // Compute directed inter-category dependencies (for topological layers)
+  var catPrereqs = {{}};  // catPrereqs[cat] = Set of categories that cat depends on
+  var catDependents = {{}};  // catDependents[cat] = Set of categories that depend on cat
+  catNames.forEach(function(c) {{ catPrereqs[c] = {{}}; catDependents[c] = {{}}; }});
+
   cy.edges().forEach(function(e) {{
-    var sc = e.source().data('category');
-    var tc = e.target().data('category');
+    var sc = e.source().data('category');  // prerequisite category
+    var tc = e.target().data('category');  // dependent category
     if (sc && tc && sc !== tc) {{
       var key = sc < tc ? sc + '|' + tc : tc + '|' + sc;
       edgeWeights[key] = (edgeWeights[key] || 0) + 1;
+      catPrereqs[tc][sc] = true;
+      catDependents[sc][tc] = true;
     }}
+  }});
+
+  // Compute topological layers (Kahn's algorithm)
+  // Layer 0 = no incoming inter-category edges (pure prerequisites)
+  var catLayer = {{}};
+  var inDegree = {{}};
+  catNames.forEach(function(c) {{ inDegree[c] = Object.keys(catPrereqs[c]).length; }});
+  var queue = [];
+  catNames.forEach(function(c) {{
+    if (inDegree[c] === 0) {{
+      catLayer[c] = 0;
+      queue.push(c);
+    }}
+  }});
+  while (queue.length > 0) {{
+    var cur = queue.shift();
+    var deps = Object.keys(catDependents[cur]);
+    for (var di = 0; di < deps.length; di++) {{
+      var dep = deps[di];
+      if (catLayer[dep] === undefined || catLayer[dep] < catLayer[cur] + 1) {{
+        catLayer[dep] = catLayer[cur] + 1;
+      }}
+      inDegree[dep]--;
+      if (inDegree[dep] === 0) queue.push(dep);
+    }}
+  }}
+  // Assign remaining (cycle members) to max layer + 1
+  var maxLayer = 0;
+  catNames.forEach(function(c) {{
+    if (catLayer[c] !== undefined && catLayer[c] > maxLayer) maxLayer = catLayer[c];
+  }});
+  catNames.forEach(function(c) {{
+    if (catLayer[c] === undefined) catLayer[c] = maxLayer + 1;
   }});
 
   // Compute total connectivity per category
@@ -3358,19 +3407,37 @@ function runPackedLayout() {{
     connectivity[parts[1]] += edgeWeights[key];
   }});
 
-  // Sort by connectivity descending (most-connected first)
+  // Sort by layer first (ascending), then connectivity descending
   var sortedCats = catNames.slice().sort(function(a, b) {{
+    if (catLayer[a] !== catLayer[b]) return catLayer[a] - catLayer[b];
     return connectivity[b] - connectivity[a];
   }});
 
-  // Level 2: Greedy placement with spiral search
+  // Level 2: Greedy placement with layer-constrained spiral search
   var placed = {{}};
+  var placedBounds = {{}};  // Track actual placed bounding boxes for minY computation
   var GAP = 80;
 
   sortedCats.forEach(function(cat, idx) {{
     if (idx === 0) {{
       placed[cat] = {{ x: 0, y: 0 }};
+      placedBounds[cat] = {{
+        y2: catBounds[cat].h / 2
+      }};
       return;
+    }}
+
+    // Compute minY: must be below the bottom edge of all prerequisite categories
+    var minY = null;
+    var prereqCats = Object.keys(catPrereqs[cat]);
+    for (var pi = 0; pi < prereqCats.length; pi++) {{
+      var pc = prereqCats[pi];
+      if (placed[pc] !== undefined && placedBounds[pc] !== undefined) {{
+        var prereqBottom = placed[pc].y + catBounds[pc].h / 2;
+        if (minY === null || prereqBottom + GAP > minY) {{
+          minY = prereqBottom + GAP;
+        }}
+      }}
     }}
 
     // Weighted centroid of placed neighbors
@@ -3388,11 +3455,14 @@ function runPackedLayout() {{
     var tx = tw > 0 ? wx / tw : 0;
     var ty = tw > 0 ? wy / tw : 0;
 
-    // Spiral search for non-overlapping position
+    // Spiral search for non-overlapping position (layer-constrained)
     var myW = catBounds[cat].w;
     var myH = catBounds[cat].h;
-    var pos = findNonOverlapping(tx, ty, myW, myH, placed, catBounds, GAP);
+    var pos = findNonOverlapping(tx, ty, myW, myH, placed, catBounds, GAP, minY);
     placed[cat] = pos;
+    placedBounds[cat] = {{
+      y2: pos.y + myH / 2
+    }};
   }});
 
   // Apply position offsets to move each category's nodes
