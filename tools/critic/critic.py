@@ -1029,6 +1029,61 @@ def generate_action_items(feature_result, cdd_status=None):
     # the feature to TODO, giving the Builder a lifecycle-based TODO item.
     # See spec Section 2.10 "SPEC_UPDATED Lifecycle Routing".
 
+    # Targeted Scope Completeness audit (policy_critic Section 2.10):
+    # When a feature has change_scope "targeted:..." and builder "TODO",
+    # flag scenarios/screens in the spec that are NOT listed in the scope.
+    if lifecycle_state == 'todo' and cdd_status is not None:
+        change_scope = _get_feature_change_scope(feature_file, cdd_status)
+        if change_scope and change_scope.startswith('targeted:'):
+            targeted_names = [
+                n.strip()
+                for n in change_scope[len('targeted:'):].split(',')
+            ]
+            # Read feature content for scenario/visual parsing
+            _sc_path = os.path.join(
+                FEATURES_DIR, os.path.basename(feature_file))
+            if os.path.isfile(_sc_path):
+                _sc_content = read_feature_file(_sc_path)
+                _sc_scenarios = parse_scenarios(_sc_content)
+                _sc_visual = parse_visual_spec(_sc_content)
+                all_titles = {s['title'] for s in _sc_scenarios}
+                visual_names = set(_sc_visual.get('screen_names', []))
+                # Scenario targets (non-Visual: entries)
+                scope_scenario_names = {
+                    n for n in targeted_names
+                    if not n.startswith('Visual:')
+                }
+                scope_visual_names = {
+                    n[len('Visual:'):].strip()
+                    for n in targeted_names
+                    if n.startswith('Visual:')
+                }
+                unscoped_scenarios = sorted(
+                    all_titles - scope_scenario_names)
+                unscoped_visual = sorted(
+                    visual_names - scope_visual_names)
+                if unscoped_scenarios or unscoped_visual:
+                    items_desc = []
+                    if unscoped_scenarios:
+                        items_desc.append(
+                            f'{len(unscoped_scenarios)} scenario(s): '
+                            + ', '.join(unscoped_scenarios))
+                    if unscoped_visual:
+                        items_desc.append(
+                            f'{len(unscoped_visual)} visual screen(s): '
+                            + ', '.join(
+                                f'Visual:{v}' for v in unscoped_visual))
+                    architect_items.append({
+                        'priority': 'MEDIUM',
+                        'category': 'scope_completeness',
+                        'feature': feature_name,
+                        'description': (
+                            f'Targeted scope incomplete for '
+                            f'{feature_name}: {"; ".join(items_desc)} '
+                            f'not in targeted scope'
+                        ),
+                    })
+
     # --- QA items ---
     # Features in TESTING status (from CDD) -> MEDIUM (scope-aware)
     regression_scope = feature_result.get('regression_scope', {})
@@ -1426,6 +1481,28 @@ def _get_feature_lifecycle_state(feature_file, cdd_status):
             entry_file = entry.get('file', '')
             if os.path.basename(entry_file) == basename:
                 return state
+
+    return None
+
+
+def _get_feature_change_scope(feature_file, cdd_status):
+    """Extract change_scope for a feature from CDD status data.
+
+    Returns the change_scope string (e.g. 'full', 'targeted:...', 'cosmetic')
+    or None if not found.
+    """
+    if cdd_status is None:
+        return None
+
+    features_data = cdd_status.get('features', {})
+    basename = os.path.basename(feature_file)
+
+    for state in ('todo', 'testing', 'complete'):
+        entries = features_data.get(state, [])
+        for entry in entries:
+            entry_file = entry.get('file', '')
+            if os.path.basename(entry_file) == basename:
+                return entry.get('change_scope')
 
     return None
 

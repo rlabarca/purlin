@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 205, "failed": 0, "total": 205}
+{"status": "PASS", "tests": 210, "failures": 0, "tool": "critic", "runner": "unittest"}

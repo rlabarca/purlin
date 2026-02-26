@@ -4024,6 +4024,215 @@ Reqs.
 
 
 # ===================================================================
+# Targeted Scope Completeness Tests (Section 2.10)
+# ===================================================================
+
+class TestTargetedScopeCompletenessAudit(unittest.TestCase):
+    """Scenario: Targeted Scope Completeness Audit
+
+    When a feature has change_scope "targeted:..." and builder "TODO",
+    the Critic flags scenarios/screens NOT listed in the targeted scope
+    as MEDIUM-priority Architect action items.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: ScopedFeature
+
+> Label: "Tool: ScopedFeature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Alpha
+    Given X When Y Then Z
+
+#### Scenario: Auto Beta
+    Given A When B Then C
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Gamma
+    Given M When N Then O
+
+#### Scenario: Manual Delta
+    Given P When Q Then R
+
+## Visual Specification
+
+### Screen: Dashboard Overview
+- [ ] Layout is correct
+
+### Screen: Settings Panel
+- [ ] Colors match
+"""
+        with open(os.path.join(
+                self.features_dir, 'scoped_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _make_result(self, change_scope='targeted:Auto Alpha,Manual Gamma'):
+        return {
+            'feature_file': 'features/scoped_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS',
+                                         'violations': [],
+                                         'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS',
+                                                'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                        'detail': 'OK',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [],
+                                    'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+            'regression_scope': {
+                'declared': change_scope,
+                'scenarios': [],
+                'visual_items': 0,
+                'cross_validation_warnings': [],
+            },
+            'visual_spec': {'present': True, 'items': 2,
+                            'screen_names': ['Dashboard Overview',
+                                             'Settings Panel']},
+        }
+
+    def _make_cdd_status(self, lifecycle='todo',
+                         change_scope='targeted:Auto Alpha,Manual Gamma'):
+        return {
+            'features': {
+                lifecycle: [{
+                    'file': 'features/scoped_feature.md',
+                    'label': 'ScopedFeature',
+                    'change_scope': change_scope,
+                }],
+                **{s: [] for s in ('todo', 'testing', 'complete')
+                   if s != lifecycle},
+            },
+        }
+
+    def test_flags_unscoped_scenarios_and_visual(self):
+        """Targeted scope missing scenarios/screens generates Architect item."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            scope = 'targeted:Auto Alpha,Manual Gamma'
+            result = self._make_result(scope)
+            cdd = self._make_cdd_status('todo', scope)
+            items = generate_action_items(result, cdd_status=cdd)
+            arch_scope = [i for i in items['architect']
+                          if i['category'] == 'scope_completeness']
+            self.assertEqual(len(arch_scope), 1)
+            desc = arch_scope[0]['description']
+            # Unscoped scenarios: Auto Beta, Manual Delta
+            self.assertIn('Auto Beta', desc)
+            self.assertIn('Manual Delta', desc)
+            # Unscoped visual screens
+            self.assertIn('Visual:Dashboard Overview', desc)
+            self.assertIn('Visual:Settings Panel', desc)
+            self.assertEqual(arch_scope[0]['priority'], 'MEDIUM')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_no_flag_when_scope_is_full(self):
+        """Features with full scope are exempt from completeness audit."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = self._make_result('full')
+            cdd = self._make_cdd_status('todo', 'full')
+            items = generate_action_items(result, cdd_status=cdd)
+            arch_scope = [i for i in items['architect']
+                          if i['category'] == 'scope_completeness']
+            self.assertEqual(len(arch_scope), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_no_flag_when_lifecycle_is_testing(self):
+        """Features in TESTING state are exempt (only TODO is audited)."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            scope = 'targeted:Auto Alpha'
+            result = self._make_result(scope)
+            cdd = self._make_cdd_status('testing', scope)
+            items = generate_action_items(result, cdd_status=cdd)
+            arch_scope = [i for i in items['architect']
+                          if i['category'] == 'scope_completeness']
+            self.assertEqual(len(arch_scope), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_no_flag_when_all_scenarios_covered(self):
+        """Targeted scope covering all scenarios generates no item."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            scope = ('targeted:Auto Alpha,Auto Beta,Manual Gamma,'
+                     'Manual Delta,Visual:Dashboard Overview,'
+                     'Visual:Settings Panel')
+            result = self._make_result(scope)
+            cdd = self._make_cdd_status('todo', scope)
+            items = generate_action_items(result, cdd_status=cdd)
+            arch_scope = [i for i in items['architect']
+                          if i['category'] == 'scope_completeness']
+            self.assertEqual(len(arch_scope), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_visual_only_unscoped(self):
+        """Targeted scope with all scenarios but missing visual screens."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            scope = ('targeted:Auto Alpha,Auto Beta,Manual Gamma,'
+                     'Manual Delta')
+            result = self._make_result(scope)
+            cdd = self._make_cdd_status('todo', scope)
+            items = generate_action_items(result, cdd_status=cdd)
+            arch_scope = [i for i in items['architect']
+                          if i['category'] == 'scope_completeness']
+            self.assertEqual(len(arch_scope), 1)
+            desc = arch_scope[0]['description']
+            # Only visual screens should be flagged
+            self.assertNotIn('Auto Alpha', desc)
+            self.assertNotIn('Manual Gamma', desc)
+            self.assertIn('Visual:Dashboard Overview', desc)
+            self.assertIn('Visual:Settings Panel', desc)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+# ===================================================================
 # Visual Specification Tests (Section 2.13)
 # ===================================================================
 
