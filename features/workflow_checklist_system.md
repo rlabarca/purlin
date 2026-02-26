@@ -1,7 +1,7 @@
 # Feature: Workflow Handoff Checklist
 
 > Label: "Tool: Workflow Handoff Checklist"
-> Category: "Coordination & Lifecycle"
+> Category: "Agent Skills"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/policy_remote_collab.md
 > Prerequisite: features/release_checklist_core.md

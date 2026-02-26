@@ -1,7 +1,7 @@
 # Feature: Spec From Code
 
 > Label: "Tool: Spec From Code"
-> Category: "Onboarding & Migration"
+> Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
 [TODO]
