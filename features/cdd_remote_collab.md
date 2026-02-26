@@ -489,7 +489,8 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - **Observed Behavior:** The active session view renders the session name and branch ref on one row, the sync state badge on a second row, and the session dropdown with Disconnect button on a third row. The layout spreads across three lines instead of two.
 - **Expected Behavior:** Per Section 2.3, the session row should be a single line: `[session-name ▾] collab/<name> [Disconnect]` -- the dropdown, branch ref, and Disconnect button all on one row. The sync state row (badge + annotation + last-check + Check Remote) should be the second row. Two rows total, not three.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Active session panel HTML reorganized: Row 1 now contains dropdown + branch ref + Disconnect (margin-left:auto). Row 2 contains sync badge + annotation + last check + Check Remote button.
 
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls

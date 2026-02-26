@@ -963,7 +963,8 @@ def _has_git_remote():
 def get_remote_collab_sessions():
     """List all collab/* sessions from remote tracking refs.
 
-    Returns list of dicts: [{name, branch, active}].
+    Returns list of dicts: [{name, branch, active, sync_state, commits_ahead,
+    commits_behind}].
     Uses locally cached refs (no network fetch).
     """
     active = get_active_remote_session()
@@ -981,10 +982,14 @@ def get_remote_collab_sessions():
             prefix = f'{remote}/collab/'
             if ref.startswith(prefix):
                 name = ref[len(prefix):]
+                sync = compute_remote_sync_state(name)
                 sessions.append({
                     'name': name,
                     'branch': f'collab/{name}',
                     'active': name == active,
+                    'sync_state': sync['sync_state'] or 'SAME',
+                    'commits_ahead': sync['commits_ahead'],
+                    'commits_behind': sync['commits_behind'],
                 })
         return sessions
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
@@ -1276,6 +1281,7 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     """Generate the REMOTE COLLABORATION section body HTML.
 
     Two modes: setup (no active session) and active (session selected).
+    Embeds session sync data as JS variable for delete modal.
     """
     if not has_remote:
         return ('<p class="dim">No git remote configured. '
@@ -1310,6 +1316,8 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
                     f'<tr><td>{s["name"]}</td>'
                     f'<td><code>{s["branch"]}</code></td>'
                     f'<td style="text-align:right">'
+                    f'<button class="btn-critic" onclick="showDeleteSessionModal(\'{name_esc}\')"'
+                    f' style="font-size:10px;padding:2px 8px;margin-right:4px">Delete</button>'
                     f'<button class="btn-critic" onclick="joinRemoteSession(\'{name_esc}\')"'
                     f' style="font-size:10px;padding:2px 8px">Join</button>'
                     f'</td></tr>'
@@ -1318,6 +1326,9 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         else:
             html += '<p class="dim">No remote collab sessions found.</p>'
 
+        # Embed sessions data for delete modal JS
+        sessions_json = json.dumps(sessions).replace('</script', '<\\/script')
+        html += f'<script>window._rcSessionsData={sessions_json};</script>'
         return html
 
     # --- Active Mode (State B) ---
@@ -1375,21 +1386,9 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         last_check = 'Never'
 
     # Active session panel
-    html = (
-        f'<div style="padding-top:4px">'
-        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-        f'<span style="color:var(--purlin-primary);font-weight:600;font-size:12px">'
-        f'{active_session}</span>'
-        f'<code style="color:var(--purlin-muted);font-size:11px">collab/{active_session}</code>'
-        f'</div>'
-        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-        f'{sync_badge} {count_detail}'
-        f'<span style="color:var(--purlin-dim);font-size:10px">Last check: {last_check}</span>'
-        f'<button class="btn-critic" onclick="fetchRemoteSession()" id="btn-check-remote"'
-        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Check Remote</button>'
-        f'</div>'
-        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-    )
+    # Row 1: [dropdown ▾] collab/<name> [Disconnect]
+    html = '<div style="padding-top:4px">'
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
 
     # Switch session dropdown
     if sessions:
@@ -1398,11 +1397,24 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
             selected = ' selected' if s['name'] == active_session else ''
             html += f'<option value="{s["name"]}"{selected}>{s["name"]}</option>'
         html += '</select>'
+    else:
+        html += (f'<span style="color:var(--purlin-primary);font-weight:600;'
+                 f'font-size:12px">{active_session}</span>')
 
-    name_esc = active_session.replace("'", "\\'")
     html += (
+        f'<code style="color:var(--purlin-muted);font-size:11px">collab/{active_session}</code>'
         f'<button class="btn-critic" onclick="disconnectRemoteSession()"'
-        f' style="font-size:10px;padding:2px 8px">Disconnect</button>'
+        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Disconnect</button>'
+        f'</div>'
+    )
+
+    # Row 2: sync badge + annotation + last check + Check Remote
+    html += (
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        f'{sync_badge} {count_detail}'
+        f'<span style="color:var(--purlin-dim);font-size:10px">Last check: {last_check}</span>'
+        f'<button class="btn-critic" onclick="fetchRemoteSession()" id="btn-check-remote"'
+        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Check Remote</button>'
         f'</div></div>'
     )
 
@@ -1422,6 +1434,9 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     else:
         html += '<p class="dim" style="margin-top:6px">(no commits on this session yet)</p>'
 
+    # Embed sessions data for delete modal JS
+    sessions_json = json.dumps(sessions).replace('</script', '<\\/script')
+    html += f'<script>window._rcSessionsData={sessions_json};</script>'
     return html
 
 
@@ -2092,6 +2107,20 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div style="margin-top:12px;text-align:right">
       <button class="btn-critic" onclick="killModalCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
       <button class="btn-critic" id="kill-modal-confirm" onclick="killModalConfirm()" style="font-size:11px">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Session Confirmation Modal -->
+<div class="modal-overlay" id="delete-session-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:6px;max-width:480px;width:90%;padding:16px">
+    <h3 style="margin:0 0 10px;font-size:14px">Delete Session</h3>
+    <div id="delete-session-modal-body"></div>
+    <div id="delete-session-modal-warning" style="display:none;margin-top:10px;padding:8px 10px;border-radius:4px;font-size:12px"></div>
+    <div id="delete-session-modal-error" style="display:none;margin-top:8px;color:var(--purlin-status-error);font-size:12px"></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn-critic" onclick="deleteSessionModalCancel()" style="font-size:11px;margin-right:6px" id="delete-session-cancel-btn">Cancel</button>
+      <button class="btn-critic" id="delete-session-confirm-btn" onclick="deleteSessionModalConfirm()" style="font-size:11px;background:var(--purlin-status-error);color:var(--purlin-bg)">Delete</button>
     </div>
   </div>
 </div>
@@ -2859,6 +2888,94 @@ function fetchRemoteSession() {{
       if (btn) {{ btn.textContent = 'Check Remote'; btn.disabled = false; }}
     }});
 }}
+
+// ============================
+// Delete Session Modal
+// ============================
+var _deleteSessionTarget = '';
+
+function showDeleteSessionModal(name) {{
+  _deleteSessionTarget = name;
+  var overlay = document.getElementById('delete-session-modal-overlay');
+  var body = document.getElementById('delete-session-modal-body');
+  var warning = document.getElementById('delete-session-modal-warning');
+  var errEl = document.getElementById('delete-session-modal-error');
+  if (!overlay || !body || !warning) return;
+  if (errEl) {{ errEl.style.display = 'none'; errEl.textContent = ''; }}
+
+  body.innerHTML = '<p style="font-size:12px">Are you sure you want to delete session <strong>' + name + '</strong>? ' +
+    'This will delete the remote branch <code>collab/' + name + '</code>. This action cannot be undone.</p>';
+
+  // Check sync state from embedded sessions data
+  var sessions = window._rcSessionsData || [];
+  var session = null;
+  for (var i = 0; i < sessions.length; i++) {{
+    if (sessions[i].name === name) {{ session = sessions[i]; break; }}
+  }}
+
+  // API sync_state uses local perspective: BEHIND = remote has extra commits (data loss risk)
+  // Spec Section 2.8 references displayed state (remote perspective): AHEAD = remote ahead = API BEHIND
+  warning.style.display = 'none';
+  if (session && session.sync_state === 'BEHIND') {{
+    // Local is behind = remote has commits not in local -> data loss
+    warning.innerHTML = 'WARNING: The remote branch has ' + session.commits_behind +
+      ' commit(s) not in your local main. Deleting this session will permanently discard those commits.';
+    warning.style.display = '';
+    warning.style.color = 'var(--purlin-status-error)';
+    warning.style.background = 'rgba(248,113,113,0.1)';
+  }} else if (session && session.sync_state === 'DIVERGED') {{
+    warning.innerHTML = 'WARNING: The remote branch has diverged from your local main (' +
+      session.commits_behind + ' commit(s) ahead, ' + session.commits_ahead +
+      ' behind). Deleting this session will permanently discard the ' +
+      session.commits_behind + ' remote-only commit(s).';
+    warning.style.display = '';
+    warning.style.color = 'var(--purlin-status-error)';
+    warning.style.background = 'rgba(248,113,113,0.1)';
+  }}
+
+  overlay.style.display = 'flex';
+}}
+
+function deleteSessionModalConfirm() {{
+  var overlay = document.getElementById('delete-session-modal-overlay');
+  var errEl = document.getElementById('delete-session-modal-error');
+  var confirmBtn = document.getElementById('delete-session-confirm-btn');
+  if (confirmBtn) {{ confirmBtn.disabled = true; confirmBtn.textContent = 'Deleting...'; }}
+  rcRemotePending = true;
+  fetch('/remote-collab/delete', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{name:_deleteSessionTarget}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (confirmBtn) {{ confirmBtn.disabled = false; confirmBtn.textContent = 'Delete'; }}
+      if (d.status === 'ok') {{
+        if (overlay) overlay.style.display = 'none';
+        refreshStatus();
+      }} else {{
+        if (errEl) {{ errEl.textContent = d.error || 'Delete failed'; errEl.style.display = ''; }}
+      }}
+    }})
+    .catch(function() {{
+      rcRemotePending = false;
+      if (confirmBtn) {{ confirmBtn.disabled = false; confirmBtn.textContent = 'Delete'; }}
+      if (errEl) {{ errEl.textContent = 'Request failed'; errEl.style.display = ''; }}
+    }});
+}}
+
+function deleteSessionModalCancel() {{
+  var overlay = document.getElementById('delete-session-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+}}
+
+// Close delete modal on Escape or outside click
+document.getElementById('delete-session-modal-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) deleteSessionModalCancel();
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape') {{
+    var overlay = document.getElementById('delete-session-modal-overlay');
+    if (overlay && overlay.style.display === 'flex') deleteSessionModalCancel();
+  }}
+}});
 
 // ============================
 // Search/Filter
@@ -4295,6 +4412,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_remote_collab_disconnect()
         elif self.path == '/remote-collab/fetch':
             self._handle_remote_collab_fetch()
+        elif self.path == '/remote-collab/delete':
+            self._handle_remote_collab_delete()
         else:
             self.send_response(404)
             self.end_headers()
@@ -4708,6 +4827,67 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 })
             except subprocess.TimeoutExpired:
                 self._send_json(500, {'error': 'Fetch timed out'})
+
+    def _handle_remote_collab_delete(self):
+        """POST /remote-collab/delete — delete a collab session."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        name = body.get('name', '').strip()
+        if not name:
+            self._send_json(400, {'error': 'Name is required'})
+            return
+
+        # Validate: same rules as create
+        import re
+        if (len(name) > 30 or not re.match(r'^[a-zA-Z0-9_.\-]+$', name) or
+                name.startswith('.') or name.startswith('-') or
+                name.endswith('.') or name.endswith('-') or '..' in name):
+            self._send_json(400, {'error': 'Invalid session name'})
+            return
+
+        rc = get_remote_config()
+        remote = rc['remote']
+        branch = f'collab/{name}'
+
+        try:
+            # Delete remote branch
+            subprocess.run(
+                ['git', 'push', remote, '--delete', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=30)
+        except subprocess.CalledProcessError as exc:
+            self._send_json(500, {
+                'error': exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            })
+            return
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {'error': 'Operation timed out'})
+            return
+
+        # Delete local tracking branch if it exists
+        try:
+            subprocess.run(
+                ['git', 'branch', '-D', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass  # Local branch may not exist — that's fine
+
+        # If this was the active session, clear the runtime file
+        active = get_active_remote_session()
+        if active == name:
+            _clear_active_remote_session()
+
+        self._send_json(200, {
+            'status': 'ok',
+            'session': name,
+            'deleted_branch': branch,
+        })
 
     def log_message(self, format, *args):
         pass  # Suppress request logging noise

@@ -600,6 +600,174 @@ class TestFiveSecondPollTriggersZeroFetchCalls(unittest.TestCase):
                              "git fetch should not be called during status poll")
 
 
+class TestDeleteSessionRemovesRemoteBranch(unittest.TestCase):
+    """Scenario: Delete Session Removes Remote Branch and Returns Success
+
+    Given collab/v0.5-sprint exists as a remote tracking branch
+    And the CDD server is running
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the server deletes collab/v0.5-sprint from the remote
+    And the local tracking branch collab/v0.5-sprint is removed if it existed
+    And the response contains { "status": "ok", "session": "v0.5-sprint" }
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('serve.get_active_remote_session', return_value=None)
+    def test_delete_session_success(self, mock_active, mock_config, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+
+        body = json.dumps({"name": "v0.5-sprint"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_delete(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        self.assertEqual(args[1]['session'], 'v0.5-sprint')
+        self.assertEqual(args[1]['deleted_branch'], 'collab/v0.5-sprint')
+
+        # Verify git push --delete was called
+        calls = mock_run.call_args_list
+        delete_calls = [c for c in calls if '--delete' in str(c)]
+        self.assertTrue(len(delete_calls) > 0,
+                        "git push --delete should have been called")
+
+
+class TestDeleteActiveSessionClearsRuntime(unittest.TestCase):
+    """Scenario: Delete Active Session Also Clears Runtime File
+
+    Given an active session "v0.5-sprint" is set
+    And collab/v0.5-sprint exists as a remote tracking branch
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the server deletes collab/v0.5-sprint from the remote
+    And .purlin/runtime/active_remote_session is empty or absent
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        rt_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(rt_dir, exist_ok=True)
+        with open(os.path.join(rt_dir, 'active_remote_session'), 'w') as f:
+            f.write('v0.5-sprint')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_delete_active_clears_runtime(self, mock_config, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+
+        body = json.dumps({"name": "v0.5-sprint"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_delete(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+
+        # Verify runtime file was cleared
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime',
+                               'active_remote_session')
+        with open(rt_path) as f:
+            content = f.read().strip()
+        self.assertEqual(content, '')
+
+
+class TestDeleteNonexistentSessionReturnsError(unittest.TestCase):
+    """Scenario: Delete Nonexistent Session Returns Error
+
+    Given no collab/nonexistent branch exists on the remote
+    When a POST request is sent to /remote-collab/delete with body {"name": "nonexistent"}
+    Then the response contains an error message
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_delete_nonexistent_returns_error(self, mock_config, mock_run):
+        # git push --delete fails for nonexistent branch
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, ['git', 'push'], stderr='error: unable to delete')
+
+        body = json.dumps({"name": "nonexistent"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_delete(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 500)
+        self.assertIn('error', args[1])
+
+
+class TestPerSessionSyncStateInRemoteCollabSessions(unittest.TestCase):
+    """Scenario: Per-Session Sync State in remote_collab_sessions
+
+    Given collab/v0.5-sprint exists as a remote tracking branch
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    When an agent calls GET /status.json
+    Then remote_collab_sessions contains an entry for "v0.5-sprint"
+    And that entry has sync_state "BEHIND" and commits_behind 2
+    """
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('serve.get_active_remote_session', return_value=None)
+    def test_per_session_sync_state(self, mock_active, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'branch' in cmd_str and '-r' in cmd_str:
+                result.stdout = '  origin/collab/v0.5-sprint\n'
+            elif 'rev-parse' in cmd_str:
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str:
+                if '..main' in cmd_str:
+                    result.stdout = ''  # ahead = 0
+                else:
+                    result.stdout = 'xyz commit1\nuvw commit2\n'  # behind = 2
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        sessions = serve.get_remote_collab_sessions()
+        self.assertEqual(len(sessions), 1)
+        s = sessions[0]
+        self.assertEqual(s['name'], 'v0.5-sprint')
+        self.assertEqual(s['sync_state'], 'BEHIND')
+        self.assertEqual(s['commits_behind'], 2)
+        self.assertEqual(s['commits_ahead'], 0)
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()
