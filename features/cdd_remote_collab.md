@@ -58,11 +58,8 @@ When `.purlin/runtime/active_remote_session` contains a session name:
 **Expanded content (in order):**
 
 1. **Active session panel** (replaces creation row):
-   - Session name + branch displayed prominently.
-   - Sync state row: badge with remote-perspective annotation (same format as collapsed badge) + "Last check: N min ago" (or "Never").
-   - "Check Remote" button (right-aligned): `POST /remote-collab/fetch`.
-   - "Switch Session" dropdown: `<select>` populated with all known sessions from remote. Changing selection -> `POST /remote-collab/switch`.
-   - "Disconnect" button: clears active session -> `POST /remote-collab/disconnect`. Does NOT delete any branches. Session remains joinable.
+   - **Session row (single line):** `[session-name ▾] collab/<name>  [Disconnect]`. The session name is a `<select>` dropdown populated with all known sessions from remote (current session pre-selected). Changing selection -> `POST /remote-collab/switch`. The branch ref `collab/<name>` is displayed as muted text beside the dropdown. The "Disconnect" button is right-aligned on the same row -> `POST /remote-collab/disconnect`. Does NOT delete any branches. Session remains joinable.
+   - **Sync state row:** badge with remote-perspective annotation (same format as collapsed badge) + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /remote-collab/fetch`.
 
 2. **CONTRIBUTORS table:**
    - Name | Commits | Last Active | Last Commit Subject -- sorted most-recent-first, max 10.
@@ -299,11 +296,11 @@ When an active session exists, the `/status.json` response includes:
     Given the CDD dashboard is open
     And an active remote session "v0.5-sprint" exists
     When the User views the REMOTE COLLABORATION section
-    Then the session name and branch are displayed
-    And a sync state badge is visible
-    And a "Check Remote" button is present
-    And a "Switch Session" dropdown is present
-    And a "Disconnect" button is present
+    Then a session-name dropdown is displayed with "v0.5-sprint" selected
+    And the branch ref "collab/v0.5-sprint" is shown as muted text beside the dropdown
+    And a "Disconnect" button is right-aligned on the same row as the dropdown
+    And a sync state badge with annotation is visible on the next row
+    And a "Check Remote" button is right-aligned on the sync state row
 
 #### Scenario: Badge Colors Match ISOLATED TEAMS Section
 
@@ -352,7 +349,8 @@ When an active session exists, the `/status.json` response includes:
 - [ ] REMOTE COLLABORATION section position: above ISOLATED TEAMS, above MAIN WORKSPACE
 - [ ] Section always visible (collapsible, same indent as peers)
 - [ ] No-active-session: creation row "Start Remote Session [input] [Create]" + known sessions table
-- [ ] Active-session: session name + branch, sync badge, Check Remote button, Switch dropdown, Disconnect
+- [ ] Active-session row 1: session-name dropdown + `collab/<name>` branch ref (muted) + Disconnect button (right-aligned), all on one line
+- [ ] Active-session row 2: sync badge + annotation + last-check timestamp + Check Remote button (right-aligned)
 - [ ] "Checking..." guard state while fetch in flight
 - [ ] Four sync state badge colors (matching ISOLATED TEAMS color scheme: SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange)
 - [ ] Last check "Never" on server start; "N min ago" after manual check
