@@ -8,3 +8,4 @@
 *   **[CLARIFICATION]** Remote tracking branch detection uses a three-step fallback: (1) if on a branch, use its configured upstream, (2) try `origin/main`, (3) try `origin/master`. If none found, print a warning and skip the update check. (Severity: INFO)
 *   **[CLARIFICATION]** The `read` for the y/n prompt defaults to "n" on EOF (`read -r REPLY || REPLY="n"`), allowing the script to run non-interactively (piped input) without hanging. (Severity: INFO)
 *   **[CLARIFICATION]** The fetch uses `--quiet` with stderr suppressed; on failure it warns and continues rather than aborting, since the fetch is best-effort (network may be unavailable). (Severity: INFO)
+*   DISCOVERY — Script originally lacked auto-fetch; spec updated (2026-02-26) to require fetching from remote and prompting user before sync, making the script self-contained.

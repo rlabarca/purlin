@@ -1,10 +1,25 @@
-# Feature: Submodule Upstream Sync
+# Feature: Submodule Upstream Sync [REMOVED]
 
-> Label: "Tool: Upstream Sync"
+> Label: "Tool: Upstream Sync [REMOVED - use /pl-update-purlin]"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/submodule_bootstrap.md
+> **Status**: REMOVED — Replaced by features/pl_update_purlin.md
 
 ## 1. Overview
+**REMOVED**: This feature described the original script-based sync approach (`tools/sync_upstream.sh`). The script has been fully removed and replaced by the intelligent agent skill `/pl-update-purlin` (see features/pl_update_purlin.md).
+
+The script-based approach had fundamental limitations:
+- No intelligence about user customizations in `.purlin/` folder
+- No tracking of top-level scripts (run_builder.sh, etc.)
+- Binary decisions only (auto-copy or warn) with no smart merging
+- No semantic understanding of changes
+
+**Replacement**: The `/pl-update-purlin` agent skill provides all functionality of the removed script plus intelligent merge strategies, migration plans, preservation of user customizations, and comprehensive tracking of all Purlin-managed files.
+
+---
+
+## Original Spec (For Historical Reference)
+
 This tool fetches the latest upstream Purlin commits, offers to update the local submodule, audits what changed, and updates the sync marker. It provides a human-readable changelog of instruction and tool changes so the project maintainer can assess the impact on their overrides.
 
 ## 2. Requirements
@@ -130,11 +145,3 @@ This tool fetches the latest upstream Purlin commits, offers to update the local
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 
-## User Testing Discoveries
-
-### [DISCOVERY] Script requires manual git pull before running; should auto-fetch and prompt (Discovered: 2026-02-26)
-- **Scenario:** NONE
-- **Observed Behavior:** The script is entirely local — it never fetches from remote. The user must manually run `git submodule update --remote` (or equivalent) before running `sync_upstream.sh`. The "Already up to date" message means the SHA marker matches the local submodule HEAD, not that the local submodule is current with remote. A user who forgets to pull first gets no indication that they may be behind.
-- **Expected Behavior:** The script should: (1) fetch the latest upstream from remote, (2) report whether a new version is available or the local submodule is already current, (3) if a new version is available, ask the user whether to proceed with the update, and only then run the changelog/sync logic. This makes the script self-contained and eliminates the prerequisite manual git step.
-- **Action Required:** Architect
-- **Status:** RESOLVED
