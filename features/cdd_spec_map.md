@@ -27,6 +27,7 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 ### 2.3 Interactive Graph View
 *   **Scope:** The graph view is for human consumption only. Agents must use `dependency_graph.json` via `tools/cdd/status.sh --graph`.
 *   **Graph Display:** The dependency graph MUST be rendered as an interactive diagram with feature nodes and directed edges representing prerequisite links. Uses Cytoscape.js for rendering.
+*   **Edge Arrows:** Edges MUST render with arrowheads at the target (dependent/child) end. Arrow direction: prerequisite → dependent (arrows point TO the child node).
 *   **Category Grouping:** Feature nodes MUST be visually grouped by their `Category` metadata (as defined in each feature file's `> Category:` line). Each group MUST be clearly delineated (e.g., via labeled bounding boxes or distinct spatial clusters) so that the category structure is immediately apparent.
 *   **Node Labels:** Each feature node MUST display both its friendly name (the `Label` from the feature file metadata) and its filename. Both pieces of information must be visible without requiring hover or click interaction.
 *   **Label Typography:** The friendly name (Label) MUST be rendered in larger, bolder text than the filename. This establishes a clear visual hierarchy where the human-readable name is the primary identifier and the filename is secondary.
@@ -53,8 +54,10 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
     *   **Level 1 -- Intra-category layout:** Each category's nodes are laid out independently using dagre (top-to-bottom direction), considering only intra-category edges. This preserves clean hierarchical prerequisite flow within each category.
     *   **Level 2 -- Inter-category packing:** Category bounding boxes are placed using a nearest-neighbor heuristic weighted by inter-category edge count. Categories with more cross-category edges are placed adjacent to each other. The algorithm:
         1.  Compute inter-category edge weights (number of edges between each pair of categories).
-        2.  Place the most-connected category first, then greedily place each subsequent category near its weighted centroid of already-placed neighbors.
-        3.  Use spiral search for non-overlapping positions.
+        2.  Compute the topological layer of each category from inter-category edges. Categories that are pure prerequisites (no incoming inter-category edges) are assigned layer 0; categories depending only on layer-0 categories are layer 1; and so on.
+        3.  Place the most-connected category first, then greedily place each subsequent category near its weighted centroid of already-placed neighbors.
+        4.  The greedy placement MUST respect topological layer ordering: a category at layer N MUST be placed above (lower Y-coordinate) all categories at layer N+1 or higher. The spiral search target position for a category MUST be constrained to Y-values below the bottom edge of all its prerequisite categories.
+        5.  Use spiral search for non-overlapping positions within the layer-constrained region.
     *   **No new CDN dependencies.** The layout uses the dagre library (already loaded) for Level 1 and a custom placement algorithm for Level 2.
 
 ### 2.4 Cytoscape.js Theme Integration
@@ -187,7 +190,14 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     When the graph layout runs
     Then category groups fill the viewport area efficiently rather than stacking vertically
     And categories with the most cross-category edges are placed adjacent to each other
+    And categories containing prerequisite nodes are placed above categories containing their dependent nodes
     And no category bounding boxes overlap
+
+#### Scenario: Prerequisite Hierarchy Preserved Across Categories
+    Given the Spec Map view displays features with cross-category prerequisite links
+    When the graph layout runs
+    Then features that are prerequisites appear above their dependents even when in different categories
+    And no child feature node has a lower Y-position than its parent prerequisite node in another category
 
 #### Scenario: Prerequisite Hierarchy Preserved Within Categories
     Given the User is viewing the Spec Map view
@@ -219,5 +229,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Category groups packed efficiently into viewport (minimal whitespace between groups)
 - [ ] High-affinity categories (many cross-category edges) placed close together
 - [ ] Intra-category prerequisite hierarchy preserved (anchor nodes above dependents, top-to-bottom flow)
+- [ ] Edges render with visible arrowheads pointing to the dependent (child) node
+- [ ] Cross-category prerequisite nodes always appear above their dependents (inter-category hierarchy preserved)
 
 ## User Testing Discoveries
