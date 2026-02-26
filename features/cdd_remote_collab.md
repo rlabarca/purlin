@@ -1,6 +1,6 @@
 # Feature: CDD Remote Collaboration
 
-> Label: "Tool: CDD Remote Collaboration"
+> Label: "CDD Remote Collaboration"
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_remote_collab.md
 > Prerequisite: features/cdd_isolated_teams.md

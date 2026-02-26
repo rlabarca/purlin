@@ -1,6 +1,6 @@
 # Feature: CDD Status Monitor
 
-> Label: "Tool: CDD Monitor"
+> Label: "CDD Monitor"
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_visual_standards.md

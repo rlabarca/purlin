@@ -1,6 +1,6 @@
 # Feature: CDD Agent Configuration
 
-> Label: "CDD Dashboard: Agent Configuration"
+> Label: "CDD Agent Configuration"
 > Category: "CDD Dashboard"
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/cdd_status_monitor.md

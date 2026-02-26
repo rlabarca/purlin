@@ -1,6 +1,6 @@
 # Feature: CDD Isolated Teams Mode
 
-> Label: "Tool: CDD Isolated Teams Mode"
+> Label: "CDD Isolated Teams Mode"
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_status_monitor.md

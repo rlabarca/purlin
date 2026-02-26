@@ -1,6 +1,6 @@
 # Feature: CDD Spec Map View
 
-> Label: "Tool: CDD Spec Map"
+> Label: "CDD Spec Map"
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md

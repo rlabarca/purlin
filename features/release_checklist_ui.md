@@ -1,6 +1,6 @@
 # Feature: Release Checklist — Dashboard Section
 
-> Label: "Release Checklist: Dashboard Section"
+> Label: "CDD Release Checklist"
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
