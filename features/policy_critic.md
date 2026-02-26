@@ -104,6 +104,9 @@ Feature files MAY contain a `## Visual Specification` section for features with 
 *   The Critic MUST detect `## Visual Specification` sections and count visual checklist items per feature.
 *   The Critic MUST generate separate QA action items for visual verification, distinct from functional scenario verification.
 *   Regression scoping applies to visual specifications: a `cosmetic` scope skips visual QA, a `targeted` scope skips visual unless explicitly targeted, and a `full` scope includes visual verification.
+*   The Critic MUST validate that `- **Reference:**` local file paths in Visual Specification sections resolve to existing files on disk. Missing files produce MEDIUM-priority Architect action items with category `missing_design_reference`.
+*   The Critic MUST detect `- **Processed:**` dates in Visual Specification sections and compare them against local artifact file modification times. If the artifact file is newer than the processed date, the description is flagged as STALE, producing LOW-priority Architect action items with category `stale_design_description`.
+*   The Critic MUST flag screens that have a `- **Reference:**` but no `- **Description:**` as HIGH-priority Architect action items with category `unprocessed_artifact`. These represent design artifacts that have been stored but not yet converted to structured markdown.
 
 ### 2.10 Targeted Scope Completeness
 When a feature has `change_scope: "targeted:..."` and `builder: "TODO"`, the Critic MUST compare the scenario names in the targeted scope list against all scenario headings (`#### Scenario:` titles) in the feature file. If scenarios exist in the feature spec that are NOT listed in the targeted scope, and the feature has `builder: "TODO"`, the Critic MUST generate a MEDIUM-priority Architect action item identifying the unscoped scenarios.

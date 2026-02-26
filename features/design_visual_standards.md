@@ -107,3 +107,13 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   Hardcoded hex colors in tool CSS (MUST use `var(--purlin-*)` custom properties).
 *   Inline style color values that bypass the token system.
 
+### 2.8 Design Artifact Inheritance
+When a design artifact is processed for a Purlin tool feature via `/pl-design-ingest`:
+
+*   All observed colors MUST be mapped to the nearest `--purlin-*` token from the color token system in Section 2.2. Literal hex values in descriptions are FORBIDDEN -- always reference the token name (e.g., "uses `var(--purlin-accent)`" not "uses #38BDF8").
+*   All observed fonts MUST be mapped to `--font-display` or `--font-body` from Section 2.3. If a design artifact shows a font not in the Purlin font stack, the description notes the discrepancy and maps to the closest Purlin font token.
+*   Rough sketches and wireframes MUST NOT override the anchor's visual language -- only layout and structure are extracted from such artifacts. Color, typography, and theme behavior always come from this anchor's invariants.
+*   Design token exports from Figma (`.tokens.css`, `.tokens.json`) MUST be validated against the token tables in Sections 2.2 and 2.3 before being referenced in feature descriptions.
+
+Note: This section is specific to the Purlin framework's own design system. Consumer projects write equivalent sections in their own `design_*.md` anchors referencing their own token system (Tailwind classes, SCSS variables, CSS custom properties, SwiftUI color assets, etc.). The `design_artifact_pipeline.md` anchor defines the generic inheritance rule; each project's design anchor implements it for their stack.
+

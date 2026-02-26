@@ -225,15 +225,36 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
 *   **Detection (`has_visual_spec`):** Check for the presence of a `## Visual Specification` heading in the feature file content. The heading MAY have a numbered prefix (e.g., `## 4. Visual Specification`); both forms MUST be detected.
 *   **Item Counting:** Count checklist items (lines matching `- [ ]` or `- [x]`) within the visual specification section. Count `### Screen:` subsections.
 *   **QA Action Items:** Generate separate QA action items for visual verification: `"Visual verify X: N checklist item(s) across M screen(s)"`. These are distinct from functional scenario verification items.
+*   **Reference Extraction (`parse_visual_spec`):** For each `### Screen:` subsection, extract:
+    *   `screen_name`: The screen title from the `### Screen:` heading.
+    *   `reference_path`: The value from `- **Reference:**` (local path, Figma URL, Live URL, or `N/A`).
+    *   `reference_type`: One of `local`, `figma`, `live`, or `none`.
+    *   `processed_date`: The value from `- **Processed:**` (YYYY-MM-DD or `N/A`).
+    *   `has_description`: Boolean indicating whether `- **Description:**` is present and non-empty.
+*   **Reference Integrity Check:** For references with `reference_type: "local"`, verify the file exists on disk relative to the project root. Missing files produce MEDIUM-priority Architect action items with category `missing_design_reference`.
+*   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority Architect action items with category `stale_design_description`.
+*   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_description` is false, produce HIGH-priority Architect action items with category `unprocessed_artifact`.
 *   **Per-Feature Output:** Include a `visual_spec` block in `tests/<feature_name>/critic.json`:
     ```json
     "visual_spec": {
         "present": true,
         "screens": 2,
-        "items": 8
+        "items": 8,
+        "references": [
+            {
+                "screen_name": "Main Dashboard",
+                "reference_path": "features/design/cdd_status_monitor/dashboard-layout.png",
+                "reference_type": "local",
+                "processed_date": "2026-02-15",
+                "has_description": true
+            }
+        ],
+        "unprocessed_count": 0,
+        "stale_count": 0,
+        "missing_reference_count": 0
     }
     ```
-    When no visual spec exists: `"visual_spec": {"present": false, "screens": 0, "items": 0}`.
+    When no visual spec exists: `"visual_spec": {"present": false, "screens": 0, "items": 0, "references": [], "unprocessed_count": 0, "stale_count": 0, "missing_reference_count": 0}`.
 *   **Traceability Exemption:** Visual checklist items are NOT subject to Gherkin traceability checks. They do not generate traceability gaps.
 *   **Scope Interaction:** Visual verification items are included in regression scope computation. A `cosmetic` scope skips visual items. A `targeted` scope skips visual unless explicitly targeted. A `full` scope includes all visual items.
 
