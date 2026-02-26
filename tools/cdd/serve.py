@@ -2116,6 +2116,7 @@ var inactivityTimer = null;
 var INACTIVITY_TIMEOUT = 300000; // 5 minutes
 var statusRefreshTimer = null;
 var modalCache = {{}};
+var labelSizeRaf = null;
 
 // ============================
 // Theme Toggle
@@ -3207,6 +3208,197 @@ function resetInactivityTimer() {{
   }}, INACTIVITY_TIMEOUT);
 }}
 
+// ============================
+// Dynamic Category Label Sizing
+// ============================
+var LABEL_BASE_FONT = 12;
+
+function updateCategoryLabelSizes() {{
+  if (!cy) return;
+  var zoom = cy.zoom();
+  // Effective font in model coords = baseFontSize / currentZoom, clamped [12, 80]
+  var fontSize = Math.min(80, Math.max(12, LABEL_BASE_FONT / zoom));
+  // Scale padding proportionally to accommodate larger labels at low zoom
+  var padding = Math.max(24, fontSize * 1.2);
+  var marginY = -(fontSize * 0.67);
+
+  cy.nodes('$node > node').style({{
+    'font-size': fontSize + 'px',
+    'padding': padding + 'px',
+    'text-margin-y': marginY,
+  }});
+}}
+
+function scheduleUpdateCategoryLabels() {{
+  if (labelSizeRaf) return;
+  labelSizeRaf = requestAnimationFrame(function() {{
+    labelSizeRaf = null;
+    updateCategoryLabelSizes();
+  }});
+}}
+
+// ============================
+// Two-Level Category Packing Layout
+// ============================
+function findNonOverlapping(cx, centerY, w, h, placed, allBounds, gap) {{
+  var step = 50;
+  var angle = 0;
+  var radius = 0;
+  for (var i = 0; i < 500; i++) {{
+    var x = cx + radius * Math.cos(angle);
+    var y = centerY + radius * Math.sin(angle);
+    var overlaps = false;
+    var keys = Object.keys(placed);
+    for (var j = 0; j < keys.length; j++) {{
+      var pc = keys[j];
+      var pp = placed[pc];
+      var pb = allBounds[pc];
+      if (Math.abs(x - pp.x) < (w + pb.w) / 2 + gap &&
+          Math.abs(y - pp.y) < (h + pb.h) / 2 + gap) {{
+        overlaps = true;
+        break;
+      }}
+    }}
+    if (!overlaps) return {{ x: x, y: y }};
+    angle += 0.5;
+    radius += step / (2 * Math.PI);
+  }}
+  return {{ x: cx + radius, y: centerY }};
+}}
+
+function runPackedLayout() {{
+  if (!cy) return;
+
+  // Collect categories and their feature nodes
+  var catMap = {{}};
+  cy.nodes('[!isCategory]').forEach(function(node) {{
+    var cat = node.data('category');
+    if (!catMap[cat]) catMap[cat] = [];
+    catMap[cat].push(node);
+  }});
+
+  var catNames = Object.keys(catMap);
+  if (catNames.length === 0) return;
+
+  // Level 1: Run dagre per category (intra-category edges only)
+  catNames.forEach(function(cat) {{
+    var nodes = catMap[cat];
+    var nodeIdSet = {{}};
+    nodes.forEach(function(n) {{ nodeIdSet[n.id()] = true; }});
+
+    // Collect intra-category edges
+    var intraEdges = cy.edges().filter(function(e) {{
+      return nodeIdSet[e.source().id()] && nodeIdSet[e.target().id()];
+    }});
+
+    // Build collection and run dagre
+    var eles = cy.collection();
+    nodes.forEach(function(n) {{ eles = eles.merge(n); }});
+    eles = eles.merge(intraEdges);
+
+    eles.layout({{
+      name: 'dagre',
+      rankDir: 'TB',
+      nodeSep: 60,
+      rankSep: 80,
+      fit: false,
+      animate: false,
+    }}).run();
+  }});
+
+  // Compute bounding boxes for each category after intra layout
+  var catBounds = {{}};
+  catNames.forEach(function(cat) {{
+    var nodes = catMap[cat];
+    var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    nodes.forEach(function(node) {{
+      var pos = node.position();
+      var w = node.outerWidth() / 2;
+      var h = node.outerHeight() / 2;
+      if (pos.x - w < x1) x1 = pos.x - w;
+      if (pos.y - h < y1) y1 = pos.y - h;
+      if (pos.x + w > x2) x2 = pos.x + w;
+      if (pos.y + h > y2) y2 = pos.y + h;
+    }});
+    catBounds[cat] = {{
+      x1: x1, y1: y1, x2: x2, y2: y2,
+      w: x2 - x1 + 60,
+      h: y2 - y1 + 60,
+      cx: (x1 + x2) / 2,
+      cy: (y1 + y2) / 2,
+    }};
+  }});
+
+  // Compute inter-category edge weights
+  var edgeWeights = {{}};
+  cy.edges().forEach(function(e) {{
+    var sc = e.source().data('category');
+    var tc = e.target().data('category');
+    if (sc && tc && sc !== tc) {{
+      var key = sc < tc ? sc + '|' + tc : tc + '|' + sc;
+      edgeWeights[key] = (edgeWeights[key] || 0) + 1;
+    }}
+  }});
+
+  // Compute total connectivity per category
+  var connectivity = {{}};
+  catNames.forEach(function(c) {{ connectivity[c] = 0; }});
+  Object.keys(edgeWeights).forEach(function(key) {{
+    var parts = key.split('|');
+    connectivity[parts[0]] += edgeWeights[key];
+    connectivity[parts[1]] += edgeWeights[key];
+  }});
+
+  // Sort by connectivity descending (most-connected first)
+  var sortedCats = catNames.slice().sort(function(a, b) {{
+    return connectivity[b] - connectivity[a];
+  }});
+
+  // Level 2: Greedy placement with spiral search
+  var placed = {{}};
+  var GAP = 80;
+
+  sortedCats.forEach(function(cat, idx) {{
+    if (idx === 0) {{
+      placed[cat] = {{ x: 0, y: 0 }};
+      return;
+    }}
+
+    // Weighted centroid of placed neighbors
+    var wx = 0, wy = 0, tw = 0;
+    Object.keys(placed).forEach(function(pc) {{
+      var key = cat < pc ? cat + '|' + pc : pc + '|' + cat;
+      var w = edgeWeights[key] || 0;
+      if (w > 0) {{
+        wx += placed[pc].x * w;
+        wy += placed[pc].y * w;
+        tw += w;
+      }}
+    }});
+
+    var tx = tw > 0 ? wx / tw : 0;
+    var ty = tw > 0 ? wy / tw : 0;
+
+    // Spiral search for non-overlapping position
+    var myW = catBounds[cat].w;
+    var myH = catBounds[cat].h;
+    var pos = findNonOverlapping(tx, ty, myW, myH, placed, catBounds, GAP);
+    placed[cat] = pos;
+  }});
+
+  // Apply position offsets to move each category's nodes
+  sortedCats.forEach(function(cat) {{
+    var target = placed[cat];
+    var bounds = catBounds[cat];
+    var dx = target.x - bounds.cx;
+    var dy = target.y - bounds.cy;
+    catMap[cat].forEach(function(node) {{
+      var pos = node.position();
+      node.position({{ x: pos.x + dx, y: pos.y + dy }});
+    }});
+  }});
+}}
+
 function createCytoscape(elements, colors) {{
   var c = colors || getThemeColors();
   var instance = cytoscape({{
@@ -3306,11 +3498,7 @@ function createCytoscape(elements, colors) {{
       }},
     ],
     layout: {{
-      name: 'dagre',
-      rankDir: 'TB',
-      nodeSep: 80,
-      rankSep: 100,
-      padding: 50,
+      name: 'preset',
     }},
     wheelSensitivity: 0.3,
     minZoom: 0.1,
@@ -3348,6 +3536,11 @@ function createCytoscape(elements, colors) {{
     resetInactivityTimer();
   }});
 
+  // Dynamic category label sizing on zoom changes
+  instance.on('zoom', function() {{
+    scheduleUpdateCategoryLabels();
+  }});
+
   return instance;
 }}
 
@@ -3373,6 +3566,8 @@ function renderGraph() {{
     var pan = cy.pan();
     cy.destroy();
     cy = createCytoscape(elements, colors);
+    runPackedLayout();
+    updateCategoryLabelSizes();
 
     // Restore node positions if user has moved nodes and graph hasn't changed
     if (userModifiedNodes && !hashChanged) {{
@@ -3389,8 +3584,11 @@ function renderGraph() {{
       cy.fit(undefined, 40);
       programmaticViewport = false;
     }}
+    updateCategoryLabelSizes();
   }} else {{
     cy = createCytoscape(elements, colors);
+    runPackedLayout();
+    updateCategoryLabelSizes();
     // Restore node positions on initial load if saved
     if (userModifiedNodes) {{
       restoreNodePositions(newHash);
@@ -3398,6 +3596,7 @@ function renderGraph() {{
     programmaticViewport = true;
     cy.fit(undefined, 40);
     programmaticViewport = false;
+    updateCategoryLabelSizes();
   }}
 
   cy.on('viewport', function() {{
@@ -3415,13 +3614,12 @@ function recenterGraph() {{
     userModifiedView = false;
     userModifiedNodes = false;
     if (lastContentHash) localStorage.removeItem(lastContentHash);
-    // Re-run layout to reset node positions to auto-layout
-    cy.layout({{
-      name: 'dagre', rankDir: 'TB', nodeSep: 80, rankSep: 100, padding: 50,
-    }}).run();
+    // Re-run packed layout to reset node positions
+    runPackedLayout();
     programmaticViewport = true;
     cy.fit(undefined, 40);
     programmaticViewport = false;
+    updateCategoryLabelSizes();
   }}
 }}
 
