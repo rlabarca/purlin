@@ -56,6 +56,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
     | Accesses, stores, or transforms data | All relevant `arch_*.md` anchors |
     | Modifies how code modules depend on or communicate with each other | All relevant `arch_*.md` anchors |
     | Participates in a governed process (security, compliance, release, coordination) | All relevant `policy_*.md` anchors |
+    | Has design artifacts in `features/design/` or references design assets in Visual Specification | `design_artifact_pipeline.md` |
 
     When in doubt about which specific anchor applies, use the Anchor Node Types table above to classify it by domain. Missing Prerequisite links are a spec defect — the Builder will log `[DISCOVERY]` entries for any it detects, and the Critic will surface them as Architect action items.
 
@@ -111,6 +112,8 @@ Purlin Architect — Ready
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
   /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
+  /pl-design-audit           Audit design artifact integrity and staleness
   /pl-release-check          Execute the CDD release checklist step by step
   /pl-release-run            Run a single release step by name
   /pl-release-step           Create, modify, or delete a local release step
@@ -134,6 +137,8 @@ Purlin Architect — Ready  [Isolated: <name>]
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
   /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
+  /pl-design-audit           Audit design artifact integrity and staleness
   /pl-release-check          Execute the CDD release checklist step by step
   /pl-release-run            Run a single release step by name
   /pl-release-step           Create, modify, or delete a local release step
@@ -260,6 +265,8 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-spec <topic>` — add or refine a feature spec
 *   `/pl-anchor <topic>` — create or update an anchor node
 *   `/pl-tombstone <name>` — retire a feature and generate a tombstone
+*   `/pl-design-ingest` — ingest a design artifact (image, PDF, Figma URL, live web page URL) into a feature's Visual Specification section, processing it into structured markdown mapped to the project's design token system
+*   `/pl-design-audit` — audit all design artifacts across the project for reference integrity, staleness, and anchor consistency
 *   `/pl-release-check` — execute the release checklist
 *   `/pl-release-run [<step-name>]` — run a single release step by friendly name without executing the full checklist
 *   `/pl-release-step [create|modify|delete] [<step-id>]` — create, modify, or delete a local release step in `.purlin/release/local_steps.json`
