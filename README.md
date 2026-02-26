@@ -37,7 +37,7 @@ By colocating technical implementation knowledge with behavioral specifications 
 ### 1. Collaborative Design-Driven
 The project's state is defined 100% by specification files, and those specifications evolve continuously with the code:
 *   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** Define the constraints of the system -- technical architecture, design standards, and governance policies. Changes cascade to all dependent features.
-*   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) coupled with Implementation Notes (Tribal Knowledge). Refined through every implementation cycle -- not written once and handed off.
+*   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) with implementation knowledge preserved in companion files (`*.impl.md`) alongside them. Refined through every implementation cycle -- not written once and handed off.
 *   **Code is disposable; design is durable.** If all source code were deleted, the specs must be sufficient to rebuild. When code reveals new truths, the design is updated first.
 
 ### 2. Role Separation
@@ -124,6 +124,8 @@ The Architect owns the specification system. All feature requirements, architect
 | `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
 | `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
 | `/pl-edit-base` | Modify a base instruction file (Purlin repo only -- not distributed to consumer projects) |
+| `/pl-collab-push` | Push local main to the remote collab branch (main only) |
+| `/pl-collab-pull` | Pull remote collab branch into local main (main only) |
 
 **Workflow examples:**
 
