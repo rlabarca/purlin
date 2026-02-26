@@ -28,7 +28,7 @@ Each check category in this step corresponds to a section of that contract.
 **Scripts:**
 - All Python tools under `tools/` (e.g., `tools/critic/critic.py`, `tools/cdd/serve.py`)
 - All shell scripts under `tools/` (e.g., `tools/cdd/status.sh`, `tools/cdd/start.sh`,
-  `tools/critic/run.sh`, `tools/bootstrap.sh`, `tools/sync_upstream.sh`)
+  `tools/critic/run.sh`, `tools/bootstrap.sh`)
 
 **Instruction Files:**
 - `instructions/HOW_WE_WORK_BASE.md`
@@ -135,8 +135,8 @@ not this file).
 
 ```
 1. AUDIT SCOPE — Examine all Python tools under tools/ (critic.py, serve.py, and any other
-   .py files), all shell scripts under tools/ (status.sh, start.sh, run.sh, bootstrap.sh,
-   sync_upstream.sh), and base instruction files (instructions/*.md).
+   .py files), all shell scripts under tools/ (status.sh, start.sh, run.sh, bootstrap.sh),
+   and base instruction files (instructions/*.md).
 
 2. CHECK 1 — PURLIN_PROJECT_ROOT env var (contract §2.11): Does each Python tool check
    os.environ.get('PURLIN_PROJECT_ROOT') before path climbing? Does each shell script check

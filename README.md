@@ -98,6 +98,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | `/pl-local-pull` | Pull latest commits from main into the current isolation branch (isolated sessions only) |
 | `/pl-collab-push` | Push local main to the remote collab branch (main only) |
 | `/pl-collab-pull` | Pull remote collab branch into local main (main only) |
+| `/pl-update-purlin` | Intelligent submodule update with semantic analysis and conflict resolution |
 
 ---
 
@@ -435,7 +436,7 @@ git commit -m "chore: update purlin submodule"
 
 **Inside the Purlin submodule (`purlin/`):**
 *   `instructions/` -- Base instruction layer (framework rules). Read by launcher scripts at runtime; never copied to your project.
-*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Upstream Sync, Release Step management).
+*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Release Step management).
 *   `purlin-config-sample/` -- Override templates used by the bootstrap script.
 
 ## Releases
@@ -457,7 +458,7 @@ git commit -m "chore: update purlin submodule"
 - Delivery plan scope reset on plan completion
 
 **Upstream Sync**
-- Auto-fetch and update prompt — script now fetches from remote and prompts before updating, eliminating the manual `git pull` prerequisite
+- Auto-fetch and update prompt — script now fetches from remote and prompts before updating, eliminating the manual `git pull` prerequisite (script subsequently replaced by `/pl-update-purlin` agent skill)
 
 **Instruction Fixes**
 - Corrected stale launcher script names in HOW_WE_WORK_BASE
