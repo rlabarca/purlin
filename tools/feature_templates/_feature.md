@@ -35,4 +35,15 @@
 
 None.
 
+<!-- Optional: Uncomment for features with a visual/UI component.
+## Visual Specification
 
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
+### Screen: <Screen Name>
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** <Describe the screen layout and structure>
+- [ ] <Visual acceptance criterion>
+-->
