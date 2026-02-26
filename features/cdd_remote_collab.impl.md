@@ -13,3 +13,11 @@
 **[CLARIFICATION]** Session sync state data is embedded as `window._rcSessionsData` in a `<script>` tag within the `_remote_collab_section_html` output. This allows the delete confirmation modal to read per-session sync state without an additional server request, as specified in Section 2.8. The data refreshes with each 5-second HTML poll cycle. (Severity: INFO)
 
 **[CLARIFICATION]** The delete confirmation modal follows the Kill Isolation Modal pattern (inline `style="display:none"` overlay, positioned fixed with `z-index:200`), not the Feature Detail Modal pattern (CSS class-based `.modal-overlay`). Both are valid CDD modal patterns. (Severity: INFO)
+
+## Pruned Discoveries
+
+BUG — IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
+SPEC_DISPUTE — IN FLIGHT table removed from Remote Collaboration section entirely; accepted by Architect since isolation branches are never pushed to remote per policy invariant 2.5; CONTRIBUTORS + sync badge provide all meaningful signals.
+BUG — Sync badge never appeared when local main branch absent (e.g., cloned from collab branch); fixed by detecting missing local main in `compute_remote_sync_state()` and returning `sync_state: "NO_MAIN"` with guidance message.
+BUG — Active session panel rendered controls across three rows instead of two; fixed by reorganizing HTML so Row 1 = dropdown + branch ref + Disconnect, Row 2 = sync badge + annotation + last check + Check Remote.
+INTENT_DRIFT — Sync state annotation was ambiguous about perspective (e.g., "1 ahead"); fixed to use remote-perspective framing ("Remote is N behind/ahead of local main") per spec Section 2.3.
