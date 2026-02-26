@@ -458,4 +458,20 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - [ ] Delete Confirmation Modal: Cancel and Delete buttons; Delete button uses `--purlin-status-error` background with contrasting text
 - [ ] Delete Confirmation Modal (AHEAD/DIVERGED): red warning block with `--purlin-status-error` text on subtle red-tinted background, positioned between body text and buttons
 
+## User Testing Discoveries
+
+### [BUG] Disconnect button renders near Check Remote instead of on the session row (Discovered: 2026-02-26)
+- **Scenario:** Active-Session State Shows Sync Badge and Controls
+- **Observed Behavior:** The Disconnect button appears near the "Check Remote" button (Row 2 / sync state row) rather than right-aligned on the session row beside the branch name. This makes it easy to accidentally click Disconnect when intending to click Check Remote.
+- **Expected Behavior:** Per Section 2.3, the Disconnect button must be right-aligned on Row 1: `[session-name ▾] collab/<name>  [Disconnect]`. Row 2 is for the sync badge, annotation, last-check timestamp, and Check Remote button only.
+- **Action Required:** Builder
+- **Status:** OPEN
+
+### [INTENT_DRIFT] Session dropdown and sync badge below it lack left-edge alignment (Discovered: 2026-02-26)
+- **Scenario:** Active-Session State Shows Sync Badge and Controls
+- **Observed Behavior:** The branch selection dropdown (Row 1) and the BEHIND/AHEAD sync badge (Row 2) do not have aligned left edges — the badge starts at a different horizontal position than the dropdown above it.
+- **Expected Behavior:** The two-row layout should feel visually coherent: the dropdown's left edge and the sync badge's left edge should line up, giving the active session panel a consistent left margin. The spec defines two rows but is silent on this alignment; the current rendering misses the intent of a clean, readable panel.
+- **Action Required:** Architect
+- **Status:** OPEN
+
 
