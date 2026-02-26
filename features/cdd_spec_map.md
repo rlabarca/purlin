@@ -36,13 +36,26 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 *   **Zoom-to-Fit on Load:** On initial page load (or when switching to the Spec Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
     *   If the user has NOT modified zoom or pan since the last fit (initial load, view switch, or Recenter), auto-refresh cycles MUST re-fit the graph to the viewable area.
     *   If the user HAS modified zoom or pan, auto-refresh cycles MUST preserve the current zoom level and pan position.
-*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the Spec Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the auto-layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
+*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the Spec Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
 *   **Node Position Persistence:** The graph tracks whether the user has manually dragged any node (category group box or individual feature node). Node positions are persisted to `localStorage`, keyed by a content hash derived from the current set of nodes and their category assignments.
     *   If the user has NOT manually moved any node, auto-refresh cycles re-run the layout algorithm normally.
     *   If the user HAS manually moved one or more nodes, auto-refresh cycles restore the saved positions. Existing nodes retain their saved coordinates; any newly-added nodes are placed by the layout algorithm.
     *   **Substantive Change Invalidation:** Saved positions are discarded when any node is added, removed, or reassigned to a different category since the positions were last persisted. The graph runs a fresh full layout, and the position interaction state resets to "unmodified."
-*   **Inactivity Timeout:** After a continuous period of 5 minutes with no user interaction on the graph (no drag, pan, zoom, or node interaction), both node positions and zoom/pan are reset to auto-layout and auto-fit state. Both interaction states reset to "unmodified."
+*   **Inactivity Timeout:** After a continuous period of 5 minutes with no user interaction on the graph (no drag, pan, zoom, or node interaction), both node positions and zoom/pan are reset to packed layout and auto-fit state. Both interaction states reset to "unmodified."
 *   **Hover Highlighting:** When the User hovers over a feature node, the node's immediate neighbors (direct prerequisites and direct dependents, one edge away) MUST be visually highlighted. Non-adjacent nodes should be de-emphasized.
+*   **Dynamic Category Label Sizing:** Category group labels MUST scale inversely with the current zoom level so they remain readable at all zoom levels.
+    *   Effective font size in model coordinates = `baseFontSize / currentZoom`, clamped to `[12px, 80px]`.
+    *   At zoom ~0.15 (typical fit-all for the full graph), labels render at approximately 12 screen pixels (readable).
+    *   At zoom 1.0 or higher, labels remain at 12px in model coordinates (same as current behavior).
+    *   The category parent node's top padding MUST scale proportionally to accommodate larger labels at low zoom, preventing label overlap with child nodes.
+    *   Label size updates MUST be triggered on zoom events (rAF-debounced), after `cy.fit()`, and after layout runs.
+*   **Two-Level Category Packing Layout:** The graph layout MUST use a two-level approach instead of a single-pass dagre layout across all nodes.
+    *   **Level 1 -- Intra-category layout:** Each category's nodes are laid out independently using dagre (top-to-bottom direction), considering only intra-category edges. This preserves clean hierarchical prerequisite flow within each category.
+    *   **Level 2 -- Inter-category packing:** Category bounding boxes are placed using a nearest-neighbor heuristic weighted by inter-category edge count. Categories with more cross-category edges are placed adjacent to each other. The algorithm:
+        1.  Compute inter-category edge weights (number of edges between each pair of categories).
+        2.  Place the most-connected category first, then greedily place each subsequent category near its weighted centroid of already-placed neighbors.
+        3.  Use spiral search for non-overlapping positions.
+    *   **No new CDN dependencies.** The layout uses the dagre library (already loaded) for Level 1 and a custom placement algorithm for Level 2.
 
 ### 2.4 Cytoscape.js Theme Integration
 *   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme.
@@ -145,22 +158,42 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Given the User has manually moved one or more nodes
     When a feature file is added, removed, or a node's category assignment changes
     Then the saved node positions are discarded
-    And the graph re-runs the full auto-layout algorithm
+    And the graph re-runs the full packed layout algorithm
     And the position interaction state resets to unmodified
 
 #### Scenario: Recenter Graph Button Resets Node Positions
     Given the User has manually moved one or more nodes
     When the User clicks the Recenter Graph button
-    Then all node positions are reset to the auto-layout positions
+    Then all node positions are reset to the packed layout positions
     And the position interaction state resets to unmodified
     And subsequent auto-refresh cycles re-layout rather than restore saved positions
 
 #### Scenario: Inactivity Timeout Redraws Graph and Resets Zoom
     Given the User has manually moved nodes or modified zoom and pan
     When 5 minutes pass with no user interaction on the graph
-    Then all node positions are reset to the auto-layout positions
+    Then all node positions are reset to the packed layout positions
     And zoom and pan are reset to fit the graph in the viewable area
     And both position and zoom interaction states reset to unmodified
+
+#### Scenario: Category Labels Readable at Overview Zoom
+    Given the User is viewing the Spec Map view with the graph zoomed to fit all nodes
+    When the zoom level is approximately 0.15 (typical fit-all)
+    Then category group labels render at approximately 12 screen pixels (readable)
+    And when the User zooms in to 1.0 or higher
+    Then category labels do not grow beyond 12px in model coordinates
+
+#### Scenario: Categories Packed Into Viewport
+    Given the User is viewing the Spec Map view
+    When the graph layout runs
+    Then category groups fill the viewport area efficiently rather than stacking vertically
+    And categories with the most cross-category edges are placed adjacent to each other
+    And no category bounding boxes overlap
+
+#### Scenario: Prerequisite Hierarchy Preserved Within Categories
+    Given the User is viewing the Spec Map view
+    When the graph layout runs
+    Then within each category group nodes flow top-to-bottom following prerequisite order
+    And anchor nodes appear above the features that depend on them
 
 ## Visual Specification
 
@@ -180,6 +213,11 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Theme persists across auto-refresh cycles
 - [ ] Search/filter input (in dashboard header) filters graph nodes by label or filename
 - [ ] Manually-moved node positions persist across page refresh when the graph has not changed substantively
-- [ ] "Recenter Graph" button resets manually-moved node positions to auto-layout in addition to resetting zoom
+- [ ] "Recenter Graph" button resets manually-moved node positions to packed layout in addition to resetting zoom
+- [ ] Category labels readable at overview zoom (~0.15) without squinting
+- [ ] Category labels do not become disproportionately large when zoomed in past 1.0
+- [ ] Category groups packed efficiently into viewport (minimal whitespace between groups)
+- [ ] High-affinity categories (many cross-category edges) placed close together
+- [ ] Intra-category prerequisite hierarchy preserved (anchor nodes above dependents, top-to-bottom flow)
 
 ## User Testing Discoveries
