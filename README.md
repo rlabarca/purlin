@@ -442,6 +442,17 @@ git commit -m "chore: update purlin submodule"
 
 ## Releases
 
+### v0.7.5 — 2026-02-26
+
+**Runtime Port Override**
+- `-p <port>` CLI flag for `start.sh` to override CDD Dashboard port at runtime
+- `CDD_PORT` env var support in `serve.py` for multi-project and collaboration scenarios
+
+**Upstream Sync Modernization**
+- `/pl-update-purlin` agent skill replaces the old `sync_upstream.sh` script
+- Intelligent submodule update with semantic analysis and conflict resolution
+- Removed deprecated `sync_upstream.sh`
+
 ### v0.7.0 — 2026-02-26
 
 **Remote Collaboration**
