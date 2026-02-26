@@ -60,12 +60,24 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
         5.  Use spiral search for non-overlapping positions within the layer-constrained region.
     *   **No new CDN dependencies.** The layout uses the dagre library (already loaded) for Level 1 and a custom placement algorithm for Level 2.
 
-### 2.4 Cytoscape.js Theme Integration
+### 2.4 Anchor Node Border Color
+*   **Distinct Border:** Anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) MUST render with a border color of `--purlin-status-good` (green) to visually distinguish them from regular feature nodes. This applies in both themes.
+
+### 2.5 Double-Click Category Zoom
+*   **Zoom to Category:** When the User double-clicks on a category bounding box (the group container, not an individual feature node), the graph MUST animate a zoom-to-fit that maximizes the view of that category box within the viewport.
+*   **Zoom Target:** The viewport MUST be adjusted so the category box fills as much of the viewable area as possible while remaining fully visible (with reasonable padding).
+*   **Interaction State:** A double-click zoom MUST update the interaction state to "modified" so that subsequent auto-refresh cycles preserve the zoom level rather than re-fitting to the full graph.
+
+### 2.6 Edge Click Pass-Through
+*   **Non-Interactive Edges:** Edges (the lines and arrows connecting nodes) MUST NOT be interactive click targets. Clicks on edges MUST pass through to the layer below (the canvas background or any element underneath).
+*   **Hover Behavior Preserved:** Edge highlighting during node hover (Section 2.3) is unaffected. Edges may still change appearance as part of hover highlighting, but they MUST NOT capture click or tap events.
+
+### 2.7 Cytoscape.js Theme Integration
 *   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme.
 *   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
 *   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
 
-### 2.5 Machine-Readable Output
+### 2.8 Machine-Readable Output
 *   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.purlin/cache/dependency_graph.json`.
 *   **Schema:**
     ```json
@@ -205,6 +217,27 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then within each category group nodes flow top-to-bottom following prerequisite order
     And anchor nodes appear above the features that depend on them
 
+#### Scenario: Anchor Nodes Have Green Border
+    Given the User is viewing the Spec Map view
+    When the graph renders anchor nodes (arch_*, design_*, policy_*)
+    Then those nodes display a border using the --purlin-status-good color (green)
+    And the green border is visible in both Blueprint (dark) and Architect (light) themes
+    And regular feature nodes do not have the green border
+
+#### Scenario: Double-Click Category Zooms to Fit
+    Given the User is viewing the Spec Map view
+    When the User double-clicks on a category bounding box
+    Then the graph animates a zoom that maximizes the view of that category box within the viewport
+    And the category box fills as much of the viewable area as possible while remaining fully visible
+    And the interaction state is set to modified so auto-refresh preserves the zoom level
+
+#### Scenario: Clicks on Edges Pass Through
+    Given the User is viewing the Spec Map view
+    When the User clicks on an edge (line or arrow between nodes)
+    Then the click passes through to the layer below
+    And no edge selection, tooltip, or modal is triggered
+    And edge hover highlighting during node hover still functions normally
+
 ## Visual Specification
 
 ### Screen: CDD Dashboard -- Spec Map View
@@ -231,5 +264,8 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Intra-category prerequisite hierarchy preserved (anchor nodes above dependents, top-to-bottom flow)
 - [ ] Edges render with visible arrowheads pointing to the dependent (child) node
 - [ ] Cross-category prerequisite nodes always appear above their dependents (inter-category hierarchy preserved)
+- [ ] Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (`--purlin-status-good`) in both themes
+- [ ] Double-clicking a category box zooms the view to maximize that category within the viewport
+- [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 
 ## User Testing Discoveries
