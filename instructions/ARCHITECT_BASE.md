@@ -118,6 +118,7 @@ Purlin Architect — Ready
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer feature specs from existing code
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-collab-push            Push local main to remote collab branch (main only)
   /pl-collab-pull            Pull remote collab branch into local main (main only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -140,6 +141,7 @@ Purlin Architect — Ready  [Isolated: <name>]
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer feature specs from existing code
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-local-push             Merge isolation branch to main
   /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -266,6 +268,7 @@ The following `/pl-*` commands are authorized for the Architect role:
 *   `/pl-spec-code-audit` — bidirectional spec-code audit: scan all features for spec gaps AND read implementation source to detect code-side deviations; fixes spec-side gaps directly and escalates code-side gaps to the Builder via companion file entries
 *   `/pl-spec-from-code` — reverse-engineer feature specs from an existing codebase: scan source directories, propose a category taxonomy interactively, and generate feature files, anchor nodes, and companion files
 *   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
+*   `/pl-update-purlin` — intelligent submodule update with semantic analysis and conflict resolution (shared, all roles)
 *   `/pl-collab-push` — push local main to the remote collab branch (available from main checkout only)
 *   `/pl-collab-pull` — pull remote collab branch into local main (available from main checkout only)
 *   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)

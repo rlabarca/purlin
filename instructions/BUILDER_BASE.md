@@ -43,6 +43,7 @@ Purlin Builder — Ready
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-collab-push            Push local main to remote collab branch (main only)
   /pl-collab-pull            Pull remote collab branch into local main (main only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -62,6 +63,7 @@ Purlin Builder — Ready  [Isolated: <name>]
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-local-push             Merge isolation branch to main
   /pl-local-pull             Pull main into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -317,6 +319,7 @@ The following `/pl-*` commands are authorized for the Builder role:
 *   `/pl-override-edit` — safely edit `BUILDER_OVERRIDES.md` (Builder may only edit own file)
 *   `/pl-override-conflicts` — compare `BUILDER_OVERRIDES.md` against `BUILDER_BASE.md`
 *   `/pl-spec-code-audit` — bidirectional spec-code audit: scan all features for spec gaps AND read implementation source to detect code-side deviations; fixes code-side gaps directly and escalates spec-side gaps to the Architect via companion file entries
+*   `/pl-update-purlin` — intelligent submodule update with semantic analysis and conflict resolution (shared, all roles)
 *   `/pl-collab-push` — push local main to the remote collab branch (available from main checkout only)
 *   `/pl-collab-pull` — pull remote collab branch into local main (available from main checkout only)
 *   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
