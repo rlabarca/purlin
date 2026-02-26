@@ -12,7 +12,7 @@ If the result is not `main`, abort immediately:
 
 ```
 This command is only valid from the main checkout.
-Current branch: <branch>. Run /pl-remote-pull from the project root (branch: main).
+Current branch: <branch>. Run /pl-collab-pull from the project root (branch: main).
 ```
 
 Do NOT proceed to Step 1.
@@ -72,14 +72,14 @@ Determine state:
 
 **SAME:** Print "Local main is already in sync with remote." Exit.
 
-**AHEAD:** Print "Local main is AHEAD by N commits. Nothing to pull — run /pl-remote-push when ready." Exit.
+**AHEAD:** Print "Local main is AHEAD by N commits. Nothing to pull — run /pl-collab-push when ready." Exit.
 
 **BEHIND:** Fast-forward merge:
 ```
 git merge --ff-only origin/collab/<session>
 ```
 On success: Print "Fast-forwarded local main by M commits from <remote>/collab/<session>."
-On failure (race condition where ff is not possible): Print "Fast-forward failed — re-run /pl-remote-pull." Exit with failure.
+On failure (race condition where ff is not possible): Print "Fast-forward failed — re-run /pl-collab-pull." Exit with failure.
 
 **DIVERGED:** Print pre-merge context:
 ```
@@ -114,7 +114,7 @@ To abandon: `git merge --abort` (restores main to its pre-merge state).
 ```
 Exit with failure.
 
-**No cascade.** After `/pl-remote-pull` updates main, any active isolations that are BEHIND will show BEHIND in the ISOLATED TEAMS section and sync themselves via `/pl-local-pull` when ready. Each isolation controls its own branch.
+**No cascade.** After `/pl-collab-pull` updates main, any active isolations that are BEHIND will show BEHIND in the ISOLATED TEAMS section and sync themselves via `/pl-local-pull` when ready. Each isolation controls its own branch.
 
 ## Notes
 

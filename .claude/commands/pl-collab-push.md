@@ -12,7 +12,7 @@ If the result is not `main`, abort immediately:
 
 ```
 This command is only valid from the main checkout.
-Current branch: <branch>. Run /pl-remote-push from the project root (branch: main).
+Current branch: <branch>. Run /pl-collab-push from the project root (branch: main).
 ```
 
 Do NOT proceed to Step 1.
@@ -76,7 +76,7 @@ If the remote tracking ref does not exist (first push), treat as AHEAD with ahea
 
 **BEHIND:** Print:
 ```
-Local main is BEHIND <remote>/collab/<session> by M commits. Run /pl-remote-pull before pushing.
+Local main is BEHIND <remote>/collab/<session> by M commits. Run /pl-collab-pull before pushing.
 ```
 Exit with failure.
 
@@ -85,7 +85,7 @@ Exit with failure.
 Local main is DIVERGED from <remote>/collab/<session>.
 Remote has M commit(s) not in local main:
   <git log main..origin/collab/<session> --oneline>
-Run /pl-remote-pull to merge remote changes before pushing.
+Run /pl-collab-pull to merge remote changes before pushing.
 ```
 Exit with failure.
 
@@ -98,7 +98,7 @@ On failure: Print the git error message. Exit with failure.
 
 ## Notes
 
-- Does NOT merge anything. Use `/pl-remote-pull` first if behind or diverged.
+- Does NOT merge anything. Use `/pl-collab-pull` first if behind or diverged.
 - Sessions are created via the CDD dashboard, not this command.
 - Run from the project root (branch: main) only.
 - If the remote branch does not exist, `git push` creates it automatically.
