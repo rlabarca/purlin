@@ -162,27 +162,38 @@ def get_implementation_notes(content):
 
 
 def resolve_impl_notes(content, feature_path):
-    """Resolve implementation notes, following companion file references.
+    """Resolve implementation notes, merging inline and companion content.
 
-    If the inline Implementation Notes stub contains a companion file
-    reference (link to <name>.impl.md), reads and returns the companion
-    file content. Otherwise returns the inline content (backward compatible).
+    Per HOW_WE_WORK Section 4.2-4.3, companion files (<name>.impl.md) are
+    standalone and feature files do NOT reference them. This function checks
+    for companion files unconditionally by naming convention and merges their
+    content with any inline Implementation Notes from the feature file.
+
+    Resolution order:
+    1. Read inline Implementation Notes from the feature file.
+    2. Check for companion file at <name>.impl.md (by naming convention).
+    3. If both exist, concatenate inline notes + companion content.
+    4. If only companion exists, return companion content.
+    5. If only inline exists, return inline content.
     """
     inline_notes = get_implementation_notes(content)
 
-    # Check if stub references a companion file
-    companion_match = re.search(r'\[[\w_-]+\.impl\.md\]', inline_notes)
-    if companion_match:
-        # Derive companion file path from feature path
+    # Check for companion file by naming convention (no link required)
+    companion_content = ''
+    if feature_path:
         base = os.path.splitext(feature_path)[0]
         companion_path = base + '.impl.md'
         if os.path.isfile(companion_path):
             try:
                 with open(companion_path, 'r', encoding='utf-8') as f:
-                    return f.read()
+                    companion_content = f.read()
             except (IOError, OSError):
                 pass
 
+    if inline_notes and companion_content:
+        return inline_notes + '\n\n' + companion_content
+    elif companion_content:
+        return companion_content
     return inline_notes
 
 
