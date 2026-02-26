@@ -249,6 +249,25 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **Aggregate Report:** Untracked files are listed in a dedicated `### Untracked Files` subsection of the Architect action items in `CRITIC_REPORT.md`.
 *   **No Per-Feature Association:** Untracked file items are project-level, not tied to a specific feature. They appear in the aggregate report only (not in per-feature `critic.json` files).
 
+### 2.15 Targeted Scope Completeness Audit
+The Critic MUST detect features where a `targeted:` scope leaves scenarios unaccounted for while the Builder still has work to do.
+
+*   **Trigger Conditions:** The audit runs for features where (a) `change_scope` starts with `"targeted:"`, AND (b) `role_status.builder` is `"TODO"`.
+*   **Comparison:** Parse the comma-separated scenario names from the `targeted:` scope string. Parse all `#### Scenario:` titles from the feature file (both automated and manual). Also parse `### Screen:` titles and prefix them with `Visual:` per the Section 2.12 naming convention. Compare the two sets.
+*   **Action Item Generation:** For each scenario or visual screen in the feature spec that is NOT listed in the targeted scope, generate a single aggregate MEDIUM-priority Architect action item:
+    *   Category: `targeted_scope_gap`.
+    *   Description: `"Targeted scope for <feature> covers N of M scenarios. Unscoped: [list]. Consider resetting to full scope."`.
+*   **Per-Feature Output:** Include a `targeted_scope_audit` block in `tests/<feature_name>/critic.json`:
+    ```json
+    "targeted_scope_audit": {
+        "scoped_count": 4,
+        "total_count": 7,
+        "unscoped": ["Double-Click Category Zooms to Fit", "Anchor Nodes Have Green Border", "Clicks on Edges Pass Through"]
+    }
+    ```
+    When the audit does not trigger (non-targeted scope, or builder is not TODO), the block is omitted.
+*   **Aggregate Report:** Targeted scope gaps appear in the Architect action items section of `CRITIC_REPORT.md`, grouped under a `### Targeted Scope Gaps` subsection.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -691,6 +710,36 @@ The Critic MUST detect untracked files in the working directory and generate Arc
     When the Critic tool runs the Implementation Gate
     Then all checks report PASS with "N/A - anchor node exempt"
     And the overall implementation_gate status is PASS
+
+#### Scenario: Targeted Scope Gap Detected for TODO Feature
+    Given a feature is in TODO lifecycle state with builder status TODO
+    And the most recent status commit contains [Scope: targeted:Scenario A,Scenario B]
+    And the feature spec contains 5 scenario headings: Scenario A, Scenario B, Scenario C, Scenario D, Scenario E
+    When the Critic runs the targeted scope completeness audit
+    Then an Architect action item is created with priority MEDIUM and category targeted_scope_gap
+    And the description lists Scenario C, Scenario D, and Scenario E as unscoped
+    And the per-feature critic.json contains targeted_scope_audit with scoped_count 2 and total_count 5
+
+#### Scenario: Targeted Scope Gap Not Triggered for Full Scope
+    Given a feature is in TODO lifecycle state with builder status TODO
+    And the change_scope is "full"
+    When the Critic runs the targeted scope completeness audit
+    Then no targeted_scope_gap action item is created
+    And the per-feature critic.json does not contain a targeted_scope_audit block
+
+#### Scenario: Targeted Scope Gap Not Triggered When Builder Is DONE
+    Given a feature has builder status DONE
+    And the change_scope is "targeted:Scenario A"
+    When the Critic runs the targeted scope completeness audit
+    Then no targeted_scope_gap action item is created
+
+#### Scenario: Targeted Scope Gap Includes Visual Screens
+    Given a feature is in TODO lifecycle state with builder status TODO
+    And the most recent status commit contains [Scope: targeted:Scenario A]
+    And the feature spec contains Scenario A, Scenario B, and a Visual Specification with Screen: Dashboard Overview
+    When the Critic runs the targeted scope completeness audit
+    Then the unscoped list includes "Scenario B" and "Visual:Dashboard Overview"
+    And the targeted_scope_audit.total_count includes both scenarios and visual screens
 
 ### Manual Scenarios (Human Verification Required)
 
