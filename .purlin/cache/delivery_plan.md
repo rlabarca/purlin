@@ -16,10 +16,10 @@
 **Completion Commit:** 426697e
 **QA Bugs Addressed:** —
 
-## Phase 3 — Level 2 Features [PENDING]
+## Phase 3 — Level 2 Features [COMPLETE]
 **Features:** cdd_remote_collab.md, pl_agent_config.md
-**Completion Commit:** —
+**Completion Commit:** 2b35960
 **QA Bugs Addressed:** —
 
 ## Plan Amendments
-_None._
+Post-Phase-2 cosmetic spec resets (cdd_status_monitor, impl_notes_companion, spec_from_code, critic_tool) re-tagged before Phase 3 work.
