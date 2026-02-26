@@ -271,6 +271,17 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 *   **Disappears When Complete:** When the delivery plan is deleted (all phases complete) or does not exist, the phase annotation is not rendered. Only the standard `ACTIVE (<count>)` heading appears.
 *   **No Per-Feature Changes:** Individual feature status badges (DONE, TODO, FAIL, etc.) are unchanged. The phase indicator is purely a section-level annotation.
 
+### 2.12 Runtime Port Override
+
+The CDD Dashboard port can be overridden at runtime, bypassing the `cdd_port` value in `.purlin/config.json`. This is essential when multiple consumer projects run on the same machine or when collaborators use different ports (since `config.json` is committed to git and collab push/pull would overwrite each other's port settings).
+
+*   **`-p` CLI Flag:** `tools/cdd/start.sh` MUST accept an optional `-p <port>` flag. When provided, the flag value takes precedence over the `cdd_port` value in `.purlin/config.json`.
+*   **`CDD_PORT` Environment Variable:** When `-p` is provided, `start.sh` MUST export `CDD_PORT=<port>` before launching `serve.py`. This is the sole mechanism for communicating the override to the Python server.
+*   **Server-Side Resolution:** `serve.py` MUST check the `CDD_PORT` environment variable first. If set, it uses that value as the listen port. If not set, it falls back to reading `cdd_port` from `.purlin/config.json` (existing behavior). The default remains `8086` if neither source provides a value.
+*   **Priority Order:** `-p` flag (via `CDD_PORT` env var) > `cdd_port` in config > `8086` default.
+*   **Validation:** If the `-p` value is not a valid integer or is outside the range 1-65535, `start.sh` MUST print an error message and exit with a non-zero status without starting the server.
+*   **No Config Mutation:** The `-p` flag MUST NOT modify `.purlin/config.json`. It is a runtime-only override.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -471,6 +482,26 @@ These scenarios are validated by the Builder's automated test suite.
     Given a tombstone file exists at features/tombstones/some_retired_feature.md
     When an agent runs tools/cdd/status.sh
     Then the JSON output includes the tombstone entry with tombstone true, architect DONE, builder TODO, qa N/A
+
+#### Scenario: CLI Port Override via Flag
+    Given the CDD server is not running
+    When the User runs tools/cdd/start.sh -p 9090
+    Then the server starts listening on port 9090
+    And the CDD_PORT environment variable is set to 9090 for the server process
+    And .purlin/config.json is not modified
+
+#### Scenario: Port Override Validation Rejects Invalid Port
+    Given the CDD server is not running
+    When the User runs tools/cdd/start.sh -p notanumber
+    Then the script prints an error message and exits with a non-zero status
+    And no server process is started
+
+#### Scenario: Server Uses Config Port When No Override
+    Given the CDD server is not running
+    And .purlin/config.json has cdd_port set to 8086
+    And no CDD_PORT environment variable is set
+    When the User runs tools/cdd/start.sh without -p
+    Then the server starts listening on port 8086
 
 ### Manual Scenarios (Human Verification Required)
 These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.

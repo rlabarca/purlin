@@ -363,10 +363,11 @@ Your Architect agent will guide you through customizing the overrides for your p
 ### 5. Run the CDD Dashboard
 
 ```bash
-./purlin/tools/cdd/start.sh
+./purlin/tools/cdd/start.sh            # uses port from config (default: 8086)
+./purlin/tools/cdd/start.sh -p 9090    # override port at runtime
 ```
 
-Open **http://localhost:8086** in your browser. The dashboard has two modes:
+Open **http://localhost:8086** (or your chosen port) in your browser. The `-p` flag overrides the `cdd_port` value in `.purlin/config.json` without modifying it -- useful when running multiple projects on the same machine or when collaborators use different ports. The dashboard has two modes:
 
 *   **Status view:** Real-time feature status by role (Architect, Builder, QA), the release checklist, and workspace / isolated team state. The **Agent Config** panel lets you configure model, effort, permissions, and startup behavior for each agent directly from the browser -- changes are written to `.purlin/config.json` and committed automatically.
 *   **Spec Map view:** An interactive dependency graph of all feature files, showing prerequisite chains and category groupings. Toggle between Status and Spec Map using the view mode controls in the dashboard header.
