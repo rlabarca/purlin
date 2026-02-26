@@ -394,13 +394,27 @@ Works on macOS, Linux, and Windows via WSL or Git Bash.
 
 ### Updating the Submodule
 
+Use the `/pl-update-purlin` agent skill to intelligently update Purlin:
+
 ```bash
-./purlin/tools/sync_upstream.sh   # Fetch, update, audit changes, update sync marker
-git add purlin
-git commit -m "chore: update purlin submodule"
+./run_architect.sh   # or run_builder.sh / run_qa.sh
+# In the Claude Code session:
+/pl-update-purlin
 ```
 
-The sync script fetches upstream, reports how many commits the submodule is behind, and prompts before updating. It then shows a changelog of what changed in `instructions/` and `tools/`, flags structural changes that may require override updates, and syncs command files.
+The agent skill:
+- Fetches upstream and reports commits behind
+- Analyzes changes semantically (not just textually)
+- Preserves your customizations in `.purlin/` folder
+- Tracks and updates top-level scripts (`run_*.sh`, etc.)
+- Offers smart merge strategies for conflicts
+- Generates migration plans for breaking changes
+
+After the update completes:
+```bash
+git add purlin .purlin
+git commit -m "chore: update purlin submodule"
+```
 
 ### Gitignore Guidance
 

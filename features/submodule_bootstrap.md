@@ -23,7 +23,7 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Config Patching:** After copying, set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `agentic-dev/tools` if the submodule is at `agentic-dev/`).
 
 ### 2.4 Upstream SHA Marker
-*   **SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha`. This file is used by `sync_upstream.sh` to detect upstream changes.
+*   **SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha`. This file is used by `/pl-update-purlin` to detect upstream changes.
 *   **Format:** Plain text, single line, the full 40-character SHA.
 
 ### 2.5 Launcher Script Generation
