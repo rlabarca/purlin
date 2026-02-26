@@ -208,7 +208,7 @@ Before starting work on each feature from the approved plan:
 *   **Commit Implementation Work:** Stage and commit all implementation code, tests, companion file updates, AND any feature file edits (discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
 
 ### 2b. Builder Decision Protocol (MANDATORY)
-When making non-trivial implementation decisions, you MUST classify and document them in the companion file (`features/<name>.impl.md`) or the `## Implementation Notes` section using structured tags.
+When making non-trivial implementation decisions, you MUST classify and document them in the companion file (`features/<name>.impl.md`) using structured tags.
 
 **Decision Categories:**
 *   **`[CLARIFICATION]`** (Severity: INFO) -- Interpreted ambiguous spec language. The spec was unclear; you chose a reasonable interpretation.

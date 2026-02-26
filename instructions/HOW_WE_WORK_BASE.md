@@ -99,7 +99,7 @@ The Purlin framework uses a two-layer instruction model to separate framework ru
 *   **Override Layer** (`.purlin/` directory in the consumer project): Contains project-specific customizations, domain context, and workflow additions. These are owned and maintained by the consumer project.
 
 ### How It Works
-At agent launch time, the launcher scripts (`run_claude_architect.sh`, `run_claude_builder.sh`, `run_claude_qa.sh`) concatenate the base and override files into a single prompt:
+At agent launch time, the launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) concatenate the base and override files into a single prompt:
 
 1. Base HOW_WE_WORK is loaded first (framework philosophy).
 2. Role-specific base instructions are appended (framework rules).
