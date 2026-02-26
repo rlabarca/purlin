@@ -137,4 +137,4 @@ None. All scenarios for this feature are fully automated.
 - **Observed Behavior:** The script is entirely local — it never fetches from remote. The user must manually run `git submodule update --remote` (or equivalent) before running `sync_upstream.sh`. The "Already up to date" message means the SHA marker matches the local submodule HEAD, not that the local submodule is current with remote. A user who forgets to pull first gets no indication that they may be behind.
 - **Expected Behavior:** The script should: (1) fetch the latest upstream from remote, (2) report whether a new version is available or the local submodule is already current, (3) if a new version is available, ask the user whether to proceed with the update, and only then run the changelog/sync logic. This makes the script self-contained and eliminates the prerequisite manual git step.
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED

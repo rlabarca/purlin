@@ -230,6 +230,168 @@ echo ""
 echo "=== Sync Upstream Tests ==="
 ###############################################################################
 
+# --- Scenario: Auto-Fetch and Update When Behind ---
+echo ""
+echo "[Scenario] Auto-Fetch and Update When Behind"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+LATEST_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+BEHIND_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~1 2>/dev/null || echo "")"
+OLDER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~2 2>/dev/null || echo "")"
+
+if [ -n "$BEHIND_SHA" ] && [ -n "$OLDER_SHA" ]; then
+    # Reset submodule to 1 commit behind origin/main
+    git -C "$PROJECT/agentic-dev" reset --hard "$BEHIND_SHA" >/dev/null 2>&1
+    # Re-overlay latest sync script (reset reverted it)
+    cp "$SUBMODULE_SRC/tools/sync_upstream.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    chmod +x "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    # Set upstream_sha to an even older commit so there's a changelog to show
+    echo "$OLDER_SHA" > "$PROJECT/.purlin/.upstream_sha"
+
+    # Pipe "y" to accept the update
+    OUTPUT=$(echo "y" | "$SYNC" 2>&1)
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully"; else log_fail "Sync exit code $EXIT_CODE"; fi
+    if echo "$OUTPUT" | grep -q "behind remote"; then log_pass "Reports commits behind"; else log_fail "Missing 'behind remote' message"; fi
+    if echo "$OUTPUT" | grep -q "Update to latest"; then log_pass "Prompts to update"; else log_fail "Missing update prompt"; fi
+    if echo "$OUTPUT" | grep -q "Submodule updated"; then log_pass "Confirms update"; else log_fail "Missing update confirmation"; fi
+
+    # Verify submodule was actually advanced
+    AFTER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+    if [ "$AFTER_SHA" = "$LATEST_SHA" ]; then
+        log_pass "Submodule advanced to latest remote commit"
+    else
+        log_fail "Submodule not advanced (at ${AFTER_SHA:0:12}, expected ${LATEST_SHA:0:12})"
+    fi
+
+    # Verify SHA marker was updated
+    MARKER_SHA="$(cat "$PROJECT/.purlin/.upstream_sha" | tr -d '[:space:]')"
+    if [ "$MARKER_SHA" = "$LATEST_SHA" ]; then
+        log_pass ".upstream_sha updated to new SHA"
+    else
+        log_fail ".upstream_sha not updated"
+    fi
+else
+    echo "  SKIP: Not enough commit history to test"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Auto-Fetch and Update When Behind (Detached HEAD) ---
+echo ""
+echo "[Scenario] Auto-Fetch and Update When Behind (Detached HEAD)"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+LATEST_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+BEHIND_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~1 2>/dev/null || echo "")"
+OLDER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~2 2>/dev/null || echo "")"
+
+if [ -n "$BEHIND_SHA" ] && [ -n "$OLDER_SHA" ]; then
+    # Detach HEAD at 1 commit behind (simulates typical submodule state)
+    git -C "$PROJECT/agentic-dev" checkout --detach "$BEHIND_SHA" 2>/dev/null
+    # Re-overlay latest sync script
+    cp "$SUBMODULE_SRC/tools/sync_upstream.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    chmod +x "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    echo "$OLDER_SHA" > "$PROJECT/.purlin/.upstream_sha"
+
+    OUTPUT=$(echo "y" | "$SYNC" 2>&1)
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully (detached)"; else log_fail "Sync exit code $EXIT_CODE (detached)"; fi
+    if echo "$OUTPUT" | grep -q "behind remote"; then log_pass "Reports commits behind (detached)"; else log_fail "Missing 'behind remote' (detached)"; fi
+    if echo "$OUTPUT" | grep -q "Submodule updated"; then log_pass "Confirms update (detached)"; else log_fail "Missing update confirmation (detached)"; fi
+
+    AFTER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+    if [ "$AFTER_SHA" = "$LATEST_SHA" ]; then
+        log_pass "Submodule advanced to latest (detached checkout)"
+    else
+        log_fail "Submodule not advanced (detached, at ${AFTER_SHA:0:12}, expected ${LATEST_SHA:0:12})"
+    fi
+else
+    echo "  SKIP: Not enough commit history to test"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: User Declines Update ---
+echo ""
+echo "[Scenario] User Declines Update"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+LATEST_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+BEHIND_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~1 2>/dev/null || echo "")"
+OLDER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~2 2>/dev/null || echo "")"
+
+if [ -n "$BEHIND_SHA" ] && [ -n "$OLDER_SHA" ]; then
+    git -C "$PROJECT/agentic-dev" reset --hard "$BEHIND_SHA" >/dev/null 2>&1
+    cp "$SUBMODULE_SRC/tools/sync_upstream.sh" "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    chmod +x "$PROJECT/agentic-dev/tools/sync_upstream.sh"
+    echo "$OLDER_SHA" > "$PROJECT/.purlin/.upstream_sha"
+
+    # Pipe "n" to decline the update
+    OUTPUT=$(echo "n" | "$SYNC" 2>&1)
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully"; else log_fail "Sync exit code $EXIT_CODE"; fi
+    if echo "$OUTPUT" | grep -q "Skipping update"; then log_pass "Prints skip message"; else log_fail "Missing skip message"; fi
+
+    # Verify submodule was NOT advanced
+    AFTER_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD)"
+    if [ "$AFTER_SHA" = "$BEHIND_SHA" ]; then
+        log_pass "Submodule remains at original commit"
+    else
+        log_fail "Submodule was unexpectedly advanced"
+    fi
+
+    # Verify sync still ran (changelog displayed for HEAD~2..HEAD~1)
+    if echo "$OUTPUT" | grep -qi "instruction changes\|tool changes"; then
+        log_pass "Changelog still displayed after declining update"
+    else
+        log_fail "Changelog not displayed after declining update"
+    fi
+else
+    echo "  SKIP: Not enough commit history to test"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Submodule Already Current With Remote ---
+echo ""
+echo "[Scenario] Submodule Already Current With Remote"
+setup_sandbox
+"$BOOTSTRAP" > /dev/null 2>&1
+
+PARENT_SHA="$(git -C "$PROJECT/agentic-dev" rev-parse HEAD~1 2>/dev/null || echo "")"
+
+if [ -n "$PARENT_SHA" ]; then
+    # Submodule is at HEAD = origin/main (up to date with remote)
+    # But .upstream_sha is older, so there are changes to report
+    echo "$PARENT_SHA" > "$PROJECT/.purlin/.upstream_sha"
+
+    OUTPUT=$("$SYNC" 2>&1)
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then log_pass "Sync completed successfully"; else log_fail "Sync exit code $EXIT_CODE"; fi
+    if echo "$OUTPUT" | grep -q "up to date with remote"; then
+        log_pass "Reports submodule is up to date with remote"
+    else
+        log_fail "Missing 'up to date with remote' message"
+    fi
+    if echo "$OUTPUT" | grep -qi "instruction changes\|tool changes"; then
+        log_pass "Changelog displayed for changes since last sync"
+    else
+        log_fail "Changelog not displayed"
+    fi
+else
+    echo "  SKIP: Not enough commit history"
+fi
+
+cleanup_sandbox
+
 # --- Scenario: Already up to date ---
 echo ""
 echo "[Scenario] Already Up to Date"

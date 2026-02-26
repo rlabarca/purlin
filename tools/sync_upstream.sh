@@ -11,7 +11,75 @@ SUBMODULE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$SUBMODULE_DIR/.." && pwd)"
 
 ###############################################################################
-# 2. SHA Comparison
+# 2. Auto-Fetch and Update Prompt (Section 2.2)
+###############################################################################
+
+# Fetch latest upstream commits
+echo "Fetching latest upstream..."
+if ! git -C "$SUBMODULE_DIR" fetch --quiet 2>/dev/null; then
+    echo "WARNING: Failed to fetch from remote. Proceeding with local state."
+fi
+
+# Determine the remote tracking branch
+REMOTE_BRANCH=""
+CURRENT_BRANCH="$(git -C "$SUBMODULE_DIR" symbolic-ref --short HEAD 2>/dev/null || true)"
+IS_DETACHED=true
+if [ -n "$CURRENT_BRANCH" ]; then
+    IS_DETACHED=false
+    TRACKING="$(git -C "$SUBMODULE_DIR" rev-parse --abbrev-ref "@{upstream}" 2>/dev/null || true)"
+    if [ -n "$TRACKING" ]; then
+        REMOTE_BRANCH="$TRACKING"
+    fi
+fi
+
+# Fallback: try origin/main, then origin/master
+if [ -z "$REMOTE_BRANCH" ]; then
+    if git -C "$SUBMODULE_DIR" rev-parse --verify "origin/main" >/dev/null 2>&1; then
+        REMOTE_BRANCH="origin/main"
+    elif git -C "$SUBMODULE_DIR" rev-parse --verify "origin/master" >/dev/null 2>&1; then
+        REMOTE_BRANCH="origin/master"
+    fi
+fi
+
+if [ -n "$REMOTE_BRANCH" ]; then
+    BEHIND_LOG="$(git -C "$SUBMODULE_DIR" log --oneline HEAD.."$REMOTE_BRANCH" 2>/dev/null || true)"
+    COMMITS_BEHIND=0
+    if [ -n "$BEHIND_LOG" ]; then
+        COMMITS_BEHIND="$(echo "$BEHIND_LOG" | wc -l | tr -d ' ')"
+    fi
+
+    if [ "$COMMITS_BEHIND" -eq 0 ]; then
+        echo "Submodule is up to date with remote."
+    else
+        printf "Submodule is %s commit(s) behind remote. Update to latest? (y/n) " "$COMMITS_BEHIND"
+        read -r REPLY || REPLY="n"
+        if [[ "$REPLY" =~ ^[Yy] ]]; then
+            REMOTE_SHA="$(git -C "$SUBMODULE_DIR" rev-parse "$REMOTE_BRANCH")"
+            if [ "$IS_DETACHED" = true ]; then
+                # Detached HEAD — checkout the remote SHA (stays detached)
+                git -C "$SUBMODULE_DIR" checkout "$REMOTE_SHA" 2>/dev/null || {
+                    echo "ERROR: Failed to advance to remote HEAD."
+                    exit 1
+                }
+            else
+                # On a branch — merge fast-forward only
+                git -C "$SUBMODULE_DIR" merge --ff-only "$REMOTE_BRANCH" 2>/dev/null || {
+                    echo "ERROR: Fast-forward merge failed."
+                    exit 1
+                }
+            fi
+            echo "Submodule updated to $(git -C "$SUBMODULE_DIR" rev-parse --short HEAD)."
+        else
+            echo "Skipping update. Running sync against current local state."
+        fi
+    fi
+else
+    echo "WARNING: Could not determine remote tracking branch. Skipping update check."
+fi
+echo ""
+
+###############################################################################
+# 3. SHA Comparison (Section 2.3)
 ###############################################################################
 SHA_FILE="$PROJECT_ROOT/.purlin/.upstream_sha"
 
@@ -25,7 +93,7 @@ OLD_SHA="$(cat "$SHA_FILE" | tr -d '[:space:]')"
 CURRENT_SHA="$(git -C "$SUBMODULE_DIR" rev-parse HEAD)"
 
 if [ "$OLD_SHA" = "$CURRENT_SHA" ]; then
-    echo "Already up to date. (SHA: ${CURRENT_SHA:0:12})"
+    echo "Already up to date — no changes since last sync. (SHA: ${CURRENT_SHA:0:12})"
     exit 0
 fi
 
@@ -36,7 +104,7 @@ echo "Current  SHA: ${CURRENT_SHA:0:12}"
 echo ""
 
 ###############################################################################
-# 3. Changelog Display
+# 4. Changelog Display
 ###############################################################################
 
 # --- Instruction Changes ---
@@ -103,7 +171,7 @@ git -C "$SUBMODULE_DIR" diff --no-color "$OLD_SHA"..HEAD -- tools/ 2>/dev/null |
 echo ""
 
 ###############################################################################
-# 3b. Command File Sync (Section 2.6)
+# 4b. Command File Sync (Section 2.7)
 ###############################################################################
 COMMANDS_SRC="$SUBMODULE_DIR/.claude/commands"
 COMMANDS_DST="$PROJECT_ROOT/.claude/commands"
@@ -176,7 +244,7 @@ fi
 echo ""
 
 ###############################################################################
-# 4. SHA Update
+# 5. SHA Update
 ###############################################################################
 echo "$CURRENT_SHA" > "$SHA_FILE"
 echo "=== SHA marker updated to ${CURRENT_SHA:0:12} ==="
