@@ -19,16 +19,13 @@ The framework is built on four goals:
 
 ## Screenshots
 
-*(From v0.6.0)*
+*(From v0.7.0)*
 
 **CDD Dashboard**
-![CDD Dashboard](assets/PurlinCDDV0.6.0.png)
+![CDD Dashboard](assets/PurlinCDDV0.7.0.png)
 
 **CDD Spec Map**
-![CDD Spec Map](assets/PurlinSpecMapV0.6.0.png)
-
-**Purlin Example Workspace**
-![Purlin Example Workspace](assets/PurlinWorkspaceV0.6.0.png)
+![CDD Spec Map](assets/PurlinSpecMapV0.7.0.png)
 
 ## Core Concepts
 
