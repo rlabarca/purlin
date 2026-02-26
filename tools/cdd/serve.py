@@ -1385,14 +1385,22 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     else:
         last_check = 'Never'
 
-    # Active session panel
-    # Row 1: [dropdown ▾] collab/<name> [Disconnect]
+    # Active session panel — two-row layout with aligned left edges
+    # Row 1: [dropdown ▾] collab/<name>  [Disconnect]
+    # Row 2: sync badge + annotation + last check  [Check Remote]
     html = '<div style="padding-top:4px">'
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    html += ('<div style="display:flex;align-items:center;gap:8px;'
+             'margin-bottom:14px">')
 
     # Switch session dropdown
     if sessions:
-        html += '<select id="rc-switch-select" onchange="switchRemoteSession(this.value)" style="font-size:11px;padding:2px 6px;background:var(--purlin-surface);color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px">'
+        html += ('<select id="rc-switch-select"'
+                 ' onchange="switchRemoteSession(this.value)"'
+                 ' style="font-size:11px;padding:2px 6px;margin:0;'
+                 'background:var(--purlin-surface);'
+                 'color:var(--purlin-primary);'
+                 'border:1px solid var(--purlin-border);'
+                 'border-radius:3px">')
         for s in sessions:
             selected = ' selected' if s['name'] == active_session else ''
             html += f'<option value="{s["name"]}"{selected}>{s["name"]}</option>'
@@ -1402,19 +1410,25 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
                  f'font-size:12px">{active_session}</span>')
 
     html += (
-        f'<code style="color:var(--purlin-muted);font-size:11px">collab/{active_session}</code>'
+        f'<code style="color:var(--purlin-muted);font-size:11px">'
+        f'collab/{active_session}</code>'
         f'<button class="btn-critic" onclick="disconnectRemoteSession()"'
-        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Disconnect</button>'
+        f' style="font-size:10px;padding:2px 8px;margin-left:auto">'
+        f'Disconnect</button>'
         f'</div>'
     )
 
     # Row 2: sync badge + annotation + last check + Check Remote
     html += (
-        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        f'<div style="display:flex;align-items:center;gap:8px;'
+        f'margin-bottom:8px">'
         f'{sync_badge} {count_detail}'
-        f'<span style="color:var(--purlin-dim);font-size:10px">Last check: {last_check}</span>'
-        f'<button class="btn-critic" onclick="fetchRemoteSession()" id="btn-check-remote"'
-        f' style="font-size:10px;padding:2px 8px;margin-left:auto">Check Remote</button>'
+        f'<span style="color:var(--purlin-dim);font-size:10px">'
+        f'Last check: {last_check}</span>'
+        f'<button class="btn-critic" onclick="fetchRemoteSession()"'
+        f' id="btn-check-remote"'
+        f' style="font-size:10px;padding:2px 8px;margin-left:auto">'
+        f'Check Remote</button>'
         f'</div></div>'
     )
 

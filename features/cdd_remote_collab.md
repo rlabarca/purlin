@@ -467,7 +467,8 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - **Observed Behavior:** The Disconnect button appears near the "Check Remote" button (Row 2 / sync state row) rather than right-aligned on the session row beside the branch name. This makes it easy to accidentally click Disconnect when intending to click Check Remote.
 - **Expected Behavior:** Per Section 2.3, the Disconnect button must be right-aligned on Row 1: `[session-name ▾] collab/<name>  [Disconnect]`. Row 2 is for the sync badge, annotation, last-check timestamp, and Check Remote button only.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Increased vertical gap between Row 1 and Row 2 from 6px to 14px, creating clear visual separation between the Disconnect and Check Remote buttons. Disconnect was already in Row 1 structurally; the proximity issue was due to insufficient vertical margin between the two flex rows.
 
 ### [INTENT_DRIFT] Session dropdown and sync badge below it lack left-edge alignment (Discovered: 2026-02-26)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls

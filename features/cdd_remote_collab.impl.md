@@ -14,6 +14,8 @@
 
 **[CLARIFICATION]** The delete confirmation modal follows the Kill Isolation Modal pattern (inline `style="display:none"` overlay, positioned fixed with `z-index:200`), not the Feature Detail Modal pattern (CSS class-based `.modal-overlay`). Both are valid CDD modal patterns. (Severity: INFO)
 
+**[CLARIFICATION]** Panel alignment fix: Row 1 (session dropdown) and Row 2 (sync badge) share the same parent flex container, ensuring consistent left-edge alignment per spec Section 2.3. The `<select>` element gets `margin:0` to normalize browser defaults. Vertical gap between rows increased from 6px to 14px to create clear visual separation between the Disconnect and Check Remote buttons. (Severity: INFO)
+
 ## Pruned Discoveries
 
 BUG — IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
