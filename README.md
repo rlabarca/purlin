@@ -395,13 +395,12 @@ Works on macOS, Linux, and Windows via WSL or Git Bash.
 ### Updating the Submodule
 
 ```bash
-cd purlin && git pull origin main && cd ..
+./purlin/tools/sync_upstream.sh   # Fetch, update, audit changes, update sync marker
 git add purlin
-./purlin/tools/sync_upstream.sh   # Audit changes, update sync marker
 git commit -m "chore: update purlin submodule"
 ```
 
-The sync script shows a changelog of what changed in `instructions/` and `tools/`, and flags any structural changes that may require override updates.
+The sync script fetches upstream, reports how many commits the submodule is behind, and prompts before updating. It then shows a changelog of what changed in `instructions/` and `tools/`, flags structural changes that may require override updates, and syncs command files.
 
 ### Gitignore Guidance
 
