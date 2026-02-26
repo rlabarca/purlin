@@ -1322,6 +1322,105 @@ class TestTombstoneEntryInCliOutput(unittest.TestCase):
 
 
 # ===================================================================
+# Complete Section Recency Sort Tests (Section 2.2.2 BUG fix)
+# ===================================================================
+
+class TestCompleteSectionRecencySort(unittest.TestCase):
+    """Scenario: Complete section sorted by most recent completion.
+
+    Verifies that generate_api_status_json() includes complete_ts in
+    the API response and that generate_html() sorts the Complete section
+    by recency (most recent first) rather than alphabetically.
+    """
+
+    def test_api_includes_complete_ts_when_present(self):
+        """API response includes complete_ts for features with a completion commit."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "feat_a.md"), "w") as f:
+                f.write('# Feature A\n\n> Label: "Feature A"\n')
+
+            cache = {
+                os.path.normpath("features/feat_a.md"): {
+                    'complete_ts': 1700000000,
+                    'complete_hash': 'abc123',
+                    'testing_ts': 0,
+                    'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_rel = serve.FEATURES_REL
+            orig_tests = serve.TESTS_DIR
+            orig_root = serve.PROJECT_ROOT
+            serve.FEATURES_ABS = features_dir
+            serve.FEATURES_REL = "features"
+            serve.TESTS_DIR = tests_dir
+            serve.PROJECT_ROOT = test_dir
+            try:
+                data = generate_api_status_json(cache=cache)
+                feat = data["features"][0]
+                self.assertEqual(feat["complete_ts"], 1700000000)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.FEATURES_REL = orig_rel
+                serve.TESTS_DIR = orig_tests
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    def test_api_omits_complete_ts_when_zero(self):
+        """API response omits complete_ts when no completion commit exists."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_dir = os.path.join(test_dir, "features")
+            tests_dir = os.path.join(test_dir, "tests")
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            with open(os.path.join(features_dir, "feat_b.md"), "w") as f:
+                f.write('# Feature B\n\n> Label: "Feature B"\n')
+
+            cache = {
+                os.path.normpath("features/feat_b.md"): {
+                    'complete_ts': 0,
+                    'complete_hash': '',
+                    'testing_ts': 1700000000,
+                    'testing_hash': 'def456',
+                    'scope': None,
+                }
+            }
+
+            import serve
+            orig_abs = serve.FEATURES_ABS
+            orig_rel = serve.FEATURES_REL
+            orig_tests = serve.TESTS_DIR
+            orig_root = serve.PROJECT_ROOT
+            serve.FEATURES_ABS = features_dir
+            serve.FEATURES_REL = "features"
+            serve.TESTS_DIR = tests_dir
+            serve.PROJECT_ROOT = test_dir
+            try:
+                data = generate_api_status_json(cache=cache)
+                feat = data["features"][0]
+                self.assertNotIn("complete_ts", feat)
+            finally:
+                serve.FEATURES_ABS = orig_abs
+                serve.FEATURES_REL = orig_rel
+                serve.TESTS_DIR = orig_tests
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+
+# ===================================================================
 # CLI Graph Output Tests
 # ===================================================================
 

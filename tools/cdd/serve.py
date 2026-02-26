@@ -525,6 +525,12 @@ def generate_api_status_json(cache=None):
         if scope:
             entry["change_scope"] = scope
 
+        # Include complete_ts for recency sorting (Section 2.2.2)
+        info = cache.get(rel_path, {})
+        c_ts = info.get('complete_ts', 0)
+        if c_ts > 0:
+            entry["complete_ts"] = c_ts
+
         features.append(entry)
 
     # Scan tombstones (Section 2.2.5 / 2.4 / 2.5)
@@ -1507,6 +1513,9 @@ def generate_html(cache=None):
 
     # Sort Active by urgency (red first, then yellow/orange, then alphabetical)
     active_features.sort(key=lambda e: (_feature_urgency(e), e["file"]))
+
+    # Sort Complete by recency (most recent first) — Section 2.2.2
+    complete_features.sort(key=lambda e: e.get("complete_ts", 0), reverse=True)
 
     # Cap Complete at COMPLETE_CAP
     total_complete = len(complete_features)

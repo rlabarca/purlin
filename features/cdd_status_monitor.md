@@ -632,4 +632,4 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** The Complete section displays features in alphabetical order by filename. The `generate_api_status_json()` function sorts all features by `x["file"]` (alphabetical), and the dashboard takes the first 10 from that list. The `complete_ts` timestamp is captured internally by `build_status_commit_cache()` and sorted correctly in `get_feature_status()`, but is never included in the API response or used by the dashboard rendering.
 - **Expected Behavior:** Complete features should be sorted by completion timestamp (most recent first), and the API response should include `complete_ts` so the dashboard can maintain this ordering. The 10-entry cap should apply after the recency sort, showing the 10 most recently completed features.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
