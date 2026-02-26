@@ -426,6 +426,34 @@ The sync script fetches upstream, reports how many commits the submodule is behi
 
 ## Releases
 
+### v0.7.0 — 2026-02-26
+
+**Remote Collaboration**
+- Remote multi-machine collaboration via collab sessions (`collab/<name>` branches)
+- Dashboard section with session management, sync badges (AHEAD/BEHIND/SAME/DIVERGED), and per-session controls
+- `/pl-collab-push` and `/pl-collab-pull` commands for main-to-remote sync
+- Session delete with confirmation modal
+
+**Spec Map Enhancements**
+- Inter-category topological layer ordering with edge arrows
+- Dynamic label sizing and two-level category packing layout
+
+**Critic Enhancements**
+- Targeted scope completeness audit
+- Delivery plan scope reset on plan completion
+
+**Upstream Sync**
+- Auto-fetch and update prompt — script now fetches from remote and prompts before updating, eliminating the manual `git pull` prerequisite
+
+**Instruction Fixes**
+- Corrected stale launcher script names in HOW_WE_WORK_BASE
+- Fixed contradictory companion file wording in BUILDER_BASE
+
+**Process**
+- `/pl-spec-from-code` command for reverse-engineering feature specs from existing codebases (experimental)
+- Renamed `/pl-remote-push`/`pull` to `/pl-collab-push`/`pull`
+- Normalized label naming across CDD Dashboard and Agent Skills categories
+
 ### v0.6.0 — 2026-02-24
 
 **Isolated Teams**
