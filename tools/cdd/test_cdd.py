@@ -19,6 +19,7 @@ from serve import (
     get_feature_status,
     get_change_scope,
     get_delivery_phase,
+    resolve_port,
     COMPLETE_CAP,
     extract_label,
     generate_internal_feature_status,
@@ -1457,6 +1458,76 @@ class TestCLIGraphOutput(unittest.TestCase):
         json_str = json.dumps(graph, indent=2)
         reparsed = json.loads(json_str)
         self.assertEqual(reparsed["features"], graph["features"])
+
+
+# ===================================================================
+# Port Override Tests (Section 2.12)
+# ===================================================================
+
+class TestPortOverrideViaFlag(unittest.TestCase):
+    """Tests for Section 2.12: CLI Port Override via Flag."""
+
+    def test_env_port_overrides_config(self):
+        """CDD_PORT env var takes priority over config port."""
+        port = resolve_port(env_port="9090", config_port=8086)
+        self.assertEqual(port, 9090)
+
+    def test_config_port_used_when_no_env(self):
+        """Config port used when no CDD_PORT env var is set."""
+        port = resolve_port(env_port="", config_port=8086)
+        self.assertEqual(port, 8086)
+
+    def test_default_port_when_no_env_no_config(self):
+        """Default 8086 used when neither env var nor config is set."""
+        port = resolve_port(env_port="", config_port=None)
+        self.assertEqual(port, 8086)
+
+    def test_invalid_env_port_falls_back_to_config(self):
+        """Invalid CDD_PORT falls back to config port."""
+        port = resolve_port(env_port="notanumber", config_port=9999)
+        self.assertEqual(port, 9999)
+
+    def test_invalid_env_port_falls_back_to_default(self):
+        """Invalid CDD_PORT with no config falls back to default."""
+        port = resolve_port(env_port="notanumber", config_port=None)
+        self.assertEqual(port, 8086)
+
+    def test_env_port_none_uses_config(self):
+        """None env_port (unset) uses config port."""
+        port = resolve_port(env_port=None, config_port=7777)
+        self.assertEqual(port, 7777)
+
+
+class TestStartShPortValidation(unittest.TestCase):
+    """Tests for start.sh -p flag validation (Section 2.12)."""
+
+    def setUp(self):
+        self.start_sh = os.path.join(
+            os.path.dirname(__file__), "start.sh")
+
+    def test_invalid_port_string_rejected(self):
+        """start.sh -p notanumber exits with non-zero status and error message."""
+        result = subprocess.run(
+            ["bash", self.start_sh, "-p", "notanumber"],
+            capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid port", result.stderr)
+
+    def test_port_zero_rejected(self):
+        """start.sh -p 0 exits with non-zero status."""
+        result = subprocess.run(
+            ["bash", self.start_sh, "-p", "0"],
+            capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid port", result.stderr)
+
+    def test_port_too_large_rejected(self):
+        """start.sh -p 99999 exits with non-zero status."""
+        result = subprocess.run(
+            ["bash", self.start_sh, "-p", "99999"],
+            capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid port", result.stderr)
 
 
 # ===================================================================

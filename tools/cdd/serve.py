@@ -37,7 +37,22 @@ if os.path.exists(CONFIG_PATH):
         print("Warning: Failed to parse .purlin/config.json; using defaults",
               file=sys.stderr)
 
-PORT = CONFIG.get("cdd_port", 8086)
+def resolve_port(env_port=None, config_port=None, default=8086):
+    """Resolve CDD port. Priority: CDD_PORT env var > config > default (Section 2.12)."""
+    if env_port:
+        try:
+            return int(env_port)
+        except ValueError:
+            print(f"Warning: Invalid CDD_PORT '{env_port}'; falling back to config",
+                  file=sys.stderr)
+    if config_port is not None:
+        return config_port
+    return default
+
+PORT = resolve_port(
+    env_port=os.environ.get('CDD_PORT', ''),
+    config_port=CONFIG.get("cdd_port"),
+)
 PROJECT_NAME = CONFIG.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 FEATURES_REL = "features"

@@ -18,6 +18,23 @@ fi
 # Source shared Python resolver (python_environment.md §2.2)
 source "$DIR/../resolve_python.sh"
 
+# Runtime port override (Section 2.12): -p <port> flag
+OVERRIDE_PORT=""
+while getopts "p:" opt; do
+    case $opt in
+        p) OVERRIDE_PORT="$OPTARG" ;;
+        *) echo "Usage: start.sh [-p <port>]" >&2; exit 1 ;;
+    esac
+done
+
+# Validate -p value if provided
+if [ -n "$OVERRIDE_PORT" ]; then
+    if ! [[ "$OVERRIDE_PORT" =~ ^[0-9]+$ ]] || [ "$OVERRIDE_PORT" -lt 1 ] || [ "$OVERRIDE_PORT" -gt 65535 ]; then
+        echo "ERROR: Invalid port '$OVERRIDE_PORT'. Must be an integer between 1 and 65535." >&2
+        exit 1
+    fi
+fi
+
 PORT=8086
 
 if [ -f "$CONFIG_FILE" ]; then
@@ -28,11 +45,21 @@ if [ -f "$CONFIG_FILE" ]; then
     fi
 fi
 
+# -p flag overrides config (Section 2.12 priority: -p > config > 8086 default)
+if [ -n "$OVERRIDE_PORT" ]; then
+    PORT="$OVERRIDE_PORT"
+fi
+
 # Artifact isolation (Section 2.12): logs/pids to .purlin/runtime/
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
 
-PURLIN_PROJECT_ROOT="$PROJECT_ROOT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
+# Export CDD_PORT when -p is provided (Section 2.12)
+if [ -n "$OVERRIDE_PORT" ]; then
+    PURLIN_PROJECT_ROOT="$PROJECT_ROOT" CDD_PORT="$OVERRIDE_PORT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
+else
+    PURLIN_PROJECT_ROOT="$PROJECT_ROOT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
+fi
 echo $! > "$RUNTIME_DIR/cdd.pid"
 SERVER_PID=$(cat "$RUNTIME_DIR/cdd.pid")
 
