@@ -23,3 +23,4 @@ SPEC_DISPUTE — IN FLIGHT table removed from Remote Collaboration section entir
 BUG — Sync badge never appeared when local main branch absent (e.g., cloned from collab branch); fixed by detecting missing local main in `compute_remote_sync_state()` and returning `sync_state: "NO_MAIN"` with guidance message.
 BUG — Active session panel rendered controls across three rows instead of two; fixed by reorganizing HTML so Row 1 = dropdown + branch ref + Disconnect, Row 2 = sync badge + annotation + last check + Check Remote.
 INTENT_DRIFT — Sync state annotation was ambiguous about perspective (e.g., "1 ahead"); fixed to use remote-perspective framing ("Remote is N behind/ahead of local main") per spec Section 2.3.
+BUG — Disconnect button appeared visually near Check Remote due to insufficient vertical margin between Row 1 and Row 2; fixed by increasing gap from 6px to 14px.
