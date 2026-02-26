@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 55, "failed": 0, "total": 55}
+{"status": "PASS", "note": "Feature REMOVED — replaced by /pl-update-purlin. Script tools/sync_upstream.sh deleted."}
