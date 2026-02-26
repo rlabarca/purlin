@@ -3,6 +3,7 @@
 > Label: "Impl Notes Companion"
 > Category: "Coordination & Lifecycle"
 > Prerequisite: instructions/HOW_WE_WORK_BASE.md
+> Prerequisite: features/policy_critic.md
 
 ## Overview
 

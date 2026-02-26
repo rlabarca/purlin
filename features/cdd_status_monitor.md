@@ -4,6 +4,7 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_visual_standards.md
+> Prerequisite: features/impl_notes_companion.md
 
 
 ## 1. Overview
