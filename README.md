@@ -12,12 +12,10 @@ Purlin is a **Collaborative Design-Driven** development framework. Designs evolv
 
 The framework is built on four goals:
 
-1. **Coordinate specialized agents** following a spec/test-driven framework for deterministic outcomes.
-2. **Specifications and tests are the backbone** -- code is disposable. If specs are rigorous enough, any compliant agent can rebuild the entire system from scratch.
-3. **Enable real people to bring expertise, amplified through agents** -- replaces meetings and ceremonies with structured, async collaboration.
-4. **Code is more provably correct** with least drift from specifications.
-
-By colocating technical implementation knowledge with behavioral specifications (Gherkin), the framework ensures that system context is never lost and that codebases can be reliably rebuilt or refactored by AI agents with minimal human intervention.
+1. **Agent coordination** -- specialized roles follow a spec/test-driven framework for deterministic outcomes.
+2. **Code is disposable** -- rigorous specs mean any compliant agent can rebuild the system from scratch.
+3. **People bring expertise, agents amplify it** -- structured async collaboration replaces meetings and ceremonies.
+4. **Provably correct code** -- continuous design sync minimizes drift from specifications.
 
 ## Screenshots
 
@@ -36,8 +34,8 @@ By colocating technical implementation knowledge with behavioral specifications 
 
 ### 1. Collaborative Design-Driven
 The project's state is defined 100% by specification files, and those specifications evolve continuously with the code:
-*   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** Define the constraints of the system -- technical architecture, design standards, and governance policies. Changes cascade to all dependent features.
-*   **Living Specifications (`*.md`):** Behavioral requirements (Gherkin) with implementation knowledge preserved in companion files (`*.impl.md`) alongside them. Refined through every implementation cycle -- not written once and handed off.
+*   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** System constraints -- architecture, design standards, governance policies. Changes cascade to all dependent features.
+*   **Living Specifications (`*.md`):** Gherkin requirements with implementation knowledge in companion files (`*.impl.md`). Refined through every implementation cycle.
 *   **Code is disposable; design is durable.** If all source code were deleted, the specs must be sufficient to rebuild. When code reveals new truths, the design is updated first.
 
 ### 2. Role Separation
@@ -49,15 +47,13 @@ The framework defines three distinct agent roles:
 ### 3. Knowledge Colocation
 Instead of separate documentation or global logs, implementation discoveries, hardware constraints, and design decisions are stored directly within the feature specifications they pertain to.
 
-*   **Companion files (`*.impl.md`):** Implementation knowledge is stored in companion files (`<name>.impl.md`) alongside the feature spec. Companion files are standalone -- the naming convention provides discoverability without requiring links from the spec. Knowledge stays colocated -- one directory listing away from its requirements -- without bloating the spec file.
-*   **Visual Specifications:** Features with UI components may include a `## Visual Specification` section with per-screen checklists and design asset references (Figma URLs, local mockups). These are Architect-owned and exempt from Gherkin traceability. They give the QA Agent a separate verification track for static appearance checks -- layout, color, typography -- distinct from interactive scenario execution.
+*   **Companion files (`*.impl.md`):** Implementation knowledge lives in standalone companion files alongside each feature spec. The naming convention provides discoverability without cross-links.
+*   **Visual Specifications:** Features with UI components may include a `## Visual Specification` section with per-screen checklists and design asset references. Architect-owned and exempt from Gherkin traceability -- a separate QA track for static appearance checks.
 
 ### 4. Layered Instruction Architecture
 The framework separates **framework rules** (base layer) from **project-specific context** (override layer):
-*   **Base Layer** (`purlin/instructions/` in your project): Core rules, protocols, and philosophies. Stays inside the Purlin submodule -- never copied to your project. Consumed directly by the launcher scripts at runtime.
-*   **Override Layer** (`.purlin/` in your project root): Project-specific customizations, domain context, and workflow additions. Created by the bootstrap script and committed to your project.
-
-At launch, the generated launcher scripts concatenate base + override files into a single agent prompt. This allows upstream Purlin updates without merge conflicts in your project-specific configuration.
+*   **Base Layer** (`purlin/instructions/`): Core rules, protocols, and philosophies. Lives inside the Purlin submodule -- never copied to your project.
+*   **Override Layer** (`.purlin/`): Project-specific customizations, domain context, and workflow additions. Created by bootstrap and committed to your project.
 
 ## The Agents
 
@@ -87,14 +83,10 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | Purlin submodule | `purlin/**` | — | — | — |
 
 **Notes:**
-- **Purlin-managed paths:** `features/`, `.purlin/`, `tests/`, `purlin/` (submodule), and root-level prose docs (`README.md`, `docs/`). Everything outside these paths is "your project code."
-- **Your project code** covers all source files, scripts, configuration files, automated tests, and other artifacts regardless of language, location, or file extension. The Builder has full ownership; the Architect and QA have read access.
-- **Instruction files** (`instructions/*.md`) live inside the Purlin submodule and are read-only for consumer projects. In the Purlin framework repository itself, the Architect has write access via `/pl-edit-base`.
-- Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files.
-- QA companion file writes are limited to pruning one-liners.
-- Builder and QA may both create (`C`) the `## User Testing Discoveries` section if it doesn't exist.
-- QA verification scripts (`tests/qa/`) are QA-exclusive -- the Builder and Architect read but do not modify.
-- Tool-generated files are produced by `tools/cdd/status.sh` or `tools/critic/run.sh` -- no agent writes directly.
+- **Purlin-managed paths:** `features/`, `.purlin/`, `tests/`, `purlin/` (submodule), and root-level prose docs. Everything else is "your project code."
+- **Instruction files** (`instructions/*.md`) live inside the submodule and are read-only for consumer projects.
+- Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files; QA companion file writes are limited to pruning one-liners.
+- Tool-generated files (`critic.json`, `CRITIC_REPORT.md`, etc.) are produced by CLI tools -- no agent writes directly.
 
 ### Shared Commands
 
@@ -107,6 +99,8 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
 | `/pl-local-push` | Merge isolation branch to main -- runs pre-merge handoff checklist (isolated sessions only) |
 | `/pl-local-pull` | Pull latest commits from main into the current isolation branch (isolated sessions only) |
+| `/pl-collab-push` | Push local main to the remote collab branch (main only) |
+| `/pl-collab-pull` | Pull remote collab branch into local main (main only) |
 
 ---
 
@@ -124,8 +118,6 @@ The Architect owns the specification system. All feature requirements, architect
 | `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
 | `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
 | `/pl-edit-base` | Modify a base instruction file (Purlin repo only -- not distributed to consumer projects) |
-| `/pl-collab-push` | Push local main to the remote collab branch (main only) |
-| `/pl-collab-pull` | Pull remote collab branch into local main (main only) |
 
 **Workflow examples:**
 
@@ -212,16 +204,14 @@ The QA Agent verifies features against their specifications through interactive 
 
 ## The Critic
 
-The Critic is the **project coordination engine** -- not a pass/fail badge. It generates role-specific action items that tell each agent what to work on next.
+The Critic is the **project coordination engine** -- not a pass/fail badge. It generates role-specific action items that tell each agent what to work on next. **CDD** shows what IS (per-role status on the dashboard); **the Critic** shows what SHOULD BE DONE (imperative action items). Agents invoke it via CLI (`tools/cdd/status.sh`); the web dashboard is for humans.
 
 ### Dual-Gate Validation
 
 Every feature is evaluated through two independent gates:
 
-*   **Spec Gate (pre-implementation):** Validates structural completeness, prerequisite anchoring, and Gherkin quality. Runs before any code exists.
-*   **Implementation Gate (post-implementation):** Validates traceability (automated scenarios matched to test functions), policy adherence (FORBIDDEN pattern scanning), builder decision audit, and optional LLM-based logic drift detection.
-
-A feature that passes the Spec Gate but fails the Implementation Gate has a code problem. A feature that passes the Implementation Gate but fails the Spec Gate has a specification problem.
+*   **Spec Gate (pre-implementation):** Validates structural completeness, prerequisite anchoring, and Gherkin quality.
+*   **Implementation Gate (post-implementation):** Validates traceability, policy adherence (FORBIDDEN pattern scanning), builder decision audit, and optional LLM-based logic drift detection.
 
 ### Supplementary Audits
 
@@ -241,22 +231,6 @@ The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific
 | **Architect** | Fix spec gaps, revise infeasible specs, acknowledge builder decisions, triage untracked files |
 | **Builder** | Implement TODO features, fix failing tests, close traceability gaps, resolve open bugs |
 | **QA** | Verify TESTING features, re-verify SPEC_UPDATED discoveries, run visual verification passes |
-
-### CDD vs. The Critic
-
-*   **CDD** shows what IS — per-role status (Architect, Builder, QA) on the dashboard.
-*   **The Critic** shows what SHOULD BE DONE — imperative action items per role.
-
-CDD does not run the Critic. It reads the `role_status` values from pre-computed `tests/<feature>/critic.json` files.
-
-### CLI Invocation
-
-```bash
-tools/cdd/status.sh           # Run Critic automatically + show CDD status (primary agent interface)
-tools/critic/run.sh           # Run Critic directly
-```
-
-Agents use the CLI exclusively. The CDD web dashboard is for human consumption only.
 
 ---
 
@@ -292,12 +266,27 @@ Builder (Phase 1)
 
 ### Rules
 
-*   **Phasing is opt-in.** The Builder proposes phases; the user always decides whether to accept, modify, or proceed as a single session.
-*   **QA is phase-gated.** QA will not mark a feature `[Complete]` if it appears in any `PENDING` phase of the delivery plan, even if all currently-delivered scenarios pass.
-*   **Cross-session resumption.** If a Builder session is interrupted mid-phase, the next Builder session resumes from where it left off -- skipping features already in `TESTING` state.
-*   **Spec changes trigger amendments.** If the Architect modifies specs while a plan is active, the Builder detects the mismatch on resume and proposes a plan amendment before continuing.
-*   **Dashboard visibility.** While a plan is active, the CDD Dashboard annotates the active section: `ACTIVE (N) [PHASE (current/total)]`.
-*   **Flexible exit.** At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
+*   **Opt-in.** The Builder proposes phases; the user decides whether to accept, modify, or skip phasing.
+*   **QA is phase-gated.** QA won't mark a feature `[Complete]` if it appears in any `PENDING` phase.
+*   **Cross-session resumption.** Interrupted sessions resume from where they left off, skipping features already in `TESTING`.
+*   **Spec changes trigger amendments.** If the Architect modifies specs mid-plan, the Builder proposes a plan amendment on resume.
+
+---
+
+## Remote Collaboration
+
+Work across machines using session-based collab branches on a hosted remote.
+
+### How It Works
+
+Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Push local main to the collab branch with `/pl-collab-push`, pull from it with `/pl-collab-pull`. Isolation branches stay local -- only main syncs to the remote.
+
+### Rules
+
+*   **Main-only.** Collab commands only run from the project root on `main`.
+*   **Session-first.** You must create or join a session in the dashboard before push/pull works.
+*   **Fetch-before-push.** Always fetches first; blocks if behind (must pull first).
+*   **Merge, not rebase.** Pulls use merge to preserve shared history.
 
 ---
 
@@ -325,11 +314,9 @@ Architect (isolated/design)          Builder (isolated/feat1)
 
 ### Rules
 
-*   **Merge-before-proceed:** Each isolation must merge to `main` before another session that depends on its changes can start. The Critic only sees commits reachable from HEAD -- a `[Complete]` status on an unmerged branch is invisible to other agents until merged.
-*   **No role assignment:** The isolation name is the identifier. `feat1`, `ui`, `hotfix` are all valid -- any agent type may use any name.
-*   **Name constraints:** 1--12 characters, matching `[a-zA-Z0-9_-]+`.
-*   **Dashboard visibility:** Active isolations appear in the **ISOLATED TEAMS** section of the CDD Dashboard, showing branch name, sync state relative to `main` (AHEAD / BEHIND / SAME / DIVERGED), and a file change summary by category (Specs, Tests, Code). Create and kill isolations directly from the dashboard.
-*   **Agent config propagation:** When Isolated Teams Mode is active, saving agent config changes via the dashboard propagates the update to all active worktrees simultaneously.
+*   **Merge-before-proceed.** Each isolation must merge to `main` before another session that depends on its changes can start.
+*   **No role assignment.** The isolation name is the identifier (`feat1`, `ui`, `hotfix`) -- any agent type may use any name.
+*   **Dashboard visibility.** Active isolations appear in the CDD Dashboard with branch name, sync state (AHEAD/BEHIND/SAME/DIVERGED), and file change summary. Create and kill isolations from the dashboard.
 
 ---
 
@@ -388,33 +375,25 @@ Open **http://localhost:8086** in your browser. The dashboard has two modes:
 
 ### 6. Startup Controls (Optional)
 
-Each agent's session behavior is governed by two per-agent flags in `.purlin/config.json`:
+Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard):
 
 | Flag | Default | Behavior |
 |---|---|---|
-| `startup_sequence` | `true` | Runs full orientation on launch (Critic report, dependency graph, action items). Set to `false` to skip straight to the command table. |
-| `recommend_next_actions` | `true` | After orientation, presents a prioritized work plan and asks for approval. Requires `startup_sequence: true`. Set to `false` to orient silently then await direction. |
+| `startup_sequence` | `true` | Full orientation on launch (Critic, graph, action items). `false` skips to the command table. |
+| `recommend_next_actions` | `true` | Presents a prioritized work plan after orientation. Requires `startup_sequence: true`. |
 
-Both `false` activates expert mode: the command table is printed and the agent waits for a direct instruction. The **Agent Config** panel in the CDD Dashboard provides UI toggles for these flags without editing `config.json` directly.
+Both `false` = expert mode: command table only, agent waits for instruction.
 
 ### Python Environment (Optional)
 
-The framework's Python tools use only the standard library -- no packages need to be installed for core functionality. However, optional features (e.g., LLM-based logic drift detection in the Critic) require third-party packages.
-
-All tool scripts auto-detect a `.venv/` at the project root. To set up:
+Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) require third-party packages. All scripts auto-detect `.venv/` at the project root:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r purlin/requirements-optional.txt
 ```
 
-No additional configuration is needed -- all shell scripts that invoke Python use a shared resolver (`tools/resolve_python.sh`) that checks for the venv automatically. The resolution priority is:
-1. `$AGENTIC_PYTHON` env var (explicit override)
-2. `$PURLIN_PROJECT_ROOT/.venv/`
-3. Climbing detection from script directory
-4. System `python3`, then `python`
-
-This works on macOS, Linux, and Windows via WSL or Git Bash. Native PowerShell is not supported.
+Works on macOS, Linux, and Windows via WSL or Git Bash.
 
 ### Updating the Submodule
 
@@ -494,7 +473,6 @@ This is tested to be started with a new project right now. You can ask the archi
 **Known limitations:**
 
 - Built exclusively for Claude Code. Supporting additional models is a goal but model feature disparity makes that non-trivial.
-- Local concurrent collaboration is supported via Isolated Teams (named worktrees). Cross-machine and remote worker support is a planned future direction.
 - The release checklist is long enough to stress context windows. For now, the checklist can be interrupted and resumed with: `/pl-release-run start with step X, steps 1 through X-1 have passed`. Modularizing the checklist to reduce token cost is a planned improvement.
 
 ### v0.5.0 — 2026-02-22
