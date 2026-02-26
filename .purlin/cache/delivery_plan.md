@@ -6,9 +6,9 @@
 ## Summary
 14 features reset to TODO by recent spec changes. Most have substantial existing implementations (70-100%). Work is primarily verify/fix/test rather than greenfield. Phased to manage context across the large cdd_status_monitor spec and dashboard dependency chain.
 
-## Phase 1 — Foundations & Independent Features [IN_PROGRESS]
+## Phase 1 — Foundations & Independent Features [COMPLETE]
 **Features:** workflow_checklist_system.md, release_step_management.md, pl_collab_pull.md, pl_collab_push.md, pl_local_pull.md, spec_from_code.md, cdd_status_monitor.md
-**Completion Commit:** —
+**Completion Commit:** e787ebd
 **QA Bugs Addressed:** —
 
 ## Phase 2 — Dashboard Extensions & Level 1 Skills [PENDING]
