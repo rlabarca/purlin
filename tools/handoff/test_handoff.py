@@ -1046,21 +1046,59 @@ class TestPlCollabPullDoesNotCascade(unittest.TestCase):
         self.assertIn("/pl-local-pull", content)
 
 
+def _write_feature_results(feature_name, status):
+    """Write tests.json for a specific feature."""
+    tests_dir = os.path.join(PROJECT_ROOT, "tests", feature_name)
+    os.makedirs(tests_dir, exist_ok=True)
+    with open(os.path.join(tests_dir, "tests.json"), 'w') as f:
+        json.dump({"status": status}, f)
+
+
+# Map test class name prefixes to feature names
+_FEATURE_PREFIX_MAP = {
+    "TestHandoff": "workflow_checklist_system",
+    "TestCriticReport": "workflow_checklist_system",
+    "TestNoRoleFiltering": "workflow_checklist_system",
+    "TestPlLocalPush": "pl_local_push",
+    "TestPlLocalPull": "pl_local_pull",
+    "TestPostRebaseSync": "pl_local_pull",
+    "TestPlCollabPush": "pl_collab_push",
+    "TestPlCollabPull": "pl_collab_pull",
+}
+
+
+def _classify_test(test_id):
+    """Return feature name for a test based on its class name."""
+    class_name = test_id.split(".")[-2] if "." in test_id else test_id
+    for prefix, feature in _FEATURE_PREFIX_MAP.items():
+        if class_name.startswith(prefix):
+            return feature
+    return "workflow_checklist_system"
+
+
 def run_tests():
-    """Run all tests and write results."""
+    """Run all tests and write per-feature results."""
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    # Write tests.json
-    tests_dir = os.path.join(PROJECT_ROOT, "tests", "workflow_checklist_system")
-    os.makedirs(tests_dir, exist_ok=True)
-    status = "PASS" if result.wasSuccessful() else "FAIL"
-    with open(os.path.join(tests_dir, "tests.json"), 'w') as f:
-        json.dump({"status": status}, f)
+    # Partition failures by feature
+    feature_failures = {}
+    for test, _ in result.failures + result.errors:
+        feature = _classify_test(str(test))
+        feature_failures.setdefault(feature, 0)
+        feature_failures[feature] += 1
 
-    print(f"\ntests.json: {status}")
+    # Write per-feature tests.json
+    all_features = set(_FEATURE_PREFIX_MAP.values())
+    for feature in all_features:
+        status = "FAIL" if feature_failures.get(feature, 0) > 0 else "PASS"
+        _write_feature_results(feature, status)
+        print(f"  tests/{feature}/tests.json: {status}")
+
+    overall = "PASS" if result.wasSuccessful() else "FAIL"
+    print(f"\nOverall: {overall}")
     return 0 if result.wasSuccessful() else 1
 
 
