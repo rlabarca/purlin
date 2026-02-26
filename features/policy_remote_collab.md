@@ -23,7 +23,7 @@ Remote collaboration extends Purlin's local isolation model to multi-machine wor
 - The active session is stored in `.purlin/runtime/active_remote_session` (a single-line plaintext file).
 - This file is gitignored (`.purlin/runtime/` is already in `.gitignore`).
 - Each collaborator independently chooses which session to connect to.
-- `/pl-remote-push` and `/pl-remote-pull` read this file to determine the target branch.
+- `/pl-collab-push` and `/pl-collab-pull` read this file to determine the target branch.
 - When the file is absent or empty, no session is active and both commands abort with a message directing the user to the CDD dashboard.
 
 ### 2.3 Config Is Optional
@@ -35,22 +35,22 @@ Remote collaboration extends Purlin's local isolation model to multi-machine wor
 
 ### 2.4 Main-Only Restriction (Critical)
 
-- `/pl-remote-push` and `/pl-remote-pull` MUST be run from the main checkout (branch: `main`).
+- `/pl-collab-push` and `/pl-collab-pull` MUST be run from the main checkout (branch: `main`).
 - They are FORBIDDEN inside isolated worktrees.
 - Enforcement: Step 0 branch check in each command file.
 - Physical placement: both files exist in the project root `.claude/commands/`. They are NOT present in isolated worktree `.claude/commands/` directories (`create_isolation.sh` places only `pl-local-push.md` and `pl-local-pull.md` in worktree `.claude/commands/`).
 
 ### 2.5 Integration Sequence
 
-Always: isolation branch -> local main (via `/pl-local-push`) -> remote collab (via `/pl-remote-push`). Isolation branches (`isolated/*`) remain local and are never pushed directly to remote.
+Always: isolation branch -> local main (via `/pl-local-push`) -> remote collab (via `/pl-collab-push`). Isolation branches (`isolated/*`) remain local and are never pushed directly to remote.
 
 ### 2.6 Fetch-Before-Push
 
-Always `git fetch` before pushing. If local main is BEHIND or DIVERGED relative to remote, block and require `/pl-remote-pull` first.
+Always `git fetch` before pushing. If local main is BEHIND or DIVERGED relative to remote, block and require `/pl-collab-pull` first.
 
 ### 2.7 Merge-Not-Rebase for Local Main
 
-`/pl-remote-pull` uses `git merge` (not rebase) on local main. Main is a shared integration branch — rebasing rewrites commits other contributors depend on. This differs from `/pl-local-pull` (isolation branches are personal -> rebase; main is shared -> merge).
+`/pl-collab-pull` uses `git merge` (not rebase) on local main. Main is a shared integration branch — rebasing rewrites commits other contributors depend on. This differs from `/pl-local-pull` (isolation branches are personal -> rebase; main is shared -> merge).
 
 ### 2.8 Contributor Identity
 
@@ -84,7 +84,7 @@ Fields: `remote` (default `"origin"`), `auto_fetch_interval` (seconds; 0 = disab
 
 - `git push origin main` — direct push to remote main during active collaboration
 - `git push --force origin <collab-branch>` — force push to collab branch
-- Running `/pl-remote-push` or `/pl-remote-pull` from inside an isolated worktree
+- Running `/pl-collab-push` or `/pl-collab-pull` from inside an isolated worktree
 - Manual editing of `.purlin/config.json` to set up remote collab (use the dashboard)
 
 ## Scenarios

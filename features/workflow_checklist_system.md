@@ -112,7 +112,7 @@ Both fields have defaults and the entire block is optional. No `enabled` flag �
 
 ### 2.8 Remote Collaboration Commands
 
-Both `/pl-remote-push` and `/pl-remote-pull` are in the project root `.claude/commands/`. They are NOT copied into isolated worktrees by `create_isolation.sh` (which places only `pl-local-push.md` and `pl-local-pull.md` in worktree `.claude/commands/`). The post-rebase re-sync step in `/pl-local-pull` deletes any extra command files restored by git rebase — this handles `pl-remote-push.md` and `pl-remote-pull.md` if rebase restores them, exactly as it handles other commands.
+Both `/pl-collab-push` and `/pl-collab-pull` are in the project root `.claude/commands/`. They are NOT copied into isolated worktrees by `create_isolation.sh` (which places only `pl-local-push.md` and `pl-local-pull.md` in worktree `.claude/commands/`). The post-rebase re-sync step in `/pl-local-pull` deletes any extra command files restored by git rebase — this handles `pl-collab-push.md` and `pl-collab-pull.md` if rebase restores them, exactly as it handles other commands.
 
 #### Step 0: Main Branch Guard (both commands)
 
@@ -124,7 +124,7 @@ If result is not `main`: abort:
 
 ```
 This command is only valid from the main checkout.
-Current branch: <branch>. Run /pl-remote-push from the project root (branch: main).
+Current branch: <branch>. Run /pl-collab-push from the project root (branch: main).
 ```
 
 #### Step 1: Session Guard (both commands)
@@ -140,29 +140,29 @@ No active remote session. Use the CDD dashboard to start or join a remote collab
 - Read remote from `remote_collab.remote` in `.purlin/config.json`, default `"origin"` if absent.
 - Working tree clean (git status check, excluding `.purlin/` files per collaboration policy).
 
-#### `/pl-remote-push` — Push Local Main to Remote Collab Branch
+#### `/pl-collab-push` — Push Local Main to Remote Collab Branch
 
 Steps (after preconditions pass):
 
 1. `git fetch <remote>`
 2. Two-range query: `git log origin/<branch>..main --oneline` (ahead), `git log main..origin/<branch> --oneline` (behind)
 3. **SAME**: "Already in sync. Nothing to push." Exit 0.
-4. **BEHIND**: "Local main is BEHIND <remote>/<branch> by M commits. Run `/pl-remote-pull` before pushing." Exit 1.
-5. **DIVERGED**: Print incoming commits. Instruct `/pl-remote-pull`. Exit 1.
+4. **BEHIND**: "Local main is BEHIND <remote>/<branch> by M commits. Run `/pl-collab-pull` before pushing." Exit 1.
+5. **DIVERGED**: Print incoming commits. Instruct `/pl-collab-pull`. Exit 1.
 6. **AHEAD**: `git push <remote> main:<branch>`. Report "Pushed N commits to <remote>/<branch>." If branch does not exist on remote, git creates it automatically. On push failure: print git error, exit 1.
 
-#### `/pl-remote-pull` — Pull Remote Collab Branch Into Local Main
+#### `/pl-collab-pull` — Pull Remote Collab Branch Into Local Main
 
 Steps (after preconditions pass):
 
 1. `git fetch <remote>`
 2. Two-range query (same as push)
 3. **SAME**: "Local main is already in sync with remote." Exit 0.
-4. **AHEAD**: "Local main is AHEAD by N commits. Nothing to pull — run `/pl-remote-push` when ready." Exit 0.
-5. **BEHIND**: `git merge --ff-only origin/<branch>`. Report "Fast-forwarded local main by M commits from <remote>/<branch>." On ff-failure (race condition): "Fast-forward failed — re-run `/pl-remote-pull`." Exit 1.
+4. **AHEAD**: "Local main is AHEAD by N commits. Nothing to pull — run `/pl-collab-push` when ready." Exit 0.
+5. **BEHIND**: `git merge --ff-only origin/<branch>`. Report "Fast-forwarded local main by M commits from <remote>/<branch>." On ff-failure (race condition): "Fast-forward failed — re-run `/pl-collab-pull`." Exit 1.
 6. **DIVERGED**: Print pre-merge context (`git log main..origin/<branch> --stat --oneline`). Run `git merge origin/<branch>`. On conflict: print per-file conflict context (commits from each side that touched each conflicting file); provide resolution instructions (`git add` + `git merge --continue` or `git merge --abort`); exit 1.
 
-**No cascade.** After `/pl-remote-pull` updates main, any active isolations that are BEHIND will show `BEHIND` in the ISOLATED TEAMS section and sync themselves via `/pl-local-pull` when ready. Each isolation controls its own branch.
+**No cascade.** After `/pl-collab-pull` updates main, any active isolations that are BEHIND will show `BEHIND` in the ISOLATED TEAMS section and sync themselves via `/pl-local-pull` when ready. Each isolation controls its own branch.
 
 **Rationale for merge-not-rebase on main:** Local `main` is a shared integration branch — rebasing rewrites commits other contributors' copies or the remote already have. Merge commits are correct and expected. This differs from `/pl-local-pull` (isolation branches personal -> rebase; main shared -> merge).
 
@@ -172,150 +172,150 @@ Steps (after preconditions pass):
 
 ### Automated Scenarios
 
-#### Scenario: pl-remote-push Exits When Current Branch Is Not Main
+#### Scenario: pl-collab-push Exits When Current Branch Is Not Main
 
     Given the current branch is isolated/feat1
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then the command prints "This command is only valid from the main checkout"
     And exits with code 1
 
-#### Scenario: pl-remote-pull Exits When Current Branch Is Not Main
+#### Scenario: pl-collab-pull Exits When Current Branch Is Not Main
 
     Given the current branch is isolated/feat1
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then the command prints "This command is only valid from the main checkout"
     And exits with code 1
 
-#### Scenario: pl-remote-push Exits When No Active Session
+#### Scenario: pl-collab-push Exits When No Active Session
 
     Given the current branch is main
     And .purlin/runtime/active_remote_session is absent
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then the command prints "No active remote session"
     And exits with code 1
 
-#### Scenario: pl-remote-pull Exits When No Active Session
+#### Scenario: pl-collab-pull Exits When No Active Session
 
     Given the current branch is main
     And .purlin/runtime/active_remote_session is absent
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then the command prints "No active remote session"
     And exits with code 1
 
-#### Scenario: pl-remote-push Aborts When Working Tree Is Dirty
+#### Scenario: pl-collab-push Aborts When Working Tree Is Dirty
 
     Given the current branch is main
     And an active remote session exists
     And the working tree has uncommitted changes outside .purlin/
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then the command prints "Commit or stash changes before pushing"
     And no git push is executed
 
-#### Scenario: pl-remote-pull Aborts When Working Tree Is Dirty
+#### Scenario: pl-collab-pull Aborts When Working Tree Is Dirty
 
     Given the current branch is main
     And an active remote session exists
     And the working tree has uncommitted changes outside .purlin/
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then the command prints "Commit or stash changes before pulling"
     And no git merge is executed
 
-#### Scenario: pl-remote-push Blocked When Local Main Is BEHIND Remote
+#### Scenario: pl-collab-push Blocked When Local Main Is BEHIND Remote
 
     Given the current branch is main with an active session "v0.5-sprint"
     And origin/collab/v0.5-sprint has 2 commits not in local main
     And local main has no commits not in origin/collab/v0.5-sprint
-    When /pl-remote-push is invoked
-    Then the command prints "Local main is BEHIND" and instructs to run /pl-remote-pull
+    When /pl-collab-push is invoked
+    Then the command prints "Local main is BEHIND" and instructs to run /pl-collab-pull
     And exits with code 1
 
-#### Scenario: pl-remote-push Blocked When Local Main Is DIVERGED
+#### Scenario: pl-collab-push Blocked When Local Main Is DIVERGED
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main has 1 commit not in origin/collab/v0.5-sprint
     And origin/collab/v0.5-sprint has 2 commits not in local main
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then the command prints the incoming commits from remote
-    And instructs to run /pl-remote-pull
+    And instructs to run /pl-collab-pull
     And exits with code 1
 
-#### Scenario: pl-remote-push Succeeds When AHEAD
+#### Scenario: pl-collab-push Succeeds When AHEAD
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main has 3 commits not in origin/collab/v0.5-sprint
     And origin/collab/v0.5-sprint has no commits not in local main
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then git push origin main:collab/v0.5-sprint is executed
     And the command reports "Pushed 3 commits"
 
-#### Scenario: pl-remote-push Is No-Op When SAME
+#### Scenario: pl-collab-push Is No-Op When SAME
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main and origin/collab/v0.5-sprint point to the same commit
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then the command prints "Already in sync. Nothing to push."
     And no git push is executed
 
-#### Scenario: pl-remote-push Auto-Creates Remote Branch When It Does Not Exist
+#### Scenario: pl-collab-push Auto-Creates Remote Branch When It Does Not Exist
 
     Given the current branch is main with an active session "new-session"
     And no collab/new-session branch exists on origin
-    When /pl-remote-push is invoked
+    When /pl-collab-push is invoked
     Then git push origin main:collab/new-session creates the branch
     And the command reports success
 
-#### Scenario: pl-remote-pull Fast-Forwards Main When BEHIND
+#### Scenario: pl-collab-pull Fast-Forwards Main When BEHIND
 
     Given the current branch is main with an active session "v0.5-sprint"
     And origin/collab/v0.5-sprint has 3 commits not in local main
     And local main has no commits not in origin/collab/v0.5-sprint
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then git merge --ff-only origin/collab/v0.5-sprint is executed
     And the command reports "Fast-forwarded local main by 3 commits"
 
-#### Scenario: pl-remote-pull Creates Merge Commit When DIVERGED No Conflicts
+#### Scenario: pl-collab-pull Creates Merge Commit When DIVERGED No Conflicts
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main has 1 commit not in origin/collab/v0.5-sprint
     And origin/collab/v0.5-sprint has 2 commits not in local main
     And the changes do not conflict
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then git merge origin/collab/v0.5-sprint creates a merge commit
     And the command reports success
 
-#### Scenario: pl-remote-pull Exits On Conflict With Per-File Context
+#### Scenario: pl-collab-pull Exits On Conflict With Per-File Context
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main and origin/collab/v0.5-sprint have conflicting changes to features/foo.md
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then git merge origin/collab/v0.5-sprint halts with conflicts
     And the command prints commits from each side that touched features/foo.md
     And provides instructions for git add and git merge --continue or git merge --abort
     And exits with code 1
 
-#### Scenario: pl-remote-pull Is No-Op When AHEAD
+#### Scenario: pl-collab-pull Is No-Op When AHEAD
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main has 2 commits not in origin/collab/v0.5-sprint
     And origin/collab/v0.5-sprint has no commits not in local main
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then the command prints "Local main is AHEAD by 2 commits. Nothing to pull"
     And no git merge is executed
 
-#### Scenario: pl-remote-pull Is No-Op When SAME
+#### Scenario: pl-collab-pull Is No-Op When SAME
 
     Given the current branch is main with an active session "v0.5-sprint"
     And local main and origin/collab/v0.5-sprint point to the same commit
-    When /pl-remote-pull is invoked
+    When /pl-collab-pull is invoked
     Then the command prints "Local main is already in sync with remote"
     And no git merge is executed
 
-#### Scenario: pl-remote-pull Does Not Cascade To Isolated Team Worktrees
+#### Scenario: pl-collab-pull Does Not Cascade To Isolated Team Worktrees
 
     Given the current branch is main with an active session "v0.5-sprint"
     And an isolated worktree exists at .worktrees/feat1
     And origin/collab/v0.5-sprint has 2 commits not in local main
-    When /pl-remote-pull is invoked and fast-forwards main
+    When /pl-collab-pull is invoked and fast-forwards main
     Then the isolated worktree at .worktrees/feat1 is not modified
     And .worktrees/feat1 shows BEHIND in subsequent status checks
 
