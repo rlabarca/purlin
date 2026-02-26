@@ -9,7 +9,6 @@ Usage:
     python3 tools/critic/critic.py features/some.md      # Single feature
 """
 
-import calendar
 import json
 import os
 import re
@@ -267,191 +266,26 @@ def parse_discovery_entries(section_text):
 def parse_visual_spec(content):
     """Detect and parse a Visual Specification section.
 
-    Returns dict with keys: present, screens, items, screen_names,
-    references, unprocessed_count, stale_count, missing_reference_count.
-
-    Each entry in ``references`` has: screen_name, reference_path,
-    reference_type ('local'|'figma'|'live'|'none'), processed_date,
-    has_description.
+    Returns dict: {'present': bool, 'screens': int, 'items': int,
+                   'screen_names': [str]}
     """
-    empty = {
-        'present': False, 'screens': 0, 'items': 0,
-        'screen_names': [], 'references': [],
-        'unprocessed_count': 0, 'stale_count': 0,
-        'missing_reference_count': 0,
-    }
-
     match = re.search(
         r'^##\s+(?:\d+\.\s+)?Visual\s+Specification\s*$(.*?)(?=^##\s|\Z)',
         content, re.MULTILINE | re.DOTALL
     )
     if not match:
-        return empty
+        return {'present': False, 'screens': 0, 'items': 0,
+                'screen_names': []}
 
     section_text = match.group(1)
+    screen_matches = re.findall(
+        r'^###\s+Screen:\s*(.+)', section_text, re.MULTILINE
+    )
+    screen_names = [s.strip() for s in screen_matches]
     items = len(re.findall(r'^-\s+\[[ x]\]', section_text, re.MULTILINE))
 
-    # Split into per-screen subsections
-    screen_splits = re.split(r'^(###\s+Screen:\s*.+)', section_text,
-                             flags=re.MULTILINE)
-    references = []
-    screen_names = []
-
-    # screen_splits alternates: [preamble, heading1, body1, heading2, body2, ...]
-    for i in range(1, len(screen_splits), 2):
-        heading = screen_splits[i]
-        body = screen_splits[i + 1] if i + 1 < len(screen_splits) else ''
-
-        name_match = re.search(r'###\s+Screen:\s*(.+)', heading)
-        screen_name = name_match.group(1).strip() if name_match else 'Unknown'
-        screen_names.append(screen_name)
-
-        ref_info = _parse_screen_reference(body)
-        ref_info['screen_name'] = screen_name
-        references.append(ref_info)
-
-    return {
-        'present': True,
-        'screens': len(screen_names),
-        'items': items,
-        'screen_names': screen_names,
-        'references': references,
-        'unprocessed_count': sum(
-            1 for r in references
-            if r['reference_path'] and r['reference_type'] != 'none'
-            and not r['has_description']),
-        'stale_count': 0,  # Computed later by validate_visual_references()
-        'missing_reference_count': 0,  # Computed later
-    }
-
-
-def _parse_screen_reference(body):
-    """Extract reference metadata from a screen subsection body.
-
-    Returns dict: reference_path, reference_type, processed_date,
-    has_description.
-    """
-    reference_path = None
-    reference_type = 'none'
-    processed_date = None
-    has_description = False
-
-    for line in body.split('\n'):
-        stripped = line.strip()
-
-        # Reference line
-        if stripped.startswith('- **Reference:**'):
-            ref_value = stripped[len('- **Reference:**'):].strip()
-            if ref_value.upper() == 'N/A' or not ref_value:
-                reference_type = 'none'
-            elif '[Figma](' in ref_value:
-                url_match = re.search(r'\[Figma\]\(([^)]+)\)', ref_value)
-                reference_path = url_match.group(1) if url_match else ref_value
-                reference_type = 'figma'
-            elif '[Live](' in ref_value:
-                url_match = re.search(r'\[Live\]\(([^)]+)\)', ref_value)
-                reference_path = url_match.group(1) if url_match else ref_value
-                reference_type = 'live'
-            else:
-                # Local file path — strip backticks
-                reference_path = ref_value.strip('`').strip()
-                reference_type = 'local'
-
-        # Processed date line
-        if stripped.startswith('- **Processed:**'):
-            date_value = stripped[len('- **Processed:**'):].strip()
-            if date_value.upper() != 'N/A' and date_value:
-                processed_date = date_value
-
-        # Description line
-        if stripped.startswith('- **Description:**'):
-            desc_value = stripped[len('- **Description:**'):].strip()
-            has_description = bool(desc_value)
-
-    return {
-        'reference_path': reference_path,
-        'reference_type': reference_type,
-        'processed_date': processed_date,
-        'has_description': has_description,
-    }
-
-
-def validate_visual_references(visual_spec, project_root=None):
-    """Validate visual spec references: integrity, staleness, unprocessed.
-
-    Mutates ``visual_spec`` dict in-place to update stale_count and
-    missing_reference_count.  Returns list of action items.
-
-    Args:
-        visual_spec: dict from parse_visual_spec()
-        project_root: project root path (defaults to PROJECT_ROOT)
-
-    Returns:
-        list of action item dicts.
-    """
-    root = project_root or PROJECT_ROOT
-    items = []
-    stale_count = 0
-    missing_count = 0
-
-    for ref in visual_spec.get('references', []):
-        screen = ref.get('screen_name', 'Unknown')
-
-        # Unprocessed artifact check (HIGH)
-        if (ref['reference_type'] != 'none' and ref['reference_path']
-                and not ref['has_description']):
-            items.append({
-                'priority': 'HIGH',
-                'category': 'unprocessed_artifact',
-                'description': (
-                    f'Unprocessed design artifact for screen '
-                    f'"{screen}": {ref["reference_path"]}'
-                ),
-            })
-
-        # Reference integrity check — local files only (MEDIUM)
-        if ref['reference_type'] == 'local' and ref['reference_path']:
-            full_path = os.path.join(root, ref['reference_path'])
-            if not os.path.isfile(full_path):
-                missing_count += 1
-                items.append({
-                    'priority': 'MEDIUM',
-                    'category': 'missing_design_reference',
-                    'description': (
-                        f'Missing design artifact for screen '
-                        f'"{screen}": {ref["reference_path"]}'
-                    ),
-                })
-
-        # Staleness check — local files with a processed date (LOW)
-        if (ref['reference_type'] == 'local' and ref['reference_path']
-                and ref['processed_date']):
-            full_path = os.path.join(root, ref['reference_path'])
-            if os.path.isfile(full_path):
-                try:
-                    file_mtime = os.path.getmtime(full_path)
-                    processed_dt = datetime.strptime(
-                        ref['processed_date'], '%Y-%m-%d')
-                    # Compare: file mtime (seconds) vs processed date (midnight)
-                    processed_ts = calendar.timegm(processed_dt.timetuple())
-                    if file_mtime > processed_ts + 86400:  # newer by >1 day
-                        stale_count += 1
-                        items.append({
-                            'priority': 'LOW',
-                            'category': 'stale_design_description',
-                            'description': (
-                                f'Stale design description for screen '
-                                f'"{screen}": artifact modified after '
-                                f'processed date {ref["processed_date"]}'
-                            ),
-                        })
-                except (ValueError, OSError):
-                    pass  # Skip if date parsing or file access fails
-
-    visual_spec['stale_count'] = stale_count
-    visual_spec['missing_reference_count'] = missing_count
-
-    return items
+    return {'present': True, 'screens': len(screen_names), 'items': items,
+            'screen_names': screen_names}
 
 
 def is_policy_file(filename):
@@ -1118,15 +952,6 @@ def generate_action_items(feature_result, cdd_status=None):
                 ),
             })
 
-    # Visual reference validation items (Section 2.13)
-    for vi in feature_result.get('_visual_ref_items', []):
-        architect_items.append({
-            'priority': vi['priority'],
-            'category': vi['category'],
-            'feature': feature_name,
-            'description': vi['description'],
-        })
-
     # --- Builder items ---
     # Compute lifecycle state once (shared by Builder + QA item generation)
     lifecycle_state = None
@@ -1261,14 +1086,12 @@ def generate_action_items(feature_result, cdd_status=None):
                                 f'Visual:{v}' for v in unscoped_visual))
                     architect_items.append({
                         'priority': 'MEDIUM',
-                        'category': 'targeted_scope_gap',
+                        'category': 'scope_completeness',
                         'feature': feature_name,
                         'description': (
-                            f'Targeted scope for {feature_name} covers '
-                            f'{len(targeted_names)} of '
-                            f'{len(all_titles | visual_names)} scenarios. '
-                            f'Unscoped: {", ".join(sorted(unscoped_scenarios) + [f"Visual:{v}" for v in sorted(unscoped_visual)])}. '
-                            f'Consider resetting to full scope.'
+                            f'Targeted scope incomplete for '
+                            f'{feature_name}: {"; ".join(items_desc)} '
+                            f'not in targeted scope'
                         ),
                     })
 
@@ -1890,9 +1713,8 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     rel_path = os.path.relpath(feature_path, PROJECT_ROOT)
 
-    # Visual spec detection and reference validation (Section 2.13)
+    # Visual spec detection (Section 2.13)
     visual_spec = parse_visual_spec(content)
-    visual_ref_items = validate_visual_references(visual_spec)
 
     # Regression scope computation (Section 2.12)
     lifecycle_state = _get_feature_lifecycle_state(rel_path, cdd_status)
@@ -1917,45 +1739,11 @@ def generate_critic_json(feature_path, cdd_status=None):
         'regression_scope': regression_scope,
     }
 
-    # Store visual reference items for action item generation
-    result['_visual_ref_items'] = visual_ref_items
-
     # Generate action items (pass visual_spec and regression_scope)
     result['action_items'] = generate_action_items(result, cdd_status)
 
-    # Targeted Scope Completeness audit output (Section 2.15)
-    if lifecycle_state == 'todo' and cdd_status is not None:
-        change_scope = _get_feature_change_scope(rel_path, cdd_status)
-        if change_scope and change_scope.startswith('targeted:'):
-            _sc_path = os.path.join(
-                FEATURES_DIR, os.path.basename(feature_path))
-            if os.path.isfile(_sc_path):
-                _sc_content = read_feature_file(_sc_path)
-                _sc_scenarios = parse_scenarios(_sc_content)
-                _sc_visual = parse_visual_spec(_sc_content)
-                all_titles = {s['title'] for s in _sc_scenarios}
-                visual_names = {
-                    f'Visual:{n}'
-                    for n in _sc_visual.get('screen_names', [])
-                }
-                total = len(all_titles) + len(visual_names)
-                targeted_names = {
-                    n.strip()
-                    for n in change_scope[len('targeted:'):].split(',')
-                }
-                scoped = len(targeted_names & (all_titles | visual_names))
-                result['targeted_scope_audit'] = {
-                    'scoped_count': scoped,
-                    'total_count': total,
-                    'unscoped': sorted(
-                        (all_titles | visual_names) - targeted_names),
-                }
-
     # Compute role status (depends on action_items being populated)
     result['role_status'] = compute_role_status(result, cdd_status)
-
-    # Clean up internal-only keys before returning
-    result.pop('_visual_ref_items', None)
 
     return result
 
