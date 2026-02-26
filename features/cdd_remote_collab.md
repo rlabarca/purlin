@@ -463,12 +463,4 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 ## User Testing Discoveries
 
 
-### [INTENT_DRIFT] Session dropdown and sync badge below it lack left-edge alignment (Discovered: 2026-02-26)
-- **Scenario:** Active-Session State Shows Sync Badge and Controls
-- **Observed Behavior:** The branch selection dropdown (Row 1) and the BEHIND/AHEAD sync badge (Row 2) do not have aligned left edges — the badge starts at a different horizontal position than the dropdown above it.
-- **Expected Behavior:** The two-row layout should feel visually coherent: the dropdown's left edge and the sync badge's left edge should line up, giving the active session panel a consistent left margin. The spec defines two rows but is silent on this alignment; the current rendering misses the intent of a clean, readable panel.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED
-- **Resolution:** Added "Panel alignment" requirement to Section 2.3 and visual spec checklist item. Row 1 and Row 2 left edges must be horizontally aligned.
-
 

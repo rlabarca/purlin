@@ -24,3 +24,4 @@ BUG — Sync badge never appeared when local main branch absent (e.g., cloned fr
 BUG — Active session panel rendered controls across three rows instead of two; fixed by reorganizing HTML so Row 1 = dropdown + branch ref + Disconnect, Row 2 = sync badge + annotation + last check + Check Remote.
 INTENT_DRIFT — Sync state annotation was ambiguous about perspective (e.g., "1 ahead"); fixed to use remote-perspective framing ("Remote is N behind/ahead of local main") per spec Section 2.3.
 BUG — Disconnect button appeared visually near Check Remote due to insufficient vertical margin between Row 1 and Row 2; fixed by increasing gap from 6px to 14px.
+INTENT_DRIFT — Session dropdown and sync badge lacked left-edge alignment; spec updated to mandate horizontal alignment of Row 1 and Row 2 left edges; verified passing after flex container and margin fix.
