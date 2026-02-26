@@ -60,6 +60,7 @@ When `.purlin/runtime/active_remote_session` contains a session name:
 1. **Active session panel** (replaces creation row):
    - **Session row (single line):** `[session-name ▾] collab/<name>  [Disconnect]`. The session name is a `<select>` dropdown populated with all known sessions from remote (current session pre-selected). Changing selection -> `POST /remote-collab/switch`. The branch ref `collab/<name>` is displayed as muted text beside the dropdown. The "Disconnect" button is right-aligned on the same row -> `POST /remote-collab/disconnect`. Does NOT delete any branches. Session remains joinable.
    - **Sync state row:** badge with remote-perspective annotation (same format as collapsed badge) + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /remote-collab/fetch`.
+   - **Panel alignment:** The session row and sync state row MUST share a consistent left edge. The dropdown's left edge on Row 1 and the sync badge's left edge on Row 2 MUST be horizontally aligned, giving the active session panel a coherent vertical alignment.
 
 2. **CONTRIBUTORS table:**
    - Name | Commits | Last Active | Last Commit Subject -- sorted most-recent-first, max 10.
@@ -447,6 +448,7 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - [ ] No-active-session: creation row "Start Remote Session [input] [Create]" + known sessions table
 - [ ] Active-session row 1: session-name dropdown + `collab/<name>` branch ref (muted) + Disconnect button (right-aligned), all on one line
 - [ ] Active-session row 2: sync badge + annotation + last-check timestamp + Check Remote button (right-aligned)
+- [ ] Active-session panel: Row 1 dropdown left edge and Row 2 sync badge left edge are horizontally aligned
 - [ ] "Checking..." guard state while fetch in flight
 - [ ] Four sync state badge colors (matching ISOLATED TEAMS color scheme: SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange)
 - [ ] Last check "Never" on server start; "N min ago" after manual check
@@ -472,6 +474,7 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - **Observed Behavior:** The branch selection dropdown (Row 1) and the BEHIND/AHEAD sync badge (Row 2) do not have aligned left edges — the badge starts at a different horizontal position than the dropdown above it.
 - **Expected Behavior:** The two-row layout should feel visually coherent: the dropdown's left edge and the sync badge's left edge should line up, giving the active session panel a consistent left margin. The spec defines two rows but is silent on this alignment; the current rendering misses the intent of a clean, readable panel.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
+- **Resolution:** Added "Panel alignment" requirement to Section 2.3 and visual spec checklist item. Row 1 and Row 2 left edges must be horizontally aligned.
 
 
