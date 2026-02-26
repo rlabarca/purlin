@@ -46,7 +46,7 @@ When `.purlin/runtime/active_remote_session` is absent or empty:
 2. **Known sessions table** (below creation row):
    - Populated from `git branch -r --list '<remote>/collab/*'` (uses locally cached refs, no network fetch).
    - Columns: Session | Branch | Action
-   - Each row has a **Join** button -> `POST /remote-collab/switch`.
+   - Each row has a **Delete** button and a **Join** button in the Action column, in that order (Delete left, Join right). Delete -> opens the Delete Confirmation Modal (Section 2.8). Join -> `POST /remote-collab/switch`.
    - Empty state: "No remote collab sessions found."
 
 ### 2.3 State B: Active Session (Operational Mode)
@@ -68,7 +68,7 @@ When `.purlin/runtime/active_remote_session` contains a session name:
 
 ### 2.4 Server Endpoints
 
-Four new POST endpoints, following the existing `/isolate/*` pattern:
+Five POST endpoints, following the existing `/isolate/*` pattern:
 
 **`POST /remote-collab/create`** -- `{ "name": "<session-name>" }`
 
@@ -100,6 +100,16 @@ Four new POST endpoints, following the existing `/isolate/*` pattern:
 4. "Checking..." label + disabled guard while in flight (same pattern as `rcPendingSave`).
 5. Auto-fetch: background thread fires after first interval (NOT on startup); boolean lock prevents concurrent fetches; failures logged server-side only.
 6. `last_fetch`: in-memory only; resets to null on server restart.
+
+**`POST /remote-collab/delete`** -- `{ "name": "<session-name>" }`
+
+1. Validate session name (same rules as create).
+2. Read remote from config (`remote_collab.remote`, default `"origin"`).
+3. Delete the remote branch: `git push <remote> --delete collab/<name>`.
+4. Delete the local tracking branch if it exists: `git branch -D collab/<name>`.
+5. If the deleted session was the active session, clear `.purlin/runtime/active_remote_session`.
+6. Return `{ "status": "ok", "session": "<name>", "deleted_branch": "collab/<name>" }`.
+7. On failure (branch doesn't exist on remote, permission denied): return `{ "error": "..." }`.
 
 ### 2.5 Sync State Computation
 
@@ -134,15 +144,40 @@ When an active session exists, the `/status.json` response includes:
     ]
   },
   "remote_collab_sessions": [
-    { "name": "v0.5-sprint", "branch": "collab/v0.5-sprint", "active": true },
-    { "name": "hotfix-auth", "branch": "collab/hotfix-auth", "active": false }
+    { "name": "v0.5-sprint", "branch": "collab/v0.5-sprint", "active": true, "sync_state": "AHEAD", "commits_ahead": 2, "commits_behind": 0 },
+    { "name": "hotfix-auth", "branch": "collab/hotfix-auth", "active": false, "sync_state": "BEHIND", "commits_ahead": 0, "commits_behind": 3 }
   ]
 }
 ```
 
 `remote_collab`: present only when an active session exists. Absent otherwise.
 
-`remote_collab_sessions`: always present (may be empty array). Lists all sessions discovered from remote tracking refs.
+`remote_collab_sessions`: always present (may be empty array). Lists all sessions discovered from remote tracking refs. Each entry includes per-session sync state computed from locally cached refs (same rules as Section 2.5, applied per session). This data is used by the Delete Confirmation Modal (Section 2.8) to determine whether a data loss warning is needed.
+
+### 2.8 Delete Session Confirmation Modal
+
+Triggered by clicking a session's **Delete** button in the known sessions table (Section 2.2). Uses the same modal overlay and container pattern as other CDD Dashboard modals (Feature Detail Modal, Kill modal).
+
+**Dismissal:** X button, clicking outside the modal, or pressing Escape. Same as all CDD modals.
+
+**Sync state source:** The modal reads the session's sync state from the `remote_collab_sessions` array in the most recent `/status.json` poll. No additional server request is needed to render the modal.
+
+**Modal content (two variants):**
+
+1. **Standard confirmation (sync state is SAME or BEHIND):**
+   - Title: "Delete Session"
+   - Body: "Are you sure you want to delete session '<name>'? This will delete the remote branch collab/<name>. This action cannot be undone."
+   - Buttons: [Cancel] [Delete] -- Cancel has default focus. Delete button uses `--purlin-status-error` as background color with contrasting text.
+
+2. **Data loss warning (sync state is AHEAD or DIVERGED):**
+   - Title: "Delete Session"
+   - Body: same as standard confirmation.
+   - **Warning block (below body, above buttons):** Red text using `--purlin-status-error` on a subtle red-tinted background (`--purlin-status-error` at reduced opacity). Text varies by state:
+     - AHEAD: "WARNING: The remote branch has N commit(s) not in your local main. Deleting this session will permanently discard those commits."
+     - DIVERGED: "WARNING: The remote branch has diverged from your local main (N commit(s) ahead, M behind). Deleting this session will permanently discard the N remote-only commit(s)."
+   - Buttons: [Cancel] [Delete] -- same styling as standard variant.
+
+**On confirm:** Dashboard sends `POST /remote-collab/delete` with body `{ "name": "<name>" }`. On success, the known sessions table re-renders without the deleted session. On failure, an inline error is shown within the modal.
 
 ---
 
@@ -273,6 +308,39 @@ When an active session exists, the `/status.json` response includes:
     When the dashboard polls GET /status.json 3 times at 5-second intervals
     Then no git fetch commands are executed during those polls
 
+#### Scenario: Delete Session Removes Remote Branch and Returns Success
+
+    Given collab/v0.5-sprint exists as a remote tracking branch
+    And the CDD server is running
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the server deletes collab/v0.5-sprint from the remote
+    And the local tracking branch collab/v0.5-sprint is removed if it existed
+    And the response contains { "status": "ok", "session": "v0.5-sprint" }
+
+#### Scenario: Delete Active Session Also Clears Runtime File
+
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    And collab/v0.5-sprint exists as a remote tracking branch
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the server deletes collab/v0.5-sprint from the remote
+    And .purlin/runtime/active_remote_session is empty or absent
+    And GET /status.json does not contain a remote_collab field
+
+#### Scenario: Delete Nonexistent Session Returns Error
+
+    Given no collab/nonexistent branch exists on the remote
+    When a POST request is sent to /remote-collab/delete with body {"name": "nonexistent"}
+    Then the response contains an error message
+
+#### Scenario: Per-Session Sync State in remote_collab_sessions
+
+    Given collab/v0.5-sprint exists as a remote tracking branch
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And local main has no commits not in origin/collab/v0.5-sprint
+    When an agent calls GET /status.json
+    Then remote_collab_sessions contains an entry for "v0.5-sprint"
+    And that entry has sync_state "BEHIND" and commits_behind 2
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: REMOTE COLLABORATION Section Always Visible
@@ -339,6 +407,34 @@ When an active session exists, the `/status.json` response includes:
     Then the REMOTE COLLABORATION section transitions back to setup mode
     And the creation row and known sessions table are shown
 
+#### Scenario: Delete Button Visible in Known Sessions Table
+
+    Given the CDD dashboard is open
+    And no active remote session exists
+    And at least one collab session exists on the remote
+    When the User views the known sessions table
+    Then each session row has a "Delete" button to the left of the "Join" button
+
+#### Scenario: Delete Confirmation Modal With Standard Warning
+
+    Given the CDD dashboard is open
+    And session "v0.5-sprint" has sync state SAME relative to local main
+    When the User clicks the Delete button for "v0.5-sprint"
+    Then a confirmation modal appears with title "Delete Session"
+    And the modal body warns that deleting will remove the remote branch
+    And Cancel and Delete buttons are visible
+    And the Delete button uses red (--purlin-status-error) background
+
+#### Scenario: Delete Confirmation Modal Shows Data Loss Warning for AHEAD Session
+
+    Given the CDD dashboard is open
+    And session "hotfix-auth" has sync state AHEAD with 3 commits ahead of local main
+    When the User clicks the Delete button for "hotfix-auth"
+    Then a confirmation modal appears with title "Delete Session"
+    And a red warning block is visible below the body text
+    And the warning states that 3 commits will be permanently discarded
+    And Cancel and Delete buttons are visible
+
 ---
 
 ## 4. Visual Specification
@@ -357,6 +453,10 @@ When an active session exists, the `/status.json` response includes:
 - [ ] CONTRIBUTORS table columns: Name, Commits, Last Active, Last Commit Subject (no Role)
 - [ ] CONTRIBUTORS empty state: "(no commits on this session yet)"
 - [ ] "Last remote sync: N min ago" annotation in MAIN WORKSPACE body (not heading), only when active
+- [ ] Known sessions table: Delete button to the left of Join button in each row's Action column
+- [ ] Delete Confirmation Modal: same overlay/container pattern as Feature Detail Modal and Kill modal
+- [ ] Delete Confirmation Modal: Cancel and Delete buttons; Delete button uses `--purlin-status-error` background with contrasting text
+- [ ] Delete Confirmation Modal (AHEAD/DIVERGED): red warning block with `--purlin-status-error` text on subtle red-tinted background, positioned between body text and buttons
 
 ## User Testing Discoveries
 
@@ -383,6 +483,13 @@ When an active session exists, the `/status.json` response includes:
 - **Action Required:** Builder
 - **Status:** RESOLVED
 - **Resolution:** `compute_remote_sync_state()` now verifies local `main` ref exists before running log comparisons. Returns `sync_state: "NO_MAIN"` when absent, and the dashboard displays "Local main branch not found (check out main to enable sync tracking)" instead of silently showing no badge.
+
+### [BUG] Active session layout splits controls across multiple rows instead of single line (Discovered: 2026-02-26)
+- **Scenario:** Active-Session State Shows Sync Badge and Controls
+- **Observed Behavior:** The active session view renders the session name and branch ref on one row, the sync state badge on a second row, and the session dropdown with Disconnect button on a third row. The layout spreads across three lines instead of two.
+- **Expected Behavior:** Per Section 2.3, the session row should be a single line: `[session-name ▾] collab/<name> [Disconnect]` -- the dropdown, branch ref, and Disconnect button all on one row. The sync state row (badge + annotation + last-check + Check Remote) should be the second row. Two rows total, not three.
+- **Action Required:** Builder
+- **Status:** OPEN
 
 ### [INTENT_DRIFT] Sync state annotation is ambiguous about perspective (Discovered: 2026-02-25)
 - **Scenario:** Active-Session State Shows Sync Badge and Controls
