@@ -1,6 +1,6 @@
 # Feature: Agent Config Skill
 
-> Label: "Tool: Agent Config Skill"
+> Label: "/pl-agent-config: Agent Configuration"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_agent_configuration.md

@@ -1,6 +1,6 @@
-# Feature: Local Release Step Management
+# Feature: Release Step Management
 
-> Label: "Local Release Step Management: /pl-release-step"
+> Label: "/pl-release-step: Release Step Management"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md

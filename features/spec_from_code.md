@@ -1,6 +1,6 @@
 # Feature: Spec From Code
 
-> Label: "Tool: Spec From Code"
+> Label: "/pl-spec-from-code: Spec From Code"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
