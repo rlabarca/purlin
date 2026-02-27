@@ -1447,50 +1447,25 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         f'</div>'
     )
 
-    # Row 3+4: "Summarize Impact" and "What's Different?" buttons
-    # (visible when sync state is not SAME)
+    # Row 3: "What's Different?" button (visible when sync state is not SAME)
     if sync_state and sync_state not in ('SAME', 'NO_MAIN', None):
-        # Compute relative timestamps for both cached files
-        def _relative_ts(path):
-            if not os.path.exists(path):
-                return ''
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   'whats-different.md')
+        digest_ts = ''
+        if os.path.exists(digest_path):
             try:
-                mtime = os.path.getmtime(path)
+                mtime = os.path.getmtime(digest_path)
                 dt = datetime.fromtimestamp(mtime, tz=timezone.utc)
                 delta = (datetime.now(timezone.utc) - dt).total_seconds()
                 if delta < 60:
-                    return 'just now'
+                    digest_ts = 'just now'
                 elif delta < 3600:
-                    return f'{int(delta // 60)} min ago'
+                    digest_ts = f'{int(delta // 60)} min ago'
                 else:
-                    return f'{int(delta // 3600)}h ago'
+                    digest_ts = f'{int(delta // 3600)}h ago'
             except (OSError, ValueError):
-                return ''
+                pass
 
-        analysis_ts = _relative_ts(os.path.join(
-            PROJECT_ROOT, 'features', 'digests',
-            'whats-different-analysis.md'))
-        digest_ts = _relative_ts(os.path.join(
-            PROJECT_ROOT, 'features', 'digests',
-            'whats-different.md'))
-
-        # Summarize Impact button (above What's Different)
-        html += (
-            '<div style="display:flex;align-items:center;gap:8px;'
-            'margin-bottom:4px">'
-            '<button class="btn-critic" onclick="summarizeImpact(this)"'
-            ' id="btn-summarize-impact"'
-            ' style="font-size:10px;padding:2px 8px">'
-            'Summarize Impact</button>'
-        )
-        if analysis_ts:
-            html += (
-                f'<span style="color:var(--purlin-muted);font-size:10px">'
-                f'Last generated: {analysis_ts}</span>'
-            )
-        html += '</div>'
-
-        # What's Different button
         html += (
             '<div style="display:flex;align-items:center;gap:8px;'
             'margin-bottom:8px">'
@@ -2267,17 +2242,23 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     </div>
     <div id="wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px;display:flex;align-items:center;gap:8px"></div>
     <div id="wd-modal-tags" style="padding:6px 14px 0;display:flex;flex-wrap:wrap;gap:6px"></div>
-    <div id="wd-impact-section" style="display:none;padding:0 14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-        <span style="color:var(--purlin-accent);font-weight:700;font-size:12px">Impact Summary</span>
-        <span id="wd-impact-date" style="color:var(--purlin-muted);font-size:10px"></span>
-        <button class="btn-critic" onclick="regenerateDeepAnalysis()" id="btn-regen-impact"
-         style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>
+    <div class="modal-body" id="wd-modal-scroll">
+      <div id="wd-impact-section" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="color:var(--purlin-accent);font-weight:700;font-size:12px">Impact Summary</span>
+          <span id="wd-impact-date" style="color:var(--purlin-muted);font-size:10px"></span>
+          <button class="btn-critic" onclick="regenerateDeepAnalysis()" id="btn-regen-impact"
+           style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>
+        </div>
+        <div id="wd-impact-body"></div>
+        <hr style="border:none;border-top:1px solid var(--purlin-border);margin:12px 0">
       </div>
-      <div class="modal-body" id="wd-impact-body" style="padding:4px 0"></div>
-      <hr style="border:none;border-top:1px solid var(--purlin-border);margin:8px 0">
+      <div id="wd-impact-generate" style="margin-bottom:12px">
+        <button class="btn-critic" onclick="generateDeepAnalysisFromModal()" id="btn-modal-summarize"
+         style="font-size:10px;padding:2px 8px">Summarize Impact</button>
+      </div>
+      <div id="wd-modal-body"></div>
     </div>
-    <div class="modal-body" id="wd-modal-body"></div>
   </div>
 </div>
 
@@ -3229,6 +3210,7 @@ function populateWdModal(data) {{
 
 function loadImpactSummary() {{
   var section = document.getElementById('wd-impact-section');
+  var genBtn = document.getElementById('wd-impact-generate');
   fetch('/whats-different/deep-analysis/read')
     .then(function(r) {{ if (!r.ok) throw new Error('none'); return r.json(); }})
     .then(function(data) {{
@@ -3236,8 +3218,12 @@ function loadImpactSummary() {{
         '<span style="font-weight:700">Generated:</span> ' + formatISOToLocal(data.generated_at);
       document.getElementById('wd-impact-body').innerHTML = marked.parse(data.analysis || '');
       section.style.display = '';
+      genBtn.style.display = 'none';
     }})
-    .catch(function() {{ section.style.display = 'none'; }});
+    .catch(function() {{
+      section.style.display = 'none';
+      genBtn.style.display = '';
+    }});
 }}
 
 function generateWhatsDifferent() {{
@@ -3311,65 +3297,60 @@ function regenerateWhatsDifferent() {{
     .finally(function() {{ wdPending = false; }});
 }}
 
-function regenerateDeepAnalysis() {{
-  var btn = document.getElementById('btn-regen-impact');
-  var impactBody = document.getElementById('wd-impact-body');
-  var impactDate = document.getElementById('wd-impact-date');
-  btn.disabled = true;
-  btn.textContent = 'Regenerating';
-  impactBody.innerHTML = '<p style="color:var(--purlin-muted)">Regenerating</p>';
-
+function _doDeepAnalysisGenerate(onSuccess, onError) {{
   fetch('/whats-different/deep-analysis/generate', {{ method: 'POST' }})
     .then(function(r) {{ return r.json(); }})
     .then(function(data) {{
-      if (data.error) {{
-        impactBody.innerHTML = '<p style="color:var(--purlin-status-error)">' + data.error + '</p>';
-        return;
-      }}
-      impactDate.innerHTML = '<span style="font-weight:700">Generated:</span> ' + formatISOToLocal(data.generated_at);
-      impactBody.innerHTML = marked.parse(data.analysis || '');
-      document.getElementById('wd-impact-section').style.display = '';
+      if (data.error) {{ if (onError) onError(data.error); return; }}
+      var section = document.getElementById('wd-impact-section');
+      var genBtn = document.getElementById('wd-impact-generate');
+      document.getElementById('wd-impact-date').innerHTML =
+        '<span style="font-weight:700">Generated:</span> ' + formatISOToLocal(data.generated_at);
+      document.getElementById('wd-impact-body').innerHTML = marked.parse(data.analysis || '');
+      section.style.display = '';
+      genBtn.style.display = 'none';
+      if (onSuccess) onSuccess();
     }})
-    .catch(function(err) {{
-      impactBody.innerHTML = '<p style="color:var(--purlin-status-error)">Failed: ' + err.message + '</p>';
-    }})
-    .finally(function() {{ btn.disabled = false; btn.textContent = 'Regenerate'; }});
+    .catch(function(err) {{ if (onError) onError(err.message); }});
 }}
 
-function summarizeImpact(btn) {{
-  if (btn.disabled) return;
+function generateDeepAnalysisFromModal() {{
+  var btn = document.getElementById('btn-modal-summarize');
   btn.disabled = true;
-  var origText = btn.textContent;
   var dots = 0;
-  var siTimer = setInterval(function() {{
+  var timer = setInterval(function() {{
     dots = (dots + 1) % 4;
     btn.textContent = 'Summarizing' + '.'.repeat(dots || 1);
   }}, 500);
   btn.textContent = 'Summarizing.';
 
-  fetch('/whats-different/deep-analysis/generate', {{ method: 'POST' }})
-    .then(function(r) {{ return r.json(); }})
-    .then(function(data) {{
-      clearInterval(siTimer);
-      btn.disabled = false;
-      btn.textContent = origText;
-      if (data.error) return;
-      // Update "Last generated" next to button
-      var span = btn.nextElementSibling;
-      if (span && span.tagName === 'SPAN') {{
-        span.textContent = 'Last generated: just now';
-      }} else {{
-        var s = document.createElement('span');
-        s.style.cssText = 'color:var(--purlin-muted);font-size:10px';
-        s.textContent = 'Last generated: just now';
-        btn.parentNode.appendChild(s);
-      }}
-    }})
-    .catch(function() {{
-      clearInterval(siTimer);
-      btn.disabled = false;
-      btn.textContent = origText;
-    }});
+  _doDeepAnalysisGenerate(
+    function() {{ clearInterval(timer); btn.disabled = false; btn.textContent = 'Summarize Impact'; }},
+    function(msg) {{
+      clearInterval(timer); btn.disabled = false; btn.textContent = 'Summarize Impact';
+      document.getElementById('wd-impact-body').innerHTML =
+        '<p style="color:var(--purlin-status-error)">' + msg + '</p>';
+      document.getElementById('wd-impact-section').style.display = '';
+      document.getElementById('wd-impact-generate').style.display = 'none';
+    }}
+  );
+}}
+
+function regenerateDeepAnalysis() {{
+  var btn = document.getElementById('btn-regen-impact');
+  btn.disabled = true;
+  btn.textContent = 'Regenerating';
+  document.getElementById('wd-impact-body').innerHTML =
+    '<p style="color:var(--purlin-muted)">Regenerating</p>';
+
+  _doDeepAnalysisGenerate(
+    function() {{ btn.disabled = false; btn.textContent = 'Regenerate'; }},
+    function(msg) {{
+      btn.disabled = false; btn.textContent = 'Regenerate';
+      document.getElementById('wd-impact-body').innerHTML =
+        '<p style="color:var(--purlin-status-error)">Failed: ' + msg + '</p>';
+    }}
+  );
 }}
 
 function closeWdModal() {{
