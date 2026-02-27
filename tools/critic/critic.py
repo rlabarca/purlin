@@ -804,35 +804,18 @@ def parse_builder_decisions(impl_notes):
     return decisions
 
 
-def _is_acknowledged(entry_text):
-    """Check if a builder decision entry is acknowledged (case-insensitive)."""
-    return 'acknowledged' in entry_text.lower()
-
-
 def check_builder_decisions(impl_notes):
-    """Audit builder decision tags.
-
-    Acknowledged entries (containing 'Acknowledged' case-insensitive on the
-    same line) are excluded from FAIL status and action item generation.
-    Summary includes both total and acknowledged counts for transparency.
-    """
+    """Audit builder decision tags."""
     decisions = parse_builder_decisions(impl_notes)
 
     summary = {tag: len(entries) for tag, entries in decisions.items()}
 
-    # Count acknowledged entries for HIGH-severity tags
-    ack_counts = {}
-    for tag in ('DEVIATION', 'DISCOVERY'):
-        ack_counts[tag] = sum(
-            1 for entry in decisions[tag] if _is_acknowledged(entry))
-    summary['acknowledged'] = ack_counts
-
     has_infeasible = summary.get('INFEASIBLE', 0) > 0
-    unack_deviation = summary['DEVIATION'] - ack_counts['DEVIATION']
-    unack_discovery = summary['DISCOVERY'] - ack_counts['DISCOVERY']
+    has_deviation = summary.get('DEVIATION', 0) > 0
+    has_discovery = summary.get('DISCOVERY', 0) > 0
     has_autonomous = summary.get('AUTONOMOUS', 0) > 0
 
-    if has_infeasible or unack_deviation > 0 or unack_discovery > 0:
+    if has_infeasible or has_deviation or has_discovery:
         return {
             'status': 'FAIL',
             'summary': summary,
@@ -1089,10 +1072,7 @@ def generate_action_items(feature_result, cdd_status=None):
         })
 
     # Unacknowledged DEVIATION/DISCOVERY -> HIGH Architect
-    ack = bd_summary.get('acknowledged', {})
-    unack_deviation = bd_summary.get('DEVIATION', 0) - ack.get('DEVIATION', 0)
-    unack_discovery = bd_summary.get('DISCOVERY', 0) - ack.get('DISCOVERY', 0)
-    if unack_deviation > 0 or unack_discovery > 0:
+    if bd_summary.get('DEVIATION', 0) > 0 or bd_summary.get('DISCOVERY', 0) > 0:
         architect_items.append({
             'priority': 'HIGH',
             'category': 'builder_decisions',
@@ -2066,17 +2046,12 @@ def generate_critic_report(results, untracked_items=None):
     for r in sorted(results, key=lambda x: x['feature_file']):
         bd = r['implementation_gate']['checks'].get('builder_decisions', {})
         summary = bd.get('summary', {})
-        ack = summary.get('acknowledged', {})
         for tag in ('INFEASIBLE', 'AUTONOMOUS', 'DEVIATION', 'DISCOVERY'):
-            count = summary.get(tag, 0)
-            if count > 0:
+            if summary.get(tag, 0) > 0:
                 if not has_decisions:
                     has_decisions = True
-                ack_count = ack.get(tag, 0)
-                ack_suffix = (
-                    f' ({ack_count} acknowledged)' if ack_count > 0 else '')
                 lines.append(
-                    f'- **{r["feature_file"]}**: [{tag}] x{count}{ack_suffix}'
+                    f'- **{r["feature_file"]}**: [{tag}] x{summary[tag]}'
                 )
     if not has_decisions:
         lines.append('No AUTONOMOUS, DEVIATION, or DISCOVERY entries found.')
