@@ -1444,8 +1444,44 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         f' id="btn-check-remote"'
         f' style="font-size:10px;padding:2px 8px;margin-left:auto">'
         f'Check Remote</button>'
-        f'</div></div>'
+        f'</div>'
     )
+
+    # Row 3: "What's Different?" button (visible when sync state is not SAME)
+    if sync_state and sync_state not in ('SAME', 'NO_MAIN', None):
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   'whats-different.md')
+        digest_ts = ''
+        if os.path.exists(digest_path):
+            try:
+                mtime = os.path.getmtime(digest_path)
+                dt = datetime.fromtimestamp(mtime, tz=timezone.utc)
+                delta = (datetime.now(timezone.utc) - dt).total_seconds()
+                if delta < 60:
+                    digest_ts = 'just now'
+                elif delta < 3600:
+                    digest_ts = f'{int(delta // 60)} min ago'
+                else:
+                    digest_ts = f'{int(delta // 3600)}h ago'
+            except (OSError, ValueError):
+                pass
+
+        html += (
+            '<div style="display:flex;align-items:center;gap:8px;'
+            'margin-bottom:8px">'
+            '<button class="btn-critic" onclick="generateWhatsDifferent()"'
+            ' id="btn-whats-different"'
+            ' style="font-size:10px;padding:2px 8px">'
+            "What's Different?</button>"
+        )
+        if digest_ts:
+            html += (
+                f'<span style="color:var(--purlin-muted);font-size:10px">'
+                f'Last generated: {digest_ts}</span>'
+            )
+        html += '</div>'
+
+    html += '</div>'
 
     # Contributors table
     if contributors:
@@ -1467,6 +1503,49 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     sessions_json = json.dumps(sessions).replace('</script', '<\\/script')
     html += f'<script>window._rcSessionsData={sessions_json};</script>'
     return html
+
+
+def _compute_digest_tags(session_name):
+    """Compute tag counts for the What's Different modal from extraction data.
+
+    Runs the extraction tool inline (lightweight) to get change categories.
+    Returns dict with keys: specs, anchors, visual, code, tests, purlin, discoveries.
+    """
+    tags = {
+        'specs': 0, 'anchors': 0, 'visual': 0,
+        'code': 0, 'tests': 0, 'purlin': 0, 'discoveries': 0,
+    }
+    try:
+        extract_tool = os.path.join(
+            PROJECT_ROOT,
+            CONFIG.get('tools_root', 'tools'),
+            'collab', 'extract_whats_different.py')
+        result = subprocess.run(
+            ['python3', extract_tool, session_name],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=30,
+            env={**os.environ, 'PURLIN_PROJECT_ROOT': PROJECT_ROOT},
+        )
+        data = json.loads(result.stdout)
+
+        for direction in ('local_changes', 'collab_changes'):
+            d = data.get(direction)
+            if not d or isinstance(d, list):
+                continue
+            cats = d.get('categories', {})
+            tags['specs'] += len(cats.get('feature_specs', []))
+            tags['anchors'] += len(cats.get('anchor_nodes', []))
+            tags['anchors'] += len(cats.get('policy_nodes', []))
+            tags['visual'] += len(cats.get('visual_specs', []))
+            tags['code'] += len(cats.get('code', []))
+            tags['tests'] += len(cats.get('tests', []))
+            tags['purlin'] += len(cats.get('purlin_config', []))
+            tags['purlin'] += len(cats.get('submodule', []))
+            tags['discoveries'] += d.get('discovery_count', 0)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+            json.JSONDecodeError, OSError):
+        pass
+    return tags
 
 
 def _collapsed_remote_collab_label(active_session, sync_data, sessions):
@@ -2151,6 +2230,19 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <button class="btn-critic" onclick="deleteSessionModalCancel()" style="font-size:11px;margin-right:6px" id="delete-session-cancel-btn">Cancel</button>
       <button class="btn-critic" id="delete-session-confirm-btn" onclick="deleteSessionModalConfirm()" style="font-size:11px;background:var(--purlin-status-error);color:var(--purlin-bg)">Delete</button>
     </div>
+  </div>
+</div>
+
+<!-- What's Different Modal -->
+<div class="modal-overlay" id="wd-modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="wd-modal-title" style="font-size:13px;color:var(--purlin-primary);margin:0">What's Different?</h2>
+      <button class="modal-close" onclick="closeWdModal()" title="Close">X</button>
+    </div>
+    <div id="wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px"></div>
+    <div id="wd-modal-tags" style="padding:6px 14px 0;display:flex;flex-wrap:wrap;gap:6px"></div>
+    <div class="modal-body" id="wd-modal-body"></div>
   </div>
 </div>
 
@@ -3003,6 +3095,101 @@ document.addEventListener('keydown', function(e) {{
   if (e.key === 'Escape') {{
     var overlay = document.getElementById('delete-session-modal-overlay');
     if (overlay && overlay.style.display === 'flex') deleteSessionModalCancel();
+  }}
+}});
+
+// ============================
+// What's Different Modal
+// ============================
+var wdPending = false;
+
+function generateWhatsDifferent() {{
+  if (wdPending) return;
+  wdPending = true;
+
+  var overlay = document.getElementById('wd-modal-overlay');
+  var body = document.getElementById('wd-modal-body');
+  var dateEl = document.getElementById('wd-modal-date');
+  var tagsEl = document.getElementById('wd-modal-tags');
+
+  body.innerHTML = '<p style="color:var(--purlin-muted)">Generating...</p>';
+  dateEl.textContent = '';
+  tagsEl.innerHTML = '';
+  overlay.classList.add('visible');
+
+  fetch('/whats-different/generate', {{ method: 'POST' }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      if (data.error) {{
+        body.innerHTML = '<p style="color:var(--purlin-status-error)">' + data.error + '</p>';
+        return;
+      }}
+
+      // Show date
+      if (data.generated_at) {{
+        dateEl.textContent = 'Generated: ' + data.generated_at;
+      }}
+
+      // Build tags
+      var tags = data.tags || {{}};
+      var tagConfig = [
+        {{ key: 'specs', label: 'Specs', color: 'var(--purlin-accent)' }},
+        {{ key: 'anchors', label: 'Anchor', color: 'var(--purlin-status-warning)' }},
+        {{ key: 'visual', label: 'Visual', color: 'var(--purlin-status-good)' }},
+        {{ key: 'code', label: 'Code', color: 'var(--purlin-primary)' }},
+        {{ key: 'tests', label: 'Tests', color: 'var(--purlin-muted)' }},
+        {{ key: 'purlin', label: 'Purlin', color: 'var(--purlin-status-todo)' }},
+        {{ key: 'discoveries', label: 'Discovery', color: 'var(--purlin-status-error)' }}
+      ];
+      var tagHtml = '';
+      tagConfig.forEach(function(tc) {{
+        var count = tags[tc.key] || 0;
+        if (count > 0) {{
+          tagHtml += '<span style="display:inline-block;padding:2px 8px;' +
+            'background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);' +
+            'border-radius:10px;font-family:var(--font-body);font-weight:700;font-size:12px;' +
+            'color:' + tc.color + '">' + count + ' ' + tc.label + '</span>';
+        }}
+      }});
+      tagsEl.innerHTML = tagHtml;
+
+      // Render markdown body with colored section headers
+      var md = data.digest || '';
+      var rendered = marked.parse(md);
+      // Apply section header colors
+      rendered = rendered.replace(
+        /(<h[23][^>]*>)(.*?Spec Changes.*?)(<\/h[23]>)/gi,
+        '$1<span style="color:var(--purlin-accent)">$2</span>$3'
+      );
+      rendered = rendered.replace(
+        /(<h[23][^>]*>)(.*?Code Changes.*?)(<\/h[23]>)/gi,
+        '$1<span style="color:var(--purlin-status-good)">$2</span>$3'
+      );
+      rendered = rendered.replace(
+        /(<h[23][^>]*>)(.*?Purlin Changes.*?)(<\/h[23]>)/gi,
+        '$1<span style="color:var(--purlin-status-todo)">$2</span>$3'
+      );
+      body.innerHTML = rendered;
+    }})
+    .catch(function(err) {{
+      body.innerHTML = '<p style="color:var(--purlin-status-error)">Generation failed: ' + err.message + '</p>';
+    }})
+    .finally(function() {{
+      wdPending = false;
+    }});
+}}
+
+function closeWdModal() {{
+  document.getElementById('wd-modal-overlay').classList.remove('visible');
+}}
+
+// Close What's Different modal on Escape or outside click
+document.getElementById('wd-modal-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) closeWdModal();
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape' && document.getElementById('wd-modal-overlay').classList.contains('visible')) {{
+    closeWdModal();
   }}
 }});
 
@@ -4443,6 +4630,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_remote_collab_fetch()
         elif self.path == '/remote-collab/delete':
             self._handle_remote_collab_delete()
+        elif self.path == '/whats-different/generate':
+            self._handle_whats_different_generate()
         else:
             self.send_response(404)
             self.end_headers()
@@ -4916,6 +5105,65 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             'status': 'ok',
             'session': name,
             'deleted_branch': branch,
+        })
+
+    def _handle_whats_different_generate(self):
+        """POST /whats-different/generate — generate the What's Different digest."""
+        active = get_active_remote_session()
+        if not active:
+            self._send_json(400, {
+                'error': 'No active remote session. Use the CDD dashboard to '
+                         'start or join a remote collab session.'
+            })
+            return
+
+        # Run the generation script
+        gen_script = os.path.join(
+            PROJECT_ROOT,
+            CONFIG.get('tools_root', 'tools'),
+            'collab', 'generate_whats_different.sh')
+
+        try:
+            result = subprocess.run(
+                ['bash', gen_script, active],
+                cwd=PROJECT_ROOT,
+                capture_output=True, text=True,
+                timeout=300,
+                env={**os.environ, 'PURLIN_PROJECT_ROOT': PROJECT_ROOT},
+            )
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {'error': 'Generation timed out'})
+            return
+        except OSError as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        if result.returncode != 0:
+            self._send_json(500, {
+                'error': result.stderr.strip() or 'Generation failed'
+            })
+            return
+
+        # Read the generated digest
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   'whats-different.md')
+        try:
+            with open(digest_path, 'r') as f:
+                digest_content = f.read()
+        except (IOError, OSError):
+            # Fallback to script stdout if file wasn't written
+            digest_content = result.stdout
+
+        # Compute tags from the extraction data
+        tags = _compute_digest_tags(active)
+        generated_at = datetime.now(timezone.utc).strftime(
+            '%Y-%m-%d %H:%M UTC')
+
+        self._send_json(200, {
+            'status': 'ok',
+            'digest': digest_content,
+            'generated_at': generated_at,
+            'tags': tags,
         })
 
     def log_message(self, format, *args):

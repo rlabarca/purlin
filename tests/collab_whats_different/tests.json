@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "test_files": [
+    "tests/collab_whats_different/test_extract.py",
+    "tests/collab_whats_different/test_dashboard.py"
+  ],
+  "results": {
+    "test_extract": {
+      "passed": 24,
+      "failed": 0,
+      "scenarios_covered": [
+        "Extraction Tool Produces Correct JSON for SAME State",
+        "Extraction Tool Produces Correct JSON for AHEAD State",
+        "Extraction Tool Produces Correct JSON for BEHIND State",
+        "Extraction Tool Produces Correct JSON for DIVERGED State",
+        "Feature File Changes Correctly Categorized",
+        "Status Commits Parsed Into Lifecycle Transitions"
+      ]
+    },
+    "test_dashboard": {
+      "passed": 8,
+      "failed": 0,
+      "scenarios_covered": [
+        "Dashboard Endpoint Returns 400 When No Active Session",
+        "Dashboard Endpoint Returns 200 After Generation",
+        "Dashboard HTML Includes Button When Sync State Is Not SAME",
+        "Dashboard HTML Omits Button When Sync State Is SAME",
+        "Dashboard HTML Omits Button When No Active Session",
+        "Generated Markdown File Exists After Generation"
+      ]
+    }
+  },
+  "total_passed": 32,
+  "total_failed": 0,
+  "timestamp": "2026-02-27T00:45:00Z"
+}
