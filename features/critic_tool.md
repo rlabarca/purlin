@@ -355,6 +355,27 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
     When the Critic tool runs the builder decision check
     Then builder_decisions reports WARN due to the AUTONOMOUS entry
 
+#### Scenario: Acknowledged DEVIATION Does Not Generate Architect Action Item
+    Given a feature has Implementation Notes with "[DEVIATION] Acknowledged." on the same line
+    When the Critic tool runs the builder decision check
+    Then builder_decisions reports PASS
+    And no HIGH-priority Architect action item is generated for the acknowledged deviation
+
+#### Scenario: Acknowledged DISCOVERY Does Not Contribute to Implementation Gate FAIL
+    Given a feature has Implementation Notes with "[DISCOVERY] Acknowledged." on the same line
+    When the Critic tool runs the builder decision check
+    Then builder_decisions reports PASS
+    And no Architect action item is generated for the acknowledged discovery
+
+#### Scenario: Mixed Acknowledged and Unacknowledged Entries
+    Given a feature has Implementation Notes with two [DEVIATION] entries
+    And one entry contains "Acknowledged" on its line
+    And the other entry does not contain "Acknowledged"
+    When the Critic tool runs the builder decision check
+    Then builder_decisions reports FAIL
+    And the action item references 1 unresolved deviation
+    And the acknowledged entry is excluded from the FAIL count
+
 #### Scenario: Implementation Gate Policy Violation
     Given an architectural policy defines FORBIDDEN: hardcoded_port
     And a feature anchored to that policy has "hardcoded_port" in its implementation

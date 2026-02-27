@@ -222,11 +222,5 @@ fi
 # Write the digest file
 echo "$DIGEST" > "$DIGEST_FILE"
 
-# Staleness invalidation (Section 2.14.7): delete stale deep analysis
-ANALYSIS_FILE="${DIGEST_DIR}/whats-different-analysis.md"
-if [ -f "$ANALYSIS_FILE" ]; then
-    rm -f "$ANALYSIS_FILE"
-fi
-
 # Output the digest to stdout
 cat "$DIGEST_FILE"
