@@ -103,10 +103,59 @@ Before executing any other step in this startup protocol, detect the current bra
 **Step 1 — Detect isolation state:**
 Run: `git rev-parse --abbrev-ref HEAD`
 
-**Step 2 — Print the command table:**
-Read `instructions/references/architect_commands.md` and print the appropriate variant (main branch or isolated session) verbatim.
+If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
 
-**Authorized commands:** /pl-status, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Step 2 — Print the appropriate table:**
+
+**If NOT in an isolated session** (branch does not start with `isolated/`), print:
+
+```
+Purlin Architect — Ready
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-spec <topic>           Add or refine a feature spec
+  /pl-anchor <topic>         Create or update an anchor node
+  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
+  /pl-design-audit           Audit design artifact integrity and staleness
+  /pl-release-check          Execute the CDD release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a local release step
+  /pl-override-edit          Safely edit an override file
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-spec-from-code         Reverse-engineer feature specs from existing code
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-collab-push            Push local main to remote collab branch (main only)
+  /pl-collab-pull            Pull remote collab branch into local main (main only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
+
+```
+Purlin Architect — Ready  [Isolated: <name>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-spec <topic>           Add or refine a feature spec
+  /pl-anchor <topic>         Create or update an anchor node
+  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
+  /pl-design-audit           Audit design artifact integrity and staleness
+  /pl-release-check          Execute the CDD release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a local release step
+  /pl-override-edit          Safely edit an override file
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-spec-from-code         Reverse-engineer feature specs from existing code
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-local-push             Merge isolation branch to main
+  /pl-local-pull             Pull main into isolation branch
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 ### 5.0.1 Read Startup Flags
 
@@ -158,10 +207,48 @@ We **DO NOT** create v2/v3 feature files.
 4.  Commit the changes, then run `tools/cdd/status.sh` to update the Critic report and `critic.json` files (per responsibility 6).
 
 ### Feature Retirement (Tombstone Protocol)
-When a feature is retired, use `/pl-tombstone` which contains the canonical format and rules.
-Key invariant: the tombstone MUST be created BEFORE the feature file is deleted. If the feature
-was specced but never implemented (no code exists), delete the feature file directly -- no
-tombstone needed.
+When a feature is retired (its code should be removed from the codebase), the Architect CANNOT delete the feature file and expect the Builder to know what to clean up — the instruction is gone with the file.
+
+**The Tombstone Protocol solves this:**
+
+1.  **Create the Tombstone BEFORE deleting the feature file.** Write a new file at `features/tombstones/<feature_name>.md` using the canonical format below.
+2.  **Delete the original feature file.**
+3.  **Commit both changes together** in a single commit with message: `retire(<scope>): retire <feature_name> + tombstone for Builder`.
+4.  The Builder detects tombstones at startup (they check `features/tombstones/`), processes all deletions, then deletes the tombstone file and commits.
+
+**Canonical tombstone format:**
+
+```markdown
+# TOMBSTONE: <feature_name>
+
+**Retired:** <YYYY-MM-DD>
+**Reason:** <One-line explanation of why this feature was retired.>
+
+## Files to Delete
+
+List each path the Builder should remove. Be specific.
+
+- `<path/to/file.py>` — entire file
+- `<path/to/directory/>` — entire directory (confirm nothing else depends on it)
+- `<path/to/module.py>:ClassName` — specific class only (if partial deletion)
+
+## Dependencies to Check
+
+List any other features or code that may reference the retired code and will need updating.
+
+- `features/<other_feature>.md` — references removed API `foo()`
+- `tools/<tool>/script.py:line 42` — imports retired module
+
+## Context
+
+<Brief explanation: what this feature did, why it was retired, and any architectural decisions the Builder should understand before deleting.>
+```
+
+**Rules:**
+*   Tombstones MUST be created before the feature file is deleted. Never delete a feature file without a tombstone if implementation code exists.
+*   If the feature was specced but never implemented (no code exists), a tombstone is unnecessary — delete the feature file directly and note "not implemented" in the commit message.
+*   Tombstone files are NOT feature files. They do not appear in the dependency graph or CDD lifecycle. The Critic detects tombstones and surfaces them as HIGH-priority Builder action items.
+*   Once the Builder processes a tombstone and deletes the code, the Builder commits and deletes the tombstone file. The tombstone is transient — it exists only until the Builder acts.
 
 ## 8. Release Protocol
 
@@ -174,13 +261,45 @@ To execute a release, work through the steps in the CDD Dashboard's RELEASE CHEC
 *   The dependency graph MUST be acyclic. Verify via `.purlin/cache/dependency_graph.json`.
 *   The `purlin.push_to_remote` step is enabled by default but MAY be disabled for air-gapped projects.
 
-## 9. Command Authorization
+## 9. Authorized Slash Commands
 
-The Architect's authorized commands are listed in the Startup Print Sequence (Section 5.0).
+The following `/pl-*` commands are authorized for the Architect role:
 
-**Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These are role-gated at the command level.
+*   `/pl-status` — check CDD status and Architect action items
+*   `/pl-find <topic>` — search the spec system for a topic
+*   `/pl-spec <topic>` — add or refine a feature spec
+*   `/pl-anchor <topic>` — create or update an anchor node
+*   `/pl-tombstone <name>` — retire a feature and generate a tombstone
+*   `/pl-design-ingest` — ingest a design artifact (image, PDF, Figma URL, live web page URL) into a feature's Visual Specification section, processing it into structured markdown mapped to the project's design token system
+*   `/pl-design-audit` — audit all design artifacts across the project for reference integrity, staleness, and anchor consistency
+*   `/pl-release-check` — execute the release checklist
+*   `/pl-release-run [<step-name>]` — run a single release step by friendly name without executing the full checklist
+*   `/pl-release-step [create|modify|delete] [<step-id>]` — create, modify, or delete a local release step in `.purlin/release/local_steps.json`
+*   `/pl-override-edit` — safely edit any override file with role-check, conflict pre-scan, and commit
+*   `/pl-override-conflicts` — compare any override file against its base for contradictions
+*   `/pl-spec-code-audit` — bidirectional spec-code audit: scan all features for spec gaps AND read implementation source to detect code-side deviations; fixes spec-side gaps directly and escalates code-side gaps to the Builder via companion file entries
+*   `/pl-spec-from-code` — reverse-engineer feature specs from an existing codebase: scan source directories, propose a category taxonomy interactively, and generate feature files, anchor nodes, and companion files
+*   `/pl-edit-base` — modify a base instruction file (Purlin framework context only; never in consumer projects)
+*   `/pl-update-purlin` — intelligent submodule update with semantic analysis and conflict resolution (shared, all roles)
+*   `/pl-collab-push` — push local main to the remote collab branch (available from main checkout only)
+*   `/pl-collab-pull` — pull remote collab branch into local main (available from main checkout only)
+*   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
+*   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
 
-Prompt suggestions MUST only suggest Architect-authorized commands. Do not suggest Builder or QA commands.
+**Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+### 9.1 `/pl-status` Uncommitted Changes Check
+
+After completing the standard `/pl-status` output (feature counts, action items, discoveries), the Architect MUST check for uncommitted changes:
+
+1.  Run `git status` and `git diff` to identify staged changes, unstaged modifications, and untracked files.
+2.  **Architect-owned files** (`features/*.md`, `features/*.impl.md`, `instructions/*.md`, `.purlin/*.md`, `README.md`, `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json`):
+    *   Present a summary of changed files grouped by change type (new, modified, deleted).
+    *   Read the diffs to understand the substance of each change.
+    *   Propose a commit message following the project's commit convention (e.g., `spec(feature_name): add edge-case scenarios`, `docs(readme): update release history`). The message must reflect the "why" not just the "what."
+    *   Ask the user: **"These Architect-owned files have uncommitted changes. Commit with the above message?"**
+3.  **Non-Architect-owned files** (Builder source, scripts, tests, etc.): Note them in the output but take no action — the Builder handles their own commits.
+4.  **Clean working tree:** Report "No uncommitted changes."
 
 ## 10. Collaboration Protocol
 
@@ -209,9 +328,65 @@ The Critic's `git log` only sees commits reachable from HEAD. A `[Complete]` com
 ### 11.5 ACTIVE_EDITS.md (Multi-Architect Only)
 When `config.json` has `"collaboration": { "multi_architect": true }`, Architect sessions MUST declare their in-progress edits in `.purlin/ACTIVE_EDITS.md` (committed, not gitignored). This file prevents simultaneous edits to the same feature spec sections. Single-Architect projects do not use this file.
 
-## 11. Feature File Format
+## 11. Prompt Suggestion Scope
 
-**MANDATE:** When creating a new feature file or anchor node, ALWAYS copy from the template
-at `{tools_root}/feature_templates/` (`_feature.md` or `_anchor.md`). Do NOT create from
-scratch. For detailed heading format rules and Critic parser requirements, read
-`instructions/references/feature_format.md`.
+When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
+box), only suggest commands and actions within the Architect's authorized vocabulary (Section 9).
+Do not suggest commands belonging to the Builder or QA roles.
+
+Prohibited suggestions in an Architect session:
+*   Builder commands: `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`
+*   QA commands: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`
+
+## 12. Feature File Format Reference
+
+The Critic's parser enforces specific Markdown heading formats. Wrong heading levels or
+section names cause Spec Gate failures that are not obvious from the error message.
+
+### Template files
+
+**MANDATE:** When creating a new feature file or anchor node, you MUST copy from the template as the starting point. Do NOT create feature files from memory or scratch. When updating an existing feature file, consult the template to verify section structure is correct. The template is the authoritative reference for required sections, heading formats, and section order.
+
+Copy from `{tools_root}/feature_templates/`:
+- `_feature.md` — regular feature file
+- `_anchor.md` — anchor node (arch_*, design_*, policy_*)
+
+**No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 and BUILDER_BASE Section 5.2 for the companion file convention.
+
+### Regular feature files
+
+**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+- A heading containing `overview`
+- A heading containing `requirements`
+- A heading containing `scenarios`
+
+**Scenario heading format — MUST use four-hash `####`:**
+
+    #### Scenario: Title of the scenario
+
+        Given <precondition>
+        When <action>
+        Then <expected outcome>
+
+NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
+
+**Manual scenario block:**
+
+    ### Manual Scenarios (Human Verification Required)
+
+    #### Scenario: Title
+
+        Given ...
+
+    (Use "None." if no manual scenarios.)
+
+### Anchor nodes (arch_*, design_*, policy_*)
+
+**Required section headings** (Critic checks for these words, case-insensitive, substring match):
+- A heading containing `purpose`
+- A heading containing `invariants`
+
+Note: `## 1. Overview` does NOT satisfy the `purpose` check. The heading text must contain
+the word "purpose" — e.g., `## Purpose`, `## 1. Purpose`.
+
+Scenario classification and gherkin quality checks are automatically skipped for anchor nodes.

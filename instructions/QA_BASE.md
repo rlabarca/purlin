@@ -44,13 +44,52 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
 
+**CRITICAL:** Printing the command table means outputting the pre-formatted text block below **verbatim**. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool during this step. Any tool or skill invocation before Section 3.0.1 is complete is a protocol violation.
+
 **Step 1 — Detect isolation state:**
 Run: `git rev-parse --abbrev-ref HEAD`
 
-**Step 2 — Print the command table:**
-Read `instructions/references/qa_commands.md` and print the appropriate variant (main branch or isolated session) verbatim. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
+If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
 
-**Authorized commands:** /pl-status, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Step 2 — Print the appropriate table:**
+
+**If NOT in an isolated session** (branch does not start with `isolated/`), print:
+
+```
+Purlin QA — Ready
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-verify <name>          Run interactive verification for a feature
+  /pl-discovery <name>       Record a structured discovery
+  /pl-complete <name>        Mark a verified feature as complete
+  /pl-qa-report              Summary of open discoveries and TESTING features
+  /pl-override-edit          Safely edit QA_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-collab-push            Push local main to remote collab branch (main only)
+  /pl-collab-pull            Pull remote collab branch into local main (main only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
+
+```
+Purlin QA — Ready  [Isolated: <name>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-verify <name>          Run interactive verification for a feature
+  /pl-discovery <name>       Record a structured discovery
+  /pl-complete <name>        Mark a verified feature as complete
+  /pl-qa-report              Summary of open discoveries and TESTING features
+  /pl-override-edit          Safely edit QA_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-local-push             Merge isolation branch to main
+  /pl-local-pull             Pull main into isolation branch
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 ### 3.0.1 Read Startup Flags
 
@@ -172,11 +211,48 @@ After all manual scenarios for a feature are complete, ask the user:
 If yes, record it as a `[DISCOVERY]` entry.
 
 ### 5.4 Visual Verification Pass
-If the feature has a `## Visual Specification` section AND the regression scope includes
-visual verification, execute the visual verification pass after functional scenarios. Read
-`instructions/references/visual_verification_protocol.md` for the full screenshot-assisted
-verification protocol (checklist presentation, screenshot analysis, consolidated results,
-manual fallback, batching).
+If the feature has a `## Visual Specification` section AND the regression scope includes visual verification (`full` or explicitly targeted), execute the visual verification pass after functional scenarios.
+
+#### 5.4.1 Present Checklist and Offer Screenshot Input
+1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references. For each screen, also present the `- **Processed:**` date. If the processed date is older than the artifact's modification time (or the Critic has flagged it as STALE), note the staleness to the user: "Warning: design artifact for Screen X was updated after the description was last processed. The description may not reflect the latest design."
+2.  **Present the full checklist** for the screen (all visual acceptance criteria).
+3.  **Offer screenshot input:** After presenting the checklist, prompt the user: "Would you like to provide one or more screenshots of this screen? I can analyze them to auto-verify many of the checklist items, reducing the number of items you need to confirm manually."
+4.  If the user declines or provides no screenshots, fall back to manual verification (Section 5.4.4).
+
+#### 5.4.2 Screenshot Analysis
+When screenshot(s) are provided:
+
+1.  **Read each screenshot** via the Read tool.
+2.  **Validate the screenshot** appears to show the expected screen. If it does not match or is clearly cropped/low-quality, inform the user and ask for a corrected one, or proceed with what is visible.
+3.  **Design artifact comparison (optional):** If the screen has a local design artifact reference (`features/design/<stem>/<file>`), QA MAY read the artifact alongside the screenshot to compare the implementation against the original design intent. This enables detection of visual drift between the design artifact and the live implementation.
+4.  **Classify each checklist item** into one of two categories:
+    *   **Screenshot-verifiable:** Static visible properties -- element presence, layout/positioning, typography, color, spacing, alignment, text content.
+    *   **Not screenshot-verifiable:** Interaction behaviors (clicks, toggles, hovers), state persistence (survives refresh/reload), temporal behaviors (animations, auto-refresh stability, flicker), implementation details (CSS variables, localStorage), absence of negative behaviors ("does not re-load").
+5.  **For screenshot-verifiable items:** Examine the screenshot and determine PASS, FAIL, or UNCERTAIN.
+    *   **PASS:** Auto-checked with a brief observation note (e.g., "Heading text 'ACTIVE' visible in bold, left-aligned").
+    *   **FAIL:** Flagged with expected vs. observed. Present to the user for confirmation before recording -- the agent may misjudge due to image compression, scaling, or rendering differences.
+    *   **UNCERTAIN:** Moved to the manual confirmation list with a reason (e.g., "Cannot determine exact font family from screenshot").
+6.  **For non-verifiable items:** Added to the manual confirmation list without analysis.
+7.  **Multi-screenshot support:** If checklist items reference multiple states (e.g., dark and light theme), ask the user for additional screenshots as needed, or defer cross-state items to the manual list.
+
+#### 5.4.3 Consolidated Results
+Present results in two groups:
+
+1.  **Auto-verified items:** List each item with PASS/FAIL and a brief observation note. Any auto-FAILs require user confirmation before being recorded as failures.
+2.  **Manual confirmation required:** A consolidated list of items the agent could not verify from screenshots. Present these together with a single prompt for the user to confirm PASS or FAIL (preserving the existing "single checklist, single prompt" pattern for the manual subset).
+
+#### 5.4.4 Manual Fallback
+If the user declines screenshots: present the full checklist and ask for a single PASS/FAIL for all visual items (current behavior, preserved as-is).
+
+#### 5.4.5 Recording Failures
+Record failures using the standard discovery protocol (Section 4.2). Record `[BUG]` or `[DISCOVERY]` entries (depending on whether a scenario covers the behavior) with a "visual" context note in the discovery entry. For auto-detected failures confirmed by the user, include the screenshot observation in the discovery's Observed Behavior field.
+
+#### 5.4.6 Batching Optimization
+When multiple features have visual specs in the same session, you MAY offer to batch all visual checks together with screenshot-assisted verification:
+*   Collect screenshots for all screens across features before analysis.
+*   Present auto-verified results grouped by feature.
+*   Present the consolidated manual confirmation list across all features.
+*   Example prompt: "3 functional scenarios across 2 features completed. Ready for visual verification: 12 checklist items across 3 screens. Would you like to provide screenshots for batch analysis, or verify feature-by-feature?"
 
 ### 5.5 Feature Summary
 After all scenarios (functional and visual) for a feature are verified:
@@ -217,10 +293,33 @@ If the current session is on an `isolated/<name>` branch (i.e., running inside a
 *   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
 *   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user. Scenario is suspended until resolved.
 
-## 8. Command Authorization
+## 8. Authorized Slash Commands
 
-The QA Agent's authorized commands are listed in the Startup Print Sequence (Section 3.0).
+The following `/pl-*` commands are authorized for the QA role:
 
-**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These are role-gated at the command level.
+*   `/pl-status` — check CDD status and QA action items
+*   `/pl-find <topic>` — search the spec system for a topic
+*   `/pl-verify <name>` — run interactive verification for a feature
+*   `/pl-discovery <name>` — record a structured discovery
+*   `/pl-complete <name>` — mark a verified feature as complete
+*   `/pl-qa-report` — summary of open discoveries and TESTING features
+*   `/pl-override-edit` — safely edit `QA_OVERRIDES.md` (QA may only edit own file)
+*   `/pl-override-conflicts` — compare `QA_OVERRIDES.md` against `QA_BASE.md`
+*   `/pl-update-purlin` — intelligent submodule update with semantic analysis and conflict resolution (shared, all roles)
+*   `/pl-collab-push` — push local main to the remote collab branch (available from main checkout only)
+*   `/pl-collab-pull` — pull remote collab branch into local main (available from main checkout only)
+*   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
+*   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
 
-Prompt suggestions MUST only suggest QA-authorized commands. Do not suggest Architect or Builder commands.
+**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
+
+## 9. Prompt Suggestion Scope
+
+When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
+box), only suggest commands and actions within the QA role's authorized vocabulary (Section 8).
+Do not suggest commands belonging to the Architect or Builder roles.
+
+Prohibited suggestions in a QA session:
+*   Architect commands: `/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`,
+    `/pl-release-run`, `/pl-release-step`, `/pl-edit-base`
+*   Builder commands: `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`

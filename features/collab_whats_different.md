@@ -80,6 +80,24 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 - Output: structured JSON categorizing changed files into specs, code, tests, companion files, purlin config, and submodule changes.
 - Feature file changes are further categorized: feature specs vs anchor nodes vs policy nodes.
 - Status commits (matching `[Complete ...]` or `[TODO]` patterns in commit messages) are parsed into lifecycle transitions.
+- The extraction tool MUST extract **structured decision entries** from changed feature files and companion files, returning an array of objects alongside the existing `discovery_count` (kept for backward compatibility with the standard digest tags). Each entry includes:
+  - `category`: tag name (e.g., `[INFEASIBLE]`, `[BUG]`, `[DEVIATION]`)
+  - `feature`: feature file name the entry belongs to
+  - `summary`: one-line description from the entry text
+  - `role`: routed recipient (`architect` or `builder`)
+- The extraction JSON output gains a new `decisions` array per direction.
+
+**Decision categories and routing:**
+
+| Category | Source | Routed To |
+|---|---|---|
+| `[INFEASIBLE]` | Companion files (`## Implementation Notes`) | Architect |
+| `[DEVIATION]` | Companion files (`## Implementation Notes`) | Architect |
+| `[DISCOVERY]` (impl) | Companion files (`## Implementation Notes`) | Architect |
+| `[BUG]` | Feature files (`## User Testing Discoveries`) | Builder (default) or Architect (if `Action Required: Architect`) |
+| `[INTENT_DRIFT]` | Feature files (`## User Testing Discoveries`) | Architect |
+| `[SPEC_DISPUTE]` | Feature files (`## User Testing Discoveries`) | Architect |
+| `[DISCOVERY]` (testing) | Feature files (`## User Testing Discoveries`) | Architect |
 
 ### 2.6 Agent-Powered Generation
 
@@ -197,6 +215,9 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 - "Impact Summary" header in `var(--purlin-accent)` (bold).
 - A horizontal rule separates the impact summary from the file-level content below.
 - The impact summary section has its own "Generated:" timestamp (bold label, local timezone AM/PM format per Section 2.8) and its own "Regenerate" button (same styling as the digest Regenerate button).
+- **Role-specific section header colors:**
+  - **Architect Actions** header: `var(--purlin-status-warning)` (amber — attention required)
+  - **Builder Actions** header: `var(--purlin-status-good)` (green — implementation work)
 
 #### 2.14.4 Generation Pipeline
 
@@ -209,9 +230,68 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 - Output: `features/digests/whats-different-analysis.md` (gitignored).
 - The file is overwritten on each generation.
 
+**Sync state directional glossary (MUST be included in the LLM prompt):**
+
+The LLM prompt MUST prepend a directional glossary before the JSON data so the model has correct context before interpreting the extraction output:
+
+- **AHEAD** — Your local main has commits the collab branch does not. Action: **push** to share your work.
+- **BEHIND** — The collab branch has commits your local main does not. Action: **pull** to receive their work.
+- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge collab into local), then **push**.
+- **SAME** — No action needed (deep analysis is not generated for SAME).
+
+**Output format:**
+
+The deep analysis output uses role-routed action sections instead of a flat "Action Items" list:
+
+- **Key Changes** (unchanged)
+- **Workflow Impact** (unchanged)
+- **Architecture Notes** (optional, unchanged)
+- **Architect Actions** — role-specific items tagged with decision categories, one line each
+- **Builder Actions** — role-specific items tagged with decision categories, one line each
+
+Each action line follows the format: `[CATEGORY] feature_name — one-line description`
+
+When no actions exist for a role, the section header is still present with "No action items." below it.
+
+**LLM prompt requirements:**
+1. Include the sync state directional glossary above before the JSON data.
+2. Read the `decisions` array from the extraction JSON.
+3. Route each entry to the correct role section (Architect Actions or Builder Actions).
+4. Use the exact `[CATEGORY]` tag syntax so the frontend can apply color styling.
+5. Keep descriptions to one line (no multi-line explanations).
+6. Never suggest "pull" when the state is AHEAD, or "push" when the state is BEHIND.
+
 #### 2.14.5 No Agent Command
 
 - Deep analysis is dashboard-only. In agent context, users ask conversationally.
+
+#### 2.14.6 Decision Category Rendering
+
+The dashboard post-processes rendered markdown in the deep analysis modal body to detect `[CATEGORY]` tags and wrap them in `<span>` elements with the corresponding color token. Tags are rendered as inline styled text (bold, colored) preceding the one-line description. Format per line: `[CATEGORY] feature_name — one-line description`
+
+**Color mapping (using existing design tokens):**
+
+| Category | Severity | Token (text color) | Rationale |
+|---|---|---|---|
+| `[INFEASIBLE]` | CRITICAL | `--purlin-status-error` | Release-blocking, requires spec revision |
+| `[BUG]` | HIGH | `--purlin-status-error` | Behavior contradicts spec |
+| `[SPEC_DISPUTE]` | HIGH | `--purlin-status-warning` | Spec itself questioned |
+| `[INTENT_DRIFT]` | MEDIUM | `--purlin-status-warning` | Literal match, intent missed |
+| `[DEVIATION]` | MEDIUM | `--purlin-accent` | Alternate path, needs acknowledgment |
+| `[DISCOVERY]` | LOW | `--purlin-muted` | New finding, informational |
+| `[AUTONOMOUS]` | LOW | `--purlin-muted` | Builder judgment call, FYI |
+
+#### 2.14.7 Staleness Invalidation
+
+The deep analysis is derived from the same extraction data as the standard digest. If the standard digest is regenerated (new extraction), any previously cached deep analysis is stale and must not be displayed.
+
+- When `POST /whats-different/generate` succeeds (new standard digest written), the server MUST delete `features/digests/whats-different-analysis.md` if it exists. The analysis was generated from a prior extraction state and is now invalid.
+- The generation shell script (`generate_whats_different.sh`) MUST delete the analysis file after writing a new digest, so both CLI and dashboard trigger paths enforce the same invariant.
+- The `GET /whats-different/deep-analysis/read` endpoint already returns 404 when the file doesn't exist -- no additional endpoint changes needed.
+- The modal already checks for the analysis file's existence before rendering the "Impact Summary" section -- no additional frontend changes needed.
+- The "Summarize Impact" button's "Last generated" timestamp disappears when the cached file is absent (existing behavior).
+
+**Net effect:** After regenerating the standard digest, the user must explicitly click "Summarize Impact" again to get a fresh analysis. This prevents stale analysis from appearing above a fresh digest.
 
 ### 2.15 Deep Analysis Endpoints
 
@@ -382,6 +462,37 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
     When a GET request is sent to /whats-different/deep-analysis/read
     Then the response status is 404
 
+#### Scenario: Extraction Tool Returns Structured Decisions Array
+
+    Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
+    And a commit range that modifies features/auth.impl.md containing a [DEVIATION] entry
+    When the extraction tool runs with the session name
+    Then the output JSON contains a decisions array
+    And each decision entry has category, feature, summary, and role fields
+    And the [INFEASIBLE] entry has role "architect"
+    And the [DEVIATION] entry has role "architect"
+
+#### Scenario: Extraction Tool Routes BUG Entries to Builder by Default
+
+    Given a commit range that modifies features/login.md containing a [BUG] entry in User Testing Discoveries
+    And the entry does not contain "Action Required: Architect"
+    When the extraction tool runs with the session name
+    Then the decisions array contains the [BUG] entry with role "builder"
+
+#### Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect
+
+    Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
+    When the extraction tool runs with the session name
+    Then the decisions array contains the [INFEASIBLE] entry with role "architect"
+
+#### Scenario: Standard Digest Generation Deletes Stale Deep Analysis
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different-analysis.md exists on disk
+    When a POST request is sent to /whats-different/generate
+    Then the response status is 200
+    And features/digests/whats-different-analysis.md does not exist on disk
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Modal Typography and Layout
@@ -508,6 +619,31 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
     Then the digest is auto-generated as Step 7
     And the digest content is displayed inline after the merge summary
 
+#### Scenario: Deep Analysis Architect Actions Display Category Tags With Correct Colors
+
+    Given the What's Different modal is open
+    And a cached deep analysis exists with Architect Actions containing [INFEASIBLE] and [INTENT_DRIFT] entries
+    When the User views the impact summary section
+    Then the "Architect Actions" header is in var(--purlin-status-warning)
+    And the [INFEASIBLE] tag is rendered in var(--purlin-status-error)
+    And the [INTENT_DRIFT] tag is rendered in var(--purlin-status-warning)
+
+#### Scenario: Deep Analysis Builder Actions Display Category Tags With Correct Colors
+
+    Given the What's Different modal is open
+    And a cached deep analysis exists with Builder Actions containing [BUG] entries
+    When the User views the impact summary section
+    Then the "Builder Actions" header is in var(--purlin-status-good)
+    And the [BUG] tag is rendered in var(--purlin-status-error)
+
+#### Scenario: Stale Impact Summary Absent After Digest Regeneration
+
+    Given the What's Different modal is open with both a cached digest and a cached deep analysis
+    When the User clicks "Regenerate" on the standard digest
+    And the digest regeneration completes
+    Then the impact summary section is absent from the modal
+    And the "Summarize Impact" button no longer shows a "Last generated" timestamp
+
 ---
 
 ## Visual Specification
@@ -561,5 +697,12 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 - [ ] Spec Changes section header color: `var(--purlin-accent)`
 - [ ] Code Changes section header color: `var(--purlin-status-good)`
 - [ ] Purlin Changes section header color: `var(--purlin-status-todo)`
+- [ ] "Architect Actions" section header color: `var(--purlin-status-warning)`
+- [ ] "Builder Actions" section header color: `var(--purlin-status-good)`
+- [ ] Decision category tags `[INFEASIBLE]` and `[BUG]` rendered in `var(--purlin-status-error)`
+- [ ] Decision category tags `[SPEC_DISPUTE]` and `[INTENT_DRIFT]` rendered in `var(--purlin-status-warning)`
+- [ ] Decision category tag `[DEVIATION]` rendered in `var(--purlin-accent)`
+- [ ] Decision category tags `[DISCOVERY]` and `[AUTONOMOUS]` rendered in `var(--purlin-muted)`
+- [ ] Each action item is a single line: `[CATEGORY] feature — description`
 - [ ] Modal body markdown rendered with proper formatting (lists, headers, code blocks)
 - [ ] Close via X button, Escape, or click outside modal

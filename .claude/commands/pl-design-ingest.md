@@ -4,8 +4,6 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
-Read `instructions/references/visual_spec_convention.md` before processing.
-
 Ingest a design artifact into a feature's Visual Specification section. This command processes external design artifacts (images, PDFs, Figma URLs, live web page URLs) into structured markdown descriptions mapped to the project's design token system.
 
 **Input:** The argument specifies the artifact source. Accepted forms:

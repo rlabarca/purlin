@@ -18,7 +18,7 @@
       ]
     },
     "test_dashboard": {
-      "passed": 15,
+      "passed": 8,
       "failed": 0,
       "scenarios_covered": [
         "Dashboard Endpoint Returns 400 When No Active Session",
@@ -26,18 +26,11 @@
         "Dashboard HTML Includes Button When Sync State Is Not SAME",
         "Dashboard HTML Omits Button When Sync State Is SAME",
         "Dashboard HTML Omits Button When No Active Session",
-        "Generated Markdown File Exists After Generation",
-        "GET Read Endpoint Returns Cached Digest",
-        "GET Read Endpoint Returns 404 When No Cache",
-        "GET Read Endpoint Returns 400 When No Session",
-        "POST Generate Endpoint Returns ISO 8601 Timestamp",
-        "POST Deep Analysis Generate Endpoint Returns Analysis",
-        "GET Deep Analysis Read Endpoint Returns Cached Analysis",
-        "GET Deep Analysis Read Endpoint Returns 404 When No Cache"
+        "Generated Markdown File Exists After Generation"
       ]
     }
   },
-  "total_passed": 39,
+  "total_passed": 32,
   "total_failed": 0,
-  "timestamp": "2026-02-27T02:00:00Z"
+  "timestamp": "2026-02-27T00:45:00Z"
 }
