@@ -36,9 +36,11 @@ The Builder MUST classify every non-trivial implementation decision using struct
 
 **Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
 
+**Acknowledgment Detection:** A bracket-tagged entry is considered acknowledged when its line contains `Acknowledged` (case-insensitive). Architect workflow: (1) update spec or confirm no change needed, (2) append `Acknowledged.` to the tag line in the companion file. Acknowledged entries are excluded from FAIL status and action item generation. Summary reports include both total and acknowledged counts for transparency.
+
 **Scope:** The Builder Decision Audit MUST scan ALL files that contain a `## Implementation Notes` section — including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`). Builders may leave `[DISCOVERY]` or `[DEVIATION]` notes in anchor node Implementation Notes when they find anchor-level constraint gaps during implementation. These entries MUST be surfaced as HIGH-priority Architect action items just as they would be in regular feature files. Skipping anchor nodes in this scan is a Critic bug.
 
-**Bracket-Tag Reservation:** The bracket-tag syntax (`[TAG]`) in Implementation Notes is reserved exclusively for active Builder Decisions. Pruned User Testing records written by QA during the PRUNED lifecycle step use unbracketed type labels (e.g., `DISCOVERY —`, `BUG —`). The Critic's Builder Decision Audit MAY use simple regex matching for bracket tags without context-awareness — the formatting convention enforces the separation.
+**Bracket-Tag Reservation:** The bracket-tag syntax (`[TAG]`) in Implementation Notes is reserved for Builder Decisions (active and acknowledged). The distinction between active and acknowledged is made by the acknowledgment marker, not by the tag format. Pruned User Testing records written by QA during the PRUNED lifecycle step use unbracketed type labels (e.g., `DISCOVERY —`, `BUG —`). The Critic's Builder Decision Audit MAY use simple regex matching for bracket tags without context-awareness — the formatting convention enforces the separation.
 
 ### 2.4 User Testing Feedback Loop
 Any agent may record findings in the `## User Testing Discoveries` section when they encounter bugs or unexpected behavior. The QA Agent owns lifecycle management (verification, resolution, pruning). Discovery types:
