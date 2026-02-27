@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "test_files": [
+    "tests/pl_whats_different/test_command.py"
+  ],
+  "results": {
+    "test_command": {
+      "passed": 13,
+      "failed": 0,
+      "scenarios_covered": [
+        "Exits When Branch Is Not Main",
+        "Exits When No Active Session",
+        "Prints In-Sync Message When SAME",
+        "Generates and Displays Digest When BEHIND"
+      ]
+    }
+  },
+  "total_passed": 13,
+  "total_failed": 0,
+  "timestamp": "2026-02-27T02:05:00Z"
+}

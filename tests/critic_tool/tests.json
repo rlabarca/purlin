@@ -1,1 +1,15 @@
-{"status": "PASS", "tests": 223, "failures": 0, "tool": "critic", "runner": "unittest"}
+{
+  "status": "PASS",
+  "test_files": [
+    "test_critic.py"
+  ],
+  "results": {
+    "test_critic": {
+      "passed": 226,
+      "failed": 0
+    }
+  },
+  "total_passed": 226,
+  "total_failed": 0,
+  "timestamp": "2026-02-27T02:37:14Z"
+}

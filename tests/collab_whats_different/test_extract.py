@@ -273,5 +273,124 @@ class TestChangesCategorization(unittest.TestCase):
         self.assertEqual(len(cats['purlin_config']), 1)
 
 
+class TestDecisionExtraction(unittest.TestCase):
+    """Test structured decision extraction from diffs.
+
+    Scenario: Extraction Tool Returns Structured Decisions Array
+    Scenario: Extraction Tool Routes BUG Entries to Builder by Default
+    Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect
+    """
+
+    def _make_side_effect(self, ahead_commits, name_status, file_diffs):
+        """Helper to build a mock side_effect for _run_git.
+
+        Args:
+            ahead_commits: str — log output for commits ahead of collab
+            name_status: str — diff --name-status output
+            file_diffs: dict mapping file paths to diff content
+        """
+        def side_effect(args, cwd=None):
+            if args[0] == 'log':
+                range_arg = args[1] if len(args) > 1 else ''
+                # _get_commits uses --format=%H|%s
+                if any('--format' in a for a in args):
+                    if '..main' in range_arg:
+                        return ahead_commits
+                    return ''
+                # compute_sync_state uses --oneline
+                if '..main' in range_arg:
+                    return ahead_commits
+                return ''
+            if args[0] == 'diff':
+                if '--name-status' in args:
+                    return name_status
+                # Decision diff: ['diff', range, '--', fpath, '-U0']
+                if '-U0' in args:
+                    fpath = args[3]  # file path is after '--'
+                    return file_diffs.get(fpath, '')
+            return ''
+        return side_effect
+
+    @patch.object(ext, '_run_git')
+    def test_impl_decisions_extracted(self, mock_git):
+        """Scenario: Extraction Tool Returns Structured Decisions Array"""
+        mock_git.side_effect = self._make_side_effect(
+            ahead_commits='abc1234|feat: impl changes\n',
+            name_status=('M\tfeatures/login.impl.md\n'
+                         'M\tfeatures/auth.impl.md\n'),
+            file_diffs={
+                'features/login.impl.md': (
+                    '+**[INFEASIBLE]** Cannot implement login as '
+                    'specified (Severity: CRITICAL)'),
+                'features/auth.impl.md': (
+                    '+**[DEVIATION]** Changed auth protocol '
+                    '(Severity: HIGH)'),
+            })
+
+        result = ext.extract('test-session')
+        decisions = result['local_changes']['decisions']
+        self.assertEqual(len(decisions), 2)
+        categories = {d['category'] for d in decisions}
+        self.assertIn('[INFEASIBLE]', categories)
+        self.assertIn('[DEVIATION]', categories)
+        for d in decisions:
+            self.assertIn('category', d)
+            self.assertIn('feature', d)
+            self.assertIn('summary', d)
+            self.assertIn('role', d)
+            self.assertEqual(d['role'], 'architect')
+
+    @patch.object(ext, '_run_git')
+    def test_bug_routes_to_builder(self, mock_git):
+        """Scenario: Extraction Tool Routes BUG Entries to Builder by Default"""
+        mock_git.side_effect = self._make_side_effect(
+            ahead_commits='abc1234|qa: found bug\n',
+            name_status='M\tfeatures/login.md\n',
+            file_diffs={
+                'features/login.md': '+### [BUG] Login fails on empty password',
+            })
+
+        result = ext.extract('test-session')
+        decisions = result['local_changes']['decisions']
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['category'], '[BUG]')
+        self.assertEqual(decisions[0]['role'], 'builder')
+
+    @patch.object(ext, '_run_git')
+    def test_infeasible_routes_to_architect(self, mock_git):
+        """Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect"""
+        mock_git.side_effect = self._make_side_effect(
+            ahead_commits='abc1234|feat: infeasible\n',
+            name_status='M\tfeatures/login.impl.md\n',
+            file_diffs={
+                'features/login.impl.md': (
+                    '+**[INFEASIBLE]** Cannot implement as specified'),
+            })
+
+        result = ext.extract('test-session')
+        decisions = result['local_changes']['decisions']
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['category'], '[INFEASIBLE]')
+        self.assertEqual(decisions[0]['role'], 'architect')
+
+    @patch.object(ext, '_run_git')
+    def test_bug_with_architect_override(self, mock_git):
+        """BUG with Action Required: Architect routes to architect."""
+        mock_git.side_effect = self._make_side_effect(
+            ahead_commits='abc1234|qa: found bug\n',
+            name_status='M\tfeatures/login.md\n',
+            file_diffs={
+                'features/login.md': (
+                    '+### [BUG] Instruction ordering wrong\n'
+                    '+- **Action Required: Architect**'),
+            })
+
+        result = ext.extract('test-session')
+        decisions = result['local_changes']['decisions']
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['category'], '[BUG]')
+        self.assertEqual(decisions[0]['role'], 'architect')
+
+
 if __name__ == '__main__':
     unittest.main()
