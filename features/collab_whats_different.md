@@ -27,7 +27,7 @@ When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND,
 The digest can be generated from three trigger points:
 
 1. **CDD dashboard:** A "What's Different?" button in the active session panel (Section 2.3 of `cdd_remote_collab.md`) triggers fresh generation.
-2. **Agent command:** `/pl-whats-different` is a standalone command usable by any role from the main checkout.
+2. **Agent command:** `/pl-whats-different` -- see `features/pl_whats_different.md`.
 3. **Post-merge auto-generation:** After a successful merge in `/pl-collab-pull`, a new Step 7 auto-generates the digest.
 
 ### 2.3 Direction-Dependent Content Structure
@@ -86,7 +86,7 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 - The dashboard invokes Claude CLI in non-interactive mode (`--print`) via a shell script.
 - The shell script is the agent abstraction point -- swappable for other agents in the future.
 - The extraction tool produces structured JSON; the agent (Claude) synthesizes it into plain English.
-- The agent command (`/pl-whats-different`) runs the same shell script inline.
+- The agent command (`/pl-whats-different`) runs the same shell script inline (see `features/pl_whats_different.md`).
 - The post-merge trigger in `/pl-collab-pull` Step 7 also runs the same script.
 
 ### 2.7 Dashboard UI: Button
@@ -94,12 +94,23 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 - The "What's Different?" button is visible in the active session panel when sync state is not SAME.
 - The button is absent when there is no active session.
 - When a cached digest exists, the button area shows "Last generated: `<timestamp>`" below the button.
-- Button click sends a POST request to a generation endpoint, then opens a modal with "Generating..." state.
+- **Cached read:** When `features/digests/whats-different.md` exists, clicking the button opens the modal with cached content via `GET /whats-different/read`. No regeneration occurs.
+- **No cache:** When no cached file exists, clicking sends `POST /whats-different/generate` and shows the "Generating" state with animated ellipsis (Section 2.8).
+- A "Regenerate" button is displayed inside the modal on the same line as the "Generated:" timestamp, right-aligned. It uses the `btn-critic` class with `font-size: 10px; padding: 2px 8px`. Clicking it triggers `POST /whats-different/generate` and refreshes the modal content.
 
 ### 2.8 Dashboard UI: Modal
 
 - The modal displays the rendered markdown digest.
 - The generation date is displayed prominently at the top of the modal.
+- **Timestamp formatting:**
+  - The "Generated:" label is **bold** (font-weight 700).
+  - The server returns an ISO 8601 UTC timestamp (e.g., `2026-02-26T20:45:00Z`).
+  - The client converts using `Intl.DateTimeFormat` to the user's local timezone with AM/PM format: `MMM DD, YYYY h:mm AM/PM TZ` (e.g., "Feb 26, 2026 3:45 PM EST").
+- **Animated ellipsis during generation:**
+  - The "Generating" text displays dots cycling through `.` / `..` / `...` at approximately 500ms intervals.
+  - Implementation may be CSS-only or minimal JS (builder's choice).
+  - Text color: `var(--purlin-muted)`.
+  - The same animated ellipsis pattern is reused for the "Summarize Impact" button (Section 2.14).
 - Close behavior: X button, Escape key, or click outside the modal.
 - Follows existing CDD modal patterns: 700px max-width, 80vh max-height, scrollable body.
 - Modal body uses `.modal-body` markdown CSS for rendered content.
@@ -144,17 +155,77 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 2. Read and display the generated markdown inline in the agent output.
 3. This step is informational -- it does not block or fail the pull.
 
-### 2.12 Dashboard Endpoint
+### 2.12 Dashboard Endpoints
 
-- `POST /whats-different/generate` triggers generation.
+**`GET /whats-different/read`:**
+
+- Returns the cached digest if `features/digests/whats-different.md` exists: `{ "status": "ok", "digest": "<content>", "generated_at": "<ISO 8601 timestamp>", "tags": { ... } }`.
+- Returns 404 if no cached file exists.
+- Returns 400 if no active session exists.
+
+**`POST /whats-different/generate`:**
+
+- Triggers generation via the generation shell script.
 - Returns 400 when no active session exists.
-- Returns 200 with the generated content on success.
-- The endpoint invokes the generation shell script and returns the result.
+- Returns 200 with the generated content on success: `{ "status": "ok", "digest": "<content>", "generated_at": "<ISO 8601 timestamp>", "tags": { ... } }`.
+- The `generated_at` field uses ISO 8601 UTC format (e.g., `2026-02-26T20:45:00Z`).
 
 ### 2.13 Dashboard Button Visibility Rules
 
 - Button is present in the HTML when: active session exists AND sync state is not SAME.
 - Button is absent from the HTML when: no active session OR sync state is SAME.
+
+### 2.14 Deep Semantic Analysis ("Summarize Impact")
+
+#### 2.14.1 Dashboard UI: "Summarize Impact" Button
+
+- The "Summarize Impact" button appears on its own row, ABOVE the "What's Different?" button.
+- Same visibility rules: active session exists AND sync state is not SAME.
+- Same `btn-critic` styling as other dashboard action buttons.
+- When a cached analysis exists, "Last generated: `<relative time>`" is displayed below the button in `var(--purlin-muted)` 12px.
+
+#### 2.14.2 Button Click Behavior
+
+- Clicking triggers `POST /whats-different/deep-analysis/generate`.
+- The button text changes to "Summarizing" with animated ellipsis (same `.` / `..` / `...` animation at ~500ms from Section 2.8).
+- The button is disabled during generation to prevent duplicate requests.
+- When generation completes: button reverts to "Summarize Impact", "Last generated: just now" appears below.
+
+#### 2.14.3 Modal Integration
+
+- When a cached deep analysis exists, it appears in the modal ABOVE the file-level digest content.
+- "Impact Summary" header in `var(--purlin-accent)` (bold).
+- A horizontal rule separates the impact summary from the file-level content below.
+- The impact summary section has its own "Generated:" timestamp (bold label, local timezone AM/PM format per Section 2.8) and its own "Regenerate" button (same styling as the digest Regenerate button).
+
+#### 2.14.4 Generation Pipeline
+
+- A new script `tools/collab/generate_whats_different_deep.sh <session>` drives generation.
+- Uses the same extraction tool JSON as the standard digest, but with a different LLM prompt emphasizing:
+  - What functionality changed and why it matters.
+  - Which workflows or user experiences are affected.
+  - What specification shifts mean for the product direction.
+  - What the collaborator should pay attention to.
+- Output: `features/digests/whats-different-analysis.md` (gitignored).
+- The file is overwritten on each generation.
+
+#### 2.14.5 No Agent Command
+
+- Deep analysis is dashboard-only. In agent context, users ask conversationally.
+
+### 2.15 Deep Analysis Endpoints
+
+**`GET /whats-different/deep-analysis/read`:**
+
+- Returns the cached analysis if `features/digests/whats-different-analysis.md` exists: `{ "status": "ok", "analysis": "<content>", "generated_at": "<ISO 8601 timestamp>" }`.
+- Returns 404 if no cached file exists.
+- Returns 400 if no active session exists.
+
+**`POST /whats-different/deep-analysis/generate`:**
+
+- Triggers generation via `tools/collab/generate_whats_different_deep.sh <session>`.
+- Returns 200 with the generated analysis on success: `{ "status": "ok", "analysis": "<content>", "generated_at": "<ISO 8601 timestamp>" }`.
+- Returns 400 if no active session exists.
 
 ---
 
@@ -256,6 +327,61 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
     And the file contains a date header
     And the file contains a "Collab Changes" section
 
+#### Scenario: GET Read Endpoint Returns Cached Digest
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different.md exists on disk
+    When a GET request is sent to /whats-different/read
+    Then the response status is 200
+    And the response body contains a "digest" field with the cached content
+    And the response body contains a "generated_at" field in ISO 8601 format
+
+#### Scenario: GET Read Endpoint Returns 404 When No Cache
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different.md does not exist
+    When a GET request is sent to /whats-different/read
+    Then the response status is 404
+
+#### Scenario: GET Read Endpoint Returns 400 When No Session
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    When a GET request is sent to /whats-different/read
+    Then the response status is 400
+    And the response body contains an error message
+
+#### Scenario: POST Generate Endpoint Returns ISO 8601 Timestamp
+
+    Given an active session "v0.5-sprint" is set
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    When a POST request is sent to /whats-different/generate
+    Then the response status is 200
+    And the response body "generated_at" field matches ISO 8601 format
+
+#### Scenario: POST Deep Analysis Generate Endpoint Returns Analysis
+
+    Given an active session "v0.5-sprint" is set
+    And origin/collab/v0.5-sprint has 2 commits not in local main
+    When a POST request is sent to /whats-different/deep-analysis/generate
+    Then the response status is 200
+    And the response body contains an "analysis" field with the generated content
+    And the response body contains a "generated_at" field in ISO 8601 format
+
+#### Scenario: GET Deep Analysis Read Endpoint Returns Cached Analysis
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different-analysis.md exists on disk
+    When a GET request is sent to /whats-different/deep-analysis/read
+    Then the response status is 200
+    And the response body contains an "analysis" field with the cached content
+
+#### Scenario: GET Deep Analysis Read Endpoint Returns 404 When No Cache
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different-analysis.md does not exist
+    When a GET request is sent to /whats-different/deep-analysis/read
+    Then the response status is 404
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Modal Typography and Layout
@@ -313,13 +439,66 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
     And change tags appear in the tag bar
     And a sync check section appears at the bottom of each direction
 
-#### Scenario: End-to-End Generation via Agent Command
+#### Scenario: Button Opens Cached Content Without Regeneration
 
-    Given the agent is on the main branch
+    Given the CDD dashboard is open
+    And an active session exists with BEHIND sync state
+    And features/digests/whats-different.md exists on disk
+    When the User clicks the "What's Different?" button
+    Then the modal opens immediately with the cached digest content
+    And no POST request is sent to /whats-different/generate
+
+#### Scenario: Regenerate Button Inside Modal Triggers Fresh Generation
+
+    Given the What's Different modal is open with cached content
+    When the User clicks the "Regenerate" button
+    Then a POST request is sent to /whats-different/generate
+    And the modal shows the animated "Generating" ellipsis state
+    And after generation completes the modal displays the fresh content
+
+#### Scenario: Animated Ellipsis During Generation
+
+    Given the CDD dashboard is open
+    And an active session exists with BEHIND sync state
+    And no cached digest exists
+    When the User clicks the "What's Different?" button
+    Then the modal shows "Generating" text with dots cycling through . / .. / ... at ~500ms intervals
+    And the text color is var(--purlin-muted)
+
+#### Scenario: Timestamp Shows Local Time With AM/PM and Timezone
+
+    Given the What's Different modal is open with generated content
+    When the User views the generation timestamp
+    Then the "Generated:" label is bold (font-weight 700)
+    And the timestamp is displayed in local timezone with AM/PM format (e.g., "Feb 26, 2026 3:45 PM EST")
+
+#### Scenario: Summarize Impact Button Placement Above What's Different
+
+    Given the CDD dashboard is open
+    And an active session exists with BEHIND sync state
+    When the User views the active session panel
+    Then a "Summarize Impact" button is visible above the "What's Different?" button
+    And the button follows the same visibility rules as "What's Different?"
+
+#### Scenario: Impact Summary Content Appears Above File-Level Digest in Modal
+
+    Given the What's Different modal is open
+    And a cached deep analysis exists at features/digests/whats-different-analysis.md
+    When the User views the modal content
+    Then the "Impact Summary" section appears above the file-level digest
+    And the "Impact Summary" header is in var(--purlin-accent), bold
+    And a horizontal rule separates the impact summary from the file-level content
+    And the impact summary has its own "Generated:" timestamp and "Regenerate" button
+
+#### Scenario: End-to-End Deep Analysis Generation via Dashboard
+
+    Given the CDD dashboard is open
     And an active session exists in BEHIND state
-    When the agent runs /pl-whats-different
-    Then the generated digest is displayed inline
-    And features/digests/whats-different.md is written to disk
+    When the User clicks the "Summarize Impact" button
+    Then the button text changes to "Summarizing" with animated ellipsis
+    And the button is disabled during generation
+    And after generation completes the button reverts to "Summarize Impact"
+    And "Last generated: just now" appears below the button
 
 #### Scenario: Auto-Generation After pl-collab-pull Merge
 
@@ -341,6 +520,9 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 - **Reference:** N/A
 - **Processed:** N/A
 - **Description:** The "What's Different?" button is rendered within the active session panel of the REMOTE COLLABORATION section, below the sync state row. The button uses standard dashboard button styling with `var(--font-body)` Inter 500 14px text. When a cached digest exists, a "Last generated: `<timestamp>`" line appears below the button in `var(--purlin-muted)` Inter 400 12px. The button is hidden when sync state is SAME or when no active session exists.
+- [ ] "Summarize Impact" button visible above "What's Different?" button (same visibility rules)
+- [ ] "Last generated" timestamp below "Summarize Impact" when cached analysis exists
+- [ ] "Summarize Impact" button text changes to animated "Summarizing." / "Summarizing.." / "Summarizing..." during generation
 - [ ] Button visible in active session panel when sync state is AHEAD, BEHIND, or DIVERGED
 - [ ] Button hidden when sync state is SAME
 - [ ] Button absent when no active session
@@ -355,8 +537,15 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 - [ ] Modal max-width 700px, max-height 80vh, scrollable body
 - [ ] Modal overlay and container match existing CDD modal pattern
 - [ ] Title "What's Different?" in modal header
-- [ ] Generation date displayed prominently below title in `var(--purlin-muted)`
-- [ ] "Generating..." state shown while generation is in progress
+- [ ] "Generated:" label bold (font-weight 700)
+- [ ] Timestamp in local timezone with AM/PM (e.g., "Feb 26, 2026 3:45 PM EST")
+- [ ] "Generating" shows animated cycling ellipsis (`.` / `..` / `...`) at ~500ms
+- [ ] "Regenerate" button on same line as timestamp, right-aligned
+- [ ] Clicking button with cached digest opens modal immediately (no regeneration)
+- [ ] Impact summary section above file-level content when present
+- [ ] "Impact Summary" header in `var(--purlin-accent)`, bold
+- [ ] Horizontal rule between impact summary and file-level content
+- [ ] Impact summary has own "Generated:" timestamp and "Regenerate" button
 - [ ] Change tags bar: flex-wrap row of pill badges below title and date
 - [ ] Tags use `var(--purlin-tag-fill)` background and `var(--purlin-tag-outline)` border
 - [ ] `[N Specs]` tag text color: `var(--purlin-accent)`
