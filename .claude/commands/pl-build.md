@@ -8,6 +8,8 @@ If an argument was provided, implement the named feature from `features/<arg>.md
 
 If no argument was provided, read `CRITIC_REPORT.md`, identify the highest-priority Builder action item, and begin implementing it. Check `features/tombstones/` first and process any pending tombstones before regular feature work.
 
+If a delivery plan exists at `.purlin/cache/delivery_plan.md`, read `instructions/references/phased_delivery.md` for the full phased delivery protocol.
+
 Follow the full per-feature implementation protocol from `instructions/BUILDER_BASE.md` Section 5:
 
 - Pre-flight: read anchor nodes and implementation notes

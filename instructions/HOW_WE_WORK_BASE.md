@@ -242,109 +242,18 @@ In short: Builder `DONE` implies automated tests passed. QA `CLEAN` vs `N/A` sig
 
 ## 9. Visual Specification Convention
 
-### 9.1 Purpose
-Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
+Feature files MAY contain a `## Visual Specification` section for features with visual/UI
+components. This section uses per-screen checklists (not Gherkin) with design anchor
+references. It is Architect-owned and exempt from Gherkin traceability. The Critic detects
+visual spec sections and generates QA action items for visual verification.
 
-### 9.2 Section Format
-The section is placed before `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
-
-```markdown
-## Visual Specification
-
-> **Design Anchor:** features/<project_design_anchor>.md
-> **Inheritance:** Colors, typography, and theme switching per anchor.
-
-### Screen: <Screen Name>
-- **Reference:** `features/design/<stem>/<file>` | [Figma](<url>) | [Live](<url>) | N/A
-- **Processed:** YYYY-MM-DD | N/A
-- **Description:** <Structured prose description of the visual design, mapped to the anchor's token system>
-- [ ] <Visual acceptance criterion 1>
-- [ ] <Visual acceptance criterion 2>
-```
-
-**Reference types:** local file path (to a stored design artifact), Figma URL, live web page URL (`[Live](<url>)`), or `N/A` when no reference exists.
-
-**Key properties:**
-*   **Optional** -- only present when the feature has a visual/UI component.
-*   **Per-screen subsections** -- one feature can have multiple screens, each as a `### Screen:` subsection.
-*   **Design anchor declaration** -- the `> **Design Anchor:**` blockquote establishes which `design_*.md` anchor governs visual properties (colors, fonts, theme behavior) for this feature.
-*   **Design asset references** -- local artifact paths, Figma URLs, live web page URLs, or "N/A" when no reference exists.
-*   **Processed date** -- records when the artifact was last converted to a structured markdown description. Used by the Critic for staleness detection.
-*   **Structured description** -- the working document that agents use. Derived from the referenced artifact and mapped to the project's design token system.
-*   **Checklist format** -- not Gherkin. Subjective visual checks are better as checkboxes than Given/When/Then.
-*   **Separate from functional scenarios** -- QA can batch all visual checks across features instead of interleaving with functional verification.
-
-### 9.3 Ownership and Traceability
-*   The `## Visual Specification` section is **Architect-owned** (like the rest of the spec). QA does NOT modify it.
-*   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
-*   The Critic detects visual spec sections and generates separate QA action items for visual verification.
-
-### 9.4 Design Asset Storage
-*   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).
-*   Local file paths are relative to the project root.
-*   There is no mandatory storage location -- projects choose what fits their workflow.
-
-### 9.5 Verification Methods
-Visual checklist items are verified by the QA Agent during the visual verification pass (QA_BASE Section 5.4). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.
-
-### 9.6 Visual vs Functional Classification
-When a feature has UI components, the Architect MUST classify each acceptance criterion:
-
-*   **Visual Specification** (checklist item): Verifiable from a static screenshot -- layout, colors, typography, element presence/absence, spacing. No interaction required.
-*   **Manual Scenario** (Gherkin): Requires user interaction (clicks, hovers, typing), temporal observation (waiting for refresh/animation), or multi-step functional verification (start server, trigger action, observe result).
-
-The goal is to **minimize Manual Scenarios** by moving all static visual checks to the Visual Specification section. Manual Scenarios should only test behavior that cannot be verified from a screenshot.
-
-### 9.7 Design Artifact Pipeline
-Design artifacts (images, PDFs, Figma exports, live web page captures) are stored within the `features/` directory tree using a structured convention:
-
-*   **Per-feature storage:** `features/design/<feature_stem>/` where `<feature_stem>` is the feature filename without `.md`.
-*   **Shared storage:** `features/design/_shared/` for cross-feature design standards (brand guides, global style references).
-*   **Naming:** `features/design/<feature_stem>/<descriptive-name>.<ext>` -- lowercase, hyphen-separated.
-
-**Processing mandate:** Every referenced artifact MUST have a corresponding `- **Description:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the markdown description is the working document agents use. The `/pl-design-ingest` command automates this processing workflow.
-
-**Supported input types:** Local images (PNG, JPG, SVG), local PDFs, Figma public URLs, Figma exports (stored locally), Figma design token exports (`.tokens.css`, `.tokens.json`), and live web page URLs (`[Live](<url>)`).
-
-### 9.8 Design Inheritance
-Visual Specifications operate under an inheritance model:
-
-*   **Anchor provides:** Colors, fonts, spacing scale, theme behavior -- all visual properties defined in the project's `design_*.md` anchor(s).
-*   **Feature provides:** Layout, structure, component arrangement, screen-specific elements -- extracted from the design artifact.
-*   **Processing rule:** When converting an artifact to a description, the Architect maps observed visuals to the project's design token system. A blue rectangle in a wireframe becomes "a button styled per the project's accent color token" -- not a literal blue color.
-
-**Design-system agnosticism:** The pipeline does not prescribe any specific design token format. The project's `design_*.md` anchor defines the token system (CSS custom properties, SCSS variables, Tailwind classes, SwiftUI color assets, Android XML resources, etc.). The `/pl-design-ingest` command dynamically reads whatever `design_*.md` anchors exist at runtime.
-
-**Conflict resolution:** The anchor always wins for visual properties. To deviate from anchor standards, update the anchor first (which triggers cascading resets to all dependent features via the dependency graph).
+For the full convention (format, inheritance, design pipeline, verification methods), see
+`instructions/references/visual_spec_convention.md`.
 
 ## 10. Phased Delivery Protocol
 
-### 10.1 Purpose
-When the Architect introduces large-scale changes (multiple new feature files, major revisions across existing features), the Builder may need to split work across multiple sessions to manage context window limits and ensure quality. The Phased Delivery Protocol provides a persistent coordination artifact that lets the Builder propose splitting work into numbered phases, each producing a testable state. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete.
-
-### 10.2 The Delivery Plan Artifact
-*   **Path:** `.purlin/cache/delivery_plan.md`
-*   **Created by:** Builder, when user approves phased delivery.
-*   **Committed to git:** Yes (all agents read it across sessions).
-*   **Deleted by:** Builder, when the final phase completes.
-*   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. Exactly one phase may be IN_PROGRESS at a time. COMPLETE phases are immutable historical record.
-*   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
-
-### 10.3 Cross-Session Resumption
-Each phase MUST be a separate Builder session. The Builder MUST NOT auto-advance to the next PENDING phase after completing the current one — it halts and waits for the user to relaunch.
-
-When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
-
-**Scope Reset on Plan Completion:** When the Builder completes the final phase and deletes the delivery plan, the Builder MUST reset the `change_scope` to `full` for every feature that participated in the plan and still has `builder: "TODO"` status. Targeted scopes are artifacts of the phased delivery — once the plan is gone, any remaining unbuilt work must be visible under a full scope. This prevents scenarios from becoming invisible to future Builder sessions after the delivery plan context is deleted.
-
-### 10.4 QA Interaction
-The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
-
-### 10.5 Phasing is Optional
-Phased delivery is never automatic. The Builder proposes phasing based on scope assessment heuristics, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
-
-### 10.6 Architect Awareness
-If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
-
-### 10.7 CDD Dashboard Integration
-When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays the current phase progress as an inline annotation: `ACTIVE (<count>) [PHASE (<current>/<total>)]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with `current` and `total` values. When all phases are COMPLETE or no delivery plan exists, the phase annotation and API field are omitted.
+Large-scope changes may be split into numbered delivery phases. The delivery plan artifact
+lives at `.purlin/cache/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it
+appears in any PENDING phase of the delivery plan. For the full protocol (format, cross-session
+resumption, QA interaction, Architect awareness), see
+`instructions/references/phased_delivery.md`.

@@ -4,6 +4,8 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
+Read `instructions/references/visual_spec_convention.md` before auditing.
+
 Audit all design artifacts and visual specifications across the project for integrity, staleness, and anchor consistency.
 
 **Workflow:**

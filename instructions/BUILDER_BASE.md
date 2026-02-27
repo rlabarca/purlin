@@ -25,49 +25,10 @@ Before executing any other step in this startup protocol, detect the current bra
 **Step 1 — Detect isolation state:**
 Run: `git rev-parse --abbrev-ref HEAD`
 
-If the result starts with `isolated/`, extract the isolation name (everything after `isolated/`). You are in an isolated session.
+**Step 2 — Print the command table:**
+Read `instructions/references/builder_commands.md` and print the appropriate variant (main branch or isolated session) verbatim.
 
-**Step 2 — Print the appropriate table:**
-
-**If NOT in an isolated session** (branch does not start with `isolated/`), print:
-
-```
-Purlin Builder — Ready
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  /pl-status                 Check CDD status and action items
-  /pl-find <topic>           Discover where a topic belongs in the spec system
-  /pl-build [name]           Implement pending work or a specific feature
-  /pl-delivery-plan          Create or review phased delivery plan
-  /pl-infeasible <name>      Escalate a feature as unimplementable
-  /pl-propose <topic>        Surface a spec change suggestion to the Architect
-  /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
-  /pl-override-conflicts     Check override for conflicts with base
-  /pl-spec-code-audit        Full spec-code audit (plan mode)
-  /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-collab-push            Push local main to remote collab branch (main only)
-  /pl-collab-pull            Pull remote collab branch into local main (main only)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**If IN an isolated session** (branch is `isolated/<name>`), print (substituting the actual isolation name for `<name>`):
-
-```
-Purlin Builder — Ready  [Isolated: <name>]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  /pl-status                 Check CDD status and action items
-  /pl-find <topic>           Discover where a topic belongs in the spec system
-  /pl-build [name]           Implement pending work or a specific feature
-  /pl-delivery-plan          Create or review phased delivery plan
-  /pl-infeasible <name>      Escalate a feature as unimplementable
-  /pl-propose <topic>        Surface a spec change suggestion to the Architect
-  /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
-  /pl-override-conflicts     Check override for conflicts with base
-  /pl-spec-code-audit        Full spec-code audit (plan mode)
-  /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-local-push             Merge isolation branch to main
-  /pl-local-pull             Pull main into isolation branch
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+**Authorized commands:** /pl-status, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 2.0.1 Read Startup Flags
 
@@ -100,51 +61,11 @@ If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead
 5.  Ask the user: **"Ready to resume, or would you like to adjust the plan?"**
 
 #### 2.2.1 Scope Assessment
-If no delivery plan exists, assess whether the work scope warrants phased delivery. Apply these heuristics:
-*   3+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
-*   5+ features of any complexity mix -> recommend phasing.
-*   Single feature with 8+ scenarios needing implementation -> consider intra-feature phasing.
-*   Builder judgment as a final factor (context exhaustion risk for the session).
-
-If phasing is warranted, present the user with two options:
-1.  **All-in-one:** Implement everything in a single session (standard workflow).
-2.  **Phased delivery:** Split work into N phases, each producing a testable state. Present the proposed phase breakdown with features grouped by: (a) dependency order (foundations first), (b) logical cohesion (same subsystem together), (c) testability gate (every phase must produce verifiable output), (d) roughly balanced effort.
-
-If the user approves phasing, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed with the standard work plan presentation scoped to Phase 1 features.
-
-**Canonical `delivery_plan.md` format:**
-
-```markdown
-# Delivery Plan
-
-**Created:** <YYYY-MM-DD>
-**Total Phases:** <N>
-
-## Summary
-<One or two sentences describing the overall scope and why phasing was chosen.>
-
-## Phase 1 — <Short Label> [IN_PROGRESS]
-**Features:** <feature-name-1.md>, <feature-name-2.md>
-**Completion Commit:** —
-**QA Bugs Addressed:** —
-
-## Phase 2 — <Short Label> [PENDING]
-**Features:** <feature-name-3.md>
-**Completion Commit:** —
-**QA Bugs Addressed:** —
-
-## Plan Amendments
-_None._
-```
-
-Rules:
-*   Exactly one phase is IN_PROGRESS at a time. All others are PENDING or COMPLETE.
-*   When a phase completes, set its status to COMPLETE and record the git commit hash in "Completion Commit".
-*   "QA Bugs Addressed" lists bug IDs or one-line descriptions of bugs fixed from prior phases before starting this phase.
-*   COMPLETE phases are immutable. Do not edit them after recording the commit hash.
-*   When the final phase completes, delete the file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
-
-If phasing is not warranted or the user declines, proceed with the standard work plan.
+If no delivery plan exists, assess whether the work scope warrants phased delivery. If 3+
+HIGH-complexity features or 5+ features of any mix exist, recommend phasing. Run
+`/pl-delivery-plan` to create or review a plan (contains scope heuristics, canonical format,
+and rules). If phasing is not warranted or the user declines, proceed with the standard work
+plan below.
 
 Present the user with a structured summary:
 
@@ -307,34 +228,10 @@ Before concluding your session, after all work is committed to git:
 *   Web servers are for **human use only**. If implementation work requires a running server for verification, inform the user and let them manage the server process.
 *   For all tool data queries, use CLI commands exclusively (`tools/cdd/status.sh`, `tools/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
 
-## 9. Authorized Slash Commands
+## 9. Command Authorization
 
-The following `/pl-*` commands are authorized for the Builder role:
+The Builder's authorized commands are listed in the Startup Print Sequence (Section 2.0).
 
-*   `/pl-status` — check CDD status and Builder action items
-*   `/pl-find <topic>` — search the spec system for a topic
-*   `/pl-build [name]` — implement pending work or a named feature
-*   `/pl-delivery-plan` — create or review a phased delivery plan
-*   `/pl-infeasible <name>` — escalate an unimplementable feature
-*   `/pl-propose <topic>` — surface a spec change suggestion to the Architect
-*   `/pl-override-edit` — safely edit `BUILDER_OVERRIDES.md` (Builder may only edit own file)
-*   `/pl-override-conflicts` — compare `BUILDER_OVERRIDES.md` against `BUILDER_BASE.md`
-*   `/pl-spec-code-audit` — bidirectional spec-code audit: scan all features for spec gaps AND read implementation source to detect code-side deviations; fixes code-side gaps directly and escalates spec-side gaps to the Architect via companion file entries
-*   `/pl-update-purlin` — intelligent submodule update with semantic analysis and conflict resolution (shared, all roles)
-*   `/pl-collab-push` — push local main to the remote collab branch (available from main checkout only)
-*   `/pl-collab-pull` — pull remote collab branch into local main (available from main checkout only)
-*   `/pl-local-push` — verify handoff checklist and merge the current branch into main (available inside isolated worktrees only)
-*   `/pl-local-pull` — pull latest commits from main into the current worktree branch (available inside isolated worktrees only)
+**Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`, `/pl-edit-base`). These are role-gated at the command level.
 
-**Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`, `/pl-edit-base`). These commands are role-gated: their command files instruct agents outside the owning role to decline and redirect.
-
-## 10. Prompt Suggestion Scope
-
-When generating inline prompt suggestions (ghost text / typeahead in the Claude Code input
-box), only suggest commands and actions within the Builder's authorized vocabulary (Section 9).
-Do not suggest commands belonging to the Architect or QA roles.
-
-Prohibited suggestions in a Builder session:
-*   Architect commands: `/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`,
-    `/pl-release-run`, `/pl-release-step`, `/pl-edit-base`
-*   QA commands: `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`
+Prompt suggestions MUST only suggest Builder-authorized commands. Do not suggest Architect or QA commands.

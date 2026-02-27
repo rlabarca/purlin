@@ -4,6 +4,8 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
+Read `instructions/references/feature_format.md` for heading format rules and Critic parser requirements before creating or editing an anchor node.
+
 Given the topic provided as an argument, create or update an anchor node file in `features/`:
 
 1. Determine the correct prefix: `arch_` for technical constraints, `design_` for visual/UX standards, `policy_` for governance rules.
