@@ -1447,25 +1447,50 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
         f'</div>'
     )
 
-    # Row 3: "What's Different?" button (visible when sync state is not SAME)
+    # Row 3+4: "Summarize Impact" and "What's Different?" buttons
+    # (visible when sync state is not SAME)
     if sync_state and sync_state not in ('SAME', 'NO_MAIN', None):
-        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
-                                   'whats-different.md')
-        digest_ts = ''
-        if os.path.exists(digest_path):
+        # Compute relative timestamps for both cached files
+        def _relative_ts(path):
+            if not os.path.exists(path):
+                return ''
             try:
-                mtime = os.path.getmtime(digest_path)
+                mtime = os.path.getmtime(path)
                 dt = datetime.fromtimestamp(mtime, tz=timezone.utc)
                 delta = (datetime.now(timezone.utc) - dt).total_seconds()
                 if delta < 60:
-                    digest_ts = 'just now'
+                    return 'just now'
                 elif delta < 3600:
-                    digest_ts = f'{int(delta // 60)} min ago'
+                    return f'{int(delta // 60)} min ago'
                 else:
-                    digest_ts = f'{int(delta // 3600)}h ago'
+                    return f'{int(delta // 3600)}h ago'
             except (OSError, ValueError):
-                pass
+                return ''
 
+        analysis_ts = _relative_ts(os.path.join(
+            PROJECT_ROOT, 'features', 'digests',
+            'whats-different-analysis.md'))
+        digest_ts = _relative_ts(os.path.join(
+            PROJECT_ROOT, 'features', 'digests',
+            'whats-different.md'))
+
+        # Summarize Impact button (above What's Different)
+        html += (
+            '<div style="display:flex;align-items:center;gap:8px;'
+            'margin-bottom:4px">'
+            '<button class="btn-critic" onclick="summarizeImpact(this)"'
+            ' id="btn-summarize-impact"'
+            ' style="font-size:10px;padding:2px 8px">'
+            'Summarize Impact</button>'
+        )
+        if analysis_ts:
+            html += (
+                f'<span style="color:var(--purlin-muted);font-size:10px">'
+                f'Last generated: {analysis_ts}</span>'
+            )
+        html += '</div>'
+
+        # What's Different button
         html += (
             '<div style="display:flex;align-items:center;gap:8px;'
             'margin-bottom:8px">'
@@ -2240,8 +2265,18 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <h2 id="wd-modal-title" style="font-size:13px;color:var(--purlin-primary);margin:0">What's Different?</h2>
       <button class="modal-close" onclick="closeWdModal()" title="Close">X</button>
     </div>
-    <div id="wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px"></div>
+    <div id="wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px;display:flex;align-items:center;gap:8px"></div>
     <div id="wd-modal-tags" style="padding:6px 14px 0;display:flex;flex-wrap:wrap;gap:6px"></div>
+    <div id="wd-impact-section" style="display:none;padding:0 14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <span style="color:var(--purlin-accent);font-weight:700;font-size:12px">Impact Summary</span>
+        <span id="wd-impact-date" style="color:var(--purlin-muted);font-size:10px"></span>
+        <button class="btn-critic" onclick="regenerateDeepAnalysis()" id="btn-regen-impact"
+         style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>
+      </div>
+      <div class="modal-body" id="wd-impact-body" style="padding:4px 0"></div>
+      <hr style="border:none;border-top:1px solid var(--purlin-border);margin:8px 0">
+    </div>
     <div class="modal-body" id="wd-modal-body"></div>
   </div>
 </div>
@@ -3102,84 +3137,243 @@ document.addEventListener('keydown', function(e) {{
 // What's Different Modal
 // ============================
 var wdPending = false;
+var wdEllipsisTimer = null;
+
+function formatISOToLocal(isoStr) {{
+  if (!isoStr) return '';
+  try {{
+    var d = new Date(isoStr);
+    return new Intl.DateTimeFormat(undefined, {{
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      hour12: true, timeZoneName: 'short'
+    }}).format(d);
+  }} catch(e) {{ return isoStr; }}
+}}
+
+function startEllipsis(el) {{
+  var dots = 0;
+  el.textContent = 'Generating';
+  if (wdEllipsisTimer) clearInterval(wdEllipsisTimer);
+  wdEllipsisTimer = setInterval(function() {{
+    dots = (dots + 1) % 4;
+    el.textContent = 'Generating' + '.'.repeat(dots || 1);
+  }}, 500);
+}}
+
+function stopEllipsis() {{
+  if (wdEllipsisTimer) {{ clearInterval(wdEllipsisTimer); wdEllipsisTimer = null; }}
+}}
+
+function buildTagsHtml(tags) {{
+  var tagConfig = [
+    {{ key: 'specs', label: 'Specs', color: 'var(--purlin-accent)' }},
+    {{ key: 'anchors', label: 'Anchor', color: 'var(--purlin-status-warning)' }},
+    {{ key: 'visual', label: 'Visual', color: 'var(--purlin-status-good)' }},
+    {{ key: 'code', label: 'Code', color: 'var(--purlin-primary)' }},
+    {{ key: 'tests', label: 'Tests', color: 'var(--purlin-muted)' }},
+    {{ key: 'purlin', label: 'Purlin', color: 'var(--purlin-status-todo)' }},
+    {{ key: 'discoveries', label: 'Discovery', color: 'var(--purlin-status-error)' }}
+  ];
+  var html = '';
+  tagConfig.forEach(function(tc) {{
+    var count = (tags || {{}})[tc.key] || 0;
+    if (count > 0) {{
+      html += '<span style="display:inline-block;padding:2px 8px;' +
+        'background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);' +
+        'border-radius:10px;font-family:var(--font-body);font-weight:700;font-size:12px;' +
+        'color:' + tc.color + '">' + count + ' ' + tc.label + '</span>';
+    }}
+  }});
+  return html;
+}}
+
+function renderDigestBody(md) {{
+  var rendered = marked.parse(md || '');
+  rendered = rendered.replace(
+    /(<h[23][^>]*>)(.*?Spec Changes.*?)(<\/h[23]>)/gi,
+    '$1<span style="color:var(--purlin-accent)">$2</span>$3'
+  );
+  rendered = rendered.replace(
+    /(<h[23][^>]*>)(.*?Code Changes.*?)(<\/h[23]>)/gi,
+    '$1<span style="color:var(--purlin-status-good)">$2</span>$3'
+  );
+  rendered = rendered.replace(
+    /(<h[23][^>]*>)(.*?Purlin Changes.*?)(<\/h[23]>)/gi,
+    '$1<span style="color:var(--purlin-status-todo)">$2</span>$3'
+  );
+  return rendered;
+}}
+
+function showWdDate(dateEl, isoStr, showRegen) {{
+  var localTime = formatISOToLocal(isoStr);
+  dateEl.innerHTML = '<span style="font-weight:700">Generated:</span> ' + localTime;
+  if (showRegen) {{
+    dateEl.innerHTML += ' <button class="btn-critic" onclick="regenerateWhatsDifferent()"'
+      + ' style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>';
+  }}
+}}
+
+function populateWdModal(data) {{
+  var body = document.getElementById('wd-modal-body');
+  var dateEl = document.getElementById('wd-modal-date');
+  var tagsEl = document.getElementById('wd-modal-tags');
+
+  showWdDate(dateEl, data.generated_at, true);
+  tagsEl.innerHTML = buildTagsHtml(data.tags);
+  body.innerHTML = renderDigestBody(data.digest);
+
+  // Show impact summary if available
+  loadImpactSummary();
+}}
+
+function loadImpactSummary() {{
+  var section = document.getElementById('wd-impact-section');
+  fetch('/whats-different/deep-analysis/read')
+    .then(function(r) {{ if (!r.ok) throw new Error('none'); return r.json(); }})
+    .then(function(data) {{
+      document.getElementById('wd-impact-date').innerHTML =
+        '<span style="font-weight:700">Generated:</span> ' + formatISOToLocal(data.generated_at);
+      document.getElementById('wd-impact-body').innerHTML = marked.parse(data.analysis || '');
+      section.style.display = '';
+    }})
+    .catch(function() {{ section.style.display = 'none'; }});
+}}
 
 function generateWhatsDifferent() {{
   if (wdPending) return;
-  wdPending = true;
 
   var overlay = document.getElementById('wd-modal-overlay');
   var body = document.getElementById('wd-modal-body');
   var dateEl = document.getElementById('wd-modal-date');
   var tagsEl = document.getElementById('wd-modal-tags');
 
-  body.innerHTML = '<p style="color:var(--purlin-muted)">Generating...</p>';
-  dateEl.textContent = '';
-  tagsEl.innerHTML = '';
+  // Try cached read first
   overlay.classList.add('visible');
+  body.innerHTML = '<p style="color:var(--purlin-muted)" id="wd-ellipsis">Loading</p>';
+  dateEl.innerHTML = '';
+  tagsEl.innerHTML = '';
+
+  fetch('/whats-different/read')
+    .then(function(r) {{
+      if (r.ok) return r.json();
+      throw new Error('no-cache');
+    }})
+    .then(function(data) {{
+      populateWdModal(data);
+    }})
+    .catch(function() {{
+      // No cache — generate fresh
+      var el = document.getElementById('wd-ellipsis');
+      if (el) startEllipsis(el);
+      wdPending = true;
+      fetch('/whats-different/generate', {{ method: 'POST' }})
+        .then(function(r) {{ return r.json(); }})
+        .then(function(data) {{
+          stopEllipsis();
+          if (data.error) {{
+            body.innerHTML = '<p style="color:var(--purlin-status-error)">' + data.error + '</p>';
+            return;
+          }}
+          populateWdModal(data);
+        }})
+        .catch(function(err) {{
+          stopEllipsis();
+          body.innerHTML = '<p style="color:var(--purlin-status-error)">Generation failed: ' + err.message + '</p>';
+        }})
+        .finally(function() {{ wdPending = false; }});
+    }});
+}}
+
+function regenerateWhatsDifferent() {{
+  if (wdPending) return;
+  wdPending = true;
+  var body = document.getElementById('wd-modal-body');
+  var dateEl = document.getElementById('wd-modal-date');
+  body.innerHTML = '<p style="color:var(--purlin-muted)" id="wd-ellipsis">Generating</p>';
+  startEllipsis(document.getElementById('wd-ellipsis'));
+  dateEl.innerHTML = '';
 
   fetch('/whats-different/generate', {{ method: 'POST' }})
     .then(function(r) {{ return r.json(); }})
     .then(function(data) {{
+      stopEllipsis();
       if (data.error) {{
         body.innerHTML = '<p style="color:var(--purlin-status-error)">' + data.error + '</p>';
         return;
       }}
-
-      // Show date
-      if (data.generated_at) {{
-        dateEl.textContent = 'Generated: ' + data.generated_at;
-      }}
-
-      // Build tags
-      var tags = data.tags || {{}};
-      var tagConfig = [
-        {{ key: 'specs', label: 'Specs', color: 'var(--purlin-accent)' }},
-        {{ key: 'anchors', label: 'Anchor', color: 'var(--purlin-status-warning)' }},
-        {{ key: 'visual', label: 'Visual', color: 'var(--purlin-status-good)' }},
-        {{ key: 'code', label: 'Code', color: 'var(--purlin-primary)' }},
-        {{ key: 'tests', label: 'Tests', color: 'var(--purlin-muted)' }},
-        {{ key: 'purlin', label: 'Purlin', color: 'var(--purlin-status-todo)' }},
-        {{ key: 'discoveries', label: 'Discovery', color: 'var(--purlin-status-error)' }}
-      ];
-      var tagHtml = '';
-      tagConfig.forEach(function(tc) {{
-        var count = tags[tc.key] || 0;
-        if (count > 0) {{
-          tagHtml += '<span style="display:inline-block;padding:2px 8px;' +
-            'background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);' +
-            'border-radius:10px;font-family:var(--font-body);font-weight:700;font-size:12px;' +
-            'color:' + tc.color + '">' + count + ' ' + tc.label + '</span>';
-        }}
-      }});
-      tagsEl.innerHTML = tagHtml;
-
-      // Render markdown body with colored section headers
-      var md = data.digest || '';
-      var rendered = marked.parse(md);
-      // Apply section header colors
-      rendered = rendered.replace(
-        /(<h[23][^>]*>)(.*?Spec Changes.*?)(<\/h[23]>)/gi,
-        '$1<span style="color:var(--purlin-accent)">$2</span>$3'
-      );
-      rendered = rendered.replace(
-        /(<h[23][^>]*>)(.*?Code Changes.*?)(<\/h[23]>)/gi,
-        '$1<span style="color:var(--purlin-status-good)">$2</span>$3'
-      );
-      rendered = rendered.replace(
-        /(<h[23][^>]*>)(.*?Purlin Changes.*?)(<\/h[23]>)/gi,
-        '$1<span style="color:var(--purlin-status-todo)">$2</span>$3'
-      );
-      body.innerHTML = rendered;
+      populateWdModal(data);
     }})
     .catch(function(err) {{
+      stopEllipsis();
       body.innerHTML = '<p style="color:var(--purlin-status-error)">Generation failed: ' + err.message + '</p>';
     }})
-    .finally(function() {{
-      wdPending = false;
+    .finally(function() {{ wdPending = false; }});
+}}
+
+function regenerateDeepAnalysis() {{
+  var btn = document.getElementById('btn-regen-impact');
+  var impactBody = document.getElementById('wd-impact-body');
+  var impactDate = document.getElementById('wd-impact-date');
+  btn.disabled = true;
+  btn.textContent = 'Regenerating';
+  impactBody.innerHTML = '<p style="color:var(--purlin-muted)">Regenerating</p>';
+
+  fetch('/whats-different/deep-analysis/generate', {{ method: 'POST' }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      if (data.error) {{
+        impactBody.innerHTML = '<p style="color:var(--purlin-status-error)">' + data.error + '</p>';
+        return;
+      }}
+      impactDate.innerHTML = '<span style="font-weight:700">Generated:</span> ' + formatISOToLocal(data.generated_at);
+      impactBody.innerHTML = marked.parse(data.analysis || '');
+      document.getElementById('wd-impact-section').style.display = '';
+    }})
+    .catch(function(err) {{
+      impactBody.innerHTML = '<p style="color:var(--purlin-status-error)">Failed: ' + err.message + '</p>';
+    }})
+    .finally(function() {{ btn.disabled = false; btn.textContent = 'Regenerate'; }});
+}}
+
+function summarizeImpact(btn) {{
+  if (btn.disabled) return;
+  btn.disabled = true;
+  var origText = btn.textContent;
+  var dots = 0;
+  var siTimer = setInterval(function() {{
+    dots = (dots + 1) % 4;
+    btn.textContent = 'Summarizing' + '.'.repeat(dots || 1);
+  }}, 500);
+  btn.textContent = 'Summarizing.';
+
+  fetch('/whats-different/deep-analysis/generate', {{ method: 'POST' }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      clearInterval(siTimer);
+      btn.disabled = false;
+      btn.textContent = origText;
+      if (data.error) return;
+      // Update "Last generated" next to button
+      var span = btn.nextElementSibling;
+      if (span && span.tagName === 'SPAN') {{
+        span.textContent = 'Last generated: just now';
+      }} else {{
+        var s = document.createElement('span');
+        s.style.cssText = 'color:var(--purlin-muted);font-size:10px';
+        s.textContent = 'Last generated: just now';
+        btn.parentNode.appendChild(s);
+      }}
+    }})
+    .catch(function() {{
+      clearInterval(siTimer);
+      btn.disabled = false;
+      btn.textContent = origText;
     }});
 }}
 
 function closeWdModal() {{
+  stopEllipsis();
   document.getElementById('wd-modal-overlay').classList.remove('visible');
 }}
 
@@ -4503,6 +4697,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_config_json()
         elif self.path == '/release-checklist':
             self._serve_release_checklist()
+        elif self.path == '/whats-different/read':
+            self._handle_whats_different_read()
+        elif self.path == '/whats-different/deep-analysis/read':
+            self._handle_deep_analysis_read()
         else:
             # Dashboard request: also regenerate internal file
             cache = build_status_commit_cache()
@@ -4632,6 +4830,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_remote_collab_delete()
         elif self.path == '/whats-different/generate':
             self._handle_whats_different_generate()
+        elif self.path == '/whats-different/deep-analysis/generate':
+            self._handle_deep_analysis_generate()
         else:
             self.send_response(404)
             self.end_headers()
@@ -5157,13 +5357,132 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Compute tags from the extraction data
         tags = _compute_digest_tags(active)
         generated_at = datetime.now(timezone.utc).strftime(
-            '%Y-%m-%d %H:%M UTC')
+            '%Y-%m-%dT%H:%M:%SZ')
 
         self._send_json(200, {
             'status': 'ok',
             'digest': digest_content,
             'generated_at': generated_at,
             'tags': tags,
+        })
+
+    def _handle_deep_analysis_generate(self):
+        """POST /whats-different/deep-analysis/generate — generate deep analysis."""
+        active = get_active_remote_session()
+        if not active:
+            self._send_json(400, {
+                'error': 'No active remote session. Use the CDD dashboard to '
+                         'start or join a remote collab session.'
+            })
+            return
+
+        gen_script = os.path.join(
+            PROJECT_ROOT,
+            CONFIG.get('tools_root', 'tools'),
+            'collab', 'generate_whats_different_deep.sh')
+
+        try:
+            result = subprocess.run(
+                ['bash', gen_script, active],
+                cwd=PROJECT_ROOT,
+                capture_output=True, text=True,
+                timeout=300,
+                env={**os.environ, 'PURLIN_PROJECT_ROOT': PROJECT_ROOT},
+            )
+        except subprocess.TimeoutExpired:
+            self._send_json(500, {'error': 'Deep analysis generation timed out'})
+            return
+        except OSError as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        if result.returncode != 0:
+            self._send_json(500, {
+                'error': result.stderr.strip() or 'Deep analysis generation failed'
+            })
+            return
+
+        analysis_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                     'whats-different-analysis.md')
+        try:
+            with open(analysis_path, 'r') as f:
+                analysis_content = f.read()
+        except (IOError, OSError):
+            analysis_content = result.stdout
+
+        generated_at = datetime.now(timezone.utc).strftime(
+            '%Y-%m-%dT%H:%M:%SZ')
+
+        self._send_json(200, {
+            'status': 'ok',
+            'analysis': analysis_content,
+            'generated_at': generated_at,
+        })
+
+    def _handle_whats_different_read(self):
+        """GET /whats-different/read — return cached digest if available."""
+        active = get_active_remote_session()
+        if not active:
+            self._send_json(400, {
+                'error': 'No active remote session. Use the CDD dashboard to '
+                         'start or join a remote collab session.'
+            })
+            return
+
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   'whats-different.md')
+        if not os.path.isfile(digest_path):
+            self._send_json(404, {'error': 'No cached digest available'})
+            return
+
+        try:
+            with open(digest_path, 'r') as f:
+                digest_content = f.read()
+            mtime = os.path.getmtime(digest_path)
+            generated_at = datetime.fromtimestamp(
+                mtime, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except (IOError, OSError) as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        tags = _compute_digest_tags(active)
+        self._send_json(200, {
+            'status': 'ok',
+            'digest': digest_content,
+            'generated_at': generated_at,
+            'tags': tags,
+        })
+
+    def _handle_deep_analysis_read(self):
+        """GET /whats-different/deep-analysis/read — return cached analysis."""
+        active = get_active_remote_session()
+        if not active:
+            self._send_json(400, {
+                'error': 'No active remote session. Use the CDD dashboard to '
+                         'start or join a remote collab session.'
+            })
+            return
+
+        analysis_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                     'whats-different-analysis.md')
+        if not os.path.isfile(analysis_path):
+            self._send_json(404, {'error': 'No cached analysis available'})
+            return
+
+        try:
+            with open(analysis_path, 'r') as f:
+                analysis_content = f.read()
+            mtime = os.path.getmtime(analysis_path)
+            generated_at = datetime.fromtimestamp(
+                mtime, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except (IOError, OSError) as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        self._send_json(200, {
+            'status': 'ok',
+            'analysis': analysis_content,
+            'generated_at': generated_at,
         })
 
     def log_message(self, format, *args):
