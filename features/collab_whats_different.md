@@ -195,19 +195,19 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 
 ### 2.14 Deep Semantic Analysis ("Summarize Impact")
 
-#### 2.14.1 Dashboard UI: "Summarize Impact" Button
+#### 2.14.1 Modal UI: "Summarize Impact" Button
 
-- The "Summarize Impact" button appears on its own row, ABOVE the "What's Different?" button.
-- Same visibility rules: active session exists AND sync state is not SAME.
+- The "Summarize Impact" button appears inside the What's Different? modal, above the digest content.
+- The button is visible whenever the modal is open and no cached analysis exists (when a cached analysis exists, the impact summary section replaces the button).
 - Same `btn-critic` styling as other dashboard action buttons.
-- When a cached analysis exists, "Last generated: `<relative time>`" is displayed below the button in `var(--purlin-muted)` 12px.
+- When a cached analysis exists, the impact summary section (Section 2.14.3) is shown instead of the button. The impact summary section includes its own "Regenerate" button to refresh the analysis.
 
 #### 2.14.2 Button Click Behavior
 
-- Clicking triggers `POST /whats-different/deep-analysis/generate`.
+- Clicking the "Summarize Impact" button (inside the modal) triggers `POST /whats-different/deep-analysis/generate`.
 - The button text changes to "Summarizing" with animated ellipsis (same `.` / `..` / `...` animation at ~500ms from Section 2.8).
 - The button is disabled during generation to prevent duplicate requests.
-- When generation completes: button reverts to "Summarize Impact", "Last generated: just now" appears below.
+- When generation completes: the button is replaced by the impact summary section (Section 2.14.3) with the generated content, its own "Generated:" timestamp, and a "Regenerate" button.
 
 #### 2.14.3 Modal Integration
 
@@ -583,13 +583,13 @@ The deep analysis is derived from the same extraction data as the standard diges
     Then the "Generated:" label is bold (font-weight 700)
     And the timestamp is displayed in local timezone with AM/PM format (e.g., "Feb 26, 2026 3:45 PM EST")
 
-#### Scenario: Summarize Impact Button Placement Above What's Different
+#### Scenario: Summarize Impact Button Placement Inside Modal
 
-    Given the CDD dashboard is open
-    And an active session exists with BEHIND sync state
-    When the User views the active session panel
-    Then a "Summarize Impact" button is visible above the "What's Different?" button
-    And the button follows the same visibility rules as "What's Different?"
+    Given the What's Different modal is open
+    And no cached deep analysis exists
+    When the User views the modal content
+    Then a "Summarize Impact" button is visible above the digest content
+    And the button uses btn-critic styling
 
 #### Scenario: Impact Summary Content Appears Above File-Level Digest in Modal
 
@@ -601,15 +601,15 @@ The deep analysis is derived from the same extraction data as the standard diges
     And a horizontal rule separates the impact summary from the file-level content
     And the impact summary has its own "Generated:" timestamp and "Regenerate" button
 
-#### Scenario: End-to-End Deep Analysis Generation via Dashboard
+#### Scenario: End-to-End Deep Analysis Generation via Modal
 
-    Given the CDD dashboard is open
-    And an active session exists in BEHIND state
-    When the User clicks the "Summarize Impact" button
+    Given the What's Different modal is open
+    And no cached deep analysis exists
+    When the User clicks the "Summarize Impact" button inside the modal
     Then the button text changes to "Summarizing" with animated ellipsis
     And the button is disabled during generation
-    And after generation completes the button reverts to "Summarize Impact"
-    And "Last generated: just now" appears below the button
+    And after generation completes the impact summary section replaces the button
+    And the impact summary shows a "Generated:" timestamp and "Regenerate" button
 
 #### Scenario: Auto-Generation After pl-collab-pull Merge
 
@@ -656,9 +656,6 @@ The deep analysis is derived from the same extraction data as the standard diges
 - **Reference:** N/A
 - **Processed:** N/A
 - **Description:** The "What's Different?" button is rendered within the active session panel of the REMOTE COLLABORATION section, below the sync state row. The button uses standard dashboard button styling with `var(--font-body)` Inter 500 14px text. When a cached digest exists, a "Last generated: `<timestamp>`" line appears below the button in `var(--purlin-muted)` Inter 400 12px. The button is hidden when sync state is SAME or when no active session exists.
-- [ ] "Summarize Impact" button visible above "What's Different?" button (same visibility rules)
-- [ ] "Last generated" timestamp below "Summarize Impact" when cached analysis exists
-- [ ] "Summarize Impact" button text changes to animated "Summarizing." / "Summarizing.." / "Summarizing..." during generation
 - [ ] Button visible in active session panel when sync state is AHEAD, BEHIND, or DIVERGED
 - [ ] Button hidden when sync state is SAME
 - [ ] Button absent when no active session
@@ -682,6 +679,9 @@ The deep analysis is derived from the same extraction data as the standard diges
 - [ ] "Impact Summary" header in `var(--purlin-accent)`, bold
 - [ ] Horizontal rule between impact summary and file-level content
 - [ ] Impact summary has own "Generated:" timestamp and "Regenerate" button
+- [ ] "Summarize Impact" button visible inside modal above digest content when no cached analysis exists
+- [ ] "Summarize Impact" button text changes to animated "Summarizing." / "Summarizing.." / "Summarizing..." during generation
+- [ ] After generation completes, impact summary section replaces the "Summarize Impact" button
 - [ ] Change tags bar: flex-wrap row of pill badges below title and date
 - [ ] Tags use `var(--purlin-tag-fill)` background and `var(--purlin-tag-outline)` border
 - [ ] `[N Specs]` tag text color: `var(--purlin-accent)`
