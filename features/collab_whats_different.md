@@ -137,15 +137,15 @@ Below the modal title and date, a row of highlighted tag boxes gives an instant 
 
 Tags appear only when their count is greater than 0. Each tag has a specific text color from the design token system:
 
-| Tag | Token (text color) | Rationale |
-|-----|-------------------|-----------|
-| `[N Specs]` | `--purlin-accent` | Source of truth -- most important in CDD |
-| `[N Anchor]` | `--purlin-status-warning` | Cascading impact -- anchor changes reset dependent features |
-| `[N Visual]` | `--purlin-status-good` | User-facing -- visible product improvements |
-| `[N Code]` | `--purlin-primary` | Core implementation -- neutral, expected work |
-| `[N Tests]` | `--purlin-muted` | Supporting verification -- important but secondary |
-| `[N Purlin]` | `--purlin-status-todo` | Framework/process shift -- affects agent behavior |
-| `[N Discovery]` | `--purlin-status-error` | Problems found -- BUG/DISPUTE/DRIFT needs attention |
+| Tag | Token (text color) | Section |
+|-----|-------------------|---------|
+| `[N Specs]` | `--purlin-accent` | Spec Changes |
+| `[N Anchor]` | `--purlin-accent` | Spec Changes |
+| `[N Visual]` | `--purlin-accent` | Spec Changes |
+| `[N Code]` | `--purlin-status-good` | Code Changes |
+| `[N Tests]` | `--purlin-status-good` | Code Changes |
+| `[N Purlin]` | `--purlin-status-todo` | Purlin Changes |
+| `[N Discovery]` | `--purlin-accent` | Spec Changes |
 
 "Purlin" covers both `.purlin/` directory changes (config, overrides, release config) and Purlin submodule updates -- framework shifts that affect how agents behave, not what the product does.
 
@@ -682,13 +682,13 @@ The deep analysis is derived from the same extraction data as the standard diges
 - [ ] After generation completes, impact summary section replaces the "Summarize Impact" button
 - [ ] Change tags bar: flex-wrap row of pill badges below title and date
 - [ ] Tags use `var(--purlin-tag-fill)` background and `var(--purlin-tag-outline)` border
-- [ ] `[N Specs]` tag text color: `var(--purlin-accent)`
-- [ ] `[N Anchor]` tag text color: `var(--purlin-status-warning)`
-- [ ] `[N Visual]` tag text color: `var(--purlin-status-good)`
-- [ ] `[N Code]` tag text color: `var(--purlin-primary)`
-- [ ] `[N Tests]` tag text color: `var(--purlin-muted)`
-- [ ] `[N Purlin]` tag text color: `var(--purlin-status-todo)`
-- [ ] `[N Discovery]` tag text color: `var(--purlin-status-error)`
+- [ ] `[N Specs]` tag text color: `var(--purlin-accent)` (Spec Changes)
+- [ ] `[N Anchor]` tag text color: `var(--purlin-accent)` (Spec Changes)
+- [ ] `[N Visual]` tag text color: `var(--purlin-accent)` (Spec Changes)
+- [ ] `[N Code]` tag text color: `var(--purlin-status-good)` (Code Changes)
+- [ ] `[N Tests]` tag text color: `var(--purlin-status-good)` (Code Changes)
+- [ ] `[N Purlin]` tag text color: `var(--purlin-status-todo)` (Purlin Changes)
+- [ ] `[N Discovery]` tag text color: `var(--purlin-accent)` (Spec Changes)
 - [ ] Tag text: Inter 700 (Bold) 12px
 - [ ] Tags only appear when count > 0
 - [ ] DIVERGED state: tags aggregate both directions
