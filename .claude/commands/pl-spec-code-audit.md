@@ -101,7 +101,9 @@ Write the following to the plan file:
 
 **Remediation Plan:**
 
-For each FIX item, describe the specific edit (which file, which section, what changes).
+For each FIX item, describe the specific edit scoped to the acting role's artifacts:
+- **Architect FIX edits** target feature specs (`features/*.md`) and anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) only — which section to add/revise, what scenario language to change, which prerequisite link to add.
+- **Builder FIX edits** target source code and tests only — which implementation file to modify, what logic to correct, which test to add or update.
 For each ESCALATE item, describe the companion file entry that will be written.
 
 If no gaps are found, write: "No spec-code gaps detected across all N features." and call `ExitPlanMode`.
