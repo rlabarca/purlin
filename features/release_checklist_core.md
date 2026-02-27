@@ -106,7 +106,7 @@ The following 6 steps are defined in `tools/release/global_steps.json`:
 - Friendly Name: "Purlin Verify Dependency Integrity"
 - Description: "Verifies that the dependency graph is acyclic and all prerequisite links are valid."
 - Code: null
-- Agent Instructions: "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links."
+- Agent Instructions: "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Then perform a reverse reference audit: for each feature that other features depend on, search the parent's body text for mentions of its children's filenames. Classify any matches as structural reversal (blocks release), example coupling (warning), or informational pointer (info). Report any cycles, broken links, or structural reversals."
 
 **`purlin.instruction_audit`**
 - Friendly Name: "Purlin Agent Instruction Audit"

@@ -25,7 +25,7 @@ For each `> Prerequisite:` link in the graph, the Architect confirms the referen
 
 ### 2.4 Pass Condition
 
-The graph is valid when: (1) no cycles are detected, and (2) all prerequisite links resolve. The Architect reports the total node count and confirms graph integrity before proceeding to the next step. No files are modified (regenerating the cache file is not a modification to spec state).
+The graph is valid when: (1) no cycles are detected, (2) all prerequisite links resolve, and (3) no structural reversals are detected in the reverse reference audit. The Architect reports the total node count and confirms graph integrity before proceeding to the next step. No files are modified (regenerating the cache file is not a modification to spec state).
 
 ### 2.5 Step Metadata
 
@@ -34,7 +34,19 @@ The graph is valid when: (1) no cycles are detected, and (2) all prerequisite li
 | ID | `purlin.verify_dependency_integrity` |
 | Friendly Name | `Purlin Verify Dependency Integrity` |
 | Code | null |
-| Agent Instructions | "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Report any cycles or broken links." |
+| Agent Instructions | "Read `.purlin/cache/dependency_graph.json`. Confirm the graph is acyclic and all prerequisite references resolve to existing feature files. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it. Then perform a reverse reference audit: for each feature that other features depend on, search the parent's body text for mentions of its children's filenames. Classify any matches as structural reversal (blocks release), example coupling (warning), or informational pointer (info). Report any cycles, broken links, or structural reversals." |
+
+### 2.6 Reverse Reference Audit
+
+The Architect performs a body-text scan of every parent node in the dependency graph. For each feature that is depended on by other features (i.e., appears as a target in at least one `> Prerequisite:` link), the Architect searches the parent's body text (excluding its own `> Prerequisite:` lines) for mentions of its children's filenames. Matches are classified:
+
+| Classification | Description | Blocks Release? |
+|---|---|---|
+| **Structural reversal** | Parent defines child's behavior as part of its own requirements (e.g., listing child as trigger point, describing child's runtime contract) | YES — the parent must not claim behavioral ownership over a child |
+| **Example coupling** | Parent hardcodes child filename in Gherkin scenarios or examples | WARNING — flagged for Architect awareness, does not block |
+| **Informational pointer** | Parent contains a "see also" reference to child documentation | INFO — no action required |
+
+The classification is a judgment call by the Architect. The audit reports all matches and the Architect assigns the classification.
 
 ## 3. Scenarios
 
@@ -66,3 +78,18 @@ Given a feature file declares a `> Prerequisite:` link to a file that does not e
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the specific broken link (source file and missing target path),
 And halts the release until the link is corrected.
+
+#### Scenario: Reverse reference audit detects structural reversal
+Given a parent feature that lists a child feature as one of its own trigger points or describes the child's runtime behavior,
+When the Architect executes the `purlin.verify_dependency_integrity` step,
+Then the Architect reports the structural reversal and halts the release.
+
+#### Scenario: Reverse reference audit detects example coupling
+Given a parent feature that uses a child's filename as a concrete example in Gherkin scenarios,
+When the Architect executes the `purlin.verify_dependency_integrity` step,
+Then the Architect reports it as a warning but does not halt the release.
+
+#### Scenario: Reverse reference audit finds no issues
+Given no parent feature body-references any of its children,
+When the Architect executes the `purlin.verify_dependency_integrity` step,
+Then the Architect reports "reverse reference audit: clean" and proceeds.

@@ -24,11 +24,10 @@ When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND,
 
 ### 2.2 Trigger Points
 
-The digest can be generated from three trigger points:
+The digest can be generated from two trigger points:
 
 1. **CDD dashboard:** A "What's Different?" button in the active session panel (Section 2.3 of `cdd_remote_collab.md`) triggers fresh generation.
-2. **Agent command:** `/pl-whats-different` -- see `features/pl_whats_different.md`.
-3. **Post-merge auto-generation:** After a successful merge in `/pl-collab-pull`, a new Step 7 auto-generates the digest.
+2. **Post-merge auto-generation:** After a successful merge in `/pl-collab-pull`, a new Step 7 auto-generates the digest.
 
 ### 2.3 Direction-Dependent Content Structure
 
@@ -104,7 +103,6 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 - The dashboard invokes Claude CLI in non-interactive mode (`--print`) via a shell script.
 - The shell script is the agent abstraction point -- swappable for other agents in the future.
 - The extraction tool produces structured JSON; the agent (Claude) synthesizes it into plain English.
-- The agent command (`/pl-whats-different`) runs the same shell script inline (see `features/pl_whats_different.md`).
 - The post-merge trigger in `/pl-collab-pull` Step 7 also runs the same script.
 
 ### 2.7 Dashboard UI: Button
