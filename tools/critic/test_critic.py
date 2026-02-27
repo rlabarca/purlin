@@ -568,6 +568,33 @@ class TestBuilderDecisionAudit(unittest.TestCase):
         result = check_builder_decisions('')
         self.assertEqual(result['status'], 'PASS')
 
+    def test_acknowledged_deviation_passes(self):
+        """Scenario: Acknowledged DEVIATION Does Not Generate Architect Action Item"""
+        notes = '**[DEVIATION]** Changed the protocol. Acknowledged.'
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['summary']['DEVIATION'], 1)
+        self.assertEqual(result['summary']['acknowledged']['DEVIATION'], 1)
+
+    def test_acknowledged_discovery_passes(self):
+        """Scenario: Acknowledged DISCOVERY Does Not Contribute to Implementation Gate FAIL"""
+        notes = '**[DISCOVERY]** Found unstated requirement. Acknowledged.'
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['summary']['DISCOVERY'], 1)
+        self.assertEqual(result['summary']['acknowledged']['DISCOVERY'], 1)
+
+    def test_mixed_acknowledged_and_unacknowledged(self):
+        """Scenario: Mixed Acknowledged and Unacknowledged Entries"""
+        notes = (
+            '**[DEVIATION]** Changed protocol A. Acknowledged.\n'
+            '**[DEVIATION]** Changed protocol B.'
+        )
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['summary']['DEVIATION'], 2)
+        self.assertEqual(result['summary']['acknowledged']['DEVIATION'], 1)
+
 
 class TestLogicDriftDisabled(unittest.TestCase):
     """Scenario: Logic Drift Engine Disabled"""
