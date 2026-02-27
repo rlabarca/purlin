@@ -218,6 +218,107 @@ def _parse_discoveries(commits, changed_files):
     return count
 
 
+# --- Decision extraction (Section 2.5) ---
+
+# Categories from Implementation Notes (companion files)
+_IMPL_DECISION_RE = re.compile(
+    r'\[(INFEASIBLE|DEVIATION|DISCOVERY)\]\s*(.*?)(?:\(Severity:|\s*$)',
+    re.IGNORECASE)
+
+# Categories from User Testing Discoveries (feature files)
+_UT_DECISION_RE = re.compile(
+    r'\[(BUG|INTENT_DRIFT|SPEC_DISPUTE|DISCOVERY)\]\s*(.*)',
+    re.IGNORECASE)
+
+# Routing rules per spec Section 2.5
+_DECISION_ROUTING = {
+    'INFEASIBLE': 'architect',
+    'DEVIATION': 'architect',
+    'INTENT_DRIFT': 'architect',
+    'SPEC_DISPUTE': 'architect',
+}
+# DISCOVERY routing depends on source; BUG defaults to builder
+
+
+def _extract_decisions_from_diff(range_spec, changed_files):
+    """Extract structured decision entries from diff content.
+
+    Scans added lines in the diff for decision tags in companion files
+    (Implementation Notes) and feature files (User Testing Discoveries).
+
+    Returns list of dicts: [{category, feature, summary, role}].
+    """
+    decisions = []
+    action_required_re = re.compile(
+        r'Action Required:\s*Architect', re.IGNORECASE)
+
+    # Identify relevant files
+    impl_files = [f['path'] for f in changed_files
+                  if f['path'].endswith('.impl.md')]
+    feature_files = [f['path'] for f in changed_files
+                     if f['path'].startswith('features/')
+                     and f['path'].endswith('.md')
+                     and not f['path'].endswith('.impl.md')]
+
+    # Process companion files for impl decisions
+    for fpath in impl_files:
+        diff_output = _run_git(
+            ['diff', range_spec, '--', fpath, '-U0'])
+        feature_stem = os.path.basename(fpath).replace('.impl.md', '.md')
+        for line in diff_output.splitlines():
+            if not line.startswith('+') or line.startswith('+++'):
+                continue
+            match = _IMPL_DECISION_RE.search(line)
+            if match:
+                category = match.group(1).upper()
+                summary = match.group(2).strip().rstrip('.')
+                if not summary:
+                    summary = f'{category} entry in {feature_stem}'
+                decisions.append({
+                    'category': f'[{category}]',
+                    'feature': feature_stem,
+                    'summary': summary,
+                    'role': _DECISION_ROUTING.get(category, 'architect'),
+                })
+
+    # Process feature files for user testing decisions
+    for fpath in feature_files:
+        diff_output = _run_git(
+            ['diff', range_spec, '--', fpath, '-U0'])
+        feature_name = os.path.basename(fpath)
+        # Track if we're in a BUG entry to check Action Required
+        current_bug_lines = []
+        for line in diff_output.splitlines():
+            if not line.startswith('+') or line.startswith('+++'):
+                continue
+            match = _UT_DECISION_RE.search(line)
+            if match:
+                category = match.group(1).upper()
+                summary = match.group(2).strip().rstrip('.')
+                if not summary:
+                    summary = f'{category} entry in {feature_name}'
+                if category == 'BUG':
+                    # Default to builder; check nearby lines for override
+                    role = 'builder'
+                elif category == 'DISCOVERY':
+                    # DISCOVERY in feature file = testing context -> architect
+                    role = 'architect'
+                else:
+                    role = _DECISION_ROUTING.get(category, 'architect')
+                decisions.append({
+                    'category': f'[{category}]',
+                    'feature': feature_name,
+                    'summary': summary,
+                    'role': role,
+                })
+            # Check for Action Required: Architect override on BUG entries
+            if (decisions and decisions[-1]['category'] == '[BUG]'
+                    and action_required_re.search(line)):
+                decisions[-1]['role'] = 'architect'
+
+    return decisions
+
+
 def _categorize_changes(changed_files):
     """Group changed files by category.
 
@@ -259,13 +360,15 @@ def extract_direction(range_spec):
         range_spec: git range like 'origin/collab/session..main' or
                     'main..origin/collab/session'
 
-    Returns dict with: commits, changed_files, categories, transitions, discovery_count.
+    Returns dict with: commits, changed_files, categories, transitions,
+    discovery_count, decisions.
     """
     commits = _get_commits(range_spec)
     changed_files = _get_changed_files(range_spec)
     categories = _categorize_changes(changed_files)
     transitions = _parse_lifecycle_transitions(commits)
     discovery_count = _parse_discoveries(commits, changed_files)
+    decisions = _extract_decisions_from_diff(range_spec, changed_files)
 
     return {
         'commits': commits,
@@ -273,6 +376,7 @@ def extract_direction(range_spec):
         'categories': categories,
         'transitions': transitions,
         'discovery_count': discovery_count,
+        'decisions': decisions,
     }
 
 
