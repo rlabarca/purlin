@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "test_files": [
+    "tests/pl_session_resume/test_command.py"
+  ],
+  "results": {
+    "test_command": {
+      "passed": 32,
+      "failed": 0,
+      "scenarios_covered": [
+        "Save Writes Checkpoint File",
+        "Restore With Checkpoint",
+        "Restore Without Checkpoint",
+        "Role From Explicit Argument",
+        "Invalid Argument Prints Error",
+        "Checkpoint Cleanup After Restore"
+      ]
+    }
+  },
+  "total_passed": 32,
+  "total_failed": 0,
+  "timestamp": "2026-02-28T15:40:00Z"
+}
