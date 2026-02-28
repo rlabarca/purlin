@@ -126,9 +126,13 @@ Before starting work on each feature from the approved plan:
 
 ### 2. Implement and Document (MANDATORY)
 *   Write the code and unit tests.
-*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST record it in the companion file (`features/<name>.impl.md`). You MUST NEVER write implementation notes directly into the feature `.md` file. If no companion file exists yet, create `features/<name>.impl.md` with title `# Implementation Notes: <Feature Name>`. Do not modify the feature file -- companion files are standalone and are not referenced from the feature spec. Commit the new companion file together with your implementation work.
+*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST record it in the companion file (`features/<name>.impl.md`) -- never in the feature `.md` file itself. If no companion file exists, create `features/<name>.impl.md` with title `# Implementation Notes: <Feature Name>`. Commit new companion files with your implementation work.
 *   **Anchor Node Escalation:** If a discovery affects a global constraint, you MUST update the relevant anchor node file (`arch_*.md`, `design_*.md`, or `policy_*.md`). This ensures the project's constraints remain accurate. Do NOT create separate log files.
-*   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's `## User Testing Discoveries` section, you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. This clears the Builder action item from the Critic and allows the CDD dashboard to show your column as `DONE` once the status commit is made. QA will re-verify and prune the entry during their verification pass.
+*   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's `## User Testing Discoveries` section, you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. QA will re-verify and prune the entry during their verification pass.
+*   **Self-Discovered Bug Documentation:** When you discover and fix a bug during implementation (not from an OPEN `[BUG]` in User Testing Discoveries):
+    *   **Bug reveals a spec gap** (missing scenario, uncovered edge case): Use `[DISCOVERY]` in the companion file per Section 2b. Fix the code now -- the `[DISCOVERY]` tag ensures the Architect adds scenario coverage.
+    *   **Spec was correct, code was simply wrong:** Record a brief untagged note in the companion file (e.g., "Off-by-one in pagination loop; fixed with `<` instead of `<=`"). No bracket tag -- tribal knowledge only.
+    *   **Bug in a different feature's scope:** Follow Cross-Feature Discovery Routing (Section 2b).
 *   **Commit Implementation Work:** Stage and commit all implementation code, tests, companion file updates, AND any feature file edits (discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
 
 ### 2b. Builder Decision Protocol (MANDATORY)
@@ -214,18 +218,14 @@ Before concluding your session, after all work is committed to git:
     *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Agentic Team Orchestration
-1.  **Orchestration Mandate:** You are encouraged to act as a "Lead Developer." When faced with a complex task, you SHOULD delegate sub-tasks to specialized sub-agents to ensure maximum accuracy and efficiency.
-2.  **Specialized Persona:** You may explicitly "spawn" internal personas for specific implementation stages (e.g., "The Critic" for review) to improve quality.
-3.  **Efficiency:** Use delegation to break down monolithic tasks into smaller, verifiable units.
+When faced with complex tasks, delegate sub-tasks to specialized sub-agents (including internal personas like "The Critic" for review). Break monolithic tasks into smaller, verifiable units.
 
 ## 8. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
 
 ### NO SERVER PROCESS MANAGEMENT
-*   **NEVER** start, stop, restart, or kill any server process (CDD Dashboard or any other service).
-*   **NEVER** run `kill`, `pkill`, or similar process management commands on servers.
-*   Web servers are for **human use only**. If implementation work requires a running server for verification, inform the user and let them manage the server process.
+*   **NEVER** start, stop, restart, or kill any server process (`kill`, `pkill`, etc.). Web servers are for human use only -- if verification requires a running server, inform the user.
 *   For all tool data queries, use CLI commands exclusively (`tools/cdd/status.sh`, `tools/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
 
 ## 9. Command Authorization
