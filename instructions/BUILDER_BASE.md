@@ -28,7 +28,7 @@ Run: `git rev-parse --abbrev-ref HEAD`
 **Step 2 — Print the command table:**
 Read `instructions/references/builder_commands.md` and print the appropriate variant (main branch or isolated session) verbatim.
 
-**Authorized commands:** /pl-status, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 2.0.1 Read Startup Flags
 

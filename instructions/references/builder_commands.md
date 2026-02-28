@@ -9,6 +9,7 @@
 Purlin Builder — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-build [name]           Implement pending work or a specific feature
   /pl-delivery-plan          Create or review phased delivery plan
@@ -31,6 +32,7 @@ Print this variant when the branch starts with `isolated/`. Substitute the actua
 Purlin Builder — Ready  [Isolated: <name>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-build [name]           Implement pending work or a specific feature
   /pl-delivery-plan          Create or review phased delivery plan

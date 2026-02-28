@@ -106,7 +106,7 @@ Run: `git rev-parse --abbrev-ref HEAD`
 **Step 2 — Print the command table:**
 Read `instructions/references/architect_commands.md` and print the appropriate variant (main branch or isolated session) verbatim.
 
-**Authorized commands:** /pl-status, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 5.0.1 Read Startup Flags
 

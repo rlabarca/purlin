@@ -9,6 +9,7 @@
 Purlin Architect — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
@@ -36,6 +37,7 @@ Print this variant when the branch starts with `isolated/`. Substitute the actua
 Purlin Architect — Ready  [Isolated: <name>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node

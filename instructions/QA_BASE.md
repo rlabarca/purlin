@@ -50,7 +50,7 @@ Run: `git rev-parse --abbrev-ref HEAD`
 **Step 2 — Print the command table:**
 Read `instructions/references/qa_commands.md` and print the appropriate variant (main branch or isolated session) verbatim. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 3.0.1 Read Startup Flags
 

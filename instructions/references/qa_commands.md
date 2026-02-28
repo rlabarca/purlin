@@ -11,6 +11,7 @@
 Purlin QA — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-verify <name>          Run interactive verification for a feature
   /pl-discovery <name>       Record a structured discovery
@@ -32,6 +33,7 @@ Print this variant when the branch starts with `isolated/`. Substitute the actua
 Purlin QA — Ready  [Isolated: <name>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-verify <name>          Run interactive verification for a feature
   /pl-discovery <name>       Record a structured discovery
