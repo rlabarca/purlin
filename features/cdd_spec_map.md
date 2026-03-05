@@ -276,3 +276,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Expected Behavior:** The search MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename. Matching nodes MUST remain at full color and opacity; non-matching nodes MUST be visibly dimmed so results stand out clearly. This is distinct from the Status view behavior (which hides non-matching rows) -- the Spec Map should dim rather than hide.
 - **Action Required:** Architect
 - **Status:** OPEN
+
+### [BUG] Non-anchor-node features rendered with green border (Discovered: 2026-03-04)
+- **Scenario:** Visual Specification checklist -- "Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (`--purlin-status-good`) in both themes"
+- **Observed Behavior:** `context_guard.md` and `spec_code_audit_role_clarity.md` are rendered with a green border in the Spec Map, despite not matching the `arch_*`, `design_*`, or `policy_*` filename convention. Both are regular feature files with `[TODO]` lifecycle status.
+- **Expected Behavior:** Only files whose names begin with `arch_`, `design_`, or `policy_` should receive the green border treatment. All other nodes should use the standard border color.
+- **Action Required:** Builder
+- **Status:** OPEN
