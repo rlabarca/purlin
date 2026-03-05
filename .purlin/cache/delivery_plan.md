@@ -1,24 +1,34 @@
 # Delivery Plan
 
 **Created:** 2026-03-04
-**Total Phases:** 3
+**Total Phases:** 5
 
 ## Summary
-11 collaboration-system features split into 3 phases by dependency order: foundations first, then agent skills, then dashboard UI. Phasing chosen due to 3 HIGH-complexity dashboard features and 4 new skill implementations exceeding scope thresholds.
+Seven features reset to TODO by Architect commit 963e7b6 (manual-to-automated scenario conversion). Most require new test coverage rather than new implementation code. Phased to respect the cdd_isolated_teams → cdd_remote_collab → collab_whats_different dependency chain and the HIGH complexity of cdd_remote_collab (27 scenarios, zero existing tests).
 
-## Phase 1 -- Foundations & Core Tooling [COMPLETE]
-**Features:** policy_collaboration.md, policy_remote_collab.md, isolated_teams.md, workflow_checklist_system.md
-**Completion Commit:** 98b0a22
+## Phase 1 -- Quick Wins [IN_PROGRESS]
+**Features:** critic_tool.md, spec_from_code.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Agent Skills [COMPLETE]
-**Features:** pl_local_pull.md, pl_local_push.md, pl_collab_pull.md, pl_collab_push.md
-**Completion Commit:** c51284e
+## Phase 2 -- Independent Features [PENDING]
+**Features:** pl_whats_different.md, release_push_to_remote.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Dashboard UI [COMPLETE]
-**Features:** cdd_isolated_teams.md, cdd_remote_collab.md, collab_whats_different.md
-**Completion Commit:** f11fba9
+## Phase 3 -- CDD Foundation [PENDING]
+**Features:** cdd_isolated_teams.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 4 -- CDD Remote [PENDING]
+**Features:** cdd_remote_collab.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 5 -- What's Different [PENDING]
+**Features:** collab_whats_different.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
