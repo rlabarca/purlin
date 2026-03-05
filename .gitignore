@@ -13,6 +13,7 @@ venv/
 # Purlin Runtime & Cache (generated artifacts outside tools/)
 .purlin/cache/
 .purlin/runtime/
+.purlin/config.local.json
 
 # Generated digests (per-machine, not committed)
 features/digests/

@@ -5,10 +5,11 @@
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/models_configuration.md
+> Prerequisite: features/config_layering.md
 
 
 ## 1. Overview
-The CDD Dashboard exposes agent model configuration (model, effort, permissions) via an interactive Agents section in the Status view, and provides API endpoints for persisting changes to `config.json`. This feature depends on the config schema defined in `features/models_configuration.md`.
+The CDD Dashboard exposes agent model configuration (model, effort, permissions) via an interactive Agents section in the Status view, and provides API endpoints for persisting changes to `config.local.json` (the gitignored local config). Reads use the config resolver (local config with shared fallback). This feature depends on the config schema defined in `features/models_configuration.md` and the config layering system defined in `features/config_layering.md`.
 
 
 ## 2. Requirements
@@ -40,10 +41,12 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 
 ### 2.2 Dashboard API Endpoints
 
-*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically (temp file + rename). Returns updated config on success, 400 on validation failure.
+*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
     *   **Completeness check:** The backend MUST reject any request that is missing one or more of the three expected roles (`architect`, `builder`, `qa`) with a 400 error: `"agents payload must include all three roles: architect, builder, qa"`. Partial saves that silently drop roles are not permitted.
-    *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
-    *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all three roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present — it MUST NOT send a partial payload.
+    *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object in `config.local.json` key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
+    *   **Worktree propagation:** When active worktrees exist, the endpoint MUST also propagate agent changes to `config.local.json` in each worktree's `.purlin/` directory.
+    *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all three roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present -- it MUST NOT send a partial payload.
+*   **`GET /config.json`:** Serves the resolved config (reads `config.local.json` if present, falls back to `config.json`) via the config resolver. This is transparent to the dashboard frontend.
 
 
 ## 3. Scenarios
@@ -55,7 +58,7 @@ None. All scenarios for this feature require the running CDD Dashboard server an
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
 #### Scenario: Agents Section Displays Current Config
-    Given the dashboard is loaded with valid config.json
+    Given the dashboard is loaded with valid config (resolved from local or shared)
     When the user expands the Agents section
     Then three rows are displayed for Architect, Builder, and QA
     And each row shows the configured model, effort, and YOLO state
@@ -69,7 +72,8 @@ These scenarios require the running CDD Dashboard server and human interaction t
 #### Scenario: Config Changes Persist via API
     Given the user changes the Builder model to "claude-opus-4-6"
     When the change is debounced and sent to POST /config/agents
-    Then config.json is updated with the new model for builder
+    Then config.local.json is updated with the new model for builder
+    And config.json (shared) is unchanged
     And relaunching the Builder uses the new model
 
 #### Scenario: Collapsed Badge Shows Uniform Model Summary
@@ -83,7 +87,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Then the badge displays "2x Sonnet 4.6 | 1x Opus 4.6"
 
 #### Scenario: Agents Section is Visually Separated from Workspace
-    Given the dashboard is loaded with valid config.json
+    Given the dashboard is loaded with valid config
     When the Status view is displayed
     Then the Agents section heading has a visible underline separator
     And the Agents section is visually distinct from the Workspace section above it

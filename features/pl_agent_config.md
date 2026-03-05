@@ -4,14 +4,17 @@
 > Category: "Agent Skills"
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_agent_configuration.md
+> Prerequisite: features/config_layering.md
 
 [TODO]
 
 ## 1. Overview
 
-The `/pl-agent-config` skill provides the ONLY sanctioned way for agents to modify `.purlin/config.json`. It enforces a critical routing invariant: when invoked from inside an isolated worktree, all changes are applied to the MAIN project config (not the worktree's ephemeral copy), and the user is shown an explicit warning before proceeding.
+The `/pl-agent-config` skill provides the ONLY sanctioned way for agents to modify agent configuration. It writes to `.purlin/config.local.json` (the gitignored local config), never to the committed `config.json`. Because the local config is gitignored, no git commit is made after changes.
 
-This skill eliminates the "accidental config commit" problem in isolated sessions. Worktree configs are ephemeral by design — created by `create_isolation.sh` as snapshots of MAIN config at creation time, marked with `git update-index --skip-worktree` so git never reports them as dirty, and discarded when `kill_isolation.sh` removes the worktree. Any direct file edit to the worktree config is invisible to git and lost at kill time. The skill makes this contract visible and provides the correct path for intentional persistent changes.
+When invoked from inside an isolated worktree, all changes are applied to the MAIN project's `config.local.json` (not the worktree's ephemeral copy), and the user is shown an explicit warning before proceeding.
+
+This skill eliminates the "accidental config commit" problem entirely. The local config file is gitignored, so changes never appear in git status or get committed. In worktree sessions, configs are ephemeral by design -- created by `create_isolation.sh` as snapshots of MAIN config at creation time and discarded when `kill_isolation.sh` removes the worktree. The skill routes all changes to the MAIN project's local config for persistence.
 
 ---
 
@@ -37,10 +40,10 @@ This skill eliminates the "accidental config commit" problem in isolated session
 
 ### 2.2 Routing Invariant
 
-Config changes MUST ALWAYS be applied to the MAIN project's `.purlin/config.json`, never to the current session's copy. This invariant holds regardless of whether the skill is invoked from:
+Config changes MUST ALWAYS be applied to the MAIN project's `.purlin/config.local.json`, never to the current session's worktree copy. This invariant holds regardless of whether the skill is invoked from:
 
-- A non-isolated session (normal case: the main config IS the only config)
-- An isolated worktree session (routing required: must target the main checkout's config)
+- A non-isolated session (normal case: the main local config IS the only local config)
+- An isolated worktree session (routing required: must target the main checkout's local config)
 
 ### 2.3 Worktree Context Detection
 
@@ -61,10 +64,10 @@ When invoked inside an isolated worktree, the skill MUST display this confirmati
 ```
 ⚠  Worktree context: isolated/<name>
 
-Config changes are ALWAYS applied to the MAIN project config:
-  <PROJECT_ROOT>/.purlin/config.json
+Config changes are ALWAYS applied to the MAIN project local config:
+  <PROJECT_ROOT>/.purlin/config.local.json
 
-The current worktree's config is ephemeral — it will be discarded
+The current worktree's config is ephemeral -- it will be discarded
 when this team is killed. Your change will take effect the next time
 an isolated team is created from main.
 
@@ -87,19 +90,13 @@ The skill MUST reject unknown keys with a clear error. Valid keys for any role a
 
 The skill writes config changes atomically:
 
-1. Read the current config JSON from the target path (MAIN config).
+1. Read the current config JSON from the target path (MAIN local config).
 2. Update the specified key within the role's block.
 3. Write to a temp file first, then rename to final path.
 
-### 2.7 Commit After Write
+### 2.7 No Commit (Gitignored File)
 
-After updating the config, the skill commits the change with:
-
-```
-config: set <role>.<key> = <value>
-```
-
-The commit is made in the MAIN checkout (not the worktree), using `git -C <PROJECT_ROOT> add .purlin/config.json && git -C <PROJECT_ROOT> commit -m "..."`.
+Because `config.local.json` is gitignored, no git commit is made after writing. The skill confirms the change with a status message but does not invoke any git commands.
 
 ---
 
@@ -107,31 +104,32 @@ The commit is made in the MAIN checkout (not the worktree), using `git -C <PROJE
 
 ### Automated Scenarios
 
-#### Scenario: Config Change Applied to MAIN in Non-Isolated Session
+#### Scenario: Config Change Applied to Local Config in Non-Isolated Session
 
     Given the current branch is main (not an isolated worktree)
-    And .purlin/config.json has startup_sequence true for builder
+    And .purlin/config.local.json has startup_sequence true for builder
     When /pl-agent-config builder startup_sequence false is invoked
-    Then .purlin/config.json has startup_sequence false for builder
-    And the change is committed with message "config: set builder.startup_sequence = false"
+    Then .purlin/config.local.json has startup_sequence false for builder
+    And .purlin/config.json is unchanged
+    And no git commit is made
 
 #### Scenario: Worktree Warning Displayed in Isolated Session
 
     Given the current branch is isolated/feat1
     When /pl-agent-config startup_sequence false is invoked
-    Then the warning is displayed showing the main config path
+    Then the warning is displayed showing the main local config path
     And the user is prompted to confirm before proceeding
 
-#### Scenario: Worktree Change Applied to MAIN Config
+#### Scenario: Worktree Change Applied to MAIN Local Config
 
     Given the current branch is isolated/feat1
     And the main checkout is at /project/
-    And /project/.purlin/config.json has startup_sequence true for builder
+    And /project/.purlin/config.local.json has startup_sequence true for builder
     When /pl-agent-config builder startup_sequence false is invoked
     And the user confirms the warning
-    Then /project/.purlin/config.json has startup_sequence false for builder
-    And the worktree's .purlin/config.json is UNCHANGED
-    And the commit is made in the main checkout
+    Then /project/.purlin/config.local.json has startup_sequence false for builder
+    And the worktree's .purlin/config.local.json is UNCHANGED
+    And no git commit is made
 
 #### Scenario: Worktree Change Aborted on User Denial
 
@@ -165,8 +163,8 @@ None.
 
 **Routing logic:** The skill uses the same MAIN checkout detection as `/pl-local-push`: check `PURLIN_PROJECT_ROOT` env var if set, otherwise parse `git worktree list --porcelain` to find the main checkout path (the entry whose `branch` field is `refs/heads/main`).
 
-**Why not update the worktree config?** Worktree configs are intentionally ephemeral — created by `create_isolation.sh` as snapshots of MAIN config at creation time and discarded when `kill_isolation.sh` removes the worktree. There is no mechanism to sync worktree config changes back to MAIN. An agent that modifies only the worktree config gets a "lost update" — the change vanishes at kill time. The skill prevents this by routing all changes to MAIN.
+**Why not update the worktree config?** Worktree configs are intentionally ephemeral -- created by `create_isolation.sh` as snapshots of MAIN config at creation time and discarded when `kill_isolation.sh` removes the worktree. There is no mechanism to sync worktree config changes back to MAIN. An agent that modifies only the worktree config gets a "lost update" -- the change vanishes at kill time. The skill prevents this by routing all changes to MAIN.
 
-**Skip-worktree transparency:** Because `create_isolation.sh` marks `.purlin/config.json` with `git update-index --skip-worktree` in each new worktree, any direct file edit to the worktree's config is invisible to `git status` — it is never accidentally committed or flagged by the handoff dirty check. This is the git-level guarantee that the skill provides the process-level UX for.
+**No commit needed:** Because `config.local.json` is gitignored, the previous `git add + git commit` step is eliminated. The skill simply writes the file and confirms the change to the user.
 
 **Role inference:** When no role argument is given, the agent uses its own role (e.g., the Architect sets `architect` keys by default). The role must be validated against `[architect, builder, qa]`.

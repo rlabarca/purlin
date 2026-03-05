@@ -1,0 +1,266 @@
+# Feature: Config Layering
+
+> Label: "Tool: Config Layering"
+> Category: "Install, Update & Scripts"
+> Prerequisite: features/submodule_bootstrap.md
+> Prerequisite: features/policy_collaboration.md
+
+[TODO]
+
+## 1. Overview
+
+`.purlin/config.json` is committed and shared across all collaborators. It contains both team-level settings (`tools_root`, `critic_llm_enabled`) and personal preferences (`cdd_port`, agent model/effort choices). When collaborators change their preferences, those changes get committed and cause merge conflicts or silently overwrite teammates' settings.
+
+This feature introduces a two-file config system with copy-on-first-use semantics:
+
+| File | Git Status | Purpose |
+|------|-----------|---------|
+| `.purlin/config.json` | **Committed** | Team defaults / template. Only read as fallback when local doesn't exist. |
+| `.purlin/config.local.json` | **Gitignored** | The actual working config. Created by copying shared on first use. All reads and writes go here. |
+
+**Resolution rule:** Read `config.local.json` if it exists, otherwise fall back to `config.json`. No merging.
+
+**First-use copy:** On first CDD start, launcher run, or any tool that reads config -- if `config.local.json` doesn't exist, copy `config.json` to `config.local.json` automatically.
+
+**Tradeoff:** Team config changes to `config.json` don't auto-propagate to collaborators who already have a local copy. They delete their local file to pick up new defaults. This is rare and the simplicity is worth it.
+
+---
+
+## 2. Requirements
+
+### 2.1 Config Resolver Utility
+
+A shared Python utility at `tools/config/resolve_config.py` that centralizes all config access:
+
+- **Resolution logic:** Check for `.purlin/config.local.json` first. If it exists and contains valid JSON, return its contents. Otherwise, fall back to `.purlin/config.json`. If neither exists, return an empty dict.
+- **Copy-on-first-access:** When `config.local.json` does not exist but `config.json` does, copy `config.json` to `config.local.json` before returning the config. This ensures all subsequent reads and writes target the local file.
+- **Malformed JSON fallback:** If `config.local.json` exists but contains invalid JSON, fall back to `config.json` (log a warning to stderr).
+- **Python API:** Exposes `resolve_config(project_root: str) -> dict` for import by Python consumers.
+- **Sync API:** Exposes `sync_config(project_root: str) -> list[str]` that recursively walks `config.json` (shared), finds any keys missing from `config.local.json` (local), adds them with shared defaults, writes the updated local config, and returns a list of added key paths (dot-notation). If local doesn't exist, creates it as a full copy (returns all keys). If both have identical key structures, returns an empty list.
+- **CLI modes:** The script is also callable from the command line for shell consumers:
+  - `--dump`: Print the full resolved config as JSON to stdout.
+  - `--key <name>`: Print the value of a single top-level key to stdout.
+  - `<role>` (positional: `architect`, `builder`, `qa`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_STARTUP=`, `AGENT_RECOMMEND=`.
+- **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.11 of `submodule_bootstrap.md`).
+
+### 2.2 Reader Migration
+
+All existing config consumers MUST be updated to use the resolver instead of direct `json.load()` on `config.json`:
+
+**Python consumers** (import `resolve_config`):
+- `tools/cdd/serve.py`
+- `tools/critic/critic.py`
+- `tools/critic/resolve.py`
+- `tools/release/manage_step.py`
+- `tools/collab/extract_whats_different.py`
+- Any other Python file that reads `.purlin/config.json` directly.
+
+**Shell consumers** (call `resolve_config.py` CLI):
+- `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (launcher scripts)
+- `tools/cdd/start.sh`
+- `tools/cdd/context_guard.sh`
+- Any other shell script that reads `.purlin/config.json` via inline `python3 -c`.
+
+The migration replaces boilerplate `json.load()` / inline `python3 -c "import json; ..."` calls with the resolver. No behavioral change other than the file source.
+
+### 2.3 Writer Updates
+
+All config writers MUST target `config.local.json`:
+
+- **`/pl-agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
+- **CDD Dashboard `POST /config/agents`:** Writes to `config.local.json`. Reads from `config.local.json` (via resolver). Worktree propagation targets `config.local.json` in each worktree.
+- **CDD Dashboard `GET /config.json`:** Serves the resolved config (local if present, shared fallback) via the resolver.
+- **`bootstrap.sh`:** Unchanged -- only creates `config.json` (shared template). Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
+
+### 2.4 Worktree Propagation
+
+- **`create_isolation.sh`:** When creating a new worktree, if `config.local.json` exists in the main project, copy it to the worktree's `.purlin/` directory alongside the shared config.
+- **Worktree creation without local config:** If no `config.local.json` exists in the main project, the worktree starts with only `config.json`. The resolver will create a local copy on first access within the worktree.
+- **CDD Dashboard agent propagation:** When `POST /config/agents` updates agent settings, the dashboard propagates changes to `config.local.json` in each active worktree (same mechanism as current `config.json` propagation).
+
+### 2.5 Update-Time Config Sync
+
+When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sync_config()` function performs a one-directional sync:
+
+- Any keys present in `config.json` (shared) but missing from `config.local.json` (local) are added to local with the shared default values.
+- Existing local values are never overwritten.
+- The sync is recursive: nested objects are walked key-by-key, so a new agent role or a new nested key is added without disturbing sibling keys.
+- The user is informed what new keys were added (or that local config is already up to date).
+- If `config.local.json` doesn't exist, it is created as a full copy of `config.json`.
+
+### 2.6 Gitignore
+
+- `.purlin/config.local.json` MUST be in the project's `.gitignore`.
+- `bootstrap.sh` MUST add this entry to the consumer project's `.gitignore` during initialization.
+- The `purlin-config-sample/.gitignore` template (if it contains recommended ignores) MUST include this entry.
+
+---
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Resolver Returns Local Config When Local Exists
+
+    Given config.local.json exists with {"cdd_port": 9999}
+    When the resolver is invoked
+    Then it returns cdd_port: 9999
+
+#### Scenario: Resolver Falls Back to Shared When No Local Exists
+
+    Given only config.json exists with {"cdd_port": 8086}
+    And config.local.json does not exist
+    When the resolver is invoked
+    Then it returns cdd_port: 8086
+
+#### Scenario: Resolver Copies Shared to Local on First Access
+
+    Given only config.json exists with {"tools_root": "tools", "cdd_port": 8086}
+    And config.local.json does not exist
+    When the resolver is invoked
+    Then config.local.json is created as a copy of config.json
+    And the returned config matches config.json contents
+
+#### Scenario: Resolver Returns Empty Dict When Neither File Exists
+
+    Given neither config.json nor config.local.json exists
+    When the resolver is invoked
+    Then it returns an empty dict
+
+#### Scenario: Resolver Handles Malformed Local JSON Gracefully
+
+    Given config.local.json contains invalid JSON
+    And config.json exists with valid content
+    When the resolver is invoked
+    Then it falls back to config.json
+
+#### Scenario: CLI Mode --dump Outputs Full Resolved Config as JSON
+
+    Given config.local.json exists
+    When resolve_config.py --dump is invoked
+    Then stdout contains valid JSON matching the local config
+
+#### Scenario: CLI Mode --key Returns Single Value
+
+    Given config.local.json exists with {"cdd_port": 9999}
+    When resolve_config.py --key cdd_port is invoked
+    Then stdout contains 9999
+
+#### Scenario: CLI Mode Role Outputs Shell Variable Assignments
+
+    Given config.local.json exists with agent settings
+    When resolve_config.py architect is invoked
+    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_STARTUP=, AGENT_RECOMMEND=
+
+#### Scenario: Agent Config Command Writes to Local Not Shared
+
+    Given config.local.json exists
+    When /pl-agent-config updates agents.architect.model
+    Then config.local.json contains the new value
+    And config.json is unchanged
+
+#### Scenario: Agent Config Command Does Not Commit Changes
+
+    Given config.local.json is gitignored
+    When /pl-agent-config updates a value
+    Then no new git commit is created
+
+#### Scenario: CDD Dashboard POST Writes to Local Config
+
+    Given config.local.json exists
+    When POST /config/agents is sent with updated agent settings
+    Then config.local.json contains the new agent values
+    And config.json is unchanged
+
+#### Scenario: CDD Dashboard GET Serves Local Config
+
+    Given config.local.json exists with {"cdd_port": 9999}
+    When GET /config.json is requested
+    Then the response contains cdd_port: 9999 from the local config
+
+#### Scenario: Bootstrap Adds Local Config to Gitignore
+
+    Given a consumer project runs bootstrap.sh
+    When bootstrap completes
+    Then .gitignore contains .purlin/config.local.json
+
+#### Scenario: Bootstrap Does Not Create Local Config
+
+    Given a consumer project runs bootstrap.sh
+    When bootstrap completes
+    Then .purlin/config.json exists as the shared template
+    And .purlin/config.local.json does NOT exist
+
+#### Scenario: Worktree Creation Copies Local Config If Present
+
+    Given config.local.json exists in the main project
+    When a new isolation worktree is created
+    Then the worktree contains a copy of config.local.json
+
+#### Scenario: Worktree Creation Works Without Local Config
+
+    Given config.local.json does not exist in the main project
+    When a new isolation worktree is created
+    Then the worktree has only config.json and no error occurs
+
+#### Scenario: CDD Dashboard Propagates Agent Changes to Worktree Local Configs
+
+    Given an active isolation worktree exists
+    When POST /config/agents updates agent settings
+    Then the worktree's config.local.json is also updated
+
+#### Scenario: Python Consumer Reads Resolved Config via Resolver
+
+    Given the resolver is imported by critic.py
+    When critic.py loads config
+    Then it uses the resolved config from local if present or shared fallback
+
+#### Scenario: Shell Consumer Reads Resolved Config via CLI
+
+    Given a launcher script calls resolve_config.py architect
+    When the launcher runs
+    Then agent settings come from the resolved config
+
+#### Scenario: Update Sync Creates Local Config When Missing
+
+    Given /pl-update-purlin runs
+    And config.local.json does not exist
+    And config.json exists with {"tools_root": "purlin/tools", "cdd_port": 8086}
+    When the config sync step executes
+    Then config.local.json is created as a copy of config.json
+    And the user is informed: "Created config.local.json from team defaults"
+
+#### Scenario: Update Sync Adds New Keys Without Overwriting Existing
+
+    Given config.local.json exists with {"cdd_port": 9999, "tools_root": "tools"}
+    And config.json has been updated with a new key {"cdd_port": 8086, "tools_root": "tools", "context_guard_threshold": 30}
+    When the config sync step executes
+    Then config.local.json contains cdd_port: 9999 which is preserved
+    And config.local.json contains context_guard_threshold: 30 which is added from shared
+    And the user is informed: "Added new config keys: context_guard_threshold"
+
+#### Scenario: Update Sync Adds Nested New Keys
+
+    Given config.local.json has {"agents": {"architect": {"model": "opus"}}}
+    And config.json adds a new agent role {"agents": {"architect": {"model": "sonnet"}, "qa": {"model": "haiku"}}}
+    When the config sync step executes
+    Then config.local.json contains agents.architect.model: "opus" which is preserved
+    And config.local.json contains agents.qa with the shared defaults which is added
+
+#### Scenario: Update Sync Reports No Changes When Already Current
+
+    Given config.local.json and config.json have identical key structures
+    When the config sync step executes
+    Then config.local.json is unchanged
+    And the user is informed: "Local config is up to date"
+
+#### Scenario: Deleting Local Config Regenerates From Shared on Next Access
+
+    Given config.local.json is deleted
+    When any tool invokes the resolver
+    Then a fresh config.local.json is created from config.json
+    And the tool reads the shared defaults
+
+### Manual Scenarios (Human Verification Required)
+
+None.

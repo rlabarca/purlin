@@ -3,6 +3,7 @@
 > Label: "/pl-update-purlin: Intelligent Purlin Update"
 > Category: "Agent Skills"
 > Prerequisite: features/submodule_bootstrap.md
+> Prerequisite: features/config_layering.md
 
 ## 1. Overview
 
@@ -239,10 +240,9 @@ The skill MUST preserve user customizations in:
    - Analyze user overrides to see if they reference the changed sections
    - Suggest updates to override files to match new structure
    - Provide migration guidance
-3. For `config.json`:
-   - Check if new keys added upstream
-   - Offer to merge new keys while preserving user values
-   - Warn if deprecated keys found in user config
+3. For config files:
+   - After update, run `sync_config()` to automatically add new keys from `config.json` (shared) to `config.local.json` (local) without overwriting existing values (see Section 2.8)
+   - Warn if deprecated keys found in user's local config
 
 ### 2.5 Interactive Merge Strategies
 
@@ -284,7 +284,19 @@ All changes MUST be applied atomically:
 4. If any step fails, rollback to backup
 5. Update `.purlin/.upstream_sha` only after all changes succeed
 
-### 2.8 Update Summary Report
+### 2.8 Config Sync After Update
+
+After the submodule is updated and `.purlin/.upstream_sha` is written, the skill MUST run the config resolver's `sync_config()` function to ensure the user's local config picks up any new keys introduced by the updated Purlin version:
+
+1. Import `sync_config` from `tools/config/resolve_config.py`.
+2. Call `sync_config(project_root)` which:
+   - If `config.local.json` doesn't exist, creates it as a copy of `config.json` (shared) and reports: "Created config.local.json from team defaults".
+   - If `config.local.json` exists, walks `config.json` for any keys missing from local, adds them with shared defaults, and reports: "Added new config keys: key1, key2" (or "Local config is up to date" if none added).
+3. Display the sync result in the update summary.
+
+This step runs unconditionally after every successful update. It ensures that new framework config options (added in Purlin updates) appear in the user's local config with sensible defaults without overwriting their existing preferences.
+
+### 2.9 Update Summary Report
 
 After successful update, display:
 
@@ -309,7 +321,7 @@ Next Steps:
   3. Test changes with: /pl-verify
 ```
 
-### 2.9 Dry Run Mode
+### 2.10 Dry Run Mode
 
 When `--dry-run` is specified:
 - Perform all analysis
@@ -318,7 +330,7 @@ When `--dry-run` is specified:
 - Do NOT modify any files
 - Do NOT update `.purlin/.upstream_sha`
 
-### 2.10 Project Root Detection
+### 2.11 Project Root Detection
 
 The skill uses the same project root detection as `sync_upstream.sh`:
 - Climb from script location through submodule directory to parent project
@@ -392,12 +404,12 @@ The skill uses the same project root detection as `sync_upstream.sh`:
     And suggests specific line updates
 
 #### Scenario: New Config Keys Added Upstream
-    Given upstream added new config key "agents.architect.review_mode"
-    And consumer's .purlin/config.json doesn't have this key
-    When /pl-update-purlin is invoked
-    Then the skill offers: "Add new config key 'review_mode' with default value? (y/n)"
-    When user confirms
-    Then config.json is updated with the new key preserving all user values
+    Given upstream added new config key "agents.architect.review_mode" in config.json
+    And consumer's config.local.json doesn't have this key
+    When /pl-update-purlin is invoked and the update completes
+    Then the config sync step adds the new key to config.local.json with the shared default
+    And the user is informed: "Added new config keys: agents.architect.review_mode"
+    And existing local config values are preserved
 
 #### Scenario: Dry Run Shows Changes Without Applying
     Given multiple changes exist upstream
