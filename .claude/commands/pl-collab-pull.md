@@ -114,6 +114,22 @@ Exit with failure.
 
 **No cascade.** After `/pl-collab-pull` updates the collaboration branch, any active isolations that are BEHIND will show BEHIND in the ISOLATED TEAMS section and sync themselves via `/pl-local-pull` when ready. Each isolation controls its own branch.
 
+### 7. Post-Merge Digest Generation
+
+After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-generate the "What's Different?" digest. This step is informational and does not block or fail the pull.
+
+1. Run the generation script:
+```
+bash <tools_root>/collab/generate_whats_different.sh <session>
+```
+where `<tools_root>` is from `.purlin/config.json` (default `tools`).
+
+2. Read the generated file at `features/digests/whats-different.md` and display its content inline.
+
+3. If the script fails or the file is not written, print a warning and continue — do not fail the pull.
+
+**Skip this step** when the merge result is SAME, AHEAD, or DIVERGED-with-conflicts (no successful merge occurred).
+
 ## Notes
 
 - Uses `git merge` (not rebase) on the collaboration branch — it is a shared branch; rebase would rewrite history that other contributors depend on.
