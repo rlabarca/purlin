@@ -49,48 +49,58 @@ This step may be set to `enabled: false` in `.purlin/release/config.json`. When 
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
+
+#### Scenario: Remote is ahead of local
+
+    Given the remote branch has commits not present locally
+    When the Architect executes the purlin.push_to_remote step
+    Then the step detects the remote is ahead via git log comparison
+    And the step halts with an error message containing "pull and reconcile"
+    And no git push command is executed
+
+#### Scenario: Step is disabled
+
+    Given .purlin/release/config.json has purlin.push_to_remote set to enabled: false
+    When the Architect executes the release checklist
+    Then the purlin.push_to_remote step is skipped entirely
+    And no git push command is executed
+    And the release proceeds to the next step
+
+#### Scenario: Clean push to remote
+
+    Given the local branch is ahead of the remote by one or more commits
+    And no force-push is required
+    When the Architect executes the purlin.push_to_remote step
+    Then git push <remote> <branch> is executed with the confirmed remote and branch
+    And git push <remote> --tags is executed
+    And the step reports the push result
+
+#### Scenario: Force-push would be required
+
+    Given the push cannot proceed without --force
+    When the Architect executes the purlin.push_to_remote step
+    Then the step detects the force-push requirement
+    And the step halts with a warning about force-push
+    And no git push --force command is executed without explicit user confirmation
+
+#### Scenario: Multiple remotes, user accepts default
+
+    Given the project has remotes "origin" and "github"
+    And the current branch is "main" tracking "origin/main"
+    When the Architect executes the purlin.push_to_remote step
+    Then the step identifies "origin" as the default remote via upstream tracking
+    And "github" is listed as an alternative remote
+    And the default remote URL is included in the confirmation prompt
+
+#### Scenario: Single remote, streamlined confirmation
+
+    Given the project has only one remote "origin"
+    And the current branch is "main"
+    When the Architect executes the purlin.push_to_remote step
+    Then the step identifies "origin" as the only remote
+    And no remote selection prompt is generated
+    And the confirmation prompt shows "Push main to origin (<url>)?"
 
 ### Manual Scenarios (Architect Execution)
 
-#### Scenario: Clean push to remote
-Given the local branch is ahead of the remote by one or more commits,
-And no force-push is required,
-When the Architect executes the `purlin.push_to_remote` step,
-Then the Architect presents the default remote and branch for confirmation,
-And on acceptance runs `git push <remote> <branch> && git push <remote> --tags`,
-And reports the push result including branches and tags updated.
-
-#### Scenario: Remote is ahead of local
-Given the remote branch has commits not present locally,
-When the Architect executes the `purlin.push_to_remote` step,
-Then the Architect reports the divergence and halts,
-And instructs the user to pull and reconcile before re-running the step.
-
-#### Scenario: Force-push would be required
-Given the push cannot proceed without `--force`,
-When the Architect executes the `purlin.push_to_remote` step,
-Then the Architect warns the user that force-push is required,
-And awaits explicit user confirmation before proceeding,
-And does not force-push without that confirmation.
-
-#### Scenario: Step is disabled
-Given `.purlin/release/config.json` has `purlin.push_to_remote` set to `enabled: false`,
-When the Architect executes the release checklist,
-Then the `purlin.push_to_remote` step is skipped entirely,
-And the release is considered complete at the prior step.
-
-#### Scenario: Multiple remotes, user accepts default
-Given the project has remotes "origin" and "github",
-And the current branch is "main" tracking "origin/main",
-When the Architect executes the `purlin.push_to_remote` step,
-Then the Architect presents "Push `main` to `origin` (`<url>`)?" as the default,
-And lists "github" as an alternative remote,
-And the user can accept the default or choose a different remote.
-
-#### Scenario: Single remote, streamlined confirmation
-Given the project has only one remote "origin",
-And the current branch is "main",
-When the Architect executes the `purlin.push_to_remote` step,
-Then the Architect presents "Push `main` to `origin` (`<url>`)?" for confirmation,
-And does not prompt for remote selection.
+None

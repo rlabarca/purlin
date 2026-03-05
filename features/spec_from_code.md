@@ -220,8 +220,6 @@ When Purlin is installed into a project with an existing codebase, there is no s
     Then all generated features appear in the CDD dashboard with TODO status
     And all generated anchor nodes appear in the CDD dashboard
 
-### Manual Scenarios (Human Verification Required)
-
 #### Scenario: End-to-end onboarding of a non-trivial codebase
 
     Given a consumer project with 10+ source files across multiple directories
@@ -240,9 +238,13 @@ When Purlin is installed into a project with an existing codebase, there is no s
 #### Scenario: Mid-Phase-3 session restart and resume
 
     Given the Architect is partway through Phase 3 (some categories complete, some not)
-    When the agent session ends and a new session starts
-    And the Architect runs /pl-spec-from-code
+    And .purlin/cache/sfc_state.json records phase 3 with some completed categories
+    When a new agent session starts and the Architect runs /pl-spec-from-code
     Then the command detects the existing state file
     And the command resumes from the first incomplete category
     And previously generated features are not regenerated
     And the user is not re-asked earlier phase questions
+
+### Manual Scenarios (Human Verification Required)
+
+None

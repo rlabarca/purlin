@@ -510,156 +510,81 @@ The deep analysis is derived from the same extraction data as the standard diges
     Then the response status is 200
     And features/digests/whats-different-analysis.md does not exist on disk
 
-### Manual Scenarios (Human Verification Required)
+#### Scenario: Impact Summary Content Appears Above File-Level Digest in HTML
 
-#### Scenario: Modal Typography and Layout
-
-    Given the CDD dashboard is open
-    And an active session exists with BEHIND sync state
-    When the User clicks the "What's Different?" button
-    Then a modal appears with 700px max-width and scrollable body
-    And the generation date is displayed prominently at the top
-    And the modal body renders markdown with proper formatting
-
-#### Scenario: Modal Close Behavior
-
-    Given the What's Different modal is open
-    When the User presses Escape
-    Then the modal closes
-    When the User clicks outside the modal
-    Then the modal closes
-    When the User clicks the X button
-    Then the modal closes
-
-#### Scenario: Change Tags Bar Displays Correct Colors
-
-    Given the What's Different modal is open
-    And the digest includes spec changes, code changes, and discoveries
-    When the User views the tag bar below the title
-    Then Specs tags use --purlin-accent text color
-    And Code tags use --purlin-primary text color
-    And Discovery tags use --purlin-status-error text color
-    And all tags use --purlin-tag-fill background and --purlin-tag-outline border
-
-#### Scenario: Section Header Colors Match Domain
-
-    Given the What's Different modal is open with a DIVERGED digest
-    When the User scrolls through the modal body
-    Then the "Spec Changes" header uses --purlin-accent color
-    And the "Code Changes" header uses --purlin-status-good color
-    And the "Purlin Changes" header uses --purlin-status-todo color
-
-#### Scenario: Button Placement in Active Session Panel
-
-    Given the CDD dashboard is open
-    And an active session exists with AHEAD sync state
-    When the User views the active session panel
-    Then a "What's Different?" button is visible
-    And "Last generated: <timestamp>" is shown below the button when a cached digest exists
-
-#### Scenario: End-to-End DIVERGED Generation via Dashboard
-
-    Given the CDD dashboard is open
-    And an active session exists in DIVERGED state
-    When the User clicks the "What's Different?" button
-    Then the modal shows "Generating..." state
-    And after generation completes the modal displays both "Your Local Changes" and "Collab Changes" sections
-    And change tags appear in the tag bar
-    And a sync check section appears at the bottom of each direction
-
-#### Scenario: Button Opens Cached Content Without Regeneration
-
-    Given the CDD dashboard is open
-    And an active session exists with BEHIND sync state
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different-analysis.md exists on disk
     And features/digests/whats-different.md exists on disk
-    When the User clicks the "What's Different?" button
-    Then the modal opens immediately with the cached digest content
-    And no POST request is sent to /whats-different/generate
-
-#### Scenario: Regenerate Button Inside Modal Triggers Fresh Generation
-
-    Given the What's Different modal is open with cached content
-    When the User clicks the "Regenerate" button
-    Then a POST request is sent to /whats-different/generate
-    And the modal shows the animated "Generating" ellipsis state
-    And after generation completes the modal displays the fresh content
-
-#### Scenario: Animated Ellipsis During Generation
-
-    Given the CDD dashboard is open
-    And an active session exists with BEHIND sync state
-    And no cached digest exists
-    When the User clicks the "What's Different?" button
-    Then the modal shows "Generating" text with dots cycling through . / .. / ... at ~500ms intervals
-    And the text color is var(--purlin-muted)
-
-#### Scenario: Timestamp Shows Local Time With AM/PM and Timezone
-
-    Given the What's Different modal is open with generated content
-    When the User views the generation timestamp
-    Then the "Generated:" label is bold (font-weight 700)
-    And the timestamp is displayed in local timezone with AM/PM format (e.g., "Feb 26, 2026 3:45 PM EST")
-
-#### Scenario: Summarize Impact Button Placement Inside Modal
-
-    Given the What's Different modal is open
-    And no cached deep analysis exists
-    When the User views the modal content
-    Then a "Summarize Impact" button is visible above the digest content
-    And the button uses btn-critic styling
-
-#### Scenario: Impact Summary Content Appears Above File-Level Digest in Modal
-
-    Given the What's Different modal is open
-    And a cached deep analysis exists at features/digests/whats-different-analysis.md
-    When the User views the modal content
-    Then the "Impact Summary" section appears above the file-level digest
-    And the "Impact Summary" header is in var(--purlin-accent), bold
-    And a horizontal rule separates the impact summary from the file-level content
-    And the impact summary has its own "Generated:" timestamp and "Regenerate" button
-
-#### Scenario: End-to-End Deep Analysis Generation via Modal
-
-    Given the What's Different modal is open
-    And no cached deep analysis exists
-    When the User clicks the "Summarize Impact" button inside the modal
-    Then the button text changes to "Summarizing" with animated ellipsis
-    And the button is disabled during generation
-    And after generation completes the impact summary section replaces the button
-    And the impact summary shows a "Generated:" timestamp and "Regenerate" button
+    When a GET request is sent to /whats-different/read
+    Then the response contains the digest content
+    When a GET request is sent to /whats-different/deep-analysis/read
+    Then the response contains the analysis content
+    And the modal renders the impact summary section above the file-level digest
 
 #### Scenario: Auto-Generation After pl-collab-pull Merge
 
     Given the agent is on the collab session branch
     And an active session exists in BEHIND state
     When the agent runs /pl-collab-pull and the merge succeeds
-    Then the digest is auto-generated as Step 7
+    Then the generation script is executed as Step 7
+    And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline after the merge summary
-
-#### Scenario: Deep Analysis Architect Actions Display Category Tags With Correct Colors
-
-    Given the What's Different modal is open
-    And a cached deep analysis exists with Architect Actions containing [INFEASIBLE] and [INTENT_DRIFT] entries
-    When the User views the impact summary section
-    Then the "Architect Actions" header is in var(--purlin-status-warning)
-    And the [INFEASIBLE] tag is rendered in var(--purlin-status-error)
-    And the [INTENT_DRIFT] tag is rendered in var(--purlin-status-warning)
-
-#### Scenario: Deep Analysis Builder Actions Display Category Tags With Correct Colors
-
-    Given the What's Different modal is open
-    And a cached deep analysis exists with Builder Actions containing [BUG] entries
-    When the User views the impact summary section
-    Then the "Builder Actions" header is in var(--purlin-status-good)
-    And the [BUG] tag is rendered in var(--purlin-status-error)
 
 #### Scenario: Stale Impact Summary Absent After Digest Regeneration
 
-    Given the What's Different modal is open with both a cached digest and a cached deep analysis
-    When the User clicks "Regenerate" on the standard digest
-    And the digest regeneration completes
-    Then the impact summary section is absent from the modal
-    And the "Summarize Impact" button no longer shows a "Last generated" timestamp
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different-analysis.md exists on disk
+    When a POST request is sent to /whats-different/generate
+    Then the response status is 200
+    And features/digests/whats-different-analysis.md does not exist on disk
+    And subsequent GET /whats-different/deep-analysis/read returns 404
+
+#### Scenario: Button Opens Cached Content Without Regeneration
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different.md exists on disk
+    When a GET request is sent to /whats-different/read
+    Then the response status is 200
+    And the response contains the cached digest content
+    And no POST request is sent to /whats-different/generate
+
+#### Scenario: DIVERGED Generation Returns Both Directions via Endpoint
+
+    Given an active session "v0.5-sprint" is set
+    And the session is in DIVERGED state
+    When a POST request is sent to /whats-different/generate
+    Then the response status is 200
+    And the response digest contains both "Your Local Changes" and "Collab Changes" sections
+    And the response contains a tags object with change counts
+
+#### Scenario: Regenerate Triggers Fresh Generation via Endpoint
+
+    Given an active session "v0.5-sprint" is set
+    And features/digests/whats-different.md exists on disk
+    When a POST request is sent to /whats-different/generate
+    Then the response status is 200
+    And the response contains freshly generated digest content
+    And features/digests/whats-different.md is overwritten with new content
+
+#### Scenario: Deep Analysis Generation Returns Analysis via Endpoint
+
+    Given an active session "v0.5-sprint" is set
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
+    When a POST request is sent to /whats-different/deep-analysis/generate
+    Then the response status is 200
+    And the response contains an analysis field with generated content
+    And features/digests/whats-different-analysis.md exists on disk
+
+#### Scenario: Modal Close Button Present in HTML
+
+    Given an active session "v0.5-sprint" is set
+    When the dashboard HTML is generated
+    Then the What's Different modal template contains an X close button element
+    And the modal container has the standard CDD modal overlay pattern
+
+### Manual Scenarios (Human Verification Required)
+
+None
 
 ---
 
@@ -723,3 +648,15 @@ The deep analysis is derived from the same extraction data as the standard diges
 - [ ] Each action item is a single line: `[CATEGORY] feature — description`
 - [ ] Modal body markdown rendered with proper formatting (lists, headers, code blocks)
 - [ ] Close via X button, Escape, or click outside modal
+- [ ] Modal typography: 700px max-width, 80vh max-height, scrollable body, generation date prominently at top
+- [ ] "Generating" animated ellipsis (`.` / `..` / `...` cycling at ~500ms) in `var(--purlin-muted)` during generation
+- [ ] "Summarizing" animated ellipsis (same pattern) during deep analysis generation
+- [ ] Regenerate click triggers animated "Generating" ellipsis state, then displays fresh content
+- [ ] Timestamp: "Generated:" label bold (font-weight 700), local timezone AM/PM format (e.g., "Feb 26, 2026 3:45 PM EST")
+- [ ] Change tags bar: `[N Specs]` in `var(--purlin-accent)`, `[N Code]` in `var(--purlin-status-good)`, `[N Discovery]` in `var(--purlin-accent)`, all on `var(--purlin-tag-fill)` background with `var(--purlin-tag-outline)` border
+- [ ] Section header colors: "Spec Changes" in `var(--purlin-accent)`, "Code Changes" in `var(--purlin-status-good)`, "Purlin Changes" in `var(--purlin-status-todo)`
+- [ ] "What's Different?" button visible in active session panel when sync state is not SAME; "Last generated: `<timestamp>`" shown below when cached
+- [ ] "Summarize Impact" button visible inside modal above digest content when no cached analysis exists; uses `btn-critic` styling
+- [ ] Deep Analysis: "Architect Actions" header in `var(--purlin-status-warning)`, `[INFEASIBLE]` in `var(--purlin-status-error)`, `[INTENT_DRIFT]` in `var(--purlin-status-warning)`
+- [ ] Deep Analysis: "Builder Actions" header in `var(--purlin-status-good)`, `[BUG]` in `var(--purlin-status-error)`
+- [ ] Modal close via Escape key and clicking outside modal (JS behavior)

@@ -397,32 +397,54 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When an agent calls GET /status.json
     Then the worktree entry has no delivery_phase field
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Sessions Table Displays Named Isolations
+#### Scenario: Sessions Table Displays Named Isolations in HTML
 
     Given the CDD server is running from the project root
     And two worktrees exist (.worktrees/feat1 and .worktrees/ui)
-    When the User opens the CDD dashboard
-    Then the Isolated Teams section is visible
-    And the Sessions sub-section shows a table with Name, Branch, Main Diff, Committed Modified, and Uncommitted Modified columns
+    When the dashboard HTML is generated
+    Then the Isolated Teams section contains a Sessions table
+    And the table has columns: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified
     And each worktree appears as a row with its isolation name and branch
-    And no Role column is present
+    And no Role column is present in the table headers
+
+#### Scenario: Delivery Phase Badge Present in Worktree Row HTML
+
+    Given a worktree at .worktrees/feat1 has an active delivery plan at Phase 1 of 2
+    When the dashboard HTML is generated
+    Then the feat1 row's Name cell contains "feat1" and "(Phase 1/2)"
+    And the phase badge element uses the --purlin-status-warning color class
+
+#### Scenario: Isolated Teams Heading Text With No Active Worktrees
+
+    Given no worktrees are active under .worktrees/
+    When the dashboard HTML is generated
+    Then the Isolated Teams section heading text is "ISOLATED TEAMS"
+    And no count annotation is appended to the heading
+
+#### Scenario: Isolated Teams Heading Shows Count With Active Worktrees
+
+    Given two worktrees are active under .worktrees/
+    When the dashboard HTML is generated
+    Then the Isolated Teams section heading text contains "2 Isolated Teams"
+
+#### Scenario: Creation Row Present When No Active Worktrees
+
+    Given no worktrees are active under .worktrees/
+    When the dashboard HTML is generated
+    Then the Isolated Teams section contains a creation row with "Create An Isolated Team" label
+    And the creation row contains a text input and a Create button
+    And no Sessions table rows are present below the creation row
 
 #### Scenario: New Isolation Input Creates Named Worktree
 
-    Given the CDD dashboard is open
-    And the New Isolation input is visible in the section footer
-    When the User types "feat2" into the input and clicks Create
-    Then a new row appears in the Sessions table with name "feat2"
-    And .worktrees/feat2/ exists in the project root
+    Given no worktree exists at .worktrees/feat2
+    And the CDD server is running
+    When a POST request is sent to /isolate/create with body {"name": "feat2"}
+    Then the response contains { "status": "ok" }
+    And .worktrees/feat2/ is created on branch isolated/feat2
+    And subsequent dashboard HTML contains a row with name "feat2" in the Sessions table
 
-#### Scenario: New Isolation Input Rejects Invalid Characters
-
-    Given the CDD dashboard is open
-    When the User types "feat@1" into the New Isolation input
-    Then the Create button remains disabled
-    And an inline validation message indicates invalid characters
+### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Kill Button Shows Safety Modal for Named Worktree
 
@@ -431,45 +453,6 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then a modal appears listing the uncommitted files
     And the modal instructs the user to commit or stash before killing
     And the Confirm button is disabled
-
-#### Scenario: Delivery Phase Badge Visible in Worktree Row
-
-    Given a worktree at .worktrees/feat1 has an active delivery plan at Phase 1 of 2
-    When the User views the Sessions table
-    Then the feat1 row's Name cell shows "feat1 (Phase 1/2)"
-    And the badge text is rendered in orange (--purlin-status-warning)
-
-#### Scenario: Isolated Teams Sub-heading Collapsed With No Active Worktrees
-
-    Given the CDD dashboard is open
-    And no worktrees are active under .worktrees/
-    When the User collapses the Isolated Teams sub-heading
-    Then the collapsed label reads "ISOLATED TEAMS" with no annotation
-
-#### Scenario: Isolated Teams Sub-heading Shows Count When Collapsed With Active Worktrees
-
-    Given the CDD dashboard is open
-    And two worktrees are active: one with main_diff DIVERGED and one with main_diff AHEAD
-    When the User collapses the Isolated Teams sub-heading
-    Then the collapsed label reads "2 Isolated Teams"
-    And the label color is the normal section heading color (--purlin-muted), not orange or any severity color
-
-#### Scenario: Creation Row Always Visible When Sub-section Is Expanded With No Agents
-
-    Given the CDD dashboard is open
-    And the Isolated Teams sub-section is expanded
-    And no worktrees are active
-    When the User views the Isolated Teams section content
-    Then the creation row "Create An Isolated Team [input] [Create]" is visible
-    And no Sessions table rows are shown
-
-#### Scenario: Name Input Preserved Across Auto-refresh
-
-    Given the CDD dashboard is open
-    And the User has typed "feat3" into the name input
-    When the 5-second auto-refresh cycle triggers a DOM update
-    Then the name input still contains "feat3"
-    And the Create button state is unchanged
 
 #### Scenario: Name Input Focus Restored After Auto-refresh
 
@@ -525,6 +508,9 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - [ ] Kill clean-state modal shows a simple Confirm/Cancel dialog
 - [ ] Agent Config section heading reads "Agent Config (applies across all local isolations)" when isolated teams mode is active
 - [ ] Agent Config section heading reads "Agent Config" (no annotation) when isolated teams mode is inactive
+- [ ] Create button is disabled and inline validation message appears when input contains invalid characters (e.g., "feat@1")
+- [ ] Name input value is preserved across 5-second auto-refresh cycle (typing is not erased by DOM update)
+- [ ] Newly created isolation row appears in Sessions table with correct name and branch after successful creation
 
 ---
 

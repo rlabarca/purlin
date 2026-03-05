@@ -785,10 +785,17 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
 
 ### Manual Scenarios (Human Verification Required)
 
-#### Scenario: CDD Dashboard Role Columns
-    Given the CDD server is running
-    And critic.json files exist for features with role_status computed
-    When the User opens the web dashboard
-    Then each feature entry shows Architect, Builder, and QA columns with role status badges
-    And features without critic.json show "??" in all role columns
+None
+
+---
+
+## 4. Visual Specification
+
+### Screen: CDD Dashboard -- Role Status Columns
+
+- **Reference:** N/A
+- [ ] Each feature row shows Architect, Builder, and QA columns with role status badges
+- [ ] Badge values match the role_status values from critic.json (TODO, DONE, FAIL, BLOCKED, INFEASIBLE, CLEAN, N/A, DISPUTED)
+- [ ] Features without critic.json show "??" placeholder in all role columns
+- [ ] Badge styling uses existing CDD dashboard status badge pattern and color tokens
 

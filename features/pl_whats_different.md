@@ -83,12 +83,15 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
-### Manual Scenarios (Human Verification Required)
-
 #### Scenario: End-to-End Generation via Agent Command
 
     Given the agent is on the main branch
     And an active session exists in BEHIND state
     When the agent runs /pl-whats-different
-    Then the generated digest is displayed inline
+    Then the generation script is executed with the active session name as argument
     And features/digests/whats-different.md is written to disk
+    And the digest content is displayed inline
+
+### Manual Scenarios (Human Verification Required)
+
+None

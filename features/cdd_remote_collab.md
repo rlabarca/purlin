@@ -381,23 +381,45 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     And the current branch remains collab/v0.5-sprint
     And .purlin/runtime/active_remote_session still contains "v0.5-sprint"
 
-### Manual Scenarios (Human Verification Required)
+#### Scenario: REMOTE COLLABORATION Section Always Visible in Dashboard HTML
 
-#### Scenario: REMOTE COLLABORATION Section Always Visible
-
-    Given the CDD dashboard is open in a browser
+    Given the CDD server is running
     And no remote_collab config exists in .purlin/config.json
-    When the User views the dashboard
-    Then the REMOTE COLLABORATION section is visible
-    And it appears above the ISOLATED TEAMS section
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading is present in the HTML output
+    And the section is rendered above the ISOLATED TEAMS section in the DOM
 
-#### Scenario: No-Active-Session State Shows Creation Row and Known Sessions
+#### Scenario: No-Active-Session Shows Creation Row and Known Sessions Table
 
-    Given the CDD dashboard is open
-    And no active remote session exists
-    When the User views the REMOTE COLLABORATION section
-    Then a creation row "Start Remote Session [input] [Create]" is visible
-    And a known sessions table is shown below the creation row
+    Given no file exists at .purlin/runtime/active_remote_session
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a creation row with "Start Remote Session" label
+    And the creation row contains a text input and a Create button
+    And a known sessions table element is present below the creation row
+
+#### Scenario: REMOTE COLLABORATION Renders Above ISOLATED TEAMS in DOM Order
+
+    Given the CDD server is running
+    And both REMOTE COLLABORATION and ISOLATED TEAMS sections exist in the HTML
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section appears before the ISOLATED TEAMS section in the HTML output
+
+#### Scenario: Last Remote Sync Annotation Present in MAIN WORKSPACE Body
+
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    When the dashboard HTML is generated
+    Then the MAIN WORKSPACE section body contains a "Last remote sync" annotation element
+    And the annotation appears below the clean/dirty state line
+
+#### Scenario: Delete Button Present in Known Sessions Table Rows
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And at least one collab session exists on the remote
+    When the dashboard HTML is generated
+    Then each session row in the known sessions table contains a Delete button
+    And the Delete button appears before the Join button in each row
+
+### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Active-Session State Shows Sync Badge and Controls
 
@@ -409,55 +431,6 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     And a "Disconnect" button is right-aligned on the same row as the dropdown
     And a sync state badge with annotation is visible on the next row
     And a "Check Remote" button is right-aligned on the sync state row
-
-#### Scenario: Badge Colors Match ISOLATED TEAMS Section
-
-    Given the CDD dashboard is open
-    And an active remote session exists with DIVERGED sync state
-    When the User views the collapsed REMOTE COLLABORATION heading
-    Then the DIVERGED badge uses orange (--purlin-status-warning)
-    And SAME would use green (--purlin-status-good)
-    And AHEAD/BEHIND would use yellow (--purlin-status-todo)
-
-#### Scenario: REMOTE COLLABORATION Renders Above ISOLATED TEAMS
-
-    Given the CDD dashboard is open
-    And both REMOTE COLLABORATION and ISOLATED TEAMS sections are visible
-    When the User scrolls through the dashboard
-    Then REMOTE COLLABORATION appears above ISOLATED TEAMS in the DOM order
-
-#### Scenario: Last Remote Sync Annotation In MAIN WORKSPACE Body
-
-    Given the CDD dashboard is open
-    And an active remote session exists
-    When the User views the MAIN WORKSPACE section body
-    Then a "Last remote sync: N min ago" line is visible below the clean/dirty state line
-
-#### Scenario: Create Session Checks Out Collab Branch and Transitions to Active Mode
-
-    Given the CDD dashboard is open in setup mode (no active session)
-    And the working tree is clean
-    When the User types "v0.5-sprint" and clicks Create
-    Then the local machine checks out collab/v0.5-sprint
-    And the REMOTE COLLABORATION section transitions to active mode
-    And the session name and sync state badge are shown
-
-#### Scenario: Disconnect Returns to Main and Transitions to Setup Mode
-
-    Given the CDD dashboard is open in active mode with session "v0.5-sprint"
-    And the working tree is clean
-    When the User clicks the Disconnect button
-    Then the local machine checks out main
-    And the REMOTE COLLABORATION section transitions back to setup mode
-    And the creation row and known sessions table are shown
-
-#### Scenario: Delete Button Visible in Known Sessions Table
-
-    Given the CDD dashboard is open
-    And no active remote session exists
-    And at least one collab session exists on the remote
-    When the User views the known sessions table
-    Then each session row has a "Delete" button to the left of the "Join" button
 
 #### Scenario: Delete Confirmation Modal With Standard Warning
 
@@ -502,6 +475,9 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - [ ] Delete Confirmation Modal: same overlay/container pattern as Feature Detail Modal and Kill modal
 - [ ] Delete Confirmation Modal: Cancel and Delete buttons; Delete button uses `--purlin-status-error` background with contrasting text
 - [ ] Delete Confirmation Modal (AHEAD/DIVERGED): red warning block with `--purlin-status-error` text on subtle red-tinted background, positioned between body text and buttons
+- [ ] Sync badge colors: SAME=green (`--purlin-status-good`), AHEAD/BEHIND=yellow (`--purlin-status-todo`), DIVERGED=orange (`--purlin-status-warning`) -- matching ISOLATED TEAMS color scheme
+- [ ] Create Session click transitions section from setup mode (creation row + known sessions) to active mode (session dropdown + sync badge)
+- [ ] Disconnect click transitions section from active mode back to setup mode (creation row + known sessions table visible)
 
 ## User Testing Discoveries
 
