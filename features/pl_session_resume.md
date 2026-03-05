@@ -244,7 +244,8 @@ Uncommitted:    [none | summary]
 
 #### Scenario: Invalid Argument Prints Error
 
-    Given the agent invokes /pl-resume invalid
+    Given an agent is in an active session
+    When the agent invokes /pl-resume with an invalid argument
     Then the output contains an error message
     And the error lists valid options: save, architect, builder, qa
     And no checkpoint file is written or read
