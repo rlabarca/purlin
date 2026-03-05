@@ -2348,6 +2348,7 @@ function getThemeColors() {{
     muted: s.getPropertyValue('--purlin-muted').trim(),
     border: s.getPropertyValue('--purlin-border').trim(),
     dim: s.getPropertyValue('--purlin-dim').trim(),
+    statusGood: s.getPropertyValue('--purlin-status-good').trim(),
   }};
 }}
 
@@ -3715,6 +3716,7 @@ function buildCytoscapeElements(features, colors) {{
     var color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
     var catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
     var filename = f.file.split('/').pop();
+    var isAnchor = /^(arch_|design_|policy_)/.test(filename);
     var svgResult = createNodeLabelSVG(f.label, filename, colors);
     nodes.push({{
       data: {{
@@ -3725,6 +3727,7 @@ function buildCytoscapeElements(features, colors) {{
         category: f.category,
         prerequisites: f.prerequisites || [],
         color: color,
+        isAnchor: isAnchor,
         parent: catId,
         svgLabel: svgResult.url,
         nodeHeight: svgResult.height + 12,
@@ -4087,6 +4090,14 @@ function createCytoscape(elements, colors) {{
         }}
       }},
       {{
+        selector: 'node[?isAnchor]',
+        style: {{
+          'border-color': c.statusGood,
+          'border-width': 3,
+          'border-opacity': 0.9,
+        }}
+      }},
+      {{
         selector: '$node > node',
         style: {{
           'label': 'data(label)',
@@ -4155,11 +4166,11 @@ function createCytoscape(elements, colors) {{
       }},
       {{
         selector: 'node.search-hidden',
-        style: {{ 'opacity': 0.1 }}
+        style: {{ 'opacity': 0.15 }}
       }},
       {{
         selector: 'edge.search-hidden',
-        style: {{ 'opacity': 0.05 }}
+        style: {{ 'opacity': 0.08 }}
       }},
     ],
     layout: {{

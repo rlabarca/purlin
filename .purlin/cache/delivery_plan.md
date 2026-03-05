@@ -16,9 +16,9 @@ Config layering introduces a local/shared config split that 3 other TODO feature
 **Completion Commit:** b864705
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Agent Config Skill Rewrite [PENDING]
+## Phase 3 -- Agent Config Skill Rewrite [COMPLETE]
 **Features:** pl_agent_config.md
-**Completion Commit:** --
+**Completion Commit:** 6e6123a
 **QA Bugs Addressed:** --
 
 ## Plan Amendments

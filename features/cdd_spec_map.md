@@ -291,11 +291,11 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - **Observed Behavior:** When typing in the search input while in the Spec Map view, matching nodes either cannot be spotted or the search may not be finding nodes at all. It is unclear whether the search is functioning.
 - **Expected Behavior:** The search MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename. Matching nodes MUST remain at full color and opacity; non-matching nodes MUST be visibly dimmed so results stand out clearly. This is distinct from the Status view behavior (which hides non-matching rows) -- the Spec Map should dim rather than hide.
 - **Action Required:** Builder
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED
 
 ### [BUG] Anchor node green border detection wrong in both directions (Discovered: 2026-03-04)
 - **Scenario:** Visual Specification checklist -- "Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (`--purlin-status-good`) in both themes"
 - **Observed Behavior:** Two failures in the same detection logic: (1) `context_guard.md` and `spec_code_audit_role_clarity.md` are incorrectly rendered with a green border despite not being anchor nodes; (2) `design_*` and `policy_*` files are NOT rendered with a green border despite being anchor nodes. The `arch_*` case has not been verified -- Builder should confirm it as part of the fix.
 - **Expected Behavior:** Only files whose names begin with `arch_`, `design_`, or `policy_` should receive the green border treatment. All other nodes should use the standard border color.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
