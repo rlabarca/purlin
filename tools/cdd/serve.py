@@ -3641,26 +3641,6 @@ var FILENAME_LINE_HEIGHT = 14;
 var CHARS_PER_LINE = 22;
 
 // Dynamic category color palette — avoids green hues (reserved for anchor borders)
-var CATEGORY_PALETTE = [
-  '#0288d1',  // blue
-  '#7B1FA2',  // purple
-  '#E65100',  // orange
-  '#00838F',  // teal
-  '#C62828',  // red
-  '#1565C0',  // darker blue
-  '#6A1B9A',  // deep purple
-  '#BF360C',  // deep orange
-  '#283593',  // indigo
-  '#4527A0',  // deep indigo
-];
-function getCategoryColor(category) {{
-  var hash = 0;
-  for (var i = 0; i < category.length; i++) {{
-    hash = ((hash << 5) - hash) + category.charCodeAt(i);
-    hash = hash & hash;
-  }}
-  return CATEGORY_PALETTE[Math.abs(hash) % CATEGORY_PALETTE.length];
-}}
 
 function wrapText(text, maxChars) {{
   var words = text.split(/\\s+/);
@@ -3724,7 +3704,6 @@ function buildCytoscapeElements(features, colors) {{
 
   features.forEach(function(f) {{
     var id = fileToId[f.file];
-    var color = getCategoryColor(f.category);
     var catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
     var filename = f.file.split('/').pop();
     var isAnchor = /^(arch_|design_|policy_)/.test(filename);
@@ -3737,7 +3716,6 @@ function buildCytoscapeElements(features, colors) {{
         file: f.file,
         category: f.category,
         prerequisites: f.prerequisites || [],
-        color: color,
         isAnchor: isAnchor,
         parent: catId,
         svgLabel: svgResult.url,
@@ -4091,12 +4069,12 @@ function createCytoscape(elements, colors) {{
           'shape': 'round-rectangle',
           'width': 220,
           'height': 'data(nodeHeight)',
-          'background-color': 'data(color)',
+          'background-color': c.surface,
           'background-opacity': 0.15,
           'background-image': 'data(svgLabel)',
           'background-fit': 'contain',
           'border-width': 2,
-          'border-color': 'data(color)',
+          'border-color': c.border,
           'border-opacity': 0.6,
         }}
       }},
