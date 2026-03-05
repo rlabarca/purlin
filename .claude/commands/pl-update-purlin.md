@@ -91,7 +91,8 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
    - **.purlin/ folder intelligence:**
      - Detect structural changes affecting overrides
      - Suggest updates to override files when base structure changes
-     - Merge new config keys while preserving user values
+     - After update, run `sync_config()` to add new keys from `config.json` (shared) to `config.local.json` (local) without overwriting existing values
+     - Warn if deprecated keys found in user's local config
 
 8. **Merge Strategies (for conflicts):**
    - "Accept upstream" - Replace with new version
@@ -112,7 +113,15 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
    - If any step fails, rollback
    - Update `.purlin/.upstream_sha` only on success
 
-11. **Summary Report:**
+11. **Config Sync After Update:**
+   - After `.purlin/.upstream_sha` is written, run the config resolver's `sync_config()` function
+   - Execute: `python3 -c "from tools.config.resolve_config import sync_config; added = sync_config('<project_root>'); print('Added new config keys: ' + ', '.join(added) if added else 'Local config is up to date')"` (adjust path for submodule layout)
+   - If `config.local.json` doesn't exist, `sync_config()` creates it as a copy of `config.json` (shared) and reports: "Created config.local.json from team defaults"
+   - If `config.local.json` exists, walks `config.json` for missing keys, adds them with shared defaults
+   - Display the sync result in the update summary
+   - This step runs unconditionally after every successful update
+
+12. **Summary Report:**
    ```
    === Purlin Update Complete ===
 
