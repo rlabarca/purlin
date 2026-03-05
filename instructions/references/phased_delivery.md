@@ -32,3 +32,12 @@ If the Architect modifies feature specs while a delivery plan is active, the Bui
 
 ## 10.7 CDD Dashboard Integration
 When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays the current phase progress as an inline annotation: `ACTIVE (<count>) [PHASE (<current>/<total>)]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with `current` and `total` values. When all phases are COMPLETE or no delivery plan exists, the phase annotation and API field are omitted.
+
+## 10.8 Per-Phase Sizing Constraints
+
+These are normative caps, not heuristics. The Builder and `/pl-delivery-plan` MUST enforce them when creating or amending delivery plans.
+
+*   **Max 2 features per phase** regardless of complexity. This prevents context exhaustion within a single session. If scope requires more, split into additional phases.
+*   **Max 1 HIGH-complexity feature per phase** if the phase contains any other feature. A phase may contain 1 HIGH + 1 LOW/MEDIUM, or 2 LOW/MEDIUM features, but never 2 HIGH features.
+*   **Dedicated phase for large features:** A single HIGH-complexity feature with 5+ unimplemented scenarios gets its own dedicated phase (no other features in that phase).
+*   **Rationale:** Each feature carries per-feature overhead: spec read, anchor review, companion file read, implementation, test execution, status commit, and checkpoint save. At ~3-5K tokens per agent turn and ~30 usable turns per session, 2 features is the practical ceiling before context pressure degrades output quality.

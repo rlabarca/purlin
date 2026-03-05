@@ -45,13 +45,14 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
 3.  Read `.purlin/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
-4.  **Spec-Level Gap Analysis (Critical):** For each feature in TODO or TESTING state, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
+4.  **Spec-Level Gap Analysis (Critical):** **If a delivery plan exists** (step 2.1.5), only read feature specs for features in the **current phase**. Gap analysis for other phases is deferred to the session that works on those phases. **If no delivery plan exists**, read specs for all features in TODO or TESTING state. For each feature in scope, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
 5.  **Delivery Plan Check:** Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
 6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
     *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
 7.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`. (When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` is a valid secondary confirmation — in a git worktree, the `.git` entry is a file pointer rather than a directory.)
+8.  **Anchor Preload (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) once. Identify every FORBIDDEN pattern and INVARIANT from each anchor and keep them active in working context for the entire session. This replaces per-feature anchor reads — anchors are loaded once at session start, not re-read for each feature.
 
 ### 2.2 Propose a Work Plan
 
@@ -64,8 +65,8 @@ If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead
 5.  Ask the user: **"Ready to resume, or would you like to adjust the plan?"**
 
 #### 2.2.1 Scope Assessment
-If no delivery plan exists, assess whether the work scope warrants phased delivery. If 3+
-HIGH-complexity features or 5+ features of any mix exist, recommend phasing. Run
+If no delivery plan exists, assess whether the work scope warrants phased delivery. If 2+
+HIGH-complexity features or 3+ features of any mix exist, recommend phasing. Run
 `/pl-delivery-plan` to create or review a plan (contains scope heuristics, canonical format,
 and rules). If phasing is not warranted or the user declines, proceed with the standard work
 plan below.
@@ -118,7 +119,7 @@ For each feature in the approved work plan, execute this protocol:
 
 ### 0. Per-Feature Pre-Flight (MANDATORY)
 Before starting work on each feature from the approved plan:
-*   **Anchor Sweep (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) unconditionally — do NOT rely solely on the feature's `> Prerequisite:` links to discover relevant anchors, as those links may be incomplete. Identify every FORBIDDEN pattern and INVARIANT from each anchor that applies to your implementation domain and keep them active in working context throughout this feature. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
+*   **Anchor Review (MANDATORY):** Review the session-preloaded anchor constraints (loaded in step 2.1.8) and identify FORBIDDEN patterns and INVARIANTs applicable to this feature. Do NOT re-read the anchor files — they were loaded once at session start. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
 *   **Visual Design Source of Truth:** When the feature has a `## Visual Specification` section, read the `- **Description:**` markdown as your working source of truth for visual design — NOT the binary image/PDF artifacts in `features/design/`. The descriptions have already been processed and mapped to the project's design token system by the Architect. Binary artifacts are audit references for the Architect and QA, not Builder inputs.
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
@@ -191,6 +192,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
     *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
 *   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). (The Critic runs automatically, keeping `critic.json` files and `CRITIC_REPORT.md` current.) If the status did not update as expected, investigate and correct before moving on.
+*   **D2. Per-Feature Checkpoint (MANDATORY):** After the status tag commit is verified, execute `/pl-resume save` automatically. This ensures session state is always recoverable if context is cleared or the session ends unexpectedly. Do NOT skip this step — it is the Builder's safety net against context exhaustion.
 *   **E. Phase Completion Check:** If a delivery plan exists at `.purlin/cache/delivery_plan.md` and the completed feature belongs to the current phase:
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
