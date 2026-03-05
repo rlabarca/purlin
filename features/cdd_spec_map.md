@@ -77,7 +77,13 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 *   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
 *   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
 
-### 2.8 Machine-Readable Output
+### 2.8 Search Filtering
+*   **Match Logic:** When the user types in the dashboard search input (owned by `cdd_status_monitor.md` Section 2.2.1), the Spec Map MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename.
+*   **Visual Treatment -- Dim Non-Matches:** Matching nodes MUST remain at full color and opacity. Non-matching nodes (and their edges) MUST be visibly dimmed (reduced opacity) so that results stand out clearly.
+*   **Distinction from Status View:** The Status view hides non-matching rows entirely. The Spec Map MUST dim rather than hide, because removing nodes from a graph would destroy spatial context and layout stability.
+*   **Empty Search:** When the search input is empty or cleared, all nodes MUST return to full color and opacity.
+
+### 2.9 Machine-Readable Output
 *   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.purlin/cache/dependency_graph.json`.
 *   **Schema:**
     ```json
@@ -231,6 +237,15 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the category box fills as much of the viewable area as possible while remaining fully visible
     And the interaction state is set to modified so auto-refresh preserves the zoom level
 
+#### Scenario: Search Dims Non-Matching Nodes
+    Given the User is viewing the Spec Map view
+    When the User types a search term in the dashboard search input
+    Then nodes whose Label or filename contain the search term (case-insensitive) remain at full color and opacity
+    And nodes that do not match are visibly dimmed (reduced opacity)
+    And edges connected only to non-matching nodes are also dimmed
+    When the User clears the search input
+    Then all nodes and edges return to full color and opacity
+
 #### Scenario: Clicks on Edges Pass Through
     Given the User is viewing the Spec Map view
     When the User clicks on an edge (line or arrow between nodes)
@@ -254,7 +269,8 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
 - [ ] SVG node labels update text colors on theme switch
 - [ ] Theme persists across auto-refresh cycles
-- [ ] Search/filter input (in dashboard header) filters graph nodes by label or filename
+- [ ] Search input dims non-matching nodes and edges (reduced opacity) while matching nodes stay at full color
+- [ ] Clearing the search input restores all nodes and edges to full color and opacity
 - [ ] Manually-moved node positions persist across page refresh when the graph has not changed substantively
 - [ ] "Recenter Graph" button resets manually-moved node positions to packed layout in addition to resetting zoom
 - [ ] Category labels readable at overview zoom (~0.15) without squinting
@@ -271,15 +287,15 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 ## User Testing Discoveries
 
 ### [DISCOVERY] Spec Map search: functional behavior and visual treatment unspecified (Discovered: 2026-03-04)
-- **Scenario:** NONE (no Gherkin scenario covers Spec Map search behavior)
+- **Scenario:** Search Dims Non-Matching Nodes (added Section 2.8 and manual scenario)
 - **Observed Behavior:** When typing in the search input while in the Spec Map view, matching nodes either cannot be spotted or the search may not be finding nodes at all. It is unclear whether the search is functioning.
 - **Expected Behavior:** The search MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename. Matching nodes MUST remain at full color and opacity; non-matching nodes MUST be visibly dimmed so results stand out clearly. This is distinct from the Status view behavior (which hides non-matching rows) -- the Spec Map should dim rather than hide.
-- **Action Required:** Architect
-- **Status:** OPEN
+- **Action Required:** Builder
+- **Status:** SPEC_UPDATED
 
-### [BUG] Non-anchor-node features rendered with green border (Discovered: 2026-03-04)
+### [BUG] Anchor node green border detection wrong in both directions (Discovered: 2026-03-04)
 - **Scenario:** Visual Specification checklist -- "Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (`--purlin-status-good`) in both themes"
-- **Observed Behavior:** `context_guard.md` and `spec_code_audit_role_clarity.md` are rendered with a green border in the Spec Map, despite not matching the `arch_*`, `design_*`, or `policy_*` filename convention. Both are regular feature files with `[TODO]` lifecycle status.
+- **Observed Behavior:** Two failures in the same detection logic: (1) `context_guard.md` and `spec_code_audit_role_clarity.md` are incorrectly rendered with a green border despite not being anchor nodes; (2) `design_*` files are NOT rendered with a green border despite being anchor nodes. The `arch_*` and `policy_*` cases have not been verified.
 - **Expected Behavior:** Only files whose names begin with `arch_`, `design_`, or `policy_` should receive the green border treatment. All other nodes should use the standard border color.
 - **Action Required:** Builder
 - **Status:** OPEN
