@@ -202,8 +202,17 @@ class TestJoinExistingSessionUpdatesRuntime(unittest.TestCase):
     @patch('serve.subprocess.run')
     @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
     def test_switch_writes_runtime(self, mock_config, mock_run):
-        # First call (rev-parse) succeeds = ref exists
-        mock_run.return_value = MagicMock(returncode=0, stdout='abc1234', stderr='')
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''  # clean working tree
+            elif 'rev-parse' in cmd_str:
+                result.stdout = 'abc1234'
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
 
         body = json.dumps({"name": "v0.5-sprint"}).encode('utf-8')
         handler = MagicMock()
@@ -226,11 +235,13 @@ class TestJoinExistingSessionUpdatesRuntime(unittest.TestCase):
 
 
 class TestDisconnectClearsActiveSession(unittest.TestCase):
-    """Scenario: Disconnect Clears Active Session
+    """Scenario: Disconnect Checks Out Main and Clears Active Session
 
     Given an active session "v0.5-sprint" is set
+    And the working tree is clean
     When a POST request is sent to /remote-collab/disconnect
-    Then .purlin/runtime/active_remote_session is empty or absent
+    Then the local branch main is checked out
+    And .purlin/runtime/active_remote_session is empty or absent
     And GET /status.json does not contain a remote_collab field
     And collab/v0.5-sprint still exists on the remote
     """
@@ -245,7 +256,12 @@ class TestDisconnectClearsActiveSession(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    def test_disconnect_clears_runtime(self):
+    @patch('serve.subprocess.run')
+    def test_disconnect_clears_runtime(self, mock_run):
+        # git status --porcelain returns empty (clean tree)
+        # git checkout main succeeds
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+
         handler = MagicMock()
         handler.headers = {'Content-Length': '2'}
         handler.rfile = io.BytesIO(b'{}')
@@ -257,6 +273,13 @@ class TestDisconnectClearsActiveSession(unittest.TestCase):
         args = handler._send_json.call_args[0]
         self.assertEqual(args[0], 200)
         self.assertEqual(args[1]['status'], 'ok')
+
+        # Verify git checkout main was called
+        checkout_calls = [c for c in mock_run.call_args_list
+                          if isinstance(c[0][0], list) and 'checkout' in c[0][0]
+                          and 'main' in c[0][0]]
+        self.assertTrue(len(checkout_calls) > 0,
+                        "git checkout main should have been called")
 
         rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime',
                                'active_remote_session')
@@ -304,24 +327,24 @@ class TestSwitchSessionUpdatesActiveSession(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'hotfix-auth')
 
 
-class TestSyncStateNoMain(unittest.TestCase):
-    """When local main branch does not exist, sync state returns NO_MAIN.
+class TestSyncStateNoLocal(unittest.TestCase):
+    """When local collab branch does not exist, sync state returns NO_LOCAL.
 
     Given an active session "v0.5-sprint" is set
     And the remote tracking ref origin/collab/v0.5-sprint exists
-    But local branch "main" does not exist
+    But local branch "collab/v0.5-sprint" does not exist
     When compute_remote_sync_state is called
-    Then sync_state is "NO_MAIN"
+    Then sync_state is "NO_LOCAL"
     """
 
     @patch('serve.subprocess.run')
     @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_no_main_state(self, mock_config, mock_run):
+    def test_no_local_state(self, mock_config, mock_run):
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 ref = cmd[-1] if cmd else ''
-                if ref == 'main':
+                if ref == 'collab/v0.5-sprint':
                     raise subprocess.CalledProcessError(128, cmd)
                 result.stdout = 'abc1234'
             else:
@@ -330,7 +353,7 @@ class TestSyncStateNoMain(unittest.TestCase):
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("v0.5-sprint")
-        self.assertEqual(state['sync_state'], 'NO_MAIN')
+        self.assertEqual(state['sync_state'], 'NO_LOCAL')
         self.assertEqual(state['commits_ahead'], 0)
         self.assertEqual(state['commits_behind'], 0)
 
@@ -366,7 +389,7 @@ class TestSyncStateAhead(unittest.TestCase):
     """Scenario: Sync State AHEAD When Local Has Unpushed Commits
 
     Given an active session "v0.5-sprint" is set
-    And local main has 3 commits not in origin/collab/v0.5-sprint
+    And local collab/v0.5-sprint has 3 commits not in origin/collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "AHEAD"
     """
@@ -379,11 +402,13 @@ class TestSyncStateAhead(unittest.TestCase):
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
-                # Check direction
-                cmd_str = ' '.join(cmd)
-                if '..main' in cmd_str:
+                # Find the range arg (contains '..')
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('origin/'):
+                    # ahead: origin/collab/..collab/ -> local has 3 extra
                     result.stdout = 'abc commit1\ndef commit2\nghi commit3\n'
                 else:
+                    # behind: collab/..origin/collab/ -> remote has 0 extra
                     result.stdout = ''
             else:
                 result.stdout = ''
@@ -399,7 +424,7 @@ class TestSyncStateBehind(unittest.TestCase):
     """Scenario: Sync State BEHIND When Remote Has New Commits
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "BEHIND"
     """
@@ -412,11 +437,13 @@ class TestSyncStateBehind(unittest.TestCase):
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
-                cmd_str = ' '.join(cmd)
-                if '..main' in cmd_str:
-                    result.stdout = ''  # ahead = 0
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('origin/'):
+                    # ahead: local has 0 extra
+                    result.stdout = ''
                 else:
-                    result.stdout = 'xyz commit1\nuvw commit2\n'  # behind = 2
+                    # behind: remote has 2 extra
+                    result.stdout = 'xyz commit1\nuvw commit2\n'
             else:
                 result.stdout = ''
             return result
@@ -431,8 +458,8 @@ class TestSyncStateDiverged(unittest.TestCase):
     """Scenario: Sync State DIVERGED When Both Sides Have Commits
 
     Given an active session "v0.5-sprint" is set
-    And local main has 1 commit not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And local collab/v0.5-sprint has 1 commit not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "DIVERGED"
     """
@@ -445,11 +472,13 @@ class TestSyncStateDiverged(unittest.TestCase):
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
-                cmd_str = ' '.join(cmd)
-                if '..main' in cmd_str:
-                    result.stdout = 'abc commit1\n'  # ahead = 1
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('origin/'):
+                    # ahead: local has 1 extra
+                    result.stdout = 'abc commit1\n'
                 else:
-                    result.stdout = 'xyz commit1\nuvw commit2\n'  # behind = 2
+                    # behind: remote has 2 extra
+                    result.stdout = 'xyz commit1\nuvw commit2\n'
             else:
                 result.stdout = ''
             return result
@@ -732,7 +761,7 @@ class TestPerSessionSyncStateInRemoteCollabSessions(unittest.TestCase):
     """Scenario: Per-Session Sync State in remote_collab_sessions
 
     Given collab/v0.5-sprint exists as a remote tracking branch
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab_sessions contains an entry for "v0.5-sprint"
     And that entry has sync_state "BEHIND" and commits_behind 2
@@ -750,10 +779,13 @@ class TestPerSessionSyncStateInRemoteCollabSessions(unittest.TestCase):
             elif 'rev-parse' in cmd_str:
                 result.stdout = 'abc1234'
             elif 'log' in cmd_str:
-                if '..main' in cmd_str:
-                    result.stdout = ''  # ahead = 0
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('origin/'):
+                    # ahead: local has 0 extra
+                    result.stdout = ''
                 else:
-                    result.stdout = 'xyz commit1\nuvw commit2\n'  # behind = 2
+                    # behind: remote has 2 extra
+                    result.stdout = 'xyz commit1\nuvw commit2\n'
             else:
                 result.stdout = ''
             return result
@@ -766,6 +798,178 @@ class TestPerSessionSyncStateInRemoteCollabSessions(unittest.TestCase):
         self.assertEqual(s['sync_state'], 'BEHIND')
         self.assertEqual(s['commits_behind'], 2)
         self.assertEqual(s['commits_ahead'], 0)
+
+
+class TestCreateSessionBlockedWhenDirty(unittest.TestCase):
+    """Scenario: Create Session Blocked When Working Tree Is Dirty
+
+    Given the CDD server is running
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/create with body {"name": "v0.5-sprint"}
+    Then the response contains an error message about dirty working tree
+    And no branch is created
+    And the current branch is unchanged
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_create_blocked_dirty_tree(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ' M src/main.py\n'  # dirty file outside .purlin/
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"name": "v0.5-sprint"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_create(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('uncommitted', args[1]['error'].lower())
+
+        # Verify no git branch or push calls were made
+        for call in mock_run.call_args_list:
+            cmd = call[0][0] if call[0] else []
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
+            self.assertNotIn('git branch', cmd_str)
+            self.assertNotIn('git push', cmd_str)
+
+        # Verify runtime file was NOT written
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime',
+                               'active_remote_session')
+        self.assertFalse(os.path.exists(rt_path))
+
+
+class TestDisconnectBlockedWhenDirty(unittest.TestCase):
+    """Scenario: Disconnect Blocked When Working Tree Is Dirty
+
+    Given an active session "v0.5-sprint" is set
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/disconnect
+    Then the response contains an error message about dirty working tree
+    And the current branch remains collab/v0.5-sprint
+    And .purlin/runtime/active_remote_session still contains "v0.5-sprint"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        rt_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(rt_dir, exist_ok=True)
+        with open(os.path.join(rt_dir, 'active_remote_session'), 'w') as f:
+            f.write('v0.5-sprint')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    def test_disconnect_blocked_dirty_tree(self, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ' M src/main.py\n'
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        handler = MagicMock()
+        handler.headers = {'Content-Length': '2'}
+        handler.rfile = io.BytesIO(b'{}')
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_disconnect(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('uncommitted', args[1]['error'].lower())
+
+        # Verify no checkout was attempted
+        for call in mock_run.call_args_list:
+            cmd = call[0][0] if call[0] else []
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else str(cmd)
+            self.assertNotIn('checkout', cmd_str)
+
+        # Verify runtime file still has session
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime',
+                               'active_remote_session')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'v0.5-sprint')
+
+
+class TestSwitchSessionBlockedWhenDirty(unittest.TestCase):
+    """Scenario: Switch Session Blocked When Working Tree Is Dirty
+
+    Given an active session "v0.5-sprint" is set
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/switch with body {"name": "hotfix-auth"}
+    Then the response contains an error message about dirty working tree
+    And the current branch remains collab/v0.5-sprint
+    And .purlin/runtime/active_remote_session still contains "v0.5-sprint"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        rt_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(rt_dir, exist_ok=True)
+        with open(os.path.join(rt_dir, 'active_remote_session'), 'w') as f:
+            f.write('v0.5-sprint')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_switch_blocked_dirty_tree(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ' M src/main.py\n'
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"name": "hotfix-auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_switch(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('uncommitted', args[1]['error'].lower())
+
+        # Verify runtime file still has original session
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime',
+                               'active_remote_session')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'v0.5-sprint')
 
 
 def run_tests():

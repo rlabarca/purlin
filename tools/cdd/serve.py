@@ -1025,44 +1025,48 @@ def get_remote_collab_sessions():
 
 
 def compute_remote_sync_state(session_name):
-    """Compute SAME/AHEAD/BEHIND/DIVERGED between local main and remote collab branch.
+    """Compute SAME/AHEAD/BEHIND/DIVERGED between local and remote collab branch.
 
+    Compares local collab/<session> vs origin/collab/<session> (same-branch).
     Returns dict with sync_state, commits_ahead, commits_behind.
     Uses locally cached refs (no network fetch during polling).
     """
     rc = get_remote_config()
     remote = rc['remote']
-    ref = f'{remote}/collab/{session_name}'
+    remote_ref = f'{remote}/collab/{session_name}'
+    local_ref = f'collab/{session_name}'
 
     # Check if the remote tracking ref exists
     try:
         subprocess.run(
-            ['git', 'rev-parse', '--verify', ref],
+            ['git', 'rev-parse', '--verify', remote_ref],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
 
-    # Check if local main branch exists (may be absent if cloned from collab branch)
+    # Check if local collab branch exists
     try:
         subprocess.run(
-            ['git', 'rev-parse', '--verify', 'main'],
+            ['git', 'rev-parse', '--verify', local_ref],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return {'sync_state': 'NO_MAIN', 'commits_ahead': 0,
+        return {'sync_state': 'NO_LOCAL', 'commits_ahead': 0,
                 'commits_behind': 0}
 
     try:
+        # Commits local has that remote doesn't (local ahead)
         ahead_result = subprocess.run(
-            ['git', 'log', f'{ref}..main', '--oneline'],
+            ['git', 'log', f'{remote_ref}..{local_ref}', '--oneline'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
         ahead_lines = [l for l in ahead_result.stdout.strip().splitlines() if l]
         commits_ahead = len(ahead_lines)
 
+        # Commits remote has that local doesn't (remote ahead)
         behind_result = subprocess.run(
-            ['git', 'log', f'main..{ref}', '--oneline'],
+            ['git', 'log', f'{local_ref}..{remote_ref}', '--oneline'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
         behind_lines = [l for l in behind_result.stdout.strip().splitlines() if l]
@@ -1126,6 +1130,29 @@ def get_remote_contributors(session_name, max_entries=10):
     ordered = list(contributors.values())[:max_entries]
     return ordered
 
+
+
+def _is_working_tree_dirty():
+    """Check if the working tree has uncommitted changes outside .purlin/.
+
+    Returns True if dirty, False if clean.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=10)
+        for line in result.stdout.splitlines():
+            if len(line) < 4:
+                continue
+            path = line[3:]
+            if ' -> ' in path:
+                path = path.split(' -> ', 1)[1]
+            if not path.startswith('.purlin/'):
+                return True
+        return False
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
 
 
 def _auto_fetch_worker():
@@ -1378,18 +1405,18 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
     elif sync_state == 'AHEAD':
         # Local is ahead -> remote is behind
         sync_badge = '<span class="st-todo">BEHIND</span>'
-        annotation = f'Remote is {commits_ahead} behind local main'
+        annotation = f'Remote is {commits_ahead} behind local'
         count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
                         f'({annotation})</span>')
     elif sync_state == 'BEHIND':
         # Local is behind -> remote is ahead
         sync_badge = '<span class="st-todo">AHEAD</span>'
-        annotation = f'Remote is {commits_behind} ahead of local main'
+        annotation = f'Remote is {commits_behind} ahead of local'
         count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
                         f'({annotation})</span>')
     elif sync_state == 'DIVERGED':
         sync_badge = '<span class="st-disputed">DIVERGED</span>'
-        annotation = f'Remote is {commits_behind} ahead, {commits_ahead} behind local main'
+        annotation = f'Remote is {commits_behind} ahead, {commits_ahead} behind local'
         count_detail = (f'<span style="color:var(--purlin-muted);font-size:11px">'
                         f'({annotation})</span>')
     elif sync_state == 'SAME':
@@ -1581,13 +1608,13 @@ def _collapsed_remote_collab_label(active_session, sync_data, sessions):
         return ("st-disputed", active_session, "NO MAIN")
     # Flip AHEAD<->BEHIND: compute_remote_sync_state uses local perspective, display uses remote
     if state == 'AHEAD':
-        annotation = f'BEHIND (Remote is {commits_ahead} behind local main)'
+        annotation = f'BEHIND (Remote is {commits_ahead} behind local)'
         return ("st-todo", active_session, annotation)
     elif state == 'BEHIND':
-        annotation = f'AHEAD (Remote is {commits_behind} ahead of local main)'
+        annotation = f'AHEAD (Remote is {commits_behind} ahead of local)'
         return ("st-todo", active_session, annotation)
     elif state == 'DIVERGED':
-        annotation = f'DIVERGED (Remote is {commits_behind} ahead, {commits_ahead} behind local main)'
+        annotation = f'DIVERGED (Remote is {commits_behind} ahead, {commits_ahead} behind local)'
         return ("st-disputed", active_session, annotation)
     else:
         return ("st-good", active_session, state)
@@ -3069,12 +3096,12 @@ function showDeleteSessionModal(name) {{
   if (session && session.sync_state === 'BEHIND') {{
     // Local is behind = remote has commits not in local -> data loss
     warning.innerHTML = 'WARNING: The remote branch has ' + session.commits_behind +
-      ' commit(s) not in your local main. Deleting this session will permanently discard those commits.';
+      ' commit(s) not in your local branch. Deleting this session will permanently discard those commits.';
     warning.style.display = '';
     warning.style.color = 'var(--purlin-status-error)';
     warning.style.background = 'rgba(248,113,113,0.1)';
   }} else if (session && session.sync_state === 'DIVERGED') {{
-    warning.innerHTML = 'WARNING: The remote branch has diverged from your local main (' +
+    warning.innerHTML = 'WARNING: The remote branch has diverged from your local branch (' +
       session.commits_behind + ' commit(s) ahead, ' + session.commits_ahead +
       ' behind). Deleting this session will permanently discard the ' +
       session.commits_behind + ' remote-only commit(s).';
@@ -5155,6 +5182,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'Invalid session name'})
             return
 
+        # Abort if working tree is dirty
+        if _is_working_tree_dirty():
+            self._send_json(400, {
+                'error': 'Working tree has uncommitted changes. '
+                         'Commit or stash before creating a session.'
+            })
+            return
+
         rc = get_remote_config()
         remote = rc['remote']
         branch = f'collab/{name}'
@@ -5171,6 +5206,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 ['git', 'push', remote, branch],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=30)
+
+            # Checkout the new branch
+            subprocess.run(
+                ['git', 'checkout', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
 
             # Write runtime file
             _write_active_remote_session(name)
@@ -5208,9 +5249,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'Name is required'})
             return
 
+        # Abort if working tree is dirty
+        if _is_working_tree_dirty():
+            self._send_json(400, {
+                'error': 'Working tree has uncommitted changes. '
+                         'Commit or stash before switching sessions.'
+            })
+            return
+
         rc = get_remote_config()
         remote = rc['remote']
         ref = f'{remote}/collab/{name}'
+        branch = f'collab/{name}'
 
         # Verify remote tracking ref exists, or fetch it
         try:
@@ -5222,7 +5272,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Try fetching
             try:
                 subprocess.run(
-                    ['git', 'fetch', remote, f'collab/{name}'],
+                    ['git', 'fetch', remote, branch],
                     capture_output=True, text=True, check=True,
                     cwd=PROJECT_ROOT, timeout=30)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
@@ -5231,11 +5281,51 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 })
                 return
 
+        # Checkout the branch; create tracking branch if needed
+        try:
+            subprocess.run(
+                ['git', 'checkout', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
+        except subprocess.CalledProcessError:
+            try:
+                subprocess.run(
+                    ['git', 'checkout', '-b', branch, ref],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                self._send_json(500, {
+                    'error': f'Failed to checkout {branch}: '
+                             f'{getattr(exc, "stderr", str(exc))}'
+                })
+                return
+
         _write_active_remote_session(name)
         self._send_json(200, {'status': 'ok', 'session': name})
 
     def _handle_remote_collab_disconnect(self):
-        """POST /remote-collab/disconnect — clear active session."""
+        """POST /remote-collab/disconnect — clear active session, checkout main."""
+        # Abort if working tree is dirty
+        if _is_working_tree_dirty():
+            self._send_json(400, {
+                'error': 'Working tree has uncommitted changes. '
+                         'Commit or stash before disconnecting.'
+            })
+            return
+
+        try:
+            subprocess.run(
+                ['git', 'checkout', 'main'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            self._send_json(500, {
+                'error': f'Failed to checkout main: '
+                         f'{getattr(exc, "stderr", str(exc))}'
+            })
+            return
+
         _clear_active_remote_session()
         self._send_json(200, {'status': 'ok'})
 
