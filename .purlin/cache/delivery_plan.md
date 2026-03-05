@@ -26,9 +26,9 @@ Seven features reset to TODO by Architect commit 963e7b6 (manual-to-automated sc
 **Completion Commit:** 7abc0a5
 **QA Bugs Addressed:** --
 
-## Phase 5 -- What's Different [PENDING]
+## Phase 5 -- What's Different [COMPLETE]
 **Features:** collab_whats_different.md
-**Completion Commit:** --
+**Completion Commit:** fe8c240
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
