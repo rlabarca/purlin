@@ -1749,6 +1749,9 @@ def generate_html(cache=None):
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
+    # Current branch for MAIN WORKSPACE heading
+    current_branch = _get_collaboration_branch()
+
     # Isolated Teams detection for dashboard
     isolation_worktrees = get_isolation_worktrees()
     isolations_active = bool(isolation_worktrees)
@@ -2204,7 +2207,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
         <span class="chevron" id="workspace-section-chevron">&#9654;</span>
-        <h3>Main Workspace</h3>
+        <h3>Main Workspace ({current_branch})</h3>
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">

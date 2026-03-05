@@ -20,7 +20,7 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - `main_diff`: computed by `_compute_main_diff(branch, collab_branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..<collab_branch> --oneline` (behind check). Query 2: `git log <collab_branch>..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
 - `committed`: computed via `git diff <collab_branch>...<branch> --name-only` (three-dot) run from PROJECT_ROOT. Three-dot diffs against common ancestor — always empty for SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED. May be all-zero for AHEAD/DIVERGED if commits are `--allow-empty`.
 - `uncommitted`: computed via `git -C <path> status --porcelain` run from the worktree directory. Captures staged, unstaged, and untracked changes. Independent of `main_diff` state — a worktree at SAME can have uncommitted changes. For renames (`XY old -> new`), the new path is used for categorization. `.purlin/` files excluded.
-- `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.json` files after the project root write. Failures collected as `warnings`.
+- `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.local.json` files after the project root write. Failures collected as `warnings`.
 - Agent Config heading annotation applied server-side in `generate_html()`.
 - Kill modal: dedicated overlay element (`kill-modal-overlay`) with 3-state content (dirty / unsynced / clean) and per-isolation name scoping. Populated by `showKillModal(name, dryRunResponse)`.
 

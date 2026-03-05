@@ -29,6 +29,7 @@ from serve import (
     get_isolation_worktrees,
     get_git_status,
     generate_api_status_json,
+    generate_html,
     generate_workspace_json,
     Handler,
     PROJECT_ROOT,
@@ -711,10 +712,10 @@ class TestAgentConfigPropagation(unittest.TestCase):
                 root_config = json.load(f)
             self.assertEqual(root_config['agents']['architect']['effort'], 'medium')
 
-            # Verify worktree configs updated
+            # Verify worktree configs updated (handler writes to config.local.json)
             for wt_name in ('feat1', 'ui'):
                 wt_cfg_path = os.path.join(
-                    td, '.worktrees', wt_name, '.purlin', 'config.json')
+                    td, '.worktrees', wt_name, '.purlin', 'config.local.json')
                 with open(wt_cfg_path, 'r') as f:
                     wt_config = json.load(f)
                 self.assertEqual(wt_config['agents']['architect']['effort'], 'medium')
@@ -1132,6 +1133,64 @@ class TestNewIsolationInputCreatesNamedWorktree(unittest.TestCase):
         html = _isolation_section_html(worktrees)
         self.assertIn('feat2', html)
         self.assertIn('isolated/feat2', html)
+
+
+class TestMainWorkspaceHeadingBranchLabel(unittest.TestCase):
+    """Scenarios: MAIN WORKSPACE Heading Includes Branch Name,
+    Branch Name Matches Git Branch, Heading Updates After Branch Change.
+
+    Verifies that the MAIN WORKSPACE section heading in generate_html()
+    includes the current branch name from _get_collaboration_branch().
+    """
+
+    # Minimal mocks for generate_html dependencies
+    _GH_PATCHES = {
+        'serve.get_git_status': '',
+        'serve.get_last_commit': 'abc1234 test (now)',
+        'serve.get_isolation_worktrees': [],
+        'serve.get_active_remote_session': None,
+        'serve._has_git_remote': False,
+        'serve.get_delivery_phase': None,
+    }
+
+    def _call_generate_html(self, branch_name):
+        """Call generate_html with all deps mocked, returning the HTML string."""
+        patches = {}
+        for target, rv in self._GH_PATCHES.items():
+            p = patch(target, return_value=rv)
+            patches[target] = p.start()
+        p_branch = patch('serve._get_collaboration_branch', return_value=branch_name)
+        p_branch.start()
+        p_api = patch('serve.generate_api_status_json', return_value={
+            'features': [], 'critic_last_run': '', 'generated_at': '',
+        })
+        p_api.start()
+        p_rc = patch('serve.get_release_checklist', return_value=([], [], []))
+        p_rc.start()
+        try:
+            return generate_html()
+        finally:
+            patch.stopall()
+
+    def test_heading_includes_branch_name(self):
+        """MAIN WORKSPACE heading contains the branch name (Section 2.3)."""
+        html = self._call_generate_html('collab/purlincollab')
+        self.assertIn('Main Workspace (collab/purlincollab)', html)
+
+    def test_branch_name_matches_mock_value(self):
+        """Branch in heading matches whatever _get_collaboration_branch returns."""
+        html = self._call_generate_html('feature/my-branch')
+        self.assertIn('Main Workspace (feature/my-branch)', html)
+        self.assertNotIn('Main Workspace (collab/', html)
+
+    def test_heading_updates_after_branch_change(self):
+        """Two calls with different branches produce different headings."""
+        html1 = self._call_generate_html('main')
+        html2 = self._call_generate_html('collab/test')
+        self.assertIn('Main Workspace (main)', html1)
+        self.assertNotIn('Main Workspace (collab/test)', html1)
+        self.assertIn('Main Workspace (collab/test)', html2)
+        self.assertNotIn('Main Workspace (main)', html2)
 
 
 # ===================================================================
