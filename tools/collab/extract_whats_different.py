@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Extraction tool for the What's Different? feature.
 
-Produces structured JSON from git range queries comparing local main
-vs a remote collab branch. Input: session name. Output: JSON to stdout.
+Produces structured JSON from git range queries comparing local collab
+branch vs remote collab branch. Input: session name. Output: JSON to stdout.
 
 Categorizes changed files into specs, code, tests, companion files,
 purlin config, and submodule changes. Parses status commits for
@@ -51,17 +51,18 @@ def _run_git(args, cwd=None):
 
 
 def compute_sync_state(session_name):
-    """Determine SAME/AHEAD/BEHIND/DIVERGED between local main and remote collab branch."""
-    ref = f'{REMOTE}/collab/{session_name}'
+    """Determine SAME/AHEAD/BEHIND/DIVERGED between local and remote collab branch."""
+    remote_ref = f'{REMOTE}/collab/{session_name}'
+    local_ref = f'collab/{session_name}'
 
-    # Commits local main has that remote does not
+    # Commits local collab has that remote does not
     ahead_lines = _run_git(
-        ['log', f'{ref}..main', '--oneline']).strip().splitlines()
+        ['log', f'{remote_ref}..{local_ref}', '--oneline']).strip().splitlines()
     ahead_lines = [l for l in ahead_lines if l.strip()]
 
-    # Commits remote has that local main does not
+    # Commits remote has that local collab does not
     behind_lines = _run_git(
-        ['log', f'main..{ref}', '--oneline']).strip().splitlines()
+        ['log', f'{local_ref}..{remote_ref}', '--oneline']).strip().splitlines()
     behind_lines = [l for l in behind_lines if l.strip()]
 
     ahead = len(ahead_lines)
@@ -88,6 +89,10 @@ def compute_sync_state(session_name):
 # Patterns for lifecycle status commits
 _STATUS_RE = re.compile(
     r'\[(Complete|Ready for Verification|TODO)\s+features/(\S+\.md)\]')
+
+# Purlin infrastructure launcher scripts (bootstrap + isolation)
+_PURLIN_LAUNCHER_RE = re.compile(
+    r'^run_(?:[a-zA-Z0-9_-]{1,12}_)?(?:architect|builder|qa)\.sh$')
 
 # Patterns for scope tags in commit messages
 _SCOPE_RE = re.compile(r'\[Scope:\s*(\S+)\]')
@@ -128,6 +133,13 @@ def categorize_file(path):
     # Tests
     if path.startswith('tests/') or '/test_' in path or path.endswith('_test.py'):
         return 'test'
+
+    # Purlin infrastructure files (launchers and command definitions)
+    basename = os.path.basename(path)
+    if _PURLIN_LAUNCHER_RE.match(basename):
+        return 'purlin_config'
+    if path.startswith('.claude/commands/pl-'):
+        return 'purlin_config'
 
     # Everything else is code
     return 'code'
@@ -357,8 +369,8 @@ def extract_direction(range_spec):
     """Extract structured data for one direction (local or collab).
 
     Args:
-        range_spec: git range like 'origin/collab/session..main' or
-                    'main..origin/collab/session'
+        range_spec: git range like 'origin/collab/session..collab/session' or
+                    'collab/session..origin/collab/session'
 
     Returns dict with: commits, changed_files, categories, transitions,
     discovery_count, decisions.
@@ -385,7 +397,8 @@ def extract(session_name):
 
     Returns the full structured JSON for both directions.
     """
-    ref = f'{REMOTE}/collab/{session_name}'
+    remote_ref = f'{REMOTE}/collab/{session_name}'
+    local_ref = f'collab/{session_name}'
     sync = compute_sync_state(session_name)
     state = sync['sync_state']
 
@@ -401,14 +414,14 @@ def extract(session_name):
     if state == 'SAME':
         return result
 
-    # Local changes (what main has that collab doesn't)
+    # Local changes (what local collab has that remote doesn't)
     if state in ('AHEAD', 'DIVERGED'):
-        local = extract_direction(f'{ref}..main')
+        local = extract_direction(f'{remote_ref}..{local_ref}')
         result['local_changes'] = local
 
-    # Collab changes (what collab has that main doesn't)
+    # Collab changes (what remote has that local collab doesn't)
     if state in ('BEHIND', 'DIVERGED'):
-        collab = extract_direction(f'main..{ref}')
+        collab = extract_direction(f'{local_ref}..{remote_ref}')
         result['collab_changes'] = collab
 
     return result

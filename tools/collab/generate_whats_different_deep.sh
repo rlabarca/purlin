@@ -64,7 +64,7 @@ if [ "$SYNC_STATE" = "SAME" ]; then
 **Generated:** ${DATE}
 **Session:** collab/${SESSION}
 
-Local main is in sync with collab/${SESSION}. No impact to summarize.
+Local collab branch is in sync with remote. No impact to summarize.
 EOF
     cat "$ANALYSIS_FILE"
     exit 0
@@ -81,9 +81,9 @@ AGENT_PROMPT="You are a senior technical analyst for the Purlin framework. Given
 4. **What the collaborator should pay attention to** — priority items, potential conflicts, things that need testing.
 
 **Sync state directional glossary:**
-- **AHEAD** — Your local main has commits the collab branch does not. Action: **push** to share your work.
-- **BEHIND** — The collab branch has commits your local main does not. Action: **pull** to receive their work.
-- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge collab into local), then **push**.
+- **AHEAD** — Your local collab branch has commits the remote collab branch does not. Action: **push** to share your work.
+- **BEHIND** — The remote collab branch has commits your local collab branch does not. Action: **pull** to receive their work.
+- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge remote into local collab branch), then **push**.
 - **SAME** — No action needed (deep analysis is not generated for SAME).
 
 Format as markdown with these sections:

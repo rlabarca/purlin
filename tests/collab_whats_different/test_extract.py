@@ -39,8 +39,8 @@ class TestSyncStateComputation(unittest.TestCase):
         """Scenario: Extraction Tool Produces Correct JSON for AHEAD State"""
         def side_effect(args, cwd=None):
             range_arg = args[1] if len(args) > 1 else ''
-            if '..main' in range_arg:
-                # Local ahead of remote
+            if range_arg.startswith('origin/'):
+                # Local ahead of remote (origin/collab/s..collab/s)
                 return 'abc1234 commit 1\ndef5678 commit 2\nghi9012 commit 3\n'
             else:
                 # Remote has nothing ahead
@@ -57,9 +57,11 @@ class TestSyncStateComputation(unittest.TestCase):
         """Scenario: Extraction Tool Produces Correct JSON for BEHIND State"""
         def side_effect(args, cwd=None):
             range_arg = args[1] if len(args) > 1 else ''
-            if '..main' in range_arg:
+            if range_arg.startswith('origin/'):
+                # Ahead direction empty (origin/collab/s..collab/s)
                 return ''
             else:
+                # Behind direction has commits (collab/s..origin/collab/s)
                 return 'abc1234 commit 1\ndef5678 commit 2\n'
         mock_git.side_effect = side_effect
 
@@ -73,9 +75,11 @@ class TestSyncStateComputation(unittest.TestCase):
         """Scenario: Extraction Tool Produces Correct JSON for DIVERGED State"""
         def side_effect(args, cwd=None):
             range_arg = args[1] if len(args) > 1 else ''
-            if '..main' in range_arg:
+            if range_arg.startswith('origin/'):
+                # Ahead direction (origin/collab/s..collab/s)
                 return 'abc1234 local commit\n'
             else:
+                # Behind direction (collab/s..origin/collab/s)
                 return 'xyz7890 remote commit 1\nuvw3456 remote commit 2\n'
         mock_git.side_effect = side_effect
 
@@ -100,12 +104,11 @@ class TestFullExtraction(unittest.TestCase):
     @patch.object(ext, '_run_git')
     def test_ahead_has_local_changes_only(self, mock_git):
         """Scenario: AHEAD state has local_changes populated, collab_changes empty."""
-        call_count = [0]
         def side_effect(args, cwd=None):
             # compute_sync_state calls
             if args[0] == 'log':
                 range_arg = args[1] if len(args) > 1 else ''
-                if '..main' in range_arg:
+                if range_arg.startswith('origin/'):
                     return 'abc1234 feat: add login\ndef5678 test: add tests\nghi9012 fix: typo\n'
                 else:
                     return ''
@@ -127,7 +130,7 @@ class TestFullExtraction(unittest.TestCase):
         def side_effect(args, cwd=None):
             if args[0] == 'log':
                 range_arg = args[1] if len(args) > 1 else ''
-                if '..main' in range_arg:
+                if range_arg.startswith('origin/'):
                     return ''
                 else:
                     return 'abc1234 feat: remote change 1\ndef5678 feat: remote change 2\n'
@@ -147,13 +150,13 @@ class TestFullExtraction(unittest.TestCase):
         def side_effect(args, cwd=None):
             if args[0] == 'log':
                 range_arg = args[1] if len(args) > 1 else ''
-                if '..main' in range_arg:
+                if range_arg.startswith('origin/'):
                     return 'abc1234 local commit\n'
                 else:
                     return 'xyz7890 remote commit 1\nuvw3456 remote commit 2\n'
             if args[0] == 'diff':
                 range_arg = args[1] if len(args) > 1 else ''
-                if '..main' in range_arg:
+                if range_arg.startswith('origin/'):
                     return 'M\ttools/local_file.py\n'
                 else:
                     return 'M\ttools/remote_file.py\n'
@@ -204,6 +207,26 @@ class TestFileCategorization(unittest.TestCase):
 
     def test_gitmodules(self):
         self.assertEqual(ext.categorize_file('.gitmodules'), 'submodule')
+
+    def test_launcher_bootstrap(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
+        self.assertEqual(ext.categorize_file('run_builder.sh'), 'purlin_config')
+
+    def test_launcher_isolation(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
+        self.assertEqual(ext.categorize_file('run_feat1_architect.sh'), 'purlin_config')
+
+    def test_purlin_command_file(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
+        self.assertEqual(ext.categorize_file('.claude/commands/pl-status.md'), 'purlin_config')
+
+    def test_launcher_not_code(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config
+        — none of these files appear in the code category."""
+        for path in ['run_builder.sh', 'run_feat1_architect.sh',
+                     '.claude/commands/pl-status.md']:
+            self.assertNotEqual(ext.categorize_file(path), 'code',
+                                f'{path} should not be categorized as code')
 
 
 class TestLifecycleTransitions(unittest.TestCase):
@@ -294,11 +317,11 @@ class TestDecisionExtraction(unittest.TestCase):
                 range_arg = args[1] if len(args) > 1 else ''
                 # _get_commits uses --format=%H|%s
                 if any('--format' in a for a in args):
-                    if '..main' in range_arg:
+                    if range_arg.startswith('origin/'):
                         return ahead_commits
                     return ''
                 # compute_sync_state uses --oneline
-                if '..main' in range_arg:
+                if range_arg.startswith('origin/'):
                     return ahead_commits
                 return ''
             if args[0] == 'diff':

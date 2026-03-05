@@ -64,7 +64,7 @@ if [ "$SYNC_STATE" = "SAME" ]; then
 **Generated:** ${DATE}
 **Session:** collab/${SESSION}
 
-Local main is in sync with collab/${SESSION}. Nothing to summarize.
+Local collab branch is in sync with remote. Nothing to summarize.
 EOF
     cat "$DIGEST_FILE"
     exit 0
