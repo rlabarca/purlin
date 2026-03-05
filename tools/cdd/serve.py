@@ -595,11 +595,16 @@ def generate_api_status_json(cache=None):
     active_session = get_active_remote_session()
     if active_session:
         rc_config = get_remote_config()
-        sync = compute_remote_sync_state(active_session)
-        contributors = get_remote_contributors(active_session)
+        # Use stored branch for non-collab sessions (join-existing),
+        # fall back to collab/<session> for standard sessions
+        stored_branch = _read_active_remote_branch()
+        actual_branch = stored_branch or f"collab/{active_session}"
+        sync = compute_remote_sync_state(active_session, branch=stored_branch)
+        contributors = get_remote_contributors(
+            active_session, branch=stored_branch)
         result["remote_collab"] = {
             "active_session": active_session,
-            "branch": f"collab/{active_session}",
+            "branch": actual_branch,
             "remote": rc_config['remote'],
             "sync_state": sync['sync_state'] or "SAME",
             "commits_ahead": sync['commits_ahead'],
@@ -1006,6 +1011,41 @@ def _clear_remote_session_base_branch():
         pass
 
 
+def _write_active_remote_branch(branch):
+    """Store the actual branch name for the active remote session."""
+    runtime_dir = os.path.join(PROJECT_ROOT, '.purlin', 'runtime')
+    os.makedirs(runtime_dir, exist_ok=True)
+    path = os.path.join(runtime_dir, 'active_remote_branch')
+    with open(path, 'w') as f:
+        f.write(branch)
+
+
+def _read_active_remote_branch():
+    """Read the stored active remote branch name.
+
+    Returns branch name or None if absent/empty.
+    """
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                        'active_remote_branch')
+    try:
+        with open(path, 'r') as f:
+            branch = f.read().strip()
+        return branch if branch else None
+    except (IOError, OSError):
+        return None
+
+
+def _clear_active_remote_branch():
+    """Remove the stored active remote branch file."""
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                        'active_remote_branch')
+    try:
+        with open(path, 'w') as f:
+            f.write('')
+    except (IOError, OSError):
+        pass
+
+
 def _has_git_remote():
     """Check if any git remote is configured."""
     try:
@@ -1053,17 +1093,58 @@ def get_remote_collab_sessions():
         return []
 
 
-def compute_remote_sync_state(session_name):
-    """Compute SAME/AHEAD/BEHIND/DIVERGED between local and remote collab branch.
+def get_eligible_remote_branches():
+    """List remote branches eligible for join-existing dropdown.
 
-    Compares local collab/<session> vs origin/collab/<session> (same-branch).
+    Returns sorted list of branch names (without remote prefix).
+    Excludes HEAD, main/master, and any collab/* branches.
+    Uses locally cached refs (no network fetch).
+    """
+    rc = get_remote_config()
+    remote = rc['remote']
+    try:
+        result = subprocess.run(
+            ['git', 'branch', '-r'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+
+    prefix = f'{remote}/'
+    branches = []
+    for line in result.stdout.strip().splitlines():
+        ref = line.strip()
+        # Skip HEAD pointer (e.g., "origin/HEAD -> origin/main")
+        if '->' in ref:
+            continue
+        if not ref.startswith(prefix):
+            continue
+        name = ref[len(prefix):]
+        # Exclude main/master and collab/* branches
+        if name in ('main', 'master'):
+            continue
+        if name.startswith('collab/'):
+            continue
+        branches.append(name)
+    return sorted(branches)
+
+
+def compute_remote_sync_state(session_name, branch=None):
+    """Compute SAME/AHEAD/BEHIND/DIVERGED between local and remote branch.
+
+    When branch is provided, compares local <branch> vs origin/<branch>.
+    Otherwise, compares local collab/<session> vs origin/collab/<session>.
     Returns dict with sync_state, commits_ahead, commits_behind.
     Uses locally cached refs (no network fetch during polling).
     """
     rc = get_remote_config()
     remote = rc['remote']
-    remote_ref = f'{remote}/collab/{session_name}'
-    local_ref = f'collab/{session_name}'
+    if branch:
+        remote_ref = f'{remote}/{branch}'
+        local_ref = branch
+    else:
+        remote_ref = f'{remote}/collab/{session_name}'
+        local_ref = f'collab/{session_name}'
 
     # Check if the remote tracking ref exists
     try:
@@ -1119,14 +1200,16 @@ def compute_remote_sync_state(session_name):
         return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
 
 
-def get_remote_contributors(session_name, max_entries=10):
-    """Get contributor list from collab branch git log.
+def get_remote_contributors(session_name, max_entries=10, branch=None):
+    """Get contributor list from remote branch git log.
 
+    When branch is provided, uses origin/<branch> instead of
+    origin/collab/<session>.
     Returns list of dicts sorted most-recent-first, max 10 entries.
     """
     rc = get_remote_config()
     remote = rc['remote']
-    ref = f'{remote}/collab/{session_name}'
+    ref = f'{remote}/{branch}' if branch else f'{remote}/collab/{session_name}'
 
     try:
         result = subprocess.run(
@@ -1384,7 +1467,8 @@ def _creation_row_html():
 
 
 def _remote_collab_section_html(active_session, sync_data, sessions,
-                                contributors, last_fetch, has_remote):
+                                contributors, last_fetch, has_remote,
+                                eligible_branches=None):
     """Generate the REMOTE COLLABORATION section body HTML.
 
     Two modes: setup (no active session) and active (session selected).
@@ -1432,6 +1516,26 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
             html += '</tbody></table>'
         else:
             html += '<p class="dim">No remote collab sessions found.</p>'
+
+        # Existing branch selector (Section 2.2 item 3)
+        if eligible_branches:
+            html += ('<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
+                     '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
+                     'Join Existing Branch</span>'
+                     '<select id="existing-branch-select"'
+                     ' style="font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
+                     'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px">')
+            for b in eligible_branches:
+                b_esc = b.replace('&', '&amp;').replace('<', '&lt;').replace('"', '&quot;')
+                html += f'<option value="{b_esc}">{b_esc}</option>'
+            html += ('</select>'
+                     '<button class="btn-critic" onclick="joinExistingBranch()"'
+                     ' style="font-size:11px" id="btn-join-existing">Join</button>'
+                     '</div>')
+        else:
+            if eligible_branches is not None:
+                html += ('<p class="dim" style="margin-top:8px;font-size:11px">'
+                         'No other remote branches available.</p>')
 
         # Embed sessions data for delete modal JS
         sessions_json = json.dumps(sessions).replace('</script', '<\\/script')
@@ -1779,9 +1883,10 @@ def generate_html(cache=None):
         rc_sync = {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
         rc_contributors = []
 
+    rc_eligible_branches = get_eligible_remote_branches() if not rc_active_session and rc_has_remote else []
     rc_section_html = _remote_collab_section_html(
         rc_active_session, rc_sync, rc_sessions, rc_contributors,
-        _remote_collab_last_fetch, rc_has_remote)
+        _remote_collab_last_fetch, rc_has_remote, rc_eligible_branches)
 
     rc_badge_css, rc_badge_text, rc_badge_sev = _collapsed_remote_collab_label(
         rc_active_session, rc_sync, rc_sessions)
@@ -3067,6 +3172,23 @@ function joinRemoteSession(name) {{
       if (d.status === 'ok') {{ refreshStatus(); }}
     }})
     .catch(function() {{ rcRemotePending = false; }});
+}}
+
+function joinExistingBranch() {{
+  var sel = document.getElementById('existing-branch-select');
+  var btn = document.getElementById('btn-join-existing');
+  if (!sel || !sel.value) return;
+  var branch = sel.value;
+  if (btn) btn.disabled = true;
+  rcRemotePending = true;
+  fetch('/remote-collab/join-existing', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:branch}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      rcRemotePending = false;
+      if (d.status === 'ok') {{ refreshStatus(); }}
+      else {{ if (btn) btn.disabled = false; }}
+    }})
+    .catch(function() {{ rcRemotePending = false; if (btn) btn.disabled = false; }});
 }}
 
 function switchRemoteSession(name) {{
@@ -4933,6 +5055,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_remote_collab_fetch()
         elif self.path == '/remote-collab/delete':
             self._handle_remote_collab_delete()
+        elif self.path == '/remote-collab/join-existing':
+            self._handle_remote_collab_join_existing()
         elif self.path == '/whats-different/generate':
             self._handle_whats_different_generate()
         elif self.path == '/whats-different/deep-analysis/generate':
@@ -5266,6 +5390,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
             # Write runtime files
             _write_active_remote_session(name)
+            _write_active_remote_branch(branch)
             _write_remote_session_base_branch(current_branch)
             _remote_collab_last_fetch = datetime.now(
                 timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -5365,6 +5490,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             _write_remote_session_base_branch(current)
 
         _write_active_remote_session(name)
+        _write_active_remote_branch(branch)
         self._send_json(200, {'status': 'ok', 'session': name})
 
     def _handle_remote_collab_disconnect(self):
@@ -5391,6 +5517,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         _clear_active_remote_session()
+        _clear_active_remote_branch()
         _clear_remote_session_base_branch()
         self._send_json(200, {'status': 'ok'})
 
@@ -5481,10 +5608,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             pass  # Local branch may not exist — that's fine
 
-        # If this was the active session, clear the runtime file
+        # If this was the active session, clear all runtime files
         active = get_active_remote_session()
         if active == name:
             _clear_active_remote_session()
+            _clear_active_remote_branch()
+            _clear_remote_session_base_branch()
 
         # Delete cached digest files (spec Section 2.4 step 6)
         for digest_name in ('whats-different.md', 'whats-different-analysis.md'):
@@ -5500,6 +5629,90 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             'status': 'ok',
             'session': name,
             'deleted_branch': branch,
+        })
+
+    def _handle_remote_collab_join_existing(self):
+        """POST /remote-collab/join-existing — join an arbitrary remote branch."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        branch = body.get('branch', '').strip()
+        if not branch:
+            self._send_json(400, {'error': 'Branch is required'})
+            return
+
+        rc = get_remote_config()
+        remote = rc['remote']
+        remote_ref = f'{remote}/{branch}'
+
+        # Validate that the branch exists as a remote tracking ref
+        try:
+            subprocess.run(
+                ['git', 'rev-parse', '--verify', remote_ref],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            self._send_json(400, {
+                'error': f'Branch "{branch}" not found on remote'
+            })
+            return
+
+        # Abort if working tree is dirty
+        if _is_working_tree_dirty():
+            self._send_json(400, {
+                'error': 'Working tree has uncommitted changes. '
+                         'Commit or stash before joining a branch.'
+            })
+            return
+
+        # Capture current branch for disconnect restoration
+        try:
+            current_branch = subprocess.run(
+                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5).stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            current_branch = 'main'
+
+        # Checkout the branch; create tracking branch if no local exists
+        try:
+            subprocess.run(
+                ['git', 'checkout', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
+        except subprocess.CalledProcessError:
+            try:
+                subprocess.run(
+                    ['git', 'checkout', '-b', branch, remote_ref],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                self._send_json(500, {
+                    'error': f'Failed to checkout {branch}: '
+                             f'{getattr(exc, "stderr", str(exc))}'
+                })
+                return
+
+        # Derive session name: collab/* -> name after collab/; else full name
+        if branch.startswith('collab/'):
+            session_name = branch[len('collab/'):]
+        else:
+            session_name = branch
+
+        # Write runtime files
+        _write_active_remote_session(session_name)
+        _write_active_remote_branch(branch)
+        _write_remote_session_base_branch(current_branch)
+
+        self._send_json(200, {
+            'status': 'ok',
+            'session': session_name,
+            'branch': branch,
         })
 
     def _handle_whats_different_generate(self):
