@@ -38,9 +38,9 @@
         {
             "id": "purlin.push_to_remote",
             "friendly_name": "Push to Remote Repository",
-            "description": "Pushes the release commits and any tags to the remote repository (e.g., GitHub). This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery.",
-            "code": "git push && git push --tags",
-            "agent_instructions": "Confirm the current branch and remote configuration, then push commits and tags to the remote repository. Warn the user if they are about to force-push or if the remote is ahead. Do not proceed without explicit user confirmation for force-push scenarios."
+            "description": "Pushes the release commits and any tags to a user-confirmed remote repository. Discovers available remotes and branches, presents defaults, and requires confirmation before pushing. This step can be disabled for air-gapped projects or when a separate CI/CD pipeline handles delivery.",
+            "code": null,
+            "agent_instructions": "1. Run `git remote -v` and `git branch` to discover all configured remotes and local branches.\n2. Identify the default remote: the upstream tracking remote for the current branch (via `git rev-parse --abbrev-ref @{upstream}`), falling back to `origin` if no upstream is set.\n3. Identify the default branch: the current branch (via `git rev-parse --abbrev-ref HEAD`).\n4. Present the default to the user: 'Push `<branch>` to `<remote>` (`<url>`)?' If multiple remotes exist, list all alternatives so the user can pick a different one. If multiple local branches exist, list them as alternatives.\n5. If the user accepts, execute `git push <remote> <branch> && git push <remote> --tags`.\n6. If the user picks a different remote or branch, use their selection in the push command.\n7. Warn if force-push is required; halt if the remote is ahead of local. Do not proceed without explicit user confirmation for force-push scenarios."
         }
     ]
 }

@@ -39,6 +39,10 @@
     {
       "id": "purlin.push_to_remote",
       "enabled": true
+    },
+    {
+      "id": "publish_to_github",
+      "enabled": true
     }
   ]
 }
