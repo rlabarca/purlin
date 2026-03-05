@@ -37,16 +37,17 @@ _resolve_python() {
         caller_dir="$(cd "$(dirname "$_RESOLVE_PYTHON_CALLER")" 2>/dev/null && pwd)"
     fi
     if [ -n "${caller_dir:-}" ]; then
+        # Submodule layout: ../../../.venv from <submodule>/tools/<subtool>/
+        # Must be checked BEFORE standalone to prevent nearer match shadowing (§2.11)
+        if [ -x "$caller_dir/../../../.venv/$venv_bin" ]; then
+            PYTHON_EXE="$(cd "$caller_dir/../../.." && pwd)/.venv/$venv_bin"
+            echo "[resolve_python] Using submodule venv at $PYTHON_EXE" >&2
+            return
+        fi
         # Standalone layout: ../../.venv from tools/<subtool>/
         if [ -x "$caller_dir/../../.venv/$venv_bin" ]; then
             PYTHON_EXE="$(cd "$caller_dir/../.." && pwd)/.venv/$venv_bin"
             echo "[resolve_python] Using standalone venv at $PYTHON_EXE" >&2
-            return
-        fi
-        # Submodule layout: ../../../.venv from <submodule>/tools/<subtool>/
-        if [ -x "$caller_dir/../../../.venv/$venv_bin" ]; then
-            PYTHON_EXE="$(cd "$caller_dir/../../.." && pwd)/.venv/$venv_bin"
-            echo "[resolve_python] Using submodule venv at $PYTHON_EXE" >&2
             return
         fi
     fi
