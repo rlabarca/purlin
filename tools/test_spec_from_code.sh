@@ -317,6 +317,49 @@ else
 fi
 
 ###############################################################################
+# Scenario: End-to-end onboarding of a non-trivial codebase
+###############################################################################
+echo ""
+echo "[Scenario] End-to-end onboarding of a non-trivial codebase"
+
+# Verify complete phase flow: all 5 phases present in sequential order
+PHASE0_POS=$(grep -n "Phase 0" "$COMMAND_FILE" | head -1 | cut -d: -f1)
+PHASE1_POS=$(grep -n "Phase 1" "$COMMAND_FILE" | head -1 | cut -d: -f1)
+PHASE2_POS=$(grep -n "Phase 2" "$COMMAND_FILE" | head -1 | cut -d: -f1)
+PHASE3_POS=$(grep -n "Phase 3" "$COMMAND_FILE" | head -1 | cut -d: -f1)
+PHASE4_POS=$(grep -n "Phase 4" "$COMMAND_FILE" | head -1 | cut -d: -f1)
+
+if [ -n "$PHASE0_POS" ] && [ -n "$PHASE1_POS" ] && [ -n "$PHASE2_POS" ] && [ -n "$PHASE3_POS" ] && [ -n "$PHASE4_POS" ] \
+   && [ "$PHASE0_POS" -lt "$PHASE1_POS" ] && [ "$PHASE1_POS" -lt "$PHASE2_POS" ] \
+   && [ "$PHASE2_POS" -lt "$PHASE3_POS" ] && [ "$PHASE3_POS" -lt "$PHASE4_POS" ]; then
+    log_pass "Complete phase flow: Phases 0-4 present in sequential order"
+else
+    log_fail "Incomplete or misordered phase flow"
+fi
+
+# Verify the command covers all end-to-end outputs: inventory, taxonomy, features, anchors, companion files, CDD status
+E2E_KEYWORDS=("sfc_inventory.md" "sfc_taxonomy.md" "_feature.md" "_anchor.md" "impl.md" "tools/cdd/status.sh" "TODO")
+E2E_PASS=true
+for kw in "${E2E_KEYWORDS[@]}"; do
+    if ! grep -q "$kw" "$COMMAND_FILE"; then
+        E2E_PASS=false
+        break
+    fi
+done
+if [ "$E2E_PASS" = true ]; then
+    log_pass "All end-to-end artifact references present (inventory, taxonomy, templates, companion, CDD, TODO)"
+else
+    log_fail "Missing end-to-end artifact references in command file"
+fi
+
+# Verify per-category commit discipline (Phase 3 commits per category)
+if grep -q "commit" "$COMMAND_FILE" && grep -q "category" "$COMMAND_FILE"; then
+    log_pass "Per-category commit discipline referenced"
+else
+    log_fail "Per-category commit discipline not referenced"
+fi
+
+###############################################################################
 # Results
 ###############################################################################
 echo ""
