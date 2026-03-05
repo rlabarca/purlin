@@ -19,6 +19,7 @@ from serve import (
     _categorize_files,
     _detect_worktrees,
     _format_category_counts,
+    _get_collaboration_branch,
     _name_from_path,
     _worktree_state,
     _compute_main_diff,
@@ -956,6 +957,90 @@ class TestIsolationSectionNoSessionsHeader(unittest.TestCase):
     def test_empty_worktrees_returns_empty(self):
         html = _isolation_section_html([])
         self.assertEqual(html, "")
+
+
+class TestCollaborationBranchAbstraction(unittest.TestCase):
+    """Collaboration branch abstraction: worktree comparisons use the branch
+    the project root is on, not hardcoded 'main' (Section 2.3, 2.4)."""
+
+    @patch('serve.run_command', return_value='collab/v0.5-sprint')
+    def test_collab_branch_returns_current_branch(self, mock_cmd):
+        """_get_collaboration_branch returns the current branch of PROJECT_ROOT."""
+        result = _get_collaboration_branch()
+        self.assertEqual(result, 'collab/v0.5-sprint')
+        mock_cmd.assert_called_once_with("git rev-parse --abbrev-ref HEAD")
+
+    @patch('serve.run_command', return_value='main')
+    def test_collab_branch_returns_main_when_on_main(self, mock_cmd):
+        result = _get_collaboration_branch()
+        self.assertEqual(result, 'main')
+
+    @patch('serve.run_command', return_value='')
+    def test_collab_branch_defaults_to_main_on_empty(self, mock_cmd):
+        result = _get_collaboration_branch()
+        self.assertEqual(result, 'main')
+
+    @patch('subprocess.run')
+    def test_compute_main_diff_uses_collab_branch(self, mock_run):
+        """_compute_main_diff uses the collab_branch parameter, not hardcoded main."""
+        mock_run.side_effect = [
+            MagicMock(stdout='', returncode=0),
+            MagicMock(stdout='abc commit\n', returncode=0),
+        ]
+        result = _compute_main_diff('isolated/feat1', 'collab/v0.5-sprint')
+        self.assertEqual(result, 'AHEAD')
+        # Verify collab branch used in git commands
+        calls = mock_run.call_args_list
+        self.assertIn('collab/v0.5-sprint', calls[0][0][0])
+        self.assertIn('collab/v0.5-sprint', calls[1][0][0])
+
+    @patch('subprocess.run')
+    def test_worktree_state_uses_collab_branch_for_committed(self, mock_run):
+        """_worktree_state uses collab_branch for three-dot diff."""
+        responses = [
+            'isolated/feat1',
+            'features/foo.md\n',
+            '',
+            'abc1234 commit (5m ago)',
+            '1',
+        ]
+        call_count = [0]
+
+        def _side_effect(*args, **kwargs):
+            idx = call_count[0]
+            call_count[0] += 1
+            return subprocess.CompletedProcess(
+                args='mock', returncode=0, stdout=responses[idx], stderr='')
+
+        mock_run.side_effect = _side_effect
+        state = _worktree_state('/tmp/fake-wt', 'collab/v0.5-sprint')
+        # Verify the git diff command used collab branch
+        diff_call = mock_run.call_args_list[1]
+        self.assertIn('collab/v0.5-sprint', diff_call[1].get('args', '') or diff_call[0][0])
+        self.assertEqual(state['committed']['specs'], 1)
+
+    @patch('serve._get_collaboration_branch', return_value='collab/v0.5-sprint')
+    @patch('serve._compute_main_diff', return_value='AHEAD')
+    @patch('serve._worktree_state')
+    @patch('serve._detect_worktrees')
+    def test_get_isolation_worktrees_passes_collab_branch(
+            self, mock_detect, mock_state, mock_diff, mock_collab):
+        """get_isolation_worktrees passes the collab branch to _worktree_state and _compute_main_diff."""
+        wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'feat1')
+        mock_detect.return_value = [
+            {'abs_path': wt_path, 'branch_ref': 'refs/heads/isolated/feat1'},
+        ]
+        mock_state.return_value = {
+            'branch': 'isolated/feat1',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+            'last_commit': 'abc feat', 'commits_ahead': 2,
+        }
+        result = get_isolation_worktrees()
+        # Verify collab branch was passed to both functions
+        mock_state.assert_called_once_with(wt_path, 'collab/v0.5-sprint')
+        mock_diff.assert_called_once_with('isolated/feat1', 'collab/v0.5-sprint')
+        self.assertEqual(len(result), 1)
 
 
 # ===================================================================

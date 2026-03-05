@@ -650,6 +650,15 @@ def generate_workspace_json():
 # ===================================================================
 
 
+def _get_collaboration_branch():
+    """Determine the collaboration branch for worktree comparisons.
+
+    The collaboration branch is whatever branch the project root is currently
+    on: collab/<session> during active remote collaboration, main otherwise.
+    """
+    return run_command("git rev-parse --abbrev-ref HEAD") or "main"
+
+
 def _detect_worktrees():
     """Detect active git worktrees under .worktrees/ relative to PROJECT_ROOT.
 
@@ -749,12 +758,12 @@ def _categorize_files(lines):
     return {'specs': specs, 'tests': tests, 'other': other}
 
 
-def _worktree_state(wt_abs_path):
+def _worktree_state(wt_abs_path, collab_branch="main"):
     """Read state of a single worktree using git -C commands.
 
     Returns dict with branch, last_commit, commits_ahead, committed
-    (files changed in branch commits vs main), and uncommitted
-    (files with uncommitted changes in the working tree).
+    (files changed in branch commits vs the collaboration branch), and
+    uncommitted (files with uncommitted changes in the working tree).
     Both committed and uncommitted are objects with specs, tests, other
     integer counts.
     """
@@ -769,14 +778,14 @@ def _worktree_state(wt_abs_path):
 
     branch = _wt_cmd("git rev-parse --abbrev-ref HEAD")
 
-    # Committed: files changed in this branch's commits relative to main
-    # Uses git diff main...<branch> --name-only (three-dot) from PROJECT_ROOT
+    # Committed: files changed in this branch's commits relative to collab branch
+    # Uses git diff <collab_branch>...<branch> --name-only (three-dot) from PROJECT_ROOT
     # Three-dot diffs the branch against common ancestor — always empty for
     # SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED.
     committed = {'specs': 0, 'tests': 0, 'other': 0}
     try:
         diff_result = subprocess.run(
-            f"git diff main...{branch} --name-only",
+            f"git diff {collab_branch}...{branch} --name-only",
             shell=True, capture_output=True, text=True,
             cwd=PROJECT_ROOT)
         committed = _categorize_files(diff_result.stdout.splitlines())
@@ -809,7 +818,8 @@ def _worktree_state(wt_abs_path):
         pass
 
     last_commit = _wt_cmd("git log -1 --format='%h %s (%cr)'")
-    commits_ahead_str = _wt_cmd("git rev-list --count main..HEAD")
+    commits_ahead_str = _wt_cmd(
+        f"git rev-list --count {collab_branch}..HEAD")
     try:
         commits_ahead = int(commits_ahead_str)
     except (ValueError, TypeError):
@@ -824,24 +834,25 @@ def _worktree_state(wt_abs_path):
     }
 
 
-def _compute_main_diff(branch):
-    """Determine sync state between a worktree branch and main.
+def _compute_main_diff(branch, collab_branch="main"):
+    """Determine sync state between a worktree branch and the collaboration branch.
 
-    Runs two git log range queries from PROJECT_ROOT (not per-worktree)
-    to ensure 'main' resolves correctly. Returns one of four states:
-    "DIVERGED", "BEHIND", "AHEAD", or "SAME".
+    Runs two git log range queries from PROJECT_ROOT (not per-worktree).
+    The collaboration branch is whatever branch the project root is on
+    (collab/<session> during active collaboration, main otherwise).
+    Returns one of four states: "DIVERGED", "BEHIND", "AHEAD", or "SAME".
     """
     try:
-        # Query 1: commits on main not in branch (branch is behind)
+        # Query 1: commits on collab branch not in branch (branch is behind)
         behind_result = subprocess.run(
-            f"git log {branch}..main --oneline",
+            f"git log {branch}..{collab_branch} --oneline",
             shell=True, capture_output=True, text=True,
             check=True, cwd=PROJECT_ROOT)
         is_behind = bool(behind_result.stdout.strip())
 
-        # Query 2: commits on branch not in main (branch is ahead)
+        # Query 2: commits on branch not in collab branch (branch is ahead)
         ahead_result = subprocess.run(
-            f"git log main..{branch} --oneline",
+            f"git log {collab_branch}..{branch} --oneline",
             shell=True, capture_output=True, text=True,
             check=True, cwd=PROJECT_ROOT)
         is_ahead = bool(ahead_result.stdout.strip())
@@ -869,10 +880,12 @@ def get_isolation_worktrees():
     if not worktrees:
         return []
 
+    collab_branch = _get_collaboration_branch()
+
     result = []
     for wt in worktrees:
         abs_path = wt.get('abs_path', '')
-        state = _worktree_state(abs_path)
+        state = _worktree_state(abs_path, collab_branch)
         branch = state['branch']
         name = _name_from_path(abs_path)
 
@@ -883,7 +896,7 @@ def get_isolation_worktrees():
             rel_path = abs_path
 
         # Main diff: run from project root (Section 2.4 of cdd_isolated_teams)
-        main_diff = _compute_main_diff(branch)
+        main_diff = _compute_main_diff(branch, collab_branch)
 
         entry = {
             'name': name,
