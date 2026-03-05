@@ -52,45 +52,48 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All scenarios for this feature require the running CDD Dashboard server and human interaction to verify.
+
+#### Scenario: Agents Section Displays Three Agent Rows in HTML
+    Given a valid resolved config with three agents (architect, builder, qa)
+    And each agent has a configured model, effort, and bypass_permissions value
+    When the dashboard HTML is generated
+    Then the Agents section contains three agent rows
+    And the architect row displays the configured model in its dropdown
+    And the builder row displays the configured effort value
+    And the qa row displays the configured bypass_permissions checkbox state
+
+#### Scenario: Capability-Gated Controls Hidden in HTML When Capabilities Are False
+    Given the builder agent is configured with a model that has capabilities.effort false and capabilities.permissions false
+    When the dashboard HTML is generated
+    Then the builder row's effort dropdown is hidden (visibility hidden or absent)
+    And the builder row's bypass_permissions checkbox is hidden (visibility hidden or absent)
+    And the column space for hidden controls is preserved in the grid layout
+
+#### Scenario: POST /config/agents Persists to config.local.json
+    Given a valid resolved config exists
+    When a POST request is sent to /config/agents with body {"architect": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "builder": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "qa": {"model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": false}}
+    Then config.local.json contains the updated agents values
+    And config.json (shared) is unchanged
+    And the response contains the updated config
+
+#### Scenario: Collapsed Badge Shows Uniform Model Summary in HTML
+    Given all three agents are configured with the same model "claude-sonnet-4-6" (label "Sonnet 4.6")
+    When the dashboard HTML is generated
+    Then the Agents section collapsed badge contains "3x Sonnet 4.6"
+
+#### Scenario: Collapsed Badge Shows Grouped Model Summary in HTML
+    Given the architect uses "claude-opus-4-6" (label "Opus 4.6") and builder and qa use "claude-sonnet-4-6" (label "Sonnet 4.6")
+    When the dashboard HTML is generated
+    Then the Agents section collapsed badge contains "2x Sonnet 4.6 | 1x Opus 4.6"
+
+#### Scenario: Agents Section Has Visual Separator in HTML
+    Given a valid resolved config exists
+    When the dashboard HTML is generated
+    Then the Agents section heading element has a separator distinct from the Workspace section above it
+    And the Agents section container is a separate DOM element from the Workspace section container
 
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
-
-#### Scenario: Agents Section Displays Current Config
-    Given the dashboard is loaded with valid config (resolved from local or shared)
-    When the user expands the Agents section
-    Then three rows are displayed for Architect, Builder, and QA
-    And each row shows the configured model, effort, and YOLO state
-
-#### Scenario: Capability-Aware Control Visibility
-    Given an agent is configured with a model that has capabilities.effort false
-    When the user views that agent's row
-    Then the effort dropdown is hidden
-    And the bypass checkbox is hidden if capabilities.permissions is also false
-
-#### Scenario: Config Changes Persist via API
-    Given the user changes the Builder model to "claude-opus-4-6"
-    When the change is debounced and sent to POST /config/agents
-    Then config.local.json is updated with the new model for builder
-    And config.json (shared) is unchanged
-    And relaunching the Builder uses the new model
-
-#### Scenario: Collapsed Badge Shows Uniform Model Summary
-    Given all three agents are configured with the same model "claude-sonnet-4-6"
-    When the Agents section is collapsed
-    Then the badge displays "3x Sonnet 4.6"
-
-#### Scenario: Collapsed Badge Shows Grouped Model Summary
-    Given the Architect uses "claude-opus-4-6" and Builder and QA use "claude-sonnet-4-6"
-    When the Agents section is collapsed
-    Then the badge displays "2x Sonnet 4.6 | 1x Opus 4.6"
-
-#### Scenario: Agents Section is Visually Separated from Workspace
-    Given the dashboard is loaded with valid config
-    When the Status view is displayed
-    Then the Agents section heading has a visible underline separator
-    And the Agents section is visually distinct from the Workspace section above it
 
 #### Scenario: Pending Change is Not Overwritten by Auto-Refresh
     Given the user checks the YOLO control for the Builder agent

@@ -497,28 +497,26 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     Then the existing branch dropdown contains "testing"
     And the existing branch dropdown does not contain "collab/sprint1"
 
+#### Scenario: Active-Session HTML Shows Session Dropdown and Sync Badge
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    And collab/v0.5-sprint exists as a remote tracking branch
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a session-name select dropdown
+    And "v0.5-sprint" is an option in the session dropdown
+    And the branch ref "collab/v0.5-sprint" is present as muted text
+    And a "Disconnect" button element is present in the active session panel
+    And a sync state badge element is present
+    And a "Check Remote" button element is present
+
+#### Scenario: No-Active-Session HTML Differs From Active-Session HTML
+    Given no file exists at .purlin/runtime/active_remote_session
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a creation row with "Start Remote Session" label
+    And the section does not contain a session-name select dropdown
+    And the section does not contain a "Disconnect" button
+    And the section does not contain a sync state badge
+
 ### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Join Existing Branch Transitions to Active Session Mode
-
-    Given the CDD dashboard is open
-    And no active session is set
-    And the existing branch dropdown contains "testing"
-    When the User selects "testing" from the dropdown and clicks the Join button
-    Then the section transitions from setup mode to active session mode
-    And the session-name dropdown shows "testing"
-    And the sync state badge is visible
-
-#### Scenario: Active-Session State Shows Sync Badge and Controls
-
-    Given the CDD dashboard is open
-    And an active remote session "v0.5-sprint" exists
-    When the User views the REMOTE COLLABORATION section
-    Then a session-name dropdown is displayed with "v0.5-sprint" selected
-    And the branch ref "collab/v0.5-sprint" is shown as muted text beside the dropdown
-    And a "Disconnect" button is right-aligned on the same row as the dropdown
-    And a sync state badge with annotation is visible on the next row
-    And a "Check Remote" button is right-aligned on the sync state row
 
 #### Scenario: Delete Confirmation Modal With Standard Warning
 

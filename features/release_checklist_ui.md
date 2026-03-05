@@ -142,16 +142,52 @@ The server MUST validate that:
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All scenarios for this feature require the running CDD Dashboard server and human interaction to verify.
+
+#### Scenario: Collapsed Badge Shows Enabled and Disabled Counts
+    Given the release checklist has 7 enabled steps and 2 disabled steps
+    When the dashboard HTML is generated
+    Then the RELEASE CHECKLIST collapsed badge contains "7 enabled"
+    And the badge contains "2 disabled"
+    And the enabled count element uses the --purlin-status-good color class
+    And the disabled count element uses the --purlin-dim color class
+
+#### Scenario: POST /release-checklist/config Persists New Step Order
+    Given the release checklist config has steps in order [A, B, C]
+    When a POST request is sent to /release-checklist/config with body {"steps": [{"id": "C", "enabled": true}, {"id": "A", "enabled": true}, {"id": "B", "enabled": true}]}
+    Then .purlin/release/config.json lists step "C" as the first entry
+    And step "A" as the second entry
+    And step "B" as the third entry
+    And the response contains {"ok": true}
+
+#### Scenario: Disabled Step Shows Em Dash and Affects Badge Count
+    Given the release checklist config has step "purlin.push_to_remote" set to enabled false
+    When the dashboard HTML is generated
+    Then the row for "purlin.push_to_remote" displays an em dash in the step number column
+    And the row for "purlin.push_to_remote" has dimmed styling
+    And the collapsed badge disabled count reflects the disabled step
+    And enabled steps have contiguous 1-based step numbers
+
+#### Scenario: Step Detail Modal Contains All Populated Sections
+    Given the release checklist contains a step with description, code, and agent_instructions all populated
+    When the dashboard HTML is generated for the step detail modal of that step
+    Then the modal contains a DESCRIPTION section with the step's description text
+    And the modal contains a CODE section with a monospace code block
+    And the modal contains an AGENT INSTRUCTIONS section
+
+#### Scenario: Step Detail Modal Omits CODE Section When Code Is Null
+    Given the release checklist contains a step where code is null and description and agent_instructions are populated
+    When the dashboard HTML is generated for the step detail modal of that step
+    Then the modal contains a DESCRIPTION section
+    And the modal contains an AGENT INSTRUCTIONS section
+    And the modal does not contain a CODE section
+
+#### Scenario: Local Step Displays LOCAL Badge in Row and Modal
+    Given the release checklist contains a step with source "local"
+    When the dashboard HTML is generated
+    Then that step's row contains a "LOCAL" badge element
+    And the step detail modal header for that step contains a "LOCAL" source badge
 
 ### Manual Scenarios
-
-#### Scenario: Collapsed State Displays Correct Counts
-Given the release checklist has 7 enabled steps and 2 disabled steps,
-When the RELEASE CHECKLIST section is collapsed,
-Then the inline badge shows "7 enabled · 2 disabled",
-And the enabled count is styled with `--purlin-status-good`,
-And the disabled count is styled with `--purlin-dim`.
 
 #### Scenario: Drag Handle Reorders Steps in Display
 Given the release checklist is expanded showing at least 3 steps in their current order,
@@ -161,39 +197,6 @@ Then the step formerly at position 3 is now displayed at position 1 in the list,
 And the steps formerly at positions 1 and 2 are now displayed at positions 2 and 3,
 And the step number labels on all rows update to reflect their new positions,
 And no page reload is required for these changes to appear.
-
-#### Scenario: Drag Reorder Persists to Config File
-Given the release checklist is expanded showing at least 3 steps in their current order,
-And the step currently at position 3 has a known step ID (e.g. "purlin.push_to_remote"),
-When the user grabs that step by its drag handle and drops it at position 1,
-Then the `steps` array in `.purlin/release/config.json` lists that step's ID as the first entry,
-And the IDs of all other steps appear in the file in the same relative order they now occupy in the displayed list.
-
-#### Scenario: Toggle Disables Step
-Given the release checklist is expanded,
-When the user unchecks the checkbox for `purlin.push_to_remote`,
-Then the `purlin.push_to_remote` row is dimmed,
-And the step's number column shows `—` instead of a number,
-And subsequent enabled steps are renumbered contiguously,
-And the disabled count in the collapsed badge increments by 1,
-And refreshing the dashboard shows `purlin.push_to_remote` still disabled.
-
-#### Scenario: Modal Displays Step Details
-Given the release checklist is expanded,
-When the user clicks the friendly name of a step that has all three fields populated (description, code, and agent_instructions),
-Then a modal opens showing the DESCRIPTION, CODE, and AGENT INSTRUCTIONS sections in order.
-
-#### Scenario: Modal Omits Empty Sections
-Given the release checklist is expanded,
-When the user clicks the friendly name of a step where `code` is null,
-Then the modal opens showing DESCRIPTION and AGENT INSTRUCTIONS sections,
-And no CODE section is rendered.
-
-#### Scenario: Local Step Identified
-Given the project has a local step defined in `.purlin/release/local_steps.json`,
-When the release checklist is expanded,
-Then that step's row displays a "LOCAL" badge,
-And when the user opens the step's detail modal, the modal header displays the "LOCAL" source badge.
 
 #### Scenario: Config File Change Refreshes Without Visual Disruption
 Given the CDD Dashboard is open in a browser with the RELEASE CHECKLIST section expanded,
