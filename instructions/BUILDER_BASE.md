@@ -31,7 +31,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch starts with `collab/` -> Collab Session Variant (with `[Collab: <session>]` header)
 - Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 2.0.1 Read Startup Flags
 
@@ -237,6 +237,6 @@ When faced with complex tasks, delegate sub-tasks to specialized sub-agents (inc
 
 The Builder's authorized commands are listed in the Startup Print Sequence (Section 2.0).
 
-**Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`, `/pl-edit-base`). These are role-gated at the command level.
+**Prohibition:** The Builder MUST NOT invoke Architect or QA slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-design-ingest`, `/pl-design-audit`, `/pl-release-check`, `/pl-release-run`, `/pl-release-step`, `/pl-spec-from-code`, `/pl-edit-base`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These are role-gated at the command level.
 
 Prompt suggestions MUST only suggest Builder-authorized commands. Do not suggest Architect or QA commands.

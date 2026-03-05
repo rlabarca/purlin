@@ -92,6 +92,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | Command | Description |
 |---|---|
 | `/pl-status` | Check CDD status and role-specific action items |
+| `/pl-resume [save\|role]` | Save or restore session state across context clears |
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
 | `/pl-override-edit` | Edit an override file (role-scoped: Builder/QA can only edit their own file; Architect can edit any) |
 | `/pl-override-conflicts` | Check an override file against its base layer for contradictions |
@@ -100,6 +101,7 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | `/pl-local-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |
 | `/pl-collab-push` | Push local collab branch to remote (collab session only) |
 | `/pl-collab-pull` | Pull remote collab branch into local (collab session only) |
+| `/pl-whats-different` | Compare current branch to main -- summary of all changes (main checkout only) |
 | `/pl-update-purlin` | Intelligent submodule update with semantic analysis and conflict resolution |
 
 ---
@@ -116,7 +118,10 @@ The Architect owns the specification system. All feature requirements, architect
 | `/pl-release-check` | Execute the CDD-controlled release checklist step by step |
 | `/pl-release-run [<step>]` | Run a single release step by name without the full checklist |
 | `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
+| `/pl-design-ingest` | Ingest a design artifact into a feature's visual spec |
+| `/pl-design-audit` | Audit design artifact integrity and staleness |
 | `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
+| `/pl-spec-from-code` | Reverse-engineer feature specs from existing code |
 | `/pl-edit-base` | Modify a base instruction file (Purlin repo only -- not distributed to consumer projects) |
 
 **Workflow examples:**

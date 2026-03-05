@@ -55,7 +55,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 3.0.1 Read Startup Flags
 
@@ -226,6 +226,6 @@ If the current session is on an `isolated/<name>` branch (i.e., running inside a
 
 The QA Agent's authorized commands are listed in the Startup Print Sequence (Section 3.0).
 
-**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-edit-base`). These are role-gated at the command level.
+**Prohibition:** The QA Agent MUST NOT invoke Architect or Builder slash commands (`/pl-spec`, `/pl-anchor`, `/pl-tombstone`, `/pl-design-ingest`, `/pl-design-audit`, `/pl-release-check`, `/pl-release-run`, `/pl-release-step`, `/pl-spec-from-code`, `/pl-edit-base`, `/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-spec-code-audit`). These are role-gated at the command level.
 
 Prompt suggestions MUST only suggest QA-authorized commands. Do not suggest Architect or Builder commands.

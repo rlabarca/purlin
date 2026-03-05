@@ -21,6 +21,8 @@ Purlin Builder — Ready
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
+  /pl-whats-different        Compare branches (main checkout only)
   /pl-collab-push            Push local collab branch to remote (collab session only)
   /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -44,6 +46,7 @@ Purlin Builder — Ready  [Collab: <session>]
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
   /pl-collab-push            Push local collab branch to remote (collab session only)
   /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -67,6 +70,7 @@ Purlin Builder — Ready  [Isolated: <name>]
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
   /pl-local-push             Merge isolation branch to collaboration branch
   /pl-local-pull             Pull collaboration branch into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -26,6 +26,8 @@ Purlin Architect — Ready
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer feature specs from existing code
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
+  /pl-whats-different        Compare branches (main checkout only)
   /pl-collab-push            Push local collab branch to remote (collab session only)
   /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -54,6 +56,7 @@ Purlin Architect — Ready  [Collab: <session>]
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer feature specs from existing code
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
   /pl-collab-push            Push local collab branch to remote (collab session only)
   /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -82,6 +85,7 @@ Purlin Architect — Ready  [Isolated: <name>]
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer feature specs from existing code
   /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-agent-config           Modify agent config in .purlin/config.json
   /pl-local-push             Merge isolation branch to collaboration branch
   /pl-local-pull             Pull collaboration branch into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
