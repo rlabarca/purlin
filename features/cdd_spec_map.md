@@ -60,8 +60,15 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
         5.  Use spiral search for non-overlapping positions within the layer-constrained region.
     *   **No new CDN dependencies.** The layout uses the dagre library (already loaded) for Level 1 and a custom placement algorithm for Level 2.
 
-### 2.4 Anchor Node Border Color
-*   **Distinct Border:** Anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) MUST render with a border color of `--purlin-status-good` (green) to visually distinguish them from regular feature nodes. This applies in both themes.
+### 2.4 Node Color Model
+All feature nodes share a single, uniform appearance. The ONLY color distinction is anchor node borders.
+
+*   **Uniform Background:** All feature nodes (anchor and non-anchor alike) MUST use the same background color: `--purlin-surface` at low opacity. No per-category background colors, no per-category tinting.
+*   **Uniform Border (Regular Nodes):** Non-anchor feature nodes MUST use `--purlin-border` as their border color. All regular nodes look identical.
+*   **Anchor Node Border (Only Distinction):** Anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`) MUST render with a border color of `--purlin-status-good` (green), a thicker border width (3px vs 2px), and higher border opacity than regular nodes. This is the sole visual distinction between node types.
+*   **No Category Color Palette:** The implementation MUST NOT use a per-category color palette for node backgrounds or borders. Category membership is conveyed entirely through spatial grouping (bounding boxes with dashed borders and category labels). Color is not used for category identity.
+*   **Label Text Colors:** Node label text (friendly name) uses `--purlin-primary`. Filename text uses `--purlin-dim`. Both are theme-dependent and uniform across all nodes.
+*   **Both Themes:** All of the above applies identically in both Blueprint (dark) and Architect (light) themes.
 
 ### 2.5 Double-Click Category Zoom
 *   **Zoom to Category:** When the User double-clicks on a category bounding box (the group container, not an individual feature node), the graph MUST animate a zoom-to-fit that maximizes the view of that category box within the viewport.
@@ -73,15 +80,16 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 *   **Hover Behavior Preserved:** Edge highlighting during node hover (Section 2.3) is unaffected. Edges may still change appearance as part of hover highlighting, but they MUST NOT capture click or tap events.
 
 ### 2.7 Cytoscape.js Theme Integration
-*   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that switches based on the current theme.
-*   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors.
-*   **SVG Node Labels:** The `createNodeLabelSVG()` function uses hardcoded `fill` values for text. It MUST accept theme colors as parameters and regenerate all node labels on theme switch.
+*   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that reads CSS custom properties (`--purlin-surface`, `--purlin-border`, `--purlin-primary`, `--purlin-dim`, `--purlin-status-good`) and applies them to all node and edge styles.
+*   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors. All node backgrounds, borders, and label colors MUST update to reflect the new theme.
+*   **SVG Node Labels:** The `createNodeLabelSVG()` function MUST accept theme colors as parameters (using `--purlin-primary` for the friendly name, `--purlin-dim` for the filename) and regenerate all node labels on theme switch. No hardcoded color values in SVG generation.
 
 ### 2.8 Search Filtering
 *   **Match Logic:** When the user types in the dashboard search input (owned by `cdd_status_monitor.md` Section 2.2.1), the Spec Map MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename.
-*   **Visual Treatment -- Dim Non-Matches:** Matching nodes MUST remain at full color and opacity. Non-matching nodes (and their edges) MUST be visibly dimmed (reduced opacity) so that results stand out clearly.
+*   **Matching Nodes -- No Change:** Matching nodes MUST remain completely unchanged -- same background, border, text color, and opacity as their default state. No highlighting, no color change, no border change. They look exactly as they do with no search active.
+*   **Non-Matching Nodes -- Dim:** Non-matching nodes (and their edges) MUST be visibly dimmed (reduced opacity) so that matching nodes stand out by contrast.
 *   **Distinction from Status View:** The Status view hides non-matching rows entirely. The Spec Map MUST dim rather than hide, because removing nodes from a graph would destroy spatial context and layout stability.
-*   **Empty Search:** When the search input is empty or cleared, all nodes MUST return to full color and opacity.
+*   **Empty Search:** When the search input is empty or cleared, all nodes and edges MUST return to full color and opacity (their default state).
 
 ### 2.9 Machine-Readable Output
 *   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.purlin/cache/dependency_graph.json`.
@@ -223,12 +231,14 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then within each category group nodes flow top-to-bottom following prerequisite order
     And anchor nodes appear above the features that depend on them
 
-#### Scenario: Anchor Nodes Have Green Border
+#### Scenario: Uniform Node Appearance with Anchor Border Distinction
     Given the User is viewing the Spec Map view
-    When the graph renders anchor nodes (arch_*, design_*, policy_*)
-    Then those nodes display a border using the --purlin-status-good color (green)
-    And the green border is visible in both Blueprint (dark) and Architect (light) themes
-    And regular feature nodes do not have the green border
+    When the graph renders all feature nodes
+    Then all nodes have the same background color (--purlin-surface at low opacity)
+    And all regular (non-anchor) nodes have the same border color (--purlin-border)
+    And no per-category color palette is applied to backgrounds or borders
+    And anchor nodes (arch_*, design_*, policy_*) have a green border (--purlin-status-good) instead
+    And the green anchor border is visible in both Blueprint (dark) and Architect (light) themes
 
 #### Scenario: Double-Click Category Zooms to Fit
     Given the User is viewing the Spec Map view
@@ -240,9 +250,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 #### Scenario: Search Dims Non-Matching Nodes
     Given the User is viewing the Spec Map view
     When the User types a search term in the dashboard search input
-    Then nodes whose Label or filename contain the search term (case-insensitive) remain at full color and opacity
+    Then nodes whose Label or filename contain the search term (case-insensitive) are completely unchanged from their default appearance
     And nodes that do not match are visibly dimmed (reduced opacity)
     And edges connected only to non-matching nodes are also dimmed
+    And matching nodes have no highlighting, no color change, and no border change applied
     When the User clears the search input
     Then all nodes and edges return to full color and opacity
 
@@ -266,10 +277,15 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] No legend overlay displayed
 - [ ] Graph is zoomed and centered to fit the viewable page area on initial load
 - [ ] "Recenter Graph" button is displayed in the bottom-right corner of the Spec Map canvas
+- [ ] All feature nodes have the same background color (--purlin-surface at low opacity) -- no per-category tinting
+- [ ] All regular (non-anchor) feature nodes have the same border color (--purlin-border)
+- [ ] Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (--purlin-status-good) in both themes
+- [ ] Regular feature nodes do NOT have green borders or any category-specific coloring
 - [ ] Theme toggle switches all colors including graph nodes, edges, category groups, and modals
-- [ ] SVG node labels update text colors on theme switch
+- [ ] SVG node labels update text colors on theme switch (--purlin-primary for name, --purlin-dim for filename)
 - [ ] Theme persists across auto-refresh cycles
-- [ ] Search input dims non-matching nodes and edges (reduced opacity) while matching nodes stay at full color
+- [ ] Search input dims non-matching nodes and edges (reduced opacity) while matching nodes remain completely unchanged
+- [ ] Matching nodes retain their exact default appearance -- no highlighting, no color change, no border change
 - [ ] Clearing the search input restores all nodes and edges to full color and opacity
 - [ ] Manually-moved node positions persist across page refresh when the graph has not changed substantively
 - [ ] "Recenter Graph" button resets manually-moved node positions to packed layout in addition to resetting zoom
@@ -280,7 +296,6 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Intra-category prerequisite hierarchy preserved (anchor nodes above dependents, top-to-bottom flow)
 - [ ] Edges render with visible arrowheads pointing to the dependent (child) node
 - [ ] Cross-category prerequisite nodes always appear above their dependents (inter-category hierarchy preserved)
-- [ ] Anchor nodes (arch_*, design_*, policy_*) have a distinct green border (`--purlin-status-good`) in both themes
 - [ ] Double-clicking a category box zooms the view to maximize that category within the viewport
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 
