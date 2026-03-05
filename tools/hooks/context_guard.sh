@@ -23,19 +23,16 @@ PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 TURN_COUNT_FILE="$RUNTIME_DIR/turn_count"
 SESSION_ID_FILE="$RUNTIME_DIR/session_id"
-CONFIG_FILE="$PROJECT_ROOT/.purlin/config.json"
-
 # Ensure runtime directory exists
 mkdir -p "$RUNTIME_DIR"
 
-# Read threshold from config (default: 30)
-THRESHOLD=$(python3 -c "
-import json, sys
-try:
-    with open(sys.argv[1]) as f:
-        print(json.load(f).get('context_guard_threshold', 30))
-except (json.JSONDecodeError, IOError, OSError):
-    print(30)" "$CONFIG_FILE" 2>/dev/null || echo "30")
+# Read threshold from resolved config via resolver CLI (config_layering)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOLVER="$SCRIPT_DIR/../config/resolve_config.py"
+THRESHOLD=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key context_guard_threshold 2>/dev/null || echo "30")
+if [ -z "$THRESHOLD" ] || ! [[ "$THRESHOLD" =~ ^[0-9]+$ ]]; then
+    THRESHOLD=30
+fi
 
 # Use hook session_id, fall back to PPID
 SESSION_ID="${HOOK_SESSION_ID:-ppid-$PPID}"

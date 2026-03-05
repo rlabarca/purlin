@@ -116,6 +116,13 @@ if [[ -f "$LIVE_CONFIG" ]]; then
     cp "$LIVE_CONFIG" "$WORKTREE_CONFIG"
 fi
 
+# Copy local config if it exists (config_layering: worktree gets snapshot of user preferences)
+LIVE_LOCAL_CONFIG="$PROJECT_ROOT/.purlin/config.local.json"
+WORKTREE_LOCAL_CONFIG="$WORKTREE_PATH/.purlin/config.local.json"
+if [[ -f "$LIVE_LOCAL_CONFIG" ]]; then
+    cp "$LIVE_LOCAL_CONFIG" "$WORKTREE_LOCAL_CONFIG"
+fi
+
 # Mark config.json as skip-worktree so git never reports it as dirty in the worktree.
 # The worktree config is ephemeral — it diverges from MAIN over the session and is
 # destroyed at kill time. skip-worktree prevents accidental commits.

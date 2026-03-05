@@ -8,9 +8,11 @@
 |------|----------------|-----------|
 | `tools/cdd/serve.py` | `json.load(open(...config.json...))` | `from tools.config.resolve_config import resolve_config; config = resolve_config(project_root)` |
 | `tools/critic/critic.py` | `json.load()` with try/except fallback | Replace with `resolve_config()` import |
-| `tools/critic/resolve.py` | `json.load()` with try/except fallback | Replace with `resolve_config()` import |
+| `tools/release/resolve.py` | `json.load()` with try/except fallback | Replace with `resolve_config()` import |
 | `tools/release/manage_step.py` | `json.load()` on config path | Replace with `resolve_config()` import |
 | `tools/collab/extract_whats_different.py` | `json.load()` on config path | Replace with `resolve_config()` import |
+
+**[CLARIFICATION]** The Architect's inventory listed `tools/critic/resolve.py` as a consumer, but this file does not exist. The actual consumer in the release module is `tools/release/resolve.py`. Updated inventory above. (Severity: INFO)
 
 All Python consumers follow the Section 2.13 safe-read pattern (`try/except` with fallback defaults). The resolver centralizes this -- individual consumers no longer need their own error handling for config reads.
 

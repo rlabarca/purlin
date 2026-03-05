@@ -24,15 +24,11 @@ else:
             PROJECT_ROOT = candidate
             break
 
-# Config loading with resilience (Section 2.13)
-_config_path = os.path.join(PROJECT_ROOT, ".purlin/config.json")
-_config = {}
-if os.path.exists(_config_path):
-    try:
-        with open(_config_path, 'r') as f:
-            _config = json.load(f)
-    except (json.JSONDecodeError, IOError, OSError):
-        pass
+# Config loading via resolver (config_layering: local config with shared fallback)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+from tools.config.resolve_config import resolve_config as _resolve_config
+_config = _resolve_config(PROJECT_ROOT)
 
 TOOLS_ROOT = _config.get("tools_root", "tools")
 

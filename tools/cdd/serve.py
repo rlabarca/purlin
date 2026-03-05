@@ -26,16 +26,13 @@ else:
             PROJECT_ROOT = candidate
             break
 
-# Config loading with resilience (Section 2.13)
-CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin/config.json")
-CONFIG = {}
-if os.path.exists(CONFIG_PATH):
-    try:
-        with open(CONFIG_PATH, 'r') as f:
-            CONFIG = json.load(f)
-    except (json.JSONDecodeError, IOError, OSError):
-        print("Warning: Failed to parse .purlin/config.json; using defaults",
-              file=sys.stderr)
+# Config loading via resolver (config_layering: local config with shared fallback)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+from tools.config.resolve_config import resolve_config as _resolve_config
+CONFIG = _resolve_config(PROJECT_ROOT)
+CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.local.json")
+CONFIG_SHARED_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.json")
 
 def resolve_port(env_port=None, config_port=None, default=8086):
     """Resolve CDD port. Priority: CDD_PORT env var > config > default (Section 2.12)."""
@@ -929,17 +926,13 @@ _remote_collab_fetch_lock = threading.Lock()
 
 
 def get_remote_config():
-    """Read remote_collab config from .purlin/config.json with defaults."""
-    try:
-        with open(CONFIG_PATH, 'r') as f:
-            cfg = json.load(f)
-        rc = cfg.get('remote_collab', {})
-        return {
-            'remote': rc.get('remote', 'origin'),
-            'auto_fetch_interval': rc.get('auto_fetch_interval', 300),
-        }
-    except (json.JSONDecodeError, IOError, OSError):
-        return {'remote': 'origin', 'auto_fetch_interval': 300}
+    """Read remote_collab config via resolver with defaults."""
+    cfg = _resolve_config(PROJECT_ROOT)
+    rc = cfg.get('remote_collab', {})
+    return {
+        'remote': rc.get('remote', 'origin'),
+        'auto_fetch_interval': rc.get('auto_fetch_interval', 300),
+    }
 
 
 def get_active_remote_session():
@@ -4833,14 +4826,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, "Error reading file")
 
     def _serve_config_json(self):
-        """Serve the project config.json with resolved project name."""
-        config_data = {}
-        if os.path.exists(CONFIG_PATH):
-            try:
-                with open(CONFIG_PATH, 'r') as f:
-                    config_data = json.load(f)
-            except (json.JSONDecodeError, IOError, OSError):
-                pass
+        """Serve the resolved config (local priority, shared fallback)."""
+        config_data = _resolve_config(PROJECT_ROOT)
         payload = json.dumps(config_data).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
@@ -5014,7 +5001,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 'error': 'kill_isolation.sh timed out'})
 
     def _handle_config_agents(self):
-        """POST /config/agents — update agent configuration in config.json, validated against flat models array."""
+        """POST /config/agents — update agent configuration in config.local.json, validated against flat models array."""
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(length).decode('utf-8'))
@@ -5034,14 +5021,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'agents payload must include all three roles: architect, builder, qa'})
             return
 
-        # Load current config
-        current = {}
-        if os.path.exists(CONFIG_PATH):
-            try:
-                with open(CONFIG_PATH, 'r') as f:
-                    current = json.load(f)
-            except (json.JSONDecodeError, IOError, OSError):
-                pass
+        # Load current config via resolver (reads local if present, shared fallback)
+        current = _resolve_config(PROJECT_ROOT)
 
         # Collect valid model IDs from the flat models array
         all_model_ids = {
@@ -5097,9 +5078,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             warnings = []
             for wt in isolation_wts:
                 wt_config_path = os.path.join(
-                    PROJECT_ROOT, wt['path'], '.purlin', 'config.json')
+                    PROJECT_ROOT, wt['path'], '.purlin', 'config.local.json')
                 try:
-                    # Merge semantics: read worktree config, merge agents, write back
+                    # Merge semantics: read worktree local config, merge agents, write back
                     wt_current = dict(current)
                     if os.path.exists(wt_config_path):
                         try:

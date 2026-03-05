@@ -1,19 +1,17 @@
 #!/bin/bash
 # start.sh
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-# Project root and config discovery (Section 2.11)
+# Project root discovery (Section 2.11)
 if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
     PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
-    CONFIG_FILE="$PURLIN_PROJECT_ROOT/.purlin/config.json"
 else
     # Climbing fallback: try submodule path (further) first, then standalone (nearer)
-    CONFIG_FILE="$DIR/../../../.purlin/config.json"
     PROJECT_ROOT="$(cd "$DIR/../../.." 2>/dev/null && pwd)"
-    if [ ! -f "$CONFIG_FILE" ]; then
-        CONFIG_FILE="$DIR/../../.purlin/config.json"
+    if [ ! -d "$PROJECT_ROOT/.purlin" ]; then
         PROJECT_ROOT="$(cd "$DIR/../.." 2>/dev/null && pwd)"
     fi
 fi
+RESOLVER="$DIR/../config/resolve_config.py"
 
 # Source shared Python resolver (python_environment.md §2.2)
 source "$DIR/../resolve_python.sh"
@@ -37,10 +35,10 @@ fi
 
 PORT=8086
 
-if [ -f "$CONFIG_FILE" ]; then
-    # Simple grep/sed extraction for "cdd_port": 1234
-    PORT_FROM_CONFIG=$(grep '"cdd_port"' "$CONFIG_FILE" | sed -E 's/.*"cdd_port": *([0-9]+).*/\1/')
-    if [ ! -z "$PORT_FROM_CONFIG" ]; then
+# Read port from resolved config via resolver CLI (config_layering)
+if [ -f "$RESOLVER" ]; then
+    PORT_FROM_CONFIG=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key cdd_port 2>/dev/null)
+    if [ -n "$PORT_FROM_CONFIG" ] && [[ "$PORT_FROM_CONFIG" =~ ^[0-9]+$ ]]; then
         PORT=$PORT_FROM_CONFIG
     fi
 fi

@@ -318,6 +318,7 @@ RECOMMENDED_IGNORES=(
     "*.pid"
     ".purlin/runtime/"
     ".purlin/cache/"
+    ".purlin/config.local.json"
 )
 
 if [ ! -f "$GITIGNORE" ]; then

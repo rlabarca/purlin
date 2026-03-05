@@ -26,8 +26,7 @@ if [ -f "$SCRIPT_DIR/.purlin/QA_OVERRIDES.md" ]; then
     cat "$SCRIPT_DIR/.purlin/QA_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-# --- Read agent config from config.json ---
-CONFIG_FILE="$SCRIPT_DIR/.purlin/config.json"
+# --- Read agent config via resolver (config_layering) ---
 AGENT_ROLE="qa"
 
 AGENT_MODEL=""
@@ -36,22 +35,9 @@ AGENT_BYPASS="false"
 AGENT_STARTUP="true"
 AGENT_RECOMMEND="true"
 
-if [ -f "$CONFIG_FILE" ]; then
-    eval "$(python3 -c "
-import json
-try:
-    c = json.load(open('$CONFIG_FILE'))
-    a = c.get('agents', {}).get('$AGENT_ROLE', {})
-    print(f'AGENT_MODEL=\"{a.get(\"model\", \"\")}\"')
-    print(f'AGENT_EFFORT=\"{a.get(\"effort\", \"\")}\"')
-    bp = 'true' if a.get('bypass_permissions', False) else 'false'
-    print(f'AGENT_BYPASS=\"{bp}\"')
-    ss = 'true' if a.get('startup_sequence', True) else 'false'
-    print(f'AGENT_STARTUP=\"{ss}\"')
-    rn = 'true' if a.get('recommend_next_actions', True) else 'false'
-    print(f'AGENT_RECOMMEND=\"{rn}\"')
-except: pass
-" 2>/dev/null)"
+RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
+if [ -f "$RESOLVER" ]; then
+    eval "$(python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
 fi
 
 # --- Validate startup controls ---
