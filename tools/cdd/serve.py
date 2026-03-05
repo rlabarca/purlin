@@ -29,6 +29,11 @@ else:
 # Config loading via resolver (config_layering: local config with shared fallback)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+# In submodule mode, tools/ lives under purlin/ (SCRIPT_DIR/../..), not PROJECT_ROOT.
+# Add the framework root so `from tools.config...` resolves in both layouts.
+_framework_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+if _framework_root != PROJECT_ROOT and _framework_root not in sys.path:
+    sys.path.insert(0, _framework_root)
 from tools.config.resolve_config import resolve_config as _resolve_config
 CONFIG = _resolve_config(PROJECT_ROOT)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.local.json")
