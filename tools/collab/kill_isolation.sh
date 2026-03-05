@@ -87,9 +87,19 @@ if [[ -n "$DIRTY_OUTPUT" ]]; then
     done <<< "$DIRTY_OUTPUT"
 fi
 
+# --- Determine collaboration branch ---
+# Read active remote session from PROJECT_ROOT (not worktree).
+# If active, collaboration branch is collab/<session>; otherwise main.
+ACTIVE_SESSION_FILE="$PROJECT_ROOT/.purlin/runtime/active_remote_session"
+if [[ -f "$ACTIVE_SESSION_FILE" ]] && [[ -s "$ACTIVE_SESSION_FILE" ]]; then
+    COLLAB_BRANCH="collab/$(cat "$ACTIVE_SESSION_FILE")"
+else
+    COLLAB_BRANCH="main"
+fi
+
 # --- Check unsynced state ---
 BRANCH_NAME="isolated/$NAME"
-UNSYNCED_OUTPUT=$(git -C "$WORKTREE_PATH" log main..HEAD --oneline 2>/dev/null || true)
+UNSYNCED_OUTPUT=$(git -C "$WORKTREE_PATH" log "$COLLAB_BRANCH"..HEAD --oneline 2>/dev/null || true)
 IS_UNSYNCED=false
 UNSYNCED_COUNT=0
 
@@ -145,7 +155,7 @@ fi
 
 # WARN: unsynced commits
 if $IS_UNSYNCED; then
-    echo "Warning: Branch '$BRANCH_NAME' has $UNSYNCED_COUNT commit(s) not yet merged to main."
+    echo "Warning: Branch '$BRANCH_NAME' has $UNSYNCED_COUNT commit(s) not yet merged to $COLLAB_BRANCH."
     echo "The branch will NOT be deleted — it still exists and can be re-added with:"
     echo "  git worktree add .worktrees/$NAME $BRANCH_NAME"
     echo ""
