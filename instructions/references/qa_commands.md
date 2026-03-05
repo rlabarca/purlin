@@ -7,6 +7,8 @@
 
 ## Main Branch Variant
 
+Print this variant when the branch is `main` (no active collab session).
+
 ```
 Purlin QA — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -20,8 +22,30 @@ Purlin QA — Ready
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-collab-push            Push local main to remote collab branch (main only)
-  /pl-collab-pull            Pull remote collab branch into local main (main only)
+  /pl-collab-push            Push local collab branch to remote (collab session only)
+  /pl-collab-pull            Pull remote collab branch into local (collab session only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Collab Session Variant
+
+Print this variant when the branch starts with `collab/`. Substitute the actual session name for `<session>`.
+
+```
+Purlin QA — Ready  [Collab: <session>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-verify <name>          Run interactive verification for a feature
+  /pl-discovery <name>       Record a structured discovery
+  /pl-complete <name>        Mark a verified feature as complete
+  /pl-qa-report              Summary of open discoveries and TESTING features
+  /pl-override-edit          Safely edit QA_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-collab-push            Push local collab branch to remote (collab session only)
+  /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -42,7 +66,7 @@ Purlin QA — Ready  [Isolated: <name>]
   /pl-override-edit          Safely edit QA_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-local-push             Merge isolation branch to main
-  /pl-local-pull             Pull main into isolation branch
+  /pl-local-push             Merge isolation branch to collaboration branch
+  /pl-local-pull             Pull collaboration branch into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

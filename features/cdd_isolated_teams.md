@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the MAIN WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to `main`.
+CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the MAIN WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to the collaboration branch (the branch the project root is currently on — `collab/<session>` during active collaboration, `main` otherwise).
 
 ---
 
@@ -65,13 +65,13 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
    Column headers use two-line rendering (`Committed<br>Modified`, `Uncommitted<br>Modified`) to save horizontal space.
 
-**Main Diff** shows the sync state between the worktree's branch and main:
-- `AHEAD` — only this branch has moved: it has commits not yet in main; main has no commits missing from this branch. Committed Modified reflects files the branch changed since its common ancestor with main.
-- `SAME` — branch and main are at identical commit positions. Committed Modified will always be empty.
-- `BEHIND` — only main has moved: it has commits not yet in this branch; this branch has no commits ahead of main. Run `/pl-local-pull` before pushing. Committed Modified will always be empty.
-- `DIVERGED` — both main and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
+**Main Diff** shows the sync state between the worktree's branch and the collaboration branch (the branch the project root is on — `collab/<session>` during active collaboration, `main` otherwise):
+- `AHEAD` — only this branch has moved: it has commits not yet in the collaboration branch; the collaboration branch has no commits missing from this branch. Committed Modified reflects files the branch changed since its common ancestor with the collaboration branch.
+- `SAME` — branch and the collaboration branch are at identical commit positions. Committed Modified will always be empty.
+- `BEHIND` — only the collaboration branch has moved: it has commits not yet in this branch; this branch has no commits ahead of the collaboration branch. Run `/pl-local-pull` before pushing. Committed Modified will always be empty.
+- `DIVERGED` — both the collaboration branch and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
 
-**Committed Modified** shows files the branch changed since its common ancestor with main — derived from `git diff main...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `main_diff` is `SAME` or `BEHIND`. It may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+**Committed Modified** shows files the branch changed since its common ancestor with the collaboration branch — derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `main_diff` is `SAME` or `BEHIND`. It may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
 
 **Uncommitted Modified** shows files in the worktree's working tree that have not yet been committed — derived from `git -C <path> status --porcelain` run from the worktree directory. This includes staged, unstaged, and untracked files. The column is independent of `main_diff` state: a worktree at `SAME` can still have uncommitted changes. When non-empty, it uses the same category format as Committed Modified. Files under `.purlin/` are excluded from all categories.
 
@@ -81,18 +81,18 @@ CDD reads each worktree's state using read-only git commands:
 
 - `git worktree list --porcelain` — all worktree paths and HEAD commits.
 - `git -C <path> rev-parse --abbrev-ref HEAD` — branch name per worktree.
-- `git diff main...<branch> --name-only` — committed files the branch changed since its common ancestor with main (three-dot diff), run from the **project root**. This is always empty for `SAME` and `BEHIND` states; may be empty for `AHEAD` or `DIVERGED` if the branch's commits touch no files. Output is one filename per line, parsed by path prefix to count per-category modified files:
+- `git diff <collaboration-branch>...<branch> --name-only` — committed files the branch changed since its common ancestor with the collaboration branch (three-dot diff), run from the **project root**. The collaboration branch is the branch the project root is on (`collab/<session>` during active collaboration, `main` otherwise). This is always empty for `SAME` and `BEHIND` states; may be empty for `AHEAD` or `DIVERGED` if the branch's commits touch no files. Output is one filename per line, parsed by path prefix to count per-category modified files:
   - Lines starting with `.purlin/` → **excluded entirely** (not counted in any category).
   - Lines starting with `features/` → Specs count.
   - Lines starting with `tests/` → Tests count.
   - All other lines → Code/Other count.
 - `git -C <path> status --porcelain` — uncommitted files in the worktree's working tree. Captures staged, unstaged, and untracked changes. Output format: `XY filename` where the filename starts at column 3. For renames, the format is `XY old -> new`; the new path is used. Parsed by the same path-prefix categorization as committed (`.purlin/` excluded, `features/` → Specs, `tests/` → Tests, rest → Code/Other).
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
-- `git -C <path> rev-list --count main..HEAD` → `commits_ahead` (int).
-- Two `git log` range queries to determine `main_diff` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name:
+- `git -C <path> rev-list --count <collaboration-branch>..HEAD` → `commits_ahead` (int).
+- Two `git log` range queries to determine `main_diff` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name and the collaboration branch:
 
-  1. `git log <branch>..main --oneline` — commits on main not in branch (branch is behind).
-  2. `git log main..<branch> --oneline` — commits on branch not in main (branch is ahead).
+  1. `git log <branch>..<collaboration-branch> --oneline` — commits on the collaboration branch not in branch (branch is behind).
+  2. `git log <collaboration-branch>..<branch> --oneline` — commits on branch not in the collaboration branch (branch is ahead).
 
   Evaluation:
   - If query 1 is non-empty AND query 2 is non-empty → `main_diff: "DIVERGED"`
@@ -161,10 +161,10 @@ Fields per worktree entry:
 - `name` — isolation name, parsed from worktree path (e.g., `.worktrees/feat1` → `"feat1"`).
 - `path` — relative path from project root.
 - `branch` — current branch name.
-- `main_diff` — four-state sync indicator (`"SAME"`, `"AHEAD"`, `"BEHIND"`, `"DIVERGED"`). Computed via two `git log` range queries from the project root.
-- `commits_ahead` — integer count of commits in this branch not yet in main. Always present (0 when none).
+- `main_diff` — four-state sync indicator (`"SAME"`, `"AHEAD"`, `"BEHIND"`, `"DIVERGED"`). Computed via two `git log` range queries from the project root using the collaboration branch as reference.
+- `commits_ahead` — integer count of commits in this branch not yet in the collaboration branch. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
-- `committed` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git diff main...<branch> --name-only` (three-dot) run from project root. Files under `.purlin/` are excluded.
+- `committed` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot) run from project root. Files under `.purlin/` are excluded.
 - `uncommitted` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git -C <path> status --porcelain` run from the worktree directory. Files under `.purlin/` are excluded.
 - `delivery_phase` — optional object with `current` (int) and `total` (int). Present only when the worktree's `.purlin/cache/delivery_plan.md` exists and has an IN_PROGRESS phase. Absent when no delivery plan exists or all phases are COMPLETE.
 
@@ -279,15 +279,15 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then the worktree entry has name "hotfix" and branch "hotfix/urgent"
     And no role field is present in the entry
 
-#### Scenario: Committed Modified Non-Empty When Branch Is AHEAD Of Main
+#### Scenario: Committed Modified Non-Empty When Branch Is AHEAD Of Collaboration Branch
 
-    Given a worktree at .worktrees/feat1 is AHEAD of main with commits that modified files
+    Given a worktree at .worktrees/feat1 is AHEAD of the collaboration branch with commits that modified files
     When an agent calls GET /status.json
     Then the worktree entry's committed object has at least one non-zero field (specs, tests, or other)
 
-#### Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Main
+#### Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Collaboration Branch
 
-    Given a worktree at .worktrees/feat1 has 3 commits not yet merged to main
+    Given a worktree at .worktrees/feat1 has 3 commits not yet merged to the collaboration branch
     When an agent calls GET /status.json
     Then the worktree entry has commits_ahead equal to 3
 
@@ -331,9 +331,9 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And .worktrees/feat1/.purlin/config.json reflects the new values
     And .worktrees/ui/.purlin/config.json reflects the new values
 
-#### Scenario: Committed Modified Categorizes Files Changed Against Main by Type
+#### Scenario: Committed Modified Categorizes Files Changed Against Collaboration Branch by Type
 
-    Given a worktree at .worktrees/feat1 on a branch AHEAD of main
+    Given a worktree at .worktrees/feat1 on a branch AHEAD of the collaboration branch
     And the branch's commits modified two files under features/ and one file outside features/ and tests/
     When an agent calls GET /status.json
     Then the worktree entry's committed field has specs=2, tests=0, other=1
@@ -346,40 +346,40 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 
 #### Scenario: Uncommitted Modified Non-Empty When Main Diff Is SAME
 
-    Given a worktree at .worktrees/ui on a branch at SAME position as main
+    Given a worktree at .worktrees/ui on a branch at SAME position as the collaboration branch
     And the worktree has uncommitted changes to three files under features/
     When an agent calls GET /status.json
     Then the worktree entry's main_diff is "SAME"
     And the worktree entry's committed field has specs=0, tests=0, other=0
     And the worktree entry's uncommitted field has specs=3, tests=0, other=0
 
-#### Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits
+#### Scenario: Main Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
-    And main has commits that are not in isolated/feat1
+    And the collaboration branch has commits that are not in isolated/feat1
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "BEHIND"
 
-#### Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Main
+#### Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
-    And isolated/feat1 has commits that are not in main
-    And main has no commits that are missing from isolated/feat1
+    And isolated/feat1 has commits that are not in the collaboration branch
+    And the collaboration branch has no commits that are missing from isolated/feat1
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "AHEAD"
 
-#### Scenario: Main Diff SAME When Branch And Main Are Identical
+#### Scenario: Main Diff SAME When Branch And Collaboration Branch Are Identical
 
     Given a worktree at .worktrees/ui on branch isolated/ui
-    And isolated/ui and main point to the same commit
+    And isolated/ui and the collaboration branch point to the same commit
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "SAME"
 
-#### Scenario: Main Diff DIVERGED When Both Main And Branch Have Commits Beyond Common Ancestor
+#### Scenario: Main Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
-    And isolated/feat1 has commits not in main
-    And main has commits not in isolated/feat1
+    And isolated/feat1 has commits not in the collaboration branch
+    And the collaboration branch has commits not in isolated/feat1
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "DIVERGED"
 

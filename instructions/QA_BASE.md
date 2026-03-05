@@ -44,11 +44,16 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
 
-**Step 1 — Detect isolation state:**
+**Step 1 — Detect branch state:**
 Run: `git rev-parse --abbrev-ref HEAD`
 
 **Step 2 — Print the command table:**
-Read `instructions/references/qa_commands.md` and print the appropriate variant (main branch or isolated session) verbatim. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
+Read `instructions/references/qa_commands.md` and print the appropriate variant based on the current branch:
+- Branch is `main` -> Main Branch Variant
+- Branch starts with `collab/` -> Collab Session Variant (with `[Collab: <session>]` header)
+- Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
+
+Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
 **Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
@@ -63,7 +68,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
 
-**Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, run `git merge main` to pull the merged implementation branch before starting verification. If `main` does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to `main` yet. Coordinate with the Builder before proceeding."
+**Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, determine the collaboration branch (`collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`) and run `git merge <collaboration-branch>` to pull the merged implementation branch before starting verification. If the collaboration branch does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to the collaboration branch yet. Coordinate with the Builder before proceeding."
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. For each TESTING feature, read the `regression_scope` block from the feature's `tests/<feature_name>/critic.json` to determine the scoped verification mode. Present the user with a summary:
@@ -201,8 +206,8 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 
 ### Step 2.5 -- Collaboration Handoff (Isolated Sessions)
 If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-*   Run `/pl-local-push` to verify handoff readiness and merge the branch to main.
-*   Check `git log main..HEAD --oneline` for commits ahead of `main`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — run `/pl-local-push` to merge `isolated/<name>` to `main` before concluding the session."
+*   Run `/pl-local-push` to verify handoff readiness and merge the branch to the collaboration branch.
+*   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-local-push` to merge `isolated/<name>` before concluding the session."
 *   Do NOT merge the branch yourself unless the user explicitly requests it.
 
 ### Step 3 -- Present Final Summary

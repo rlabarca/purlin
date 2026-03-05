@@ -53,7 +53,7 @@ When `.purlin/runtime/active_remote_session` is absent or empty:
 
 When `.purlin/runtime/active_remote_session` contains a session name:
 
-**Collapsed badge:** `"<session-name> <STATE annotation>"` where STATE is the sync state, framed from the remote's perspective. Annotation format: SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local main)"`, BEHIND -> `"BEHIND (Remote is N ahead of local main)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local main)"`. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`). Same tokens as ISOLATED TEAMS.
+**Collapsed badge:** `"<session-name> <STATE annotation>"` where STATE is the sync state, framed from the remote's perspective. Annotation format: SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local)"`, BEHIND -> `"BEHIND (Remote is N ahead of local)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local)"`. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`). Same tokens as ISOLATED TEAMS.
 
 **Expanded content (in order):**
 
@@ -74,24 +74,30 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 **`POST /remote-collab/create`** -- `{ "name": "<session-name>" }`
 
 1. Validate session name (`[a-zA-Z0-9_.-]+`, 1-30 chars, no leading/trailing dots/hyphens, no `..`).
-2. Read remote from config (`remote_collab.remote`, default `"origin"`).
-3. Create branch `collab/<name>` from current `main` HEAD: `git branch collab/<name> main`.
-4. Push to remote: `git push <remote> collab/<name>`.
-5. Write session name to `.purlin/runtime/active_remote_session`.
-6. Return `{ "status": "ok", "session": "<name>", "branch": "collab/<name>" }`.
-7. On push failure: return `{ "error": "..." }`, do NOT write runtime file.
+2. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
+3. Read remote from config (`remote_collab.remote`, default `"origin"`).
+4. Create branch `collab/<name>` from current `main` HEAD: `git branch collab/<name> main`.
+5. Push to remote: `git push <remote> collab/<name>`.
+6. Checkout the new branch: `git checkout collab/<name>`.
+7. Write session name to `.purlin/runtime/active_remote_session`.
+8. Return `{ "status": "ok", "session": "<name>", "branch": "collab/<name>" }`.
+9. On push failure: return `{ "error": "..." }`, do NOT write runtime file or checkout.
 
 **`POST /remote-collab/switch`** -- `{ "name": "<session-name>" }`
 
-1. Verify `origin/collab/<name>` exists in remote tracking refs. If not: `git fetch <remote> collab/<name>`.
-2. Write session name to `.purlin/runtime/active_remote_session`.
-3. Return `{ "status": "ok", "session": "<name>" }`.
+1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
+2. Verify `origin/collab/<name>` exists in remote tracking refs. If not: `git fetch <remote> collab/<name>`.
+3. Checkout the target branch: `git checkout collab/<name>`. If the local branch does not exist, create it tracking the remote: `git checkout -b collab/<name> origin/collab/<name>`.
+4. Write session name to `.purlin/runtime/active_remote_session`.
+5. Return `{ "status": "ok", "session": "<name>" }`.
 
 **`POST /remote-collab/disconnect`** -- `{}`
 
-1. Remove/truncate `.purlin/runtime/active_remote_session`.
-2. Do NOT delete any branches or remote refs.
-3. Return `{ "status": "ok" }`.
+1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
+2. Checkout main: `git checkout main`.
+3. Remove/truncate `.purlin/runtime/active_remote_session`.
+4. Do NOT delete any branches or remote refs.
+5. Return `{ "status": "ok" }`.
 
 **`POST /remote-collab/fetch`** -- `{}` (uses active session)
 
@@ -115,9 +121,9 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 ### 2.5 Sync State Computation
 
 - Uses locally cached remote tracking refs -- never triggers a network fetch during the 5-second poll.
-- `git log origin/collab/<session>..main --oneline` -> commits local main is ahead.
-- `git log main..origin/collab/<session> --oneline` -> commits remote is ahead.
-- SAME/AHEAD/BEHIND/DIVERGED four-state logic (same as ISOLATED TEAMS section).
+- `git log origin/collab/<session>..collab/<session> --oneline` -> commits local collab branch is ahead.
+- `git log collab/<session>..origin/collab/<session> --oneline` -> commits remote is ahead.
+- SAME/AHEAD/BEHIND/DIVERGED four-state logic (same as ISOLATED TEAMS section). Same-branch comparison is simpler than the previous cross-branch model.
 - When remote tracking ref `origin/collab/<session>` does not exist yet (pre-first-fetch): show inline note "Run Check Remote to see sync state" instead of a badge.
 
 ### 2.6 Cross-Section Annotation in MAIN WORKSPACE
@@ -205,13 +211,15 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     When an agent calls GET /status.json
     Then the response contains remote_collab_sessions as an empty array
 
-#### Scenario: Create Session Pushes Branch and Writes Runtime File
+#### Scenario: Create Session Pushes Branch Checks Out and Writes Runtime File
 
     Given no collab/v0.5-sprint branch exists on the remote
     And the CDD server is running
+    And the working tree is clean
     When a POST request is sent to /remote-collab/create with body {"name": "v0.5-sprint"}
     Then the server creates branch collab/v0.5-sprint from main HEAD
     And pushes collab/v0.5-sprint to origin
+    And checks out collab/v0.5-sprint locally
     And writes "v0.5-sprint" to .purlin/runtime/active_remote_session
     And the response contains { "status": "ok", "session": "v0.5-sprint" }
     And GET /status.json shows remote_collab.sync_state as "SAME"
@@ -224,19 +232,23 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     And no branch is created on the remote
     And .purlin/runtime/active_remote_session is not written
 
-#### Scenario: Join Existing Session Updates Runtime File
+#### Scenario: Join Existing Session Checks Out Branch and Updates Runtime File
 
     Given collab/v0.5-sprint exists as a remote tracking branch
     And no active session is set
+    And the working tree is clean
     When a POST request is sent to /remote-collab/switch with body {"name": "v0.5-sprint"}
-    Then .purlin/runtime/active_remote_session contains "v0.5-sprint"
+    Then the local branch collab/v0.5-sprint is checked out
+    And .purlin/runtime/active_remote_session contains "v0.5-sprint"
     And GET /status.json shows remote_collab.active_session as "v0.5-sprint"
 
-#### Scenario: Disconnect Clears Active Session
+#### Scenario: Disconnect Checks Out Main and Clears Active Session
 
     Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    And the working tree is clean
     When a POST request is sent to /remote-collab/disconnect
-    Then .purlin/runtime/active_remote_session is empty or absent
+    Then the local branch main is checked out
+    And .purlin/runtime/active_remote_session is empty or absent
     And GET /status.json does not contain a remote_collab field
     And collab/v0.5-sprint still exists on the remote
 
@@ -251,7 +263,7 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 #### Scenario: Sync State SAME When Local and Remote Are Identical
 
     Given an active session "v0.5-sprint" is set
-    And local main and origin/collab/v0.5-sprint point to the same commit
+    And local collab/v0.5-sprint and origin/collab/v0.5-sprint point to the same commit
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "SAME"
     And remote_collab.commits_ahead is 0
@@ -260,8 +272,8 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 #### Scenario: Sync State AHEAD When Local Has Unpushed Commits
 
     Given an active session "v0.5-sprint" is set
-    And local main has 3 commits not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has no commits not in local main
+    And local collab/v0.5-sprint has 3 commits not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has no commits not in local collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "AHEAD"
     And remote_collab.commits_ahead is 3
@@ -269,8 +281,8 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 #### Scenario: Sync State BEHIND When Remote Has New Commits
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has 2 commits not in local main
-    And local main has no commits not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
+    And local collab/v0.5-sprint has no commits not in origin/collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "BEHIND"
     And remote_collab.commits_behind is 2
@@ -278,8 +290,8 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 #### Scenario: Sync State DIVERGED When Both Sides Have Commits
 
     Given an active session "v0.5-sprint" is set
-    And local main has 1 commit not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And local collab/v0.5-sprint has 1 commit not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab.sync_state is "DIVERGED"
     And remote_collab.commits_ahead is 1
@@ -336,11 +348,38 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 #### Scenario: Per-Session Sync State in remote_collab_sessions
 
     Given collab/v0.5-sprint exists as a remote tracking branch
-    And origin/collab/v0.5-sprint has 2 commits not in local main
-    And local main has no commits not in origin/collab/v0.5-sprint
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
+    And local collab/v0.5-sprint has no commits not in origin/collab/v0.5-sprint
     When an agent calls GET /status.json
     Then remote_collab_sessions contains an entry for "v0.5-sprint"
     And that entry has sync_state "BEHIND" and commits_behind 2
+
+#### Scenario: Create Session Blocked When Working Tree Is Dirty
+
+    Given the CDD server is running
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/create with body {"name": "v0.5-sprint"}
+    Then the response contains an error message about dirty working tree
+    And no branch is created
+    And the current branch is unchanged
+
+#### Scenario: Disconnect Blocked When Working Tree Is Dirty
+
+    Given an active session "v0.5-sprint" is set
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/disconnect
+    Then the response contains an error message about dirty working tree
+    And the current branch remains collab/v0.5-sprint
+    And .purlin/runtime/active_remote_session still contains "v0.5-sprint"
+
+#### Scenario: Switch Session Blocked When Working Tree Is Dirty
+
+    Given an active session "v0.5-sprint" is set
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/switch with body {"name": "hotfix-auth"}
+    Then the response contains an error message about dirty working tree
+    And the current branch remains collab/v0.5-sprint
+    And .purlin/runtime/active_remote_session still contains "v0.5-sprint"
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -394,18 +433,22 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     When the User views the MAIN WORKSPACE section body
     Then a "Last remote sync: N min ago" line is visible below the clean/dirty state line
 
-#### Scenario: Create Session Transitions From Setup to Active Mode
+#### Scenario: Create Session Checks Out Collab Branch and Transitions to Active Mode
 
     Given the CDD dashboard is open in setup mode (no active session)
+    And the working tree is clean
     When the User types "v0.5-sprint" and clicks Create
-    Then the REMOTE COLLABORATION section transitions to active mode
+    Then the local machine checks out collab/v0.5-sprint
+    And the REMOTE COLLABORATION section transitions to active mode
     And the session name and sync state badge are shown
 
-#### Scenario: Disconnect Transitions From Active to Setup Mode
+#### Scenario: Disconnect Returns to Main and Transitions to Setup Mode
 
     Given the CDD dashboard is open in active mode with session "v0.5-sprint"
+    And the working tree is clean
     When the User clicks the Disconnect button
-    Then the REMOTE COLLABORATION section transitions back to setup mode
+    Then the local machine checks out main
+    And the REMOTE COLLABORATION section transitions back to setup mode
     And the creation row and known sessions table are shown
 
 #### Scenario: Delete Button Visible in Known Sessions Table

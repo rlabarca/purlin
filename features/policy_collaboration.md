@@ -19,11 +19,11 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 
 ### 2.2 Merge-Before-Proceed Rule
 
-*   Each isolation MUST merge to `main` before another session that depends on its changes can start or continue.
+*   Each isolation MUST merge to the collaboration branch before another session that depends on its changes can start or continue.
 *   The Critic uses `git log` without a branch specifier; it only sees commits reachable from HEAD.
 *   A COMPLETE status commit on an unmerged isolation branch is invisible to agents on other branches until merged.
 *   This is enforced by the handoff protocol, not by tooling (no code enforcement needed).
-*   Process rule: merge to `main` → confirm status is visible → hand off to next agent.
+*   Process rule: merge to the collaboration branch → confirm status is visible → hand off to next agent.
 
 ### 2.3 PURLIN_PROJECT_ROOT in Worktrees
 
@@ -35,10 +35,10 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 
 ### 2.4 Integration Moment Protocol
 
-*   The "integration moment" is when an isolation branch merges to `main`.
+*   The "integration moment" is when an isolation branch merges to the collaboration branch.
 *   Who merges: the agent that completed the session's work (before shutting down).
 *   What it triggers: the next agent that needs the merged work can now see the commits.
-*   For remote collaboration, the merge is followed by `git push origin main`.
+*   For remote collaboration, the merge is followed by `/pl-collab-push` to sync the collaboration branch to the remote.
 *   `/pl-local-push` verifies readiness and performs the merge in one step.
 
 ### 2.5 Worktree Location Convention
@@ -50,9 +50,9 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 
 ### 2.6 ff-only Merge Invariant
 
-*   All merges from isolation branches to `main` use `git merge --ff-only`.
+*   All merges from isolation branches to the collaboration branch use `git merge --ff-only`.
 *   If the branch cannot be fast-forwarded (DIVERGED state), the agent must rebase first via `/pl-local-pull`.
-*   This prevents merge commits on `main` and keeps history linear.
+*   This prevents merge commits on the collaboration branch and keeps history linear.
 
 ### 2.7 .purlin/ Exclusion from Dirty Detection
 
@@ -112,7 +112,7 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 
 **Local Isolation:** Single machine, multiple named git worktrees, CDD dashboard runs at project root.
 
-**Remote Collaboration:** Multiple machines, lifecycle branches pushed to origin, CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
+**Remote Collaboration:** Multiple machines, collab session branches on the remote. Each collaborator checks out the `collab/<session>` branch locally, making push and pull symmetric same-branch operations. CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
 
 ## Scenarios
 

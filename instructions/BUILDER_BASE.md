@@ -22,11 +22,14 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
 
-**Step 1 — Detect isolation state:**
+**Step 1 — Detect branch state:**
 Run: `git rev-parse --abbrev-ref HEAD`
 
 **Step 2 — Print the command table:**
-Read `instructions/references/builder_commands.md` and print the appropriate variant (main branch or isolated session) verbatim.
+Read `instructions/references/builder_commands.md` and print the appropriate variant based on the current branch:
+- Branch is `main` -> Main Branch Variant
+- Branch starts with `collab/` -> Collab Session Variant (with `[Collab: <session>]` header)
+- Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
 **Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
@@ -213,8 +216,8 @@ Before concluding your session, after all work is committed to git:
     ```
     If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 4.  **Collaboration Handoff (Isolated Sessions):** If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-    *   Run `/pl-local-push` to verify handoff readiness and merge the branch to main.
-    *   Check whether any commits exist that are ahead of `main` with `git log main..HEAD --oneline`. If commits are ahead, print an integration reminder: "N commits ahead of `main` — run `/pl-local-push` to merge `isolated/<name>` to `main` before concluding the session."
+    *   Run `/pl-local-push` to verify handoff readiness and merge the branch to the collaboration branch.
+    *   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-local-push` to merge `isolated/<name>` before concluding the session."
     *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Agentic Team Orchestration

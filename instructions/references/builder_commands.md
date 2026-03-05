@@ -5,6 +5,8 @@
 
 ## Main Branch Variant
 
+Print this variant when the branch is `main` (no active collab session).
+
 ```
 Purlin Builder — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -19,8 +21,31 @@ Purlin Builder — Ready
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-collab-push            Push local main to remote collab branch (main only)
-  /pl-collab-pull            Pull remote collab branch into local main (main only)
+  /pl-collab-push            Push local collab branch to remote (collab session only)
+  /pl-collab-pull            Pull remote collab branch into local (collab session only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Collab Session Variant
+
+Print this variant when the branch starts with `collab/`. Substitute the actual session name for `<session>`.
+
+```
+Purlin Builder — Ready  [Collab: <session>]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /pl-status                 Check CDD status and action items
+  /pl-resume [save|role]     Save or restore session state across context clears
+  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-build [name]           Implement pending work or a specific feature
+  /pl-delivery-plan          Create or review phased delivery plan
+  /pl-infeasible <name>      Escalate a feature as unimplementable
+  /pl-propose <topic>        Surface a spec change suggestion to the Architect
+  /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
+  /pl-override-conflicts     Check override for conflicts with base
+  /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-update-purlin          Intelligent submodule update with conflict resolution
+  /pl-collab-push            Push local collab branch to remote (collab session only)
+  /pl-collab-pull            Pull remote collab branch into local (collab session only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -42,7 +67,7 @@ Purlin Builder — Ready  [Isolated: <name>]
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-local-push             Merge isolation branch to main
-  /pl-local-pull             Pull main into isolation branch
+  /pl-local-push             Merge isolation branch to collaboration branch
+  /pl-local-pull             Pull collaboration branch into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

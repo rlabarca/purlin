@@ -94,10 +94,10 @@ The framework enforces three ownership types: **specification** (Architect), **i
 | `/pl-override-edit` | Edit an override file (role-scoped: Builder/QA can only edit their own file; Architect can edit any) |
 | `/pl-override-conflicts` | Check an override file against its base layer for contradictions |
 | `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
-| `/pl-local-push` | Merge isolation branch to main -- runs pre-merge handoff checklist (isolated sessions only) |
-| `/pl-local-pull` | Pull latest commits from main into the current isolation branch (isolated sessions only) |
-| `/pl-collab-push` | Push local main to the remote collab branch (main only) |
-| `/pl-collab-pull` | Pull remote collab branch into local main (main only) |
+| `/pl-local-push` | Merge isolation branch to collaboration branch -- runs pre-merge handoff checklist (isolated sessions only) |
+| `/pl-local-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |
+| `/pl-collab-push` | Push local collab branch to remote (collab session only) |
+| `/pl-collab-pull` | Pull remote collab branch into local (collab session only) |
 | `/pl-update-purlin` | Intelligent submodule update with semantic analysis and conflict resolution |
 
 ---
@@ -277,11 +277,11 @@ Work across machines using session-based collab branches on a hosted remote.
 
 ### How It Works
 
-Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Push local main to the collab branch with `/pl-collab-push`, pull from it with `/pl-collab-pull`. Isolation branches stay local -- only main syncs to the remote.
+Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Check out the `collab/<session>` branch locally, then push and pull are symmetric same-branch operations: `/pl-collab-push` pushes the local collab branch to the remote, `/pl-collab-pull` pulls the remote into the local collab branch. Isolation branches merge to the collaboration branch (which is the collab branch during an active session, or `main` when no session is active).
 
 ### Rules
 
-*   **Main-only.** Collab commands only run from the project root on `main`.
+*   **Collab branch only.** Collab commands only run from a checked-out `collab/<session>` branch.
 *   **Session-first.** You must create or join a session in the dashboard before push/pull works.
 *   **Fetch-before-push.** Always fetches first; blocks if behind (must pull first).
 *   **Merge, not rebase.** Pulls use merge to preserve shared history.
@@ -300,19 +300,19 @@ A single command creates one isolated team:
 tools/collab/create_isolation.sh <name>
 ```
 
-This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-local-push` to run the pre-merge handoff checklist and merge the branch back to `main`.
+This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-local-push` to run the pre-merge handoff checklist and merge the branch back to the collaboration branch.
 
 ```
 Architect (isolated/design)          Builder (isolated/feat1)
   → designs new specs                  → implements existing backlog
   → /pl-local-push                     → /pl-local-push
-       ↓ merge to main                      ↓ merge to main
+       ↓ merge to collab branch              ↓ merge to collab branch
                     → QA verifies combined result
 ```
 
 ### Rules
 
-*   **Merge-before-proceed.** Each isolation must merge to `main` before another session that depends on its changes can start.
+*   **Merge-before-proceed.** Each isolation must merge to the collaboration branch before another session that depends on its changes can start.
 *   **No role assignment.** The isolation name is the identifier (`feat1`, `ui`, `hotfix`) -- any agent type may use any name.
 *   **Dashboard visibility.** Active isolations appear in the CDD Dashboard with branch name, sync state (AHEAD/BEHIND/SAME/DIVERGED), and file change summary. Create and kill isolations from the dashboard.
 
@@ -458,7 +458,7 @@ git commit -m "chore: update purlin submodule"
 **Remote Collaboration**
 - Remote multi-machine collaboration via collab sessions (`collab/<name>` branches)
 - Dashboard section with session management, sync badges (AHEAD/BEHIND/SAME/DIVERGED), and per-session controls
-- `/pl-collab-push` and `/pl-collab-pull` commands for main-to-remote sync
+- `/pl-collab-push` and `/pl-collab-pull` commands for collab branch sync with remote
 - Session delete with confirmation modal
 
 **Spec Map Enhancements**

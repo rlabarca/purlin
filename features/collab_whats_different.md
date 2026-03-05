@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND, or DIVERGED), there is no human-readable way to understand what changed. The "What's Different?" feature compares local main vs the collab branch in both directions, uses an LLM agent to synthesize a plain-English summary, and makes it available from the CDD dashboard and via agent command. The summary orients a collaborator on what features changed, what specs shifted, whether feedback was addressed, and what needs testing.
+When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND, or DIVERGED), there is no human-readable way to understand what changed. The "What's Different?" feature compares the local collab branch vs the remote collab branch in both directions, uses an LLM agent to synthesize a plain-English summary, and makes it available from the CDD dashboard and via agent command. The summary orients a collaborator on what features changed, what specs shifted, whether feedback was addressed, and what needs testing.
 
 ---
 
@@ -232,9 +232,9 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 
 The LLM prompt MUST prepend a directional glossary before the JSON data so the model has correct context before interpreting the extraction output:
 
-- **AHEAD** — Your local main has commits the collab branch does not. Action: **push** to share your work.
-- **BEHIND** — The collab branch has commits your local main does not. Action: **pull** to receive their work.
-- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge collab into local), then **push**.
+- **AHEAD** — Your local collab branch has commits the remote collab branch does not. Action: **push** to share your work.
+- **BEHIND** — The remote collab branch has commits your local collab branch does not. Action: **pull** to receive their work.
+- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge remote into local collab branch), then **push**.
 - **SAME** — No action needed (deep analysis is not generated for SAME).
 
 **Output format:**
@@ -313,15 +313,15 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Extraction Tool Produces Correct JSON for SAME State
 
-    Given local main and origin/collab/session are at the same commit
+    Given local collab/session and origin/collab/session are at the same commit
     When the extraction tool runs with the session name
     Then the output JSON has empty arrays for both local_changes and collab_changes
     And the sync_state field is "SAME"
 
 #### Scenario: Extraction Tool Produces Correct JSON for AHEAD State
 
-    Given local main has 3 commits not in origin/collab/session
-    And origin/collab/session has 0 commits not in local main
+    Given local collab/session has 3 commits not in origin/collab/session
+    And origin/collab/session has 0 commits not in local collab/session
     When the extraction tool runs with the session name
     Then the output JSON has entries in local_changes
     And collab_changes is an empty array
@@ -329,8 +329,8 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Extraction Tool Produces Correct JSON for BEHIND State
 
-    Given origin/collab/session has 2 commits not in local main
-    And local main has 0 commits not in origin/collab/session
+    Given origin/collab/session has 2 commits not in local collab/session
+    And local collab/session has 0 commits not in origin/collab/session
     When the extraction tool runs with the session name
     Then the output JSON has entries in collab_changes
     And local_changes is an empty array
@@ -338,8 +338,8 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Extraction Tool Produces Correct JSON for DIVERGED State
 
-    Given local main has 1 commit not in origin/collab/session
-    And origin/collab/session has 2 commits not in local main
+    Given local collab/session has 1 commit not in origin/collab/session
+    And origin/collab/session has 2 commits not in local collab/session
     When the extraction tool runs with the session name
     Then the output JSON has entries in both local_changes and collab_changes
     And the sync_state field is "DIVERGED"
@@ -370,7 +370,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 #### Scenario: Dashboard Endpoint Returns 200 After Generation
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
     And the response body contains the generated markdown content
@@ -386,7 +386,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 #### Scenario: Dashboard HTML Omits Button When Sync State Is SAME
 
     Given an active session "v0.5-sprint" is set
-    And local main and origin/collab/v0.5-sprint are at the same commit
+    And local collab/v0.5-sprint and origin/collab/v0.5-sprint are at the same commit
     When the dashboard HTML is generated
     Then the active session panel does not contain a "What's Different?" button
 
@@ -399,7 +399,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 #### Scenario: Generated Markdown File Exists After Generation
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has commits not in local main
+    And origin/collab/v0.5-sprint has commits not in local collab/v0.5-sprint
     When the generation script is executed
     Then features/digests/whats-different.md exists
     And the file contains a date header
@@ -431,7 +431,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 #### Scenario: POST Generate Endpoint Returns ISO 8601 Timestamp
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
     And the response body "generated_at" field matches ISO 8601 format
@@ -439,7 +439,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 #### Scenario: POST Deep Analysis Generate Endpoint Returns Analysis
 
     Given an active session "v0.5-sprint" is set
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/deep-analysis/generate
     Then the response status is 200
     And the response body contains an "analysis" field with the generated content
@@ -611,7 +611,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Auto-Generation After pl-collab-pull Merge
 
-    Given the agent is on the main branch
+    Given the agent is on the collab session branch
     And an active session exists in BEHIND state
     When the agent runs /pl-collab-pull and the merge succeeds
     Then the digest is auto-generated as Step 7
