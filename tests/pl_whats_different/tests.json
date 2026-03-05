@@ -5,17 +5,18 @@
   ],
   "results": {
     "test_command": {
-      "passed": 13,
+      "passed": 18,
       "failed": 0,
       "scenarios_covered": [
         "Exits When Branch Is Not Main",
         "Exits When No Active Session",
         "Prints In-Sync Message When SAME",
-        "Generates and Displays Digest When BEHIND"
+        "Generates and Displays Digest When BEHIND",
+        "End-to-End Generation via Agent Command"
       ]
     }
   },
-  "total_passed": 13,
+  "total_passed": 18,
   "total_failed": 0,
-  "timestamp": "2026-02-27T02:05:00Z"
+  "timestamp": "2026-03-05T03:00:00Z"
 }
