@@ -17,6 +17,7 @@ import http.server
 
 from serve import (
     _categorize_files,
+    _creation_row_html,
     _detect_worktrees,
     _format_category_counts,
     _get_collaboration_branch,
@@ -206,9 +207,9 @@ class TestNonIsolatedBranchNoRoleAssignment(unittest.TestCase):
 
 
 class TestCommittedModifiedCategorization(unittest.TestCase):
-    """Scenario: Committed Modified Categorizes Files Changed Against Main by Type.
+    """Scenario: Committed Modified Categorizes Files Changed Against Collaboration Branch by Type.
 
-    Given a worktree on a branch AHEAD of main with commits that modified
+    Given a worktree on a branch AHEAD of the collaboration branch with commits that modified
     two files under features/ and one file outside features/ and tests/
     Then the committed field has specs=2, tests=0, other=1.
     """
@@ -360,9 +361,9 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
 
 
 class TestCommitsAheadReported(unittest.TestCase):
-    """Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Main.
+    """Scenario: Commits Ahead Reported When Worktree Branch Is Ahead Of Collaboration Branch.
 
-    Given a worktree at .worktrees/feat1 has 3 commits not yet merged to main
+    Given a worktree at .worktrees/feat1 has 3 commits not yet merged to the collaboration branch
     Then the worktree entry has commits_ahead equal to 3.
     """
 
@@ -388,10 +389,10 @@ class TestCommitsAheadReported(unittest.TestCase):
 
 
 class TestMainDiffBehind(unittest.TestCase):
-    """Scenario: Main Diff BEHIND When Worktree Branch Is Missing Main Commits.
+    """Scenario: Main Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits.
 
-    Given main has commits that are not in isolated/feat1
-    And isolated/feat1 has no commits not in main
+    Given the collaboration branch has commits that are not in isolated/feat1
+    And isolated/feat1 has no commits not in the collaboration branch
     Then the worktree entry has main_diff "BEHIND".
     """
 
@@ -429,9 +430,9 @@ class TestMainDiffBehind(unittest.TestCase):
 
 
 class TestMainDiffSame(unittest.TestCase):
-    """Scenario: Main Diff SAME When Branch And Main Are Identical.
+    """Scenario: Main Diff SAME When Branch And Collaboration Branch Are Identical.
 
-    Given isolated/ui and main point to the same commit
+    Given isolated/ui and the collaboration branch point to the same commit
     Then the worktree entry has main_diff "SAME".
     """
 
@@ -451,10 +452,10 @@ class TestMainDiffSame(unittest.TestCase):
 
 
 class TestMainDiffAhead(unittest.TestCase):
-    """Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Main.
+    """Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch.
 
-    Given isolated/feat1 has commits that are not in main
-    And main has no commits that are missing from isolated/feat1
+    Given isolated/feat1 has commits that are not in the collaboration branch
+    And the collaboration branch has no commits that are missing from isolated/feat1
     Then the worktree entry has main_diff "AHEAD".
     """
 
@@ -492,9 +493,9 @@ class TestMainDiffAhead(unittest.TestCase):
 
 
 class TestMainDiffDiverged(unittest.TestCase):
-    """Scenario: Main Diff DIVERGED When Both Main And Branch Have Commits Beyond Common Ancestor.
+    """Scenario: Main Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor.
 
-    Given isolated/feat1 has commits not in main AND main has commits not in isolated/feat1
+    Given isolated/feat1 has commits not in the collaboration branch AND the collaboration branch has commits not in isolated/feat1
     Then the worktree entry has main_diff "DIVERGED".
     """
 
@@ -763,7 +764,11 @@ class TestWorktreeStatePurlinExclusion(unittest.TestCase):
 
 
 class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
-    """Sessions table has Name column, no Role column (Section 2.3)."""
+    """Scenario: Sessions Table Displays Named Isolations in HTML.
+
+    Sessions table has Name, Branch, Main Diff, Committed Modified,
+    Uncommitted Modified columns — no Role column (Section 2.3).
+    """
 
     def test_name_rendered_in_table(self):
         worktrees = [{
@@ -853,7 +858,11 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
 
 
 class TestDeliveryPhaseBadgeInHtml(unittest.TestCase):
-    """Scenario: Delivery Phase Badge Present When Delivery Plan Has Active Phase."""
+    """Scenario: Delivery Phase Badge Present in Worktree Row HTML.
+
+    Also covers: Delivery Phase Badge Present When Delivery Plan Has Active Phase,
+    Delivery Phase Badge Absent When No Delivery Plan.
+    """
 
     def test_phase_badge_rendered_in_name_cell(self):
         """Name cell shows delivery phase badge when present."""
@@ -892,8 +901,10 @@ class TestGetGitStatusPurlinExclusion(unittest.TestCase):
 
 
 class TestCollapsedIsolationLabel(unittest.TestCase):
-    """_collapsed_isolation_label returns (badge_css, heading_text, badge_text).
+    """Scenario: Isolated Teams Heading Text With No Active Worktrees,
+    Isolated Teams Heading Shows Count With Active Worktrees.
 
+    _collapsed_isolation_label returns (badge_css, heading_text, badge_text).
     - badge_css: severity class for the badge only (not the heading)
     - heading_text: always in --purlin-muted color (no severity coloring)
     - badge_text: worst severity state name for the badge to the right
@@ -1041,6 +1052,86 @@ class TestCollaborationBranchAbstraction(unittest.TestCase):
         mock_state.assert_called_once_with(wt_path, 'collab/v0.5-sprint')
         mock_diff.assert_called_once_with('isolated/feat1', 'collab/v0.5-sprint')
         self.assertEqual(len(result), 1)
+
+
+class TestCreationRowPresentWhenNoWorktrees(unittest.TestCase):
+    """Scenario: Creation Row Present When No Active Worktrees.
+
+    Given no worktrees are active under .worktrees/
+    When the dashboard HTML is generated
+    Then the Isolated Teams section contains a creation row with "Create An Isolated Team" label
+    And the creation row contains a text input and a Create button
+    And no Sessions table rows are present below the creation row.
+    """
+
+    def test_creation_row_contains_label(self):
+        """Creation row HTML contains the 'Create An Isolated Team' label."""
+        html = _creation_row_html()
+        self.assertIn('Create An Isolated Team', html)
+
+    def test_creation_row_contains_text_input(self):
+        """Creation row HTML contains a text input with correct attributes."""
+        html = _creation_row_html()
+        self.assertIn('id="new-isolation-name"', html)
+        self.assertIn('maxlength="12"', html)
+        self.assertIn('autocapitalize="none"', html)
+        self.assertIn('autocorrect="off"', html)
+
+    def test_creation_row_contains_create_button(self):
+        """Creation row HTML contains the Create button."""
+        html = _creation_row_html()
+        self.assertIn('id="btn-create-isolation"', html)
+        self.assertIn('>Create</button>', html)
+
+    def test_creation_row_input_styling(self):
+        """Input uses the same color scheme as the header filter box (Section 2.8)."""
+        html = _creation_row_html()
+        self.assertIn('var(--purlin-surface)', html)
+        self.assertIn('var(--purlin-primary)', html)
+        self.assertIn('var(--purlin-border)', html)
+
+    def test_no_sessions_table_when_empty(self):
+        """_isolation_section_html returns empty when no worktrees exist (no table rows)."""
+        html = _isolation_section_html([])
+        self.assertEqual(html, "")
+
+
+class TestNewIsolationInputCreatesNamedWorktree(unittest.TestCase):
+    """Scenario: New Isolation Input Creates Named Worktree.
+
+    Given no worktree exists at .worktrees/feat2
+    And the CDD server is running
+    When a POST request is sent to /isolate/create with body {"name": "feat2"}
+    Then the response contains { "status": "ok" }
+    And .worktrees/feat2/ is created on branch isolated/feat2
+    And subsequent dashboard HTML contains a row with name "feat2" in the Sessions table.
+    """
+
+    @patch('subprocess.run')
+    @patch('os.path.exists', return_value=True)
+    def test_create_returns_ok(self, mock_exists, mock_run):
+        """POST /isolate/create with valid name returns ok status."""
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = MagicMock(spec=Handler)
+        body = json.dumps({'name': 'feat2'}).encode('utf-8')
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+        handler._handle_isolate_create = Handler._handle_isolate_create.__get__(
+            handler, Handler)
+        handler._handle_isolate_create()
+        handler._send_json.assert_called_once_with(200, {'status': 'ok'})
+
+    def test_created_worktree_appears_in_sessions_table(self):
+        """After creation, a worktree with the name appears in generated HTML."""
+        worktrees = [{
+            'name': 'feat2', 'branch': 'isolated/feat2', 'main_diff': 'SAME',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+        }]
+        html = _isolation_section_html(worktrees)
+        self.assertIn('feat2', html)
+        self.assertIn('isolated/feat2', html)
 
 
 # ===================================================================

@@ -1331,6 +1331,29 @@ def _collapsed_isolation_label(worktrees):
     return (css, f"{n} Isolated Team{'s' if n != 1 else ''}", sev_name)
 
 
+def _creation_row_html():
+    """Generate HTML for the Isolated Teams creation row.
+
+    Always rendered as the first item in the expanded ISOLATED TEAMS section,
+    regardless of whether any worktrees are active (Section 2.8).
+    """
+    return (
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
+        '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
+        'Create An Isolated Team</span>'
+        '<input type="text" id="new-isolation-name" maxlength="12" placeholder="name"'
+        ' autocapitalize="none" autocorrect="off"'
+        ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
+        'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
+        ' oninput="validateIsolationName(this)">'
+        '<button class="btn-critic" onclick="createIsolation()" id="btn-create-isolation"'
+        ' style="font-size:11px" disabled>Create</button>'
+        '<span id="isolation-ctrl-err" style="color:var(--purlin-status-error);font-size:11px;margin-left:4px"></span>'
+        '</div>'
+        '<span id="isolation-name-hint" style="color:var(--purlin-muted);font-size:10px;display:none"></span>'
+    )
+
+
 def _remote_collab_section_html(active_session, sync_data, sessions,
                                 contributors, last_fetch, has_remote):
     """Generate the REMOTE COLLABORATION section body HTML.
@@ -1711,21 +1734,7 @@ def generate_html(cache=None):
         isolation_badge = ''
 
     # Creation row (always first item in Isolated Teams sub-section)
-    creation_row_html = (
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-top:4px">'
-        '<span style="color:var(--purlin-muted);font-size:11px;white-space:nowrap">'
-        'Create An Isolated Team</span>'
-        '<input type="text" id="new-isolation-name" maxlength="12" placeholder="name"'
-        ' autocapitalize="none" autocorrect="off"'
-        ' style="width:80px;font-size:11px;padding:3px 6px;background:var(--purlin-surface);'
-        'color:var(--purlin-primary);border:1px solid var(--purlin-border);border-radius:3px"'
-        ' oninput="validateIsolationName(this)">'
-        '<button class="btn-critic" onclick="createIsolation()" id="btn-create-isolation"'
-        ' style="font-size:11px" disabled>Create</button>'
-        '<span id="isolation-ctrl-err" style="color:var(--purlin-status-error);font-size:11px;margin-left:4px"></span>'
-        '</div>'
-        '<span id="isolation-name-hint" style="color:var(--purlin-muted);font-size:10px;display:none"></span>'
-    )
+    creation_row_html = _creation_row_html()
 
     # Remote Collaboration section data
     rc_active_session = get_active_remote_session()
