@@ -88,6 +88,7 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 *   **Match Logic:** When the user types in the dashboard search input (owned by `cdd_status_monitor.md` Section 2.2.1), the Spec Map MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename.
 *   **Matching Nodes -- No Change:** Matching nodes MUST remain completely unchanged -- same background, border, text color, and opacity as their default state. No highlighting, no color change, no border change. They look exactly as they do with no search active.
 *   **Non-Matching Nodes -- Dim:** Non-matching nodes (and their edges) MUST be visibly dimmed (reduced opacity) so that matching nodes stand out by contrast.
+*   **Category Container Opacity:** Category parent nodes (bounding boxes) MUST NOT be dimmed if any of their child feature nodes match the search. In Cytoscape.js, parent node opacity cascades to children -- so dimming a category container would visually hide matching children inside it. A category container MUST only be dimmed when ALL of its children are non-matching.
 *   **Distinction from Status View:** The Status view hides non-matching rows entirely. The Spec Map MUST dim rather than hide, because removing nodes from a graph would destroy spatial context and layout stability.
 *   **Empty Search:** When the search input is empty or cleared, all nodes and edges MUST return to full color and opacity (their default state).
 
