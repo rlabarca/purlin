@@ -3640,16 +3640,27 @@ var FILENAME_FONT_SIZE = 9;
 var FILENAME_LINE_HEIGHT = 14;
 var CHARS_PER_LINE = 22;
 
-var CATEGORY_COLORS = {{
-  'DevOps Tools': '#0288d1',
-  'Auth': '#7B1FA2',
-  'Core': '#2E7D32',
-  'UI': '#7B1FA2',
-  'Hardware': '#2E7D32',
-  'Release': '#E65100',
-  'Process': '#558B2F',
-}};
-var DEFAULT_NODE_COLOR = '#01579b';
+// Dynamic category color palette — avoids green hues (reserved for anchor borders)
+var CATEGORY_PALETTE = [
+  '#0288d1',  // blue
+  '#7B1FA2',  // purple
+  '#E65100',  // orange
+  '#00838F',  // teal
+  '#C62828',  // red
+  '#1565C0',  // darker blue
+  '#6A1B9A',  // deep purple
+  '#BF360C',  // deep orange
+  '#283593',  // indigo
+  '#4527A0',  // deep indigo
+];
+function getCategoryColor(category) {{
+  var hash = 0;
+  for (var i = 0; i < category.length; i++) {{
+    hash = ((hash << 5) - hash) + category.charCodeAt(i);
+    hash = hash & hash;
+  }}
+  return CATEGORY_PALETTE[Math.abs(hash) % CATEGORY_PALETTE.length];
+}}
 
 function wrapText(text, maxChars) {{
   var words = text.split(/\\s+/);
@@ -3713,7 +3724,7 @@ function buildCytoscapeElements(features, colors) {{
 
   features.forEach(function(f) {{
     var id = fileToId[f.file];
-    var color = CATEGORY_COLORS[f.category] || DEFAULT_NODE_COLOR;
+    var color = getCategoryColor(f.category);
     var catId = 'cat_' + f.category.replace(/[^a-zA-Z0-9]/g, '_');
     var filename = f.file.split('/').pop();
     var isAnchor = /^(arch_|design_|policy_)/.test(filename);
