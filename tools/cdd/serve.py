@@ -3487,7 +3487,8 @@ function applySearchFilter() {{
       cy.elements().removeClass('search-hidden');
       return;
     }}
-    cy.nodes().forEach(function(node) {{
+    // First pass: match feature nodes (non-category)
+    cy.nodes('[!isCategory]').forEach(function(node) {{
       var name = (node.data('friendlyName') || node.data('label') || '').toLowerCase();
       var file = (node.data('file') || '').toLowerCase();
       var filename = (node.data('filename') || '').toLowerCase();
@@ -3495,6 +3496,18 @@ function applySearchFilter() {{
         node.removeClass('search-hidden');
       }} else {{
         node.addClass('search-hidden');
+      }}
+    }});
+    // Second pass: category containers — only dim if ALL children are non-matching
+    cy.nodes('[?isCategory]').forEach(function(catNode) {{
+      var children = catNode.children();
+      var anyMatch = children.some(function(child) {{
+        return !child.hasClass('search-hidden');
+      }});
+      if (anyMatch) {{
+        catNode.removeClass('search-hidden');
+      }} else {{
+        catNode.addClass('search-hidden');
       }}
     }});
     cy.edges().forEach(function(edge) {{
