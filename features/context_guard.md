@@ -76,7 +76,7 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
     Given config.json does not contain context_guard_threshold
     When the context guard script reads the threshold
-    Then the threshold value is 30
+    Then the threshold value is 45
 
 #### Scenario: Warning repeats after threshold
 
