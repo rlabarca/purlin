@@ -34,8 +34,8 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 ### 2.4 Warning Output
 
-- When the counter exceeds the configured threshold, the hook outputs a halt instruction to stdout (visible to both agent and user):
-  `[CONTEXT GUARD] Turn ${N}/${THRESHOLD}. Run /pl-resume save, then /clear, then /pl-resume to continue.`
+- When the counter exceeds the configured threshold, the hook outputs a JSON object to stdout with the warning in the `hookSpecificOutput.additionalContext` field. This is the only output format that Claude Code surfaces to the agent in PostToolUse hooks — plain `echo`/stdout text is visible in the user's terminal but NOT to the agent.
+- The warning message: `[CONTEXT GUARD] Turn ${N}/${THRESHOLD}. Run /pl-resume save, then /clear, then /pl-resume to continue.`
 - The warning fires on every turn after the threshold is exceeded (not just the first crossing), to ensure the agent sees it even if earlier warnings were lost to context compression.
 
 ### 2.5 Hook Registration
