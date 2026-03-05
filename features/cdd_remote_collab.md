@@ -49,6 +49,13 @@ When `.purlin/runtime/active_remote_session` is absent or empty:
    - Each row has a **Delete** button and a **Join** button in the Action column, in that order (Delete left, Join right). Delete -> opens the Delete Confirmation Modal (Section 2.8). Join -> `POST /remote-collab/switch`.
    - Empty state: "No remote collab sessions found."
 
+3. **Existing branch selector** (below known sessions table):
+   - A dropdown (`<select>`) populated from `git branch -r`, filtered to exclude `HEAD`, `main`/`master`, and any `collab/*` branches already listed in the known sessions table.
+   - Label: "Join Existing Branch"
+   - "Join" button beside the dropdown. Disabled when no branches are available in the dropdown.
+   - On click -> `POST /remote-collab/join-existing` with `{ "branch": "<selected-branch>" }`.
+   - When no eligible branches exist, the dropdown and Join button are hidden and a muted note reads "No other remote branches available."
+
 ### 2.3 State B: Active Session (Operational Mode)
 
 When `.purlin/runtime/active_remote_session` contains a session name:
@@ -108,6 +115,16 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 5. Auto-fetch: background thread fires after first interval (NOT on startup); boolean lock prevents concurrent fetches; failures logged server-side only.
 6. `last_fetch`: in-memory only; resets to null on server restart.
 
+**`POST /remote-collab/join-existing`** -- `{ "branch": "<branch>" }`
+
+1. Validate that the branch exists as a remote tracking ref (`origin/<branch>`).
+2. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
+3. Checkout the branch locally. If no local branch exists, create one tracking the remote: `git checkout -b <branch> origin/<branch>`. If the local branch already exists: `git checkout <branch>`.
+4. Derive session name: for `collab/*` branches, use the name after `collab/`; for all other branches, use the full branch name.
+5. Write session name to `.purlin/runtime/active_remote_session`.
+6. Return `{ "status": "ok", "session": "<session-name>", "branch": "<branch>" }`.
+7. On failure (branch doesn't exist on remote, checkout error): return `{ "error": "..." }`.
+
 **`POST /remote-collab/delete`** -- `{ "name": "<session-name>" }`
 
 1. Validate session name (same rules as create).
@@ -158,7 +175,7 @@ When an active session exists, the `/status.json` response includes:
 }
 ```
 
-`remote_collab`: present only when an active session exists. Absent otherwise.
+`remote_collab`: present only when an active session exists. Absent otherwise. The `branch` field reflects the actual checked-out branch name. For sessions created via `/remote-collab/create` or `/remote-collab/switch`, this is `collab/<name>`. For sessions joined via `/remote-collab/join-existing`, this is the original branch name (e.g., `testing`, `feature/auth`). Sync state computation is unchanged -- it compares local vs `origin/<branch>` regardless of naming convention.
 
 `remote_collab_sessions`: always present (may be empty array). Lists all sessions discovered from remote tracking refs. Each entry includes per-session sync state computed from locally cached refs (same rules as Section 2.5, applied per session). This data is used by the Delete Confirmation Modal (Section 2.8) to determine whether a data loss warning is needed.
 
@@ -431,7 +448,66 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     Then each session row in the known sessions table contains a Delete button
     And the Delete button appears before the Join button in each row
 
+#### Scenario: Join-Existing Endpoint Checks Out Branch and Writes Runtime File
+
+    Given the branch "testing" exists as a remote tracking branch
+    And no active session is set
+    And the working tree is clean
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "testing"}
+    Then the local branch "testing" is checked out
+    And .purlin/runtime/active_remote_session contains "testing"
+    And the response contains { "status": "ok", "session": "testing", "branch": "testing" }
+
+#### Scenario: Join-Existing With Dirty Working Tree Returns Error
+
+    Given the branch "testing" exists as a remote tracking branch
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "testing"}
+    Then the response contains an error message about dirty working tree
+    And the current branch is unchanged
+
+#### Scenario: Join-Existing With Nonexistent Remote Branch Returns Error
+
+    Given no branch "nonexistent" exists as a remote tracking branch
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "nonexistent"}
+    Then the response contains an error message
+    And no branch checkout occurs
+
+#### Scenario: status.json Reflects Joined Branch for Non-Collab Branch
+
+    Given the branch "testing" has been joined via /remote-collab/join-existing
+    When an agent calls GET /status.json
+    Then remote_collab.branch is "testing"
+    And remote_collab.active_session is "testing"
+
+#### Scenario: Existing Branch Dropdown Populated in HTML
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And remote tracking branches "origin/testing" and "origin/feature/auth" exist
+    And no collab/* branches match those names
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a select element with "testing" and "feature/auth" options
+
+#### Scenario: Collab Branches Excluded From Existing Branch Dropdown
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And remote tracking branches "origin/collab/sprint1" and "origin/testing" exist
+    And "collab/sprint1" is listed in the known sessions table
+    When the dashboard HTML is generated
+    Then the existing branch dropdown contains "testing"
+    And the existing branch dropdown does not contain "collab/sprint1"
+
 ### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Join Existing Branch Transitions to Active Session Mode
+
+    Given the CDD dashboard is open
+    And no active session is set
+    And the existing branch dropdown contains "testing"
+    When the User selects "testing" from the dropdown and clicks the Join button
+    Then the section transitions from setup mode to active session mode
+    And the session-name dropdown shows "testing"
+    And the sync state badge is visible
 
 #### Scenario: Active-Session State Shows Sync Badge and Controls
 
@@ -490,6 +566,10 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - [ ] Sync badge colors: SAME=green (`--purlin-status-good`), AHEAD/BEHIND=yellow (`--purlin-status-todo`), DIVERGED=orange (`--purlin-status-warning`) -- matching ISOLATED TEAMS color scheme
 - [ ] Create Session click transitions section from setup mode (creation row + known sessions) to active mode (session dropdown + sync badge)
 - [ ] Disconnect click transitions section from active mode back to setup mode (creation row + known sessions table visible)
+- [ ] Existing branch dropdown visible in setup mode, positioned below the known sessions table
+- [ ] "Join Existing Branch" label visible beside the existing branch dropdown
+- [ ] Join button visible beside the existing branch dropdown, disabled when no branches available
+- [ ] Existing branch dropdown hidden with muted "No other remote branches available" note when no eligible branches exist
 
 ## User Testing Discoveries
 
