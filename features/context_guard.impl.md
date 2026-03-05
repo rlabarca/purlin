@@ -8,4 +8,6 @@
 
 **[DISCOVERY]** ~~Spec Section 2.2 says default threshold is 45 turns, but the automated scenario "Default threshold when config key absent" (Section 3) still says "Then the threshold value is 30". Code and tests updated to match Section 2.2 (45). The Architect needs to update the scenario's expected value from 30 to 45. (Severity: HIGH)~~ **ACKNOWLEDGED** — Scenario updated to expect 45.
 
+**[CLARIFICATION]** PostToolUse hook visibility fix: BUG — Agents never saw the context guard warning because plain stdout from PostToolUse hooks is not surfaced to the agent; fixed by switching hook output to JSON with `hookSpecificOutput.additionalContext`; default threshold also corrected from 30 to 45 turns.
+
 **[CLARIFICATION]** File locking uses `mkdir`-based mutex (atomic on POSIX) since `flock` is unavailable on macOS. The lock serializes parallel PostToolUse hook invocations that fire simultaneously when Claude Code processes multiple tool calls in a single response. Without this, parallel hooks read-increment-write the same count value, causing the counter to under-count by a factor of 3-5x. A 2-second stale lock timeout prevents deadlocks from crashed processes. (Severity: INFO)
