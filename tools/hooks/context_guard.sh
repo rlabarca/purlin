@@ -40,6 +40,20 @@ except (json.JSONDecodeError, IOError, OSError):
 # Use hook session_id, fall back to PPID
 SESSION_ID="${HOOK_SESSION_ID:-ppid-$PPID}"
 
+# Acquire file lock to prevent race conditions with parallel tool calls.
+# mkdir is atomic on POSIX; used as a portable mutex (flock unavailable on macOS).
+LOCK_DIR="$RUNTIME_DIR/context_guard.lock"
+LOCK_WAIT=0
+while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+    sleep 0.02
+    LOCK_WAIT=$((LOCK_WAIT + 1))
+    if [[ $LOCK_WAIT -ge 100 ]]; then
+        # After ~2 seconds, force break stale lock
+        rmdir "$LOCK_DIR" 2>/dev/null || rm -rf "$LOCK_DIR" 2>/dev/null || true
+    fi
+done
+trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+
 # Session detection: new session when session_id changes or file missing
 NEW_SESSION=false
 if [[ ! -f "$SESSION_ID_FILE" ]]; then

@@ -156,6 +156,27 @@ fi
 cleanup_sandbox
 
 ###############################################################################
+# Scenario 6: Parallel invocations count correctly (race condition)
+###############################################################################
+echo ""
+echo "[Scenario] Parallel invocations count correctly"
+setup_sandbox
+
+# Run 10 instances in parallel with the same session
+for i in $(seq 1 10); do
+    run_guard "session-6" >/dev/null 2>&1 &
+done
+wait
+
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count")
+if [[ "$ACTUAL" == "10" ]]; then
+    log_pass "Parallel invocations all counted: 10/10"
+else
+    log_fail "Expected turn count 10 from 10 parallel invocations, got '$ACTUAL'"
+fi
+cleanup_sandbox
+
+###############################################################################
 # Summary
 ###############################################################################
 TOTAL=$((PASS + FAIL))
