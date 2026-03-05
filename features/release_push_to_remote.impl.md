@@ -1,5 +1,5 @@
 # Implementation Notes: Push to Remote Repository
 
-This is the only global release step with a non-null `code` field. The shell command `git push && git push --tags` is the canonical execution path. However, the Architect always verifies pre-push conditions (Sections 2.1–2.2) before invoking it.
+This global release step has `code: null` (interactive). It cannot be automated as a one-liner because it requires remote/branch discovery and user confirmation before pushing. The Architect executes the agent instructions interactively during the release process.
 
-In Purlin's own `.purlin/release/config.json`, this step is `enabled: true`.
+In Purlin's own `.purlin/release/config.json`, this step is `enabled: true`. A companion local step `publish_to_github` handles pushing to the public GitHub remote as a separate deliberate action.
