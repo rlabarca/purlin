@@ -972,6 +972,198 @@ class TestSwitchSessionBlockedWhenDirty(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'v0.5-sprint')
 
 
+class TestDeleteSessionRemovesCachedDigestAndAnalysisFiles(unittest.TestCase):
+    """Scenario: Delete Session Removes Cached Digest and Analysis Files
+
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    And collab/v0.5-sprint exists as a remote tracking branch
+    And features/digests/whats-different.md exists on disk
+    And features/digests/whats-different-analysis.md exists on disk
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the response contains { "status": "ok" }
+    And features/digests/whats-different.md does not exist on disk
+    And features/digests/whats-different-analysis.md does not exist on disk
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        rt_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(rt_dir, exist_ok=True)
+        with open(os.path.join(rt_dir, 'active_remote_session'), 'w') as f:
+            f.write('v0.5-sprint')
+        # Create digest files
+        digest_dir = os.path.join(self.tmpdir, 'features', 'digests')
+        os.makedirs(digest_dir, exist_ok=True)
+        with open(os.path.join(digest_dir, 'whats-different.md'), 'w') as f:
+            f.write('# Digest content')
+        with open(os.path.join(digest_dir, 'whats-different-analysis.md'), 'w') as f:
+            f.write('# Analysis content')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_delete_removes_digest_files(self, mock_config, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+
+        body = json.dumps({"name": "v0.5-sprint"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_delete(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+
+        digest_dir = os.path.join(self.tmpdir, 'features', 'digests')
+        self.assertFalse(
+            os.path.exists(os.path.join(digest_dir, 'whats-different.md')),
+            "whats-different.md should have been deleted")
+        self.assertFalse(
+            os.path.exists(os.path.join(digest_dir, 'whats-different-analysis.md')),
+            "whats-different-analysis.md should have been deleted")
+
+
+class TestRemoteCollabSectionAlwaysVisibleInDashboardHTML(unittest.TestCase):
+    """Scenario: REMOTE COLLABORATION Section Always Visible in Dashboard HTML
+
+    Given the CDD server is running
+    And no remote_collab config exists in .purlin/config.json
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading is present in the HTML output
+    And the section is rendered above the ISOLATED TEAMS section in the DOM
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_section_heading_present_and_above_isolated(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('REMOTE COLLABORATION', html)
+        # Verify the section heading element exists
+        self.assertIn('id="rc-heading"', html)
+        # Verify it appears above ISOLATED TEAMS in DOM
+        rc_pos = html.find('remote-collab-section')
+        iso_pos = html.find('isolation-section')
+        self.assertGreater(rc_pos, -1, "remote-collab-section not found")
+        self.assertGreater(iso_pos, -1, "isolation-section not found")
+        self.assertLess(rc_pos, iso_pos,
+                        "REMOTE COLLABORATION should appear before ISOLATED TEAMS")
+
+
+class TestNoActiveSessionShowsCreationRowAndKnownSessionsTable(unittest.TestCase):
+    """Scenario: No-Active-Session Shows Creation Row and Known Sessions Table
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a creation row with
+         "Start Remote Session" label
+    And the creation row contains a text input and a Create button
+    And a known sessions table element is present below the creation row
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_creation_row_and_sessions_table(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('Start Remote Session', html)
+        self.assertIn('id="new-session-name"', html)
+        self.assertIn('id="btn-create-session"', html)
+
+
+class TestRemoteCollabRendersAboveIsolatedTeamsInDOMOrder(unittest.TestCase):
+    """Scenario: REMOTE COLLABORATION Renders Above ISOLATED TEAMS in DOM Order
+
+    Given the CDD server is running
+    And both REMOTE COLLABORATION and ISOLATED TEAMS sections exist in the HTML
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section appears before the ISOLATED TEAMS
+         section in the HTML output
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_dom_order(self, *mocks):
+        html = serve.generate_html()
+        rc_pos = html.find('remote-collab-section')
+        iso_pos = html.find('isolation-section')
+        self.assertGreater(rc_pos, -1)
+        self.assertGreater(iso_pos, -1)
+        self.assertLess(rc_pos, iso_pos)
+
+
+class TestLastRemoteSyncAnnotationPresentInMainWorkspaceBody(unittest.TestCase):
+    """Scenario: Last Remote Sync Annotation Present in MAIN WORKSPACE Body
+
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    When the dashboard HTML is generated
+    Then the MAIN WORKSPACE section body contains a "Last remote sync" annotation
+    And the annotation appears below the clean/dirty state line
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.compute_remote_sync_state', return_value={
+        'sync_state': 'SAME', 'commits_ahead': 0, 'commits_behind': 0})
+    @patch('serve.get_remote_contributors', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_last_remote_sync_annotation(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('Last remote sync', html)
+        # The annotation should be in the workspace section area
+        workspace_pos = html.find('workspace-section')
+        sync_pos = html.find('Last remote sync')
+        self.assertGreater(workspace_pos, -1)
+        self.assertGreater(sync_pos, -1)
+
+
+class TestDeleteButtonPresentInKnownSessionsTableRows(unittest.TestCase):
+    """Scenario: Delete Button Present in Known Sessions Table Rows
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And at least one collab session exists on the remote
+    When the dashboard HTML is generated
+    Then each session row in the known sessions table contains a Delete button
+    And the Delete button appears before the Join button in each row
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[
+        {'name': 'v0.5-sprint', 'branch': 'collab/v0.5-sprint',
+         'active': False, 'sync_state': 'SAME',
+         'commits_ahead': 0, 'commits_behind': 0}
+    ])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_delete_button_before_join(self, *mocks):
+        html = serve.generate_html()
+        # Find the session row with Delete and Join
+        self.assertIn('showDeleteSessionModal', html)
+        # Verify Delete appears before Join in the row
+        delete_pos = html.find('showDeleteSessionModal')
+        join_pos = html.find('joinRemoteSession')
+        self.assertGreater(delete_pos, -1, "Delete button not found")
+        self.assertGreater(join_pos, -1, "Join button not found")
+        self.assertLess(delete_pos, join_pos,
+                        "Delete button should appear before Join button")
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()

@@ -5430,6 +5430,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if active == name:
             _clear_active_remote_session()
 
+        # Delete cached digest files (spec Section 2.4 step 6)
+        for digest_name in ('whats-different.md', 'whats-different-analysis.md'):
+            digest_path = os.path.join(
+                PROJECT_ROOT, 'features', 'digests', digest_name)
+            if os.path.exists(digest_path):
+                try:
+                    os.remove(digest_path)
+                except OSError:
+                    pass  # Best-effort cleanup
+
         self._send_json(200, {
             'status': 'ok',
             'session': name,
