@@ -1980,7 +1980,8 @@ def generate_html(cache=None):
             f'<td onmousedown="rcHandleDown(event)" '
             f'style="width:24px;color:var(--purlin-dim);cursor:grab;text-align:center;user-select:none">\u28FF</td>'
             f'<td style="width:32px;text-align:right;font-family:monospace;'
-            f'color:var(--purlin-muted)">{s["order"]}</td>'
+            f'color:var({"--purlin-dim" if s["order"] is None else "--purlin-muted"})">'
+            f'{"&mdash;" if s["order"] is None else s["order"]}</td>'
             f'<td style="width:60px">{source_badge}</td>'
             f'<td style="flex:1">'
             f'<span class="feature-link" onclick="openStepModal(\'{sid_escaped}\')">'
@@ -2872,9 +2873,20 @@ function rcMouseUp(e) {{
 
 function rcUpdateNumbers() {{
   var rows = document.querySelectorAll('#rc-tbody tr');
-  rows.forEach(function(row, i) {{
+  var enabledIdx = 0;
+  rows.forEach(function(row) {{
     var numCell = row.querySelectorAll('td')[1];
-    if (numCell) numCell.textContent = (i + 1);
+    if (!numCell) return;
+    var cb = row.querySelector('input[type=checkbox]');
+    var isEnabled = cb ? cb.checked : true;
+    if (isEnabled) {{
+      enabledIdx++;
+      numCell.textContent = enabledIdx;
+      numCell.style.color = 'var(--purlin-muted)';
+    }} else {{
+      numCell.innerHTML = '&mdash;';
+      numCell.style.color = 'var(--purlin-dim)';
+    }}
   }});
 }}
 
@@ -2887,6 +2899,7 @@ function rcToggle(stepId, enabled) {{
       row.classList.add('rc-disabled');
     }}
   }}
+  rcUpdateNumbers();
   rcPersistConfig();
   rcUpdateBadge();
 }}

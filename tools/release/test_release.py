@@ -1,11 +1,12 @@
 """Tests for release checklist resolution (features/release_checklist_core.md).
 
-Covers all 5 automated scenarios:
+Covers all 6 automated scenarios:
 1. Full resolution with defaults
 2. Disabled step preserved
-3. Auto-discovery appends new global step
-4. Orphaned config entry skipped with warning
-5. Local step with reserved prefix rejected
+3. Enabled steps numbered contiguously when disabled step present
+4. Auto-discovery appends new global step
+5. Orphaned config entry skipped with warning
+6. Local step with reserved prefix rejected
 """
 import json
 import os
@@ -156,6 +157,83 @@ def test_disabled_step_preserved(r):
             r.log_pass("purlin.push_to_remote has enabled=false")
         else:
             r.log_fail("purlin.push_to_remote should be disabled")
+
+        # Section 2.9: disabled steps have order=None
+        if push_step[0]["order"] is None:
+            r.log_pass("Disabled step has order=None")
+        else:
+            r.log_fail(f"Disabled step order should be None, got {push_step[0]['order']}")
+
+        # Section 2.9: enabled steps have contiguous 1-based order
+        enabled_orders = [s["order"] for s in resolved if s["enabled"]]
+        expected_orders = list(range(1, len(enabled_orders) + 1))
+        if enabled_orders == expected_orders:
+            r.log_pass("Enabled steps have contiguous 1-based order values")
+        else:
+            r.log_fail(f"Expected contiguous orders {expected_orders}, got {enabled_orders}")
+
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_enabled_steps_contiguous_numbering(r):
+    """Scenario: Enabled steps numbered contiguously when disabled step present."""
+    print("\n[Scenario] Enabled steps numbered contiguously when disabled step present")
+    sandbox = make_sandbox()
+    try:
+        local_path = os.path.join(sandbox, "local_steps.json")
+        config_path = os.path.join(sandbox, "config.json")
+
+        # Config with 5 steps; the 2nd step is disabled
+        global_steps = load_global_steps(GLOBAL_STEPS_PATH)
+        config_entries = []
+        for i, s in enumerate(global_steps[:5]):
+            enabled = (i != 1)  # Disable the 2nd step (index 1)
+            config_entries.append({"id": s["id"], "enabled": enabled})
+
+        write_json(config_path, {"steps": config_entries})
+
+        resolved, warnings, errors = resolve_checklist(
+            global_path=GLOBAL_STEPS_PATH,
+            local_path=local_path,
+            config_path=config_path,
+        )
+
+        if len(resolved) == 6:
+            # Auto-discovered 6th step appended
+            pass
+        elif len(resolved) == 5:
+            pass
+
+        # Check the 1st step has order=1
+        if resolved[0]["order"] == 1:
+            r.log_pass("1st step has order=1")
+        else:
+            r.log_fail(f"1st step order should be 1, got {resolved[0]['order']}")
+
+        # Check the 2nd step (disabled) has order=None
+        if resolved[1]["order"] is None:
+            r.log_pass("Disabled 2nd step has order=None")
+        else:
+            r.log_fail(f"Disabled 2nd step order should be None, got {resolved[1]['order']}")
+
+        # Check the 3rd step (2nd enabled) has order=2
+        if resolved[2]["order"] == 2:
+            r.log_pass("3rd step (2nd enabled) has order=2")
+        else:
+            r.log_fail(f"3rd step order should be 2, got {resolved[2]['order']}")
+
+        # Check the 4th step (3rd enabled) has order=3
+        if resolved[3]["order"] == 3:
+            r.log_pass("4th step (3rd enabled) has order=3")
+        else:
+            r.log_fail(f"4th step order should be 3, got {resolved[3]['order']}")
+
+        # Check the 5th step (4th enabled) has order=4
+        if resolved[4]["order"] == 4:
+            r.log_pass("5th step (4th enabled) has order=4")
+        else:
+            r.log_fail(f"5th step order should be 4, got {resolved[4]['order']}")
 
     finally:
         cleanup_sandbox(sandbox)
@@ -310,6 +388,7 @@ def main():
 
     test_full_resolution_with_defaults(r)
     test_disabled_step_preserved(r)
+    test_enabled_steps_contiguous_numbering(r)
     test_auto_discovery_appends_new_step(r)
     test_orphaned_config_entry_skipped(r)
     test_local_step_reserved_prefix_rejected(r)

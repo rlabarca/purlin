@@ -195,9 +195,15 @@ def resolve_checklist(global_path=None, local_path=None, config_path=None,
             if sid:
                 resolved.append(_make_entry(step, "local", True))
 
-    # Add 1-based order
-    for i, step in enumerate(resolved):
-        step["order"] = i + 1
+    # Add 1-based order: only enabled steps get contiguous numbering;
+    # disabled steps get order=None (Section 2.9)
+    enabled_idx = 0
+    for step in resolved:
+        if step["enabled"]:
+            enabled_idx += 1
+            step["order"] = enabled_idx
+        else:
+            step["order"] = None
 
     return resolved, warnings, errors
 
