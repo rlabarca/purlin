@@ -96,4 +96,5 @@ None.
 - **Observed Behavior:** The hook is registered and the script is running (turn count increments correctly), but agents are still overbounding context. The warning is either not firing in time or not being acted upon. `context_guard_threshold` is not set in config, so the default of 30 applies -- this may be too late to prevent degradation.
 - **Expected Behavior:** The warning should fire early enough that the agent can save state and clear context before attention degrades. The Builder should investigate: (1) whether 30 turns is an appropriate default; (2) whether the warning output is visible to the agent; (3) whether session resets are occurring unexpectedly.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
+- **Resolution:** Root cause was PostToolUse hook output format. Plain stdout from PostToolUse hooks is NOT surfaced to the agent — only JSON with `hookSpecificOutput.additionalContext` is visible. Changed hook output from `echo` to JSON format with `additionalContext` field. Warning is now confirmed visible to the agent.

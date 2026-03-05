@@ -3,7 +3,9 @@
 # and warns when a configurable threshold is exceeded.
 #
 # Input: JSON on stdin from Claude Code (contains session_id, cwd, etc.)
-# Output: Warning message to stdout when turn count exceeds threshold.
+# Output: JSON with additionalContext when turn count exceeds threshold.
+#         Plain stdout is NOT visible to the agent in PostToolUse hooks.
+#         Must use hookSpecificOutput.additionalContext for agent visibility.
 
 set -uo pipefail
 
@@ -70,6 +72,10 @@ COUNT=$((COUNT + 1))
 echo "$COUNT" > "$TURN_COUNT_FILE"
 
 # Warning when count exceeds threshold
+# PostToolUse hooks MUST output JSON with additionalContext for agent visibility.
+# Plain stdout/echo is NOT surfaced to the agent — only to the user's terminal.
 if [[ $COUNT -gt $THRESHOLD ]]; then
-    echo "[CONTEXT GUARD] Turn ${COUNT}/${THRESHOLD}. Run /pl-resume save, then /clear, then /pl-resume to continue."
+    cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[CONTEXT GUARD] Turn ${COUNT}/${THRESHOLD}. Run /pl-resume save, then /clear, then /pl-resume to continue."}}
+GUARDJSON
 fi
