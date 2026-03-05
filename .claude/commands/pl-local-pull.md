@@ -1,4 +1,4 @@
-Pull: merge latest commits from main into the current isolation branch.
+Pull: merge latest commits from the collaboration branch into the current isolation branch.
 
 **Owner: All roles** (no role inference — generic pull)
 
@@ -20,30 +20,36 @@ Do NOT proceed to Step 1.
 
 ### 1. Resolve PROJECT_ROOT
 
-Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --porcelain` and identify the main checkout: the entry whose `branch` field is `refs/heads/main`, or the first worktree entry. Extract its absolute path.
+Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --porcelain` and identify the main checkout: the entry whose `branch` field does NOT start with `refs/heads/isolated/`, or the first worktree entry. Extract its absolute path.
 
-### 2. Check Dirty State
+### 2. Detect Collaboration Branch
+
+Read `.purlin/runtime/active_remote_session` from PROJECT_ROOT (the main checkout, not the worktree). If the file exists and is non-empty, the collaboration branch is `collab/<value>` (trimmed). Otherwise, the collaboration branch is `main`.
+
+Print: `Collaboration branch: <collaboration-branch>`
+
+### 3. Check Dirty State
 
 ```
 git status --porcelain
 ```
 If any output is returned, abort: "Commit or stash changes before pulling."
 
-### 3. Report Sync State
+### 4. Report Sync State
 
 Gather both counts before taking any action:
 
 ```
-# Commits on main that this branch is missing:
-git log HEAD..main --oneline
+# Commits on the collaboration branch that this branch is missing:
+git log HEAD..<collaboration-branch> --oneline
 
-# Commits on this branch not yet on main:
-git log main..HEAD --oneline
+# Commits on this branch not yet on the collaboration branch:
+git log <collaboration-branch>..HEAD --oneline
 ```
 
 Let N = number of commits behind, M = number of commits ahead.
 
-Print: "You are N commit(s) behind / M commit(s) ahead of main."
+Print: "You are N commit(s) behind / M commit(s) ahead of <collaboration-branch>."
 
 Determine and print the state label:
 - N=0, M=0 → `State: SAME`
@@ -51,7 +57,7 @@ Determine and print the state label:
 - N>0, M=0 → `State: BEHIND`
 - N>0, M>0 → `State: DIVERGED`
 
-### 4. State Dispatch
+### 5. State Dispatch
 
 **SAME (N=0, M=0):**
 Print: "Already up to date — nothing to pull or push." Stop.
@@ -62,44 +68,44 @@ Print: "M commits ahead, nothing to pull. Run /pl-local-push when ready." Stop.
 **BEHIND (N>0, M=0):**
 Run:
 ```
-git rebase main
+git rebase <collaboration-branch>
 ```
 This is a fast-forward rebase — no local commits to replay, no conflict risk.
-On success, print: "Rebased onto main (fast-forward). N new commits incorporated."
+On success, print: "Rebased onto <collaboration-branch> (fast-forward). N new commits incorporated."
 
 **DIVERGED (N>0, M>0):**
 
-1. Print DIVERGED context before rebasing. Show all commits coming in from main and which files each touched:
+1. Print DIVERGED context before rebasing. Show all commits coming in from the collaboration branch and which files each touched:
    ```
-   git log HEAD..main --stat --oneline
+   git log HEAD..<collaboration-branch> --stat --oneline
    ```
-   Label this output: `Incoming from main (N commits):` — one commit per line with its stat block.
+   Label this output: `Incoming from <collaboration-branch> (N commits):` — one commit per line with its stat block.
 
 2. Run:
    ```
-   git rebase main
+   git rebase <collaboration-branch>
    ```
 
-3. On clean success, print: "Rebased M commits onto main. Branch is now AHEAD by M commits. Ready to push."
+3. On clean success, print: "Rebased M commits onto <collaboration-branch>. Branch is now AHEAD by M commits. Ready to push."
 
-### 5. Conflict Handling
+### 6. Conflict Handling
 
-When `git rebase main` halts with conflicts, for **each conflicting file** print:
+When `git rebase <collaboration-branch>` halts with conflicts, for **each conflicting file** print:
 
 ```
 CONFLICT: <filepath>
 
-  What main changed in this file:
-    <git log HEAD..main --oneline -- <filepath>>
+  What <collaboration-branch> changed in this file:
+    <git log HEAD..<collaboration-branch> --oneline -- <filepath>>
 
   What your branch changed in this file:
-    <git log main..ORIG_HEAD --oneline -- <filepath>>
+    <git log <collaboration-branch>..ORIG_HEAD --oneline -- <filepath>>
 
   Resolution hint: <path-scoped guidance>
 ```
 
 Path-scoped guidance (derived from file path prefix):
-- `features/` → "Architect priority: accept spec changes, incorporate non-conflicting additions from main."
+- `features/` → "Architect priority: accept spec changes, incorporate non-conflicting additions from the collaboration branch."
 - `tests/` → "Preserve all passing test cases. Review both sides."
 - Everything else → "Review both sides carefully. If unsure, run `git rebase --abort` and ask for help."
 
@@ -109,7 +115,7 @@ Resolve each conflict, then run `git add <file>` and `git rebase --continue`.
 To abandon: `git rebase --abort` (restores your branch to its pre-rebase state).
 ```
 
-### 6. Post-Rebase Command Re-Sync
+### 7. Post-Rebase Command Re-Sync
 
 **Only runs after a successful rebase (BEHIND or DIVERGED states). Skipped for SAME and AHEAD.**
 
@@ -125,6 +131,7 @@ c. After re-sync, verify `git status --porcelain` reports no file changes in `.c
 
 ## Notes
 
-- This command pulls from the local `main` ref only — it does not fetch from remote. Run `git fetch origin main` first if you need remote changes.
-- Use this when another agent has merged their branch to `main` and you want those changes before continuing your work.
-- `/pl-local-push` auto-rebases if the branch is BEHIND main (safe, no conflicts). If the branch is DIVERGED, `/pl-local-push` blocks and instructs you to run `/pl-local-pull` manually.
+- This command pulls from the local collaboration branch only — it does not fetch from remote. Run `git fetch origin` first if you need remote changes.
+- The collaboration branch is `collab/<session>` when a remote session is active, or `main` when no session is active.
+- Use this when another agent has merged their branch to the collaboration branch and you want those changes before continuing your work.
+- `/pl-local-push` auto-rebases if the branch is BEHIND the collaboration branch (safe, no conflicts). If the branch is DIVERGED, `/pl-local-push` blocks and instructs you to run `/pl-local-pull` manually.
