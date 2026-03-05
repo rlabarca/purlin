@@ -975,6 +975,37 @@ def _clear_active_remote_session():
         pass
 
 
+def _write_remote_session_base_branch(branch):
+    """Store the branch the user was on before entering a collab session."""
+    runtime_dir = os.path.join(PROJECT_ROOT, '.purlin', 'runtime')
+    os.makedirs(runtime_dir, exist_ok=True)
+    path = os.path.join(runtime_dir, 'remote_session_base_branch')
+    with open(path, 'w') as f:
+        f.write(branch)
+
+
+def _read_remote_session_base_branch():
+    """Read the stored base branch. Returns branch name or 'main' fallback."""
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                        'remote_session_base_branch')
+    try:
+        with open(path, 'r') as f:
+            branch = f.read().strip()
+        return branch if branch else 'main'
+    except (IOError, OSError):
+        return 'main'
+
+
+def _clear_remote_session_base_branch():
+    """Remove the stored base branch file."""
+    path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                        'remote_session_base_branch')
+    try:
+        os.remove(path)
+    except (IOError, OSError):
+        pass
+
+
 def _has_git_remote():
     """Check if any git remote is configured."""
     try:
@@ -5202,10 +5233,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         remote = rc['remote']
         branch = f'collab/{name}'
 
+        # Capture current branch before switching (for disconnect restoration)
         try:
-            # Create local branch from main HEAD
+            current_branch = subprocess.run(
+                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5).stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            current_branch = 'main'
+
+        try:
+            # Create local branch from current HEAD
             subprocess.run(
-                ['git', 'branch', branch, 'main'],
+                ['git', 'branch', branch, 'HEAD'],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=10)
 
@@ -5221,8 +5261,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=10)
 
-            # Write runtime file
+            # Write runtime files
             _write_active_remote_session(name)
+            _write_remote_session_base_branch(current_branch)
             _remote_collab_last_fetch = datetime.now(
                 timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -5309,11 +5350,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 })
                 return
 
+        # Store base branch if joining from a non-collab branch
+        try:
+            current = subprocess.run(
+                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5).stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            current = ''
+        if current and not current.startswith('collab/'):
+            _write_remote_session_base_branch(current)
+
         _write_active_remote_session(name)
         self._send_json(200, {'status': 'ok', 'session': name})
 
     def _handle_remote_collab_disconnect(self):
-        """POST /remote-collab/disconnect — clear active session, checkout main."""
+        """POST /remote-collab/disconnect — clear active session, return to base branch."""
         # Abort if working tree is dirty
         if _is_working_tree_dirty():
             self._send_json(400, {
@@ -5322,19 +5374,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
+        base_branch = _read_remote_session_base_branch()
         try:
             subprocess.run(
-                ['git', 'checkout', 'main'],
+                ['git', 'checkout', base_branch],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=10)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             self._send_json(500, {
-                'error': f'Failed to checkout main: '
+                'error': f'Failed to checkout {base_branch}: '
                          f'{getattr(exc, "stderr", str(exc))}'
             })
             return
 
         _clear_active_remote_session()
+        _clear_remote_session_base_branch()
         self._send_json(200, {'status': 'ok'})
 
     def _handle_remote_collab_fetch(self):

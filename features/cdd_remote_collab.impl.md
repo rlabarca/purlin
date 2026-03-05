@@ -16,6 +16,8 @@
 
 **[CLARIFICATION]** Panel alignment fix: Row 1 (session dropdown) and Row 2 (sync badge) share the same parent flex container, ensuring consistent left-edge alignment per spec Section 2.3. The `<select>` element gets `margin:0` to normalize browser defaults. Vertical gap between rows increased from 6px to 14px to create clear visual separation between the Disconnect and Check Remote buttons. (Severity: INFO)
 
+**[DISCOVERY]** The spec (Section 2.4) hardcodes `main` in two places: create step 4 says `git branch collab/<name> main` and disconnect step 2 says `git checkout main`. This breaks when the user starts a remote collab session from a non-main branch (e.g., an existing collab branch). Fixed in code to use `HEAD` for branch creation and store/restore the pre-session branch for disconnect. The spec needs Architect update to replace hardcoded `main` references with dynamic base branch semantics. (Severity: HIGH)
+
 ## Pruned Discoveries
 
 BUG — IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
