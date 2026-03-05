@@ -23,8 +23,8 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 ### 2.2 Threshold Configuration
 
 - The threshold is read from `.purlin/config.json` at key `context_guard_threshold`.
-- Default threshold when the key is absent: **30 turns**.
-- The threshold represents approximately 60-70% of usable context (~30 turns at ~3-5K tokens per turn ≈ 90-150K tokens consumed, out of ~170K usable context after system prompt).
+- Default threshold when the key is absent: **60 turns**.
+- The threshold represents approximately 60-70% of usable context (~60 turns at ~2-3K tokens per turn ≈ 120-180K tokens consumed, out of ~200K usable context after system prompt).
 
 ### 2.3 Session Detection
 
@@ -76,7 +76,7 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
     Given config.json does not contain context_guard_threshold
     When the context guard script reads the threshold
-    Then the threshold value is 30
+    Then the threshold value is 60
 
 #### Scenario: Warning repeats after threshold
 
