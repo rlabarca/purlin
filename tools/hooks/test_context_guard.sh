@@ -45,7 +45,7 @@ echo "==============================="
 # Scenario 1: Counter increments on each invocation
 ###############################################################################
 echo ""
-echo "Scenario: Counter increments on each invocation"
+echo "[Scenario] Counter increments on each invocation"
 setup_sandbox
 
 run_guard "session-1" >/dev/null 2>&1
@@ -64,7 +64,7 @@ cleanup_sandbox
 # Scenario 2: Warning fires when threshold exceeded
 ###############################################################################
 echo ""
-echo "Scenario: Warning fires when threshold exceeded"
+echo "[Scenario] Warning fires when threshold exceeded"
 setup_sandbox
 
 # Set threshold to 5
@@ -86,7 +86,7 @@ cleanup_sandbox
 # Scenario 3: Counter resets on new session
 ###############################################################################
 echo ""
-echo "Scenario: Counter resets on new session"
+echo "[Scenario] Counter resets on new session"
 setup_sandbox
 
 # Count at 25 with old session
@@ -107,7 +107,7 @@ cleanup_sandbox
 # Scenario 4: Default threshold when config key absent
 ###############################################################################
 echo ""
-echo "Scenario: Default threshold when config key absent"
+echo "[Scenario] Default threshold when config key absent"
 setup_sandbox
 
 # Config without threshold key
@@ -140,7 +140,7 @@ cleanup_sandbox
 # Scenario 5: Warning repeats after threshold
 ###############################################################################
 echo ""
-echo "Scenario: Warning repeats after threshold"
+echo "[Scenario] Warning repeats after threshold"
 setup_sandbox
 
 echo '{"context_guard_threshold": 2}' > "$SANDBOX/.purlin/config.json"
