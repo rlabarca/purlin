@@ -115,8 +115,9 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 3. Delete the remote branch: `git push <remote> --delete collab/<name>`.
 4. Delete the local tracking branch if it exists: `git branch -D collab/<name>`.
 5. If the deleted session was the active session, clear `.purlin/runtime/active_remote_session`.
-6. Return `{ "status": "ok", "session": "<name>", "deleted_branch": "collab/<name>" }`.
-7. On failure (branch doesn't exist on remote, permission denied): return `{ "error": "..." }`.
+6. Delete cached digest files if they exist: `features/digests/whats-different.md` and `features/digests/whats-different-analysis.md`. These are per-machine artifacts derived from the collab branch; once the branch is deleted they are stale.
+7. Return `{ "status": "ok", "session": "<name>", "deleted_branch": "collab/<name>" }`.
+8. On failure (branch doesn't exist on remote, permission denied): return `{ "error": "..." }`.
 
 ### 2.5 Sync State Computation
 
@@ -338,6 +339,17 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     Then the server deletes collab/v0.5-sprint from the remote
     And .purlin/runtime/active_remote_session is empty or absent
     And GET /status.json does not contain a remote_collab field
+
+#### Scenario: Delete Session Removes Cached Digest and Analysis Files
+
+    Given an active session "v0.5-sprint" is set in .purlin/runtime/active_remote_session
+    And collab/v0.5-sprint exists as a remote tracking branch
+    And features/digests/whats-different.md exists on disk
+    And features/digests/whats-different-analysis.md exists on disk
+    When a POST request is sent to /remote-collab/delete with body {"name": "v0.5-sprint"}
+    Then the response contains { "status": "ok" }
+    And features/digests/whats-different.md does not exist on disk
+    And features/digests/whats-different-analysis.md does not exist on disk
 
 #### Scenario: Delete Nonexistent Session Returns Error
 
