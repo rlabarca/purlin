@@ -83,7 +83,7 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 1. Validate session name (`[a-zA-Z0-9_.-]+`, 1-30 chars, no leading/trailing dots/hyphens, no `..`).
 2. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
 3. Read remote from config (`remote_collab.remote`, default `"origin"`).
-4. Create branch `collab/<name>` from current `main` HEAD: `git branch collab/<name> main`.
+4. Record the current branch as the base branch (stored in `.purlin/runtime/remote_collab_base_branch`). Create branch `collab/<name>` from HEAD: `git branch collab/<name> HEAD`.
 5. Push to remote: `git push <remote> collab/<name>`.
 6. Checkout the new branch: `git checkout collab/<name>`.
 7. Write session name to `.purlin/runtime/active_remote_session`.
@@ -101,8 +101,8 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 **`POST /remote-collab/disconnect`** -- `{}`
 
 1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
-2. Checkout main: `git checkout main`.
-3. Remove/truncate `.purlin/runtime/active_remote_session`.
+2. Read the stored base branch from `.purlin/runtime/remote_collab_base_branch` (default `main` if absent). Checkout that branch: `git checkout <base-branch>`.
+3. Remove/truncate `.purlin/runtime/active_remote_session` and `.purlin/runtime/remote_collab_base_branch`.
 4. Do NOT delete any branches or remote refs.
 5. Return `{ "status": "ok" }`.
 
