@@ -269,3 +269,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 
 ## User Testing Discoveries
+
+### [DISCOVERY] Search highlighting: matching nodes should stay full color, others dimmed (Discovered: 2026-03-04)
+- **Scenario:** NONE (no scenario covers search visual treatment in Spec Map)
+- **Observed Behavior:** When using the search input while in the Spec Map view, matching nodes are not highlighted aggressively enough -- they cannot be spotted easily among the rest of the graph.
+- **Expected Behavior:** Matching nodes should remain at their normal full color and opacity; non-matching nodes should be visibly dimmed so that search results stand out clearly without requiring a "hide" behavior.
+- **Action Required:** Architect
+- **Status:** OPEN
