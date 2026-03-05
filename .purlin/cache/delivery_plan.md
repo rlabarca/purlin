@@ -11,9 +11,9 @@ Config layering introduces a local/shared config split that 3 other TODO feature
 **Completion Commit:** d95f91b
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Dashboard + Update Skill Migration [PENDING]
+## Phase 2 -- Dashboard + Update Skill Migration [COMPLETE]
 **Features:** cdd_agent_configuration.md, pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** b864705
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Agent Config Skill Rewrite [PENDING]
