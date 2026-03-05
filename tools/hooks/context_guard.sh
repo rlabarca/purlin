@@ -31,9 +31,9 @@ mkdir -p "$RUNTIME_DIR"
 # Read threshold from resolved config via resolver CLI (config_layering)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVER="$SCRIPT_DIR/../config/resolve_config.py"
-THRESHOLD=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key context_guard_threshold 2>/dev/null || echo "30")
+THRESHOLD=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key context_guard_threshold 2>/dev/null || echo "45")
 if [ -z "$THRESHOLD" ] || ! [[ "$THRESHOLD" =~ ^[0-9]+$ ]]; then
-    THRESHOLD=30
+    THRESHOLD=45
 fi
 
 # Use hook session_id, fall back to PPID

@@ -115,24 +115,24 @@ setup_sandbox
 # Config without threshold key
 echo '{"cdd_port": 9086}' > "$SANDBOX/.purlin/config.json"
 
-# Set count to 30 — next run will be 31 which exceeds default threshold of 30
-echo "30" > "$SANDBOX/.purlin/runtime/turn_count"
+# Set count to 45 — next run will be 46 which exceeds default threshold of 45
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count"
 echo "session-4" > "$SANDBOX/.purlin/runtime/session_id"
 
 OUTPUT=$(run_guard "session-4" 2>&1)
-if echo "$OUTPUT" | grep -q "\[CONTEXT GUARD\] Turn 31/30"; then
-    log_pass "Default threshold is 30 (warning at turn 31/30)"
+if echo "$OUTPUT" | grep -q "\[CONTEXT GUARD\] Turn 46/45"; then
+    log_pass "Default threshold is 45 (warning at turn 46/45)"
 else
-    log_fail "Expected warning 'Turn 31/30' with default threshold, got: '$OUTPUT'"
+    log_fail "Expected warning 'Turn 46/45' with default threshold, got: '$OUTPUT'"
 fi
 
-# Also verify no warning at exactly threshold (turn 30/30)
-echo "29" > "$SANDBOX/.purlin/runtime/turn_count"
+# Also verify no warning at exactly threshold (turn 45/45)
+echo "44" > "$SANDBOX/.purlin/runtime/turn_count"
 echo "session-4b" > "$SANDBOX/.purlin/runtime/session_id"
 
 OUTPUT=$(run_guard "session-4b" 2>&1)
 if [[ -z "$OUTPUT" ]]; then
-    log_pass "No warning at exactly threshold (turn 30/30)"
+    log_pass "No warning at exactly threshold (turn 45/45)"
 else
     log_fail "Expected no warning at threshold, got: '$OUTPUT'"
 fi
