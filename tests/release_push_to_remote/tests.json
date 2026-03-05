@@ -1,1 +1,23 @@
-{"status": "PASS", "passed": 0, "failed": 0, "total": 0}
+{
+  "status": "PASS",
+  "test_files": [
+    "tests/release_push_to_remote/test_push_to_remote.py"
+  ],
+  "results": {
+    "test_push_to_remote": {
+      "passed": 22,
+      "failed": 0,
+      "scenarios_covered": [
+        "Remote is ahead of local",
+        "Step is disabled",
+        "Clean push to remote",
+        "Force-push would be required",
+        "Multiple remotes, user accepts default",
+        "Single remote, streamlined confirmation"
+      ]
+    }
+  },
+  "total_passed": 22,
+  "total_failed": 0,
+  "timestamp": "2026-03-05T03:15:00Z"
+}
