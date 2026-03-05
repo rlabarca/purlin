@@ -1164,6 +1164,218 @@ class TestDeleteButtonPresentInKnownSessionsTableRows(unittest.TestCase):
                         "Delete button should appear before Join button")
 
 
+class TestJoinExistingChecksOutBranchAndWritesRuntimeFile(unittest.TestCase):
+    """Scenario: Join-Existing Endpoint Checks Out Branch and Writes Runtime File
+
+    Given the branch "testing" exists as a remote tracking branch
+    And no active session is set
+    And the working tree is clean
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "testing"}
+    Then the local branch "testing" is checked out
+    And .purlin/runtime/active_remote_session contains "testing"
+    And the response contains { "status": "ok", "session": "testing", "branch": "testing" }
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(self.runtime_dir, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve._is_working_tree_dirty', return_value=False)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_join_existing_success(self, mock_config, mock_run, mock_dirty):
+        mock_run.return_value = MagicMock(returncode=0, stdout='main\n', stderr='')
+
+        body = json.dumps({"branch": "testing"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_join_existing(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        self.assertEqual(args[1]['session'], 'testing')
+        self.assertEqual(args[1]['branch'], 'testing')
+
+        # Verify runtime file written
+        rt_path = os.path.join(self.runtime_dir, 'active_remote_session')
+        self.assertTrue(os.path.exists(rt_path))
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'testing')
+
+        # Verify active_remote_branch written
+        branch_path = os.path.join(self.runtime_dir, 'active_remote_branch')
+        self.assertTrue(os.path.exists(branch_path))
+        with open(branch_path) as f:
+            self.assertEqual(f.read().strip(), 'testing')
+
+
+class TestJoinExistingWithDirtyWorkingTreeReturnsError(unittest.TestCase):
+    """Scenario: Join-Existing With Dirty Working Tree Returns Error
+
+    Given the branch "testing" exists as a remote tracking branch
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "testing"}
+    Then the response contains an error message about dirty working tree
+    And the current branch is unchanged
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve._is_working_tree_dirty', return_value=True)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_dirty_tree_returns_error(self, mock_config, mock_run, mock_dirty):
+        # rev-parse --verify succeeds (branch exists on remote)
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+
+        body = json.dumps({"branch": "testing"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_join_existing(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('uncommitted', args[1]['error'].lower())
+
+        # Verify no runtime file written
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_remote_session')
+        if os.path.exists(rt_path):
+            with open(rt_path) as f:
+                self.assertEqual(f.read().strip(), '')
+
+
+class TestJoinExistingWithNonexistentRemoteBranchReturnsError(unittest.TestCase):
+    """Scenario: Join-Existing With Nonexistent Remote Branch Returns Error
+
+    Given no branch "nonexistent" exists as a remote tracking branch
+    When a POST request is sent to /remote-collab/join-existing with body {"branch": "nonexistent"}
+    Then the response contains an error message
+    And no branch checkout occurs
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_nonexistent_branch_returns_error(self, mock_config, mock_run):
+        # rev-parse --verify fails (branch not found on remote)
+        mock_run.side_effect = subprocess.CalledProcessError(1, 'git')
+
+        body = json.dumps({"branch": "nonexistent"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_remote_collab_join_existing(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('not found', args[1]['error'].lower())
+
+
+class TestStatusJsonReflectsJoinedBranchForNonCollabBranch(unittest.TestCase):
+    """Scenario: status.json Reflects Joined Branch for Non-Collab Branch
+
+    Given the branch "testing" has been joined via /remote-collab/join-existing
+    When an agent calls GET /status.json
+    Then remote_collab.branch is "testing"
+    And remote_collab.active_session is "testing"
+    """
+
+    @patch('serve._read_active_remote_branch', return_value='testing')
+    @patch('serve.get_active_remote_session', return_value='testing')
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.compute_remote_sync_state', return_value={
+        'sync_state': 'SAME', 'commits_ahead': 0, 'commits_behind': 0})
+    @patch('serve.get_remote_contributors', return_value=[])
+    def test_status_json_branch_and_session(self, *mocks):
+        data = serve.generate_api_status_json()
+        self.assertIn('remote_collab', data)
+        self.assertEqual(data['remote_collab']['branch'], 'testing')
+        self.assertEqual(data['remote_collab']['active_session'], 'testing')
+
+
+class TestExistingBranchDropdownPopulatedInHtml(unittest.TestCase):
+    """Scenario: Existing Branch Dropdown Populated in HTML
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And remote tracking branches "origin/testing" and "origin/feature/auth" exist
+    And no collab/* branches match those names
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section contains a select element with
+         "testing" and "feature/auth" options
+    """
+
+    @patch('serve.get_eligible_remote_branches', return_value=['feature/auth', 'testing'])
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_dropdown_populated(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('id="existing-branch-select"', html)
+        self.assertIn('Join Existing Branch', html)
+        self.assertIn('<option value="testing">testing</option>', html)
+        self.assertIn('<option value="feature/auth">feature/auth</option>', html)
+        self.assertIn('id="btn-join-existing"', html)
+
+
+class TestCollabBranchesExcludedFromExistingBranchDropdown(unittest.TestCase):
+    """Scenario: Collab Branches Excluded From Existing Branch Dropdown
+
+    Given no file exists at .purlin/runtime/active_remote_session
+    And remote tracking branches "origin/collab/sprint1" and "origin/testing" exist
+    And "collab/sprint1" is listed in the known sessions table
+    When the dashboard HTML is generated
+    Then the existing branch dropdown contains "testing"
+    And the existing branch dropdown does not contain "collab/sprint1"
+    """
+
+    @patch('serve.get_eligible_remote_branches', return_value=['testing'])
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[
+        {'name': 'sprint1', 'branch': 'collab/sprint1',
+         'active': False, 'sync_state': 'SAME',
+         'commits_ahead': 0, 'commits_behind': 0}
+    ])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_collab_excluded_non_collab_included(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('<option value="testing">testing</option>', html)
+        self.assertNotIn('collab/sprint1', html.split('existing-branch-select')[1].split('</select>')[0]
+                         if 'existing-branch-select' in html else '')
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()
