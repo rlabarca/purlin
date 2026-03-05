@@ -27,7 +27,9 @@ setup_sandbox() {
     trap cleanup_sandbox EXIT
     mkdir -p "$SANDBOX/.purlin/runtime"
     mkdir -p "$SANDBOX/tools/hooks"
+    mkdir -p "$SANDBOX/tools/config"
     cp "$SCRIPT_DIR/context_guard.sh" "$SANDBOX/tools/hooks/"
+    cp "$SCRIPT_DIR/../config/resolve_config.py" "$SANDBOX/tools/config/"
 }
 
 # Run context_guard.sh with a given session_id, using the sandbox as project root.
