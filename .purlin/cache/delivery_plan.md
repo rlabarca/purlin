@@ -6,9 +6,9 @@
 ## Summary
 Seven features reset to TODO by Architect commit 963e7b6 (manual-to-automated scenario conversion). Most require new test coverage rather than new implementation code. Phased to respect the cdd_isolated_teams → cdd_remote_collab → collab_whats_different dependency chain and the HIGH complexity of cdd_remote_collab (27 scenarios, zero existing tests).
 
-## Phase 1 -- Quick Wins [IN_PROGRESS]
+## Phase 1 -- Quick Wins [COMPLETE]
 **Features:** critic_tool.md, spec_from_code.md
-**Completion Commit:** --
+**Completion Commit:** eb5dd5d
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Independent Features [PENDING]
