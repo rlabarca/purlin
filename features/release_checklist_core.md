@@ -154,6 +154,14 @@ This step is positioned in Purlin's `.purlin/release/config.json` immediately af
 
 This step is positioned in Purlin's `.purlin/release/config.json` immediately after `doc_consistency_framework`, so the focused Critic audit runs after the broader instruction-file consistency check.
 
+### 2.9 Step Numbering
+
+The `order` field is a derived value computed after the resolution algorithm (Section 2.5) completes:
+
+*   Only **enabled** steps receive a 1-based `order` value, numbered contiguously among enabled steps.
+*   **Disabled** steps receive `order: null`.
+*   When a step's enabled state changes, all `order` values are recomputed.
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -168,7 +176,18 @@ And all steps have `enabled: true`.
 Given a local `config.json` with `purlin.push_to_remote` set to `enabled: false`,
 When the checklist is loaded,
 Then the resolved list includes `purlin.push_to_remote`,
-And that step's `enabled` field is `false`.
+And that step's `enabled` field is `false`,
+And that step's `order` field is `null`,
+And all enabled steps have contiguous 1-based `order` values.
+
+#### Scenario: Enabled steps numbered contiguously when disabled step present
+Given a `config.json` with 5 steps where the 2nd step is `enabled: false`,
+When the checklist is loaded,
+Then the 1st step has `order: 1`,
+And the 3rd step (2nd enabled) has `order: 2`,
+And the 4th step (3rd enabled) has `order: 3`,
+And the 5th step (4th enabled) has `order: 4`,
+And the disabled 2nd step has `order: null`.
 
 #### Scenario: Auto-discovery appends new global step
 Given a `config.json` listing 5 of the 6 global steps (omitting `purlin.push_to_remote`),

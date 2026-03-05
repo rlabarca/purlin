@@ -28,7 +28,7 @@ The Release Checklist section is the last section in the CDD Dashboard Status vi
 When expanded, the section renders an ordered list of steps. Each row contains the following columns, in order from left to right:
 
 *   **Drag handle** (leftmost, fixed width): The character `⠿` (Unicode U+28FF, Braille Pattern Dots 1-8). Color: `--purlin-dim`. Cursor changes to `grab` on hover. The drag handle is the only interactive element that initiates drag-to-reorder.
-*   **Step number** (fixed width, right-aligned): The 1-based position of the step in the current ordered list. Rendered in monospace font, `--purlin-muted` color.
+*   **Step number** (fixed width, right-aligned): The 1-based position of the step among enabled steps. Enabled steps are numbered contiguously (1, 2, 3, ...). Disabled steps display an em dash (`—`) instead of a number. Rendered in monospace font, `--purlin-muted` color for enabled steps; `--purlin-dim` color for the em dash on disabled steps.
 *   **Global/Local badge** (narrow, optional): A tag showing `GLOBAL` or `LOCAL`. Uses `--purlin-tag-fill` as background color and `--purlin-tag-outline` as border, Inter Bold 10px uppercase. Only shown when the step's `source` field is present.
 *   **Friendly name** (flex-grow): The step's `friendly_name`. Clickable. Underline appears on hover; color changes to `--purlin-accent` on hover. Clicking opens the Step Detail Modal (Section 2.6). When the step is disabled, the friendly name is dimmed to `--purlin-dim`.
 *   **Enable/disable checkbox** (rightmost, fixed width): A checkbox representing the step's `enabled` state. When unchecked, the entire row (handle, number, badge, name) is dimmed to `--purlin-dim`.
@@ -52,6 +52,7 @@ Behavior when a checkbox is toggled:
 2.  A `POST /release-checklist/config` request is sent with the updated enabled state for that step (full config payload, not a partial diff).
 3.  On success, the collapsed-state badge recalculates and updates the enabled/disabled count.
 4.  On failure, the checkbox reverts to its previous state and a brief inline error indicator is shown.
+5.  Step numbers for all rows are recalculated: enabled steps are renumbered contiguously; the toggled row (if now disabled) shows `—` instead of its former number.
 
 ### 2.6 Step Detail Modal
 
@@ -114,7 +115,7 @@ Returns the fully resolved, ordered list of release steps by applying the algori
 }
 ```
 
-The `source` field is `"global"` for steps defined in `global_steps.json` and `"local"` for steps from `local_steps.json`. The `order` field is the 1-based position in the resolved list.
+The `source` field is `"global"` for steps defined in `global_steps.json` and `"local"` for steps from `local_steps.json`. The `order` field is the 1-based position among enabled steps. Disabled steps have `order: null`.
 
 #### `POST /release-checklist/config`
 
@@ -172,6 +173,8 @@ And the IDs of all other steps appear in the file in the same relative order the
 Given the release checklist is expanded,
 When the user unchecks the checkbox for `purlin.push_to_remote`,
 Then the `purlin.push_to_remote` row is dimmed,
+And the step's number column shows `—` instead of a number,
+And subsequent enabled steps are renumbered contiguously,
 And the disabled count in the collapsed badge increments by 1,
 And refreshing the dashboard shows `purlin.push_to_remote` still disabled.
 
@@ -216,7 +219,7 @@ And rows whose content did not change appear visually undisturbed.
 - **Reference:** N/A
 - [ ] Drag handle character (`⠿`) appears at the left edge of each row
 - [ ] Drag handle color is `--purlin-dim`; cursor changes to `grab` on hover
-- [ ] Step number is right-aligned, rendered in monospace font, `--purlin-muted` color
+- [ ] Step number is right-aligned, rendered in monospace font, `--purlin-muted` color for enabled steps; disabled steps show `—` in `--purlin-dim` color instead of a number
 - [ ] GLOBAL/LOCAL badge uses `--purlin-tag-fill` background and `--purlin-tag-outline` border, Inter Bold 10px uppercase
 - [ ] Friendly name is clickable; underline and `--purlin-accent` color appear on hover
 - [ ] Disabled rows have all text (handle, number, badge, name) dimmed to `--purlin-dim`

@@ -19,7 +19,7 @@ The `<step-name>` argument matches against a step's `friendly_name` (case-insens
      - Exactly one match: proceed with that step.
      - Multiple matches: list the matching steps and ask the user to choose one.
      - No match: report "No step found matching '<step-name>'." and stop.
-   - If no argument was provided: display all steps in their configured order, numbered. Show friendly name and source (GLOBAL / LOCAL); mark disabled steps with `[disabled]`. Ask the user to choose a step by number.
+   - If no argument was provided: display all steps in their configured order. Number only enabled steps contiguously (1, 2, 3, ...). Show friendly name and source (GLOBAL / LOCAL). Disabled steps appear without a number, marked `[disabled]`. The user selects an enabled step by its displayed number, or any step (including disabled) by name.
 
 3. **Display the step definition.** Show: friendly name, source (GLOBAL / LOCAL), description, `code` value (if non-null), and `agent_instructions` (if non-null).
 
