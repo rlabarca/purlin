@@ -59,7 +59,7 @@ class IsolationTestBase(unittest.TestCase):
         # Create .claude/commands/ with test command files
         cmd_dir = os.path.join(self.project_root, ".claude", "commands")
         os.makedirs(cmd_dir, exist_ok=True)
-        for cmd_file in ["pl-local-push.md", "pl-local-pull.md", "pl-status.md"]:
+        for cmd_file in ["pl-isolated-push.md", "pl-isolated-pull.md", "pl-status.md"]:
             with open(os.path.join(cmd_dir, cmd_file), "w") as f:
                 f.write(f"# {cmd_file}\nTest content for {cmd_file}\n")
         self._git("add", ".claude/")
@@ -164,7 +164,7 @@ class TestCreateIsolation(IsolationTestBase):
         self.assertIn("invalid", stderr.lower(),
                        "Error should mention invalid characters")
 
-    def test_places_only_local_commands(self):
+    def test_places_only_isolated_commands(self):
         """Scenario: create_isolation Places Only pl-local Commands in Worktree"""
         rc, stdout, stderr = run_script("create_isolation.sh", ["ui"], self.project_root)
         self.assertEqual(rc, 0, f"Expected exit 0. stderr: {stderr}")
@@ -172,11 +172,11 @@ class TestCreateIsolation(IsolationTestBase):
         wt_cmd_dir = os.path.join(self.project_root, ".worktrees", "ui",
                                    ".claude", "commands")
 
-        # pl-local-push.md and pl-local-pull.md should exist
-        self.assertTrue(os.path.exists(os.path.join(wt_cmd_dir, "pl-local-push.md")),
-                         "pl-local-push.md should be in worktree commands")
-        self.assertTrue(os.path.exists(os.path.join(wt_cmd_dir, "pl-local-pull.md")),
-                         "pl-local-pull.md should be in worktree commands")
+        # pl-isolated-push.md and pl-isolated-pull.md should exist
+        self.assertTrue(os.path.exists(os.path.join(wt_cmd_dir, "pl-isolated-push.md")),
+                         "pl-isolated-push.md should be in worktree commands")
+        self.assertTrue(os.path.exists(os.path.join(wt_cmd_dir, "pl-isolated-pull.md")),
+                         "pl-isolated-pull.md should be in worktree commands")
 
         # pl-status.md should NOT exist
         self.assertFalse(os.path.exists(os.path.join(wt_cmd_dir, "pl-status.md")),

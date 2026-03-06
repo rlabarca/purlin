@@ -88,11 +88,11 @@ if [[ -n "$DIRTY_OUTPUT" ]]; then
 fi
 
 # --- Determine collaboration branch ---
-# Read active remote session from PROJECT_ROOT (not worktree).
-# If active, collaboration branch is collab/<session>; otherwise main.
-ACTIVE_SESSION_FILE="$PROJECT_ROOT/.purlin/runtime/active_remote_session"
-if [[ -f "$ACTIVE_SESSION_FILE" ]] && [[ -s "$ACTIVE_SESSION_FILE" ]]; then
-    COLLAB_BRANCH="collab/$(cat "$ACTIVE_SESSION_FILE")"
+# Read active branch from PROJECT_ROOT (not worktree).
+# If set, use that value directly; otherwise fall back to main.
+ACTIVE_BRANCH_FILE="$PROJECT_ROOT/.purlin/runtime/active_branch"
+if [[ -f "$ACTIVE_BRANCH_FILE" ]] && [[ -s "$ACTIVE_BRANCH_FILE" ]]; then
+    COLLAB_BRANCH="$(cat "$ACTIVE_BRANCH_FILE")"
 else
     COLLAB_BRANCH="main"
 fi

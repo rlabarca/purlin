@@ -90,7 +90,7 @@ ROOT_CMD_DIR="$PROJECT_ROOT/.claude/commands"
 mkdir -p "$WORKTREE_CMD_DIR"
 
 # Copy pl-local-push.md and pl-local-pull.md from project root
-for cmd_file in pl-local-push.md pl-local-pull.md; do
+for cmd_file in pl-isolated-push.md pl-isolated-pull.md; do
     if [[ -f "$ROOT_CMD_DIR/$cmd_file" ]]; then
         cp "$ROOT_CMD_DIR/$cmd_file" "$WORKTREE_CMD_DIR/$cmd_file"
     fi
@@ -100,7 +100,7 @@ done
 for f in "$WORKTREE_CMD_DIR"/*; do
     [[ -f "$f" ]] || continue
     basename_f="$(basename "$f")"
-    if [[ "$basename_f" != "pl-local-push.md" && "$basename_f" != "pl-local-pull.md" ]]; then
+    if [[ "$basename_f" != "pl-isolated-push.md" && "$basename_f" != "pl-isolated-pull.md" ]]; then
         rm "$f"
         # Mark the deletion as intentional so git doesn't report it as dirty
         git -C "$WORKTREE_PATH" update-index --skip-worktree ".claude/commands/$basename_f" 2>/dev/null || true
@@ -174,4 +174,4 @@ echo "  ./run_${NAME}_qa.sh"
 echo ""
 echo "Or launch from within the worktree:"
 echo "  cd $WORKTREE_PATH"
-echo "  # When done, run /pl-local-push to merge back to the collaboration branch"
+echo "  # When done, run /pl-isolated-push to merge back to the collaboration branch"
