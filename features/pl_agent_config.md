@@ -55,7 +55,7 @@ git rev-parse --abbrev-ref HEAD
 
 If the result starts with `isolated/`, the session is in an isolated worktree. The isolation name is the substring after `isolated/`.
 
-When in a worktree, the MAIN project root is located by parsing `git worktree list --porcelain` and finding the entry whose `branch` field is `refs/heads/main` (or the first worktree entry). This is the same detection logic used by `/pl-local-push`.
+When in a worktree, the MAIN project root is located by parsing `git worktree list --porcelain` and finding the entry whose `branch` field is `refs/heads/main` (or the first worktree entry). This is the same detection logic used by `/pl-isolated-push`.
 
 ### 2.4 Explicit Worktree Warning
 
@@ -161,7 +161,7 @@ None.
 
 ## 4. Implementation Notes
 
-**Routing logic:** The skill uses the same MAIN checkout detection as `/pl-local-push`: check `PURLIN_PROJECT_ROOT` env var if set, otherwise parse `git worktree list --porcelain` to find the main checkout path (the entry whose `branch` field is `refs/heads/main`).
+**Routing logic:** The skill uses the same MAIN checkout detection as `/pl-isolated-push`: check `PURLIN_PROJECT_ROOT` env var if set, otherwise parse `git worktree list --porcelain` to find the main checkout path (the entry whose `branch` field is `refs/heads/main`).
 
 **Why not update the worktree config?** Worktree configs are intentionally ephemeral -- created by `create_isolation.sh` as snapshots of MAIN config at creation time and discarded when `kill_isolation.sh` removes the worktree. There is no mechanism to sync worktree config changes back to MAIN. An agent that modifies only the worktree config gets a "lost update" -- the change vanishes at kill time. The skill prevents this by routing all changes to MAIN.
 

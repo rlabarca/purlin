@@ -39,7 +39,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 *   Who merges: the agent that completed the session's work (before shutting down).
 *   What it triggers: the next agent that needs the merged work can now see the commits.
 *   For remote collaboration, the merge is followed by `/pl-remote-push` to sync the collaboration branch to the remote.
-*   `/pl-local-push` verifies readiness and performs the merge in one step.
+*   `/pl-isolated-push` verifies readiness and performs the merge in one step.
 
 ### 2.5 Worktree Location Convention
 
@@ -51,14 +51,14 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 ### 2.6 ff-only Merge Invariant
 
 *   All merges from isolation branches to the collaboration branch use `git merge --ff-only`.
-*   If the branch cannot be fast-forwarded (DIVERGED state), the agent must rebase first via `/pl-local-pull`.
+*   If the branch cannot be fast-forwarded (DIVERGED state), the agent must rebase first via `/pl-isolated-pull`.
 *   This prevents merge commits on the collaboration branch and keeps history linear.
 
 ### 2.7 .purlin/ Exclusion from Dirty Detection
 
 *   `.purlin/` files are excluded from dirty detection in all isolation scripts and commands.
 *   Auto-propagated `config.json` changes must not trigger false dirty blocks.
-*   This applies in `kill_isolation.sh`, `/pl-local-push`, and any other dirty check in the collab toolchain.
+*   This applies in `kill_isolation.sh`, `/pl-isolated-push`, and any other dirty check in the collab toolchain.
 
 ### 2.8 Critic Branch-Scope Limitation (Known Constraint)
 

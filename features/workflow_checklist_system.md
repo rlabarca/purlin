@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The Workflow Handoff Checklist system provides a generic pre-merge checklist that agents run before completing their isolation session and merging their branch to the collaboration branch. It is architecturally parallel to the Release Checklist system, reusing the same step schema and resolver infrastructure. The `/pl-local-push` skill invokes this checklist as a prerequisite to merging.
+The Workflow Handoff Checklist system provides a generic pre-merge checklist that agents run before completing their isolation session and merging their branch to the collaboration branch. It is architecturally parallel to the Release Checklist system, reusing the same step schema and resolver infrastructure. The `/pl-isolated-push` skill invokes this checklist as a prerequisite to merging.
 
 No role is assumed. The checklist steps are generic and apply equally to any agent (Architect, Builder, QA) running in any named isolation.
 

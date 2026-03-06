@@ -173,7 +173,7 @@ The three major content sections in the modal body use color-coded headers to ma
 
 This creates a visual map: scan the tags for "what changed," then jump to the matching colored section for details.
 
-### 2.11 Post-Merge Integration (pl-collab-pull Step 7)
+### 2.11 Post-Merge Integration (pl-remote-pull Step 7)
 
 After a successful merge in `/pl-remote-pull` (BEHIND fast-forward or DIVERGED merge), a new Step 7 runs:
 
@@ -521,7 +521,7 @@ The deep analysis is derived from the same extraction data as the standard diges
     Then the response contains the analysis content
     And the modal renders the impact summary section above the file-level digest
 
-#### Scenario: Auto-Generation After pl-collab-pull Merge
+#### Scenario: Auto-Generation After pl-remote-pull Merge
 
     Given the agent is on the collaboration branch
     And an active branch exists in BEHIND state

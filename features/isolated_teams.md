@@ -39,9 +39,9 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 5. **Idempotency:** If `.worktrees/<name>/` already exists, print a status message and exit cleanly (code 0). Do not create duplicate worktrees or branches.
 6. **Command file setup:**
    a. Ensure `.worktrees/<name>/.claude/commands/` exists (create if absent).
-   b. Copy `pl-local-push.md` and `pl-local-pull.md` from the project root's `.claude/commands/` into the worktree's `.claude/commands/`.
-   c. Delete all OTHER files from the worktree's `.claude/commands/` (any file that is NOT `pl-local-push.md` or `pl-local-pull.md`).
-   d. Net result: the worktree's `.claude/commands/` contains ONLY `pl-local-push.md` and `pl-local-pull.md`. All other `/pl-*` commands are discovered via directory tree climbing from the parent repo.
+   b. Copy `pl-isolated-push.md` and `pl-isolated-pull.md` from the project root's `.claude/commands/` into the worktree's `.claude/commands/`.
+   c. Delete all OTHER files from the worktree's `.claude/commands/` (any file that is NOT `pl-isolated-push.md` or `pl-isolated-pull.md`).
+   d. Net result: the worktree's `.claude/commands/` contains ONLY `pl-isolated-push.md` and `pl-isolated-pull.md`. All other `/pl-*` commands are discovered via directory tree climbing from the parent repo.
 7. **Config propagation:** After `git worktree add` completes, copy the live project root `.purlin/config.json` into the new worktree's `.purlin/config.json`, overwriting the git-committed copy. If the live config does not exist, the git-committed copy is used as-is. After copying, run `git update-index --skip-worktree .purlin/config.json` inside the worktree so that any session-local modifications to the config are never reported as dirty by `git status` and cannot be accidentally committed. Print a note: `"Note: .purlin/config.json is marked skip-worktree. Use /pl-agent-config to make persistent changes."`.
 8. **Config is ephemeral by design:** The worktree config is a snapshot of the MAIN config at creation time. It diverges from MAIN over the session's lifetime (e.g., agents may change settings locally). It is destroyed when `kill_isolation.sh` removes the worktree. To make a persistent config change from a worktree, use `/pl-agent-config`, which always routes changes to the MAIN config.
 9. Print a summary of what was created and next-steps instructions.
@@ -107,7 +107,7 @@ When `create_isolation.sh <name>` succeeds, it MUST generate three scripts in `$
 
 **Script contract:**
 - Each script MUST `cd` into the worktree directory and then `exec` the corresponding launcher: `cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_<role>.sh" "$@"`.
-- **Why `cd` is required:** The agent startup protocol runs `git rev-parse --abbrev-ref HEAD` to detect whether it is in an isolated session. Git resolves the branch from the process's working directory. Without `cd`, the process inherits the caller's CWD (project root, on `main` branch), causing `git rev-parse` to return `main` instead of `isolated/<name>` — suppressing `/pl-local-push` and `/pl-local-pull` from the startup command print.
+- **Why `cd` is required:** The agent startup protocol runs `git rev-parse --abbrev-ref HEAD` to detect whether it is in an isolated session. Git resolves the branch from the process's working directory. Without `cd`, the process inherits the caller's CWD (project root, on `main` branch), causing `git rev-parse` to return `main` instead of `isolated/<name>` — suppressing `/pl-isolated-push` and `/pl-isolated-pull` from the startup command print.
 - Each script sets `PURLIN_PROJECT_ROOT` indirectly: `exec` replaces the wrapper subshell with the worktree's launcher, which sets `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` (resolved to the worktree path via `dirname "${BASH_SOURCE[0]}"`). No explicit `PURLIN_PROJECT_ROOT` override is needed.
 - **CWD preservation (user's shell):** The `cd` inside the generated script does NOT change the user's interactive shell working directory. Because `exec` replaces only the child subshell (not the user's interactive shell), the user's working directory at the project root is preserved after the agent exits. A comment in each generated script MUST document this guarantee.
 - If the worktree does not exist at execution time, the script exits with code 1 and a descriptive error message.
@@ -173,10 +173,10 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 
 #### Scenario: create_isolation Places Only pl-local Commands in Worktree
 
-    Given the project root .claude/commands/ contains pl-local-push.md, pl-local-pull.md, and pl-status.md
+    Given the project root .claude/commands/ contains pl-isolated-push.md, pl-isolated-pull.md, and pl-status.md
     When create_isolation.sh ui is run
-    Then .worktrees/ui/.claude/commands/pl-local-push.md exists
-    And .worktrees/ui/.claude/commands/pl-local-pull.md exists
+    Then .worktrees/ui/.claude/commands/pl-isolated-push.md exists
+    And .worktrees/ui/.claude/commands/pl-isolated-pull.md exists
     And .worktrees/ui/.claude/commands/pl-status.md does not exist
     And .claude/commands/ at the project root still contains all command files
 
@@ -292,9 +292,9 @@ None.
 
 The `create_isolation.sh` approach avoids modifying the main checkout during setup. The branch is created from `HEAD` of `main`. The key insight: when a launcher script does `SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)`, running from within a worktree makes `$SCRIPT_DIR` the worktree root — which is exactly what `PURLIN_PROJECT_ROOT` should be.
 
-**Command file placement (inverted from legacy):** The old `setup_worktrees.sh` deleted `.claude/commands/` entirely from each worktree, relying on tree climbing to find all commands in the parent repo. The new design places ONLY `pl-local-push.md` and `pl-local-pull.md` in the worktree's `.claude/commands/`. This ensures:
+**Command file placement (inverted from legacy):** The old `setup_worktrees.sh` deleted `.claude/commands/` entirely from each worktree, relying on tree climbing to find all commands in the parent repo. The new design places ONLY `pl-isolated-push.md` and `pl-isolated-pull.md` in the worktree's `.claude/commands/`. This ensures:
 
-1. The worktree-exclusive commands (pl-local-push and pl-local-pull) are present and take precedence over any parent-repo versions.
+1. The worktree-exclusive commands (pl-isolated-push and pl-isolated-pull) are present and take precedence over any parent-repo versions.
 2. All other commands (pl-status, pl-spec, etc.) are still discoverable via tree climbing.
 3. No duplicate command completions appear in the Claude Code UI.
 
@@ -304,14 +304,14 @@ The `create_isolation.sh` approach avoids modifying the main checkout during set
 
 **`.worktrees/` detection:** The `.worktrees/` directory convention is required for the CDD Isolated Teams dashboard to detect active isolated teams. The dashboard uses `git worktree list --porcelain` and filters to paths under `.worktrees/` relative to the project root.
 
-**Per-team launcher scripts:** `create_isolation.sh` generates `run_<name>_architect.sh`, `run_<name>_builder.sh`, and `run_<name>_qa.sh` in `$PROJECT_ROOT/` using `cd "$WORKTREE_PATH" && exec` to delegate to the corresponding launchers inside the worktree. The `cd` before `exec` is required so the agent process inherits the worktree as its working directory — without it, `git rev-parse --abbrev-ref HEAD` returns `main` (the caller's CWD) instead of `isolated/<name>`, suppressing the `/pl-local-push`/`/pl-local-pull` commands in the startup print. `PURLIN_PROJECT_ROOT` is still resolved correctly by the worktree's own launcher (`SCRIPT_DIR` → worktree path via `dirname "${BASH_SOURCE[0]}"`). The user's interactive shell working directory is preserved because `exec` replaces only the child subshell, not the interactive shell. These scripts are gitignored and removed by `kill_isolation.sh` before worktree removal.
+**Per-team launcher scripts:** `create_isolation.sh` generates `run_<name>_architect.sh`, `run_<name>_builder.sh`, and `run_<name>_qa.sh` in `$PROJECT_ROOT/` using `cd "$WORKTREE_PATH" && exec` to delegate to the corresponding launchers inside the worktree. The `cd` before `exec` is required so the agent process inherits the worktree as its working directory — without it, `git rev-parse --abbrev-ref HEAD` returns `main` (the caller's CWD) instead of `isolated/<name>`, suppressing the `/pl-isolated-push`/`/pl-isolated-pull` commands in the startup print. `PURLIN_PROJECT_ROOT` is still resolved correctly by the worktree's own launcher (`SCRIPT_DIR` → worktree path via `dirname "${BASH_SOURCE[0]}"`). The user's interactive shell working directory is preserved because `exec` replaces only the child subshell, not the interactive shell. These scripts are gitignored and removed by `kill_isolation.sh` before worktree removal.
 
 ---
 
 ## User Testing Discoveries
 
 **[BUG] RESOLVED — Generated launcher scripts do not cd into worktree before exec** (Severity: HIGH)
-- **Observed:** Running `./run_<team>_architect.sh` from the project root does not print `/pl-local-push` and `/pl-local-pull` in the Architect startup command table. Running the same session by cd-ing into the worktree and running `./run_architect.sh` directly does show them.
+- **Observed:** Running `./run_<team>_architect.sh` from the project root does not print `/pl-isolated-push` and `/pl-isolated-pull` in the Architect startup command table. Running the same session by cd-ing into the worktree and running `./run_architect.sh` directly does show them.
 - **Root cause:** The generated scripts delegate via `exec` without first `cd`-ing into the worktree. Claude inherits the caller's CWD (project root, branch `main`), so `git rev-parse --abbrev-ref HEAD` returns `main` instead of `isolated/<name>`, causing the startup protocol to skip the isolation command table variant.
 - **Fix required (Builder):** In `tools/collab/create_isolation.sh`, change the generated script's delegation line from `exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"` to `cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"`. The `cd` occurs in the child subshell; `exec` replaces it — the user's interactive shell CWD is unaffected.
 - **Spec updated:** Section 2.6 now mandates `cd` before `exec` and explains why.

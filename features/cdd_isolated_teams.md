@@ -345,7 +345,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When an agent calls GET /status.json
     Then the worktree entry's uncommitted field has specs=1, tests=0, other=2
 
-#### Scenario: Uncommitted Modified Non-Empty When Main Diff Is SAME
+#### Scenario: Uncommitted Modified Non-Empty When Local Branch Diff Is SAME
 
     Given a worktree at .worktrees/ui on a branch at SAME position as the collaboration branch
     And the worktree has uncommitted changes to three files under features/
@@ -354,14 +354,14 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And the worktree entry's committed field has specs=0, tests=0, other=0
     And the worktree entry's uncommitted field has specs=3, tests=0, other=0
 
-#### Scenario: Main Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits
+#### Scenario: Local Branch Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And the collaboration branch has commits that are not in isolated/feat1
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "BEHIND"
 
-#### Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch
+#### Scenario: Local Branch Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And isolated/feat1 has commits that are not in the collaboration branch
@@ -369,14 +369,14 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "AHEAD"
 
-#### Scenario: Main Diff SAME When Branch And Collaboration Branch Are Identical
+#### Scenario: Local Branch Diff SAME When Branch And Collaboration Branch Are Identical
 
     Given a worktree at .worktrees/ui on branch isolated/ui
     And isolated/ui and the collaboration branch point to the same commit
     When an agent calls GET /status.json
     Then the worktree entry has main_diff "SAME"
 
-#### Scenario: Main Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor
+#### Scenario: Local Branch Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And isolated/feat1 has commits not in the collaboration branch
