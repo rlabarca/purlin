@@ -17,15 +17,15 @@ Current branch: <branch>. Run /pl-whats-different from the project root (branch:
 
 Do NOT proceed to Step 1.
 
-### 1. Session Guard
+### 1. Branch Guard
 
-Read `.purlin/runtime/active_remote_session`. If the file is absent or empty, abort:
+Read `.purlin/runtime/active_branch`. If the file is absent or empty, abort:
 
 ```
-No active remote session. Use the CDD dashboard to start or join a remote collab session.
+No active collaboration branch. Use the CDD dashboard to start or join a collaboration branch.
 ```
 
-Extract the session name from the file contents (single line, trimmed).
+Extract the branch name from the file contents (single line, trimmed).
 
 ### 2. Load Config
 

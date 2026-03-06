@@ -11,7 +11,7 @@ Covers automated scenarios from features/pl_whats_different.md:
 The agent command is a Claude skill defined in .claude/commands/pl-whats-different.md.
 These tests verify the underlying tool behavior that the command depends on:
 - Branch detection via git rev-parse
-- Session file reading from .purlin/runtime/active_remote_session
+- Active branch file reading from .purlin/runtime/active_branch
 - Sync state computation via extract_whats_different.py
 - Generation script execution via generate_whats_different.sh
 """
@@ -73,69 +73,69 @@ class TestExitsWhenNoActiveSession(unittest.TestCase):
     """Scenario: Exits When No Active Session
 
     Given the current branch is "main"
-    And no file exists at .purlin/runtime/active_remote_session
+    And no file exists at .purlin/runtime/active_branch
     When the agent runs /pl-whats-different
-    Then the command aborts with a message containing "No active remote session"
+    Then the command aborts with a message containing "No active collaboration branch"
     And no generation script is executed
 
-    Test: Verifies session file reading behavior.
+    Test: Verifies active branch file reading behavior.
     """
 
-    def test_missing_session_file_detected(self):
-        """Missing session file triggers abort."""
+    def test_missing_active_branch_file_detected(self):
+        """Missing active branch file triggers abort."""
         tmpdir = tempfile.mkdtemp()
-        session_path = os.path.join(tmpdir, '.purlin', 'runtime',
-                                    'active_remote_session')
+        branch_path = os.path.join(tmpdir, '.purlin', 'runtime',
+                                   'active_branch')
         # File does not exist
-        self.assertFalse(os.path.exists(session_path))
+        self.assertFalse(os.path.exists(branch_path))
 
         import shutil
         shutil.rmtree(tmpdir)
 
-    def test_empty_session_file_detected(self):
-        """Empty session file triggers abort."""
+    def test_empty_active_branch_file_detected(self):
+        """Empty active branch file triggers abort."""
         tmpdir = tempfile.mkdtemp()
         runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        session_path = os.path.join(runtime_dir, 'active_remote_session')
-        with open(session_path, 'w') as f:
+        branch_path = os.path.join(runtime_dir, 'active_branch')
+        with open(branch_path, 'w') as f:
             f.write('')
 
-        with open(session_path) as f:
+        with open(branch_path) as f:
             content = f.read().strip()
         self.assertEqual(content, '')
 
         import shutil
         shutil.rmtree(tmpdir)
 
-    def test_valid_session_file_read(self):
-        """Valid session file content is extracted correctly."""
+    def test_valid_active_branch_file_read(self):
+        """Valid active branch file content is extracted correctly."""
         tmpdir = tempfile.mkdtemp()
         runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
-        session_path = os.path.join(runtime_dir, 'active_remote_session')
-        with open(session_path, 'w') as f:
+        branch_path = os.path.join(runtime_dir, 'active_branch')
+        with open(branch_path, 'w') as f:
             f.write('v0.6-sprint\n')
 
-        with open(session_path) as f:
-            session = f.read().strip()
-        self.assertEqual(session, 'v0.6-sprint')
+        with open(branch_path) as f:
+            branch = f.read().strip()
+        self.assertEqual(branch, 'v0.6-sprint')
 
         import shutil
         shutil.rmtree(tmpdir)
 
     def test_error_message_content(self):
-        """Error message matches spec: 'No active remote session'."""
-        error_msg = ('No active remote session. Use the CDD dashboard '
-                     'to start or join a remote collab session.')
-        self.assertIn('No active remote session', error_msg)
+        """Error message matches spec: 'No active collaboration branch'."""
+        error_msg = ('No active collaboration branch. Use the CDD dashboard '
+                     'to start or join a collaboration branch.')
+        self.assertIn('No active collaboration branch', error_msg)
 
 
 class TestPrintsInSyncMessageWhenSAME(unittest.TestCase):
     """Scenario: Prints In-Sync Message When SAME
 
     Given the current branch is "main"
-    And an active session "v0.6-sprint" is set
+    And an active branch "v0.6-sprint" is set
     And local main and origin/collab/v0.6-sprint are at the same commit
     When the agent runs /pl-whats-different
     Then the command prints a message containing "in sync"
@@ -153,8 +153,8 @@ class TestPrintsInSyncMessageWhenSAME(unittest.TestCase):
 
     def test_in_sync_message_content(self):
         """In-sync message matches spec pattern."""
-        session = 'v0.6-sprint'
-        msg = f'Local main is in sync with collab/{session}. Nothing to summarize.'
+        branch = 'v0.6-sprint'
+        msg = f'Local main is in sync with collab/{branch}. Nothing to summarize.'
         self.assertIn('in sync', msg)
 
 
@@ -162,7 +162,7 @@ class TestGeneratesAndDisplaysDigestWhenBEHIND(unittest.TestCase):
     """Scenario: Generates and Displays Digest When BEHIND
 
     Given the current branch is "main"
-    And an active session "v0.6-sprint" is set
+    And an active branch "v0.6-sprint" is set
     And origin/collab/v0.6-sprint has 2 commits not in local main
     When the agent runs /pl-whats-different
     Then the generation script is executed with "v0.6-sprint" as argument
@@ -216,9 +216,9 @@ class TestEndToEndGenerationViaAgentCommand(unittest.TestCase):
     """Scenario: End-to-End Generation via Agent Command
 
     Given the agent is on the main branch
-    And an active session exists in BEHIND state
+    And an active branch exists in BEHIND state
     When the agent runs /pl-whats-different
-    Then the generation script is executed with the active session name as argument
+    Then the generation script is executed with the active branch name as argument
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
@@ -290,7 +290,7 @@ class TestEndToEndGenerationViaAgentCommand(unittest.TestCase):
         purlin_dir = os.path.join(cls.local_dir, '.purlin')
         runtime_dir = os.path.join(purlin_dir, 'runtime')
         os.makedirs(runtime_dir, exist_ok=True)
-        with open(os.path.join(runtime_dir, 'active_remote_session'), 'w') as f:
+        with open(os.path.join(runtime_dir, 'active_branch'), 'w') as f:
             f.write('test-session\n')
         with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
             json.dump({'tools_root': 'tools'}, f)
@@ -316,7 +316,7 @@ class TestEndToEndGenerationViaAgentCommand(unittest.TestCase):
 
     @patch.object(ext, '_run_git')
     def test_extraction_produces_behind_state(self, mock_git):
-        """Extraction tool returns BEHIND when remote has unpushed commits."""
+        """Extraction tool returns BEHIND when remote has commits not in local."""
         def side_effect(args, cwd=None):
             range_arg = args[1] if len(args) > 1 else ''
             # ahead range starts with origin/ (remote..local) → empty
