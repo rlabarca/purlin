@@ -36,7 +36,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
         *   **Checkbox:** Toggles `context_guard` on/off for the agent. No inline label (column header identifies it). Defaults to checked.
         *   **Number input:** `type="number"`, `min="5"`, `max="200"`, ~40px wide, with stepper arrows for up/down. Represents `context_guard_threshold` for the agent. Defaults to the global `context_guard_threshold` value, then 45.
         *   **Disabled state:** When the checkbox is unchecked, the number input is `disabled` with `opacity: 0.4`. The threshold value remains visible but is not editable.
-        *   **Styling:** Matches dashboard conventions — `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size. Checkbox uses `accent-color: var(--purlin-accent)`. Focus state: `border-color: var(--purlin-accent)`.
+        *   **Styling:** Matches dashboard conventions — `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size. Checkbox uses `accent-color: var(--purlin-accent)`. Focus state: `border-color: var(--purlin-accent)`. **Stepper arrows:** The number input's up/down spinner buttons MUST use `color: var(--purlin-muted)` via `::-webkit-inner-spin-button` styling (and equivalent for other engines) so arrows are visible against dark backgrounds.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all three rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited.
 *   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until the `POST /config/agents` response is received. While any control is pending, the auto-refresh cycle MUST NOT overwrite its value with server-returned state. Only non-pending controls are updated by auto-refresh during this window. Once the server acknowledges the write (success or error), all pending locks are released.
@@ -184,6 +184,7 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Context Guard compound cell shows checkbox and number stepper arranged horizontally with 4px gap
 - [ ] When Context Guard checkbox is unchecked, the threshold input is visually dimmed (opacity 0.4) and non-interactive
 - [ ] Number stepper arrows are visible and functional within the 40px-wide input
+- [ ] Stepper arrows use `var(--purlin-muted)` color, visible against dark blueprint theme background
 - [ ] Toggling the Context Guard checkbox does not cause adjacent columns to shift or resize
 
 ## User Testing Discoveries
