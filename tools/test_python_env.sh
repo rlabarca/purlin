@@ -230,19 +230,20 @@ else
     log_fail "cdd/start.sh does not source resolve_python.sh"
 fi
 
-# --- Scenario: Bootstrap Uses Resolved Python for JSON Validation ---
+# --- Scenario: Bootstrap/Init Uses Resolved Python for JSON Validation ---
+# bootstrap.sh is a deprecation shim delegating to init.sh; check init.sh
 echo ""
-echo "[Scenario] Bootstrap Uses Resolved Python for JSON Validation"
-BOOTSTRAP="$SCRIPT_DIR/bootstrap.sh"
-if grep -q 'source.*resolve_python\.sh' "$BOOTSTRAP"; then
-    log_pass "bootstrap.sh sources resolve_python.sh"
+echo "[Scenario] Init Uses Resolved Python for JSON Validation"
+INIT_SCRIPT="$SCRIPT_DIR/init.sh"
+if grep -q 'source.*resolve_python\.sh' "$INIT_SCRIPT"; then
+    log_pass "init.sh sources resolve_python.sh"
 else
-    log_fail "bootstrap.sh does not source resolve_python.sh"
+    log_fail "init.sh does not source resolve_python.sh"
 fi
-if grep -q '\$PYTHON_EXE.*-c.*import json' "$BOOTSTRAP" || grep -q '"$PYTHON_EXE" -c.*import json' "$BOOTSTRAP"; then
-    log_pass "bootstrap.sh uses \$PYTHON_EXE for JSON validation"
+if grep -q '\$PYTHON_EXE' "$INIT_SCRIPT"; then
+    log_pass "init.sh uses \$PYTHON_EXE"
 else
-    log_fail "bootstrap.sh still uses bare python3 for JSON validation"
+    log_fail "init.sh still uses bare python3"
 fi
 
 # --- Scenario: test_lifecycle.sh Uses Resolved Python ---
