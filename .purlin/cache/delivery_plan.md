@@ -11,9 +11,9 @@
 **Completion Commit:** 7f27bdb
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Isolation + Utility Skills [PENDING]
+## Phase 2 -- Isolation + Utility Skills [COMPLETE]
 **Features:** pl_isolated_pull.md, pl_isolated_push.md, pl_whats_different.md, pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** d6429bb
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Design + Config Skills [PENDING]
