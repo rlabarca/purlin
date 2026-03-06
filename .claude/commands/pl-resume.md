@@ -133,7 +133,8 @@ When the system prompt already contains the role instructions (agent was started
 
 1. Read `instructions/references/{role}_commands.md` (where role is `architect`, `builder`, or `qa`).
 2. Detect the current branch via `git rev-parse --abbrev-ref HEAD`.
-3. Print the appropriate variant (main branch or isolated session) verbatim.
+3. Check if `.purlin/runtime/active_branch` exists and is non-empty to determine if this is a collaboration branch.
+4. Print the appropriate variant (main branch, collaboration branch, or isolated branch) verbatim.
 
 ### Step 5 -- Gather Fresh Project State
 
