@@ -185,3 +185,12 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] When Context Guard checkbox is unchecked, the threshold input is visually dimmed (opacity 0.4) and non-interactive
 - [ ] Number stepper arrows are visible and functional within the 40px-wide input
 - [ ] Toggling the Context Guard checkbox does not cause adjacent columns to shift or resize
+
+## User Testing Discoveries
+
+### [DISCOVERY] Concurrent multi-control writes race and reset pending values (Discovered: 2026-03-06)
+- **Scenario:** NONE
+- **Observed Behavior:** When changing multiple context guard thresholds in quick succession, a value would revert to its previous state. Waiting for the prior save to complete before making the next change allowed values to stick.
+- **Expected Behavior:** The pending-write lock should prevent any incoming response (not just auto-refresh) from overwriting a control that has a pending user edit.
+- **Action Required:** Architect
+- **Status:** OPEN
