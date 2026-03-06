@@ -468,6 +468,208 @@ class TestSectionVisualSeparation(unittest.TestCase):
         self.assertIn('border-bottom', h3_rule.group())
 
 
+class TestContextGuardCountersEndpoint(unittest.TestCase):
+    """Scenario: GET /context-guard/counters returns per-role arrays"""
+
+    def _make_handler(self):
+        """Create a Handler instance with mocked socket internals."""
+        handler = serve.Handler.__new__(serve.Handler)
+        handler.wfile = io.BytesIO()
+        handler._headers_buffer = []
+        handler.request_version = 'HTTP/1.1'
+        handler.requestline = 'GET /context-guard/counters HTTP/1.1'
+        return handler
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    def test_returns_per_role_arrays(self, mock_wt):
+        """Live agents grouped by role with counts sorted ascending."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+
+            # Create turn_count and session_meta for current PID (guaranteed alive)
+            pid = os.getpid()
+            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+                f.write('5')
+            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
+                f.write(f'uuid-123\narchitect\n2026-01-01\n')
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            raw = handler.wfile.read().decode('utf-8')
+            # Extract JSON body (after headers)
+            body = raw.split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            self.assertEqual(data['architect'], [5])
+            self.assertEqual(data['builder'], [])
+            self.assertEqual(data['qa'], [])
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    def test_dead_process_excluded(self, mock_wt):
+        """Dead process counters excluded from response."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+
+            # Use PID 99999999 — almost certainly not running
+            with open(os.path.join(runtime, 'turn_count_99999999'), 'w') as f:
+                f.write('42')
+            with open(os.path.join(runtime, 'session_meta_99999999'), 'w') as f:
+                f.write('uuid\nbuilder\n2026-01-01\n')
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            self.assertEqual(data['builder'], [])
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    def test_missing_session_meta_excluded(self, mock_wt):
+        """Counter without session_meta is excluded."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+
+            pid = os.getpid()
+            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+                f.write('10')
+            # No session_meta file
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            # No role should contain 10
+            for counts in data.values():
+                self.assertNotIn(10, counts)
+
+    @patch('serve.get_isolation_worktrees')
+    def test_worktree_counters_included(self, mock_wt):
+        """Worktree agent counters included in response."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Main runtime
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+            pid = os.getpid()
+            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+                f.write('20')
+            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
+                f.write(f'uuid\nbuilder\n2026-01-01\n')
+
+            # Worktree runtime (same PID for simplicity — already alive)
+            wt_runtime = os.path.join(tmpdir, '.worktrees', 'team-a',
+                                      '.purlin', 'runtime')
+            os.makedirs(wt_runtime)
+            with open(os.path.join(wt_runtime, f'turn_count_{pid}'), 'w') as f:
+                f.write('7')
+            with open(os.path.join(wt_runtime, f'session_meta_{pid}'), 'w') as f:
+                f.write(f'uuid2\nbuilder\n2026-01-01\n')
+
+            mock_wt.return_value = [{'name': 'team-a'}]
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            self.assertEqual(data['builder'], [7, 20])  # sorted ascending
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    def test_multiple_roles_sorted(self, mock_wt):
+        """Multiple agents across roles, counts sorted ascending."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+
+            pid = os.getpid()
+            # Use current PID for one, parent PID for another (both alive)
+            ppid = os.getppid()
+            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+                f.write('30')
+            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
+                f.write(f'uuid\nbuilder\n2026-01-01\n')
+            with open(os.path.join(runtime, f'turn_count_{ppid}'), 'w') as f:
+                f.write('5')
+            with open(os.path.join(runtime, f'session_meta_{ppid}'), 'w') as f:
+                f.write(f'uuid2\nbuilder\n2026-01-01\n')
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            self.assertEqual(data['builder'], [5, 30])
+
+
+class TestContextGuardCounterFrontend(unittest.TestCase):
+    """Frontend JS for live counter display."""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_counter_span_in_agent_row(self, mock_run, mock_status):
+        """Counter span exists in agent row HTML (JS template)."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # buildAgentRowHtml generates spans dynamically: 'agent-cg-counter-' + role
+        self.assertIn("agent-cg-counter-' + role + '", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_refresh_function_exists(self, mock_run, mock_status):
+        """refreshContextGuardCounters function is defined."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("function refreshContextGuardCounters()", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_refresh_interval_set(self, mock_run, mock_status):
+        """5-second refresh interval is configured."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("setInterval(refreshContextGuardCounters, 5000)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_counter_fetches_endpoint(self, mock_run, mock_status):
+        """Refresh function fetches /context-guard/counters."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("fetch('/context-guard/counters')", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_counter_styling(self, mock_run, mock_status):
+        """Counter span has correct monospace styling."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("font-family:monospace", html)
+        self.assertIn("font-size:10px", html)
+
+
 # =============================================================================
 # Test runner: writes results to tests/cdd_agent_configuration/tests.json
 # =============================================================================

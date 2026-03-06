@@ -4715,6 +4715,7 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<div style="display:flex;gap:4px;align-items:center">' +
       '<input type="checkbox" id="agent-cg-' + role + '" style="accent-color:var(--purlin-accent)"' + (cgEnabled ? ' checked' : '') + '>' +
       '<input type="number" id="agent-cgt-' + role + '" min="5" max="200" value="' + cgThreshold + '" style="width:40px;background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;padding:2px;outline:none' + (!cgEnabled ? ';opacity:0.4' : '') + '"' + (!cgEnabled ? ' disabled' : '') + '>' +
+      '<span id="agent-cg-counter-' + role + '" style="font-family:monospace;font-size:10px;color:var(--purlin-muted);margin-left:6px"></span>' +
     '</div>' +
   '</div>';
 }}
@@ -4818,12 +4819,37 @@ function saveAgentConfig() {{
 }}
 
 // ============================
+// Context Guard Live Counters
+// ============================
+function refreshContextGuardCounters() {{
+  fetch('/context-guard/counters')
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      ['architect', 'builder', 'qa'].forEach(function(role) {{
+        var span = document.getElementById('agent-cg-counter-' + role);
+        if (!span) return;
+        var counts = data[role] || [];
+        if (counts.length === 0) {{
+          span.textContent = '';
+        }} else if (counts.length === 1) {{
+          span.textContent = '' + counts[0];
+        }} else {{
+          span.textContent = counts.join('|');
+        }}
+      }});
+    }})
+    .catch(function() {{}});
+}}
+
+// ============================
 // Initialize
 // ============================
 applySectionStates();
 initAgentsSection();
 updateCriticLabel();
 initFromHash();
+refreshContextGuardCounters();
+setInterval(refreshContextGuardCounters, 5000);
 </script>
 </body>
 </html>"""
@@ -5104,6 +5130,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_whats_different_generate()
         elif self.path == '/whats-different/deep-analysis/generate':
             self._handle_deep_analysis_generate()
+        elif self.path == '/context-guard/counters':
+            self._handle_context_guard_counters()
         else:
             self.send_response(404)
             self.end_headers()
@@ -5115,6 +5143,67 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
+
+    def _handle_context_guard_counters(self):
+        """GET /context-guard/counters — live turn counts grouped by role."""
+        # Collect runtime directories: main project + worktrees
+        runtime_dirs = [os.path.join(PROJECT_ROOT, '.purlin', 'runtime')]
+        for wt in get_isolation_worktrees():
+            wt_runtime = os.path.join(
+                PROJECT_ROOT, '.worktrees', wt.get('name', ''),
+                '.purlin', 'runtime')
+            if os.path.isdir(wt_runtime):
+                runtime_dirs.append(wt_runtime)
+
+        # Scan for turn_count_<PID> files, match with session_meta_<PID>
+        role_counts = {'architect': [], 'builder': [], 'qa': []}
+        for runtime_dir in runtime_dirs:
+            if not os.path.isdir(runtime_dir):
+                continue
+            for fname in os.listdir(runtime_dir):
+                if not fname.startswith('turn_count_'):
+                    continue
+                pid_str = fname[len('turn_count_'):]
+                try:
+                    pid = int(pid_str)
+                except ValueError:
+                    continue
+
+                # Liveness check
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    continue  # dead process
+
+                # Read role from session_meta_<PID>
+                meta_path = os.path.join(runtime_dir, f'session_meta_{pid_str}')
+                if not os.path.isfile(meta_path):
+                    continue
+                try:
+                    with open(meta_path, 'r') as f:
+                        lines = f.read().splitlines()
+                    if len(lines) < 2:
+                        continue
+                    role = lines[1].strip().lower()
+                except (IOError, OSError):
+                    continue
+                if role not in role_counts:
+                    continue
+
+                # Read turn count
+                tc_path = os.path.join(runtime_dir, fname)
+                try:
+                    with open(tc_path, 'r') as f:
+                        count = int(f.read().strip())
+                except (IOError, OSError, ValueError):
+                    continue
+                role_counts[role].append(count)
+
+        # Sort each role's counts ascending
+        for role in role_counts:
+            role_counts[role].sort()
+
+        self._send_json(200, role_counts)
 
     def _handle_isolate_create(self):
         """POST /isolate/create — run create_isolation.sh <name>."""
