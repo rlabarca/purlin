@@ -250,10 +250,10 @@ None.
 
 ### [BUG] Threshold shows 45 when per-agent config sets 60
 
-**Status:** RESOLVED
-**Date:** 2026-03-06
-**Discovered by:** User (Architect session)
-**Action Required:** Builder
+- **Status:** RESOLVED
+- **Date:** 2026-03-06
+- **Discovered by:** User (Architect session)
+- **Action Required:** Builder
 
 **Observed:** Hook output shows `CONTEXT GUARD: ... / 45` despite `config.local.json` having `context_guard_threshold: 60` in the agent's config block.
 
@@ -267,10 +267,10 @@ None.
 
 ### [BUG] Counter not resetting after /clear + /pl-resume
 
-**Status:** RESOLVED
-**Date:** 2026-03-06
-**Discovered by:** User (Builder session)
-**Action Required:** Builder
+- **Status:** RESOLVED
+- **Date:** 2026-03-06
+- **Discovered by:** User (Builder session)
+- **Action Required:** Builder
 
 **Observed:** After running `/clear` then `/pl-resume`, the hook immediately shows an exhausted count (e.g., `42/45`) instead of resetting to 1.
 
@@ -286,10 +286,10 @@ None.
 
 ### [BUG] Hook silently exits for subagents with no output
 
-**Status:** RESOLVED
-**Date:** 2026-03-06
-**Discovered by:** User (multiple sessions)
-**Action Required:** Builder
+- **Status:** RESOLVED
+- **Date:** 2026-03-06
+- **Discovered by:** User (multiple sessions)
+- **Action Required:** Builder
 
 **Observed:** Context guard message does not appear on every tool call. Some calls produce no output at all.
 
