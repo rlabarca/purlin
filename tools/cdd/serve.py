@@ -1347,12 +1347,19 @@ def _qa_badge_html(entry):
     if manual_parts:
         tooltip_parts.append(f'Manual: {", ".join(manual_parts)}')
 
-    tooltip = ' | '.join(tooltip_parts)
+    # Build tooltip HTML lines for the custom popup
+    tooltip_lines = []
+    if auto_parts:
+        tooltip_lines.append(f'<b>Auto-resolvable:</b> {", ".join(auto_parts)}')
+    if manual_parts:
+        tooltip_lines.append(f'<b>Human-required:</b> {", ".join(manual_parts)}')
+    tooltip_html = "<br>".join(tooltip_lines)
+
     effort_span = (
-        f' <span class="effort-breakdown" title="{tooltip}">'
+        f'<span class="effort-breakdown" data-effort-tooltip="{tooltip_html}">'
         f'({total_auto}a/{total_manual}m)</span>'
     )
-    return base + effort_span
+    return f'<span class="qa-badge-wrap">{base} {effort_span}</span>'
 
 
 def _format_category_counts(counts):
@@ -2218,7 +2225,9 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-blocked{{color:var(--purlin-dim);font-weight:bold}}
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
-.effort-breakdown{{color:var(--purlin-muted);font-size:12px;font-weight:normal;cursor:help}}
+.qa-badge-wrap{{white-space:nowrap}}
+.effort-breakdown{{color:var(--purlin-muted);font-size:12px;font-weight:normal;cursor:help;position:relative}}
+.effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-fg);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
 .qa-queue-summary{{color:var(--purlin-muted);font-size:12px;font-weight:500;margin-left:8px}}
 /* Feature Detail Modal */
 .modal-overlay{{
@@ -2486,6 +2495,28 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 // ============================
 // State
 // ============================
+// Effort tooltip singleton
+var effortTip = document.createElement('div');
+effortTip.className = 'effort-tooltip';
+document.body.appendChild(effortTip);
+document.addEventListener('mouseover', function(e) {{
+  var el = e.target.closest('.effort-breakdown[data-effort-tooltip]');
+  if (!el) {{ effortTip.style.display = 'none'; return; }}
+  effortTip.innerHTML = el.getAttribute('data-effort-tooltip');
+  effortTip.style.display = 'block';
+  var r = el.getBoundingClientRect();
+  var tw = effortTip.offsetWidth, th = effortTip.offsetHeight;
+  var left = r.left - tw - 8;
+  if (left < 4) left = r.right + 8;
+  var top = r.top + (r.height / 2) - (th / 2);
+  if (top + th > window.innerHeight - 4) top = window.innerHeight - th - 4;
+  if (top < 4) top = 4;
+  effortTip.style.left = left + 'px';
+  effortTip.style.top = top + 'px';
+}});
+document.addEventListener('mouseout', function(e) {{
+  if (e.target.closest('.effort-breakdown[data-effort-tooltip]')) effortTip.style.display = 'none';
+}});
 var currentView = 'status';
 var cy = null;
 var graphData = null;
