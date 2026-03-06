@@ -1,7 +1,7 @@
 # Delivery Plan
 
 **Created:** 2026-03-06
-**Last Updated:** 2026-03-06T04:50:00Z
+**Last Updated:** 2026-03-06T05:00:00Z
 **Total Phases:** 6
 
 ## Phase 1 — Foundation: Project Init
@@ -17,14 +17,15 @@
 ---
 
 ## Phase 2 — Config Layering + Python Environment
-**Status:** PENDING
+**Status:** COMPLETE
+**Completion Commit:** c9be63b
 **Features:**
 1. `features/config_layering.md` — MEDIUM-HIGH (24 scenarios)
 2. `features/python_environment.md` — LOW-MEDIUM (15 scenarios)
 
 **Rationale:** Both depend on project_init. config_layering is a prerequisite for pl_update_purlin and release_step_management. python_environment is lightweight and pairs well.
 
-**Note:** Both features are spec revisions — existing implementations may be largely complete. Scope assessment needed per-feature.
+**Result:** Both features were spec revisions with existing implementations nearly complete. config_layering: all code migrated, all 24 tests pass. python_environment: fixed 1 bare `python3` in start.sh, all 22 tests pass.
 
 ---
 

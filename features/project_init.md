@@ -198,7 +198,7 @@ The test script MUST include assertions for all of the following. Each test MUST
 
 **Standalone Guard Tests:**
 
-27. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where `.purlin/` exists at `$SUBMODULE_DIR`). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
+27. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
 
 **Ergonomic Symlink Tests:**
 
@@ -215,7 +215,7 @@ The test script MUST include assertions for all of the following. Each test MUST
 
 The script MUST detect when it is being run inside the standalone Purlin repo (where Purlin IS the project, not a submodule) and refuse to proceed.
 
-*   **Detection:** After computing `SUBMODULE_DIR`, check if `$SUBMODULE_DIR/.purlin` exists. In the submodule layout, the submodule directory does NOT contain `.purlin/` (that lives at the consumer project root). In standalone mode, the Purlin repo root DOES contain `.purlin/`. If `.purlin/` exists in `$SUBMODULE_DIR`, print an error and exit non-zero.
+*   **Detection:** After computing `PROJECT_ROOT` (the parent of `SUBMODULE_DIR`), check whether `$PROJECT_ROOT` is a git repository (e.g., `git -C "$PROJECT_ROOT" rev-parse --git-dir`). In a consumer project, the parent directory IS the consumer's git repo root. In standalone mode, the Purlin repo's parent is NOT a git repository, so the check fails. If `$PROJECT_ROOT` is not a git repository, print an error and exit non-zero.
 *   **Error Message:** The error MUST be printed to stderr and explain that `init.sh` is for consumer projects only, not for the Purlin repository itself.
 *   **No Side Effects:** The guard MUST fire before any file creation or modification. No files outside the Purlin repo may be created or modified.
 
@@ -349,7 +349,7 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: Standalone Mode Guard Prevents Init in Purlin Repo
 
     Given Purlin is the project (not a submodule)
-    And .purlin/ exists at the Purlin repo root
+    And the computed PROJECT_ROOT (parent of the script's directory) is not a git repository
     When the user runs "tools/init.sh"
     Then the script prints an error to stderr explaining init.sh is for consumer projects only
     And the script exits with non-zero status
