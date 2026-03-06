@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN, FAIL, DISPUTED, N/A). When QA is TODO, there is no indication of how much work is needed or what kind -- a feature with 8 manual hardware-in-the-loop scenarios looks identical to one with 2 web-verifiable checks. This feature enriches the QA column with an effort breakdown derived from the Critic's `verification_effort` block, and adds an aggregate queue summary.
+The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN, FAIL, DISPUTED, N/A). When QA is TODO, there is no indication of how much work is needed or what kind -- a feature with 8 manual hardware-in-the-loop scenarios looks identical to one with 2 web-verifiable checks. This feature enriches the QA column with an effort breakdown derived from the Critic's `verification_effort` block.
 
 ---
 
@@ -31,19 +31,13 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
     *   `Manual: N interactive, N visual, N hardware`
 *   Categories with zero count MAY be omitted from the tooltip for brevity.
 
-### 2.3 Aggregate Queue Summary
-
-*   The Active section header MUST display an aggregate QA queue summary when expanded: `QA Queue: N auto-resolvable, M manual across K features`.
-*   `N` is the sum of `total_auto` across all TESTING features. `M` is the sum of `total_manual`. `K` is the count of features with any non-zero effort.
-*   When the queue is empty (no TESTING features), no summary is shown.
-
-### 2.4 Data Source
+### 2.3 Data Source
 
 *   The dashboard reads `verification_effort` from the per-feature `critic.json` files, alongside the existing `role_status` data.
 *   The `/status.json` API endpoint MUST include the `verification_effort` block for each feature.
 *   No additional Critic invocation is required; the data is pre-computed.
 
-### 2.5 Theme Compatibility
+### 2.4 Theme Compatibility
 
 *   The effort breakdown text MUST be legible in both light and dark themes.
 *   The parenthetical `(Na/Mm)` uses a muted color (lower contrast than the status badge) to avoid visual clutter.
@@ -80,19 +74,6 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
     When a client requests `/status.json`
     Then each feature object includes the `verification_effort` block
 
-#### Scenario: Aggregate queue summary in Active header
-
-    Given 3 features are in TESTING state
-    And their combined `total_auto` is 8 and combined `total_manual` is 12
-    When the Active section header is rendered (expanded)
-    Then it includes "QA Queue: 8 auto-resolvable, 12 manual across 3 features"
-
-#### Scenario: No aggregate summary when queue is empty
-
-    Given no features are in TESTING state
-    When the Active section header is rendered
-    Then no QA Queue summary is shown
-
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Effort tooltip displays full breakdown
@@ -122,10 +103,3 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 - [ ] Tooltip appears on hover with full category breakdown
 - [ ] Both light and dark themes render breakdown legibly
 
-### Screen: Active Section QA Queue Summary
-- **Reference:** N/A
-- **Processed:** N/A
-- **Description:** The Active section header shows an aggregate QA queue line when expanded and TESTING features exist.
-- [ ] Queue summary line appears below Active section heading
-- [ ] Format: "QA Queue: N auto-resolvable, M manual across K features"
-- [ ] Summary absent when no TESTING features exist
