@@ -7,7 +7,9 @@ Uses CSS Grid with a column header row and three agent data rows. The header row
 The YOLO checkbox has no inline label; it is identified solely by the column header. Its checked state maps directly to `bypass_permissions` in config.json. Checked = agent skips permission prompts (`bypass_permissions: true`). Unchecked = agent asks before using tools (`bypass_permissions: false`).
 
 ### Pending-Write Lock
-Uses a `pendingWrites` Map (key: control identifier like `"builder.bypass_permissions"`, value: the user's pending DOM value). On user interaction, the event handler stores the value via `pendingWrites.set()`. In `diffUpdateAgentRows()`, controls present in the Map are skipped. When `POST /config/agents` resolves (success or error), the Map is cleared.
+Uses a `pendingWrites` Map (key: control identifier like `"builder.bypass_permissions"`, value: the user's pending DOM value). On user interaction, the event handler stores the value via `pendingWrites.set()`. In `diffUpdateAgentRows()`, controls present in the Map are skipped.
+
+**Per-request lock association (spec update 2026-03-06):** The pending-write lock change is cross-cutting -- it affects ALL controls, not just context guard. When implementing, each pending lock must be associated with the specific POST request that carries its change. Only locks included in that POST are cleared on response; locks added after the POST was sent remain pending. This prevents rapid sequential edits from being reverted by stale responses. The previous approach of clearing all pending locks on any POST response is insufficient. **Full scope re-implementation is warranted** for this change.
 
 ### Flicker-Free Refresh
 On 5-second auto-refresh, `initAgentsSection()` compares incoming config JSON against the cached `agentsConfig` before deciding whether to re-render. If config is unchanged, rendering is skipped entirely. If changed, `diffUpdateAgentRows()` updates only the controls whose values differ.
