@@ -47,9 +47,11 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 ### 2.5 Playwright MCP Auto-Setup
 
 - The skill MUST check for Playwright MCP tool availability (check for `browser_navigate` in the tool list).
-- If Playwright MCP is not available, attempt auto-setup: verify package accessibility via `npx @playwright/mcp@latest --help`, then configure via `claude mcp add playwright -- npx @playwright/mcp`.
+- Playwright MUST run in **headless mode** (`--headless` flag). Headless mode runs the browser invisibly in the background, avoids disrupting the user's screen, and is 20-30% faster than headed mode. Screenshots, DOM evaluation, and all Playwright MCP actions work identically in headless mode.
+- If Playwright MCP is not available, attempt auto-setup: verify package accessibility via `npx @playwright/mcp@latest --help`, then configure via `claude mcp add playwright -- npx @playwright/mcp --headless`.
 - After auto-setup, inform the user a session restart is required to load the new MCP server, then stop.
 - If auto-setup fails, print the error with manual setup instructions and stop.
+- If Playwright MCP IS available but was previously configured without `--headless`, the skill MUST detect this and instruct the user to reconfigure: `claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless`, then restart the session.
 
 ### 2.6 Browser Setup
 
@@ -120,13 +122,21 @@ The following instruction files MUST be updated by the Builder to reference the 
     When `/pl-web-verify feature_name http://localhost:3000` is invoked
     Then the URL override `http://localhost:3000` is used instead of the spec URL
 
-#### Scenario: Playwright MCP not available triggers auto-setup
+#### Scenario: Playwright MCP not available triggers headless auto-setup
 
     Given Playwright MCP tools are not available in the current session
     When `/pl-web-verify` is invoked
-    Then the skill attempts to install and configure Playwright MCP
+    Then the skill attempts to install and configure Playwright MCP with `--headless` flag
     And informs the user a session restart is required
     And stops execution (does not attempt verification)
+
+#### Scenario: Headed Playwright MCP detected triggers reconfiguration
+
+    Given Playwright MCP tools are available in the current session
+    But the MCP server was configured without `--headless`
+    When `/pl-web-verify` is invoked
+    Then the skill instructs the user to reconfigure with headless mode
+    And stops execution until the session is restarted with headless configuration
 
 #### Scenario: Manual scenario PASS recorded correctly
 
