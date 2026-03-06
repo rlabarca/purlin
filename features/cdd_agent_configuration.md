@@ -26,12 +26,17 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     *   Two groups: `"1x Opus 4.6 | 2x Sonnet 4.6"`
     *   All different: `"1x Opus 4.6 | 1x Sonnet 4.6 | 1x Haiku 4.5"`
     *   The segments are ordered by count descending, then alphabetically by label.
-*   **Section Header Row:** A non-data row at the top of the section body containing column labels for the control columns. Labels for narrow checkbox columns display on two lines to conserve horizontal space (e.g., "YOLO" centered; "Startup" / "Sequence" on two lines). The header row MUST span all control columns and remain visually aligned with the agent data rows below. The `cdd_startup_controls.md` feature appends two additional column headers to this row: **Startup** / **Sequence** and **Suggest** / **Next** (each on two lines).
+*   **Section Header Row:** A non-data row at the top of the section body containing column labels for the control columns. Labels for narrow checkbox columns display on two lines to conserve horizontal space (e.g., "YOLO" centered; "Startup" / "Sequence" on two lines). The header row MUST span all control columns and remain visually aligned with the agent data rows below. The `cdd_startup_controls.md` feature appends two additional column headers to this row: **Startup** / **Sequence** and **Suggest** / **Next** (each on two lines). This feature adds a **Context** / **Guard** column header (two lines, matching the two-line pattern).
 *   **Section Body:** Three rows, one per agent (Architect, Builder, QA). Each row contains:
     1.  **Agent Name:** Inter 500, 12px, uppercase, `var(--purlin-primary)` color.
     2.  **Model Dropdown:** Lists models from the `models` array in config. Active selection matches config value.
     3.  **Effort Dropdown:** Options: `low`, `medium`, `high`. Visible only when the selected model has `capabilities.effort: true`.
     4.  **YOLO Checkbox:** No inline label (identified solely by the column header). Checked = `bypass_permissions: true` (agent skips permission prompts). Unchecked = `bypass_permissions: false` (agent asks before using tools). Visible only when the selected model has `capabilities.permissions: true`.
+    5.  **Context Guard (compound cell):** A checkbox and number input arranged horizontally (`display: flex`, `gap: 4px`).
+        *   **Checkbox:** Toggles `context_guard` on/off for the agent. No inline label (column header identifies it). Defaults to checked.
+        *   **Number input:** `type="number"`, `min="5"`, `max="200"`, ~40px wide, with stepper arrows for up/down. Represents `context_guard_threshold` for the agent. Defaults to the global `context_guard_threshold` value, then 45.
+        *   **Disabled state:** When the checkbox is unchecked, the number input is `disabled` with `opacity: 0.4`. The threshold value remains visible but is not editable.
+        *   **Styling:** Matches dashboard conventions — `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size. Checkbox uses `accent-color: var(--purlin-accent)`. Focus state: `border-color: var(--purlin-accent)`.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all three rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited.
 *   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until the `POST /config/agents` response is received. While any control is pending, the auto-refresh cycle MUST NOT overwrite its value with server-returned state. Only non-pending controls are updated by auto-refresh during this window. Once the server acknowledges the write (success or error), all pending locks are released.
@@ -42,7 +47,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 
 ### 2.2 Dashboard API Endpoints
 
-*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
+*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array, effort values are one of `low`/`medium`/`high`, `context_guard` is boolean if present, and `context_guard_threshold` is an integer in the range 5-200 if present. Both `context_guard` and `context_guard_threshold` are optional — when absent, the existing value is preserved via merge semantics. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
     *   **Completeness check:** The backend MUST reject any request that is missing one or more of the three expected roles (`architect`, `builder`, `qa`) with a 400 error: `"agents payload must include all three roles: architect, builder, qa"`. Partial saves that silently drop roles are not permitted.
     *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object in `config.local.json` key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
     *   **Worktree propagation:** When active worktrees exist, the endpoint MUST also propagate agent changes to `config.local.json` in each worktree's `.purlin/` directory.
@@ -93,6 +98,32 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     Then the Agents section heading element has a separator distinct from the Workspace section above it
     And the Agents section container is a separate DOM element from the Workspace section container
 
+#### Scenario: Context Guard Controls Render with Correct State
+    Given the architect agent has context_guard true and context_guard_threshold 60 in config
+    When the dashboard HTML is generated
+    Then the architect row's Context Guard checkbox is checked
+    And the architect row's Context Guard threshold input shows "60"
+    And the threshold input is enabled
+
+#### Scenario: Threshold Input Disabled When Guard Unchecked
+    Given the builder agent has context_guard false and context_guard_threshold 30 in config
+    When the dashboard HTML is generated
+    Then the builder row's Context Guard checkbox is unchecked
+    And the builder row's Context Guard threshold input shows "30"
+    And the threshold input is disabled with opacity 0.4
+
+#### Scenario: POST Validates Context Guard Threshold Range
+    Given a valid resolved config exists
+    When a POST request is sent to /config/agents with builder context_guard_threshold set to 300
+    Then the response status is 400
+    And the response contains a validation error for threshold range
+
+#### Scenario: POST Accepts Valid Context Guard Settings
+    Given a valid resolved config exists
+    When a POST request is sent to /config/agents with architect context_guard true and context_guard_threshold 30
+    Then config.local.json contains agents.architect.context_guard as true
+    And config.local.json contains agents.architect.context_guard_threshold as 30
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
@@ -108,6 +139,20 @@ These scenarios require the running CDD Dashboard server and human interaction t
     When the page is reloaded
     Then the Agents section is still expanded
     And the expanded/collapsed state is read from localStorage
+
+#### Scenario: Context Guard Checkbox Toggle Disables Threshold Input
+    Given the Agents section is expanded
+    And the architect Context Guard checkbox is checked
+    When the user unchecks the architect Context Guard checkbox
+    Then the architect threshold input becomes disabled with opacity 0.4
+    And the threshold value remains visible
+
+#### Scenario: Context Guard Threshold Stepper Persists Value
+    Given the Agents section is expanded
+    And the builder Context Guard checkbox is checked
+    When the user clicks the threshold stepper up arrow to increase the value
+    Then the new threshold value is sent via POST /config/agents
+    And on page reload the new value is displayed
 
 
 ## Visual Specification
@@ -134,3 +179,9 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Changing a control value does not cause it to visibly revert and re-apply while the config write is in-flight
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Section collapse/expand state persists across page reloads via localStorage
+- [ ] "Context" / "Guard" column header displays on two lines, aligned with adjacent two-line headers (Startup/Sequence, Suggest/Next)
+- [ ] Context Guard column width is 80px, consistent across all rows
+- [ ] Context Guard compound cell shows checkbox and number stepper arranged horizontally with 4px gap
+- [ ] When Context Guard checkbox is unchecked, the threshold input is visually dimmed (opacity 0.4) and non-interactive
+- [ ] Number stepper arrows are visible and functional within the 40px-wide input
+- [ ] Toggling the Context Guard checkbox does not cause adjacent columns to shift or resize

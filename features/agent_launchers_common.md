@@ -17,6 +17,7 @@ Scripts are named `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` and live
 *   **Files:** `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Submodule detection:** Each script MUST check for `$SCRIPT_DIR/purlin/instructions/` and fall back to `$SCRIPT_DIR/instructions/` when not in a submodule consumer context.
 *   **Project root export:** Each script MUST export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
+*   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by PostToolUse hooks (e.g., `context_guard.sh`) for per-agent configuration resolution.
 
 ### 2.2 Prompt Assembly
 1.  Create a temporary file via `mktemp`. Register cleanup with `trap "rm -f '$PROMPT_FILE'" EXIT`.
@@ -26,8 +27,8 @@ Scripts are named `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` and live
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, and `AGENT_BYPASS` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
-*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`.
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_CONTEXT_GUARD`, and `AGENT_CONTEXT_GUARD_THRESHOLD` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
+*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_CONTEXT_GUARD="true"`, `AGENT_CONTEXT_GUARD_THRESHOLD=""`.
 
 ### 2.4 Claude Dispatch
 ```
@@ -66,6 +67,12 @@ Session messages are passed as the trailing positional argument to the Claude CL
     Given a launcher script is invoked from any working directory
     When any launcher script (run_architect.sh, run_builder.sh, run_qa.sh) is executed
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of the project root
+
+#### Scenario: Launcher Exports AGENT_ROLE
+    Given a launcher script is invoked
+    When run_architect.sh is executed
+    Then AGENT_ROLE is exported as "architect"
+    And the env var is visible to child processes and PostToolUse hooks
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
