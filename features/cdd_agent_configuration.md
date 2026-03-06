@@ -39,7 +39,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
         *   **Styling:** Matches dashboard conventions — `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size. Checkbox uses `accent-color: var(--purlin-accent)`. Focus state: `border-color: var(--purlin-accent)`. **Stepper arrows:** The number input's up/down spinner buttons MUST use `color: var(--purlin-muted)` via `::-webkit-inner-spin-button` styling (and equivalent for other engines) so arrows are visible against dark backgrounds.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all three rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited.
-*   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until the `POST /config/agents` response is received. While any control is pending, the auto-refresh cycle MUST NOT overwrite its value with server-returned state. Only non-pending controls are updated by auto-refresh during this window. Once the server acknowledges the write (success or error), all pending locks are released.
+*   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until a `POST /config/agents` response confirms the change. While a control is pending, ALL incoming state updates -- both auto-refresh AND POST responses -- MUST NOT overwrite its value. Each pending lock is associated with the POST request that carries its change. When a POST response arrives, only pending locks that were included in that specific request are released; controls changed after that POST was sent remain pending. This ensures that rapid sequential edits are not reverted by a stale response from an earlier save.
 *   **Styling:** All controls follow existing dashboard patterns:
     *   `<select>`: `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size.
     *   Checkbox: Native with `accent-color: var(--purlin-accent)`.
@@ -127,12 +127,14 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
-#### Scenario: Pending Change is Not Overwritten by Auto-Refresh
-    Given the user checks the YOLO control for the Builder agent
-    And the config write is debounced or the POST /config/agents request is in-flight
-    When the 5-second auto-refresh fires and returns the pre-change config value
-    Then the YOLO checkbox remains checked
-    And the control does not visibly revert to unchecked and then flip back to checked
+#### Scenario: Pending Change is Not Overwritten by Concurrent State Updates
+    Given the user changes the architect threshold to 50
+    And a POST /config/agents request is in-flight for that change
+    And the user then changes the builder threshold to 30 before the POST response arrives
+    When the first POST response arrives with stale builder config
+    Then the architect threshold lock is released and shows the confirmed value
+    And the builder threshold remains 30 (still pending, not overwritten)
+    And the 5-second auto-refresh also does not overwrite the pending builder value
 
 #### Scenario: Agents Section State Persists Across Reloads
     Given the user expands the Agents section
@@ -194,4 +196,4 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - **Observed Behavior:** When changing multiple context guard thresholds in quick succession, a value would revert to its previous state. Waiting for the prior save to complete before making the next change allowed values to stick.
 - **Expected Behavior:** The pending-write lock should prevent any incoming response (not just auto-refresh) from overwriting a control that has a pending user edit.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
