@@ -113,21 +113,46 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
    - If any step fails, rollback
    - Update `.purlin/.upstream_sha` only on success
 
-11. **Config Sync After Update:**
-   - After `.purlin/.upstream_sha` is written, run the config resolver's `sync_config()` function
+11. **Post-Update Init Refresh:**
+   - After the atomic update completes successfully, run `tools/init.sh --quiet` to refresh all project-root artifacts
+   - This refreshes: command files (new/updated `.claude/commands/pl-*.md`), CDD convenience symlinks, project-root shim (`purlin_init.sh`), and `.purlin/.upstream_sha`
+   - Init's timestamp logic preserves locally modified files — the three-way diff in step 7 handles content conflicts for modified files
+   - Note in the summary report that init/refresh ran (e.g., "Init refresh completed")
+
+12. **Config Sync After Update:**
+   - After init refresh completes, run the config resolver's `sync_config()` function
    - Execute: `python3 -c "from tools.config.resolve_config import sync_config; added = sync_config('<project_root>'); print('Added new config keys: ' + ', '.join(added) if added else 'Local config is up to date')"` (adjust path for submodule layout)
    - If `config.local.json` doesn't exist, `sync_config()` creates it as a copy of `config.json` (shared) and reports: "Created config.local.json from team defaults"
    - If `config.local.json` exists, walks `config.json` for missing keys, adds them with shared defaults
    - Display the sync result in the update summary
    - This step runs unconditionally after every successful update
 
-12. **Summary Report:**
+13. **Stale Artifact Cleanup:**
+   - After update, detect artifacts from previous Purlin versions that are no longer needed
+   - Compare files installed by the old version against what the new version expects; identify orphaned artifacts
+   - Known stale artifacts include:
+     - `tools/sync_upstream.sh` (replaced by `/pl-update-purlin`)
+     - Any launcher or shim scripts renamed or consolidated across versions
+   - Report format:
+     ```
+     Stale artifacts detected from previous Purlin version:
+       • tools/sync_upstream.sh (replaced by /pl-update-purlin)
+       • <other stale file> (<reason>)
+
+     Remove these files? (y/n)
+     ```
+   - Always prompt before deleting; if confirmed, remove and report each deletion
+   - If declined: "Stale files preserved — you can remove them manually later."
+   - In `--dry-run` mode: list stale artifacts but do not delete
+
+14. **Summary Report:**
    ```
    === Purlin Update Complete ===
 
    Updated: <old_sha> → <new_sha>
 
    Changes Applied:
+     ✓ Init refresh completed
      ✓ 3 command files updated
      ✓ 1 new command added
      ✓ run_builder.sh updated
@@ -137,7 +162,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
    ```
 
 **Options:**
-- `--dry-run`: Show what would change without modifying files
+- `--dry-run`: Show what would change without modifying files; list stale artifacts but do not delete
 - `--auto-approve`: Skip confirmation prompts for non-conflicting changes
 
 **Example usage:**
