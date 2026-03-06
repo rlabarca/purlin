@@ -2,7 +2,7 @@
 
 > Label: "/pl-update-purlin: Intelligent Purlin Update"
 > Category: "Agent Skills"
-> Prerequisite: features/submodule_bootstrap.md
+> Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
 
 ## 1. Overview
@@ -345,10 +345,28 @@ When `--dry-run` is specified:
 - Do NOT modify any files
 - Do NOT update `.purlin/.upstream_sha`
 
-### 2.12 Project Root Detection
+### 2.12 Stale Artifact Cleanup
 
-The skill uses the same project root detection as `sync_upstream.sh`:
-- Climb from script location through submodule directory to parent project
+After a successful update, the skill MUST detect and offer to remove stale artifacts from previous Purlin versions that are no longer needed:
+
+1. **Detection:** Compare the list of files that the old Purlin version installed (scripts, symlinks, command files) against what the new version expects. Identify orphaned artifacts — files that were installed by a previous version but are no longer part of the current version.
+2. **Known Stale Artifacts:** Maintain awareness of historically removed scripts. Examples:
+   - `tools/sync_upstream.sh` — removed when `/pl-update-purlin` replaced it
+   - Any launcher or shim scripts that were renamed or consolidated across versions
+3. **Report Format:**
+   ```
+   Stale artifacts detected from previous Purlin version:
+     • tools/sync_upstream.sh (replaced by /pl-update-purlin)
+     • <other stale file> (<reason>)
+
+   Remove these files? (y/n)
+   ```
+4. **User Confirmation:** Always prompt before deleting. If the user confirms, remove the files and report each deletion. If the user declines, print "Stale files preserved — you can remove them manually later."
+5. **Dry Run:** In `--dry-run` mode, list stale artifacts but do not delete.
+
+### 2.13 Project Root Detection
+
+The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with directory-climbing as fallback.
 
 ---
 
@@ -434,11 +452,22 @@ The skill uses the same project root detection as `sync_upstream.sh`:
     And command files, CDD symlinks, shim, and upstream SHA are refreshed
     And the summary report notes that init/refresh ran
 
+#### Scenario: Stale Artifacts Detected and Cleaned
+    Given the previous Purlin version installed tools/sync_upstream.sh
+    And the current Purlin version no longer includes that script
+    When /pl-update-purlin completes the update
+    Then the skill detects tools/sync_upstream.sh as a stale artifact
+    And prompts the user: "Stale artifacts detected. Remove these files?"
+    When the user confirms
+    Then the stale files are deleted
+    And each deletion is reported in the summary
+
 #### Scenario: Dry Run Shows Changes Without Applying
     Given multiple changes exist upstream
     When /pl-update-purlin --dry-run is invoked
     Then all changes are analyzed and displayed
     And a migration plan is shown
+    And stale artifacts are listed but not deleted
     But no files are modified
     And .purlin/.upstream_sha remains unchanged
 

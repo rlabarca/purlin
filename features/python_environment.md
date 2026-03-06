@@ -2,7 +2,7 @@
 
 > Label: "Tool: Python Environment"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/submodule_bootstrap.md
+> Prerequisite: features/project_init.md
 
 ## 1. Overview
 Standardizes how all shell scripts in the framework discover and invoke Python. Today, 1 of 6 scripts (`cdd/start.sh`) has ad-hoc venv detection while the other 5 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server script finds it. The Critic, CDD status, bootstrap, and lifecycle test scripts silently use system Python instead.
@@ -39,6 +39,7 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 | `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
 | `tools/cdd/stop.sh` | No Python invocation | No migration needed (does not invoke Python) |
 | `tools/bootstrap.sh` | `python3 -c "import json; ..."` | Source helper, replace `python3` with `$PYTHON_EXE` |
+| `tools/init.sh` | `python3 -c "import json; ..."` (JSON validation) | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
 
 **Source Path Convention:** Each script MUST compute the path to `resolve_python.sh` relative to its own location. For scripts in `tools/<subtool>/`, the path is `"$SCRIPT_DIR/../resolve_python.sh"`. For scripts directly in `tools/`, the path is `"$SCRIPT_DIR/resolve_python.sh"`.
@@ -61,8 +62,8 @@ Two dependency manifest files MUST be created at the framework/submodule root (a
     anthropic>=0.18.0  # LLM-based logic drift detection (Critic tool)
     ```
 
-### 2.4 Bootstrap Venv Suggestion
-After bootstrap completes (Section 8 of `submodule_bootstrap.md`), the summary output MUST include an optional venv setup suggestion if `.venv/` does not already exist at the project root. The suggestion MUST:
+### 2.4 Init Venv Suggestion
+After `tools/init.sh` full-init completes (Section 2.3 of `project_init.md`), the summary output MUST include an optional venv setup suggestion if `.venv/` does not already exist at the project root. The suggestion MUST:
 *   Be clearly marked as optional (not a required step).
 *   Include the correct submodule-relative path to `requirements-optional.txt`.
 *   Not cause bootstrap to fail if Python is unavailable or if the user skips venv creation.
@@ -144,6 +145,11 @@ Example output:
     When bootstrap.sh runs the JSON validation step
     Then it uses $PYTHON_EXE instead of bare python3
 
+#### Scenario: Init Uses Resolved Python for JSON Validation
+    Given tools/init.sh has been migrated
+    When init.sh runs the JSON validation step
+    Then it uses $PYTHON_EXE instead of bare python3
+
 #### Scenario: test_lifecycle.sh Uses Resolved Python
     Given test_lifecycle.sh has been migrated
     When the helper functions invoke Python
@@ -160,15 +166,15 @@ Example output:
     When requirements-optional.txt is read
     Then it contains "anthropic>=0.18.0"
 
-#### Scenario: Bootstrap Prints Venv Suggestion When No Venv Exists
+#### Scenario: Init Prints Venv Suggestion When No Venv Exists
     Given no .venv/ directory exists at the consumer project root
-    When bootstrap.sh completes successfully
+    When tools/init.sh completes full-init successfully
     Then the summary output includes a venv setup suggestion
     And the suggestion includes the path to requirements-optional.txt
 
-#### Scenario: Bootstrap Omits Venv Suggestion When Venv Exists
+#### Scenario: Init Omits Venv Suggestion When Venv Exists
     Given .venv/ already exists at the consumer project root
-    When bootstrap.sh completes successfully
+    When tools/init.sh completes full-init successfully
     Then the summary output does not include a venv setup suggestion
 
 ### Manual Scenarios (Human Verification Required)

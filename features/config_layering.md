@@ -2,7 +2,7 @@
 
 > Label: "Tool: Config Layering"
 > Category: "Install, Update & Scripts"
-> Prerequisite: features/submodule_bootstrap.md
+> Prerequisite: features/project_init.md
 > Prerequisite: features/policy_collaboration.md
 
 [TODO]
@@ -41,7 +41,7 @@ A shared Python utility at `tools/config/resolve_config.py` that centralizes all
   - `--dump`: Print the full resolved config as JSON to stdout.
   - `--key <name>`: Print the value of a single top-level key to stdout.
   - `<role>` (positional: `architect`, `builder`, `qa`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_STARTUP=`, `AGENT_RECOMMEND=`.
-- **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.11 of `submodule_bootstrap.md`).
+- **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.11 of `submodule_bootstrap.md` / Section 2.1 of `project_init.md`).
 
 ### 2.2 Reader Migration
 
@@ -70,7 +70,7 @@ All config writers MUST target `config.local.json`:
 - **`/pl-agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
 - **CDD Dashboard `POST /config/agents`:** Writes to `config.local.json`. Reads from `config.local.json` (via resolver). Worktree propagation targets `config.local.json` in each worktree.
 - **CDD Dashboard `GET /config.json`:** Serves the resolved config (local if present, shared fallback) via the resolver.
-- **`bootstrap.sh`:** Unchanged -- only creates `config.json` (shared template). Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
+- **`init.sh`:** Creates `config.json` (shared template) during full-init mode. Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
 
 ### 2.4 Worktree Propagation
 
@@ -91,7 +91,7 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 ### 2.6 Gitignore
 
 - `.purlin/config.local.json` MUST be in the project's `.gitignore`.
-- `bootstrap.sh` MUST add this entry to the consumer project's `.gitignore` during initialization.
+- `init.sh` MUST add this entry to the consumer project's `.gitignore` during initialization.
 - The `purlin-config-sample/.gitignore` template (if it contains recommended ignores) MUST include this entry.
 
 ---
@@ -178,16 +178,16 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     When GET /config.json is requested
     Then the response contains cdd_port: 9999 from the local config
 
-#### Scenario: Bootstrap Adds Local Config to Gitignore
+#### Scenario: Init Adds Local Config to Gitignore
 
-    Given a consumer project runs bootstrap.sh
-    When bootstrap completes
+    Given a consumer project runs tools/init.sh (full-init mode)
+    When init completes
     Then .gitignore contains .purlin/config.local.json
 
-#### Scenario: Bootstrap Does Not Create Local Config
+#### Scenario: Init Does Not Create Local Config
 
-    Given a consumer project runs bootstrap.sh
-    When bootstrap completes
+    Given a consumer project runs tools/init.sh (full-init mode)
+    When init completes
     Then .purlin/config.json exists as the shared template
     And .purlin/config.local.json does NOT exist
 

@@ -71,8 +71,8 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 
 ### 2.3 Bootstrap Generation
 
-*   **Updated Launchers:** `tools/bootstrap.sh` Section 5 (Launcher Script Generation) MUST generate launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) with config-reading, Claude dispatch, and role-specific tool restrictions as described in Section 2.2.
-*   **No `.claude/agents/` Generation:** Bootstrap MUST NOT generate Claude-specific agent configuration files. Agent configuration is in `config.json`.
+*   **Updated Launchers:** `tools/init.sh` (Section 2.3, step 5 of `project_init.md`) MUST generate launchers (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) with config-reading, Claude dispatch, and role-specific tool restrictions as described in Section 2.2.
+*   **No `.claude/agents/` Generation:** Init MUST NOT generate Claude-specific agent configuration files. Agent configuration is in `config.json`.
 
 
 ## 3. Scenarios
