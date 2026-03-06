@@ -52,12 +52,14 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 ### 2.4 Context Status Output
 
-- The hook outputs a JSON object to stdout on **every tool call** (not just when the threshold is exceeded). This provides continuous visibility into the remaining context budget.
+- The hook outputs a JSON object to stdout on **every tool call** (not just when the threshold is exceeded). This provides continuous visibility into the context budget usage.
 - Output uses the `hookSpecificOutput.additionalContext` field — the only format Claude Code surfaces to the agent in PostToolUse hooks. Plain `echo`/stdout text is visible in the user's terminal but NOT to the agent.
-- **Format (normal):** `CONTEXT GUARD: ${REMAINING}/${THRESHOLD}` where REMAINING = THRESHOLD - COUNT.
-    - Example at turn 22 of 37: `CONTEXT GUARD: 15/37`
-- **Format (exceeded):** When REMAINING <= 0, append evacuation instructions.
-    - Example at turn 40 of 37: `CONTEXT GUARD: -3/37 -- Run /pl-resume save, then /clear, then /pl-resume to continue.`
+- **Format (normal):** `CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used` where COUNT = turns consumed (incremented before output).
+    - Example at turn 5 of 45: `CONTEXT GUARD: 5 / 45 used`
+    - Interpretation: higher COUNT means closer to the limit.
+- **Format (exceeded):** When COUNT >= THRESHOLD, append evacuation instructions.
+    - Example at turn 48 of 45: `CONTEXT GUARD: 48 / 45 used -- Run /pl-resume save, then /clear, then /pl-resume to continue.`
+- **No silent exits:** The hook MUST produce output on every tool call when the guard is enabled. Early exits for subagent detection or other conditions MUST still output the context guard status. The only exception is when `context_guard` is explicitly set to `false` for the current agent.
 - **When guard is disabled** (`context_guard: false` for the current agent): No JSON output is produced. The counter still increments in the background so that re-enabling the guard mid-session shows an accurate count.
 - **Context cost:** ~8-12 tokens per message. At 45 turns = ~360-540 tokens (<0.3% of usable context).
 
@@ -87,14 +89,14 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     Given the context_guard_threshold is set to 10 in config.json
     And the turn count is currently 2
     When the context guard script runs
-    Then stdout contains JSON with additionalContext "CONTEXT GUARD: 7/10"
+    Then stdout contains JSON with additionalContext "CONTEXT GUARD: 3 / 10 used"
 
 #### Scenario: Exceeded threshold appends evacuation instructions
 
     Given the context_guard_threshold is set to 5 in config.json
     And the turn count is currently 5
     When the context guard script runs
-    Then stdout contains "CONTEXT GUARD: -1/5 -- Run /pl-resume save, then /clear, then /pl-resume to continue."
+    Then stdout contains "CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
 
 #### Scenario: Counter resets on new session
 
@@ -139,10 +141,93 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     Given the context_guard_threshold is set to 2
     And the turn count is currently 3
     When the context guard script runs
-    Then stdout contains "CONTEXT GUARD: -2/2 -- Run /pl-resume save, then /clear, then /pl-resume to continue."
+    Then stdout contains "CONTEXT GUARD: 4 / 2 used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
+
+#### Scenario: Per-agent threshold is used when AGENT_ROLE is set
+
+    Given config.json has context_guard_threshold set to 45
+    And agents.builder.context_guard_threshold is set to 60
+    And AGENT_ROLE is "builder"
+    And the turn count is currently 0
+    When the context guard script runs
+    Then stdout contains "CONTEXT GUARD: 1 / 60 used"
+
+#### Scenario: Subagent detection still outputs context guard status
+
+    Given the turn count file was modified within the last 120 seconds
+    And the session_id file contains a different session_id than the hook input
+    And the guard is enabled
+    When the context guard script runs
+    Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
+    And the turn count file is NOT incremented
+
+#### Scenario: Counter resets after session_id file deletion
+
+    Given the turn count file exists with value "42"
+    And the session_id file does not exist
+    When the context guard script runs
+    Then the turn count file contains "1"
+    And stdout contains "CONTEXT GUARD: 1 /"
+
+#### Scenario: Guard output on every tool call with no silent exits
+
+    Given the guard is enabled for the current agent
+    When the context guard script runs under any condition (new session, existing session, subagent)
+    Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
 
 ### Manual Scenarios (Human Verification Required)
 
 None.
 
 ## User Testing Discoveries
+
+### [BUG] Threshold shows 45 when per-agent config sets 60
+
+**Status:** OPEN
+**Date:** 2026-03-06
+**Discovered by:** User (Architect session)
+**Action Required:** Builder
+
+**Observed:** Hook output shows `CONTEXT GUARD: ... / 45` despite `config.local.json` having `context_guard_threshold: 60` in the agent's config block.
+
+**Expected:** Hook should show `... / 60` when the per-agent threshold is set to 60.
+
+**Root Cause (probable):** The `AGENT_ROLE` environment variable may not be set when the hook runs outside of a launcher script, causing fallback to the global threshold (45). Alternatively, `resolve_config.py --dump` may not merge `config.local.json` overrides, or the inline Python extraction has a bug in the per-agent path.
+
+**Scenario affected:** "Per-agent threshold overrides global"
+
+---
+
+### [BUG] Counter not resetting after /clear + /pl-resume
+
+**Status:** OPEN
+**Date:** 2026-03-06
+**Discovered by:** User (Builder session)
+**Action Required:** Builder
+
+**Observed:** After running `/clear` then `/pl-resume`, the hook immediately shows an exhausted count (e.g., `42/45`) instead of resetting to 1.
+
+**Expected:** After `/clear` + `/pl-resume`, the counter should show `1 / Y used` on the first tool call.
+
+**Root Cause:** `/clear` does not change Claude Code's `session_id`. The hook sees the same `session_id`, doesn't detect a new session, and keeps the old `turn_count`. The `/pl-resume` restore flow resets `turn_count` to 0, but the `session_id` file must also be deleted so the hook treats the next invocation as a genuinely new session.
+
+**Fix required:** `/pl-resume` Step 0 must delete `session_id` and all `session_id_*` files alongside resetting `turn_count`. (Spec updated in `pl_session_resume.md` Section 2.3.1.)
+
+**Scenario affected:** "Counter resets after session_id file deletion" (new)
+
+---
+
+### [BUG] Hook silently exits for subagents with no output
+
+**Status:** OPEN
+**Date:** 2026-03-06
+**Discovered by:** User (multiple sessions)
+**Action Required:** Builder
+
+**Observed:** Context guard message does not appear on every tool call. Some calls produce no output at all.
+
+**Expected:** Every tool call should show `CONTEXT GUARD: X / Y used` when the guard is enabled.
+
+**Root Cause:** Subagent detection (`IS_SUBAGENT=true`) causes `exit 0` with no JSON output. Other early-exit paths may also skip output silently.
+
+**Fix required:** When subagent is detected, the hook should still output the current context guard status (reading the existing turn_count without incrementing) rather than exiting silently. The spec Section 2.4 has been updated to require output on every tool call with no silent exits.

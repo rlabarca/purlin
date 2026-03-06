@@ -118,7 +118,16 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 
 ### 2.3 Restore Mode (`/pl-resume`)
 
-Restore mode follows a 7-step sequence. Each step is mandatory unless noted otherwise.
+Restore mode follows an 8-step sequence. Each step is mandatory unless noted otherwise.
+
+#### 2.3.0 Step 0 -- Reset Context Guard
+
+Before any other restore step, reset the context guard state so the hook detects a fresh session:
+
+1. Delete all `session_id` and `session_id_*` files in `.purlin/runtime/` (e.g., `session_id`, `session_id_builder`, `session_id_architect`, `session_id_qa`).
+2. Write `0` to all `turn_count` and `turn_count_*` files in `.purlin/runtime/`.
+
+**Rationale:** `/clear` does not change Claude Code's `session_id`. Without this reset, the hook sees the same session_id after `/clear` + `/pl-resume` and preserves the old exhausted turn count. Deleting the session_id files forces the hook to treat the next invocation as a genuinely new session.
 
 #### 2.3.1 Step 1 -- Role Detection (3-Tier Fallback)
 
