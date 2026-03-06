@@ -1,6 +1,6 @@
 # Feature: Remote Push
 
-> Label: "/pl-remote-push: Remote Push"
+> Label: "/pl-remote-push Remote Push"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_branch_collab.md
 

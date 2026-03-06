@@ -1,6 +1,6 @@
 # Feature: /pl-resume Session Checkpoint and Recovery Skill
 
-> Label: "Agent Skills: /pl-resume"
+> Label: "/pl-resume Session Resume"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 

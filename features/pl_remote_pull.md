@@ -1,6 +1,6 @@
 # Feature: Remote Pull
 
-> Label: "/pl-remote-pull: Remote Pull"
+> Label: "/pl-remote-pull Remote Pull"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_branch_collab.md
 

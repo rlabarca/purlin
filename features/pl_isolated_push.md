@@ -1,6 +1,6 @@
 # Feature: Isolated Push
 
-> Label: "/pl-isolated-push: Isolated Push"
+> Label: "/pl-isolated-push Isolated Push"
 > Category: "Agent Skills"
 > Prerequisite: features/workflow_checklist_system.md
 > Prerequisite: features/policy_collaboration.md

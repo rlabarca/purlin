@@ -1,6 +1,6 @@
 # Feature: /pl-whats-different Command
 
-> Label: "Agent Skills: /pl-whats-different"
+> Label: "/pl-whats-different What's Different"
 > Category: "Agent Skills"
 > Prerequisite: features/collab_whats_different.md
 

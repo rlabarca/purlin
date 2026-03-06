@@ -1,6 +1,6 @@
 # Feature: Isolated Pull
 
-> Label: "/pl-isolated-pull: Isolated Pull"
+> Label: "/pl-isolated-pull Isolated Pull"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_collaboration.md
 

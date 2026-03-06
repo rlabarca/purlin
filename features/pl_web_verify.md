@@ -1,6 +1,6 @@
 # Feature: Web Verify Command
 
-> Label: "Agent Skills: /pl-web-verify"
+> Label: "/pl-web-verify Web Verify"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 

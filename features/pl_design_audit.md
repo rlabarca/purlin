@@ -1,6 +1,6 @@
 # Feature: Design Audit Command
 
-> Label: "Agent Skills: /pl-design-audit"
+> Label: "/pl-design-audit Design Audit"
 > Category: "Agent Skills"
 > Prerequisite: features/design_artifact_pipeline.md
 > Prerequisite: features/policy_critic.md

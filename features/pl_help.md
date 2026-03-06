@@ -1,6 +1,6 @@
 # Feature: Help Command
 
-> Label: "Commands: Help"
+> Label: "/pl-help Purlin Help"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
