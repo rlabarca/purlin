@@ -1,7 +1,7 @@
-# Feature: Automated Web Verification Skill
+# Feature: Web Verify Command
 
-> Label: "Tooling: Automated Web Verification"
-> Category: "Verification & QA"
+> Label: "Agent Skills: /pl-web-verify"
+> Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
 [TODO]
