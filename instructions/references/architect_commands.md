@@ -10,26 +10,44 @@ Print this variant when the branch is `main` (no active collaboration branch).
 ```
 Purlin Architect — Ready
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the Architect — it designs feature specs, sets
+architectural rules, and owns the release process. It doesn't
+write code; everything gets handed off to the Builder through
+specs.
+
+  Global
+  ──────
   /pl-status                 Check CDD status and action items
-  /pl-resume [save|role]     Save or restore session state across context clears
-  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-resume [save|role]     Save or restore session state
+  /pl-find <topic>           Discover where a topic lives in specs
+  /pl-agent-config           Modify agent config
+  /pl-context-guard          View or modify context guard settings
+  /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
+  /pl-update-purlin          Intelligent submodule update
+
+  Specification & Design
+  ──────
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
-  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
-  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
-  /pl-design-audit           Audit design artifact integrity and staleness
-  /pl-release-check          Execute the CDD release checklist step by step
-  /pl-release-run            Run a single release step by name
-  /pl-release-step           Create, modify, or delete a local release step
-  /pl-override-edit          Safely edit an override file
-  /pl-override-conflicts     Check override for conflicts with base
+  /pl-tombstone <name>       Retire a feature (tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into visual spec
+  /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
-  /pl-spec-from-code         Reverse-engineer feature specs from existing code
-  /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-agent-config           Modify agent config in .purlin/config.json
+  /pl-spec-from-code         Reverse-engineer specs from existing code
+
+  Release
+  ──────
+  /pl-release-check          Execute the release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a release step
+
+  Collaboration & Git
+  ──────
   /pl-whats-different        Compare branches (main checkout only)
   /pl-remote-push            Push active branch to remote
   /pl-remote-pull            Pull remote into active branch
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -40,25 +58,43 @@ Print this variant when `.purlin/runtime/active_branch` exists and is non-empty.
 ```
 Purlin Architect — Ready  [Branch: <branch>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the Architect — it designs feature specs, sets
+architectural rules, and owns the release process. It doesn't
+write code; everything gets handed off to the Builder through
+specs.
+
+  Global
+  ──────
   /pl-status                 Check CDD status and action items
-  /pl-resume [save|role]     Save or restore session state across context clears
-  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-resume [save|role]     Save or restore session state
+  /pl-find <topic>           Discover where a topic lives in specs
+  /pl-agent-config           Modify agent config
+  /pl-context-guard          View or modify context guard settings
+  /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
+  /pl-update-purlin          Intelligent submodule update
+
+  Specification & Design
+  ──────
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
-  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
-  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
-  /pl-design-audit           Audit design artifact integrity and staleness
-  /pl-release-check          Execute the CDD release checklist step by step
-  /pl-release-run            Run a single release step by name
-  /pl-release-step           Create, modify, or delete a local release step
-  /pl-override-edit          Safely edit an override file
-  /pl-override-conflicts     Check override for conflicts with base
+  /pl-tombstone <name>       Retire a feature (tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into visual spec
+  /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
-  /pl-spec-from-code         Reverse-engineer feature specs from existing code
-  /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-agent-config           Modify agent config in .purlin/config.json
+  /pl-spec-from-code         Reverse-engineer specs from existing code
+
+  Release
+  ──────
+  /pl-release-check          Execute the release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a release step
+
+  Collaboration & Git
+  ──────
   /pl-remote-push            Push active branch to remote
   /pl-remote-pull            Pull remote into active branch
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -69,24 +105,42 @@ Print this variant when the branch starts with `isolated/`. Substitute the actua
 ```
 Purlin Architect — Ready  [Isolated: <name>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is the Architect — it designs feature specs, sets
+architectural rules, and owns the release process. It doesn't
+write code; everything gets handed off to the Builder through
+specs.
+
+  Global
+  ──────
   /pl-status                 Check CDD status and action items
-  /pl-resume [save|role]     Save or restore session state across context clears
-  /pl-find <topic>           Discover where a topic belongs in the spec system
+  /pl-resume [save|role]     Save or restore session state
+  /pl-find <topic>           Discover where a topic lives in specs
+  /pl-agent-config           Modify agent config
+  /pl-context-guard          View or modify context guard settings
+  /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
+  /pl-update-purlin          Intelligent submodule update
+
+  Specification & Design
+  ──────
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
-  /pl-tombstone <name>       Retire a feature (generates tombstone for Builder)
-  /pl-design-ingest          Ingest a design artifact into a feature's visual spec
-  /pl-design-audit           Audit design artifact integrity and staleness
-  /pl-release-check          Execute the CDD release checklist step by step
-  /pl-release-run            Run a single release step by name
-  /pl-release-step           Create, modify, or delete a local release step
-  /pl-override-edit          Safely edit an override file
-  /pl-override-conflicts     Check override for conflicts with base
+  /pl-tombstone <name>       Retire a feature (tombstone for Builder)
+  /pl-design-ingest          Ingest a design artifact into visual spec
+  /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
-  /pl-spec-from-code         Reverse-engineer feature specs from existing code
-  /pl-update-purlin          Intelligent submodule update with conflict resolution
-  /pl-agent-config           Modify agent config in .purlin/config.json
+  /pl-spec-from-code         Reverse-engineer specs from existing code
+
+  Release
+  ──────
+  /pl-release-check          Execute the release checklist step by step
+  /pl-release-run            Run a single release step by name
+  /pl-release-step           Create, modify, or delete a release step
+
+  Collaboration & Git
+  ──────
   /pl-isolated-push          Merge isolation branch to active branch
   /pl-isolated-pull          Pull active branch into isolation branch
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
