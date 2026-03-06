@@ -624,6 +624,52 @@ cleanup_sandbox
 
 ###############################################################################
 echo ""
+echo "=== Standalone Guard Tests ==="
+###############################################################################
+
+# --- Scenario: Standalone Mode Guard Prevents Init in Purlin Repo ---
+echo ""
+echo "[Scenario] Standalone Mode Guard Prevents Init in Purlin Repo"
+
+# Create a controlled standalone environment: parent dir is NOT a git repo
+STANDALONE_DIR="$(mktemp -d)"
+mkdir -p "$STANDALONE_DIR/purlin/tools"
+mkdir -p "$STANDALONE_DIR/purlin/purlin-config-sample"
+cp "$SUBMODULE_SRC/tools/init.sh" "$STANDALONE_DIR/purlin/tools/init.sh"
+cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$STANDALONE_DIR/purlin/tools/resolve_python.sh"
+chmod +x "$STANDALONE_DIR/purlin/tools/init.sh" "$STANDALONE_DIR/purlin/tools/resolve_python.sh"
+
+# Initialize purlin/ as a git repo (so resolve_python can work)
+git -C "$STANDALONE_DIR/purlin" init -q 2>/dev/null
+git -C "$STANDALONE_DIR/purlin" commit --allow-empty -q -m "init" 2>/dev/null
+
+# $STANDALONE_DIR is NOT a git repo -> guard should fire
+GUARD_OUTPUT=$("$STANDALONE_DIR/purlin/tools/init.sh" 2>&1)
+GUARD_EXIT=$?
+
+if [ $GUARD_EXIT -ne 0 ]; then
+    log_pass "Standalone guard exits with non-zero status ($GUARD_EXIT)"
+else
+    log_fail "Standalone guard did NOT exit with non-zero status"
+fi
+
+if echo "$GUARD_OUTPUT" | grep -qi "consumer project"; then
+    log_pass "Standalone guard error mentions consumer projects"
+else
+    log_fail "Standalone guard error missing consumer project explanation: $GUARD_OUTPUT"
+fi
+
+# Verify no files were created in the parent (no side effects)
+if [ ! -d "$STANDALONE_DIR/.purlin" ]; then
+    log_pass "No files created outside the Purlin repo"
+else
+    log_fail "Files created in parent directory (side effects)"
+fi
+
+rm -rf "$STANDALONE_DIR"
+
+###############################################################################
+echo ""
 echo "=== Ergonomic Symlink Tests ==="
 ###############################################################################
 

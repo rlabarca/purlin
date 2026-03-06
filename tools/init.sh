@@ -53,6 +53,21 @@ export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
 source "$SCRIPT_DIR/resolve_python.sh"
 
 ###############################################################################
+# 1b. Standalone Mode Guard (project_init.md §2.13)
+###############################################################################
+# In a consumer project, $PROJECT_ROOT is the consumer's git repo root.
+# In standalone mode (Purlin IS the project), $PROJECT_ROOT is the parent
+# directory of the Purlin repo, which is NOT a git repository.
+# Note: We cannot check for .purlin/ in $SUBMODULE_DIR because .purlin/ is
+# tracked in the Purlin repo and will exist in any submodule clone too.
+if ! git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "ERROR: init.sh is for consumer projects that use Purlin as a submodule." >&2
+    echo "  It cannot be run inside the Purlin repository itself." >&2
+    echo "  ($PROJECT_ROOT is not a git repository.)" >&2
+    exit 1
+fi
+
+###############################################################################
 # 2. Mode Detection
 ###############################################################################
 if [ -d "$PROJECT_ROOT/.purlin" ]; then
