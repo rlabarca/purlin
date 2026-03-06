@@ -42,12 +42,15 @@
 ---
 
 ## Phase 4 — Release Tools
-**Status:** PENDING
+**Status:** COMPLETE
+**Completion Commit:** 701274b
 **Features:**
 1. `features/release_step_management.md` — MEDIUM (11 scenarios)
 2. `features/release_submodule_safety_audit.md` — LOW (5 manual scenarios)
 
 **Rationale:** Both depend on project_init. release_submodule_safety_audit depends on release_step_management. Natural grouping of release tooling.
+
+**Result:** Both features had cosmetic spec changes only (renamed submodule_bootstrap.md references to project_init.md). release_step_management: all 30 tests pass, re-tagged Complete. release_submodule_safety_audit: updated agent_instructions in local_steps.json to reference init.sh instead of bootstrap.sh, re-tagged Ready for Verification.
 
 ---
 
