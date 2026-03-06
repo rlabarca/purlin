@@ -284,7 +284,22 @@ All changes MUST be applied atomically:
 4. If any step fails, rollback to backup
 5. Update `.purlin/.upstream_sha` only after all changes succeed
 
-### 2.8 Config Sync After Update
+### 2.8 Post-Update Init Refresh
+
+After the atomic update is complete (Section 2.7) and before config sync, the skill MUST run `tools/init.sh --quiet` to refresh all project-root artifacts:
+
+*   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic).
+*   CDD convenience symlinks (repaired if missing).
+*   Project-root shim (`purlin_init.sh` updated with new SHA and version).
+*   `.purlin/.upstream_sha` (updated to current submodule HEAD).
+
+This delegates the mechanical copy/symlink/shim work to the canonical init script, replacing the skill's own post-update file-copy logic. The skill's step 7 (Section 2.4.3: command file changes with three-way diff) remains for conflict resolution on files that have both upstream and local modifications — init's timestamp-based skip preserves locally modified files but does not resolve content conflicts.
+
+The skill's summary report (Section 2.9) MUST note that init/refresh ran (e.g., "Init refresh completed").
+
+The command file (`.claude/commands/pl-update-purlin.md`) MUST include a step after atomic update: "Run `tools/init.sh --quiet` to refresh commands, symlinks, and project-root shim."
+
+### 2.9 Config Sync After Update
 
 After the submodule is updated and `.purlin/.upstream_sha` is written, the skill MUST run the config resolver's `sync_config()` function to ensure the user's local config picks up any new keys introduced by the updated Purlin version:
 
@@ -296,7 +311,7 @@ After the submodule is updated and `.purlin/.upstream_sha` is written, the skill
 
 This step runs unconditionally after every successful update. It ensures that new framework config options (added in Purlin updates) appear in the user's local config with sensible defaults without overwriting their existing preferences.
 
-### 2.9 Update Summary Report
+### 2.10 Update Summary Report
 
 After successful update, display:
 
@@ -321,7 +336,7 @@ Next Steps:
   3. Test changes with: /pl-verify
 ```
 
-### 2.10 Dry Run Mode
+### 2.11 Dry Run Mode
 
 When `--dry-run` is specified:
 - Perform all analysis
@@ -330,7 +345,7 @@ When `--dry-run` is specified:
 - Do NOT modify any files
 - Do NOT update `.purlin/.upstream_sha`
 
-### 2.11 Project Root Detection
+### 2.12 Project Root Detection
 
 The skill uses the same project root detection as `sync_upstream.sh`:
 - Climb from script location through submodule directory to parent project
@@ -410,6 +425,14 @@ The skill uses the same project root detection as `sync_upstream.sh`:
     Then the config sync step adds the new key to config.local.json with the shared default
     And the user is informed: "Added new config keys: agents.architect.review_mode"
     And existing local config values are preserved
+
+#### Scenario: Init Refresh Runs After Successful Update
+    Given the submodule has been advanced to a newer commit
+    And the atomic update (Section 2.7) completed successfully
+    When /pl-update-purlin completes the update
+    Then tools/init.sh --quiet is executed
+    And command files, CDD symlinks, shim, and upstream SHA are refreshed
+    And the summary report notes that init/refresh ran
 
 #### Scenario: Dry Run Shows Changes Without Applying
     Given multiple changes exist upstream

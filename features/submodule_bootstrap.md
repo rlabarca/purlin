@@ -4,6 +4,10 @@
 > Category: "Install, Update & Scripts"
 > Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 6: Layered Instruction Architecture)
 
+## Deprecation Notice
+
+> **Deprecated:** This feature is superseded by `features/project_init.md` (Unified Project Init). The `bootstrap.sh` script now acts as a thin shim that prints a deprecation notice to stderr and delegates to `tools/init.sh`. All new development targets `project_init.md`. This spec is retained as a reference for the requirements that `project_init.md` inherits and extends.
+
 ## 1. Overview
 Initializes a consumer project that has added Purlin as a git submodule. Creates the `.purlin/` override directory, generates launcher scripts, and configures the project for the layered instruction architecture.
 
