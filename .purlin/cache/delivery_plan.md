@@ -55,11 +55,14 @@
 ---
 
 ## Phase 5 — CDD Status Monitor
-**Status:** PENDING
+**Status:** COMPLETE
+**Completion Commit:** 35a273c
 **Features:**
 1. `features/cdd_status_monitor.md` — HIGH (41 scenarios)
 
 **Rationale:** Standalone feature (no dependency on other TODO features). Dedicated phase due to HIGH complexity with 41 scenarios. Likely a revision with substantial existing implementation.
+
+**Result:** Cosmetic spec change only — documentation reference renamed from `submodule_bootstrap Section 2.11` to `project_init.md Section 2.1`. No code changes required. All 73 automated tests pass.
 
 ---
 

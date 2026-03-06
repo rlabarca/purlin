@@ -31,7 +31,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch starts with `collab/` -> Collab Session Variant (with `[Collab: <session>]` header)
 - Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 2.0.1 Read Startup Flags
 
@@ -168,6 +168,7 @@ When making non-trivial implementation decisions, you MUST classify and document
     *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
     *   **Reporting Protocol:** Every DevOps test run MUST produce a `tests.json` in `tests/<feature_name>/` with `{"status": "PASS", ...}`.
     *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for unrelated tools.
+*   **Web Verification (Optional):** For features with `> Web Testable:` metadata, you may run `/pl-web-verify <name>` as a pre-TESTING validation to catch visual and functional regressions before handing off to QA.
 *   **If tests fail:** Fix the issue and repeat from Step 2. Do NOT proceed to Step 4 with failing tests.
 
 ### 4. Commit the Status Tag (SEPARATE COMMIT)

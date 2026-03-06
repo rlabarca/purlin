@@ -1,7 +1,7 @@
 # Visual Specification Convention
 
 > This file is loaded on-demand by `/pl-spec`, `/pl-design-ingest`, `/pl-design-audit`,
-> and `/pl-verify` commands when working with features that have visual specifications.
+> `/pl-verify`, and `/pl-web-verify` commands when working with features that have visual specifications.
 
 ## 9.1 Purpose
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
@@ -47,6 +47,8 @@ The section is placed before `## User Testing Discoveries` (or at the end of the
 
 ## 9.5 Verification Methods
 Visual checklist items are verified by the QA Agent during the visual verification pass (QA_BASE Section 5.4). The QA Agent MAY use screenshot-assisted verification: the user provides screenshots and the agent auto-checks items verifiable from a static image (layout, positioning, typography, color). Items requiring interaction, temporal observation, or implementation inspection are confirmed manually by the human tester.
+
+For features with `> Web Testable: <url>` metadata, `/pl-web-verify` provides fully automated visual verification using Playwright MCP browser control. The agent navigates to the page, takes screenshots, executes interactions, and judges each checklist item via vision analysis -- no manual screenshot provision required.
 
 ## 9.6 Visual vs Functional Classification
 When a feature has UI components, the Architect MUST classify each acceptance criterion:

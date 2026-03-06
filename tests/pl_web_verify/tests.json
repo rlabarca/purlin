@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "test_files": [
+    "tests/pl_web_verify/test_command.py"
+  ],
+  "results": {
+    "test_command": {
+      "passed": 65,
+      "failed": 0,
+      "scenarios_covered": [
+        "Auto-discover web-testable features",
+        "URL override from argument",
+        "Playwright MCP not available triggers auto-setup",
+        "Manual scenario PASS recorded correctly",
+        "Manual scenario FAIL creates BUG discovery",
+        "Inconclusive step handled gracefully",
+        "Visual spec items verified via screenshot analysis",
+        "Regression scope respected",
+        "Cosmetic scope skips feature",
+        "QA completion gate prompts for completion",
+        "Builder completion gate is summary only",
+        "Instruction files updated with web-verify references"
+      ]
+    }
+  },
+  "total_passed": 65,
+  "total_failed": 0,
+  "timestamp": "2026-03-06T13:25:00Z"
+}

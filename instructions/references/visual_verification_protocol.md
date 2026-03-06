@@ -1,6 +1,6 @@
 # Visual Verification Protocol
 
-> This file is loaded on-demand by `/pl-verify` when a feature has a `## Visual Specification` section.
+> This file is loaded on-demand by `/pl-verify` and `/pl-web-verify` when a feature has a `## Visual Specification` section.
 
 ## 5.4.1 Present Checklist and Offer Screenshot Input
 1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references. For each screen, also present the `- **Processed:**` date. If the processed date is older than the artifact's modification time (or the Critic has flagged it as STALE), note the staleness to the user: "Warning: design artifact for Screen X was updated after the description was last processed. The description may not reflect the latest design."
@@ -42,3 +42,6 @@ When multiple features have visual specs in the same session, you MAY offer to b
 *   Present auto-verified results grouped by feature.
 *   Present the consolidated manual confirmation list across all features.
 *   Example prompt: "3 functional scenarios across 2 features completed. Ready for visual verification: 12 checklist items across 3 screens. Would you like to provide screenshots for batch analysis, or verify feature-by-feature?"
+
+## 5.4.7 Playwright MCP Automated Alternative
+For features with `> Web Testable: <url>` metadata, `/pl-web-verify` provides fully automated visual verification using Playwright MCP browser control tools. The agent navigates to each screen, takes screenshots, executes interactions (hover, click, theme switch), and judges each checklist item via vision analysis -- no manual screenshot provision or human confirmation required. Results are recorded as PASS/FAIL per checklist item with observation notes. Failures are recorded as `[BUG]` discoveries in the standard format.

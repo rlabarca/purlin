@@ -55,7 +55,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-override-conflicts, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
 
 ### 3.0.1 Read Startup Flags
 
@@ -182,6 +182,8 @@ visual verification, execute the visual verification pass after functional scena
 `instructions/references/visual_verification_protocol.md` for the full screenshot-assisted
 verification protocol (checklist presentation, screenshot analysis, consolidated results,
 manual fallback, batching).
+
+For features with `> Web Testable:` metadata, `/pl-web-verify` provides an automated alternative using Playwright MCP browser control. See Section 5.4.7 in the visual verification protocol.
 
 ### 5.5 Feature Summary
 After all scenarios (functional and visual) for a feature are verified:

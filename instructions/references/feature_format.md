@@ -16,6 +16,15 @@ Copy from `{tools_root}/feature_templates/`:
 
 **No Implementation Notes section:** Feature files do NOT contain an `## Implementation Notes` section. All implementation knowledge belongs in companion files (`features/<name>.impl.md`). See HOW_WE_WORK_BASE Section 4.3 and BUILDER_BASE Section 5.2 for the companion file convention.
 
+## Blockquote Metadata
+
+Feature files use `>` blockquote lines at the top for metadata. Supported metadata fields:
+
+- `> Label: "Human-Readable Name"` -- display name for CDD dashboard.
+- `> Category: "Category Name"` -- grouping for CDD dashboard.
+- `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
+- `> Web Testable: <url>` -- declares the feature's web UI is accessible at `<url>` for automated verification via `/pl-web-verify`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Testable: http://localhost:9086`.
+
 ## Regular Feature Files
 
 **Required section headings** (Critic checks for these words, case-insensitive, substring match):

@@ -16,6 +16,7 @@ Purlin QA — Ready
   /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-verify <name>          Run interactive verification for a feature
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-discovery <name>       Record a structured discovery
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and TESTING features
@@ -40,6 +41,7 @@ Purlin QA — Ready  [Collab: <session>]
   /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-verify <name>          Run interactive verification for a feature
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-discovery <name>       Record a structured discovery
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and TESTING features
@@ -63,6 +65,7 @@ Purlin QA — Ready  [Isolated: <name>]
   /pl-resume [save|role]     Save or restore session state across context clears
   /pl-find <topic>           Discover where a topic belongs in the spec system
   /pl-verify <name>          Run interactive verification for a feature
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-discovery <name>       Record a structured discovery
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and TESTING features

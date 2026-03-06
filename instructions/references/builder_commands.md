@@ -17,6 +17,7 @@ Purlin Builder — Ready
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-infeasible <name>      Escalate a feature as unimplementable
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
@@ -42,6 +43,7 @@ Purlin Builder — Ready  [Collab: <session>]
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-infeasible <name>      Escalate a feature as unimplementable
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
@@ -66,6 +68,7 @@ Purlin Builder — Ready  [Isolated: <name>]
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-infeasible <name>      Escalate a feature as unimplementable
   /pl-propose <topic>        Surface a spec change suggestion to the Architect
+  /pl-web-verify [name]      Automated web verification via Playwright MCP
   /pl-override-edit          Safely edit BUILDER_OVERRIDES.md
   /pl-override-conflicts     Check override for conflicts with base
   /pl-spec-code-audit        Full spec-code audit (plan mode)
