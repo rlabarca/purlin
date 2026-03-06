@@ -6,9 +6,9 @@
 ## Summary
 16 TODO features (1 blocked on Architect). Most are cosmetic spec resets on instruction-driven skills. Consolidated into 4 phases by grouping LOW-complexity pairs aggressively. cdd_agent_configuration excluded (blocked).
 
-## Phase 1 -- Fix + Core Skills [IN_PROGRESS]
+## Phase 1 -- Fix + Core Skills [COMPLETE]
 **Features:** pl_help.md, pl_session_resume.md, pl_remote_pull.md, pl_remote_push.md
-**Completion Commit:** --
+**Completion Commit:** 7f27bdb
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Isolation + Utility Skills [PENDING]
