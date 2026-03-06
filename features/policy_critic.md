@@ -131,9 +131,39 @@ The following keys in `.purlin/config.json` govern Critic behavior:
 | `critic_llm_enabled` | boolean | `false` | Whether the LLM-based logic drift engine is active. |
 | `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
 
+### 2.12 Verification Effort Classification
+The Critic MUST compute a `verification_effort` block for each feature, classifying pending QA work into auto-resolvable and human-required categories. This block is included in the per-feature `critic.json` output alongside `role_status`.
+
+**Taxonomy:**
+
+| Category | Key | Condition |
+|----------|-----|-----------|
+| Auto:Web | `auto_web` | Manual scenarios + visual items on `> Web Testable:` features |
+| Auto:TestOnly | `auto_test_only` | Feature has only automated scenarios, tests pass, no manual/visual items |
+| Auto:Skip | `auto_skip` | Regression scope is `cosmetic` (not escalated) |
+| Manual:Interactive | `manual_interactive` | Manual scenarios on non-web features |
+| Manual:Visual | `manual_visual` | Visual spec items on non-web features |
+| Manual:Hardware | `manual_hardware` | Scenarios with hardware/device keywords on non-web features |
+
+Derived fields: `total_auto`, `total_manual`, `summary` (human-readable string).
+
+The block is only meaningful for TESTING features (qa: TODO). Non-TESTING features report zeroed counts with `summary` of `"no QA items"` or `"awaiting builder"` as appropriate.
+
+See `features/qa_verification_effort.md` for the full classification rules, output schema, and scenarios.
+
+## 3. Configuration
+
+The following keys in `.purlin/config.json` govern Critic behavior:
+
+| Key | Type | Default | Meaning |
+|-----|------|---------|---------|
+| `critic_llm_model` | string | `claude-sonnet-4-20250514` | Model used for logic drift detection. |
+| `critic_llm_enabled` | boolean | `false` | Whether the LLM-based logic drift engine is active. |
+| `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
+
 ## 4. Output Contract
 The Critic tool MUST produce:
 
-*   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, and `role_status` sections.
+*   **Per-feature:** `tests/<feature_name>/critic.json` with `spec_gate`, `implementation_gate`, `user_testing`, `action_items`, `role_status`, and `verification_effort` sections.
 *   **Aggregate:** `CRITIC_REPORT.md` at the project root summarizing all features.
 

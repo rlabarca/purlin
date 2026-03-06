@@ -71,27 +71,15 @@ Run `tools/cdd/status.sh` to generate critic reports and get the current feature
 **Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, determine the collaboration branch (`collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`) and run `git merge <collaboration-branch>` to pull the merged implementation branch before starting verification. If the collaboration branch does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to the collaboration branch yet. Coordinate with the Builder before proceeding."
 
 ### 3.2 Identify Verification Targets
-Review QA action items in `CRITIC_REPORT.md` under the `### QA` subsection. For each TESTING feature, read the `regression_scope` block from the feature's `tests/<feature_name>/critic.json` to determine the scoped verification mode. Present the user with a summary:
-*   How many features are in TESTING state (from CDD status).
-*   **Per-feature scope summary:**
-    *   `full` -- "Feature X: N manual scenario(s), M visual checklist item(s) (full verification)"
-    *   `targeted:A,B` -- "Feature X: 2 targeted scenario(s) [Scenario A, Scenario B]"
-    *   `cosmetic` -- "Feature X: QA skip (cosmetic change) -- 0 scenarios queued"
-    *   `dependency-only` -- If `regression_scope.scenarios` is non-empty: "Feature X: N scenario(s) touching changed dependency surface". If empty: "Feature X: QA skip (dependency-only, no scenarios in scope)"
-*   QA action items from the Critic report: features to verify, scoped scenario counts, visual verification items, and SPEC_UPDATED discoveries to re-verify.
-*   Any existing OPEN discoveries that need re-verification.
-*   Count of features with `## Visual Specification` sections (shown separately from functional scenarios).
+Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
+*   How many features are in TESTING state.
+*   **Per-feature effort:** `"Feature X: Na auto-resolvable (web-verify, test-only, cosmetic-skip) | Mm human-required"` -- values from the `verification_effort` block. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
+*   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
+*   If a delivery plan exists at `.purlin/cache/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
 
-#### 3.2.1 Delivery Plan Context
-Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists:
-*   Read the plan and identify the current phase and total phases.
-*   For each TESTING feature, classify it as:
-    *   **Fully delivered** -- the feature appears only in COMPLETE phases (or does not appear in the plan at all). Eligible for `[Complete]` marking.
-    *   **More work coming** -- the feature appears in a PENDING phase. NOT eligible for `[Complete]` marking, even if all currently-delivered scenarios pass.
-*   Present the phase context to the user: "Delivery Plan active: Phase N of M. Features X, Y are fully delivered and eligible for completion. Features A, B have more work coming in Phase N+1 -- will not be marked complete this session."
-
-### 3.3 Begin Interactive Verification
-Start walking the user through the first TESTING feature using the appropriate verification mode (see Section 5).
+### 3.3 Execute Verification
+*   **3.3a Auto pass:** Execute all auto-resolvable items first. ACK test-only features (read `tests.json`), skip cosmetic features (log skip), run `/pl-web-verify` for web-testable features. When `recommend_next_actions` is `true`, execute these without asking. When `false`, present the list and wait for user confirmation before executing.
+*   **3.3b Interactive pass:** Proceed to human-required items using the appropriate verification mode (see Section 5). Walk the user through each remaining feature's manual scenarios and visual spec items.
 
 ## 4. Discovery Protocol
 
