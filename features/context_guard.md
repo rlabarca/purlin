@@ -17,7 +17,9 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 ### 2.1 Turn Counter
 
 - A shell script (`tools/hooks/context_guard.sh`) runs after every tool call via Claude Code's `PostToolUse` hook system.
-- The script increments an integer counter stored in `.purlin/runtime/turn_count`.
+- The script increments an integer counter stored in `.purlin/runtime/turn_count_<AGENT_ID>`, where `AGENT_ID` is the Claude Code process PID (`$PPID` from the hook script's perspective).
+- `AGENT_ID` may be overridden via the `CONTEXT_GUARD_AGENT_ID` environment variable (for testing).
+- Each Claude Code process gets its own counter file. No counter files are shared between processes.
 - The counter file contains only the integer count (no other data).
 
 ### 2.2 Threshold Configuration
@@ -32,10 +34,11 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 ### 2.2.1 Agent Role Detection
 
-- The hook reads the `AGENT_ROLE` environment variable to determine which agent's config to use.
-- `AGENT_ROLE` is set by the launcher scripts (see `agent_launchers_common.md` Section 2.1).
+- The hook determines the agent's role for threshold resolution using a two-tier approach:
+    1. **Session-local (primary):** Read role from `session_meta_<AGENT_ID>` (persisted on first invocation of each agent session). This eliminates races where concurrent agents of different roles overwrite a shared file.
+    2. **Initial source (bootstrap):** On first invocation (no `session_meta_<AGENT_ID>` exists), read `AGENT_ROLE` from the environment variable or `.purlin/runtime/agent_role` file (written by launcher scripts). Persist the resolved role into `session_meta_<AGENT_ID>` for subsequent invocations.
 - Valid values: `architect`, `builder`, `qa`.
-- When `AGENT_ROLE` is not set (e.g., direct `claude` invocation without a launcher): the hook falls back to global config behavior — global `context_guard_threshold` with the guard always enabled.
+- When neither `AGENT_ROLE` nor `.purlin/runtime/agent_role` provides a role: the hook falls back to global config behavior — global `context_guard_threshold` with the guard always enabled.
 
 ### 2.2.2 Config Reading via Resolver
 
@@ -46,9 +49,12 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 ### 2.3 Session Detection
 
-- A new session is detected when the turn count file's modification timestamp is older than the current shell session start time, OR when the file does not exist.
-- On new session detection, the counter resets to 0 before incrementing.
-- Session start time is determined by checking the process start time of the parent Claude Code process, or by using a session marker file (`.purlin/runtime/session_id`) that the hook creates on first invocation.
+- Each Claude Code process is identified by its OS PID (`$PPID` from the hook script's perspective), referred to as `AGENT_ID`.
+- **New process** = new PPID = no existing `turn_count_<AGENT_ID>` or `session_meta_<AGENT_ID>` files → create fresh files, start counter at 1.
+- **Same process** = same PPID = existing files → read `session_id` from `session_meta_<AGENT_ID>` and compare with the `session_id` in the hook's stdin input:
+    - **Match:** This is the parent Claude Code process → increment counter.
+    - **Mismatch:** This is a subagent (Task tool) running under the same Claude Code process → read counter without incrementing.
+- No file-age heuristics or timestamp-based detection is used.
 
 ### 2.4 Context Status Output
 
@@ -72,6 +78,34 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 - The hook MUST NOT attempt to count tokens or query context window usage. Claude Code hooks do not expose token counters. Turn count is the proxy metric.
 
+### 2.7 Multi-Instance Isolation
+
+- Each Claude Code process is identified by its OS PID (`$PPID` from the hook script's perspective), overridable via `CONTEXT_GUARD_AGENT_ID` for testing.
+- File naming: `turn_count_<PID>`, `session_meta_<PID>`.
+- Multiple agents of the same role running concurrently in different terminals get different PIDs and track independently.
+- No agent can read, write, or reset another agent's counter files (except during cleanup of dead processes per Section 2.8).
+
+### 2.8 Stale File Cleanup
+
+- On every hook invocation (within the lock), scan `turn_count_*` and `session_meta_*` files in `.purlin/runtime/`.
+- For each file with a numeric PID suffix that is NOT the current `AGENT_ID`:
+    - Check process liveness via `kill -0 $PID`.
+    - If the process is dead → delete the file.
+    - If the process is alive → verify process identity by comparing the stored process start time (third line of `session_meta_<PID>`) with the actual process start time (`ps -p $PID -o lstart=`). If they differ → PID was recycled → delete the file.
+- `session_meta` format (three lines):
+    ```
+    <session_id>
+    <role>
+    <process_start_time>
+    ```
+
+### 2.9 Counter Reset Protocol
+
+- Counter reset is **PPID-scoped**: only the current Claude Code process's files are affected.
+- The `/pl-resume` protocol resets the counter by writing `0` to `turn_count_$PPID` (where `$PPID` is available in bash commands run by the same Claude Code process).
+- No wildcard resets. No other agent's files are touched.
+- After reset, the next hook invocation for this session reads 0 and increments to 1.
+
 ---
 
 ## 3. Scenarios
@@ -80,29 +114,30 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
 #### Scenario: Counter increments on each invocation
 
-    Given the turn count file does not exist
-    When the context guard script runs 3 times
-    Then the turn count file contains "3"
+    Given no turn_count file exists for the current AGENT_ID
+    When the context guard script runs 3 times with the same PPID
+    Then the turn count file turn_count_<AGENT_ID> contains "3"
 
 #### Scenario: Status output on every turn when guard enabled
 
     Given the context_guard_threshold is set to 10 in config.json
-    And the turn count is currently 2
+    And the turn count for the current AGENT_ID is currently 2
     When the context guard script runs
     Then stdout contains JSON with additionalContext "CONTEXT GUARD: 3 / 10 used"
 
 #### Scenario: Exceeded threshold appends evacuation instructions
 
     Given the context_guard_threshold is set to 5 in config.json
-    And the turn count is currently 5
+    And the turn count for the current AGENT_ID is currently 5
     When the context guard script runs
     Then stdout contains "CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
 
-#### Scenario: Counter resets on new session
+#### Scenario: New process starts fresh counter
 
-    Given the turn count file exists with value "25" and a stale timestamp
-    When the context guard script runs in a new session
-    Then the turn count file contains "1"
+    Given a previous agent session created turn_count_<OLD_PID> with value "25"
+    When the context guard script runs with a different PPID
+    Then a new turn_count_<NEW_PID> file is created with value "1"
+    And the old turn_count_<OLD_PID> file is unaffected
 
 #### Scenario: Default threshold when config key absent
 
@@ -123,7 +158,7 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 
     Given agents.architect.context_guard is false in config.json
     And AGENT_ROLE is "architect"
-    And the turn count is currently 10
+    And the turn count for the current AGENT_ID is currently 10
     When the context guard script runs
     Then no JSON output is produced on stdout
     And the turn count file contains "11"
@@ -139,7 +174,7 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 #### Scenario: Exceeded output repeats on subsequent turns
 
     Given the context_guard_threshold is set to 2
-    And the turn count is currently 3
+    And the turn count for the current AGENT_ID is currently 3
     When the context guard script runs
     Then stdout contains "CONTEXT GUARD: 4 / 2 used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
 
@@ -148,24 +183,24 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     Given config.json has context_guard_threshold set to 45
     And agents.builder.context_guard_threshold is set to 60
     And AGENT_ROLE is "builder"
-    And the turn count is currently 0
+    And the turn count for the current AGENT_ID is currently 0
     When the context guard script runs
     Then stdout contains "CONTEXT GUARD: 1 / 60 used"
 
-#### Scenario: Subagent detection still outputs context guard status
+#### Scenario: Subagent detection via session_meta mismatch
 
-    Given the turn count file was modified within the last 120 seconds
-    And the session_id file contains a different session_id than the hook input
+    Given session_meta_<AGENT_ID> exists with a stored session_id
+    And the hook receives a different session_id in its stdin input
     And the guard is enabled
     When the context guard script runs
     Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
     And the turn count file is NOT incremented
 
-#### Scenario: Counter resets after session_id file deletion
+#### Scenario: Counter resets via PPID-scoped reset command
 
-    Given the turn count file exists with value "42"
-    And the session_id file does not exist
-    When the context guard script runs
+    Given turn_count_<AGENT_ID> exists with value "42"
+    When "0" is written to turn_count_<AGENT_ID>
+    And the context guard script runs
     Then the turn count file contains "1"
     And stdout contains "CONTEXT GUARD: 1 /"
 
@@ -174,6 +209,38 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     Given the guard is enabled for the current agent
     When the context guard script runs under any condition (new session, existing session, subagent)
     Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
+
+#### Scenario: Multiple agents of same role track independently
+
+    Given two Claude Code processes with different PPIDs both have AGENT_ROLE set to "builder"
+    When each process runs the context guard script 5 times
+    Then turn_count_<PID_A> contains "5"
+    And turn_count_<PID_B> contains "5"
+    And neither counter affected the other
+
+#### Scenario: Reset only affects current session
+
+    Given turn_count_<PID_A> exists with value "30"
+    And turn_count_<PID_B> exists with value "20"
+    When "0" is written to turn_count_<PID_A>
+    Then turn_count_<PID_A> contains "0"
+    And turn_count_<PID_B> still contains "20"
+
+#### Scenario: Stale file cleanup removes dead process files
+
+    Given turn_count_<DEAD_PID> and session_meta_<DEAD_PID> exist
+    And the process with DEAD_PID is no longer running
+    When the context guard script runs for a different AGENT_ID
+    Then turn_count_<DEAD_PID> is deleted
+    And session_meta_<DEAD_PID> is deleted
+
+#### Scenario: PID recycling does not prevent cleanup
+
+    Given session_meta_<PID> exists with a stored process start time
+    And a different process now occupies that PID (different start time)
+    When the context guard script runs stale file cleanup
+    Then session_meta_<PID> is deleted
+    And turn_count_<PID> is deleted
 
 ### Manual Scenarios (Human Verification Required)
 

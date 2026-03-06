@@ -122,12 +122,11 @@ Restore mode follows an 8-step sequence. Each step is mandatory unless noted oth
 
 #### 2.3.0 Step 0 -- Reset Context Guard
 
-Before any other restore step, reset the context guard state so the hook detects a fresh session:
+Before any other restore step, reset the current session's context guard counter:
 
-1. Delete all `session_id` and `session_id_*` files in `.purlin/runtime/` (e.g., `session_id`, `session_id_builder`, `session_id_architect`, `session_id_qa`).
-2. Write `0` to all `turn_count` and `turn_count_*` files in `.purlin/runtime/`.
+1. Write `0` to `.purlin/runtime/turn_count_$PPID`.
 
-**Rationale:** `/clear` does not change Claude Code's `session_id`. Without this reset, the hook sees the same session_id after `/clear` + `/pl-resume` and preserves the old exhausted turn count. Deleting the session_id files forces the hook to treat the next invocation as a genuinely new session.
+**Rationale:** `$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. This targets only the current session's counter. Other concurrent agents' counters are unaffected. No wildcard resets or `session_id` file deletions are needed — the PPID-based design makes each agent's files inherently isolated.
 
 #### 2.3.1 Step 1 -- Role Detection (3-Tier Fallback)
 
@@ -206,6 +205,7 @@ Uncommitted:    [none | summary]
 
 #### 2.3.7 Step 7 -- Cleanup and Confirm
 
+- Reset the current session's context guard counter: write `0` to `.purlin/runtime/turn_count_$PPID`. This zeroes only the current session's counter. Other concurrent agents are unaffected.
 - If a checkpoint file was read in Step 2, delete it (it has been consumed).
 - Ask: "Ready to continue from here, or would you like to adjust?"
 - If the user says "go" (or equivalent), begin executing the work plan starting with the first item.
