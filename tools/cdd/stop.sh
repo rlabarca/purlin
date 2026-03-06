@@ -1,8 +1,8 @@
 #!/bin/bash
-# stop.sh
+# stop.sh — Stateless CDD Dashboard stop (cdd_lifecycle)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-# Project root discovery (must match start.sh for PID path consistency)
+# Project root discovery (must match start.sh)
 if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
     PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
 else
@@ -14,13 +14,29 @@ else
 fi
 
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
-PID_FILE="$RUNTIME_DIR/cdd.pid"
+PORT_FILE="$RUNTIME_DIR/cdd.port"
 
-if [ -f "$PID_FILE" ]; then
-    PID=$(cat "$PID_FILE")
-    kill "$PID" 2>/dev/null
-    rm "$PID_FILE"
-    echo "CDD Monitor stopped (PID: $PID)"
-else
-    echo "CDD Monitor is not running (no cdd.pid found at $PID_FILE)"
+# Stateless process detection (cdd_lifecycle §2.5): ps-based, no PID file
+PID=$(ps aux | grep "[s]erve.py" | grep -- "--project-root $PROJECT_ROOT" | awk '{print $2}' | head -1)
+
+if [ -z "$PID" ]; then
+    echo "CDD Monitor is not running"
+    rm -f "$PORT_FILE"
+    exit 0
 fi
+
+# Kill with SIGTERM, escalate to SIGKILL after 2 seconds (§2.5 step 2)
+kill "$PID" 2>/dev/null
+for i in $(seq 1 20); do
+    if ! kill -0 "$PID" 2>/dev/null; then
+        break
+    fi
+    sleep 0.1
+done
+if kill -0 "$PID" 2>/dev/null; then
+    kill -9 "$PID" 2>/dev/null
+fi
+
+# Clean up port file (§2.5 step 3)
+rm -f "$PORT_FILE"
+echo "CDD Monitor stopped (PID: $PID)"

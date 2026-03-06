@@ -1,6 +1,8 @@
+import argparse
 import http.server
 import json
 import re
+import socket
 import socketserver
 import subprocess
 import os
@@ -13,18 +15,33 @@ from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Pre-parse --project-root before full argparse (needed at module level)
+_cli_root = None
+for i, arg in enumerate(sys.argv[1:], 1):
+    if arg == '--project-root' and i < len(sys.argv) - 1:
+        _cli_root = sys.argv[i + 1]
+        break
+    elif arg.startswith('--project-root='):
+        _cli_root = arg.split('=', 1)[1]
+        break
+
 # Project root detection (Section 2.11)
-_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-if _env_root and os.path.isdir(_env_root):
-    PROJECT_ROOT = _env_root
+# Priority: --project-root CLI arg > PURLIN_PROJECT_ROOT env var > climbing fallback
+if _cli_root and os.path.isdir(_cli_root):
+    PROJECT_ROOT = os.path.abspath(_cli_root)
+    os.environ['PURLIN_PROJECT_ROOT'] = PROJECT_ROOT
 else:
-    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            PROJECT_ROOT = candidate
-            break
+    _env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
+    if _env_root and os.path.isdir(_env_root):
+        PROJECT_ROOT = _env_root
+    else:
+        # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
+        PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+        for depth in ('../../../', '../../'):
+            candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
+            if os.path.exists(os.path.join(candidate, '.purlin')):
+                PROJECT_ROOT = candidate
+                break
 
 # Config loading via resolver (config_layering: local config with shared fallback)
 if PROJECT_ROOT not in sys.path:
@@ -39,22 +56,32 @@ CONFIG = _resolve_config(PROJECT_ROOT)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.local.json")
 CONFIG_SHARED_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.json")
 
-def resolve_port(env_port=None, config_port=None, default=8086):
-    """Resolve CDD port. Priority: CDD_PORT env var > config > default (Section 2.12)."""
-    if env_port:
-        try:
-            return int(env_port)
-        except ValueError:
-            print(f"Warning: Invalid CDD_PORT '{env_port}'; falling back to config",
-                  file=sys.stderr)
-    if config_port is not None:
-        return config_port
-    return default
+def resolve_port(cli_port=None):
+    """Resolve CDD port. --port flag or auto-select via OS."""
+    if cli_port is not None:
+        return cli_port
+    # Auto-select: bind to port 0, let OS assign a free port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
-PORT = resolve_port(
-    env_port=os.environ.get('CDD_PORT', ''),
-    config_port=CONFIG.get("cdd_port"),
-)
+# Pre-parse --port for module-level PORT (full argparse in __main__)
+_cli_port = None
+for i, arg in enumerate(sys.argv[1:], 1):
+    if arg == '--port' and i < len(sys.argv) - 1:
+        try:
+            _cli_port = int(sys.argv[i + 1])
+        except ValueError:
+            pass
+        break
+    elif arg.startswith('--port='):
+        try:
+            _cli_port = int(arg.split('=', 1)[1])
+        except ValueError:
+            pass
+        break
+
+PORT = resolve_port(cli_port=_cli_port)
 PROJECT_NAME = CONFIG.get("project_name", "") or os.path.basename(PROJECT_ROOT)
 
 FEATURES_REL = "features"
@@ -5808,5 +5835,11 @@ if __name__ == "__main__":
 
         socketserver.TCPServer.allow_reuse_address = True
         with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            # Write port file before serve_forever (cdd_lifecycle §2.3)
+            runtime_dir = os.path.join(PROJECT_ROOT, ".purlin", "runtime")
+            os.makedirs(runtime_dir, exist_ok=True)
+            port_file = os.path.join(runtime_dir, "cdd.port")
+            with open(port_file, 'w') as f:
+                f.write(str(PORT))
             print(f"CDD Dashboard serving at http://localhost:{PORT}")
             httpd.serve_forever()

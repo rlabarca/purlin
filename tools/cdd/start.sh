@@ -1,5 +1,5 @@
 #!/bin/bash
-# start.sh
+# start.sh — Stateless CDD Dashboard lifecycle (cdd_lifecycle)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 # Project root discovery (Section 2.11)
 if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
@@ -11,12 +11,11 @@ else
         PROJECT_ROOT="$(cd "$DIR/../.." 2>/dev/null && pwd)"
     fi
 fi
-RESOLVER="$DIR/../config/resolve_config.py"
 
 # Source shared Python resolver (python_environment.md §2.2)
 source "$DIR/../resolve_python.sh"
 
-# Runtime port override (Section 2.12): -p <port> flag
+# Runtime port override: -p <port> flag
 OVERRIDE_PORT=""
 while getopts "p:" opt; do
     case $opt in
@@ -33,40 +32,51 @@ if [ -n "$OVERRIDE_PORT" ]; then
     fi
 fi
 
-PORT=8086
-
-# Read port from resolved config via resolver CLI (config_layering)
-if [ -f "$RESOLVER" ]; then
-    PORT_FROM_CONFIG=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" "$PYTHON_EXE" "$RESOLVER" --key cdd_port 2>/dev/null)
-    if [ -n "$PORT_FROM_CONFIG" ] && [[ "$PORT_FROM_CONFIG" =~ ^[0-9]+$ ]]; then
-        PORT=$PORT_FROM_CONFIG
-    fi
-fi
-
-# -p flag overrides config (Section 2.12 priority: -p > config > 8086 default)
-if [ -n "$OVERRIDE_PORT" ]; then
-    PORT="$OVERRIDE_PORT"
-fi
-
-# Artifact isolation (Section 2.12): logs/pids to .purlin/runtime/
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
+PORT_FILE="$RUNTIME_DIR/cdd.port"
 
-# Export CDD_PORT when -p is provided (Section 2.12)
-if [ -n "$OVERRIDE_PORT" ]; then
-    PURLIN_PROJECT_ROOT="$PROJECT_ROOT" CDD_PORT="$OVERRIDE_PORT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
-else
-    PURLIN_PROJECT_ROOT="$PROJECT_ROOT" nohup $PYTHON_EXE "$DIR/serve.py" > "$RUNTIME_DIR/cdd.log" 2>&1 &
+# Stateless process detection (cdd_lifecycle §2.1): ps-based, no PID file
+EXISTING_PID=$(ps aux | grep "[s]erve.py" | grep -- "--project-root $PROJECT_ROOT" | awk '{print $2}' | head -1)
+
+if [ -n "$EXISTING_PID" ]; then
+    # Already running — print URL and exit (idempotent start, §2.9)
+    if [ -f "$PORT_FILE" ]; then
+        RUNNING_PORT=$(cat "$PORT_FILE")
+        echo "http://localhost:$RUNNING_PORT"
+    else
+        echo "CDD server already running (PID $EXISTING_PID) but port file missing"
+    fi
+    exit 0
 fi
-echo $! > "$RUNTIME_DIR/cdd.pid"
-SERVER_PID=$(cat "$RUNTIME_DIR/cdd.pid")
 
-# Verify server actually started (detect bind failures)
-sleep 0.5
-if kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "CDD Monitor started on port $PORT (PID: $SERVER_PID)"
+# Clean stale port file if no process is running (§2.4 step 2)
+rm -f "$PORT_FILE"
+
+# Build serve.py arguments
+SERVE_ARGS="--project-root $PROJECT_ROOT"
+if [ -n "$OVERRIDE_PORT" ]; then
+    SERVE_ARGS="$SERVE_ARGS --port $OVERRIDE_PORT"
+fi
+
+# Launch serve.py (§2.4 step 3)
+nohup $PYTHON_EXE "$DIR/serve.py" $SERVE_ARGS > "$RUNTIME_DIR/cdd.log" 2>&1 &
+
+# Wait for port file to appear (up to 2 seconds, §2.4 step 4)
+for i in $(seq 1 20); do
+    if [ -f "$PORT_FILE" ]; then
+        break
+    fi
+    sleep 0.1
+done
+
+# Verify server started
+VERIFY_PID=$(ps aux | grep "[s]erve.py" | grep -- "--project-root $PROJECT_ROOT" | awk '{print $2}' | head -1)
+
+if [ -n "$VERIFY_PID" ] && [ -f "$PORT_FILE" ]; then
+    PORT=$(cat "$PORT_FILE")
+    echo "http://localhost:$PORT"
 else
-    echo "ERROR: CDD Monitor failed to start (PID $SERVER_PID exited). Check $RUNTIME_DIR/cdd.log" >&2
-    rm -f "$RUNTIME_DIR/cdd.pid"
+    echo "ERROR: CDD Monitor failed to start. Check $RUNTIME_DIR/cdd.log" >&2
     exit 1
 fi
