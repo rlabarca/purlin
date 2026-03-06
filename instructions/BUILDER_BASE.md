@@ -31,7 +31,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 - Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
 
 ### 2.0.1 Read Startup Flags
 

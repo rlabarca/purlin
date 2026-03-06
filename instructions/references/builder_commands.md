@@ -19,6 +19,7 @@ Tell it what to build or let it pick up the next item.
   ──────
   /pl-status                 Check CDD status and action items
   /pl-resume [save|role]     Save or restore session state
+  /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings
@@ -62,6 +63,7 @@ Tell it what to build or let it pick up the next item.
   ──────
   /pl-status                 Check CDD status and action items
   /pl-resume [save|role]     Save or restore session state
+  /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings
@@ -104,6 +106,7 @@ Tell it what to build or let it pick up the next item.
   ──────
   /pl-status                 Check CDD status and action items
   /pl-resume [save|role]     Save or restore session state
+  /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings

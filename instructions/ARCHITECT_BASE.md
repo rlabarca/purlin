@@ -109,7 +109,7 @@ Read `instructions/references/architect_commands.md` and print the appropriate v
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 - Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
 
 ### 5.0.1 Read Startup Flags
 
