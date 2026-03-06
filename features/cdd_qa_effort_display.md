@@ -11,25 +11,27 @@
 
 ## 1. Overview
 
-The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN, FAIL, DISPUTED, N/A). When QA is TODO, there is no indication of how much work is needed or what kind -- a feature with 8 manual hardware-in-the-loop scenarios looks identical to one with 2 web-verifiable checks. This feature enriches the QA column with an effort breakdown derived from the Critic's `verification_effort` block.
+The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN, FAIL, DISPUTED, N/A). When QA is TODO, there is no indication of how much work is needed or what kind. This feature adds two enhancements: (1) features that are completely auto-resolvable (zero manual items) display `AUTO` in orange instead of `TODO` in yellow, giving an at-a-glance signal that no human verification is needed; (2) hovering over any `TODO` or `AUTO` badge reveals a tooltip with the full effort breakdown (auto vs manual categories). Both are derived from the Critic's `verification_effort` block.
 
 ---
 
 ## 2. Requirements
 
-### 2.1 QA Column Enrichment
+### 2.1 QA Column — AUTO Status
 
-*   When a feature's QA status is `TODO`, the dashboard table cell MUST display the effort breakdown inline: `TODO (Na/Mm)` where `N` is `total_auto` and `M` is `total_manual` from the feature's `verification_effort` block.
-*   Examples: `TODO (3a/6m)`, `TODO (0a/2m)`, `TODO (5a/0m)`.
-*   When both `total_auto` and `total_manual` are zero (e.g., `summary` is `"awaiting builder"`), display only `TODO` with no parenthetical.
+*   When a feature's QA status is `TODO` and its verification effort is **completely auto-resolvable** (`total_manual == 0` and `total_auto > 0`), the QA cell MUST display `AUTO` instead of `TODO`.
+*   When a feature's QA status is `TODO` and it has any manual items (`total_manual > 0`), the QA cell displays `TODO` (unchanged).
+*   When both `total_auto` and `total_manual` are zero (e.g., `summary` is `"awaiting builder"`), display `TODO` (unchanged).
 *   Non-TODO QA statuses (CLEAN, FAIL, DISPUTED, N/A) are unchanged.
+*   **AUTO color:** The `AUTO` badge MUST use `var(--purlin-status-warning)` — orange in both light and dark themes — to distinguish it from the yellow `TODO` badge.
 
 ### 2.2 Effort Tooltip
 
-*   When the user hovers over a QA cell showing the effort breakdown, a tooltip MUST display the full category breakdown:
+*   When the user hovers over a QA cell showing `TODO` or `AUTO`, a tooltip MUST display the full effort breakdown:
     *   `Auto: N web, N test-only, N skip`
     *   `Manual: N interactive, N visual, N hardware`
 *   Categories with zero count MAY be omitted from the tooltip for brevity.
+*   When both totals are zero (awaiting builder), no tooltip is shown.
 
 ### 2.3 Data Source
 
@@ -39,8 +41,9 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 
 ### 2.4 Theme Compatibility
 
-*   The effort breakdown text MUST be legible in both light and dark themes.
-*   The parenthetical `(Na/Mm)` uses a muted color (lower contrast than the status badge) to avoid visual clutter.
+*   `TODO` continues to use `var(--purlin-status-todo)`.
+*   `AUTO` uses `var(--purlin-status-warning)` in both themes.
+*   The tooltip MUST be legible in both light and dark themes.
 
 ---
 
@@ -48,25 +51,33 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 
 ### Automated Scenarios
 
-#### Scenario: QA TODO cell shows effort breakdown
+#### Scenario: Fully auto-resolvable feature shows AUTO
+
+    Given a feature has QA status "TODO"
+    And its `verification_effort` has `total_auto: 5` and `total_manual: 0`
+    When the CDD dashboard renders the Status view
+    Then the QA cell displays "AUTO"
+    And the AUTO text uses `var(--purlin-status-warning)` color
+
+#### Scenario: Mixed effort feature shows TODO
 
     Given a feature has QA status "TODO"
     And its `verification_effort` has `total_auto: 3` and `total_manual: 6`
     When the CDD dashboard renders the Status view
-    Then the QA cell displays "TODO (3a/6m)"
+    Then the QA cell displays "TODO"
 
 #### Scenario: QA TODO with zero effort shows plain TODO
 
     Given a feature has QA status "TODO"
     And its `verification_effort.summary` is "awaiting builder"
     When the CDD dashboard renders the Status view
-    Then the QA cell displays "TODO" with no parenthetical
+    Then the QA cell displays "TODO" with no tooltip
 
 #### Scenario: Non-TODO QA status is unchanged
 
     Given a feature has QA status "CLEAN"
     When the CDD dashboard renders the Status view
-    Then the QA cell displays "CLEAN" with no effort breakdown
+    Then the QA cell displays "CLEAN" with no effort tooltip
 
 #### Scenario: Status JSON includes verification_effort
 
@@ -76,18 +87,20 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 
 ### Manual Scenarios (Human Verification Required)
 
-#### Scenario: Effort tooltip displays full breakdown
+#### Scenario: Effort tooltip displays full breakdown on hover
 
-    Given a feature's QA cell shows "TODO (3a/6m)"
-    When the user hovers over the QA cell
-    Then a tooltip displays: "Auto: 3 web" and "Manual: 2 interactive, 4 visual"
+    Given a feature's QA cell shows "TODO" with manual and auto items
+    When the user hovers over the TODO text
+    Then a tooltip displays the category breakdown (e.g., "Auto: 3 web | Manual: 2 interactive, 4 visual")
     And zero-count categories are omitted
 
-#### Scenario: Effort breakdown is legible in dark theme
+#### Scenario: AUTO badge is visually distinct from TODO
 
-    Given the CDD dashboard is in dark theme
-    When a QA cell shows "TODO (5a/2m)"
-    Then the parenthetical text is visible and uses a muted color distinct from the badge
+    Given the CDD dashboard is rendered
+    And one feature has QA status AUTO and another has TODO
+    When both are visible in the Status view
+    Then AUTO uses an orange color (`var(--purlin-status-warning)`) distinct from TODO's yellow (`var(--purlin-status-todo)`)
+    And the color difference is clear in both light and dark themes
 
 ## Visual Specification
 
@@ -97,9 +110,9 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 ### Screen: QA Effort Column
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** QA column cells showing TODO status display an inline effort breakdown `(Na/Mm)` in muted text after the status badge. Non-TODO statuses are unchanged.
-- [ ] Effort breakdown `(Na/Mm)` is visible next to TODO badge
-- [ ] Muted color for parenthetical distinguishes it from the badge
-- [ ] Tooltip appears on hover with full category breakdown
-- [ ] Both light and dark themes render breakdown legibly
+- **Description:** QA column cells show TODO (yellow) or AUTO (orange) status. Hovering over TODO or AUTO reveals a tooltip with the full effort breakdown. Non-TODO statuses are unchanged.
+- [ ] AUTO badge uses `var(--purlin-status-warning)` (orange), visually distinct from TODO's yellow
+- [ ] TODO badge continues to use `var(--purlin-status-todo)` (yellow)
+- [ ] Tooltip appears on hover over TODO or AUTO text with full category breakdown
+- [ ] Both light and dark themes render AUTO and TODO with clearly distinct colors
 
