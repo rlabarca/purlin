@@ -342,9 +342,9 @@ fi
 
 cleanup_sandbox
 
-# --- Test 15: Idempotent second run ---
+# --- Scenario: Idempotent Repeated Runs ---
 echo ""
-echo "[Test 15] Idempotent second run"
+echo "[Scenario] Idempotent Repeated Runs"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
@@ -545,9 +545,9 @@ echo ""
 echo "=== CLI Flag Tests ==="
 ###############################################################################
 
-# --- Test 23: --quiet suppresses output ---
+# --- Scenario: --quiet Flag Suppresses Output ---
 echo ""
-echo "[Test 23] --quiet suppresses output"
+echo "[Scenario] --quiet Flag Suppresses Output"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
@@ -585,9 +585,9 @@ fi
 
 cleanup_sandbox
 
-# --- Test 25: --regenerate-launchers regenerates scripts ---
+# --- Scenario: --regenerate-launchers Flag ---
 echo ""
-echo "[Test 25] --regenerate-launchers regenerates scripts"
+echo "[Scenario] --regenerate-launchers Flag"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
@@ -701,6 +701,57 @@ else
     log_fail "purlin/init.sh did NOT create .purlin/"
 fi
 
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Shim Submodule Init Tests ==="
+###############################################################################
+
+# --- Scenario: Shim Initializes Submodule on Fresh Clone ---
+echo ""
+echo "[Scenario] Shim Initializes Submodule on Fresh Clone"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Save the generated shim
+SHIM="$PROJECT/purlin_init.sh"
+
+# Simulate uninitialized submodule: remove init.sh (shim checks for this)
+rm -f "$PROJECT/purlin/tools/init.sh"
+
+# Create a mock git that captures args and restores init.sh when submodule update is called
+MOCK_DIR="$(mktemp -d)"
+MOCK_CAPTURE="$MOCK_DIR/captured_git_args"
+
+cat > "$MOCK_DIR/git" << MOCK_EOF
+#!/bin/bash
+echo "\$@" >> "$MOCK_CAPTURE"
+# If this is a submodule update --init call, restore init.sh to simulate successful init
+if echo "\$@" | grep -q "submodule update --init"; then
+    cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
+    chmod +x "$PROJECT/purlin/tools/init.sh"
+fi
+MOCK_EOF
+chmod +x "$MOCK_DIR/git"
+
+# Run the shim with mock git in PATH
+PATH="$MOCK_DIR:$PATH" bash "$SHIM" > /dev/null 2>&1
+
+if [ -f "$MOCK_CAPTURE" ] && grep -q "submodule update --init" "$MOCK_CAPTURE"; then
+    log_pass "Shim calls git submodule update --init when init.sh is missing"
+else
+    log_fail "Shim did not call git submodule update --init"
+fi
+
+# Verify that init.sh was ultimately executed (shim delegates via exec)
+if [ -d "$PROJECT/.purlin" ]; then
+    log_pass "Shim delegated to init.sh after submodule init"
+else
+    log_fail "Shim did not delegate to init.sh after submodule init"
+fi
+
+rm -rf "$MOCK_DIR"
 cleanup_sandbox
 
 ###############################################################################
