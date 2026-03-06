@@ -53,12 +53,35 @@ while ! mkdir "$LOCK_DIR" 2>/dev/null; do
 done
 trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
-# Session detection: new session when session_id changes or file missing
+# Session detection: new session when session_id changes or file missing.
+# Subagent detection: Task-launched subagents have different session_ids but
+# run concurrently with the main agent. If session_id mismatches but the
+# turn_count file was recently modified, this is a subagent — skip silently.
 NEW_SESSION=false
+IS_SUBAGENT=false
 if [[ ! -f "$SESSION_ID_FILE" ]]; then
     NEW_SESSION=true
 elif [[ "$(cat "$SESSION_ID_FILE" 2>/dev/null)" != "$SESSION_ID" ]]; then
-    NEW_SESSION=true
+    # Session ID mismatch: either a new main session or a subagent.
+    # Check turn_count file age to distinguish.
+    TURN_MOD_AGE=$(python3 -c "
+import os, time
+try:
+    print(int(time.time() - os.path.getmtime('$TURN_COUNT_FILE')))
+except:
+    print(9999)" 2>/dev/null || echo "9999")
+    if [[ $TURN_MOD_AGE -lt 120 ]]; then
+        # Recent activity — main session is still alive, this is a subagent.
+        IS_SUBAGENT=true
+    else
+        # Stale — genuinely new session.
+        NEW_SESSION=true
+    fi
+fi
+
+# Subagents exit without counting or resetting.
+if [[ "$IS_SUBAGENT" == "true" ]]; then
+    exit 0
 fi
 
 if [[ "$NEW_SESSION" == "true" ]]; then

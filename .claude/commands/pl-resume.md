@@ -178,6 +178,10 @@ Uncommitted:    <none | summary>
 ### Step 8 -- Cleanup and Confirm
 
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
+- **Final counter reset:** Reset the context guard turn counter one more time so the user's actual work starts from a clean budget (the restore flow itself may have consumed many turns):
+  ```
+  echo "0" > .purlin/runtime/turn_count
+  ```
 - Ask: **"Ready to continue from here, or would you like to adjust?"**
 - If the user says "go" (or equivalent), begin executing the work plan.
 - If the user provides modifications, adjust accordingly.
