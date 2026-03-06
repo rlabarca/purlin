@@ -1,0 +1,734 @@
+#!/bin/bash
+# test_init.sh — Automated tests for tools/init.sh (Unified Project Init)
+# Produces tests/<feature>/tests.json in the project's tests directory.
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SUBMODULE_SRC="$(cd "$SCRIPT_DIR/.." && pwd)"
+TESTS_DIR="$SUBMODULE_SRC/tests"
+PASS=0
+FAIL=0
+ERRORS=""
+
+###############################################################################
+# Helpers
+###############################################################################
+log_pass() { PASS=$((PASS + 1)); echo "  PASS: $1"; }
+log_fail() { FAIL=$((FAIL + 1)); ERRORS="$ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
+
+cleanup_sandbox() {
+    if [ -n "${SANDBOX:-}" ] && [ -d "$SANDBOX" ]; then
+        rm -rf "$SANDBOX"
+    fi
+}
+
+# Build a sandbox simulating a consumer project with Purlin as a submodule.
+setup_sandbox() {
+    SANDBOX="$(mktemp -d)"
+    trap cleanup_sandbox EXIT
+
+    PROJECT="$SANDBOX/my-project"
+    mkdir -p "$PROJECT"
+
+    # Initialize consumer project as a git repo
+    git -C "$PROJECT" init -q
+    git -C "$PROJECT" commit --allow-empty -q -m "initial commit"
+
+    # Clone current repo into the consumer project as a "submodule"
+    git clone -q "$SUBMODULE_SRC" "$PROJECT/purlin"
+
+    # Overlay uncommitted scripts so tests exercise latest code
+    cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
+    cp "$SUBMODULE_SRC/tools/bootstrap.sh" "$PROJECT/purlin/tools/bootstrap.sh"
+    cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
+    # Copy CDD scripts for symlink targets
+    cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/purlin/tools/cdd/start.sh"
+    cp "$SUBMODULE_SRC/tools/cdd/stop.sh" "$PROJECT/purlin/tools/cdd/stop.sh"
+    # Copy requirements files
+    cp "$SUBMODULE_SRC/requirements.txt" "$PROJECT/purlin/requirements.txt" 2>/dev/null || true
+    cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
+    chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/bootstrap.sh" "$PROJECT/purlin/tools/resolve_python.sh"
+
+    # Create submodule root symlink
+    ln -sf tools/init.sh "$PROJECT/purlin/init.sh"
+
+    # Register as a submodule in .gitmodules (so git submodule commands work)
+    cat > "$PROJECT/.gitmodules" << 'GITMOD_EOF'
+[submodule "purlin"]
+    path = purlin
+    url = https://github.com/rlabarca/purlin.git
+GITMOD_EOF
+
+    INIT_SH="$PROJECT/purlin/tools/init.sh"
+}
+
+###############################################################################
+echo "=== Full Init Tests ==="
+###############################################################################
+
+# --- Test 1: Fresh init creates .purlin/ ---
+echo ""
+echo "[Test 1] Fresh init creates .purlin/"
+setup_sandbox
+
+OUTPUT=$("$INIT_SH" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then log_pass "Exit code 0"; else log_fail "Exit code was $EXIT_CODE (expected 0)"; fi
+if [ -d "$PROJECT/.purlin" ]; then log_pass ".purlin/ created"; else log_fail ".purlin/ not created"; fi
+if [ -f "$PROJECT/.purlin/config.json" ]; then log_pass "config.json exists"; else log_fail "config.json missing"; fi
+if [ -f "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" ]; then log_pass "ARCHITECT_OVERRIDES.md exists"; else log_fail "ARCHITECT_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/BUILDER_OVERRIDES.md" ]; then log_pass "BUILDER_OVERRIDES.md exists"; else log_fail "BUILDER_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/QA_OVERRIDES.md" ]; then log_pass "QA_OVERRIDES.md exists"; else log_fail "QA_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then log_pass "HOW_WE_WORK_OVERRIDES.md exists"; else log_fail "HOW_WE_WORK_OVERRIDES.md missing"; fi
+if [ -f "$PROJECT/.purlin/.upstream_sha" ]; then log_pass ".upstream_sha exists"; else log_fail ".upstream_sha missing"; fi
+
+cleanup_sandbox
+
+# --- Test 2: Config JSON validity ---
+echo ""
+echo "[Test 2] Config JSON validity"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if python3 -c "import json; json.load(open('$PROJECT/.purlin/config.json'))" 2>/dev/null; then
+    log_pass "config.json is valid JSON"
+else
+    log_fail "config.json is NOT valid JSON"
+fi
+
+cleanup_sandbox
+
+# --- Test 3: Config tools_root is correct ---
+echo ""
+echo "[Test 3] Config tools_root is correct"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if grep -q '"tools_root": "purlin/tools"' "$PROJECT/.purlin/config.json"; then
+    log_pass "tools_root set to purlin/tools"
+else
+    log_fail "tools_root incorrect: $(grep tools_root "$PROJECT/.purlin/config.json")"
+fi
+
+cleanup_sandbox
+
+# --- Test 4: Launcher scripts created and executable ---
+echo ""
+echo "[Test 4] Launcher scripts created and executable"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+for launcher in run_architect.sh run_builder.sh run_qa.sh; do
+    if [ -x "$PROJECT/$launcher" ]; then
+        log_pass "$launcher exists and is executable"
+    else
+        log_fail "$launcher missing or not executable"
+    fi
+done
+
+cleanup_sandbox
+
+# --- Test 5: Launcher scripts export PURLIN_PROJECT_ROOT ---
+echo ""
+echo "[Test 5] Launcher scripts export PURLIN_PROJECT_ROOT"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+for launcher in run_architect.sh run_builder.sh run_qa.sh; do
+    if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/$launcher"; then
+        log_pass "$launcher exports PURLIN_PROJECT_ROOT"
+    else
+        log_fail "$launcher does NOT export PURLIN_PROJECT_ROOT"
+    fi
+done
+
+cleanup_sandbox
+
+# --- Test 6: Command files copied ---
+echo ""
+echo "[Test 6] Command files copied"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -d "$PROJECT/.claude/commands" ]; then
+    CMD_COUNT=$(ls "$PROJECT/.claude/commands"/pl-*.md 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$CMD_COUNT" -gt 0 ]; then
+        log_pass ".claude/commands/ contains $CMD_COUNT pl-*.md files"
+    else
+        log_fail ".claude/commands/ exists but no pl-*.md files found"
+    fi
+else
+    log_fail ".claude/commands/ not created"
+fi
+
+cleanup_sandbox
+
+# --- Test 7: pl-edit-base.md excluded ---
+echo ""
+echo "[Test 7] pl-edit-base.md excluded"
+setup_sandbox
+
+# Ensure pl-edit-base.md exists in the submodule
+mkdir -p "$PROJECT/purlin/.claude/commands"
+echo "# MUST NOT be distributed" > "$PROJECT/purlin/.claude/commands/pl-edit-base.md"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.claude/commands/pl-edit-base.md" ]; then
+    log_fail "pl-edit-base.md was copied (MUST NOT be)"
+else
+    log_pass "pl-edit-base.md correctly excluded"
+fi
+
+cleanup_sandbox
+
+# --- Test 8: features/ directory created ---
+echo ""
+echo "[Test 8] features/ directory created"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -d "$PROJECT/features" ]; then
+    log_pass "features/ directory exists"
+else
+    log_fail "features/ directory missing"
+fi
+
+cleanup_sandbox
+
+# --- Test 9: Shim generated ---
+echo ""
+echo "[Test 9] Shim generated"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -x "$PROJECT/purlin_init.sh" ]; then
+    log_pass "purlin_init.sh exists and is executable"
+else
+    log_fail "purlin_init.sh missing or not executable"
+fi
+
+cleanup_sandbox
+
+# --- Test 10: Shim contains metadata ---
+echo ""
+echo "[Test 10] Shim contains metadata"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+SHIM_CONTENT="$(cat "$PROJECT/purlin_init.sh")"
+EXPECTED_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
+
+if echo "$SHIM_CONTENT" | grep -q "SHA:"; then
+    log_pass "Shim contains SHA field"
+else
+    log_fail "Shim missing SHA field"
+fi
+if echo "$SHIM_CONTENT" | grep -q "$EXPECTED_SHA"; then
+    log_pass "Shim contains correct SHA value"
+else
+    log_fail "Shim SHA does not match submodule HEAD"
+fi
+if echo "$SHIM_CONTENT" | grep -q "Version:"; then
+    log_pass "Shim contains Version field"
+else
+    log_fail "Shim missing Version field"
+fi
+if echo "$SHIM_CONTENT" | grep -q "Repo:"; then
+    log_pass "Shim contains Repo field"
+else
+    log_fail "Shim missing Repo field"
+fi
+
+cleanup_sandbox
+
+# --- Test 11: CDD symlinks created ---
+echo ""
+echo "[Test 11] CDD symlinks created"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -L "$PROJECT/purlin_cdd_start.sh" ]; then
+    log_pass "purlin_cdd_start.sh is a symlink"
+else
+    log_fail "purlin_cdd_start.sh is not a symlink"
+fi
+if [ -L "$PROJECT/purlin_cdd_stop.sh" ]; then
+    log_pass "purlin_cdd_stop.sh is a symlink"
+else
+    log_fail "purlin_cdd_stop.sh is not a symlink"
+fi
+
+cleanup_sandbox
+
+# --- Test 12: CDD symlinks use relative paths ---
+echo ""
+echo "[Test 12] CDD symlinks use relative paths"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+START_TARGET="$(readlink "$PROJECT/purlin_cdd_start.sh")"
+STOP_TARGET="$(readlink "$PROJECT/purlin_cdd_stop.sh")"
+
+if [[ "$START_TARGET" != /* ]]; then
+    log_pass "purlin_cdd_start.sh uses relative path: $START_TARGET"
+else
+    log_fail "purlin_cdd_start.sh uses absolute path: $START_TARGET"
+fi
+if [[ "$STOP_TARGET" != /* ]]; then
+    log_pass "purlin_cdd_stop.sh uses relative path: $STOP_TARGET"
+else
+    log_fail "purlin_cdd_stop.sh uses absolute path: $STOP_TARGET"
+fi
+
+cleanup_sandbox
+
+# --- Test 13: Output is concise ---
+echo ""
+echo "[Test 13] Output is concise"
+setup_sandbox
+
+OUTPUT=$("$INIT_SH" 2>&1)
+
+if echo "$OUTPUT" | grep -q "Purlin initialized"; then
+    log_pass "Output contains 'Purlin initialized'"
+else
+    log_fail "Output missing 'Purlin initialized'"
+fi
+if echo "$OUTPUT" | grep -q "run_architect.sh"; then
+    log_pass "Output mentions run_architect.sh"
+else
+    log_fail "Output missing run_architect.sh"
+fi
+if echo "$OUTPUT" | grep -q "purlin_cdd_start.sh"; then
+    log_pass "Output mentions purlin_cdd_start.sh"
+else
+    log_fail "Output missing purlin_cdd_start.sh"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Refresh Mode Tests ==="
+###############################################################################
+
+# --- Test 14: Re-run enters refresh mode ---
+echo ""
+echo "[Test 14] Re-run enters refresh mode"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Record config modification time before second run
+CONFIG_MTIME_BEFORE="$(stat -f %m "$PROJECT/.purlin/config.json" 2>/dev/null || stat -c %Y "$PROJECT/.purlin/config.json" 2>/dev/null)"
+
+OUTPUT=$("$INIT_SH" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then log_pass "Second run exits 0"; else log_fail "Second run exits $EXIT_CODE"; fi
+if echo "$OUTPUT" | grep -q "refreshed"; then
+    log_pass "Second run reports 'refreshed' (refresh mode)"
+else
+    log_fail "Second run did not enter refresh mode"
+fi
+
+CONFIG_MTIME_AFTER="$(stat -f %m "$PROJECT/.purlin/config.json" 2>/dev/null || stat -c %Y "$PROJECT/.purlin/config.json" 2>/dev/null)"
+if [ "$CONFIG_MTIME_BEFORE" = "$CONFIG_MTIME_AFTER" ]; then
+    log_pass "config.json not re-created in refresh mode"
+else
+    log_fail "config.json modification time changed in refresh mode"
+fi
+
+cleanup_sandbox
+
+# --- Test 15: Idempotent second run ---
+echo ""
+echo "[Test 15] Idempotent second run"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Commit everything after first init
+git -C "$PROJECT" add -A > /dev/null 2>&1
+git -C "$PROJECT" commit -q -m "after init" 2>/dev/null
+
+# Run again
+"$INIT_SH" > /dev/null 2>&1
+
+# Check git diff (excluding untracked and submodule pointer changes)
+DIFF_OUTPUT="$(git -C "$PROJECT" diff -- . ':!purlin' 2>/dev/null)"
+if [ -z "$DIFF_OUTPUT" ]; then
+    log_pass "No changes after idempotent second run"
+else
+    log_fail "Changes detected after second run: $(echo "$DIFF_OUTPUT" | head -5)"
+fi
+
+cleanup_sandbox
+
+# --- Test 16: New command files copied on refresh ---
+echo ""
+echo "[Test 16] New command files copied on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Create a new command file in the submodule
+echo "# Test new command" > "$PROJECT/purlin/.claude/commands/pl-test-new.md"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.claude/commands/pl-test-new.md" ]; then
+    log_pass "New command file copied on refresh"
+else
+    log_fail "New command file NOT copied on refresh"
+fi
+
+cleanup_sandbox
+
+# --- Test 17: Locally modified commands preserved ---
+echo ""
+echo "[Test 17] Locally modified commands preserved"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Find any command file to test with
+TEST_CMD=""
+if [ -d "$PROJECT/.claude/commands" ]; then
+    TEST_CMD="$(ls "$PROJECT/.claude/commands"/pl-*.md 2>/dev/null | head -1)"
+fi
+
+if [ -n "$TEST_CMD" ]; then
+    CMD_FNAME="$(basename "$TEST_CMD")"
+    # Make the consumer copy newer by touching it in the future
+    sleep 1
+    echo "# Local modification" >> "$TEST_CMD"
+    touch "$TEST_CMD"
+
+    CONTENT_BEFORE="$(cat "$TEST_CMD")"
+
+    "$INIT_SH" > /dev/null 2>&1
+
+    CONTENT_AFTER="$(cat "$TEST_CMD")"
+    if [ "$CONTENT_BEFORE" = "$CONTENT_AFTER" ]; then
+        log_pass "Locally modified $CMD_FNAME preserved"
+    else
+        log_fail "Locally modified $CMD_FNAME was overwritten"
+    fi
+else
+    echo "  SKIP: No command files available to test"
+fi
+
+cleanup_sandbox
+
+# --- Test 18: pl-edit-base.md excluded on refresh ---
+echo ""
+echo "[Test 18] pl-edit-base.md excluded on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Add pl-edit-base.md to submodule
+echo "# MUST NOT be distributed" > "$PROJECT/purlin/.claude/commands/pl-edit-base.md"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.claude/commands/pl-edit-base.md" ]; then
+    log_fail "pl-edit-base.md copied during refresh (MUST NOT be)"
+else
+    log_pass "pl-edit-base.md excluded during refresh"
+fi
+
+cleanup_sandbox
+
+# --- Test 19: Upstream SHA updated on refresh ---
+echo ""
+echo "[Test 19] Upstream SHA updated on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Create a new commit in the submodule
+echo "test" > "$PROJECT/purlin/test_file.txt"
+git -C "$PROJECT/purlin" add test_file.txt > /dev/null 2>&1
+git -C "$PROJECT/purlin" commit -q -m "test commit" 2>/dev/null
+
+NEW_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
+
+"$INIT_SH" > /dev/null 2>&1
+
+STORED_SHA="$(cat "$PROJECT/.purlin/.upstream_sha" | tr -d '[:space:]')"
+if [ "$STORED_SHA" = "$NEW_SHA" ]; then
+    log_pass ".upstream_sha updated to new SHA"
+else
+    log_fail ".upstream_sha not updated (got: ${STORED_SHA:0:12}, expected: ${NEW_SHA:0:12})"
+fi
+
+cleanup_sandbox
+
+# --- Test 20: Config and overrides untouched on refresh ---
+echo ""
+echo "[Test 20] Config and overrides untouched on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Record checksums
+CONFIG_HASH="$(shasum "$PROJECT/.purlin/config.json" | cut -d' ' -f1)"
+ARCH_HASH="$(shasum "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" | cut -d' ' -f1)"
+BUILD_HASH="$(shasum "$PROJECT/.purlin/BUILDER_OVERRIDES.md" | cut -d' ' -f1)"
+QA_HASH="$(shasum "$PROJECT/.purlin/QA_OVERRIDES.md" | cut -d' ' -f1)"
+HWW_HASH="$(shasum "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" | cut -d' ' -f1)"
+
+"$INIT_SH" > /dev/null 2>&1
+
+CONFIG_HASH2="$(shasum "$PROJECT/.purlin/config.json" | cut -d' ' -f1)"
+ARCH_HASH2="$(shasum "$PROJECT/.purlin/ARCHITECT_OVERRIDES.md" | cut -d' ' -f1)"
+BUILD_HASH2="$(shasum "$PROJECT/.purlin/BUILDER_OVERRIDES.md" | cut -d' ' -f1)"
+QA_HASH2="$(shasum "$PROJECT/.purlin/QA_OVERRIDES.md" | cut -d' ' -f1)"
+HWW_HASH2="$(shasum "$PROJECT/.purlin/HOW_WE_WORK_OVERRIDES.md" | cut -d' ' -f1)"
+
+ALL_MATCH=true
+[ "$CONFIG_HASH" != "$CONFIG_HASH2" ] && ALL_MATCH=false
+[ "$ARCH_HASH" != "$ARCH_HASH2" ] && ALL_MATCH=false
+[ "$BUILD_HASH" != "$BUILD_HASH2" ] && ALL_MATCH=false
+[ "$QA_HASH" != "$QA_HASH2" ] && ALL_MATCH=false
+[ "$HWW_HASH" != "$HWW_HASH2" ] && ALL_MATCH=false
+
+if [ "$ALL_MATCH" = true ]; then
+    log_pass "Config and overrides unchanged after refresh"
+else
+    log_fail "Config or overrides modified during refresh"
+fi
+
+cleanup_sandbox
+
+# --- Test 21: CDD symlinks repaired on refresh ---
+echo ""
+echo "[Test 21] CDD symlinks repaired on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Delete one symlink
+rm -f "$PROJECT/purlin_cdd_start.sh"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -L "$PROJECT/purlin_cdd_start.sh" ]; then
+    log_pass "CDD symlink repaired on refresh"
+else
+    log_fail "CDD symlink NOT repaired on refresh"
+fi
+
+cleanup_sandbox
+
+# --- Test 22: Shim self-update on refresh ---
+echo ""
+echo "[Test 22] Shim self-update on refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Create a new commit in the submodule to change HEAD
+echo "update" > "$PROJECT/purlin/test_update.txt"
+git -C "$PROJECT/purlin" add test_update.txt > /dev/null 2>&1
+git -C "$PROJECT/purlin" commit -q -m "update commit" 2>/dev/null
+
+NEW_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if grep -q "$NEW_SHA" "$PROJECT/purlin_init.sh"; then
+    log_pass "Shim updated with new SHA"
+else
+    log_fail "Shim NOT updated with new SHA"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== CLI Flag Tests ==="
+###############################################################################
+
+# --- Test 23: --quiet suppresses output ---
+echo ""
+echo "[Test 23] --quiet suppresses output"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+STDOUT_OUTPUT=$("$INIT_SH" --quiet 2>/dev/null)
+
+if [ -z "$STDOUT_OUTPUT" ]; then
+    log_pass "--quiet suppresses stdout"
+else
+    log_fail "--quiet did not suppress stdout: $STDOUT_OUTPUT"
+fi
+
+cleanup_sandbox
+
+# --- Test 24: --quiet still completes ---
+echo ""
+echo "[Test 24] --quiet still completes"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Create a new commit so SHA changes
+echo "quiet test" > "$PROJECT/purlin/quiet_test.txt"
+git -C "$PROJECT/purlin" add quiet_test.txt > /dev/null 2>&1
+git -C "$PROJECT/purlin" commit -q -m "quiet test" 2>/dev/null
+
+NEW_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
+
+"$INIT_SH" --quiet 2>/dev/null
+
+STORED_SHA="$(cat "$PROJECT/.purlin/.upstream_sha" | tr -d '[:space:]')"
+if [ "$STORED_SHA" = "$NEW_SHA" ]; then
+    log_pass "--quiet refresh completed (.upstream_sha updated)"
+else
+    log_fail "--quiet refresh did not complete (.upstream_sha mismatch)"
+fi
+
+cleanup_sandbox
+
+# --- Test 25: --regenerate-launchers regenerates scripts ---
+echo ""
+echo "[Test 25] --regenerate-launchers regenerates scripts"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Modify run_architect.sh
+echo "# MODIFIED BY TEST" > "$PROJECT/run_architect.sh"
+
+"$INIT_SH" --regenerate-launchers > /dev/null 2>&1
+
+if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/run_architect.sh"; then
+    log_pass "--regenerate-launchers overwrote run_architect.sh"
+else
+    log_fail "--regenerate-launchers did NOT overwrite run_architect.sh"
+fi
+
+cleanup_sandbox
+
+# --- Test 26: Refresh without --regenerate-launchers preserves launchers ---
+echo ""
+echo "[Test 26] Refresh without --regenerate-launchers preserves launchers"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Modify run_architect.sh
+echo "# MODIFIED BY TEST" > "$PROJECT/run_architect.sh"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if grep -q "MODIFIED BY TEST" "$PROJECT/run_architect.sh"; then
+    log_pass "Launcher preserved without --regenerate-launchers"
+else
+    log_fail "Launcher overwritten without --regenerate-launchers flag"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Deprecation Shim Tests ==="
+###############################################################################
+
+# --- Test 27: bootstrap.sh prints deprecation notice ---
+echo ""
+echo "[Test 27] bootstrap.sh prints deprecation notice"
+setup_sandbox
+
+OUTPUT=$("$PROJECT/purlin/tools/bootstrap.sh" 2>&1)
+
+if echo "$OUTPUT" | grep -qi "deprecated"; then
+    log_pass "bootstrap.sh prints deprecation notice"
+else
+    log_fail "bootstrap.sh does NOT print deprecation notice"
+fi
+if echo "$OUTPUT" | grep -qi "init.sh"; then
+    log_pass "bootstrap.sh mentions init.sh"
+else
+    log_fail "bootstrap.sh does NOT mention init.sh"
+fi
+
+cleanup_sandbox
+
+# --- Test 28: bootstrap.sh delegates to init.sh ---
+echo ""
+echo "[Test 28] bootstrap.sh delegates to init.sh"
+setup_sandbox
+
+"$PROJECT/purlin/tools/bootstrap.sh" > /dev/null 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then log_pass "bootstrap.sh delegation succeeded"; else log_fail "bootstrap.sh delegation failed (exit $EXIT_CODE)"; fi
+if [ -d "$PROJECT/.purlin" ]; then
+    log_pass "bootstrap.sh created .purlin/ (via init.sh delegation)"
+else
+    log_fail "bootstrap.sh did NOT create .purlin/"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Ergonomic Symlink Tests ==="
+###############################################################################
+
+# --- Test 29: Submodule root symlink exists ---
+echo ""
+echo "[Test 29] Submodule root symlink exists"
+
+if [ -L "$SUBMODULE_SRC/init.sh" ]; then
+    TARGET="$(readlink "$SUBMODULE_SRC/init.sh")"
+    if [ "$TARGET" = "tools/init.sh" ]; then
+        log_pass "init.sh symlink points to tools/init.sh"
+    else
+        log_fail "init.sh symlink points to '$TARGET' (expected 'tools/init.sh')"
+    fi
+else
+    log_fail "init.sh is not a symlink at submodule root"
+fi
+
+# --- Test 30: Submodule root symlink works ---
+echo ""
+echo "[Test 30] Submodule root symlink works"
+setup_sandbox
+
+# Run via the symlink
+"$PROJECT/purlin/init.sh" > /dev/null 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then log_pass "purlin/init.sh symlink works"; else log_fail "purlin/init.sh symlink failed (exit $EXIT_CODE)"; fi
+if [ -d "$PROJECT/.purlin" ]; then
+    log_pass "purlin/init.sh created .purlin/ correctly"
+else
+    log_fail "purlin/init.sh did NOT create .purlin/"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+# Results
+###############################################################################
+echo ""
+echo "==============================="
+TOTAL=$((PASS + FAIL))
+echo "  Results: $PASS/$TOTAL passed"
+if [ $FAIL -gt 0 ]; then
+    echo ""
+    echo "  Failures:"
+    echo -e "$ERRORS"
+fi
+echo "==============================="
+
+# Write tests/<feature>/tests.json
+RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}"
+
+OUTDIR="$TESTS_DIR/project_init"
+mkdir -p "$OUTDIR"
+echo "$RESULT_JSON" > "$OUTDIR/tests.json"
+
+echo ""
+if [ $FAIL -eq 0 ]; then
+    echo "tests.json: PASS"
+    exit 0
+else
+    echo "tests.json: FAIL"
+    exit 1
+fi
