@@ -21,6 +21,8 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - Feature files MAY include a `> Web Testable: <url>` blockquote metadata line (e.g., `> Web Testable: http://localhost:9086`), placed alongside other `>` metadata (Label, Category, Prerequisite).
 - The URL declares where the feature's web UI is accessible for automated verification.
 - Features without this annotation are not eligible for `/pl-web-verify` and continue using `/pl-verify` (manual).
+- Feature files MAY include a `> Web Port File: <path>` blockquote metadata line (e.g., `> Web Port File: .purlin/runtime/cdd.port`). The path is relative to the project root. When present, the port read from this file at verification time overrides the port in the `> Web Testable:` URL. This enables dynamic port resolution for servers that write their port to a file at startup.
+- Feature files MAY include a `> Web Start: <command>` blockquote metadata line (e.g., `> Web Start: /pl-cdd`). When present and the server is not reachable during pre-flight, the skill invokes this command to start the server before proceeding.
 
 ### 2.2 Skill File
 
@@ -53,13 +55,22 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - If auto-setup fails, print the error with manual setup instructions and stop.
 - If Playwright MCP IS available but was previously configured without `--headless`, the skill MUST detect this and instruct the user to reconfigure: `claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless`, then restart the session.
 
-### 2.6 Browser Setup
+### 2.6 Dynamic Port Resolution and Server Liveness
 
-- Navigate to the base URL via Playwright MCP `browser_navigate`.
+- **Port resolution order:** (1) URL override from command argument, (2) `> Web Port File:` runtime port file, (3) port from `> Web Testable:` URL.
+- If `> Web Port File:` is declared, read the file at the specified path (relative to project root). If the file exists and contains a valid port number, replace the port in the `> Web Testable:` URL with the runtime port. If the file does not exist or is empty, fall through to the `> Web Testable:` URL as-is.
+- **Liveness check:** Before navigating, attempt an HTTP request (via `browser_navigate` or `curl`) to the resolved URL. If the server is not reachable:
+  - If `> Web Start:` is declared, invoke the start command, wait for the port file to appear (up to 10 seconds), re-read the port, and retry the liveness check.
+  - If `> Web Start:` is not declared or the server is still not reachable after auto-start, report the error with the resolved URL and stop verification for this feature (do not fail the entire run -- continue with other features).
+- **Stale server detection:** When using a runtime port file, verify the resolved URL responds with expected content (e.g., a non-error HTTP status). A server responding on the hardcoded port that differs from the port file port is treated as stale -- the port file port takes precedence.
+
+### 2.7 Browser Setup
+
+- Navigate to the resolved URL (after dynamic port resolution) via Playwright MCP `browser_navigate`.
 - Verify the page loads successfully.
-- If the page fails to load, report the error and suggest the user verify the server is running.
+- If the page fails to load (after liveness pre-flight passed), report the error and skip this feature.
 
-### 2.7 Manual Scenario Execution
+### 2.8 Manual Scenario Execution
 
 - For each in-scope manual scenario, read the Given/When/Then steps.
 - Translate each step into Playwright MCP actions: `browser_navigate`, `browser_click`, `browser_type`, `browser_hover`, `browser_wait`, `browser_screenshot`, `browser_evaluate`.
@@ -69,7 +80,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - Record results with evidence (screenshot observations, DOM values, JS evaluation results).
 - For steps requiring something outside the browser (file system, environment, email): use Bash tools when feasible, or mark as INCONCLUSIVE with a reason note recommending manual verification.
 
-### 2.8 Visual Spec Verification
+### 2.9 Visual Spec Verification
 
 - For each in-scope visual spec screen, navigate to the appropriate page/view state.
 - Set up required state (e.g., hover, expand, switch themes) via Playwright MCP actions.
@@ -78,23 +89,23 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - For interaction-dependent items (hover effects, transitions): execute the interaction, take another screenshot, then verify.
 - Record PASS/FAIL per checklist item with observation notes.
 
-### 2.9 Result Recording
+### 2.10 Result Recording
 
 - Print a summary: N passed, M failed, K inconclusive out of T total (separately for manual scenarios and visual spec items).
 - For failures: record as `[BUG]` discoveries in the feature's `## User Testing Discoveries` section using the standard discovery format (QA_BASE Section 4.3), including observed behavior from screenshot/DOM analysis and expected behavior from the spec.
 - For inconclusive items: list them with recommendation for manual verification via `/pl-verify`.
 - Commit discovery entries with message format: `qa(<scope>): [BUG] - web-verify findings`.
 
-### 2.10 Completion Gate
+### 2.11 Completion Gate
 
 - **QA Agent invocation:** If all scenarios and visual items pass (zero failures, zero inconclusive), prompt: "All web verification passed. Run `/pl-complete <name>` to mark done?" If confirmed, run `/pl-complete`.
 - **Builder invocation:** If all pass, print summary only. Do not mark complete. Suggest the QA agent run `/pl-complete`.
 
-### 2.11 Instruction Updates
+### 2.12 Instruction Updates
 
 The following instruction files MUST be updated by the Builder to reference the new skill:
 
-- `instructions/references/feature_format.md` -- Add `> Web Testable: <url>` to blockquote metadata documentation.
+- `instructions/references/feature_format.md` -- Add `> Web Testable: <url>`, `> Web Port File: <path>`, and `> Web Start: <command>` to blockquote metadata documentation.
 - `instructions/references/visual_spec_convention.md` -- Document that `> Web Testable:` enables automated visual verification via Playwright MCP. Update on-demand loader notice to include `/pl-web-verify`.
 - `instructions/references/visual_verification_protocol.md` -- Add Section 5.4.7: Playwright MCP automated alternative referencing `/pl-web-verify`. Update on-demand loader notice to include `/pl-web-verify`.
 - `instructions/QA_BASE.md` -- Add `/pl-web-verify` to the authorized commands list (Section 3.0). Add brief reference in Section 5.4 noting the automated alternative for web-testable features.
@@ -137,6 +148,54 @@ The following instruction files MUST be updated by the Builder to reference the 
     When `/pl-web-verify` is invoked
     Then the skill instructs the user to reconfigure with headless mode
     And stops execution until the session is restarted with headless configuration
+
+#### Scenario: Dynamic port resolution from port file
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    And `.purlin/runtime/cdd.port` contains `52288`
+    When `/pl-web-verify` resolves the URL for that feature
+    Then the resolved URL is `http://localhost:52288`
+    And port `9086` from the metadata is not used
+
+#### Scenario: Port file missing falls back to metadata URL
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    And `.purlin/runtime/cdd.port` does not exist
+    When `/pl-web-verify` resolves the URL for that feature
+    Then the resolved URL is `http://localhost:9086`
+
+#### Scenario: Server auto-start when not reachable
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    And the feature has `> Web Start: /pl-cdd`
+    And no server is reachable at the resolved URL
+    When `/pl-web-verify` performs the liveness check
+    Then the skill invokes `/pl-cdd` to start the server
+    And waits up to 10 seconds for the port file to appear
+    And re-reads the port file for the new port
+    And retries the liveness check at the updated URL
+
+#### Scenario: Server not reachable and no start command
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature does not have `> Web Start:` metadata
+    And no server is reachable at the resolved URL
+    When `/pl-web-verify` performs the liveness check
+    Then the skill reports the error with the resolved URL
+    And skips verification for this feature
+    And continues with the next feature in the queue
+
+#### Scenario: URL override takes precedence over port file
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    And `.purlin/runtime/cdd.port` contains `52288`
+    When `/pl-web-verify feature_name http://localhost:3000` is invoked
+    Then the resolved URL is `http://localhost:3000`
+    And neither the metadata port nor the port file port is used
 
 #### Scenario: Manual scenario PASS recorded correctly
 
@@ -201,7 +260,7 @@ The following instruction files MUST be updated by the Builder to reference the 
 #### Scenario: Instruction files updated with web-verify references
 
     Given the skill file has been created
-    When instruction updates are applied per Section 2.11
+    When instruction updates are applied per Section 2.12
     Then `/pl-web-verify` appears in both QA and Builder authorized command lists
     And `/pl-web-verify [name]` appears in all variants of both command tables
     And `> Web Testable:` is documented in feature_format.md
@@ -219,4 +278,4 @@ None.
 - **Observed Behavior:** During web verification of `cdd_agent_configuration`, the skill navigated to `http://localhost:9086` (from the `> Web Testable:` metadata). A stale server was running on that port from a previous session — it was not the current CDD Dashboard instance. The real server was running on port 52288, as written by the server at startup to `.purlin/runtime/cdd.port`. The verification was testing against stale/incorrect state.
 - **Expected Behavior:** `/pl-web-verify` should (1) read `.purlin/runtime/cdd.port` to discover the actual running port for CDD Dashboard features, (2) validate that the server at the resolved URL is the correct/current instance, (3) start the server via `/pl-cdd` if it is not running, and (4) prefer the dynamic port over the hardcoded `> Web Testable:` URL when a runtime port file exists. Feature specs should not be required to hardcode a specific port number.
 - **Action Required:** Architect
-- **Status:** OPEN
+- **Status:** SPEC_UPDATED
