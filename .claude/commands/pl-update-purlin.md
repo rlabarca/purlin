@@ -6,6 +6,12 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
 
 **Behavior:**
 
+0. **Standalone Mode Guard:**
+   - Before any other work, check if this is the Purlin repository itself (not a consumer project)
+   - Detection: `.purlin/.upstream_sha` does not exist AND `purlin-config-sample/` exists at the project root
+   - If both conditions are true, print: `/pl-update-purlin is only for consumer projects using Purlin as a submodule.`
+   - Exit immediately without making any changes
+
 1. **Fetch and Check Remote:**
    - Run `git -C <submodule_dir> fetch --tags` to retrieve latest upstream commits and release tags
    - Compare local submodule HEAD against remote tracking branch
@@ -132,7 +138,8 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
    - Compare files installed by the old version against what the new version expects; identify orphaned artifacts
    - Known stale artifacts include:
      - `tools/sync_upstream.sh` (replaced by `/pl-update-purlin`)
-     - Any launcher or shim scripts renamed or consolidated across versions
+     - `tools/bootstrap.sh` (removed when `tools/init.sh` superseded it)
+     - `tools/test_bootstrap.sh` (removed with `bootstrap.sh`; tests moved to `tools/test_init.sh`)
    - Report format:
      ```
      Stale artifacts detected from previous Purlin version:
