@@ -6,10 +6,10 @@
 ## Summary
 The Architect renamed "Remote Collaboration" to "Branch Collaboration" and removed the session abstraction, creating 6 tombstones and resetting 19 features. Most features are resets with existing implementations and companion files — the work is primarily rename/refactor passes on existing code, not fresh implementations. Only `pl_agent_config.md` is brand new. Consolidated to 6 phases per user direction (most resets are cosmetic rename passes).
 
-## Phase 1 -- Tombstones + Policies + Foundation Tools [PENDING]
+## Phase 1 -- Tombstones + Policies + Foundation Tools [COMPLETE]
 **Features:** policy_collaboration.md, policy_branch_collab.md, isolated_teams.md, workflow_checklist_system.md
 **Tombstones:** cdd_remote_collab, pl_collab_pull, pl_collab_push, pl_local_pull, pl_local_push, policy_remote_collab
-**Completion Commit:** --
+**Completion Commit:** ea3f4c3
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Branch Skills [PENDING]

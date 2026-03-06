@@ -10,4 +10,6 @@
 
 **[CLARIFICATION]** PostToolUse hook visibility fix: BUG — Agents never saw the context guard warning because plain stdout from PostToolUse hooks is not surfaced to the agent; fixed by switching hook output to JSON with `hookSpecificOutput.additionalContext`; default threshold also corrected from 30 to 45 turns.
 
+BUG — `/clear` does not change Claude Code's `session_id`, so the hook never detects a new session after a context clear. The turn counter persists across `/clear` invocations within the same terminal session. Fixed by adding an explicit `echo "0" > .purlin/runtime/turn_count` step to the `/pl-resume` restore flow (Step 0 in pl-resume.md). The hook's session detection is correct for actual new sessions (new terminal) — only the `/clear` + `/pl-resume` workflow was broken.
+
 **[CLARIFICATION]** File locking uses `mkdir`-based mutex (atomic on POSIX) since `flock` is unavailable on macOS. The lock serializes parallel PostToolUse hook invocations that fire simultaneously when Claude Code processes multiple tool calls in a single response. Without this, parallel hooks read-increment-write the same count value, causing the counter to under-count by a factor of 3-5x. A 2-second stale lock timeout prevents deadlocks from crashed processes. (Severity: INFO)

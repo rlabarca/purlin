@@ -90,7 +90,17 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 ## Restore Mode (`/pl-resume` or `/pl-resume <role>`)
 
-Execute this 7-step sequence:
+Execute this 8-step sequence:
+
+### Step 0 -- Reset Context Guard
+
+Reset the turn counter so the restore flow itself does not trigger context guard warnings:
+
+```
+echo "0" > .purlin/runtime/turn_count
+```
+
+This is necessary because `/clear` does not change Claude Code's `session_id`, so the PostToolUse hook does not detect a new session. The counter must be explicitly reset when restoring.
 
 ### Step 1 -- Role Detection (3-Tier Fallback)
 
@@ -165,7 +175,7 @@ Uncommitted:    <none | summary>
 ---
 ```
 
-### Step 7 -- Cleanup and Confirm
+### Step 8 -- Cleanup and Confirm
 
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
 - Ask: **"Ready to continue from here, or would you like to adjust?"**
