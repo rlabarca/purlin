@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # context_guard.sh — PostToolUse hook that monitors session turn count
-# and warns when a configurable threshold is exceeded.
+# and outputs context budget status on every tool call.
 #
 # Input: JSON on stdin from Claude Code (contains session_id, cwd, etc.)
-# Output: JSON with additionalContext when turn count exceeds threshold.
+# Output: JSON with additionalContext on every turn (when guard enabled).
 #         Plain stdout is NOT visible to the agent in PostToolUse hooks.
 #         Must use hookSpecificOutput.additionalContext for agent visibility.
 
@@ -28,12 +28,38 @@ SESSION_ID_FILE="$RUNTIME_DIR/session_id"
 # Ensure runtime directory exists
 mkdir -p "$RUNTIME_DIR"
 
-# Read threshold from resolved config via resolver CLI (config_layering)
+# Read per-agent config via resolver --dump + inline Python.
+# AGENT_ROLE is set by launcher scripts (agent_launchers_common.md Section 2.1).
+# Fallback chain: agents.<role>.context_guard_threshold > global context_guard_threshold > 45
+# Enabled chain: agents.<role>.context_guard > default true
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVER="$SCRIPT_DIR/../config/resolve_config.py"
-THRESHOLD=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key context_guard_threshold 2>/dev/null || echo "45")
+
+read -r THRESHOLD GUARD_ENABLED < <(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 -c "
+import json, subprocess, sys, os
+role = os.environ.get('AGENT_ROLE', '')
+try:
+    raw = subprocess.check_output(
+        [sys.executable, '$RESOLVER', '--dump'],
+        env={**os.environ, 'PURLIN_PROJECT_ROOT': '$PROJECT_ROOT'},
+        stderr=subprocess.DEVNULL
+    )
+    cfg = json.loads(raw)
+except:
+    cfg = {}
+global_thresh = cfg.get('context_guard_threshold', 45)
+agent = cfg.get('agents', {}).get(role, {}) if role else {}
+thresh = agent.get('context_guard_threshold', global_thresh)
+enabled = agent.get('context_guard', True)
+print(f'{thresh} {\"true\" if enabled else \"false\"}')
+" 2>/dev/null || echo "45 true")
+
+# Validate threshold is a positive integer
 if [ -z "$THRESHOLD" ] || ! [[ "$THRESHOLD" =~ ^[0-9]+$ ]]; then
     THRESHOLD=45
+fi
+if [ -z "$GUARD_ENABLED" ]; then
+    GUARD_ENABLED="true"
 fi
 
 # Use hook session_id, fall back to PPID
@@ -89,16 +115,25 @@ if [[ "$NEW_SESSION" == "true" ]]; then
     echo "0" > "$TURN_COUNT_FILE"
 fi
 
-# Read current count and increment
+# Read current count and increment (counter always increments, even when guard disabled)
 COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
 COUNT=$((COUNT + 1))
 echo "$COUNT" > "$TURN_COUNT_FILE"
 
-# Warning when count exceeds threshold
+# When guard is disabled, no output — counter still increments in background.
+if [[ "$GUARD_ENABLED" != "true" ]]; then
+    exit 0
+fi
+
+# Output context status on every turn via additionalContext.
 # PostToolUse hooks MUST output JSON with additionalContext for agent visibility.
-# Plain stdout/echo is NOT surfaced to the agent — only to the user's terminal.
-if [[ $COUNT -gt $THRESHOLD ]]; then
+REMAINING=$((THRESHOLD - COUNT))
+if [[ $REMAINING -gt 0 ]]; then
     cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[CONTEXT GUARD] Turn ${COUNT}/${THRESHOLD}. Run /pl-resume save, then /clear, then /pl-resume to continue."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${REMAINING}/${THRESHOLD}"}}
+GUARDJSON
+else
+    cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${REMAINING}/${THRESHOLD} -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
 GUARDJSON
 fi
