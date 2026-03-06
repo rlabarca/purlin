@@ -1148,7 +1148,7 @@ class TestLocalBranchHeadingBranchLabel(unittest.TestCase):
         'serve.get_git_status': '',
         'serve.get_last_commit': 'abc1234 test (now)',
         'serve.get_isolation_worktrees': [],
-        'serve.get_active_remote_session': None,
+        'serve.get_active_branch': None,
         'serve._has_git_remote': False,
         'serve.get_delivery_phase': None,
     }
