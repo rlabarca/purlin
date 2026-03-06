@@ -273,6 +273,13 @@ None.
 
 ## User Testing Discoveries
 
+### [BUG] Playwright MCP running in headed mode instead of headless (Discovered: 2026-03-06)
+- **Scenario:** Headed Playwright MCP detected triggers reconfiguration
+- **Observed Behavior:** `/pl-web-verify` launches a visible browser window during verification, disrupting the user's screen. The Playwright MCP server is configured without the `--headless` flag.
+- **Expected Behavior:** Per Section 2.5, Playwright MUST run in headless mode. The skill should detect the non-headless configuration and instruct the user to reconfigure with `claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless`, then stop execution until the session is restarted.
+- **Action Required:** Builder
+- **Status:** OPEN
+
 ### [DISCOVERY] pl-web-verify uses hardcoded feature URL without server liveness or dynamic port resolution (Discovered: 2026-03-06)
 - **Scenario:** NONE
 - **Observed Behavior:** During web verification of `cdd_agent_configuration`, the skill navigated to `http://localhost:9086` (from the `> Web Testable:` metadata). A stale server was running on that port from a previous session — it was not the current CDD Dashboard instance. The real server was running on port 52288, as written by the server at startup to `.purlin/runtime/cdd.port`. The verification was testing against stale/incorrect state.
