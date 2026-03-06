@@ -269,4 +269,4 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - **Observed Behavior:** When changing multiple context guard thresholds in quick succession, a value would revert to its previous state. Waiting for the prior save to complete before making the next change allowed values to stick.
 - **Expected Behavior:** The pending-write lock should prevent any incoming response (not just auto-refresh) from overwriting a control that has a pending user edit.
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED

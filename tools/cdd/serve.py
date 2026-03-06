@@ -4796,6 +4796,8 @@ function saveAgentConfig() {{
       context_guard_threshold: cgtInput ? parseInt(cgtInput.value, 10) || 45 : 45
     }};
   }});
+  // Snapshot pending keys included in this request (per-request lock association)
+  var sentKeys = new Set(pendingWrites.keys());
   fetch('/config/agents', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
@@ -4803,13 +4805,16 @@ function saveAgentConfig() {{
   }})
   .then(function(r) {{ return r.json(); }})
   .then(function(d) {{
-    pendingWrites.clear();
+    // Only release locks that were part of this specific request
+    sentKeys.forEach(function(k) {{ pendingWrites.delete(k); }});
     if (agentsConfig && d.agents) {{
       agentsConfig.agents = d.agents;
       updateAgentsBadge(agentsConfig);
     }}
   }})
-  .catch(function() {{ pendingWrites.clear(); }});
+  .catch(function() {{
+    sentKeys.forEach(function(k) {{ pendingWrites.delete(k); }});
+  }});
 }}
 
 // ============================

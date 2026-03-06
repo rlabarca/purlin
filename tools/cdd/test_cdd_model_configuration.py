@@ -419,12 +419,13 @@ class TestPendingWriteLock(unittest.TestCase):
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_save_clears_pending_writes(self, mock_run, mock_status):
+    def test_save_releases_sent_pending_writes(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # saveAgentConfig must clear pendingWrites on success and error
-        self.assertIn('pendingWrites.clear()', html)
+        # saveAgentConfig must release only sent keys (per-request lock association)
+        self.assertIn('sentKeys.forEach', html)
+        self.assertIn('pendingWrites.delete(k)', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
