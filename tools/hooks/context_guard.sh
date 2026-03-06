@@ -23,10 +23,18 @@ except:
 # Project root: PURLIN_PROJECT_ROOT > CWD
 PROJECT_ROOT="${PURLIN_PROJECT_ROOT:-$(pwd)}"
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
-TURN_COUNT_FILE="$RUNTIME_DIR/turn_count"
-SESSION_ID_FILE="$RUNTIME_DIR/session_id"
 # Ensure runtime directory exists
 mkdir -p "$RUNTIME_DIR"
+
+# Role-specific files prevent cross-contamination between concurrent agents.
+# When AGENT_ROLE is set (via launcher scripts), each agent gets its own counter
+# and session tracking. Without AGENT_ROLE, falls back to unsuffixed files.
+ROLE_SUFFIX=""
+if [[ -n "${AGENT_ROLE:-}" ]]; then
+    ROLE_SUFFIX="_${AGENT_ROLE}"
+fi
+TURN_COUNT_FILE="$RUNTIME_DIR/turn_count${ROLE_SUFFIX}"
+SESSION_ID_FILE="$RUNTIME_DIR/session_id${ROLE_SUFFIX}"
 
 # Read per-agent config via resolver --dump + inline Python.
 # AGENT_ROLE is set by launcher scripts (agent_launchers_common.md Section 2.1).

@@ -168,8 +168,9 @@ echo "[Scenario] Per-agent threshold overrides global"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"builder": {"context_guard_threshold": 30, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-echo "29" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-6" > "$SANDBOX/.purlin/runtime/session_id"
+# Role-specific files: when AGENT_ROLE=builder, hook reads turn_count_builder / session_id_builder
+echo "29" > "$SANDBOX/.purlin/runtime/turn_count_builder"
+echo "session-6" > "$SANDBOX/.purlin/runtime/session_id_builder"
 
 OUTPUT=$(run_guard "session-6" "builder" 2>&1)
 if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 0/30 -- Run /pl-resume save'; then
@@ -187,11 +188,12 @@ echo "[Scenario] Per-agent guard disabled suppresses output"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": false, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-echo "10" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-7" > "$SANDBOX/.purlin/runtime/session_id"
+# Role-specific files: when AGENT_ROLE=architect, hook reads turn_count_architect / session_id_architect
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_architect"
+echo "session-7" > "$SANDBOX/.purlin/runtime/session_id_architect"
 
 OUTPUT=$(run_guard "session-7" "architect" 2>&1)
-COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count")
+COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_architect")
 
 if [[ -z "$OUTPUT" ]] && [[ "$COUNTER" == "11" ]]; then
     log_pass "No output when guard disabled, counter still incremented to 11"
@@ -257,6 +259,38 @@ if [[ "$ACTUAL" == "10" ]]; then
     log_pass "Parallel invocations all counted: 10/10"
 else
     log_fail "Expected turn count 10 from 10 parallel invocations, got '$ACTUAL'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 11: Role-specific files isolate concurrent agents
+###############################################################################
+echo ""
+echo "[Scenario] Role-specific files isolate concurrent agents"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+
+# Builder runs 3 times
+run_guard "builder-session" "builder" >/dev/null 2>&1
+run_guard "builder-session" "builder" >/dev/null 2>&1
+run_guard "builder-session" "builder" >/dev/null 2>&1
+
+# Architect runs 5 times (different session_id, concurrent)
+run_guard "architect-session" "architect" >/dev/null 2>&1
+run_guard "architect-session" "architect" >/dev/null 2>&1
+run_guard "architect-session" "architect" >/dev/null 2>&1
+run_guard "architect-session" "architect" >/dev/null 2>&1
+run_guard "architect-session" "architect" >/dev/null 2>&1
+
+BUILDER_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_builder" 2>/dev/null || echo "MISSING")
+ARCHITECT_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_architect" 2>/dev/null || echo "MISSING")
+UNSUFFIXED=$(cat "$SANDBOX/.purlin/runtime/turn_count" 2>/dev/null || echo "MISSING")
+
+if [[ "$BUILDER_COUNT" == "3" ]] && [[ "$ARCHITECT_COUNT" == "5" ]]; then
+    log_pass "Builder=3, Architect=5 in separate files"
+else
+    log_fail "Expected Builder=3, Architect=5, got Builder='$BUILDER_COUNT', Architect='$ARCHITECT_COUNT', unsuffixed='$UNSUFFIXED'"
 fi
 cleanup_sandbox
 

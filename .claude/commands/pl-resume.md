@@ -94,13 +94,15 @@ Execute this 8-step sequence:
 
 ### Step 0 -- Reset Context Guard
 
-Reset the turn counter so the restore flow itself does not trigger context guard warnings:
+Reset the turn counter and session marker so the restore flow starts with a clean context guard state:
 
 ```
+rm -f .purlin/runtime/session_id .purlin/runtime/session_id_*
 echo "0" > .purlin/runtime/turn_count
+for f in .purlin/runtime/turn_count_*; do [ -f "$f" ] && echo "0" > "$f"; done
 ```
 
-This is necessary because `/clear` does not change Claude Code's `session_id`, so the PostToolUse hook does not detect a new session. The counter must be explicitly reset when restoring.
+This clears both the counter and the session_id files. The session_id deletion is critical: `/clear` may or may not change Claude Code's `session_id`, and concurrent agents write different session_ids to the same directory. Without clearing, the hook's subagent detection sees a stale session_id mismatch and exits silently — producing no output and no counter tracking.
 
 ### Step 1 -- Role Detection (3-Tier Fallback)
 
@@ -179,9 +181,11 @@ Uncommitted:    <none | summary>
 ### Step 8 -- Cleanup and Confirm
 
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
-- **Final counter reset:** Reset the context guard turn counter one more time so the user's actual work starts from a clean budget (the restore flow itself may have consumed many turns):
+- **Final counter reset:** Reset the context guard turn counter and session marker one more time so the user's actual work starts from a clean budget (the restore flow itself may have consumed many turns):
   ```
+  rm -f .purlin/runtime/session_id .purlin/runtime/session_id_*
   echo "0" > .purlin/runtime/turn_count
+  for f in .purlin/runtime/turn_count_*; do [ -f "$f" ] && echo "0" > "$f"; done
   ```
 - Ask: **"Ready to continue from here, or would you like to adjust?"**
 - If the user says "go" (or equivalent), begin executing the work plan.
