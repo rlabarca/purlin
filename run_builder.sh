@@ -27,7 +27,7 @@ if [ -f "$SCRIPT_DIR/.purlin/BUILDER_OVERRIDES.md" ]; then
 fi
 
 # --- Read agent config via resolver ---
-AGENT_ROLE="builder"
+export AGENT_ROLE="builder"
 RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
 
 AGENT_MODEL=""

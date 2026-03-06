@@ -27,7 +27,7 @@ if [ -f "$SCRIPT_DIR/.purlin/QA_OVERRIDES.md" ]; then
 fi
 
 # --- Read agent config via resolver ---
-AGENT_ROLE="qa"
+export AGENT_ROLE="qa"
 RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
 
 AGENT_MODEL=""
