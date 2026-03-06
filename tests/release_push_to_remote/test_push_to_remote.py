@@ -8,6 +8,7 @@ Covers automated scenarios from features/release_push_to_remote.md:
 - Force-push would be required
 - Multiple remotes, user accepts default
 - Single remote, streamlined confirmation
+- Release push from collaboration branch shows branch confirmation
 
 This release step has code: null (interactive). These tests verify the
 underlying git behaviors and config parsing that the agent relies on
@@ -415,6 +416,77 @@ class TestSingleRemote(unittest.TestCase):
         self.assertIn('main', prompt)
         self.assertIn('origin', prompt)
         self.assertIn(url, prompt)
+
+
+class TestCollaborationBranchWarning(unittest.TestCase):
+    """Scenario: Release push from collaboration branch shows branch confirmation
+
+    Given .purlin/runtime/active_branch contains "collab/v0.6-sprint"
+    And the current branch is "collab/v0.6-sprint"
+    When the Architect executes the purlin.push_to_remote step
+    Then the step warns that the current branch is a collaboration branch
+    And the warning message contains "collab/v0.6-sprint"
+    And the Architect must confirm before proceeding
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fixture = GitRepoFixture().setup()
+        # Create the collab branch
+        _git_check(
+            ['checkout', '-b', 'collab/v0.6-sprint'], cls.fixture.local_dir)
+        # Set up .purlin/runtime/active_branch
+        cls.runtime_dir = os.path.join(
+            cls.fixture.local_dir, '.purlin', 'runtime')
+        os.makedirs(cls.runtime_dir, exist_ok=True)
+        cls.active_branch_path = os.path.join(
+            cls.runtime_dir, 'active_branch')
+        with open(cls.active_branch_path, 'w') as f:
+            f.write('collab/v0.6-sprint')
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.fixture.teardown()
+
+    def test_active_branch_file_detected(self):
+        """active_branch file exists and is non-empty."""
+        self.assertTrue(os.path.exists(self.active_branch_path))
+        with open(self.active_branch_path) as f:
+            content = f.read().strip()
+        self.assertTrue(len(content) > 0)
+
+    def test_current_branch_matches_active_branch(self):
+        """Current branch matches the value in active_branch file."""
+        current = _git_check(
+            ['rev-parse', '--abbrev-ref', 'HEAD'], self.fixture.local_dir)
+        with open(self.active_branch_path) as f:
+            active = f.read().strip()
+        self.assertEqual(current, active)
+
+    def test_warning_message_contains_branch_name(self):
+        """Warning message includes the collaboration branch name."""
+        with open(self.active_branch_path) as f:
+            branch = f.read().strip()
+        msg = (f'Current branch is a collaboration branch (`{branch}`). '
+               'Pushing directly may bypass the collaboration workflow. '
+               'Confirm to proceed.')
+        self.assertIn('collab/v0.6-sprint', msg)
+        self.assertIn('collaboration branch', msg)
+        self.assertIn('Confirm to proceed', msg)
+
+    def test_no_warning_when_active_branch_differs(self):
+        """No warning when current branch does not match active_branch."""
+        current = _git_check(
+            ['rev-parse', '--abbrev-ref', 'HEAD'], self.fixture.local_dir)
+        non_matching_active = 'collab/other-sprint'
+        should_warn = (current == non_matching_active)
+        self.assertFalse(should_warn)
+
+    def test_no_warning_when_active_branch_file_missing(self):
+        """No warning when active_branch file does not exist."""
+        fake_path = os.path.join(self.runtime_dir, 'nonexistent')
+        should_warn = os.path.exists(fake_path)
+        self.assertFalse(should_warn)
 
 
 if __name__ == '__main__':

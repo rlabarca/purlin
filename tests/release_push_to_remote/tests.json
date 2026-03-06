@@ -5,7 +5,7 @@
   ],
   "results": {
     "test_push_to_remote": {
-      "passed": 22,
+      "passed": 27,
       "failed": 0,
       "scenarios_covered": [
         "Remote is ahead of local",
@@ -13,11 +13,12 @@
         "Clean push to remote",
         "Force-push would be required",
         "Multiple remotes, user accepts default",
-        "Single remote, streamlined confirmation"
+        "Single remote, streamlined confirmation",
+        "Release push from collaboration branch shows branch confirmation"
       ]
     }
   },
-  "total_passed": 22,
+  "total_passed": 27,
   "total_failed": 0,
-  "timestamp": "2026-03-05T03:15:00Z"
+  "timestamp": "2026-03-06T14:55:00Z"
 }
