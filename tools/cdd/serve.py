@@ -1281,6 +1281,7 @@ ROLE_BADGE_CSS = {
     "DONE": "st-done",
     "CLEAN": "st-done",
     "TODO": "st-todo",
+    "AUTO": "st-auto",
     "FAIL": "st-fail",
     "INFEASIBLE": "st-fail",
     "BLOCKED": "st-blocked",
@@ -1306,27 +1307,34 @@ def _role_badge_html(status):
 
 
 def _qa_badge_html(entry):
-    """Returns a QA badge with optional effort breakdown for TODO status.
+    """Returns a QA badge with AUTO status and effort tooltip.
 
-    When QA is TODO and verification_effort has non-zero counts,
-    appends (Na/Mm) in muted text.
+    When QA is TODO and verification_effort is fully auto-resolvable
+    (total_manual==0, total_auto>0), displays AUTO in orange.
+    Hovering over TODO or AUTO shows the full effort breakdown tooltip.
     """
     qa = entry.get("qa")
-    base = _role_badge_html(qa)
     if qa != "TODO":
-        return base
+        return _role_badge_html(qa)
 
     ve = entry.get("verification_effort")
     if not ve:
-        return base
+        return _role_badge_html(qa)
 
     total_auto = ve.get("total_auto", 0)
     total_manual = ve.get("total_manual", 0)
     if total_auto == 0 and total_manual == 0:
-        return base
+        return _role_badge_html(qa)
 
-    # Build tooltip with full category breakdown
-    tooltip_parts = []
+    # Determine display label: AUTO when fully auto-resolvable, else TODO
+    if total_manual == 0 and total_auto > 0:
+        display_label = "AUTO"
+    else:
+        display_label = "TODO"
+
+    badge_css = ROLE_BADGE_CSS.get(display_label, "st-na")
+
+    # Build tooltip with full category breakdown (omit zero categories)
     auto_parts = []
     if ve.get("auto_web", 0) > 0:
         auto_parts.append(f'{ve["auto_web"]} web')
@@ -1334,8 +1342,6 @@ def _qa_badge_html(entry):
         auto_parts.append(f'{ve["auto_test_only"]} test-only')
     if ve.get("auto_skip", 0) > 0:
         auto_parts.append(f'{ve["auto_skip"]} skip')
-    if auto_parts:
-        tooltip_parts.append(f'Auto: {", ".join(auto_parts)}')
 
     manual_parts = []
     if ve.get("manual_interactive", 0) > 0:
@@ -1344,22 +1350,19 @@ def _qa_badge_html(entry):
         manual_parts.append(f'{ve["manual_visual"]} visual')
     if ve.get("manual_hardware", 0) > 0:
         manual_parts.append(f'{ve["manual_hardware"]} hardware')
-    if manual_parts:
-        tooltip_parts.append(f'Manual: {", ".join(manual_parts)}')
 
     # Build tooltip HTML lines for the custom popup
     tooltip_lines = []
     if auto_parts:
-        tooltip_lines.append(f'<b>Auto-resolvable:</b> {", ".join(auto_parts)}')
+        tooltip_lines.append(f'<b>Auto:</b> {", ".join(auto_parts)}')
     if manual_parts:
-        tooltip_lines.append(f'<b>Human-required:</b> {", ".join(manual_parts)}')
+        tooltip_lines.append(f'<b>Manual:</b> {", ".join(manual_parts)}')
     tooltip_html = "<br>".join(tooltip_lines)
 
-    effort_span = (
+    return (
         f'<span class="effort-breakdown" data-effort-tooltip="{tooltip_html}">'
-        f'({total_auto}a/{total_manual}m)</span>'
+        f'<span class="{badge_css}">{display_label}</span></span>'
     )
-    return f'<span class="qa-badge-wrap">{base} {effort_span}</span>'
 
 
 def _format_category_counts(counts):
@@ -2224,9 +2227,9 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-fail{{color:var(--purlin-status-error);font-weight:bold}}
 .st-blocked{{color:var(--purlin-dim);font-weight:bold}}
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
+.st-auto{{color:var(--purlin-status-warning);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
-.qa-badge-wrap{{white-space:nowrap}}
-.effort-breakdown{{color:var(--purlin-muted);font-size:12px;font-weight:normal;cursor:help;position:relative}}
+.effort-breakdown{{cursor:help;position:relative}}
 .effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-fg);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
 .qa-queue-summary{{color:var(--purlin-muted);font-size:12px;font-weight:500;margin-left:8px}}
 /* Feature Detail Modal */

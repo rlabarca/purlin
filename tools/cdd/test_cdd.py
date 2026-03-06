@@ -1537,9 +1537,45 @@ class TestStartShPortValidation(unittest.TestCase):
 # ===================================================================
 
 class TestQaBadgeHtml(unittest.TestCase):
-    """Scenario: QA TODO cell shows effort breakdown."""
+    """Scenarios: QA TODO/AUTO badge and effort tooltip."""
 
-    def test_todo_with_effort_shows_breakdown(self):
+    def test_fully_auto_shows_auto_badge(self):
+        """Scenario: Fully auto-resolvable feature shows AUTO."""
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "manual_interactive": 0, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 5, "total_manual": 0,
+                "summary": "5 auto, 0 manual",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("AUTO", html)
+        self.assertIn("st-auto", html)
+        self.assertNotIn("TODO", html)
+        self.assertIn("effort-breakdown", html)
+
+    def test_auto_badge_has_tooltip(self):
+        """AUTO badge shows effort tooltip on hover."""
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "manual_interactive": 0, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 5, "total_manual": 0,
+                "summary": "5 auto, 0 manual",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("data-effort-tooltip", html)
+        self.assertIn("3 web", html)
+        self.assertIn("2 test-only", html)
+
+    def test_mixed_effort_shows_todo(self):
+        """Scenario: Mixed effort feature shows TODO."""
         entry = {
             "qa": "TODO",
             "verification_effort": {
@@ -1552,10 +1588,12 @@ class TestQaBadgeHtml(unittest.TestCase):
         }
         html = _qa_badge_html(entry)
         self.assertIn("TODO", html)
-        self.assertIn("(3a/6m)", html)
+        self.assertIn("st-todo", html)
+        self.assertNotIn("AUTO", html)
         self.assertIn("effort-breakdown", html)
 
     def test_todo_zero_effort_shows_plain_todo(self):
+        """Scenario: QA TODO with zero effort shows plain TODO."""
         entry = {
             "qa": "TODO",
             "verification_effort": {
@@ -1571,6 +1609,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         self.assertNotIn("effort-breakdown", html)
 
     def test_non_todo_no_effort(self):
+        """Scenario: Non-TODO QA status is unchanged."""
         entry = {"qa": "CLEAN"}
         html = _qa_badge_html(entry)
         self.assertIn("CLEAN", html)
@@ -1594,7 +1633,7 @@ class TestQaBadgeHtml(unittest.TestCase):
             },
         }
         html = _qa_badge_html(entry)
-        self.assertIn("title=", html)
+        self.assertIn("data-effort-tooltip", html)
         self.assertIn("3 web", html)
         self.assertIn("2 interactive", html)
         self.assertIn("4 visual", html)
