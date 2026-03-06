@@ -32,9 +32,9 @@ The Architect renamed "Remote Collaboration" to "Branch Collaboration" and remov
 **Completion Commit:** ee33e4d
 **QA Bugs Addressed:** --
 
-## Phase 6 -- What's Different Dashboard [PENDING]
+## Phase 6 -- What's Different Dashboard [COMPLETE]
 **Features:** collab_whats_different.md
-**Completion Commit:** --
+**Completion Commit:** bef38fd
 **QA Bugs Addressed:** --
 
 ## Plan Amendments

@@ -90,9 +90,3 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 None.
 
 ## User Testing Discoveries
-
-### [BUG] Turn counter not reset after /clear + /pl-resume
-- **Status:** RESOLVED
-- **Severity:** HIGH
-- **Description:** `/clear` does not change Claude Code's `session_id`, so the context guard hook never detects a new session after a context clear. The turn counter persists, causing immediate warnings when resuming.
-- **Resolution:** Added Step 0 to `/pl-resume` restore flow that explicitly resets `.purlin/runtime/turn_count` to 0. The hook's session detection remains correct for actual new sessions (new terminal).
