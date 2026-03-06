@@ -1,7 +1,10 @@
 #!/bin/bash
 # test_context_guard.sh — Automated tests for context_guard.sh
-# Covers all 9 automated scenarios from features/context_guard.md.
+# Covers all automated scenarios from features/context_guard.md.
 # Produces tests/context_guard/tests.json.
+#
+# The hook uses PPID as unique agent identity. Since PPID is read-only in bash,
+# tests use CONTEXT_GUARD_AGENT_ID to simulate different agent processes.
 
 set -uo pipefail
 
@@ -32,17 +35,22 @@ setup_sandbox() {
     cp "$SCRIPT_DIR/../config/resolve_config.py" "$SANDBOX/tools/config/"
 }
 
-# Run context_guard.sh with a given session_id, using the sandbox as project root.
-# Optional second arg: AGENT_ROLE value (empty string = unset).
+# Run context_guard.sh with a given session_id and agent_id.
+# Args: session_id [agent_role] [agent_id]
 run_guard() {
     local session_id="${1:-test-session}"
     local agent_role="${2:-}"
+    local agent_id="${3:-test-agent}"
     if [[ -n "$agent_role" ]]; then
         echo "{\"session_id\":\"$session_id\"}" | \
-            PURLIN_PROJECT_ROOT="$SANDBOX" AGENT_ROLE="$agent_role" bash "$SANDBOX/tools/hooks/context_guard.sh"
+            PURLIN_PROJECT_ROOT="$SANDBOX" AGENT_ROLE="$agent_role" \
+            CONTEXT_GUARD_AGENT_ID="$agent_id" \
+            bash "$SANDBOX/tools/hooks/context_guard.sh"
     else
         echo "{\"session_id\":\"$session_id\"}" | \
-            PURLIN_PROJECT_ROOT="$SANDBOX" bash -c 'unset AGENT_ROLE; bash "$1"' _ "$SANDBOX/tools/hooks/context_guard.sh"
+            PURLIN_PROJECT_ROOT="$SANDBOX" \
+            CONTEXT_GUARD_AGENT_ID="$agent_id" \
+            bash -c 'unset AGENT_ROLE; bash "$1"' _ "$SANDBOX/tools/hooks/context_guard.sh"
     fi
 }
 
@@ -57,11 +65,11 @@ echo ""
 echo "[Scenario] Counter increments on each invocation"
 setup_sandbox
 
-run_guard "session-1" >/dev/null 2>&1
-run_guard "session-1" >/dev/null 2>&1
-run_guard "session-1" >/dev/null 2>&1
+run_guard "session-1" "" "agent-1" >/dev/null 2>&1
+run_guard "session-1" "" "agent-1" >/dev/null 2>&1
+run_guard "session-1" "" "agent-1" >/dev/null 2>&1
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-1")
 if [[ "$ACTUAL" == "3" ]]; then
     log_pass "Turn count is 3 after 3 invocations"
 else
@@ -77,14 +85,15 @@ echo "[Scenario] Status output on every turn when guard enabled"
 setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
-echo "2" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-2" > "$SANDBOX/.purlin/runtime/session_id"
+# Pre-seed session meta and counter (simulates an existing session)
+echo "session-2" > "$SANDBOX/.purlin/runtime/session_meta_agent-2"
+echo "2" > "$SANDBOX/.purlin/runtime/turn_count_agent-2"
 
-OUTPUT=$(run_guard "session-2" 2>&1)
-if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 7/10"'; then
-    log_pass "Status output shows CONTEXT GUARD: 7/10"
+OUTPUT=$(run_guard "session-2" "" "agent-2" 2>&1)
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 3 / 10 used"'; then
+    log_pass "Status output shows CONTEXT GUARD: 3 / 10 used"
 else
-    log_fail "Expected 'CONTEXT GUARD: 7/10' in additionalContext, got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 3 / 10 used' in additionalContext, got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
@@ -96,36 +105,43 @@ echo "[Scenario] Exceeded threshold appends evacuation instructions"
 setup_sandbox
 
 echo '{"context_guard_threshold": 5}' > "$SANDBOX/.purlin/config.json"
-echo "5" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-3" > "$SANDBOX/.purlin/runtime/session_id"
+echo "session-3" > "$SANDBOX/.purlin/runtime/session_meta_agent-3"
+echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-3"
 
-OUTPUT=$(run_guard "session-3" 2>&1)
-if echo "$OUTPUT" | grep -q "CONTEXT GUARD: -1/5 -- Run /pl-resume save"; then
-    log_pass "Exceeded output shows CONTEXT GUARD: -1/5 with evacuation instructions"
+OUTPUT=$(run_guard "session-3" "" "agent-3" 2>&1)
+if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save"; then
+    log_pass "Exceeded output shows CONTEXT GUARD: 6 / 5 with evacuation instructions"
 else
-    log_fail "Expected 'CONTEXT GUARD: -1/5 -- Run /pl-resume save...', got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save...', got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 4: Counter resets on new session
+# Scenario 4: Counter resets on new agent process (different AGENT_ID)
 ###############################################################################
 echo ""
-echo "[Scenario] Counter resets on new session"
+echo "[Scenario] Counter resets on new agent process"
 setup_sandbox
 
-echo "25" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "old-session" > "$SANDBOX/.purlin/runtime/session_id"
-# Backdate turn_count to simulate stale file (>120s) so subagent detection triggers reset
-touch -t 202501010000 "$SANDBOX/.purlin/runtime/turn_count"
+# Old agent had 25 turns
+echo "old-session" > "$SANDBOX/.purlin/runtime/session_meta_old-agent"
+echo "25" > "$SANDBOX/.purlin/runtime/turn_count_old-agent"
 
-run_guard "new-session" >/dev/null 2>&1
+# New agent process (different AGENT_ID) starts fresh
+run_guard "new-session" "" "new-agent" >/dev/null 2>&1
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_new-agent")
 if [[ "$ACTUAL" == "1" ]]; then
-    log_pass "Counter reset to 1 on new session"
+    log_pass "New agent starts at count 1 (fresh counter)"
 else
-    log_fail "Expected turn count 1 after session reset, got '$ACTUAL'"
+    log_fail "Expected turn count 1 for new agent, got '$ACTUAL'"
+fi
+# Old agent's file should be untouched
+OLD=$(cat "$SANDBOX/.purlin/runtime/turn_count_old-agent")
+if [[ "$OLD" == "25" ]]; then
+    log_pass "Old agent's counter untouched at 25"
+else
+    log_fail "Expected old agent count 25, got '$OLD'"
 fi
 cleanup_sandbox
 
@@ -136,27 +152,13 @@ echo ""
 echo "[Scenario] Default threshold when config key absent"
 setup_sandbox
 
-# Config without threshold key, AGENT_ROLE unset
 echo '{"cdd_port": 9086}' > "$SANDBOX/.purlin/config.json"
-echo "45" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-5" > "$SANDBOX/.purlin/runtime/session_id"
 
-OUTPUT=$(run_guard "session-5" 2>&1)
-if echo "$OUTPUT" | grep -q "CONTEXT GUARD: -1/45 -- Run /pl-resume save"; then
-    log_pass "Default threshold is 45 (exceeded at turn 46/45)"
+OUTPUT=$(run_guard "session-5" "" "agent-5" 2>&1)
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 1 / 45 used"'; then
+    log_pass "Default threshold is 45 (shows 1 / 45 used)"
 else
-    log_fail "Expected 'CONTEXT GUARD: -1/45' with default threshold, got: '$OUTPUT'"
-fi
-
-# Also verify normal output at pre-threshold (turn 45/45)
-echo "44" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-5b" > "$SANDBOX/.purlin/runtime/session_id"
-
-OUTPUT=$(run_guard "session-5b" 2>&1)
-if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 0/45 -- Run /pl-resume save'; then
-    log_pass "At exactly threshold (turn 45/45), remaining=0 triggers evacuation"
-else
-    log_fail "Expected 'CONTEXT GUARD: 0/45' at threshold, got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 1 / 45 used' with default threshold, got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
@@ -168,15 +170,12 @@ echo "[Scenario] Per-agent threshold overrides global"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"builder": {"context_guard_threshold": 30, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-# Role-specific files: when AGENT_ROLE=builder, hook reads turn_count_builder / session_id_builder
-echo "29" > "$SANDBOX/.purlin/runtime/turn_count_builder"
-echo "session-6" > "$SANDBOX/.purlin/runtime/session_id_builder"
 
-OUTPUT=$(run_guard "session-6" "builder" 2>&1)
-if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 0/30 -- Run /pl-resume save'; then
-    log_pass "Per-agent threshold 30 used instead of global 45 (turn 30/30)"
+OUTPUT=$(run_guard "session-6" "builder" "agent-6" 2>&1)
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 1 / 30 used"'; then
+    log_pass "Per-agent threshold 30 used instead of global 45"
 else
-    log_fail "Expected 'CONTEXT GUARD: 0/30', got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 1 / 30 used', got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
@@ -188,12 +187,11 @@ echo "[Scenario] Per-agent guard disabled suppresses output"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": false, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-# Role-specific files: when AGENT_ROLE=architect, hook reads turn_count_architect / session_id_architect
-echo "10" > "$SANDBOX/.purlin/runtime/turn_count_architect"
-echo "session-7" > "$SANDBOX/.purlin/runtime/session_id_architect"
+echo "session-7" > "$SANDBOX/.purlin/runtime/session_meta_agent-7"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-7"
 
-OUTPUT=$(run_guard "session-7" "architect" 2>&1)
-COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_architect")
+OUTPUT=$(run_guard "session-7" "architect" "agent-7" 2>&1)
+COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-7")
 
 if [[ -z "$OUTPUT" ]] && [[ "$COUNTER" == "11" ]]; then
     log_pass "No output when guard disabled, counter still incremented to 11"
@@ -210,15 +208,13 @@ echo "[Scenario] Missing AGENT_ROLE falls back to global"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50, "agents": {"builder": {"context_guard_threshold": 30, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-echo "49" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-8" > "$SANDBOX/.purlin/runtime/session_id"
 
 # Run without AGENT_ROLE — should use global threshold 50
-OUTPUT=$(run_guard "session-8" 2>&1)
-if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 0/50 -- Run /pl-resume save'; then
-    log_pass "Global threshold 50 used when AGENT_ROLE unset (turn 50/50)"
+OUTPUT=$(run_guard "session-8" "" "agent-8" 2>&1)
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 1 / 50 used"'; then
+    log_pass "Global threshold 50 used when AGENT_ROLE unset"
 else
-    log_fail "Expected 'CONTEXT GUARD: 0/50', got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 1 / 50 used', got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
@@ -230,31 +226,107 @@ echo "[Scenario] Exceeded output repeats on subsequent turns"
 setup_sandbox
 
 echo '{"context_guard_threshold": 2}' > "$SANDBOX/.purlin/config.json"
-echo "3" > "$SANDBOX/.purlin/runtime/turn_count"
-echo "session-9" > "$SANDBOX/.purlin/runtime/session_id"
+echo "session-9" > "$SANDBOX/.purlin/runtime/session_meta_agent-9"
+echo "3" > "$SANDBOX/.purlin/runtime/turn_count_agent-9"
 
-OUTPUT=$(run_guard "session-9" 2>&1)
-if echo "$OUTPUT" | grep -q "CONTEXT GUARD: -2/2 -- Run /pl-resume save"; then
-    log_pass "Exceeded output repeats: CONTEXT GUARD: -2/2"
+OUTPUT=$(run_guard "session-9" "" "agent-9" 2>&1)
+if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 4 / 2 used -- Run /pl-resume save"; then
+    log_pass "Exceeded output repeats: CONTEXT GUARD: 4 / 2 used"
 else
-    log_fail "Expected 'CONTEXT GUARD: -2/2 -- Run /pl-resume save...', got: '$OUTPUT'"
+    log_fail "Expected 'CONTEXT GUARD: 4 / 2 used -- Run /pl-resume save...', got: '$OUTPUT'"
 fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 10: Parallel invocations count correctly (race condition)
+# Scenario 10: Per-agent threshold used when AGENT_ROLE is set
+###############################################################################
+echo ""
+echo "[Scenario] Per-agent threshold used when AGENT_ROLE is set"
+setup_sandbox
+
+echo '{"context_guard_threshold": 45, "agents": {"builder": {"context_guard_threshold": 60, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
+
+OUTPUT=$(run_guard "session-10" "builder" "agent-10" 2>&1)
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 1 / 60 used"'; then
+    log_pass "Per-agent threshold 60 used for builder"
+else
+    log_fail "Expected 'CONTEXT GUARD: 1 / 60 used', got: '$OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 11: Subagent detection outputs status without incrementing
+###############################################################################
+echo ""
+echo "[Scenario] Subagent detection outputs status without incrementing"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+
+# Main agent runs first (creates session_meta and increments)
+run_guard "main-session" "" "agent-11" >/dev/null 2>&1
+run_guard "main-session" "" "agent-11" >/dev/null 2>&1
+run_guard "main-session" "" "agent-11" >/dev/null 2>&1
+
+# Subagent has same AGENT_ID but different session_id
+OUTPUT=$(run_guard "subagent-session" "" "agent-11" 2>&1)
+COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11")
+
+if [[ "$COUNTER" == "3" ]]; then
+    log_pass "Counter stays at 3 (subagent did not increment)"
+else
+    log_fail "Expected count=3, got '$COUNTER'"
+fi
+if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 3 / 10 used"'; then
+    log_pass "Subagent still outputs parent's status: 3 / 10 used"
+else
+    log_fail "Expected 'CONTEXT GUARD: 3 / 10 used' from subagent, got: '$OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 12: Counter resets after session_meta deletion
+###############################################################################
+echo ""
+echo "[Scenario] Counter resets after session_meta deletion"
+setup_sandbox
+
+# Simulate existing session
+echo "old-session" > "$SANDBOX/.purlin/runtime/session_meta_agent-12"
+echo "42" > "$SANDBOX/.purlin/runtime/turn_count_agent-12"
+
+# Delete session_meta (simulates /pl-resume reset)
+rm -f "$SANDBOX/.purlin/runtime/session_meta_agent-12"
+
+OUTPUT=$(run_guard "new-session" "" "agent-12" 2>&1)
+COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-12")
+
+if [[ "$COUNTER" == "1" ]]; then
+    log_pass "Counter reset to 1 after session_meta deletion"
+else
+    log_fail "Expected count=1 after meta deletion, got '$COUNTER'"
+fi
+if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 1 /"; then
+    log_pass "Output shows count 1 after reset"
+else
+    log_fail "Expected 'CONTEXT GUARD: 1 /' in output, got: '$OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 13: Parallel invocations count correctly (race condition)
 ###############################################################################
 echo ""
 echo "[Scenario] Parallel invocations count correctly"
 setup_sandbox
 
-# Run 10 instances in parallel with the same session
+# Run 10 instances in parallel with the same session and agent
 for i in $(seq 1 10); do
-    run_guard "session-10" >/dev/null 2>&1 &
+    run_guard "session-13" "" "agent-13" >/dev/null 2>&1 &
 done
 wait
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-13")
 if [[ "$ACTUAL" == "10" ]]; then
     log_pass "Parallel invocations all counted: 10/10"
 else
@@ -263,34 +335,65 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 11: Role-specific files isolate concurrent agents
+# Scenario 14: Different agent IDs isolate counters
 ###############################################################################
 echo ""
-echo "[Scenario] Role-specific files isolate concurrent agents"
+echo "[Scenario] Different agent IDs isolate counters"
 setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
 
-# Builder runs 3 times
-run_guard "builder-session" "builder" >/dev/null 2>&1
-run_guard "builder-session" "builder" >/dev/null 2>&1
-run_guard "builder-session" "builder" >/dev/null 2>&1
+# Agent A runs 3 times
+run_guard "session-a" "" "agent-a" >/dev/null 2>&1
+run_guard "session-a" "" "agent-a" >/dev/null 2>&1
+run_guard "session-a" "" "agent-a" >/dev/null 2>&1
 
-# Architect runs 5 times (different session_id, concurrent)
-run_guard "architect-session" "architect" >/dev/null 2>&1
-run_guard "architect-session" "architect" >/dev/null 2>&1
-run_guard "architect-session" "architect" >/dev/null 2>&1
-run_guard "architect-session" "architect" >/dev/null 2>&1
-run_guard "architect-session" "architect" >/dev/null 2>&1
+# Agent B runs 5 times (different agent, simulating different Claude Code process)
+run_guard "session-b" "" "agent-b" >/dev/null 2>&1
+run_guard "session-b" "" "agent-b" >/dev/null 2>&1
+run_guard "session-b" "" "agent-b" >/dev/null 2>&1
+run_guard "session-b" "" "agent-b" >/dev/null 2>&1
+run_guard "session-b" "" "agent-b" >/dev/null 2>&1
 
-BUILDER_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_builder" 2>/dev/null || echo "MISSING")
-ARCHITECT_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_architect" 2>/dev/null || echo "MISSING")
-UNSUFFIXED=$(cat "$SANDBOX/.purlin/runtime/turn_count" 2>/dev/null || echo "MISSING")
+A_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-a" 2>/dev/null || echo "MISSING")
+B_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-b" 2>/dev/null || echo "MISSING")
 
-if [[ "$BUILDER_COUNT" == "3" ]] && [[ "$ARCHITECT_COUNT" == "5" ]]; then
-    log_pass "Builder=3, Architect=5 in separate files"
+if [[ "$A_COUNT" == "3" ]] && [[ "$B_COUNT" == "5" ]]; then
+    log_pass "Agent-A=3, Agent-B=5 in separate files"
 else
-    log_fail "Expected Builder=3, Architect=5, got Builder='$BUILDER_COUNT', Architect='$ARCHITECT_COUNT', unsuffixed='$UNSUFFIXED'"
+    log_fail "Expected A=3, B=5, got A='$A_COUNT', B='$B_COUNT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 15: Guard output on every tool call with no silent exits
+###############################################################################
+echo ""
+echo "[Scenario] Guard output on every tool call with no silent exits"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+
+# New session call
+OUTPUT_NEW=$(run_guard "session-15" "" "agent-15" 2>&1)
+
+# Same session call
+OUTPUT_SAME=$(run_guard "session-15" "" "agent-15" 2>&1)
+
+# Subagent call
+OUTPUT_SUB=$(run_guard "subagent-15" "" "agent-15" 2>&1)
+
+ALL_HAVE_OUTPUT=true
+for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "sub:$OUTPUT_SUB"; do
+    label="${label_output%%:*}"
+    output="${label_output#*:}"
+    if ! echo "$output" | grep -q "CONTEXT GUARD:"; then
+        log_fail "No CONTEXT GUARD output for $label session call: '$output'"
+        ALL_HAVE_OUTPUT=false
+    fi
+done
+if [[ "$ALL_HAVE_OUTPUT" == "true" ]]; then
+    log_pass "All code paths (new, same, subagent) produce CONTEXT GUARD output"
 fi
 cleanup_sandbox
 
