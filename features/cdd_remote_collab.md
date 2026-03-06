@@ -27,6 +27,8 @@ The REMOTE COLLABORATION section is always rendered in the dashboard, regardless
 
 The section is always visible because it IS the entry point for remote collab. Hiding it behind config creates a chicken-and-egg problem (user cannot discover the feature without editing config).
 
+The expanded heading text is `"REMOTE COLLABORATION (<shortened-url>)"` where `<shortened-url>` is the remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `remote_collab.remote` config, default `"origin"`). When no git remote is configured, the expanded heading remains plain `"REMOTE COLLABORATION"` (no parenthetical). The `data-expanded` attribute on the `rc-heading` span includes the URL. Collapsed text behavior is unchanged (already shows session name + sync state in active mode).
+
 Exception: if `git remote` returns empty (no remote configured at all), the section body shows "No git remote configured. Add a remote to enable remote collaboration."
 
 ### 2.2 State A: No Active Session (Setup Mode)
@@ -49,7 +51,13 @@ When `.purlin/runtime/active_remote_session` is absent or empty:
    - Each row has a **Delete** button and a **Join** button in the Action column, in that order (Delete left, Join right). Delete -> opens the Delete Confirmation Modal (Section 2.8). Join -> `POST /remote-collab/switch`.
    - Empty state: "No remote collab sessions found."
 
-3. **Existing branch selector** (below known sessions table):
+3. **Refresh Sessions button** (inline with the known sessions table heading):
+   - A **"Refresh Sessions"** button positioned to the right of the known sessions table heading.
+   - On click: `POST /remote-collab/fetch-all`.
+   - While in-flight: button text changes to "Refreshing..." and is disabled (same guard pattern as "Check Remote").
+   - After success: the known sessions table re-renders with updated branches from refreshed refs.
+
+4. **Existing branch selector** (below known sessions table):
    - A dropdown (`<select>`) populated from `git branch -r`, filtered to exclude `HEAD`, `main`/`master`, and any `collab/*` branches already listed in the known sessions table.
    - Label: "Join Existing Branch"
    - "Join" button beside the dropdown. Disabled when no branches are available in the dropdown.
@@ -114,6 +122,14 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 4. "Checking..." label + disabled guard while in flight (same pattern as `rcPendingSave`).
 5. Auto-fetch: background thread fires after first interval (NOT on startup); boolean lock prevents concurrent fetches; failures logged server-side only.
 6. `last_fetch`: in-memory only; resets to null on server restart.
+
+**`POST /remote-collab/fetch-all`** -- `{}`
+
+1. Read remote from config (`remote_collab.remote`, default `"origin"`).
+2. Run `git fetch <remote>` (no branch argument -- fetches all refs for the configured remote).
+3. Return `{ "status": "ok", "fetched_at": "<ISO timestamp>" }`.
+4. Uses the same `_remote_collab_fetch_lock` to prevent concurrent fetches with the active-session fetch.
+5. On failure: return `{ "error": "..." }`.
 
 **`POST /remote-collab/join-existing`** -- `{ "branch": "<branch>" }`
 
@@ -516,6 +532,29 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
     And the section does not contain a "Disconnect" button
     And the section does not contain a sync state badge
 
+#### Scenario: Refresh Sessions Button Fetches All Remote Refs
+
+    Given the CDD server is running with no active session
+    And the known sessions table shows 1 collab session
+    When a new collab branch is pushed to the remote from another machine
+    And a POST request is sent to /remote-collab/fetch-all
+    Then the response contains { "status": "ok" } with a fetched_at timestamp
+    And the known sessions table re-renders with the newly discovered collab branch
+
+#### Scenario: Section Heading Shows Shortened Remote URL
+
+    Given the CDD server is running
+    And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading expanded text includes "(github.com/rlabarca/purlin)"
+
+#### Scenario: Section Heading Without Remote
+
+    Given the CDD server is running
+    And no git remote is configured
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading expanded text is "REMOTE COLLABORATION" with no parenthetical
+
 ### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Delete Confirmation Modal With Standard Warning
@@ -568,6 +607,10 @@ Triggered by clicking a session's **Delete** button in the known sessions table 
 - [ ] "Join Existing Branch" label visible beside the existing branch dropdown
 - [ ] Join button visible beside the existing branch dropdown, disabled when no branches available
 - [ ] Existing branch dropdown hidden with muted "No other remote branches available" note when no eligible branches exist
+- [ ] "Refresh Sessions" button positioned to the right of the known sessions table heading in setup mode
+- [ ] "Refresh Sessions" button shows "Refreshing..." text and is disabled while fetch-all is in flight
+- [ ] Expanded heading text includes shortened remote URL in parentheses (e.g., `REMOTE COLLABORATION (github.com/rlabarca/purlin)`) when remote is configured
+- [ ] Expanded heading shows plain "REMOTE COLLABORATION" when no remote is configured
 
 ## User Testing Discoveries
 
