@@ -230,8 +230,7 @@ else
     log_fail "cdd/start.sh does not source resolve_python.sh"
 fi
 
-# --- Scenario: Bootstrap/Init Uses Resolved Python for JSON Validation ---
-# bootstrap.sh is a deprecation shim delegating to init.sh; check init.sh
+# --- Scenario: Init Uses Resolved Python for JSON Validation ---
 echo ""
 echo "[Scenario] Init Uses Resolved Python for JSON Validation"
 INIT_SCRIPT="$SCRIPT_DIR/init.sh"
@@ -298,25 +297,25 @@ fi
 
 ###############################################################################
 echo ""
-echo "=== Bootstrap Venv Suggestion Tests ==="
+echo "=== Init Venv Suggestion Tests ==="
 ###############################################################################
 
-# --- Scenario: Bootstrap Prints Venv Suggestion When No Venv Exists ---
+# --- Scenario: Init Prints Venv Suggestion When No Venv Exists ---
 echo ""
-echo "[Scenario] Bootstrap Prints Venv Suggestion When No Venv Exists"
+echo "[Scenario] Init Prints Venv Suggestion When No Venv Exists"
 SANDBOX="$(mktemp -d)"
 trap cleanup_sandbox EXIT
 PROJECT="$SANDBOX/my-project"
 mkdir -p "$PROJECT"
 git -C "$PROJECT" init -q
-git clone -q "$SUBMODULE_SRC" "$PROJECT/agentic-dev"
+git clone -q "$SUBMODULE_SRC" "$PROJECT/purlin"
 # Overlay latest scripts
-cp "$SUBMODULE_SRC/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/bootstrap.sh"
-cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
-cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/agentic-dev/requirements-optional.txt" 2>/dev/null || true
-chmod +x "$PROJECT/agentic-dev/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
+cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
+cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
+cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
+chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
-OUTPUT=$("$PROJECT/agentic-dev/tools/bootstrap.sh" 2>&1)
+OUTPUT=$("$PROJECT/purlin/tools/init.sh" 2>&1)
 if echo "$OUTPUT" | grep -q "requirements-optional.txt"; then
     log_pass "Venv suggestion printed when no .venv exists"
 else
@@ -325,22 +324,22 @@ fi
 
 cleanup_sandbox
 
-# --- Scenario: Bootstrap Omits Venv Suggestion When Venv Exists ---
+# --- Scenario: Init Omits Venv Suggestion When Venv Exists ---
 echo ""
-echo "[Scenario] Bootstrap Omits Venv Suggestion When Venv Exists"
+echo "[Scenario] Init Omits Venv Suggestion When Venv Exists"
 SANDBOX="$(mktemp -d)"
 trap cleanup_sandbox EXIT
 PROJECT="$SANDBOX/my-project"
 mkdir -p "$PROJECT"
 git -C "$PROJECT" init -q
-git clone -q "$SUBMODULE_SRC" "$PROJECT/agentic-dev"
-cp "$SUBMODULE_SRC/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/bootstrap.sh"
-cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
-cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/agentic-dev/requirements-optional.txt" 2>/dev/null || true
-chmod +x "$PROJECT/agentic-dev/tools/bootstrap.sh" "$PROJECT/agentic-dev/tools/resolve_python.sh"
+git clone -q "$SUBMODULE_SRC" "$PROJECT/purlin"
+cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
+cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
+cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
+chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 mkdir -p "$PROJECT/.venv"
 
-OUTPUT=$("$PROJECT/agentic-dev/tools/bootstrap.sh" 2>&1)
+OUTPUT=$("$PROJECT/purlin/tools/init.sh" 2>&1)
 if echo "$OUTPUT" | grep -q "requirements-optional.txt"; then
     log_fail "Venv suggestion printed when .venv already exists"
 else

@@ -39,7 +39,6 @@ setup_sandbox() {
 
     # Overlay uncommitted scripts so tests exercise latest code
     cp "$SUBMODULE_SRC/tools/init.sh" "$PROJECT/purlin/tools/init.sh"
-    cp "$SUBMODULE_SRC/tools/bootstrap.sh" "$PROJECT/purlin/tools/bootstrap.sh"
     cp "$SUBMODULE_SRC/tools/resolve_python.sh" "$PROJECT/purlin/tools/resolve_python.sh"
     # Copy CDD scripts for symlink targets
     cp "$SUBMODULE_SRC/tools/cdd/start.sh" "$PROJECT/purlin/tools/cdd/start.sh"
@@ -47,7 +46,7 @@ setup_sandbox() {
     # Copy requirements files
     cp "$SUBMODULE_SRC/requirements.txt" "$PROJECT/purlin/requirements.txt" 2>/dev/null || true
     cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
-    chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/bootstrap.sh" "$PROJECT/purlin/tools/resolve_python.sh"
+    chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
     # Create submodule root symlink
     ln -sf tools/init.sh "$PROJECT/purlin/init.sh"
@@ -625,54 +624,12 @@ cleanup_sandbox
 
 ###############################################################################
 echo ""
-echo "=== Deprecation Shim Tests ==="
-###############################################################################
-
-# --- Test 27: bootstrap.sh prints deprecation notice ---
-echo ""
-echo "[Test 27] bootstrap.sh prints deprecation notice"
-setup_sandbox
-
-OUTPUT=$("$PROJECT/purlin/tools/bootstrap.sh" 2>&1)
-
-if echo "$OUTPUT" | grep -qi "deprecated"; then
-    log_pass "bootstrap.sh prints deprecation notice"
-else
-    log_fail "bootstrap.sh does NOT print deprecation notice"
-fi
-if echo "$OUTPUT" | grep -qi "init.sh"; then
-    log_pass "bootstrap.sh mentions init.sh"
-else
-    log_fail "bootstrap.sh does NOT mention init.sh"
-fi
-
-cleanup_sandbox
-
-# --- Test 28: bootstrap.sh delegates to init.sh ---
-echo ""
-echo "[Test 28] bootstrap.sh delegates to init.sh"
-setup_sandbox
-
-"$PROJECT/purlin/tools/bootstrap.sh" > /dev/null 2>&1
-EXIT_CODE=$?
-
-if [ $EXIT_CODE -eq 0 ]; then log_pass "bootstrap.sh delegation succeeded"; else log_fail "bootstrap.sh delegation failed (exit $EXIT_CODE)"; fi
-if [ -d "$PROJECT/.purlin" ]; then
-    log_pass "bootstrap.sh created .purlin/ (via init.sh delegation)"
-else
-    log_fail "bootstrap.sh did NOT create .purlin/"
-fi
-
-cleanup_sandbox
-
-###############################################################################
-echo ""
 echo "=== Ergonomic Symlink Tests ==="
 ###############################################################################
 
-# --- Test 29: Submodule root symlink exists ---
+# --- Test 27: Submodule root symlink exists ---
 echo ""
-echo "[Test 29] Submodule root symlink exists"
+echo "[Test 27] Submodule root symlink exists"
 
 if [ -L "$SUBMODULE_SRC/init.sh" ]; then
     TARGET="$(readlink "$SUBMODULE_SRC/init.sh")"
@@ -685,9 +642,9 @@ else
     log_fail "init.sh is not a symlink at submodule root"
 fi
 
-# --- Test 30: Submodule root symlink works ---
+# --- Test 28: Submodule root symlink works ---
 echo ""
-echo "[Test 30] Submodule root symlink works"
+echo "[Test 28] Submodule root symlink works"
 setup_sandbox
 
 # Run via the symlink
