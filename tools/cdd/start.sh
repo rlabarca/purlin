@@ -37,7 +37,7 @@ PORT=8086
 
 # Read port from resolved config via resolver CLI (config_layering)
 if [ -f "$RESOLVER" ]; then
-    PORT_FROM_CONFIG=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$RESOLVER" --key cdd_port 2>/dev/null)
+    PORT_FROM_CONFIG=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" "$PYTHON_EXE" "$RESOLVER" --key cdd_port 2>/dev/null)
     if [ -n "$PORT_FROM_CONFIG" ] && [[ "$PORT_FROM_CONFIG" =~ ^[0-9]+$ ]]; then
         PORT=$PORT_FROM_CONFIG
     fi
