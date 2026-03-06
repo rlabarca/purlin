@@ -17,9 +17,9 @@ The Architect renamed "Remote Collaboration" to "Branch Collaboration" and remov
 **Completion Commit:** 5776832
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Config + Skills [PENDING]
+## Phase 3 -- Config + Skills [COMPLETE]
 **Features:** cdd_agent_configuration.md, pl_agent_config.md, pl_session_resume.md, pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** 29e83e2
 **QA Bugs Addressed:** --
 
 ## Phase 4 -- Release + Smaller Dashboard [PENDING]
