@@ -65,7 +65,8 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     - Interpretation: higher COUNT means closer to the limit.
 - **Format (exceeded):** When COUNT >= THRESHOLD, append evacuation instructions.
     - Example at turn 48 of 45: `CONTEXT GUARD: 48 / 45 used -- Run /pl-resume save, then /clear, then /pl-resume to continue.`
-- **No silent exits:** The hook MUST produce output on every tool call when the guard is enabled. Early exits for subagent detection or other conditions MUST still output the context guard status. The only exception is when `context_guard` is explicitly set to `false` for the current agent.
+- **User-visible status line:** In addition to the JSON `additionalContext` output (agent-only), the hook MUST also emit a plain-text status line to stderr showing the same `CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used` format (and the exceeded variant when applicable). This ensures the human user sees the context budget in the terminal alongside each tool call, not only in the CDD Dashboard. Stderr is used because plain stdout text would interfere with the JSON output that Claude Code parses for the agent.
+- **No silent exits:** The hook MUST produce output on every tool call when the guard is enabled (both the JSON `additionalContext` for the agent AND the stderr status line for the user). Early exits for subagent detection or other conditions MUST still output the context guard status. The only exception is when `context_guard` is explicitly set to `false` for the current agent.
 - **When guard is disabled** (`context_guard: false` for the current agent): No JSON output is produced. The counter still increments in the background so that re-enabling the guard mid-session shows an accurate count.
 - **Context cost:** ~8-12 tokens per message. At 45 turns = ~360-540 tokens (<0.3% of usable context).
 
@@ -204,11 +205,21 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     Then the turn count file contains "1"
     And stdout contains "CONTEXT GUARD: 1 /"
 
+#### Scenario: User-visible status line emitted to stderr
+
+    Given the guard is enabled for the current agent
+    And the turn count for the current AGENT_ID is currently 4
+    And the context_guard_threshold is set to 45
+    When the context guard script runs
+    Then stderr contains "CONTEXT GUARD: 5 / 45 used"
+    And stdout contains JSON with additionalContext "CONTEXT GUARD: 5 / 45 used"
+
 #### Scenario: Guard output on every tool call with no silent exits
 
     Given the guard is enabled for the current agent
     When the context guard script runs under any condition (new session, existing session, subagent)
     Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
+    And stderr contains a line matching "CONTEXT GUARD:"
 
 #### Scenario: Multiple agents of same role track independently
 
