@@ -30,6 +30,7 @@ These tests verify the underlying behaviors that the command depends on:
 import os
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -59,6 +60,30 @@ INSTRUCTION_FILES = {
 }
 
 # Sample feature spec with Web Testable metadata
+SAMPLE_WEB_TESTABLE_WITH_PORT_FILE = """\
+# Feature: Sample Web Feature with Port File
+
+> Label: "Sample Feature"
+> Category: "CDD"
+> Prerequisite: features/policy_critic.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
+
+[TESTING]
+
+## 1. Overview
+A sample feature with dynamic port resolution.
+
+## 3. Scenarios
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Dashboard Loads
+    Given the server is running
+    When the user navigates to the dashboard
+    Then the page loads successfully
+"""
+
 SAMPLE_WEB_TESTABLE_FEATURE = """\
 # Feature: Sample Web Feature
 
@@ -240,6 +265,47 @@ def _parse_url_override(args):
         else:
             features.append(arg)
     return features, url_override
+
+
+def _extract_web_port_file(content):
+    """Extract the Web Port File path from feature file content."""
+    match = re.search(r'>\s*Web Port File:\s*(\S+)', content)
+    return match.group(1) if match else None
+
+
+def _extract_web_start(content):
+    """Extract the Web Start command from feature file content."""
+    match = re.search(r'>\s*Web Start:\s*(.+)', content)
+    return match.group(1).strip() if match else None
+
+
+def _resolve_url(base_url, port_file_path=None, url_override=None,
+                 project_root=None):
+    """Resolve the effective URL using the priority order.
+
+    Priority: (1) URL override, (2) runtime port file, (3) base URL.
+    Returns the resolved URL string.
+    """
+    if url_override:
+        return url_override
+
+    if port_file_path and project_root:
+        abs_port_path = os.path.join(project_root, port_file_path)
+        if os.path.isfile(abs_port_path):
+            try:
+                with open(abs_port_path) as f:
+                    port_str = f.read().strip()
+                if port_str.isdigit():
+                    # Replace port in the base URL
+                    import urllib.parse
+                    parsed = urllib.parse.urlparse(base_url)
+                    replaced = parsed._replace(
+                        netloc=f'{parsed.hostname}:{port_str}')
+                    return urllib.parse.urlunparse(replaced)
+            except (IOError, OSError):
+                pass
+
+    return base_url
 
 
 def _filter_scenarios_by_scope(scope, manual_scenarios, visual_items):
@@ -889,5 +955,216 @@ class TestInstructionFilesUpdated(unittest.TestCase):
         self.assertIn('Web Testable', content)
 
 
+class TestDynamicPortResolution(unittest.TestCase):
+    """Scenario: Dynamic port resolution from port file
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    And `.purlin/runtime/cdd.port` contains `52288`
+    When `/pl-web-verify` resolves the URL for that feature
+    Then the resolved URL is `http://localhost:52288`
+
+    Test: Verifies port file reading and URL port replacement.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_port_file_metadata_extracted(self):
+        """Web Port File metadata is correctly extracted."""
+        port_file = _extract_web_port_file(
+            SAMPLE_WEB_TESTABLE_WITH_PORT_FILE)
+        self.assertEqual(port_file, '.purlin/runtime/cdd.port')
+
+    def test_web_start_metadata_extracted(self):
+        """Web Start metadata is correctly extracted."""
+        start_cmd = _extract_web_start(
+            SAMPLE_WEB_TESTABLE_WITH_PORT_FILE)
+        self.assertEqual(start_cmd, '/pl-cdd')
+
+    def test_no_port_file_metadata_returns_none(self):
+        """Feature without Web Port File returns None."""
+        port_file = _extract_web_port_file(SAMPLE_WEB_TESTABLE_FEATURE)
+        self.assertIsNone(port_file)
+
+    def test_no_web_start_returns_none(self):
+        """Feature without Web Start returns None."""
+        start_cmd = _extract_web_start(SAMPLE_WEB_TESTABLE_FEATURE)
+        self.assertIsNone(start_cmd)
+
+    def test_port_file_overrides_spec_port(self):
+        """Port from file replaces port in Web Testable URL."""
+        runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(runtime_dir)
+        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+            f.write('52288')
+
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path='.purlin/runtime/cdd.port',
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:52288')
+
+    def test_port_file_missing_falls_back(self):
+        """Missing port file falls back to spec URL."""
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path='.purlin/runtime/cdd.port',
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:9086')
+
+    def test_port_file_empty_falls_back(self):
+        """Empty port file falls back to spec URL."""
+        runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(runtime_dir)
+        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+            f.write('')
+
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path='.purlin/runtime/cdd.port',
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:9086')
+
+    def test_url_override_takes_precedence(self):
+        """URL override takes precedence over port file."""
+        runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(runtime_dir)
+        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+            f.write('52288')
+
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path='.purlin/runtime/cdd.port',
+            url_override='http://localhost:3000',
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:3000')
+
+    def test_no_port_file_path_uses_base_url(self):
+        """No port file path uses base URL directly."""
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path=None,
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:9086')
+
+    def test_invalid_port_file_content_falls_back(self):
+        """Non-numeric port file content falls back to spec URL."""
+        runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(runtime_dir)
+        with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
+            f.write('not-a-port')
+
+        resolved = _resolve_url(
+            'http://localhost:9086',
+            port_file_path='.purlin/runtime/cdd.port',
+            project_root=self.tmpdir)
+        self.assertEqual(resolved, 'http://localhost:9086')
+
+
+class TestHeadedPlaywrightDetection(unittest.TestCase):
+    """Scenario: Headed Playwright MCP detected triggers reconfiguration
+
+    Given Playwright MCP tools are available in the current session
+    But the MCP server was configured without `--headless`
+    When `/pl-web-verify` is invoked
+    Then the skill instructs the user to reconfigure with headless mode
+
+    Test: Verifies skill file has headless detection logic.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_skill_checks_headless_flag(self):
+        """Skill file checks for --headless in MCP config."""
+        self.assertIn('--headless', self.command_content)
+
+    def test_skill_references_mcp_config_files(self):
+        """Skill file references MCP config file locations."""
+        self.assertIn('settings.local.json', self.command_content)
+        self.assertIn('mcpServers.playwright', self.command_content)
+
+    def test_skill_provides_reconfigure_command(self):
+        """Skill file provides the reconfigure commands."""
+        self.assertIn('claude mcp remove playwright', self.command_content)
+        self.assertIn(
+            'claude mcp add playwright -- npx @playwright/mcp --headless',
+            self.command_content)
+
+    def test_skill_stops_on_headed_detection(self):
+        """Skill file stops execution when headed mode detected."""
+        self.assertIn('Stop execution', self.command_content)
+
+
+class TestDynamicPortResolutionInSkillFile(unittest.TestCase):
+    """Verifies the skill file documents the port resolution protocol."""
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_skill_references_web_port_file(self):
+        """Skill file references Web Port File metadata."""
+        self.assertIn('Web Port File', self.command_content)
+
+    def test_skill_references_web_start(self):
+        """Skill file references Web Start metadata."""
+        self.assertIn('Web Start', self.command_content)
+
+    def test_skill_documents_priority_order(self):
+        """Skill file documents URL override > port file > spec URL."""
+        self.assertIn('URL override', self.command_content)
+        self.assertIn('port file', self.command_content.lower())
+
+    def test_skill_documents_liveness_check(self):
+        """Skill file documents liveness check via curl."""
+        self.assertIn('curl', self.command_content)
+        self.assertIn('liveness', self.command_content.lower())
+
+    def test_skill_documents_auto_start(self):
+        """Skill file documents server auto-start protocol."""
+        self.assertIn('10 seconds', self.command_content)
+        self.assertIn('auto-start', self.command_content.lower())
+
+    def test_skill_continues_on_failure(self):
+        """Skill file continues with other features on liveness failure."""
+        self.assertIn(
+            'skip this feature (continue with others)',
+            self.command_content)
+
+
+# =============================================================================
+# Test runner: writes results to tests/pl_web_verify/tests.json
+# =============================================================================
 if __name__ == '__main__':
-    unittest.main()
+    import json as _json
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(script_dir, '../..'))
+    env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
+    if env_root and os.path.isdir(env_root):
+        project_root = env_root
+
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+
+    tests_dir = os.path.join(project_root, 'tests', 'pl_web_verify')
+    os.makedirs(tests_dir, exist_ok=True)
+    passed = result.testsRun - len(result.failures) - len(result.errors)
+    failed = len(result.failures) + len(result.errors)
+    status = 'PASS' if failed == 0 else 'FAIL'
+    with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
+        _json.dump({
+            'status': status,
+            'passed': passed,
+            'failed': failed,
+            'total': result.testsRun
+        }, f)
+    print(f"\ntests.json: {status}")

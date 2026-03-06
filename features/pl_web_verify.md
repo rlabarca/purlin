@@ -278,7 +278,7 @@ None.
 - **Observed Behavior:** `/pl-web-verify` launches a visible browser window during verification, disrupting the user's screen. The Playwright MCP server is configured without the `--headless` flag.
 - **Expected Behavior:** Per Section 2.5, Playwright MUST run in headless mode. The skill should detect the non-headless configuration and instruct the user to reconfigure with `claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless`, then stop execution until the session is restarted.
 - **Action Required:** Builder
-- **Status:** OPEN
+- **Status:** RESOLVED
 
 ### [DISCOVERY] pl-web-verify uses hardcoded feature URL without server liveness or dynamic port resolution (Discovered: 2026-03-06)
 - **Scenario:** NONE

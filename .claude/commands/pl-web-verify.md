@@ -34,8 +34,11 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 
 1. Check whether Playwright MCP tools are available by looking for `browser_navigate` in the available tool list.
 2. **If available:**
-   a. Verify headless mode: check the MCP server configuration for `--headless` flag. Run `claude mcp list` or inspect the tool configuration to determine if Playwright was configured with `--headless`.
-   b. **If configured without `--headless`:** Instruct the user to reconfigure:
+   a. Verify headless mode by reading the MCP server configuration. Check these files in order until one contains a `playwright` MCP entry:
+      - `<project_root>/.claude/settings.local.json` → key `mcpServers.playwright.args`
+      - `~/.claude.json` → key `mcpServers.playwright.args`
+      If neither file exists or has a playwright entry, run `claude mcp list` and parse the output for the playwright server's arguments.
+   b. **If the args array does NOT contain `--headless`:** Instruct the user to reconfigure:
       ```
       Playwright MCP is configured but not in headless mode.
       Headless mode is required (runs invisibly, avoids disrupting your screen, 20-30% faster).
@@ -44,7 +47,7 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
       Then restart the Claude Code session and re-run /pl-web-verify.
       ```
       Stop execution.
-   c. **If configured with `--headless`:** Proceed to Step 3.
+   c. **If the args array contains `--headless`:** Proceed to Step 3.
 3. **If NOT available:**
    a. Attempt auto-setup: run `npx @playwright/mcp@latest --help` to verify the package is accessible.
    b. If the package is accessible, run: `claude mcp add playwright -- npx @playwright/mcp --headless`
@@ -74,11 +77,37 @@ For each eligible feature:
 4. Extract Visual Specification items from `## Visual Specification` (if present).
 5. If a feature has neither manual scenarios nor visual spec items after scope filtering, skip it with a note.
 
+### Step 3.5 — Dynamic Port Resolution and Liveness (Per Feature)
+
+For each eligible feature, resolve the final URL before navigating:
+
+1. **Determine effective URL** using this priority order:
+   a. **URL override from command argument** — If the user provided a URL argument, use it as-is. Skip steps 2-4.
+   b. **Runtime port file** — Read the feature spec for `> Web Port File: <path>` metadata. If present:
+      - Read the file at `<PROJECT_ROOT>/<path>`.
+      - If the file exists and contains a valid port number (digits only, trimmed), replace the port in the `> Web Testable:` URL with this runtime port.
+      - If the file does not exist or is empty, fall through to the `> Web Testable:` URL.
+   c. **Spec URL** — Use the `> Web Testable:` URL as-is (fallback).
+
+2. **Liveness check:** Attempt to reach the resolved URL:
+   - Use `curl -s -o /dev/null -w "%{http_code}" <resolved_url>` via Bash to check if the server responds.
+   - A 200-level or 300-level response means the server is alive.
+
+3. **Auto-start (if not reachable):** If the liveness check fails:
+   a. Check the feature spec for `> Web Start: <command>` metadata.
+   b. If present, invoke the start command (e.g., run the slash command or shell command).
+   c. Wait for the port file to appear (poll every 1 second, up to 10 seconds).
+   d. Re-read the port file for the updated port.
+   e. Retry the liveness check at the updated URL.
+   f. If still not reachable after auto-start, report the error and skip this feature (continue with others).
+
+4. **No start command:** If the server is not reachable and no `> Web Start:` metadata exists, report: "Server not reachable at `<resolved_url>`. No `> Web Start:` command configured." and skip this feature (continue with others).
+
 ### Step 4 — Browser Setup
 
 For each eligible feature:
 
-1. Navigate to the base URL via `browser_navigate`.
+1. Navigate to the **resolved URL** (from Step 3.5) via `browser_navigate`.
 2. Verify the page loads (check for non-error response).
 3. If the page fails to load, report: "Failed to load `<url>`. Please verify the server is running." and skip this feature.
 
