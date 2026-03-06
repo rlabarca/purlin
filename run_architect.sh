@@ -26,8 +26,9 @@ if [ -f "$SCRIPT_DIR/.purlin/ARCHITECT_OVERRIDES.md" ]; then
     cat "$SCRIPT_DIR/.purlin/ARCHITECT_OVERRIDES.md" >> "$PROMPT_FILE"
 fi
 
-# --- Read agent config via resolver (config_layering) ---
+# --- Read agent config from config.json ---
 AGENT_ROLE="architect"
+CONFIG_FILE="$SCRIPT_DIR/.purlin/config.json"
 
 AGENT_MODEL=""
 AGENT_EFFORT=""
@@ -35,9 +36,20 @@ AGENT_BYPASS="false"
 AGENT_STARTUP="true"
 AGENT_RECOMMEND="true"
 
-RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
-if [ -f "$RESOLVER" ]; then
-    eval "$(python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
+if [ -f "$CONFIG_FILE" ]; then
+    eval "$(python3 -c "
+import json
+try:
+    c = json.load(open('$CONFIG_FILE'))
+    a = c.get('agents', {}).get('$AGENT_ROLE', {})
+    if a.get('model'): print(f'AGENT_MODEL=\"{a[\"model\"]}\"')
+    if a.get('effort'): print(f'AGENT_EFFORT=\"{a[\"effort\"]}\"')
+    if 'bypass_permissions' in a: print(f'AGENT_BYPASS=\"{str(a[\"bypass_permissions\"]).lower()}\"')
+    if 'startup_sequence' in a: print(f'AGENT_STARTUP=\"{str(a[\"startup_sequence\"]).lower()}\"')
+    if 'recommend_next_actions' in a: print(f'AGENT_RECOMMEND=\"{str(a[\"recommend_next_actions\"]).lower()}\"')
+except (json.JSONDecodeError, IOError, OSError):
+    pass
+" 2>/dev/null)"
 fi
 
 # --- Validate startup controls ---
