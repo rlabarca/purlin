@@ -114,7 +114,7 @@ The skill MUST detect and report ALL user customizations:
 
 2. **Top-Level Scripts Analysis:**
    - For each tracked script (`run_builder.sh`, `run_architect.sh`, `run_qa.sh`):
-     - Compare against what bootstrap.sh would have generated at current submodule version
+     - Compare against what init.sh would have generated at current submodule version
      - If differs, report: "Modified: <script> (custom logic added)"
 
 3. **Command Files Analysis:**
@@ -350,9 +350,10 @@ When `--dry-run` is specified:
 After a successful update, the skill MUST detect and offer to remove stale artifacts from previous Purlin versions that are no longer needed:
 
 1. **Detection:** Compare the list of files that the old Purlin version installed (scripts, symlinks, command files) against what the new version expects. Identify orphaned artifacts — files that were installed by a previous version but are no longer part of the current version.
-2. **Known Stale Artifacts:** Maintain awareness of historically removed scripts. Examples:
+2. **Known Stale Artifacts:** Maintain awareness of historically removed scripts:
    - `tools/sync_upstream.sh` — removed when `/pl-update-purlin` replaced it
-   - Any launcher or shim scripts that were renamed or consolidated across versions
+   - `tools/bootstrap.sh` — removed when `tools/init.sh` superseded it
+   - `tools/test_bootstrap.sh` — removed with `bootstrap.sh` (tests moved to `tools/test_init.sh`)
 3. **Report Format:**
    ```
    Stale artifacts detected from previous Purlin version:
@@ -367,6 +368,14 @@ After a successful update, the skill MUST detect and offer to remove stale artif
 ### 2.13 Project Root Detection
 
 The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with directory-climbing as fallback.
+
+### 2.14 Standalone Mode Guard
+
+The skill MUST detect when invoked in the standalone Purlin repo (not a consumer project) and refuse to proceed.
+
+*   **Detection:** Check that `.purlin/.upstream_sha` does not exist AND `purlin-config-sample/` exists at the project root. The combination confirms this IS the Purlin repo, not just an un-bootstrapped consumer project (which would lack `purlin-config-sample/`).
+*   **Error Message:** Print: `/pl-update-purlin is only for consumer projects using Purlin as a submodule.`
+*   **No Side Effects:** The guard MUST fire before any fetch, analysis, or file modification.
 
 ---
 
@@ -476,6 +485,14 @@ The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with 
     When /pl-update-purlin is invoked
     Then pl-edit-base.md is silently excluded
     And does not appear in any reports or counts
+
+#### Scenario: Standalone Mode Guard Prevents Update in Purlin Repo
+    Given the current project IS the Purlin repository (not a consumer project)
+    And .purlin/.upstream_sha does not exist
+    And purlin-config-sample/ exists at the project root
+    When /pl-update-purlin is invoked
+    Then the skill prints: "/pl-update-purlin is only for consumer projects using Purlin as a submodule."
+    And the skill exits without making any changes
 
 ### Manual Scenarios (Human Verification Required)
 

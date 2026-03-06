@@ -10,14 +10,14 @@
 
 ## Overview
 
-Purlin is a **Collaborative Design-Driven** development framework. Designs evolve in sync with code -- never ahead of it, never behind it. Specifications are living documents that are continuously refined as implementation reveals new constraints and insights.
+Purlin helps AI agents build software together using a shared set of specs. The specs stay in sync with the code -- when code teaches us something new, the specs get updated to match.
 
 The framework is built on four goals:
 
-1. **Agent coordination** -- specialized roles follow a spec/test-driven framework for deterministic outcomes.
-2. **Code is disposable** -- rigorous specs mean any compliant agent can rebuild the system from scratch.
-3. **People bring expertise, agents amplify it** -- structured async collaboration replaces meetings and ceremonies.
-4. **Provably correct code** -- continuous design sync minimizes drift from specifications.
+1. **Agents stay coordinated** -- three specialized roles (Architect, Builder, QA) each know exactly what to do next.
+2. **Specs are the source of truth** -- if the code disappeared tomorrow, any agent could rebuild it from the specs alone.
+3. **People steer, agents execute** -- you set the direction; agents handle the back-and-forth without meetings.
+4. **Code stays correct** -- specs and code are always in sync, so bugs from "stale requirements" don't happen.
 
 ## Screenshots
 
@@ -31,10 +31,10 @@ The framework is built on four goals:
 
 ## Core Concepts
 
-### 1. Collaborative Design-Driven
-The project's state is defined 100% by specification files, and those specifications evolve continuously with the code:
-*   **Anchor Nodes (`arch_*.md`, `design_*.md`, `policy_*.md`):** System constraints -- architecture, design standards, governance policies. Changes cascade to all dependent features.
-*   **Living Specifications (`*.md`):** Gherkin requirements with implementation knowledge in companion files (`*.impl.md`). Refined through every implementation cycle.
+### 1. Specs Drive Everything
+The project's state is defined by specification files in `features/`. Those specs evolve continuously with the code:
+*   **Anchor nodes** are project-wide rules (architecture, design standards, policies) stored as files. When you change a rule, every feature that depends on it gets flagged for review automatically.
+*   **Feature specs** describe requirements in plain-language scenarios, with implementation notes stored in companion files alongside them. They're refined through every build cycle.
 *   **Code is disposable; design is durable.** If all source code were deleted, the specs must be sufficient to rebuild. When code reveals new truths, the design is updated first.
 
 ### 2. Role Separation
@@ -43,22 +43,23 @@ The framework defines three distinct agent roles:
 *   **The Builder:** Owns "The How." Implements code and tests based on specifications and documents discoveries.
 *   **The QA Agent:** Owns "The Verification and The Feedback." Executes manual scenarios, records structured discoveries, and tracks their resolution.
 
-### 3. Knowledge Colocation
-Instead of separate documentation or global logs, implementation discoveries, hardware constraints, and design decisions are stored directly within the feature specifications they pertain to.
+### 3. Keep Notes Where They Belong
+Instead of a separate wiki or shared doc, implementation notes live right next to the feature spec they're about. Nothing gets lost in a side channel.
 
-*   **Companion files (`*.impl.md`):** Implementation knowledge lives in standalone companion files alongside each feature spec. The naming convention provides discoverability without cross-links.
-*   **Visual Specifications:** Features with UI components may include a `## Visual Specification` section with per-screen checklists and design asset references. Architect-owned and exempt from Gherkin traceability -- a separate QA track for static appearance checks.
+*   **Companion files (`*.impl.md`):** Each feature spec can have a companion file that captures implementation decisions, gotchas, and lessons learned.
+*   **Visual specs:** Features with UI components can include a visual checklist with design references -- a separate QA track for checking how things look.
 
-### 4. Layered Instruction Architecture
-The framework separates **framework rules** (base layer) from **project-specific context** (override layer):
-*   **Base Layer** (`purlin/instructions/`): Core rules, protocols, and philosophies. Lives inside the Purlin submodule -- never copied to your project.
-*   **Override Layer** (`.purlin/`): Project-specific customizations, domain context, and workflow additions. Created by bootstrap and committed to your project.
+### 4. Your Rules Layer on Top
+Purlin's built-in rules live inside the submodule. Your project-specific tweaks go in `.purlin/`. The agents combine both at launch -- you never need to edit framework files.
 
 ## The Agents
 
 ### File Access Permissions
 
-The framework enforces three ownership types: **specification** (Architect), **implementation** (Builder), and **verification** (QA). Each file category has explicit access rules per role.
+The Architect owns specs and policies. The Builder owns code, tests, and implementation notes. QA owns verification scripts and testing discoveries. Each role can read everything but only write to their own files. The Purlin submodule is read-only for all roles.
+
+<details>
+<summary>Full permissions matrix</summary>
 
 **Permission key:** C = Create, R = Read, W = Write/Modify, D = Delete
 
@@ -86,6 +87,8 @@ The framework enforces three ownership types: **specification** (Architect), **i
 - **Instruction files** (`instructions/*.md`) live inside the submodule and are read-only for consumer projects.
 - Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files; QA companion file writes are limited to pruning one-liners.
 - Tool-generated files (`critic.json`, `CRITIC_REPORT.md`, etc.) are produced by CLI tools -- no agent writes directly.
+
+</details>
 
 ### Shared Commands
 
@@ -209,23 +212,14 @@ The QA Agent verifies features against their specifications through interactive 
 
 ## The Critic
 
-The Critic is the **project coordination engine** -- not a pass/fail badge. It generates role-specific action items that tell each agent what to work on next. **CDD** shows what IS (per-role status on the dashboard); **the Critic** shows what SHOULD BE DONE (imperative action items). Agents invoke it via CLI (`tools/cdd/status.sh`); the web dashboard is for humans.
+The Critic scans every feature and tells each agent what to work on next. Think of it as an automated project manager: it checks specs for gaps, verifies tests match requirements, and generates a prioritized to-do list per role. You can see results on the CDD Dashboard or agents can check from the command line.
 
 ### Dual-Gate Validation
 
-Every feature is evaluated through two independent gates:
+Every feature gets checked twice:
 
-*   **Spec Gate (pre-implementation):** Validates structural completeness, prerequisite anchoring, and Gherkin quality.
-*   **Implementation Gate (post-implementation):** Validates traceability, policy adherence (FORBIDDEN pattern scanning), builder decision audit, and optional LLM-based logic drift detection.
-
-### Supplementary Audits
-
-On every run, the Critic also executes:
-
-*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries across all feature files.
-*   **Builder Decision Audit:** Scans `## Implementation Notes` for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags (HIGH-priority Architect items).
-*   **Visual Specification Detection:** Detects `## Visual Specification` sections and generates separate QA action items for visual verification.
-*   **Untracked File Audit:** Flags untracked files as MEDIUM-priority Architect triage items.
+*   **Before coding:** Is the spec complete? Are all dependencies declared?
+*   **After coding:** Do the tests match the spec? Does the code follow project rules?
 
 ### Role-Specific Action Items
 
@@ -241,40 +235,20 @@ The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific
 
 ## Phased Delivery
 
-When the Architect introduces a large batch of new or revised specs, the Builder may split work across multiple sessions using a **phased delivery plan**. Each phase produces a testable state; the user orchestrates the cycle: Builder → QA → Builder → QA → ... until the backlog is clear.
+When there's a large backlog, the Builder can split work into numbered phases. Each phase produces a testable state, and the cycle repeats -- Builder implements, QA verifies -- until the backlog is clear.
 
-### How It Works
-
-The Builder creates a delivery plan at `.purlin/cache/delivery_plan.md` when the user approves phased delivery. The plan contains numbered phases, each with a feature list and one of three statuses: `PENDING`, `IN_PROGRESS`, or `COMPLETE`. The file is committed to git so all agents share the same view across sessions.
+The Builder creates the plan with `/pl-delivery-plan`. It lives at `.purlin/cache/delivery_plan.md` and is committed to git so all agents share the same view across sessions.
 
 ```
 /pl-delivery-plan
-→ Agent assesses scope and dependency ordering
 → "6 TODO features. Dependency analysis suggests 3 phases:
    Phase 1 (foundation): policy_critic, python_environment
    Phase 2 (core tools): critic_tool, cdd_status_monitor
    Phase 3 (release): release_checklist_core, release_checklist_ui
-   Rationale: Phase 1 unblocks all Phase 2 prerequisites.
    Adjust or confirm?"
 ```
 
-The standard multi-phase cycle:
-
-```
-Builder (Phase 1)
-  → QA verifies Phase 1 features
-  → Builder (addresses QA bugs + implements Phase 2)
-  → QA verifies Phase 2 features
-  → ... until all phases COMPLETE
-  → Builder deletes delivery_plan.md
-```
-
-### Rules
-
-*   **Opt-in.** The Builder proposes phases; the user decides whether to accept, modify, or skip phasing.
-*   **QA is phase-gated.** QA won't mark a feature `[Complete]` if it appears in any `PENDING` phase.
-*   **Cross-session resumption.** Interrupted sessions resume from where they left off, skipping features already in `TESTING`.
-*   **Spec changes trigger amendments.** If the Architect modifies specs mid-plan, the Builder proposes a plan amendment on resume.
+Phasing is opt-in -- the user decides whether to accept, modify, or skip it. QA won't mark a feature complete if it appears in a pending phase. Interrupted sessions resume where they left off.
 
 ---
 
@@ -331,7 +305,7 @@ Architect (isolated/design)          Builder (isolated/feat1)
 
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) must be installed before using Purlin. Purlin agents run exclusively inside Claude Code sessions.
 
-### 2. Add Purlin as a Submodule
+### 2. Add Purlin and Initialize
 
 Your project must be an initialized git repository. If it isn't already:
 
@@ -339,25 +313,39 @@ Your project must be an initialized git repository. If it isn't already:
 git init
 ```
 
-Then add Purlin as a submodule:
+Add Purlin as a submodule and run the init script:
 
 ```bash
 git submodule add https://github.com/rlabarca/purlin purlin
 git submodule update --init
-```
-
-### 3. Run the Bootstrap Script
-
-```bash
-./purlin/tools/bootstrap.sh
+./purlin/init.sh
 ```
 
 This creates in your project root:
 *   `.purlin/` -- override templates and config (MUST be committed to your project)
 *   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
+*   `purlin_init.sh` -- a shim for collaborators to initialize or refresh Purlin (commit this)
+*   `purlin_cdd_start.sh` / `purlin_cdd_stop.sh` -- CDD dashboard convenience symlinks
 *   `features/` directory
+*   `.claude/commands/` -- agent slash commands
+
+Commit everything:
+
+```bash
+git add -A && git commit -m "init purlin"
+```
 
 Your Architect agent will guide you through customizing the overrides for your project on first launch.
+
+### 3. Collaborator Setup (Fresh Clone)
+
+When a team member clones your repository (even without `--recurse-submodules`), a single command handles everything:
+
+```bash
+./purlin_init.sh
+```
+
+This automatically initializes the Purlin submodule if needed, then runs the init script in refresh mode -- creating or repairing launchers, commands, and symlinks without touching project-specific config or overrides.
 
 ### 4. Launch Agents
 
@@ -370,8 +358,8 @@ Your Architect agent will guide you through customizing the overrides for your p
 ### 5. Run the CDD Dashboard
 
 ```bash
-./purlin/tools/cdd/start.sh            # uses port from config (default: 8086)
-./purlin/tools/cdd/start.sh -p 9090    # override port at runtime
+./purlin_cdd_start.sh                  # uses port from config (default: 8086)
+./purlin_cdd_start.sh -p 9090         # override port at runtime
 ```
 
 Open **http://localhost:8086** (or your chosen port) in your browser. The `-p` flag overrides the `cdd_port` value in `.purlin/config.json` without modifying it -- useful when running multiple projects on the same machine or when collaborators use different ports. The dashboard has two modes:
@@ -427,24 +415,17 @@ git commit -m "chore: update purlin submodule"
 
 ### Gitignore Guidance
 
-**`.purlin/` MUST be committed** to your project. It contains project-specific overrides, config, and the upstream sync marker. The bootstrap script will warn if it detects `.purlin` in your `.gitignore`.
+**`.purlin/` MUST be committed** to your project. It contains project-specific overrides, config, and the upstream sync marker. The init script will warn if it detects `.purlin` in your `.gitignore`.
 
 ## Directory Structure
 
-**In your project (created by bootstrap):**
-*   `purlin/` -- The Purlin submodule. Contains all framework tooling and base instruction files.
-*   `.purlin/` -- Your project's override layer.
-    *   `ARCHITECT_OVERRIDES.md` -- Project-specific Architect rules.
-    *   `BUILDER_OVERRIDES.md` -- Project-specific Builder rules.
-    *   `QA_OVERRIDES.md` -- Project-specific QA verification rules.
-    *   `HOW_WE_WORK_OVERRIDES.md` -- Project-specific workflow additions.
-    *   `config.json` -- `tools_root`, critic configuration, agent settings, and dashboard port.
-*   `features/` -- Your project's feature specifications.
-*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- Agent launcher scripts.
+Created by `init.sh` in your project root:
 
-**Inside the Purlin submodule (`purlin/`):**
-*   `instructions/` -- Base instruction layer (framework rules). Read by launcher scripts at runtime; never copied to your project.
-*   `tools/` -- Python-based DevOps tools (CDD Dashboard, Critic, Bootstrap, Release Step management).
-*   `purlin-config-sample/` -- Override templates used by the bootstrap script.
+*   `purlin/` -- The Purlin submodule (framework tooling and base rules). Treat as read-only.
+*   `.purlin/` -- Your project-specific overrides and config.
+*   `features/` -- Your feature specifications.
+*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- Agent launcher scripts.
+*   `purlin_init.sh` -- Collaborator setup shim. Commit this.
+*   `purlin_cdd_start.sh` / `purlin_cdd_stop.sh` -- CDD dashboard start/stop scripts.
 
 

@@ -5,14 +5,14 @@
 > Prerequisite: features/project_init.md
 
 ## 1. Overview
-Standardizes how all shell scripts in the framework discover and invoke Python. Today, 1 of 6 scripts (`cdd/start.sh`) has ad-hoc venv detection while the other 5 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server script finds it. The Critic, CDD status, bootstrap, and lifecycle test scripts silently use system Python instead.
+Standardizes how all shell scripts in the framework discover and invoke Python. Today, 1 of 5 scripts (`cdd/start.sh`) has ad-hoc venv detection while the other 4 use bare `python3`. This creates a split-brain problem: if a consumer creates a `.venv/` (e.g., to install the optional `anthropic` SDK), only the server script finds it. The Critic, CDD status, init, and lifecycle test scripts silently use system Python instead.
 
-This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates all 6 shell scripts to the unified resolution path.
+This feature introduces a shared resolution helper (`tools/resolve_python.sh`) that all scripts source, two dependency manifests (`requirements.txt`, `requirements-optional.txt`) establishing the convention, and migrates all 5 shell scripts to the unified resolution path.
 
 ## 2. Requirements
 
 ### 2.1 Shared Python Resolution Helper (`tools/resolve_python.sh`)
-*   **File Location:** `tools/resolve_python.sh` at the submodule/framework root, alongside `bootstrap.sh`.
+*   **File Location:** `tools/resolve_python.sh` at the submodule/framework root, alongside `init.sh`.
 *   **Sourceable Design:** The script MUST be designed to be sourced (`. resolve_python.sh` or `source resolve_python.sh`), not executed directly. It MUST NOT contain `set -e`, `set -u`, `exit`, or any construct that would terminate the sourcing script.
 *   **Output Variable:** After sourcing, `$PYTHON_EXE` MUST be set to the resolved Python interpreter path.
 *   **Resolution Priority:** The helper MUST resolve `$PYTHON_EXE` using the following priority order (first match wins):
@@ -30,7 +30,7 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
 *   **Approximate Size:** ~35 lines. No external dependencies.
 
 ### 2.2 Shell Script Migration
-All shell scripts that invoke Python MUST source the shared helper and use `$PYTHON_EXE` instead of bare `python3`. The following 6 scripts MUST be migrated:
+All shell scripts that invoke Python MUST source the shared helper and use `$PYTHON_EXE` instead of bare `python3`. The following scripts MUST be migrated:
 
 | Script | Current Python Invocation | Migration Action |
 |--------|--------------------------|------------------|
@@ -38,7 +38,6 @@ All shell scripts that invoke Python MUST source the shared helper and use `$PYT
 | `tools/cdd/status.sh` | `exec python3 "$SCRIPT_DIR/serve.py"` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/start.sh` | Ad-hoc 5-line venv detection block | Remove ad-hoc block, source helper instead |
 | `tools/cdd/stop.sh` | No Python invocation | No migration needed (does not invoke Python) |
-| `tools/bootstrap.sh` | `python3 -c "import json; ..."` | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/init.sh` | `python3 -c "import json; ..."` (JSON validation) | Source helper, replace `python3` with `$PYTHON_EXE` |
 | `tools/cdd/test_lifecycle.sh` | `python3 -c "..."` in helper functions | Source helper, replace `python3` with `$PYTHON_EXE` |
 
@@ -66,7 +65,7 @@ Two dependency manifest files MUST be created at the framework/submodule root (a
 After `tools/init.sh` full-init completes (Section 2.3 of `project_init.md`), the summary output MUST include an optional venv setup suggestion if `.venv/` does not already exist at the project root. The suggestion MUST:
 *   Be clearly marked as optional (not a required step).
 *   Include the correct submodule-relative path to `requirements-optional.txt`.
-*   Not cause bootstrap to fail if Python is unavailable or if the user skips venv creation.
+*   Not cause init to fail if Python is unavailable or if the user skips venv creation.
 
 Example output:
 ```
@@ -139,11 +138,6 @@ Example output:
     When the script is inspected
     Then it does not contain the pattern 'if [ -d "$DIR/../../.venv" ]'
     And it sources tools/resolve_python.sh
-
-#### Scenario: Bootstrap Uses Resolved Python for JSON Validation
-    Given bootstrap.sh has been migrated
-    When bootstrap.sh runs the JSON validation step
-    Then it uses $PYTHON_EXE instead of bare python3
 
 #### Scenario: Init Uses Resolved Python for JSON Validation
     Given tools/init.sh has been migrated

@@ -17,7 +17,7 @@ A CLI tool at `tools/release/manage_step.py` accepts three sub-commands: `create
 
 **Shared behavior across all sub-commands:**
 
-*   Tool locates the project root using `PURLIN_PROJECT_ROOT` first, then directory-climbing fallback (per the submodule safety contract in `submodule_bootstrap.md`).
+*   Tool locates the project root using `PURLIN_PROJECT_ROOT` first, then directory-climbing fallback (per the submodule safety contract in `project_init.md`).
 *   Target files are `.purlin/release/local_steps.json` and `.purlin/release/config.json`.
 *   If `local_steps.json` does not exist, treat it as `{"steps": []}`. Do NOT error on absence.
 *   If `config.json` does not exist, treat it as `{"steps": []}`. Do NOT error on absence.

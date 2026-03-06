@@ -41,7 +41,7 @@ A shared Python utility at `tools/config/resolve_config.py` that centralizes all
   - `--dump`: Print the full resolved config as JSON to stdout.
   - `--key <name>`: Print the value of a single top-level key to stdout.
   - `<role>` (positional: `architect`, `builder`, `qa`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_STARTUP=`, `AGENT_RECOMMEND=`.
-- **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.11 of `submodule_bootstrap.md` / Section 2.1 of `project_init.md`).
+- **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.1 of `project_init.md`).
 
 ### 2.2 Reader Migration
 

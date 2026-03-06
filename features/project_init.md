@@ -3,13 +3,12 @@
 > Label: "Tool: Project Init"
 > Category: "Install, Update & Scripts"
 > Prerequisite: instructions/HOW_WE_WORK_BASE.md (Section 6: Layered Instruction Architecture)
-> Prerequisite: features/submodule_bootstrap.md
 
 [TODO]
 
 ## 1. Overview
 
-Provides a single, idempotent entry point for initializing and refreshing a consumer project that uses Purlin as a git submodule. Supersedes `bootstrap.sh` (which refuses re-runs and overwrites config if forced) with a unified `init.sh` that auto-detects project state and does the right thing — whether it is the first run or the hundredth.
+Provides a single, idempotent entry point for initializing and refreshing a consumer project that uses Purlin as a git submodule. The unified `init.sh` auto-detects project state and does the right thing — whether it is the first run or the hundredth.
 
 The design uses a two-script architecture: a canonical `tools/init.sh` containing all logic, and a thin `purlin_init.sh` shim at the project root that works even before the submodule is initialized.
 
@@ -21,7 +20,7 @@ The design uses a two-script architecture: a canonical `tools/init.sh` containin
 
 *   **Canonical Location:** `tools/init.sh` (executable, `chmod +x`).
 *   **Submodule Root Symlink:** A symlink at `<submodule>/init.sh` MUST point to `tools/init.sh` for ergonomic access (e.g., `purlin/init.sh`).
-*   **Project Root Detection:** The script MUST detect the consumer project root as the parent of the submodule directory, using the same detection logic as `bootstrap.sh` (Section 2.1 of `submodule_bootstrap.md`). Detection MUST work when invoked from any working directory.
+*   **Project Root Detection:** The script MUST detect the consumer project root as the parent of the submodule directory. Detection MUST work when invoked from any working directory.
 *   **Submodule Path:** The script MUST detect the submodule directory name dynamically from its own location.
 
 ### 2.2 Mode Detection
@@ -36,16 +35,16 @@ The script MUST auto-detect the current project state and select the appropriate
 When `.purlin/` is missing, the script MUST perform all of the following in order:
 
 1.  **Override Directory Initialization:** Copy all files from `purlin-config-sample/` (in the submodule root) to `<project_root>/.purlin/`.
-2.  **Config Patching:** Set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `purlin/tools`). MUST follow the JSON safety rules from `submodule_bootstrap.md` Section 2.10 (precise sed, JSON validation with `python3 json.load()`).
-3.  **Provider Detection:** Run `tools/detect-providers.sh` and merge available providers into config, per `submodule_bootstrap.md` Section 2.17.
+2.  **Config Patching:** Set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `purlin/tools`). MUST use precise `sed` that replaces only the value portion and validate with `python3 json.load()`.
+3.  **Provider Detection:** Run `tools/detect-providers.sh` and merge available providers into config. For each provider reported as `available: true`, merge its `models` array into the installed config under `llm_providers.<provider>`. Non-blocking if the script fails or is missing.
 4.  **Upstream SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha` (40-character SHA, single line).
-5.  **Launcher Script Generation:** Generate `run_architect.sh`, `run_builder.sh`, `run_qa.sh` at the project root, per `submodule_bootstrap.md` Section 2.5 (concatenation order, PURLIN_PROJECT_ROOT export, startup controls, override tolerance). All MUST be `chmod +x`.
-6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`, per `submodule_bootstrap.md` Section 2.18. `pl-edit-base.md` MUST NEVER be copied.
+5.  **Launcher Script Generation:** Generate `run_architect.sh`, `run_builder.sh`, `run_qa.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
+6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
-8.  **Gitignore Handling:** Per `submodule_bootstrap.md` Section 2.7 (warning if `.purlin` is gitignored, recommended ignores including `.purlin/runtime/` and `.purlin/cache/`).
+8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Append recommended ignores (including `.purlin/runtime/` and `.purlin/cache/`) if not already present.
 9.  **Shim Generation:** Generate `purlin_init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
-11. **Python Environment Suggestion:** Per `submodule_bootstrap.md` Section 2.16 (informational, non-blocking).
+11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
 12. **Summary Output:** Print a concise summary (Section 2.7).
 
 ### 2.4 Refresh Mode
@@ -135,16 +134,7 @@ If CDD symlinks were repaired or the shim was updated, append a brief note.
 *   **`--regenerate-launchers`:** When passed, refresh mode ALSO regenerates launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`), overwriting existing ones. Without this flag, launchers are never touched in refresh mode.
 *   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `/pl-update-purlin`). Errors still print to stderr.
 
-### 2.10 Bootstrap Deprecation Shim
-
-The existing `tools/bootstrap.sh` MUST be modified to:
-
-1.  Print a deprecation notice: `"bootstrap.sh is deprecated. Use init.sh instead."` (to stderr).
-2.  Delegate to `tools/init.sh` by `exec`-ing it with all original arguments.
-
-This preserves backward compatibility — existing consumer projects with `bootstrap.sh` in their workflows will still work but see the deprecation notice.
-
-### 2.11 Idempotency
+### 2.10 Idempotency
 
 Running the script multiple times MUST produce the same result. Specifically:
 
@@ -152,22 +142,22 @@ Running the script multiple times MUST produce the same result. Specifically:
 *   Refresh mode followed by another refresh MUST produce no file changes (verified by `git diff` showing nothing new).
 *   CDD symlinks, command files, and SHA marker MUST be stable across repeated runs when the submodule has not changed.
 
-### 2.12 Integration with `/pl-update-purlin`
+### 2.11 Integration with `/pl-update-purlin`
 
 After a successful submodule update (step 10 in the `/pl-update-purlin` workflow: atomic update), the skill MUST run `tools/init.sh --quiet` to refresh commands, symlinks, shim, and SHA. This replaces the skill's manual post-update copy logic with the canonical refresh mechanism. The skill's step 7 (command file changes with three-way diff) remains for conflict resolution on modified files. The skill's step 12 summary MUST note that init/refresh ran.
 
-### 2.13 Automated Verification Test Script
+### 2.12 Automated Verification Test Script
 
-A comprehensive test script MUST be created at `tools/test_init.sh` (executable, `chmod +x`) that exercises all init and refresh scenarios in a simulated submodule sandbox. This script replaces the role of `tools/test_bootstrap.sh` for init-related verification.
+A comprehensive test script MUST be created at `tools/test_init.sh` (executable, `chmod +x`) that exercises all init and refresh scenarios in a simulated submodule sandbox.
 
-#### 2.13.1 Sandbox Architecture
+#### 2.12.1 Sandbox Architecture
 
 *   **Temporary Directory:** The test creates a temporary directory acting as a consumer project root, with a git-initialized repo.
 *   **Submodule Simulation:** A clone (or copy) of the current Purlin repository is placed inside the sandbox at a submodule-like path (e.g., `my-project/purlin/`). Any uncommitted tool/script changes MUST be overlaid onto the clone so tests exercise the latest code.
 *   **Git Setup:** The sandbox repo MUST have the simulated submodule registered in `.gitmodules` and have an initial commit, so `git submodule` commands work correctly within the sandbox.
 *   **Cleanup:** The test MUST clean up all temporary directories on exit via `trap`, even on test failure.
 
-#### 2.13.2 Required Test Scenarios
+#### 2.12.2 Required Test Scenarios
 
 The test script MUST include assertions for all of the following. Each test MUST print a clear PASS/FAIL result with a descriptive label.
 
@@ -206,21 +196,28 @@ The test script MUST include assertions for all of the following. Each test MUST
 25. **`--regenerate-launchers` regenerates scripts:** Modify `run_architect.sh` content. Run `init.sh --regenerate-launchers`. Assert `run_architect.sh` was overwritten with fresh content.
 26. **Refresh without `--regenerate-launchers` preserves launchers:** Modify `run_architect.sh` content. Run `init.sh` (no flag). Assert `run_architect.sh` was NOT overwritten.
 
-**Deprecation Shim Tests:**
+**Standalone Guard Tests:**
 
-27. **`bootstrap.sh` prints deprecation notice:** Run `bootstrap.sh`. Assert stderr contains "deprecated" and "init.sh".
-28. **`bootstrap.sh` delegates to `init.sh`:** Run `bootstrap.sh` in a clean sandbox. Assert the same artifacts are created as a direct `init.sh` run.
+27. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where `.purlin/` exists at `$SUBMODULE_DIR`). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
 
 **Ergonomic Symlink Tests:**
 
-29. **Submodule root symlink exists:** Assert `<submodule>/init.sh` is a symlink to `tools/init.sh`.
-30. **Submodule root symlink works:** Run `<submodule>/init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
+28. **Submodule root symlink exists:** Assert `<submodule>/init.sh` is a symlink to `tools/init.sh`.
+29. **Submodule root symlink works:** Run `<submodule>/init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
 
-#### 2.13.3 Test Output Format
+#### 2.12.3 Test Output Format
 
 *   Each test prints: `PASS: <description>` or `FAIL: <description>` followed by diagnostic details on failure.
 *   At the end, print a summary: `N/M tests passed`. Exit with non-zero status if any test failed.
 *   Tests MUST run independently where possible — a failure in one test MUST NOT prevent subsequent tests from running (use per-test `set +e` / `set -e` or subshell isolation).
+
+### 2.13 Standalone Mode Guard
+
+The script MUST detect when it is being run inside the standalone Purlin repo (where Purlin IS the project, not a submodule) and refuse to proceed.
+
+*   **Detection:** After computing `SUBMODULE_DIR`, check if `$SUBMODULE_DIR/.purlin` exists. In the submodule layout, the submodule directory does NOT contain `.purlin/` (that lives at the consumer project root). In standalone mode, the Purlin repo root DOES contain `.purlin/`. If `.purlin/` exists in `$SUBMODULE_DIR`, print an error and exit non-zero.
+*   **Error Message:** The error MUST be printed to stderr and explain that `init.sh` is for consumer projects only, not for the Purlin repository itself.
+*   **No Side Effects:** The guard MUST fire before any file creation or modification. No files outside the Purlin repo may be created or modified.
 
 ---
 
@@ -349,12 +346,14 @@ The test script MUST include assertions for all of the following. Each test MUST
     Then no output is written to stdout
     And the refresh completes successfully
 
-#### Scenario: Bootstrap Deprecation Shim
+#### Scenario: Standalone Mode Guard Prevents Init in Purlin Repo
 
-    Given tools/bootstrap.sh exists
-    When the user runs "purlin/tools/bootstrap.sh"
-    Then a deprecation notice is printed to stderr mentioning init.sh
-    And tools/init.sh is executed (delegated via exec)
+    Given Purlin is the project (not a submodule)
+    And .purlin/ exists at the Purlin repo root
+    When the user runs "tools/init.sh"
+    Then the script prints an error to stderr explaining init.sh is for consumer projects only
+    And the script exits with non-zero status
+    And no files are created or modified outside the Purlin repo
 
 #### Scenario: Ergonomic Symlink at Submodule Root
 

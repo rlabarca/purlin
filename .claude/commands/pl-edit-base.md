@@ -1,8 +1,8 @@
 **Purlin command: Purlin framework Architect only — LOCAL TO THIS REPOSITORY**
 
 > IMPORTANT: This command is local to the Purlin framework repository. It MUST NOT be distributed
-> to consumer projects via bootstrap.sh or sync_upstream.sh. Consumer project agents MUST NEVER
-> modify base instruction files — use the override layer at `.purlin/` instead.
+> to consumer projects via init.sh. Consumer project agents MUST NEVER modify base instruction
+> files — use the override layer at `.purlin/` instead.
 
 ---
 

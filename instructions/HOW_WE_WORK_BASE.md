@@ -111,7 +111,7 @@ This ordering ensures that project-specific rules can refine or extend (but not 
 ### Submodule Consumption Pattern
 When used as a git submodule (e.g., at `purlin/`):
 1. The submodule provides the base layer (`purlin/instructions/`) and all tools (`purlin/tools/`).
-2. The consumer project runs `purlin/tools/bootstrap.sh` to initialize `.purlin/` with override templates.
+2. The consumer project runs `purlin/tools/init.sh` to initialize `.purlin/` with override templates.
 3. Tools resolve their paths via `tools_root` in `.purlin/config.json`.
 4. Upstream updates use the `/pl-update-purlin` agent skill for intelligent synchronization.
 
