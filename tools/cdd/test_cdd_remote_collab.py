@@ -1376,6 +1376,104 @@ class TestCollabBranchesExcludedFromExistingBranchDropdown(unittest.TestCase):
                          if 'existing-branch-select' in html else '')
 
 
+class TestRefreshSessionsButtonFetchesAllRemoteRefs(unittest.TestCase):
+    """Scenario: Refresh Sessions Button Fetches All Remote Refs
+
+    Given the CDD server is running with no active session
+    And the known sessions table shows 1 collab session
+    When a new collab branch is pushed to the remote from another machine
+    And a POST request is sent to /remote-collab/fetch-all
+    Then the response contains { "status": "ok" } with a fetched_at timestamp
+    And the known sessions table re-renders with the newly discovered collab branch
+    """
+
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('subprocess.run')
+    def test_fetch_all_succeeds(self, mock_run, *mocks):
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': '2'}
+        handler.rfile = io.BytesIO(b'{}')
+        handler.path = '/remote-collab/fetch-all'
+        responses = []
+
+        def mock_send_json(status, data):
+            responses.append((status, data))
+        handler._send_json = mock_send_json
+        serve.Handler._handle_remote_collab_fetch_all(handler)
+        self.assertEqual(len(responses), 1)
+        status, data = responses[0]
+        self.assertEqual(status, 200)
+        self.assertEqual(data['status'], 'ok')
+        self.assertIn('fetched_at', data)
+        self.assertIsNotNone(data['fetched_at'])
+        # Verify git fetch was called without a specific branch (fetch all)
+        fetch_call = [c for c in mock_run.call_args_list
+                      if 'fetch' in str(c)]
+        self.assertTrue(len(fetch_call) > 0)
+        args = fetch_call[0][0][0]
+        # The command should be ['git', 'fetch', 'origin'] (no branch arg)
+        self.assertEqual(args, ['git', 'fetch', 'origin'])
+
+    @patch('serve.get_remote_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('subprocess.run')
+    def test_fetch_all_returns_error_on_failure(self, mock_run, *mocks):
+        mock_run.side_effect = subprocess.CalledProcessError(1, 'git', stderr='fetch failed')
+        handler = MagicMock()
+        responses = []
+
+        def mock_send_json(status, data):
+            responses.append((status, data))
+        handler._send_json = mock_send_json
+        serve.Handler._handle_remote_collab_fetch_all(handler)
+        self.assertEqual(len(responses), 1)
+        status, data = responses[0]
+        self.assertEqual(status, 500)
+        self.assertIn('error', data)
+
+
+class TestSectionHeadingShowsShortenedRemoteUrl(unittest.TestCase):
+    """Scenario: Section Heading Shows Shortened Remote URL
+
+    Given the CDD server is running
+    And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading expanded text includes "(github.com/rlabarca/purlin)"
+    """
+
+    @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_heading_includes_shortened_url(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('REMOTE COLLABORATION (github.com/rlabarca/purlin)', html)
+        self.assertIn('data-expanded="REMOTE COLLABORATION (github.com/rlabarca/purlin)"', html)
+
+
+class TestSectionHeadingWithoutRemote(unittest.TestCase):
+    """Scenario: Section Heading Without Remote
+
+    Given the CDD server is running
+    And no git remote is configured
+    When the dashboard HTML is generated
+    Then the REMOTE COLLABORATION section heading expanded text is "REMOTE COLLABORATION" with no parenthetical
+    """
+
+    @patch('serve._get_shortened_remote_url', return_value='')
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_remote_session', return_value=None)
+    @patch('serve._has_git_remote', return_value=False)
+    @patch('serve.get_remote_collab_sessions', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_heading_plain_without_remote(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('data-expanded="REMOTE COLLABORATION"', html)
+        self.assertNotIn('data-expanded="REMOTE COLLABORATION (', html)
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()

@@ -1057,6 +1057,43 @@ def _has_git_remote():
         return False
 
 
+def _get_shortened_remote_url():
+    """Get shortened remote URL for the REMOTE COLLABORATION heading.
+
+    Strips protocol (https://, git@, ssh://), removes trailing .git,
+    and converts git@host:path to host/path.
+    Returns empty string if no remote is configured.
+    """
+    rc = get_remote_config()
+    remote = rc['remote']
+    try:
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', remote],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        url = result.stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ''
+
+    if not url:
+        return ''
+
+    # Strip protocols
+    for prefix in ('https://', 'http://', 'ssh://'):
+        if url.startswith(prefix):
+            url = url[len(prefix):]
+            break
+    # Convert git@host:path to host/path
+    if url.startswith('git@'):
+        url = url[4:]
+        url = url.replace(':', '/', 1)
+    # Remove trailing .git
+    if url.endswith('.git'):
+        url = url[:-4]
+
+    return url
+
+
 def get_remote_collab_sessions():
     """List all collab/* sessions from remote tracking refs.
 
@@ -1496,7 +1533,13 @@ def _remote_collab_section_html(active_session, sync_data, sessions,
             '</div>'
         )
 
-        # Known sessions table
+        # Known sessions table with Refresh button
+        html += ('<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+                 '<span style="color:var(--purlin-muted);font-size:11px;font-weight:700;letter-spacing:0.05em">'
+                 'Known Sessions</span>'
+                 '<button class="btn-critic" onclick="refreshRemoteSessions()"'
+                 ' id="btn-refresh-sessions" style="font-size:10px;padding:2px 8px">'
+                 'Refresh Sessions</button></div>')
         if sessions:
             html += ('<table class="ft" style="width:100%"><thead><tr>'
                      '<th>Session</th><th>Branch</th><th></th>'
@@ -1894,6 +1937,13 @@ def generate_html(cache=None):
         rc_collab_badge = f'<span class="{rc_badge_css}">{rc_badge_sev}</span>'
     else:
         rc_collab_badge = ''
+
+    # Shortened remote URL for heading (spec Section 2.1)
+    rc_short_url = _get_shortened_remote_url() if rc_has_remote else ''
+    rc_heading_expanded = 'REMOTE COLLABORATION'
+    if rc_short_url:
+        url_esc = rc_short_url.replace('&', '&amp;').replace('"', '&quot;')
+        rc_heading_expanded = f'REMOTE COLLABORATION ({url_esc})'
 
     # Cross-section annotation in MAIN WORKSPACE body (spec 2.6)
     workspace_remote_sync = ''
@@ -2325,7 +2375,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('remote-collab-section')">
         <span class="chevron" id="remote-collab-section-chevron">&#9654;</span>
-        <span id="rc-heading" data-expanded="REMOTE COLLABORATION" data-collapsed-text="{rc_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">REMOTE COLLABORATION</span>
+        <span id="rc-heading" data-expanded="{rc_heading_expanded}" data-collapsed-text="{rc_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">REMOTE COLLABORATION</span>
         <span class="section-badge" id="remote-collab-section-badge" style="display:none">{rc_collab_badge}</span>
       </div>
       <div class="section-body collapsed" id="remote-collab-section">
@@ -3185,6 +3235,21 @@ function joinRemoteSession(name) {{
       if (d.status === 'ok') {{ refreshStatus(); }}
     }})
     .catch(function() {{ rcRemotePending = false; }});
+}}
+
+function refreshRemoteSessions() {{
+  var btn = document.getElementById('btn-refresh-sessions');
+  if (!btn) return;
+  btn.textContent = 'Refreshing...';
+  btn.disabled = true;
+  fetch('/remote-collab/fetch-all', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      btn.textContent = 'Refresh Sessions';
+      btn.disabled = false;
+      if (d.status === 'ok') {{ refreshStatus(); }}
+    }})
+    .catch(function() {{ btn.textContent = 'Refresh Sessions'; btn.disabled = false; }});
 }}
 
 function joinExistingBranch() {{
@@ -5066,6 +5131,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_remote_collab_disconnect()
         elif self.path == '/remote-collab/fetch':
             self._handle_remote_collab_fetch()
+        elif self.path == '/remote-collab/fetch-all':
+            self._handle_remote_collab_fetch_all()
         elif self.path == '/remote-collab/delete':
             self._handle_remote_collab_delete()
         elif self.path == '/remote-collab/join-existing':
@@ -5563,6 +5630,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(200, {
                     'status': 'ok',
                     'fetched_at': _remote_collab_last_fetch,
+                })
+            except subprocess.CalledProcessError as exc:
+                self._send_json(500, {
+                    'error': exc.stderr.strip() or str(exc)
+                })
+            except subprocess.TimeoutExpired:
+                self._send_json(500, {'error': 'Fetch timed out'})
+
+    def _handle_remote_collab_fetch_all(self):
+        """POST /remote-collab/fetch-all — fetch all refs from remote."""
+        rc = get_remote_config()
+        remote = rc['remote']
+
+        if _remote_collab_fetch_lock.locked():
+            self._send_json(200, {'status': 'ok', 'fetched_at': None})
+            return
+
+        with _remote_collab_fetch_lock:
+            try:
+                subprocess.run(
+                    ['git', 'fetch', remote],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+                fetched_at = datetime.now(
+                    timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                self._send_json(200, {
+                    'status': 'ok',
+                    'fetched_at': fetched_at,
                 })
             except subprocess.CalledProcessError as exc:
                 self._send_json(500, {
