@@ -262,18 +262,3 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Counter display updates on 5-second refresh without flickering
 - [ ] When no agents are running for a role, no counter text appears (span is empty)
 
-## User Testing Discoveries
-
-### [BUG] Live counter counts not displayed next to context guard threshold input (Discovered: 2026-03-06)
-- **Scenario:** Live Counter Displays Running Agent Counts
-- **Observed Behavior:** The CDD Dashboard agent configuration rows do not show any turn count values to the right of the context guard threshold input, even when agents are actively running (turn_count and session_meta files present in `.purlin/runtime/`).
-- **Expected Behavior:** Per Section 2.1 lines 41-47: a `<span>` to the right of the threshold input should display current turn counts (plain number for one agent, pipe-separated for multiple), updated on each 5-second auto-refresh via `GET /context-guard/counters`.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [DISCOVERY] Concurrent multi-control writes race and reset pending values (Discovered: 2026-03-06)
-- **Scenario:** NONE
-- **Observed Behavior:** When changing multiple context guard thresholds in quick succession, a value would revert to its previous state. Waiting for the prior save to complete before making the next change allowed values to stick.
-- **Expected Behavior:** The pending-write lock should prevent any incoming response (not just auto-refresh) from overwriting a control that has a pending user edit.
-- **Action Required:** Architect
-- **Status:** RESOLVED

@@ -22,3 +22,6 @@ All HTML IDs, CSS classes, JS variable names, and localStorage section-name entr
 
 ### Test Directory
 The automated test suite lives at `tests/cdd_agent_configuration/`. If a prior implementation pass renamed this to `tests/cdd_model_configuration/`, rename it back. The `tests.json` file inside should be preserved.
+
+BUG — Live agent turn counters not shown in Dashboard agent config rows; fixed by implementing GET /context-guard/counters endpoint and rendering span UI with 5-second auto-refresh.
+DISCOVERY — Concurrent threshold changes caused value revert due to pending-write lock gap; lock extended to block any response (not just auto-refresh) from overwriting controls with pending edits.

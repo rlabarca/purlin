@@ -271,18 +271,3 @@ The following instruction files MUST be updated by the Builder to reference the 
 
 None.
 
-## User Testing Discoveries
-
-### [BUG] Playwright MCP running in headed mode instead of headless (Discovered: 2026-03-06)
-- **Scenario:** Headed Playwright MCP detected triggers reconfiguration
-- **Observed Behavior:** `/pl-web-verify` launches a visible browser window during verification, disrupting the user's screen. The Playwright MCP server is configured without the `--headless` flag.
-- **Expected Behavior:** Per Section 2.5, Playwright MUST run in headless mode. The skill should detect the non-headless configuration and instruct the user to reconfigure with `claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless`, then stop execution until the session is restarted.
-- **Action Required:** Builder
-- **Status:** RESOLVED
-
-### [DISCOVERY] pl-web-verify uses hardcoded feature URL without server liveness or dynamic port resolution (Discovered: 2026-03-06)
-- **Scenario:** NONE
-- **Observed Behavior:** During web verification of `cdd_agent_configuration`, the skill navigated to `http://localhost:9086` (from the `> Web Testable:` metadata). A stale server was running on that port from a previous session — it was not the current CDD Dashboard instance. The real server was running on port 52288, as written by the server at startup to `.purlin/runtime/cdd.port`. The verification was testing against stale/incorrect state.
-- **Expected Behavior:** `/pl-web-verify` should (1) read `.purlin/runtime/cdd.port` to discover the actual running port for CDD Dashboard features, (2) validate that the server at the resolved URL is the correct/current instance, (3) start the server via `/pl-cdd` if it is not running, and (4) prefer the dynamic port over the hardcoded `> Web Testable:` URL when a runtime port file exists. Feature specs should not be required to hardcode a specific port number.
-- **Action Required:** Architect
-- **Status:** SPEC_UPDATED

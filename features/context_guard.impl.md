@@ -35,3 +35,7 @@ BUG — False subagent detection on new sessions: The 120-second file-age heuris
 **[DISCOVERY]** ~~Spec Section 2.3 and the "Subagent detection" scenario (Section 3) reference the 120-second file-age heuristic which has been replaced. The Architect should update Section 2.3 to describe PPID-based agent identity and update the subagent scenario to reference session_meta instead of file modification timestamps. (Severity: HIGH)~~ **ACKNOWLEDGED** — Section 2.3 rewritten for PPID-based identity. Subagent scenario updated to use `session_meta_<AGENT_ID>`. All file-age heuristic references removed.
 
 **[CLARIFICATION]** session_meta 3-line format and PID recycling detection implemented per spec Section 2.8. For non-numeric AGENT_IDs (test overrides via CONTEXT_GUARD_AGENT_ID), process_start_time is written as "unknown" since `ps -p` requires a numeric PID. Stale cleanup only runs PID recycling checks on numeric IDs, so test artifacts are unaffected. (Severity: INFO)
+
+BUG — Per-agent threshold shows global value when running `claude` directly (no AGENT_ROLE set); correct by design per Section 2.2.1 — launchers set AGENT_ROLE, direct invocations fall back to global threshold.
+BUG — /clear does not change session_id; /pl-resume Step 0 now deletes session_id files so hook treats next invocation as a new session, resetting counter to 1.
+BUG — Subagent path exited silently with no output; fixed to read turn_count and emit guard status before exiting on all code paths.
