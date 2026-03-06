@@ -25,12 +25,22 @@ class TestPlCddSkill(unittest.TestCase):
         """Scenario: Start when not running."""
         self.assertIn('start.sh', self.content)
         self.assertIn('START_SCRIPT', self.content)
-        self.assertIn('http://localhost', self.content)
+        # Skill instructs agent to relay URL output from start.sh
+        self.assertIn('prints the URL', self.content)
 
-    def test_start_when_already_running_shows_url(self):
-        """Scenario: Start when already running shows URL."""
-        self.assertIn('already running', self.content.lower())
+    def test_start_when_already_running_restarts(self):
+        """Scenario: Start when already running restarts on same port."""
+        # Must stop existing instance before restarting
+        self.assertIn('STOP_SCRIPT', self.content)
+        # Must read current port and pass as preference
         self.assertIn('cdd.port', self.content)
+        self.assertIn('PREFERRED_PORT', self.content)
+        self.assertIn('-p', self.content)
+
+    def test_restart_falls_back_to_new_port(self):
+        """Scenario: Restart falls back to new port when preferred port unavailable."""
+        # Must retry without -p if preferred port fails
+        self.assertIn('retry without', self.content.lower())
 
     def test_stop_a_running_server(self):
         """Scenario: Stop a running server."""

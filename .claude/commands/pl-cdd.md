@@ -5,7 +5,7 @@ Start, stop, or restart the CDD Dashboard server. Prints the full clickable URL 
 ## Usage
 
 ```
-/pl-cdd              # Start (or show URL if already running)
+/pl-cdd              # Start (or restart if already running)
 /pl-cdd stop         # Stop the server
 /pl-cdd restart      # Stop then start
 ```
@@ -56,10 +56,11 @@ Check if the output contains a line matching the current project root. If it doe
 #### 4a. Start
 
 If already running:
-- Read the port from `.purlin/runtime/cdd.port`.
-- Print: `CDD Dashboard is already running.`
-- Print: `http://localhost:<port>`
-- Done.
+- Read the current port from `.purlin/runtime/cdd.port` and save it as `PREFERRED_PORT`.
+- Stop the existing instance: Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<STOP_SCRIPT>"`
+- Start a new instance with port preference: Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<START_SCRIPT>" -p <PREFERRED_PORT>`
+- If the start fails (non-zero exit, e.g., preferred port still held by OS), retry without `-p` to let the OS assign a new port.
+- Print the URL from the start output.
 
 If not running:
 - Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<START_SCRIPT>"`
@@ -82,5 +83,6 @@ If not running:
 
 - The server runs in the background via `nohup` and persists after the agent session exits.
 - Process detection uses `ps` -- no PID files are involved.
-- The port is auto-selected by the OS unless the user previously started with `-p <port>`.
-- To use a specific port, invoke `start.sh` directly with `-p`: `bash tools/cdd/start.sh -p 9090`
+- When restarting an already-running server, the skill reads the current port from `cdd.port` and passes it via `-p` to preserve the URL across restarts.
+- If the preferred port is unavailable after stop (OS still holding it), the skill retries without `-p` for an OS-assigned port.
+- To use a specific port manually, invoke `start.sh` directly with `-p`: `bash tools/cdd/start.sh -p 9090`
