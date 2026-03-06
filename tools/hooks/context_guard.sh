@@ -159,14 +159,14 @@ if [[ "$IS_SUBAGENT" == "true" ]]; then
     if [[ "$GUARD_ENABLED" == "true" ]]; then
         COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
         if [[ $COUNT -lt $THRESHOLD ]]; then
-            cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"}}
-GUARDJSON
+            STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"
         else
-            cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
-GUARDJSON
+            STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
         fi
+        echo "$STATUS_MSG" >&2
+        cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${STATUS_MSG}"}}
+GUARDJSON
     fi
     exit 0
 fi
@@ -184,12 +184,13 @@ fi
 # Output context status on every turn via additionalContext.
 # PostToolUse hooks MUST output JSON with additionalContext for agent visibility.
 # Format: "COUNT / THRESHOLD used" where COUNT = turns consumed (higher = closer to limit).
+# Also emit plain-text status line to stderr for user visibility in terminal.
 if [[ $COUNT -lt $THRESHOLD ]]; then
-    cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"}}
-GUARDJSON
+    STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"
 else
-    cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
-GUARDJSON
+    STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
 fi
+echo "$STATUS_MSG" >&2
+cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${STATUS_MSG}"}}
+GUARDJSON

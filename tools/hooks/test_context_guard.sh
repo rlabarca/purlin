@@ -471,6 +471,77 @@ fi
 cleanup_sandbox
 
 ###############################################################################
+# Scenario 19: User-visible status line emitted to stderr
+###############################################################################
+echo ""
+echo "[Scenario] User-visible status line emitted to stderr"
+setup_sandbox
+
+echo '{"context_guard_threshold": 45}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-19" "session-19"
+echo "4" > "$SANDBOX/.purlin/runtime/turn_count_agent-19"
+
+STDERR_FILE="$SANDBOX/stderr_output"
+STDOUT_OUTPUT=$(run_guard "session-19" "" "agent-19" 2>"$STDERR_FILE")
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 5 / 45 used"; then
+    log_pass "stderr contains 'CONTEXT GUARD: 5 / 45 used'"
+else
+    log_fail "Expected stderr 'CONTEXT GUARD: 5 / 45 used', got: '$STDERR_OUTPUT'"
+fi
+if echo "$STDOUT_OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 5 / 45 used"'; then
+    log_pass "stdout JSON additionalContext also contains 'CONTEXT GUARD: 5 / 45 used'"
+else
+    log_fail "Expected stdout additionalContext 'CONTEXT GUARD: 5 / 45 used', got: '$STDOUT_OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 20: Exceeded status line emitted to stderr
+###############################################################################
+echo ""
+echo "[Scenario] Exceeded status line emitted to stderr"
+setup_sandbox
+
+echo '{"context_guard_threshold": 5}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-20" "session-20"
+echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-20"
+
+STDERR_FILE="$SANDBOX/stderr_exceeded"
+STDOUT_OUTPUT=$(run_guard "session-20" "" "agent-20" 2>"$STDERR_FILE")
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save"; then
+    log_pass "stderr contains exceeded message with evacuation instructions"
+else
+    log_fail "Expected stderr exceeded message, got: '$STDERR_OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 21: Subagent also emits stderr status line
+###############################################################################
+echo ""
+echo "[Scenario] Subagent also emits stderr status line"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-21" "main-session-21"
+echo "7" > "$SANDBOX/.purlin/runtime/turn_count_agent-21"
+
+STDERR_FILE="$SANDBOX/stderr_subagent"
+STDOUT_OUTPUT=$(run_guard "subagent-session-21" "" "agent-21" 2>"$STDERR_FILE")
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 7 / 10 used"; then
+    log_pass "Subagent emits stderr status line"
+else
+    log_fail "Expected subagent stderr 'CONTEXT GUARD: 7 / 10 used', got: '$STDERR_OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
 # Summary
 ###############################################################################
 TOTAL=$((PASS + FAIL))
