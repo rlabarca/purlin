@@ -18,9 +18,8 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
 *   **Root Detection:** The script MUST detect the consumer project root as the parent of the directory containing the submodule (i.e., if the submodule is at `<project_root>/agentic-dev/`, the project root is `<project_root>/`). The detection logic MUST work when the script is invoked from any working directory.
 *   **Submodule Path:** The script MUST detect the submodule directory name dynamically from its own location (e.g., the grandparent of `tools/bootstrap.sh`).
 
-### 2.2 Guard: Prevent Re-Initialization
-*   **Abort Condition:** If `.purlin/` already exists at the project root, the script MUST print an error message and exit with a non-zero status code.
-*   **Message:** The error message MUST state that `.purlin/` already exists and suggest removing it if re-initialization is intended.
+### 2.2 Guard: Prevent Re-Initialization (Superseded)
+> **Superseded:** This requirement described the original bootstrap.sh behavior. Now that bootstrap.sh is a deprecation shim delegating to `init.sh` (see `project_init.md` Section 2.10), re-runs enter refresh mode instead of aborting. See `project_init.md` Section 2.4 for the current refresh behavior.
 
 ### 2.3 Override Directory Initialization
 *   **Source:** Copy all files from `purlin-config-sample/` (located in the submodule root) to `<project_root>/.purlin/`.
@@ -143,11 +142,12 @@ Initializes a consumer project that has added Purlin as a git submodule. Creates
     And all launcher scripts are executable
     And features/ directory exists at the project root
 
-#### Scenario: Prevent Double Initialization
+#### Scenario: Bootstrap Second Run Delegates to Refresh Mode
     Given .purlin/ already exists at the project root
     When the user runs "agentic-dev/tools/bootstrap.sh"
-    Then the script exits with a non-zero status
-    And an error message is printed
+    Then the script prints a deprecation notice to stderr
+    And delegates to init.sh which enters refresh mode
+    And the script exits with status 0
 
 #### Scenario: Launcher Script Concatenation Order
     Given bootstrap has been run successfully
