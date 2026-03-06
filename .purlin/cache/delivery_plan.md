@@ -30,11 +30,14 @@
 ---
 
 ## Phase 3 — Intelligent Purlin Update
-**Status:** PENDING
+**Status:** COMPLETE
+**Completion Commit:** d7073d8
 **Features:**
 1. `features/pl_update_purlin.md` — HIGH (18 scenarios)
 
 **Rationale:** Depends on project_init and config_layering. Dedicated phase due to HIGH complexity with 18 scenarios and complex merge logic.
+
+**Result:** Spec revision added standalone mode guard (Section 2.14) and expanded known stale artifacts list. Command file updated with step 0 guard and specific bootstrap.sh/test_bootstrap.sh entries. All 14 automated scenarios traced, tests PASS.
 
 ---
 
