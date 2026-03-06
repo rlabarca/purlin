@@ -1896,7 +1896,7 @@ def generate_html(cache=None):
     else:
         git_html = '<p class="wip">Work in Progress:</p><pre>' + git_status + '</pre>'
 
-    # Current branch for MAIN WORKSPACE heading
+    # Current branch for LOCAL BRANCH heading
     current_branch = _get_collaboration_branch()
 
     # Isolated Teams detection for dashboard
@@ -1945,7 +1945,7 @@ def generate_html(cache=None):
         url_esc = rc_short_url.replace('&', '&amp;').replace('"', '&quot;')
         rc_heading_expanded = f'REMOTE COLLABORATION ({url_esc})'
 
-    # Cross-section annotation in MAIN WORKSPACE body (spec 2.6)
+    # Cross-section annotation in LOCAL BRANCH body (spec 2.6)
     workspace_remote_sync = ''
     if rc_active_session:
         if _remote_collab_last_fetch:
@@ -2363,7 +2363,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx">
       <div class="section-hdr" onclick="toggleSection('workspace-section')">
         <span class="chevron" id="workspace-section-chevron">&#9654;</span>
-        <h3>Main Workspace ({current_branch})</h3>
+        <h3>Local Branch ({current_branch})</h3>
         <span class="section-badge" id="workspace-section-badge">{workspace_summary}</span>
       </div>
       <div class="section-body collapsed" id="workspace-section">

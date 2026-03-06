@@ -1135,11 +1135,11 @@ class TestNewIsolationInputCreatesNamedWorktree(unittest.TestCase):
         self.assertIn('isolated/feat2', html)
 
 
-class TestMainWorkspaceHeadingBranchLabel(unittest.TestCase):
-    """Scenarios: MAIN WORKSPACE Heading Includes Branch Name,
+class TestLocalBranchHeadingBranchLabel(unittest.TestCase):
+    """Scenarios: LOCAL BRANCH Heading Includes Branch Name,
     Branch Name Matches Git Branch, Heading Updates After Branch Change.
 
-    Verifies that the MAIN WORKSPACE section heading in generate_html()
+    Verifies that the LOCAL BRANCH section heading in generate_html()
     includes the current branch name from _get_collaboration_branch().
     """
 
@@ -1173,24 +1173,24 @@ class TestMainWorkspaceHeadingBranchLabel(unittest.TestCase):
             patch.stopall()
 
     def test_heading_includes_branch_name(self):
-        """MAIN WORKSPACE heading contains the branch name (Section 2.3)."""
+        """LOCAL BRANCH heading contains the branch name (Section 2.3)."""
         html = self._call_generate_html('collab/purlincollab')
-        self.assertIn('Main Workspace (collab/purlincollab)', html)
+        self.assertIn('Local Branch (collab/purlincollab)', html)
 
     def test_branch_name_matches_mock_value(self):
         """Branch in heading matches whatever _get_collaboration_branch returns."""
         html = self._call_generate_html('feature/my-branch')
-        self.assertIn('Main Workspace (feature/my-branch)', html)
-        self.assertNotIn('Main Workspace (collab/', html)
+        self.assertIn('Local Branch (feature/my-branch)', html)
+        self.assertNotIn('Local Branch (collab/', html)
 
     def test_heading_updates_after_branch_change(self):
         """Two calls with different branches produce different headings."""
         html1 = self._call_generate_html('main')
         html2 = self._call_generate_html('collab/test')
-        self.assertIn('Main Workspace (main)', html1)
-        self.assertNotIn('Main Workspace (collab/test)', html1)
-        self.assertIn('Main Workspace (collab/test)', html2)
-        self.assertNotIn('Main Workspace (main)', html2)
+        self.assertIn('Local Branch (main)', html1)
+        self.assertNotIn('Local Branch (collab/test)', html1)
+        self.assertIn('Local Branch (collab/test)', html2)
+        self.assertNotIn('Local Branch (main)', html2)
 
 
 # ===================================================================
