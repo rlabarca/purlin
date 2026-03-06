@@ -26,6 +26,12 @@ RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 # Ensure runtime directory exists
 mkdir -p "$RUNTIME_DIR"
 
+# Role detection: env var first, then persisted file (Claude Code doesn't pass env vars to hooks).
+# Launcher scripts write AGENT_ROLE to .purlin/runtime/agent_role for this fallback.
+if [[ -z "${AGENT_ROLE:-}" ]] && [[ -f "$RUNTIME_DIR/agent_role" ]]; then
+    AGENT_ROLE=$(cat "$RUNTIME_DIR/agent_role" 2>/dev/null || echo "")
+fi
+
 # Role-specific files prevent cross-contamination between concurrent agents.
 # When AGENT_ROLE is set (via launcher scripts), each agent gets its own counter
 # and session tracking. Without AGENT_ROLE, falls back to unsuffixed files.
@@ -43,7 +49,7 @@ SESSION_ID_FILE="$RUNTIME_DIR/session_id${ROLE_SUFFIX}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOLVER="$SCRIPT_DIR/../config/resolve_config.py"
 
-read -r THRESHOLD GUARD_ENABLED < <(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 -c "
+read -r THRESHOLD GUARD_ENABLED < <(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" AGENT_ROLE="${AGENT_ROLE:-}" python3 -c "
 import json, subprocess, sys, os
 role = os.environ.get('AGENT_ROLE', '')
 try:

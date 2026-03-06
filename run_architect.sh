@@ -28,6 +28,9 @@ fi
 
 # --- Read agent config via resolver ---
 export AGENT_ROLE="architect"
+# Persist role to file so hooks can read it (Claude Code doesn't pass env vars to hooks)
+mkdir -p "$SCRIPT_DIR/.purlin/runtime"
+echo "$AGENT_ROLE" > "$SCRIPT_DIR/.purlin/runtime/agent_role"
 RESOLVER="$CORE_DIR/tools/config/resolve_config.py"
 
 AGENT_MODEL=""
