@@ -1,0 +1,1 @@
+{"status": "PASS", "tests": 7, "failures": 0, "tool": "cdd", "runner": "unittest", "note": "Tests colocated in tools/cdd/test_cdd.py (TestQaBadgeHtml, TestVerificationEffortInApiStatus classes)"}

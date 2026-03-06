@@ -63,6 +63,8 @@ from critic import (
     validate_visual_references,
     compute_regression_set,
     _extract_scope_from_commit,
+    _parse_web_testable,
+    compute_verification_effort,
 )
 import logic_drift
 
@@ -5024,6 +5026,367 @@ class TestValidateVisualReferences(unittest.TestCase):
         self.assertEqual(len(items), 0)
         self.assertEqual(visual_spec['stale_count'], 0)
         self.assertEqual(visual_spec['missing_reference_count'], 0)
+
+
+# ===================================================================
+# Verification Effort Classification Tests (qa_verification_effort.md)
+# ===================================================================
+
+WEB_TESTABLE_FEATURE = """\
+# Feature: Test
+
+> Label: "Test"
+> Category: "CDD Dashboard"
+> Web Testable: http://localhost:9086
+
+## 1. Overview
+Test feature.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto test one
+
+    Given something
+    When something happens
+    Then something is verified
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual one
+
+    Given the dashboard is open
+    When I click a button
+    Then something happens
+
+#### Scenario: Manual two
+
+    Given another state
+    When I hover
+    Then tooltip appears
+
+#### Scenario: Manual three
+
+    Given hardware connected
+    When serial port is opened
+    Then data flows
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
+### Screen: Dashboard Main
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** Main dashboard view.
+- [ ] Layout is correct
+- [ ] Colors match theme
+"""
+
+NON_WEB_FEATURE = """\
+# Feature: CLI Tool
+
+> Label: "CLI Tool"
+> Category: "Tools"
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto test
+
+    Given something
+    Then verified
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual interactive one
+
+    Given the CLI is running
+    When I enter a command
+    Then output is displayed
+
+#### Scenario: Manual interactive two
+
+    Given another state
+    When I type input
+    Then processing occurs
+
+#### Scenario: Manual hardware check
+
+    Given hardware device connected via USB
+    When the serial port is opened
+    Then data is read from the device
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+
+### Screen: Output View
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** CLI output view.
+- [ ] Text alignment is correct
+- [ ] Colors are readable
+- [ ] Font is monospace
+"""
+
+AUTO_ONLY_FEATURE = """\
+# Feature: Auto Only
+
+> Label: "Auto Only"
+> Category: "Tools"
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto one
+
+    Given something
+    Then verified
+
+#### Scenario: Auto two
+
+    Given more
+    Then also verified
+"""
+
+
+class TestParseWebTestable(unittest.TestCase):
+    """Scenario: Web-testable detection."""
+
+    def test_web_testable_found(self):
+        content = '> Label: "Test"\n> Web Testable: http://localhost:9086\n'
+        self.assertEqual(_parse_web_testable(content), 'http://localhost:9086')
+
+    def test_web_testable_not_found(self):
+        content = '> Label: "Test"\n> Category: "Tools"\n'
+        self.assertIsNone(_parse_web_testable(content))
+
+
+class TestVerificationEffortWebTestable(unittest.TestCase):
+    """Scenario: Web-testable feature classifies manual scenarios as auto_web."""
+
+    def test_web_feature_manual_and_visual_as_auto_web(self):
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': ['Manual one', 'Manual two', 'Manual three'],
+            'visual_items': 2,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_web'], 5)  # 3 manual + 2 visual
+        self.assertEqual(ve['manual_interactive'], 0)
+        self.assertEqual(ve['manual_visual'], 0)
+        self.assertEqual(ve['total_auto'], 5)
+        self.assertEqual(ve['total_manual'], 0)
+        self.assertEqual(ve['summary'], '5 auto, 0 manual')
+
+
+class TestVerificationEffortNonWeb(unittest.TestCase):
+    """Scenario: Non-web feature classifies manual scenarios as manual_interactive."""
+
+    def test_non_web_manual_scenarios(self):
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': ['Manual interactive one', 'Manual interactive two',
+                          'Manual hardware check'],
+            'visual_items': 3,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            NON_WEB_FEATURE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_web'], 0)
+        self.assertEqual(ve['manual_interactive'], 2)
+        self.assertEqual(ve['manual_hardware'], 1)
+        self.assertEqual(ve['manual_visual'], 3)
+        self.assertEqual(ve['total_auto'], 0)
+        self.assertEqual(ve['total_manual'], 6)
+        self.assertEqual(ve['summary'], '0 auto, 6 manual')
+
+
+class TestVerificationEffortAutoTestOnly(unittest.TestCase):
+    """Scenario: Feature with only automated scenarios classifies as auto_test_only."""
+
+    def test_auto_only_with_passing_tests(self):
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': [],
+            'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            AUTO_ONLY_FEATURE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_test_only'], 1)
+        self.assertEqual(ve['total_auto'], 1)
+        self.assertEqual(ve['total_manual'], 0)
+        self.assertEqual(ve['summary'], '1 auto, 0 manual')
+
+
+class TestVerificationEffortCosmeticScope(unittest.TestCase):
+    """Scenario: Cosmetic scope feature classified as auto_skip."""
+
+    def test_cosmetic_scope_auto_skip(self):
+        regression_scope = {
+            'declared': 'cosmetic',
+            'scenarios': [],
+            'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_skip'], 1)
+        self.assertEqual(ve['total_auto'], 1)
+        self.assertEqual(ve['total_manual'], 0)
+        self.assertEqual(ve['summary'], '1 auto, 0 manual')
+
+
+class TestVerificationEffortTargetedScope(unittest.TestCase):
+    """Scenario: Targeted scope reduces counts to named items only."""
+
+    def test_targeted_scope_filters_scenarios(self):
+        regression_scope = {
+            'declared': 'targeted:Manual one,Manual two',
+            'scenarios': ['Manual one', 'Manual two'],
+            'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_web'], 2)  # Only 2 targeted scenarios
+        self.assertEqual(ve['total_auto'], 2)
+
+
+class TestVerificationEffortBuilderIncomplete(unittest.TestCase):
+    """Scenario: Builder-incomplete feature shows awaiting builder."""
+
+    def test_builder_todo_returns_awaiting(self):
+        regression_scope = {
+            'declared': 'full', 'scenarios': [], 'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'TODO', 'qa': 'N/A'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'todo', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['summary'], 'awaiting builder')
+        self.assertEqual(ve['total_auto'], 0)
+        self.assertEqual(ve['total_manual'], 0)
+
+
+class TestVerificationEffortNonTestingLifecycle(unittest.TestCase):
+    """Lifecycle gating: non-testing features return zeroed counts."""
+
+    def test_complete_feature_returns_zeroed(self):
+        regression_scope = {
+            'declared': 'full', 'scenarios': [], 'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'CLEAN'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'complete', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['summary'], 'no QA items')
+        self.assertEqual(ve['total_auto'], 0)
+
+
+class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
+    """Scenario: Visual spec items classified by web-testability."""
+
+    def test_non_web_visual_only(self):
+        content = """\
+# Feature: Visual Only
+
+> Label: "Visual Only"
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+
+### Screen: Main View
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** Main view.
+- [ ] Layout correct
+- [ ] Colors right
+- [ ] Spacing consistent
+- [ ] Font correct
+- [ ] Borders visible
+- [ ] Icons present
+"""
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': [],
+            'visual_items': 6,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            content, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['manual_visual'], 6)
+        self.assertEqual(ve['auto_web'], 0)
+        self.assertEqual(ve['total_manual'], 6)
+        self.assertEqual(ve['summary'], '0 auto, 6 manual')
+
+
+class TestVerificationEffortInCriticJson(unittest.TestCase):
+    """Scenario: verification_effort appears in critic.json output."""
+
+    def test_critic_json_has_verification_effort(self):
+        import critic
+        root = tempfile.mkdtemp()
+        features_dir = os.path.join(root, 'features')
+        os.makedirs(features_dir)
+        feature_path = os.path.join(features_dir, 'test_ve.md')
+        with open(feature_path, 'w') as f:
+            f.write(AUTO_ONLY_FEATURE)
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = features_dir
+        critic.TESTS_DIR = os.path.join(root, 'tests')
+        critic.PROJECT_ROOT = root
+        try:
+            data = generate_critic_json(feature_path)
+            self.assertIn('verification_effort', data)
+            ve = data['verification_effort']
+            self.assertIn('auto_web', ve)
+            self.assertIn('auto_test_only', ve)
+            self.assertIn('auto_skip', ve)
+            self.assertIn('manual_interactive', ve)
+            self.assertIn('manual_visual', ve)
+            self.assertIn('manual_hardware', ve)
+            self.assertIn('total_auto', ve)
+            self.assertIn('total_manual', ve)
+            self.assertIn('summary', ve)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+            shutil.rmtree(root)
 
 
 # ===================================================================

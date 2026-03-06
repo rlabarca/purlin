@@ -33,17 +33,28 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 ### Step 2 — Playwright MCP Pre-Check
 
 1. Check whether Playwright MCP tools are available by looking for `browser_navigate` in the available tool list.
-2. **If available:** Proceed to Step 3.
+2. **If available:**
+   a. Verify headless mode: check the MCP server configuration for `--headless` flag. Run `claude mcp list` or inspect the tool configuration to determine if Playwright was configured with `--headless`.
+   b. **If configured without `--headless`:** Instruct the user to reconfigure:
+      ```
+      Playwright MCP is configured but not in headless mode.
+      Headless mode is required (runs invisibly, avoids disrupting your screen, 20-30% faster).
+      Please reconfigure:
+        claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless
+      Then restart the Claude Code session and re-run /pl-web-verify.
+      ```
+      Stop execution.
+   c. **If configured with `--headless`:** Proceed to Step 3.
 3. **If NOT available:**
    a. Attempt auto-setup: run `npx @playwright/mcp@latest --help` to verify the package is accessible.
-   b. If the package is accessible, run: `claude mcp add playwright -- npx @playwright/mcp`
-   c. Inform the user: "Playwright MCP server has been configured. Please restart the Claude Code session to load the new MCP server, then re-run `/pl-web-verify`."
+   b. If the package is accessible, run: `claude mcp add playwright -- npx @playwright/mcp --headless`
+   c. Inform the user: "Playwright MCP server has been configured in headless mode. Please restart the Claude Code session to load the new MCP server, then re-run `/pl-web-verify`."
    d. Stop execution. Do NOT attempt verification without Playwright MCP.
    e. If the package is NOT accessible, print the error and provide manual setup instructions:
       ```
       Playwright MCP auto-setup failed. Manual setup:
       1. npm install -g @playwright/mcp
-      2. claude mcp add playwright -- npx @playwright/mcp
+      2. claude mcp add playwright -- npx @playwright/mcp --headless
       3. Restart Claude Code session
       4. Re-run /pl-web-verify
       ```

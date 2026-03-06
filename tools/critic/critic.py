@@ -1714,6 +1714,134 @@ def _get_feature_change_scope(feature_file, cdd_status):
     return None
 
 
+def _parse_web_testable(content):
+    """Extract > Web Testable: URL from feature file metadata.
+
+    Returns the URL string if found, or None if not present.
+    """
+    match = re.search(r'^>\s*Web Testable:\s*(.+)', content, re.MULTILINE)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def compute_verification_effort(content, lifecycle_state, regression_scope,
+                                role_status, feature_result):
+    """Compute verification_effort block for a feature.
+
+    Classifies pending QA work into auto-resolvable and human-required
+    categories per qa_verification_effort.md.
+
+    Returns dict with category counts, totals, and summary.
+    """
+    zeroed = {
+        'auto_web': 0, 'auto_test_only': 0, 'auto_skip': 0,
+        'manual_interactive': 0, 'manual_visual': 0, 'manual_hardware': 0,
+        'total_auto': 0, 'total_manual': 0, 'summary': 'no QA items',
+    }
+
+    # Lifecycle gating (Section 2.5)
+    if role_status.get('builder') in ('TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'):
+        return {**zeroed, 'summary': 'awaiting builder'}
+
+    if lifecycle_state != 'testing':
+        return zeroed
+
+    # Only TESTING features reach here
+    declared = regression_scope.get('declared', 'full')
+
+    # Cosmetic scope: auto_skip (if not escalated — escalation changes declared to 'full')
+    if declared == 'cosmetic':
+        return {
+            **zeroed,
+            'auto_skip': 1,
+            'total_auto': 1,
+            'summary': '1 auto, 0 manual',
+        }
+
+    # Parse feature data
+    web_testable_url = _parse_web_testable(content)
+    is_web = web_testable_url is not None
+    scenarios = parse_scenarios(content)
+    visual = parse_visual_spec(content)
+
+    # Determine in-scope manual scenarios based on regression scope
+    scoped_scenarios = regression_scope.get('scenarios', [])
+    if declared == 'full' or declared == 'dependency-only':
+        manual_scenarios = [s for s in scenarios if s.get('is_manual')]
+    elif declared.startswith('targeted:'):
+        scoped_set = set(scoped_scenarios)
+        manual_scenarios = [
+            s for s in scenarios
+            if s.get('is_manual') and s['title'] in scoped_set
+        ]
+    else:
+        manual_scenarios = [s for s in scenarios if s.get('is_manual')]
+
+    manual_count = len(manual_scenarios)
+    visual_items = regression_scope.get('visual_items', 0)
+
+    # Auto:TestOnly — only automated scenarios, no manual, no visual, tests pass
+    has_manual = manual_count > 0
+    has_visual = visual_items > 0
+    struct = feature_result.get('implementation_gate', {}).get(
+        'checks', {}).get('structural_completeness', {})
+    tests_pass = struct.get('status') == 'PASS'
+
+    if not has_manual and not has_visual:
+        if tests_pass:
+            return {
+                **zeroed,
+                'auto_test_only': 1,
+                'total_auto': 1,
+                'summary': '1 auto, 0 manual',
+            }
+        else:
+            return zeroed
+
+    # Classify manual scenarios and visual items
+    auto_web = 0
+    manual_interactive = 0
+    manual_visual = 0
+    manual_hardware = 0
+
+    hardware_keywords = re.compile(
+        r'\b(hardware|serial|GPIO|USB|device|physical)\b', re.IGNORECASE)
+
+    if is_web:
+        # Web-testable: manual scenarios + visual items -> auto_web
+        auto_web = manual_count + visual_items
+    else:
+        # Non-web: classify manual scenarios
+        for s in manual_scenarios:
+            if hardware_keywords.search(s.get('body', '')):
+                manual_hardware += 1
+            else:
+                manual_interactive += 1
+        # Non-web visual items -> manual_visual
+        manual_visual = visual_items
+
+    total_auto = auto_web
+    total_manual = manual_interactive + manual_visual + manual_hardware
+
+    if total_auto == 0 and total_manual == 0:
+        summary = 'no QA items'
+    else:
+        summary = f'{total_auto} auto, {total_manual} manual'
+
+    return {
+        'auto_web': auto_web,
+        'auto_test_only': 0,
+        'auto_skip': 0,
+        'manual_interactive': manual_interactive,
+        'manual_visual': manual_visual,
+        'manual_hardware': manual_hardware,
+        'total_auto': total_auto,
+        'total_manual': total_manual,
+        'summary': summary,
+    }
+
+
 def compute_role_status(feature_result, cdd_status=None):
     """Compute role_status for a feature based on analysis results.
 
@@ -1972,6 +2100,11 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Compute role status (depends on action_items being populated)
     result['role_status'] = compute_role_status(result, cdd_status)
+
+    # Compute verification effort (depends on role_status being populated)
+    result['verification_effort'] = compute_verification_effort(
+        content, lifecycle_state, regression_scope,
+        result['role_status'], result)
 
     # Clean up internal-only keys before returning
     result.pop('_visual_ref_items', None)

@@ -320,10 +320,11 @@ def get_feature_test_status(feature_stem, tests_dir):
 
 
 def get_feature_role_status(feature_stem, tests_dir):
-    """Reads role_status from tests/<feature_stem>/critic.json.
+    """Reads role_status and verification_effort from tests/<feature_stem>/critic.json.
 
-    Returns dict with 'architect', 'builder', 'qa' keys, or None
-    if no critic.json exists or it lacks role_status.
+    Returns dict with 'architect', 'builder', 'qa', and optionally
+    'verification_effort' keys, or None if no critic.json exists
+    or it lacks role_status.
     """
     critic_path = os.path.join(tests_dir, feature_stem, "critic.json")
     if not os.path.isfile(critic_path):
@@ -331,7 +332,10 @@ def get_feature_role_status(feature_stem, tests_dir):
     try:
         with open(critic_path, 'r') as f:
             data = json.load(f)
-        return data.get("role_status")
+        rs = data.get("role_status")
+        if rs is not None and "verification_effort" in data:
+            rs["verification_effort"] = data["verification_effort"]
+        return rs
     except (json.JSONDecodeError, IOError, OSError):
         return None
 
@@ -537,6 +541,8 @@ def generate_api_status_json(cache=None):
                 entry["builder"] = role_status["builder"]
             if 'qa' in role_status:
                 entry["qa"] = role_status["qa"]
+            if 'verification_effort' in role_status:
+                entry["verification_effort"] = role_status["verification_effort"]
 
         scope = get_change_scope(rel_path, cache)
         if scope:
@@ -1299,6 +1305,56 @@ def _role_badge_html(status):
     return f'<span class="{css}">{status}</span>'
 
 
+def _qa_badge_html(entry):
+    """Returns a QA badge with optional effort breakdown for TODO status.
+
+    When QA is TODO and verification_effort has non-zero counts,
+    appends (Na/Mm) in muted text.
+    """
+    qa = entry.get("qa")
+    base = _role_badge_html(qa)
+    if qa != "TODO":
+        return base
+
+    ve = entry.get("verification_effort")
+    if not ve:
+        return base
+
+    total_auto = ve.get("total_auto", 0)
+    total_manual = ve.get("total_manual", 0)
+    if total_auto == 0 and total_manual == 0:
+        return base
+
+    # Build tooltip with full category breakdown
+    tooltip_parts = []
+    auto_parts = []
+    if ve.get("auto_web", 0) > 0:
+        auto_parts.append(f'{ve["auto_web"]} web')
+    if ve.get("auto_test_only", 0) > 0:
+        auto_parts.append(f'{ve["auto_test_only"]} test-only')
+    if ve.get("auto_skip", 0) > 0:
+        auto_parts.append(f'{ve["auto_skip"]} skip')
+    if auto_parts:
+        tooltip_parts.append(f'Auto: {", ".join(auto_parts)}')
+
+    manual_parts = []
+    if ve.get("manual_interactive", 0) > 0:
+        manual_parts.append(f'{ve["manual_interactive"]} interactive')
+    if ve.get("manual_visual", 0) > 0:
+        manual_parts.append(f'{ve["manual_visual"]} visual')
+    if ve.get("manual_hardware", 0) > 0:
+        manual_parts.append(f'{ve["manual_hardware"]} hardware')
+    if manual_parts:
+        tooltip_parts.append(f'Manual: {", ".join(manual_parts)}')
+
+    tooltip = ' | '.join(tooltip_parts)
+    effort_span = (
+        f' <span class="effort-breakdown" title="{tooltip}">'
+        f'({total_auto}a/{total_manual}m)</span>'
+    )
+    return base + effort_span
+
+
 def _format_category_counts(counts):
     """Format a {specs, tests, other} dict as space-separated category counts.
 
@@ -1971,6 +2027,32 @@ def generate_html(cache=None):
         return f'<span class="{css}">{top}</span>'
 
     active_summary = _section_summary_badge(active_features)
+
+    # QA Queue aggregate summary (cdd_qa_effort_display Section 2.3)
+    qa_queue_html = ''
+    if active_features:
+        total_auto = 0
+        total_manual = 0
+        features_with_effort = 0
+        for e in active_features:
+            ve = e.get('verification_effort')
+            if ve:
+                a = ve.get('total_auto', 0)
+                m = ve.get('total_manual', 0)
+                if a > 0 or m > 0:
+                    total_auto += a
+                    total_manual += m
+                    features_with_effort += 1
+        if features_with_effort > 0:
+            qa_queue_html = (
+                f'<span class="qa-queue-summary">'
+                f'QA Queue: {total_auto} auto-resolvable, '
+                f'{total_manual} manual across '
+                f'{features_with_effort} feature'
+                f'{"s" if features_with_effort != 1 else ""}'
+                f'</span>'
+            )
+
     complete_summary = ''  # Complete section shows no badge when collapsed (spec 2.2.2)
 
     # Workspace collapsed summary
@@ -2136,6 +2218,8 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-blocked{{color:var(--purlin-dim);font-weight:bold}}
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
+.effort-breakdown{{color:var(--purlin-muted);font-size:12px;font-weight:normal;cursor:help}}
+.qa-queue-summary{{color:var(--purlin-muted);font-size:12px;font-weight:500;margin-left:8px}}
 /* Feature Detail Modal */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
@@ -2245,6 +2329,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         <span class="section-badge" id="active-section-badge" style="display:none">{active_summary}</span>
       </div>
       <div class="section-body" id="active-section">
+        {qa_queue_html}
         {active_html or '<p class="dim">No active features.</p>'}
       </div>
       <div class="section-hdr" onclick="toggleSection('complete-section')">
@@ -4652,7 +4737,7 @@ def _role_table_html(features):
         label = entry.get("label", fname)
         arch = _role_badge_html(entry.get("architect"))
         builder = _role_badge_html(entry.get("builder"))
-        qa = _role_badge_html(entry.get("qa"))
+        qa = _qa_badge_html(entry)
         escaped_fname = fname.replace("'", "\\'")
         escaped_label = label.replace("'", "\\'")
 

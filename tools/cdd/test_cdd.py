@@ -28,6 +28,7 @@ from serve import (
     _feature_urgency,
     strip_discoveries_section,
     spec_content_unchanged,
+    _qa_badge_html,
 )
 
 
@@ -1528,6 +1529,129 @@ class TestStartShPortValidation(unittest.TestCase):
             capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Invalid port", result.stderr)
+
+
+# ===================================================================
+# ===================================================================
+# QA Effort Display Tests (cdd_qa_effort_display.md)
+# ===================================================================
+
+class TestQaBadgeHtml(unittest.TestCase):
+    """Scenario: QA TODO cell shows effort breakdown."""
+
+    def test_todo_with_effort_shows_breakdown(self):
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 3, "auto_test_only": 0, "auto_skip": 0,
+                "manual_interactive": 2, "manual_visual": 4,
+                "manual_hardware": 0,
+                "total_auto": 3, "total_manual": 6,
+                "summary": "3 auto, 6 manual",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("TODO", html)
+        self.assertIn("(3a/6m)", html)
+        self.assertIn("effort-breakdown", html)
+
+    def test_todo_zero_effort_shows_plain_todo(self):
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 0, "auto_test_only": 0, "auto_skip": 0,
+                "manual_interactive": 0, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 0, "total_manual": 0,
+                "summary": "awaiting builder",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("TODO", html)
+        self.assertNotIn("effort-breakdown", html)
+
+    def test_non_todo_no_effort(self):
+        entry = {"qa": "CLEAN"}
+        html = _qa_badge_html(entry)
+        self.assertIn("CLEAN", html)
+        self.assertNotIn("effort-breakdown", html)
+
+    def test_todo_no_verification_effort_key(self):
+        entry = {"qa": "TODO"}
+        html = _qa_badge_html(entry)
+        self.assertIn("TODO", html)
+        self.assertNotIn("effort-breakdown", html)
+
+    def test_tooltip_includes_category_breakdown(self):
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 3, "auto_test_only": 0, "auto_skip": 0,
+                "manual_interactive": 2, "manual_visual": 4,
+                "manual_hardware": 0,
+                "total_auto": 3, "total_manual": 6,
+                "summary": "3 auto, 6 manual",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("title=", html)
+        self.assertIn("3 web", html)
+        self.assertIn("2 interactive", html)
+        self.assertIn("4 visual", html)
+        # Zero categories omitted
+        self.assertNotIn("hardware", html)
+        self.assertNotIn("test-only", html)
+        self.assertNotIn("skip", html)
+
+
+class TestVerificationEffortInApiStatus(unittest.TestCase):
+    """Scenario: Status JSON includes verification_effort."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_role_status_includes_verification_effort(self):
+        """get_feature_role_status includes verification_effort when present."""
+        stem = "test_feature"
+        d = os.path.join(self.test_dir, stem)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "critic.json"), "w") as f:
+            json.dump({
+                "role_status": {
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "TODO",
+                },
+                "verification_effort": {
+                    "auto_web": 5, "auto_test_only": 0, "auto_skip": 0,
+                    "manual_interactive": 0, "manual_visual": 0,
+                    "manual_hardware": 0,
+                    "total_auto": 5, "total_manual": 0,
+                    "summary": "5 auto, 0 manual",
+                },
+            }, f)
+        result = get_feature_role_status(stem, self.test_dir)
+        self.assertIn("verification_effort", result)
+        self.assertEqual(result["verification_effort"]["total_auto"], 5)
+
+    def test_role_status_without_verification_effort(self):
+        """get_feature_role_status works when verification_effort is absent."""
+        stem = "old_feature"
+        d = os.path.join(self.test_dir, stem)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "critic.json"), "w") as f:
+            json.dump({
+                "role_status": {
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "CLEAN",
+                },
+            }, f)
+        result = get_feature_role_status(stem, self.test_dir)
+        self.assertNotIn("verification_effort", result)
 
 
 # ===================================================================

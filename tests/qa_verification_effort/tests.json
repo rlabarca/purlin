@@ -1,0 +1,1 @@
+{"status": "PASS", "tests": 10, "failures": 0, "tool": "critic", "runner": "unittest", "note": "Tests colocated in tools/critic/test_critic.py (TestVerificationEffort* classes)"}
