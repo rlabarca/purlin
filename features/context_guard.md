@@ -183,7 +183,7 @@ None.
 
 ### [BUG] Threshold shows 45 when per-agent config sets 60
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Date:** 2026-03-06
 **Discovered by:** User (Architect session)
 **Action Required:** Builder
@@ -192,7 +192,7 @@ None.
 
 **Expected:** Hook should show `... / 60` when the per-agent threshold is set to 60.
 
-**Root Cause (probable):** The `AGENT_ROLE` environment variable may not be set when the hook runs outside of a launcher script, causing fallback to the global threshold (45). Alternatively, `resolve_config.py --dump` may not merge `config.local.json` overrides, or the inline Python extraction has a bug in the per-agent path.
+**Root Cause:** Confirmed: `AGENT_ROLE` environment variable is not set when running `claude` directly (without a launcher script). The hook correctly falls back to the global threshold (45). Per-agent thresholds only apply when `AGENT_ROLE` is set by the launcher (`run_builder.sh`, etc.). This is by-design per spec Section 2.2.1. The code and resolver are working correctly — this is a usage issue, not a code bug.
 
 **Scenario affected:** "Per-agent threshold overrides global"
 
@@ -200,7 +200,7 @@ None.
 
 ### [BUG] Counter not resetting after /clear + /pl-resume
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Date:** 2026-03-06
 **Discovered by:** User (Builder session)
 **Action Required:** Builder
@@ -211,15 +211,15 @@ None.
 
 **Root Cause:** `/clear` does not change Claude Code's `session_id`. The hook sees the same `session_id`, doesn't detect a new session, and keeps the old `turn_count`. The `/pl-resume` restore flow resets `turn_count` to 0, but the `session_id` file must also be deleted so the hook treats the next invocation as a genuinely new session.
 
-**Fix required:** `/pl-resume` Step 0 must delete `session_id` and all `session_id_*` files alongside resetting `turn_count`. (Spec updated in `pl_session_resume.md` Section 2.3.1.)
+**Resolution:** `/pl-resume` Step 0 now deletes `session_id` files alongside resetting `turn_count`. Verified working — counter shows `1 / Y used` after `/clear` + `/pl-resume`.
 
-**Scenario affected:** "Counter resets after session_id file deletion" (new)
+**Scenario affected:** "Counter resets after session_id file deletion"
 
 ---
 
 ### [BUG] Hook silently exits for subagents with no output
 
-**Status:** OPEN
+**Status:** RESOLVED
 **Date:** 2026-03-06
 **Discovered by:** User (multiple sessions)
 **Action Required:** Builder
@@ -228,6 +228,6 @@ None.
 
 **Expected:** Every tool call should show `CONTEXT GUARD: X / Y used` when the guard is enabled.
 
-**Root Cause:** Subagent detection (`IS_SUBAGENT=true`) causes `exit 0` with no JSON output. Other early-exit paths may also skip output silently.
+**Root Cause:** Subagent detection (`IS_SUBAGENT=true`) caused `exit 0` with no JSON output.
 
-**Fix required:** When subagent is detected, the hook should still output the current context guard status (reading the existing turn_count without incrementing) rather than exiting silently. The spec Section 2.4 has been updated to require output on every tool call with no silent exits.
+**Resolution:** Subagent path now reads the current turn_count (without incrementing) and outputs the context guard status before exiting. All code paths produce output when the guard is enabled.

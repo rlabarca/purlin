@@ -113,8 +113,20 @@ except:
     fi
 fi
 
-# Subagents exit without counting or resetting.
+# Subagents: output status without incrementing counter.
 if [[ "$IS_SUBAGENT" == "true" ]]; then
+    if [[ "$GUARD_ENABLED" == "true" ]]; then
+        COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
+        if [[ $COUNT -lt $THRESHOLD ]]; then
+            cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"}}
+GUARDJSON
+        else
+            cat <<GUARDJSON
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
+GUARDJSON
+        fi
+    fi
     exit 0
 fi
 
@@ -135,13 +147,13 @@ fi
 
 # Output context status on every turn via additionalContext.
 # PostToolUse hooks MUST output JSON with additionalContext for agent visibility.
-REMAINING=$((THRESHOLD - COUNT))
-if [[ $REMAINING -gt 0 ]]; then
+# Format: "COUNT / THRESHOLD used" where COUNT = turns consumed (higher = closer to limit).
+if [[ $COUNT -lt $THRESHOLD ]]; then
     cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${REMAINING}/${THRESHOLD}"}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"}}
 GUARDJSON
 else
     cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${REMAINING}/${THRESHOLD} -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."}}
 GUARDJSON
 fi
