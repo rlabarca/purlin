@@ -24,6 +24,7 @@ specs.
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings
+  /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
 
@@ -73,6 +74,7 @@ specs.
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings
+  /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
 
@@ -121,6 +123,7 @@ specs.
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
   /pl-context-guard          View or modify context guard settings
+  /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
 
