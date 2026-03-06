@@ -324,13 +324,13 @@ class TestNoRoleFilteringInHandoff(unittest.TestCase):
                           "purlin.handoff.critic_report"])
 
 
-class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
-    """Scenario: pl-local-push Merges Branch When All Checks Pass
+class TestPlIsolatedPushMergesWhenAllChecksPass(unittest.TestCase):
+    """Scenario: pl-isolated-push Merges Branch When All Checks Pass
 
     Given the current branch is isolated/feat1
     And tools/handoff/run.sh exits with code 0
-    And the main checkout is on branch main
-    When /pl-local-push is invoked
+    And the main checkout is on the collaboration branch
+    When /pl-isolated-push is invoked
     Then git merge --ff-only isolated/feat1 is executed from PROJECT_ROOT
     And the command succeeds
     """
@@ -381,23 +381,23 @@ class TestPlLocalPushMergesWhenAllChecksPass(unittest.TestCase):
                          f"stderr: {result.stderr}")
 
     def test_skill_file_instructs_ff_only_merge(self):
-        """The pl-local-push skill file specifies --ff-only merge."""
+        """The pl-isolated-push skill file specifies --ff-only merge."""
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-push.md")
+                                  "pl-isolated-push.md")
         self.assertTrue(os.path.exists(skill_path),
-                        "pl-local-push.md skill file must exist")
+                        "pl-isolated-push.md skill file must exist")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("--ff-only", content)
         self.assertIn("merge", content)
 
 
-class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
-    """Scenario: pl-local-push Blocks Merge When Handoff Checks Fail
+class TestPlIsolatedPushBlocksMergeWhenChecksFail(unittest.TestCase):
+    """Scenario: pl-isolated-push Blocks Merge When Handoff Checks Fail
 
     Given the current branch is isolated/feat1
     And tools/handoff/run.sh exits with code 1
-    When /pl-local-push is invoked
+    When /pl-isolated-push is invoked
     Then the failing items are printed
     And no merge is executed
     """
@@ -449,99 +449,101 @@ class TestPlLocalPushBlocksMergeWhenChecksFail(unittest.TestCase):
         self.assertIn("FAIL", result.stdout)
 
 
-class TestPlLocalPullAbortsWhenDirty(unittest.TestCase):
-    """Scenario: pl-local-pull Aborts When Working Tree Is Dirty
+class TestPlIsolatedPullAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-isolated-pull Aborts When Working Tree Is Dirty
 
     Given the current worktree has uncommitted changes
-    When /pl-local-pull is invoked
+    When /pl-isolated-pull is invoked
     Then the command prints "Commit or stash changes before pulling"
     And no git rebase is executed
     """
 
     def test_skill_file_checks_clean_state(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         self.assertTrue(os.path.exists(skill_path),
-                        "pl-local-pull.md skill file must exist")
+                        "pl-isolated-pull.md skill file must exist")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("Commit or stash changes before pulling", content)
         self.assertIn("git status --porcelain", content)
 
 
-class TestPlLocalPullRebasesMainWhenBehind(unittest.TestCase):
-    """Scenario: pl-local-pull Rebases Main Into Worktree When Branch Is BEHIND
+class TestPlIsolatedPullRebasesWhenBehind(unittest.TestCase):
+    """Scenario: pl-isolated-pull Rebases Collaboration Branch Into Worktree When Branch Is BEHIND
 
     Given the current worktree is clean
-    And main has 3 new commits not in the worktree branch
-    And the worktree branch has no commits not in main
-    When /pl-local-pull is invoked
+    And the collaboration branch has 3 new commits not in the worktree branch
+    And the worktree branch has no commits not in the collaboration branch
+    When /pl-isolated-pull is invoked
     Then the state label "BEHIND" is printed
-    And git rebase main is executed
+    And git rebase <collaboration-branch> is executed
     And the output reports 3 new commits incorporated
     """
 
-    def test_skill_file_instructs_rebase_main(self):
+    def test_skill_file_instructs_rebase(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
-        self.assertIn("git rebase main", content)
-        self.assertNotIn("git merge main", content)
+        self.assertIn("git rebase <collaboration-branch>", content)
+        self.assertNotIn("git merge <collaboration-branch>", content)
 
     def test_skill_file_prints_behind_state(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("BEHIND", content)
         self.assertIn("fast-forward", content.lower())
 
 
-class TestPlLocalPullRebasesWhenDiverged(unittest.TestCase):
-    """Scenario: pl-local-pull Rebases When Branch Is DIVERGED
+class TestPlIsolatedPullRebasesWhenDiverged(unittest.TestCase):
+    """Scenario: pl-isolated-pull Rebases When Branch Is DIVERGED
 
     Given the current worktree is clean
-    And the worktree branch has 2 commits not in main
-    And main has 3 commits not in the worktree branch
-    When /pl-local-pull is invoked
+    And the worktree branch has 2 commits not in the collaboration branch
+    And the collaboration branch has 3 commits not in the worktree branch
+    When /pl-isolated-pull is invoked
     Then the state label "DIVERGED" is printed
     And the DIVERGED context report is printed showing incoming commits
-    And git rebase main is executed
-    And on success the branch is AHEAD of main by 2 commits
+    And git rebase <collaboration-branch> is executed
+    And on success the branch is AHEAD of the collaboration branch by 2 commits
     """
 
     def test_skill_file_handles_diverged_state(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
-        self.assertIn("git log HEAD..main --stat --oneline", content)
-        self.assertIn("git rebase main", content)
+        self.assertIn("git log HEAD..<collaboration-branch> --stat --oneline",
+                       content)
+        self.assertIn("git rebase <collaboration-branch>", content)
 
 
-class TestPlLocalPullReportsPerFileConflictContext(unittest.TestCase):
-    """Scenario: pl-local-pull Reports Per-File Commit Context On Conflict
+class TestPlIsolatedPullReportsPerFileConflictContext(unittest.TestCase):
+    """Scenario: pl-isolated-pull Reports Per-File Commit Context On Conflict
 
-    Given /pl-local-pull is invoked and git rebase main halts with a conflict
+    Given /pl-isolated-pull is invoked and git rebase halts with a conflict
     When the conflict is reported
-    Then the output includes commits from main and the worktree branch
+    Then the output includes commits from the collaboration branch and worktree branch
     And a resolution hint is shown for features/ files
     And the output includes instructions to git rebase --continue or --abort
     """
 
     def test_skill_file_includes_per_file_conflict_context(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
-        self.assertIn("git log HEAD..main --oneline --", content)
-        self.assertIn("git log main..ORIG_HEAD --oneline --", content)
+        self.assertIn("git log HEAD..<collaboration-branch> --oneline --", content)
+        self.assertIn("git log <collaboration-branch>..ORIG_HEAD --oneline --",
+                       content)
 
     def test_skill_file_includes_resolution_hints(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("features/", content)
@@ -550,43 +552,43 @@ class TestPlLocalPullReportsPerFileConflictContext(unittest.TestCase):
 
     def test_skill_file_includes_rebase_continue_abort(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("git rebase --continue", content)
         self.assertIn("git rebase --abort", content)
 
 
-class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
-    """Scenario: pl-local-push Blocks When Branch Is DIVERGED
+class TestPlIsolatedPushBlocksWhenDiverged(unittest.TestCase):
+    """Scenario: pl-isolated-push Blocks When Branch Is DIVERGED
 
-    Given the current worktree branch has commits not in main
-    And main has commits not in the worktree branch
-    When /pl-local-push is invoked
-    Then the command prints the DIVERGED state and lists incoming main commits
+    Given the current worktree branch has commits not in the collaboration branch
+    And the collaboration branch has commits not in the worktree branch
+    When /pl-isolated-push is invoked
+    Then the command prints the DIVERGED state
     And the handoff checklist is NOT run
     And no merge is executed
-    And the agent is instructed to run /pl-local-pull first
+    And the agent is instructed to run /pl-isolated-pull first
     """
 
     def test_skill_file_blocks_diverged_before_checklist(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-push.md")
+                                  "pl-isolated-push.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
-        self.assertIn("/pl-local-pull", content)
+        self.assertIn("/pl-isolated-pull", content)
 
     def test_skill_file_diverged_shows_incoming_commits(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-push.md")
+                                  "pl-isolated-push.md")
         with open(skill_path) as f:
             content = f.read()
-        self.assertIn("git log HEAD..main --oneline", content)
+        self.assertIn("git log HEAD..<collaboration-branch> --oneline", content)
 
     def test_skill_file_diverged_does_not_proceed_to_checklist(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-push.md")
+                                  "pl-isolated-push.md")
         with open(skill_path) as f:
             content = f.read()
         diverged_pos = content.find("DIVERGED")
@@ -597,453 +599,497 @@ class TestPlLocalPushBlocksWhenDiverged(unittest.TestCase):
                         "DIVERGED block must appear before the handoff checklist")
 
 
-class TestPlLocalPullReSyncsCommandFilesAfterRebase(unittest.TestCase):
-    """Scenario: pl-local-pull Re-Syncs Command Files After Rebase
+class TestPlIsolatedPullReSyncsCommandFilesAfterRebase(unittest.TestCase):
+    """Scenario: pl-isolated-pull Re-Syncs Command Files After Rebase
 
     Given the current worktree is clean
-    And main has 2 new commits not in the worktree branch
-    And .claude/commands/ in the worktree contains extra files restored by rebase
-    When /pl-local-pull is invoked
-    Then git rebase main succeeds
-    And extra command files are deleted from the worktree
-    And pl-local-push.md and pl-local-pull.md still exist
+    And the collaboration branch has 2 new commits not in the worktree branch
+    And .claude/commands/ in the worktree contains pl-isolated-push.md,
+        pl-isolated-pull.md, and pl-status.md (restored by rebase)
+    When /pl-isolated-pull is invoked
+    Then git rebase succeeds
+    And .claude/commands/pl-status.md is deleted from the worktree
+    And .claude/commands/pl-isolated-push.md and pl-isolated-pull.md still exist
     """
 
     def test_skill_file_instructs_command_resync(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("skip-worktree", content)
-        self.assertIn("pl-local-push.md", content)
-        self.assertIn("pl-local-pull.md", content)
+        self.assertIn("pl-isolated-push.md", content)
+        self.assertIn("pl-isolated-pull.md", content)
 
 
 class TestPostRebaseSyncLeavesWorkingTreeClean(unittest.TestCase):
     """Scenario: Post-Rebase Sync Leaves Working Tree Clean
 
     Given the current worktree is clean
-    And main has 1 new commit not in the worktree branch
-    And rebase restores extra command files to .claude/commands/
-    When /pl-local-pull is invoked
-    Then git rebase main succeeds
-    And git status --porcelain reports no file changes
+    And the collaboration branch has 1 new commit not in the worktree branch
+    And rebase restores extra command files to .claude/commands/ in the worktree
+    When /pl-isolated-pull is invoked
+    Then git rebase succeeds
+    And git status --porcelain reports no file changes in the worktree
+    And .claude/commands/ in the worktree contains only pl-isolated-push.md
+        and pl-isolated-pull.md
     """
 
     def test_skill_file_uses_skip_worktree_for_clean_status(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
         self.assertIn("git update-index --skip-worktree", content)
 
 
-class TestPlLocalPullNoFailWhenExtraFilesAbsent(unittest.TestCase):
-    """Scenario: pl-local-pull Does Not Fail When Extra Command Files Are Already Absent
+class TestPlIsolatedPullNoFailWhenExtraFilesAbsent(unittest.TestCase):
+    """Scenario: pl-isolated-pull Does Not Fail When Extra Command Files Are Already Absent
 
     Given the current worktree is clean
-    And main has 2 new commits not in the worktree branch
-    And .claude/commands/ contains only pl-local-push.md and pl-local-pull.md
-    When /pl-local-pull is invoked
-    Then git rebase main succeeds
+    And the collaboration branch has 2 new commits not in the worktree branch
+    And .claude/commands/ in the worktree contains only pl-isolated-push.md
+        and pl-isolated-pull.md (no extra files)
+    When /pl-isolated-pull is invoked
+    Then git rebase succeeds
     And no error is raised
     """
 
     def test_skill_file_handles_absent_extra_files_gracefully(self):
         skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                  "pl-local-pull.md")
+                                  "pl-isolated-pull.md")
         with open(skill_path) as f:
             content = f.read()
-        # The command re-sync section should not fail when files don't exist
-        self.assertIn("pl-local-push.md", content)
-        self.assertIn("pl-local-pull.md", content)
+        self.assertIn("pl-isolated-push.md", content)
+        self.assertIn("pl-isolated-pull.md", content)
+
+
+class TestPlIsolatedPullUsesActiveCollaborationBranch(unittest.TestCase):
+    """Scenario: pl-isolated-pull Uses Active Collaboration Branch
+
+    Given the current worktree is clean
+    And an active branch "feature/auth" exists at PROJECT_ROOT in
+        .purlin/runtime/active_branch
+    And the collaboration branch feature/auth has 2 new commits
+    When /pl-isolated-pull is invoked
+    Then the state detection uses feature/auth as the reference branch
+    And git rebase feature/auth is executed
+    """
+
+    def test_skill_file_reads_active_branch(self):
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-isolated-pull.md")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("active_branch", content)
+        self.assertIn("collaboration branch", content.lower())
+
+class TestPlIsolatedPushUsesActiveCollaborationBranch(unittest.TestCase):
+    """Scenario: pl-isolated-push Merges to Active Collaboration Branch
+
+    Given the current branch is isolated/feat1
+    And an active branch "feature/auth" exists at PROJECT_ROOT in
+        .purlin/runtime/active_branch
+    And tools/handoff/run.sh exits with code 0
+    And the main checkout is on branch feature/auth
+    When /pl-isolated-push is invoked
+    Then git merge --ff-only isolated/feat1 is executed from PROJECT_ROOT on feature/auth
+    And the command succeeds
+    """
+
+    def test_skill_file_reads_active_branch(self):
+        skill_path = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                  "pl-isolated-push.md")
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn("active_branch", content)
+        self.assertIn("collaboration branch", content.lower())
 
 
 # =============================================================================
-# Collab Push/Pull Scenarios (Section 2.8 of workflow_checklist_system.md)
+# Remote Push/Pull Scenarios (features/pl_remote_push.md, pl_remote_pull.md)
 # =============================================================================
 
-COLLAB_PUSH_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                "pl-collab-push.md")
-COLLAB_PULL_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
-                                "pl-collab-pull.md")
+REMOTE_PUSH_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                "pl-remote-push.md")
+REMOTE_PULL_PATH = os.path.join(PROJECT_ROOT, ".claude", "commands",
+                                "pl-remote-pull.md")
 
 
-class TestPlCollabPushExitsWhenNotMain(unittest.TestCase):
-    """Scenario: pl-collab-push Exits When Current Branch Is Not Main
-
-    Given the current branch is isolated/feat1
-    When /pl-collab-push is invoked
-    Then the command prints "This command is only valid from the main checkout"
-    And exits with code 1
-    """
-
-    def test_skill_file_has_main_branch_guard(self):
-        with open(COLLAB_PUSH_PATH) as f:
-            content = f.read()
-        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
-        self.assertIn("This command is only valid from the main checkout", content)
-
-    def test_skill_file_guard_is_step_0(self):
-        with open(COLLAB_PUSH_PATH) as f:
-            content = f.read()
-        guard_pos = content.find("Main Branch Guard")
-        session_pos = content.find("Session Guard")
-        self.assertGreater(guard_pos, 0)
-        self.assertGreater(session_pos, guard_pos,
-                           "Main Branch Guard must appear before Session Guard")
-
-
-class TestPlCollabPullExitsWhenNotMain(unittest.TestCase):
-    """Scenario: pl-collab-pull Exits When Current Branch Is Not Main
-
-    Given the current branch is isolated/feat1
-    When /pl-collab-pull is invoked
-    Then the command prints "This command is only valid from the main checkout"
-    And exits with code 1
-    """
-
-    def test_skill_file_has_main_branch_guard(self):
-        with open(COLLAB_PULL_PATH) as f:
-            content = f.read()
-        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
-        self.assertIn("This command is only valid from the main checkout", content)
-
-    def test_skill_file_guard_is_step_0(self):
-        with open(COLLAB_PULL_PATH) as f:
-            content = f.read()
-        guard_pos = content.find("Main Branch Guard")
-        session_pos = content.find("Session Guard")
-        self.assertGreater(guard_pos, 0)
-        self.assertGreater(session_pos, guard_pos,
-                           "Main Branch Guard must appear before Session Guard")
-
-
-class TestPlCollabPushExitsWhenNoActiveSession(unittest.TestCase):
-    """Scenario: pl-collab-push Exits When No Active Session
+class TestPlRemotePushExitsWhenNotOnCollabBranch(unittest.TestCase):
+    """Scenario: pl-remote-push Exits When Not On Collaboration Branch
 
     Given the current branch is main
-    And .purlin/runtime/active_remote_session is absent
-    When /pl-collab-push is invoked
-    Then the command prints "No active remote session"
+    And an active branch "feature/auth" exists in .purlin/runtime/active_branch
+    When /pl-remote-push is invoked
+    Then the command prints "This command must be run from the collaboration branch"
     And exits with code 1
     """
 
-    def test_skill_file_has_session_guard(self):
-        with open(COLLAB_PUSH_PATH) as f:
+    def test_skill_file_has_collaboration_branch_guard(self):
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
-        self.assertIn("active_remote_session", content)
-        self.assertIn("No active remote session", content)
+        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
+        self.assertIn("This command must be run from the collaboration branch",
+                       content)
+
+    def test_skill_file_branch_guard_before_config(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        guard_pos = content.find("Collaboration Branch Guard")
+        config_pos = content.find("Load Config")
+        self.assertGreater(guard_pos, 0)
+        self.assertGreater(config_pos, guard_pos,
+                           "Branch guard must appear before Load Config")
+
+
+class TestPlRemotePushExitsWhenOnWrongBranch(unittest.TestCase):
+    """Scenario: pl-remote-push Exits When On Wrong Branch
+
+    Given the current branch is hotfix/urgent
+    And an active branch "feature/auth" exists in .purlin/runtime/active_branch
+    When /pl-remote-push is invoked
+    Then the command prints "This command must be run from the collaboration branch (feature/auth)"
+    And exits with code 1
+    """
+
+    def test_skill_file_checks_branch_match(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("collaboration branch", content.lower())
+        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
+
+
+class TestPlRemotePullExitsWhenNotOnCollabBranch(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits When Not On Collaboration Branch
+
+    Given the current branch is main
+    And an active branch "feature/auth" exists in .purlin/runtime/active_branch
+    When /pl-remote-pull is invoked
+    Then the command prints "This command must be run from the collaboration branch"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_collaboration_branch_guard(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        self.assertIn("git rev-parse --abbrev-ref HEAD", content)
+        self.assertIn("This command must be run from the collaboration branch",
+                       content)
+
+    def test_skill_file_branch_guard_before_config(self):
+        with open(REMOTE_PULL_PATH) as f:
+            content = f.read()
+        guard_pos = content.find("Collaboration Branch Guard")
+        config_pos = content.find("Load Config")
+        self.assertGreater(guard_pos, 0)
+        self.assertGreater(config_pos, guard_pos,
+                           "Branch guard must appear before Load Config")
+
+
+class TestPlRemotePushExitsWhenNoActiveBranch(unittest.TestCase):
+    """Scenario: pl-remote-push Exits When No Active Branch
+
+    Given no file exists at .purlin/runtime/active_branch
+    When /pl-remote-push is invoked
+    Then the command prints "No active collaboration branch"
+    And exits with code 1
+    """
+
+    def test_skill_file_has_branch_guard(self):
+        with open(REMOTE_PUSH_PATH) as f:
+            content = f.read()
+        self.assertIn("active_branch", content)
+        self.assertIn("No active collaboration branch", content)
 
     def test_skill_file_directs_to_dashboard(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("CDD dashboard", content)
 
 
-class TestPlCollabPullExitsWhenNoActiveSession(unittest.TestCase):
-    """Scenario: pl-collab-pull Exits When No Active Session
+class TestPlRemotePullExitsWhenNoActiveBranch(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits When No Active Branch
 
-    Given the current branch is main
-    And .purlin/runtime/active_remote_session is absent
-    When /pl-collab-pull is invoked
-    Then the command prints "No active remote session"
+    Given no file exists at .purlin/runtime/active_branch
+    When /pl-remote-pull is invoked
+    Then the command prints "No active collaboration branch"
     And exits with code 1
     """
 
-    def test_skill_file_has_session_guard(self):
-        with open(COLLAB_PULL_PATH) as f:
+    def test_skill_file_has_branch_guard(self):
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
-        self.assertIn("active_remote_session", content)
-        self.assertIn("No active remote session", content)
+        self.assertIn("active_branch", content)
+        self.assertIn("No active collaboration branch", content)
 
     def test_skill_file_directs_to_dashboard(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("CDD dashboard", content)
 
 
-class TestPlCollabPushAbortsWhenDirty(unittest.TestCase):
-    """Scenario: pl-collab-push Aborts When Working Tree Is Dirty
+class TestPlRemotePushAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-remote-push Aborts When Working Tree Is Dirty
 
-    Given the current branch is main
-    And an active remote session exists
+    Given the current branch is feature/auth
+    And an active branch "feature/auth" exists in .purlin/runtime/active_branch
     And the working tree has uncommitted changes outside .purlin/
-    When /pl-collab-push is invoked
+    When /pl-remote-push is invoked
     Then the command prints "Commit or stash changes before pushing"
     And no git push is executed
     """
 
     def test_skill_file_checks_dirty_state(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("git status --porcelain", content)
         self.assertIn("Commit or stash changes before pushing", content)
 
     def test_skill_file_excludes_purlin_from_dirty(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn(".purlin/", content)
 
 
-class TestPlCollabPullAbortsWhenDirty(unittest.TestCase):
-    """Scenario: pl-collab-pull Aborts When Working Tree Is Dirty
+class TestPlRemotePullAbortsWhenDirty(unittest.TestCase):
+    """Scenario: pl-remote-pull Aborts When Working Tree Is Dirty
 
-    Given the current branch is main
-    And an active remote session exists
+    Given the current branch is feature/auth
+    And an active branch "feature/auth" exists in .purlin/runtime/active_branch
     And the working tree has uncommitted changes outside .purlin/
-    When /pl-collab-pull is invoked
+    When /pl-remote-pull is invoked
     Then the command prints "Commit or stash changes before pulling"
     And no git merge is executed
     """
 
     def test_skill_file_checks_dirty_state(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("git status --porcelain", content)
         self.assertIn("Commit or stash changes before pulling", content)
 
     def test_skill_file_excludes_purlin_from_dirty(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn(".purlin/", content)
 
 
-class TestPlCollabPushBlockedWhenBehind(unittest.TestCase):
-    """Scenario: pl-collab-push Blocked When Local Main Is BEHIND Remote
+class TestPlRemotePushBlockedWhenBehind(unittest.TestCase):
+    """Scenario: pl-remote-push Blocked When Local Is BEHIND Remote
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And origin/collab/v0.5-sprint has 2 commits not in local main
-    And local main has no commits not in origin/collab/v0.5-sprint
-    When /pl-collab-push is invoked
-    Then the command prints "Local main is BEHIND" and instructs /pl-collab-pull
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And origin/feature/auth has 2 commits not in local feature/auth
+    And local feature/auth has no commits not in origin/feature/auth
+    When /pl-remote-push is invoked
+    Then the command prints "Local <branch> is BEHIND" and instructs /pl-remote-pull
     And exits with code 1
     """
 
     def test_skill_file_blocks_behind_state(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("BEHIND", content)
-        self.assertIn("/pl-collab-pull", content)
+        self.assertIn("/pl-remote-pull", content)
 
     def test_skill_file_uses_two_range_query(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
-        self.assertIn("git log origin/collab/<session>..main --oneline", content)
-        self.assertIn("git log main..origin/collab/<session> --oneline", content)
+        self.assertIn("git log <remote>/<branch>..<branch> --oneline", content)
+        self.assertIn("git log <branch>..<remote>/<branch> --oneline", content)
 
 
-class TestPlCollabPushBlockedWhenDiverged(unittest.TestCase):
-    """Scenario: pl-collab-push Blocked When Local Main Is DIVERGED
+class TestPlRemotePushBlockedWhenDiverged(unittest.TestCase):
+    """Scenario: pl-remote-push Blocked When Local Is DIVERGED
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main has 1 commit not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has 2 commits not in local main
-    When /pl-collab-push is invoked
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth has 1 commit not in origin/feature/auth
+    And origin/feature/auth has 2 commits not in local feature/auth
+    When /pl-remote-push is invoked
     Then the command prints the incoming commits from remote
-    And instructs to run /pl-collab-pull
+    And instructs to run /pl-remote-pull
     And exits with code 1
     """
 
     def test_skill_file_blocks_diverged_state(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
-        self.assertIn("/pl-collab-pull", content)
+        self.assertIn("/pl-remote-pull", content)
 
     def test_skill_file_shows_incoming_commits_on_diverged(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
-        self.assertIn("git log main..origin/collab/<session> --oneline", content)
+        self.assertIn("git log <branch>..<remote>/<branch> --oneline", content)
 
 
-class TestPlCollabPushSucceedsWhenAhead(unittest.TestCase):
-    """Scenario: pl-collab-push Succeeds When AHEAD
+class TestPlRemotePushSucceedsWhenAhead(unittest.TestCase):
+    """Scenario: pl-remote-push Succeeds When AHEAD
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main has 3 commits not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has no commits not in local main
-    When /pl-collab-push is invoked
-    Then git push origin main:collab/v0.5-sprint is executed
-    And the command reports "Pushed N commits"
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth has 3 commits not in origin/feature/auth
+    And origin/feature/auth has no commits not in local feature/auth
+    When /pl-remote-push is invoked
+    Then git push origin feature/auth is executed
+    And the command reports "Pushed 3 commits"
     """
 
     def test_skill_file_pushes_on_ahead(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
-        self.assertIn("git push", content)
-        self.assertIn("main:collab/<session>", content)
+        self.assertIn("git push <remote> <branch>", content)
 
     def test_skill_file_reports_pushed_commits(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("Pushed", content)
         self.assertIn("commits", content)
 
 
-class TestPlCollabPushNoOpWhenSame(unittest.TestCase):
-    """Scenario: pl-collab-push Is No-Op When SAME
+class TestPlRemotePushNoOpWhenSame(unittest.TestCase):
+    """Scenario: pl-remote-push Is No-Op When SAME
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main and origin/collab/v0.5-sprint point to the same commit
-    When /pl-collab-push is invoked
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth and origin/feature/auth point to the same commit
+    When /pl-remote-push is invoked
     Then the command prints "Already in sync. Nothing to push."
     And no git push is executed
     """
 
     def test_skill_file_noop_on_same(self):
-        with open(COLLAB_PUSH_PATH) as f:
+        with open(REMOTE_PUSH_PATH) as f:
             content = f.read()
         self.assertIn("Already in sync. Nothing to push.", content)
 
 
-class TestPlCollabPushAutoCreatesRemoteBranch(unittest.TestCase):
-    """Scenario: pl-collab-push Auto-Creates Remote Branch When It Does Not Exist
+class TestPlRemotePullFastForwardsWhenBehind(unittest.TestCase):
+    """Scenario: pl-remote-pull Fast-Forwards When BEHIND
 
-    Given the current branch is main with an active session "new-session"
-    And no collab/new-session branch exists on origin
-    When /pl-collab-push is invoked
-    Then git push origin main:collab/new-session creates the branch
-    And the command reports success
-    """
-
-    def test_skill_file_handles_nonexistent_remote_branch(self):
-        with open(COLLAB_PUSH_PATH) as f:
-            content = f.read()
-        # The command should mention that git push creates the branch automatically
-        self.assertIn("git push", content)
-        # The fetch step should handle non-existent branch gracefully
-        self.assertIn("git fetch", content)
-
-
-class TestPlCollabPullFastForwardsWhenBehind(unittest.TestCase):
-    """Scenario: pl-collab-pull Fast-Forwards Main When BEHIND
-
-    Given the current branch is main with an active session "v0.5-sprint"
-    And origin/collab/v0.5-sprint has 3 commits not in local main
-    And local main has no commits not in origin/collab/v0.5-sprint
-    When /pl-collab-pull is invoked
-    Then git merge --ff-only origin/collab/<session> is executed
-    And the command reports "Fast-forwarded local main by N commits"
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And origin/feature/auth has 3 commits not in local feature/auth
+    And local feature/auth has no commits not in origin/feature/auth
+    When /pl-remote-pull is invoked
+    Then git merge --ff-only origin/feature/auth is executed
+    And the command reports "Fast-forwarded local feature/auth by 3 commits"
     """
 
     def test_skill_file_fast_forwards_on_behind(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("--ff-only", content)
         self.assertIn("Fast-forwarded", content)
 
     def test_skill_file_uses_merge_not_rebase(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("git merge", content)
-        # Remote pull uses merge on main (shared branch), never rebase
+        # Remote pull uses merge on collaboration branch (shared), never rebase
         self.assertNotIn("git rebase", content)
 
 
-class TestPlCollabPullMergesWhenDivergedNoConflicts(unittest.TestCase):
-    """Scenario: pl-collab-pull Creates Merge Commit When DIVERGED No Conflicts
+class TestPlRemotePullMergesWhenDivergedNoConflicts(unittest.TestCase):
+    """Scenario: pl-remote-pull Creates Merge Commit When DIVERGED No Conflicts
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main has 1 commit not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has 2 commits not in local main
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth has 1 commit not in origin/feature/auth
+    And origin/feature/auth has 2 commits not in local feature/auth
     And the changes do not conflict
-    When /pl-collab-pull is invoked
-    Then git merge origin/collab/<session> creates a merge commit
+    When /pl-remote-pull is invoked
+    Then git merge origin/feature/auth creates a merge commit
     And the command reports success
     """
 
     def test_skill_file_merges_on_diverged(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("DIVERGED", content)
-        self.assertIn("git merge origin/collab/<session>", content)
+        self.assertIn("git merge <remote>/<branch>", content)
 
     def test_skill_file_shows_pre_merge_context(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
-        self.assertIn("git log main..origin/collab/<session> --stat --oneline",
+        self.assertIn("git log <branch>..<remote>/<branch> --stat --oneline",
                        content)
 
 
-class TestPlCollabPullExitsOnConflictWithContext(unittest.TestCase):
-    """Scenario: pl-collab-pull Exits On Conflict With Per-File Context
+class TestPlRemotePullExitsOnConflictWithContext(unittest.TestCase):
+    """Scenario: pl-remote-pull Exits On Conflict With Per-File Context
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main and origin/collab/v0.5-sprint have conflicting changes
-    When /pl-collab-pull is invoked
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth and origin/feature/auth have conflicting changes to features/foo.md
+    When /pl-remote-pull is invoked
     Then git merge halts with conflicts
-    And the command prints commits from each side for each conflicting file
-    And provides instructions for git merge --continue or --abort
+    And the command prints commits from each side that touched features/foo.md
+    And provides instructions for git add and git merge --continue or git merge --abort
     And exits with code 1
     """
 
     def test_skill_file_shows_per_file_conflict_context(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("CONFLICT", content)
-        self.assertIn("git log main..origin/collab/<session> --oneline --",
+        self.assertIn("git log <branch>..<remote>/<branch> --oneline --",
                        content)
-        self.assertIn("git log origin/collab/<session>..main --oneline --",
+        self.assertIn("git log <remote>/<branch>..<branch> --oneline --",
                        content)
 
     def test_skill_file_instructs_merge_continue_or_abort(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("git merge --continue", content)
         self.assertIn("git merge --abort", content)
 
 
-class TestPlCollabPullNoOpWhenAhead(unittest.TestCase):
-    """Scenario: pl-collab-pull Is No-Op When AHEAD
+class TestPlRemotePullNoOpWhenAhead(unittest.TestCase):
+    """Scenario: pl-remote-pull Is No-Op When AHEAD
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main has 2 commits not in origin/collab/v0.5-sprint
-    And origin/collab/v0.5-sprint has no commits not in local main
-    When /pl-collab-pull is invoked
-    Then the command prints "Local main is AHEAD by N commits. Nothing to pull"
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth has 2 commits not in origin/feature/auth
+    And origin/feature/auth has no commits not in local feature/auth
+    When /pl-remote-pull is invoked
+    Then the command prints "Local <branch> is AHEAD by 2 commits. Nothing to pull"
     And no git merge is executed
     """
 
     def test_skill_file_noop_on_ahead(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("AHEAD", content)
         self.assertIn("Nothing to pull", content)
 
 
-class TestPlCollabPullNoOpWhenSame(unittest.TestCase):
-    """Scenario: pl-collab-pull Is No-Op When SAME
+class TestPlRemotePullNoOpWhenSame(unittest.TestCase):
+    """Scenario: pl-remote-pull Is No-Op When SAME
 
-    Given the current branch is main with an active session "v0.5-sprint"
-    And local main and origin/collab/v0.5-sprint point to the same commit
-    When /pl-collab-pull is invoked
-    Then the command prints "Local main is already in sync with remote"
+    Given the current branch is feature/auth with an active branch "feature/auth"
+    And local feature/auth and origin/feature/auth point to the same commit
+    When /pl-remote-pull is invoked
+    Then the command prints "Local <branch> is already in sync with remote"
     And no git merge is executed
     """
 
     def test_skill_file_noop_on_same(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
-        self.assertIn("Local main is already in sync with remote", content)
+        self.assertIn("already in sync with remote", content)
 
 
-class TestPlCollabPullDoesNotCascade(unittest.TestCase):
-    """Scenario: pl-collab-pull Does Not Cascade To Isolated Team Worktrees
+class TestPlRemotePullDoesNotCascade(unittest.TestCase):
+    """Scenario: pl-remote-pull Does Not Cascade To Isolated Team Worktrees
 
-    Given the current branch is main with an active session "v0.5-sprint"
+    Given the current branch is feature/auth with an active branch "feature/auth"
     And an isolated worktree exists at .worktrees/feat1
-    And origin/collab/v0.5-sprint has 2 commits not in local main
-    When /pl-collab-pull is invoked and fast-forwards main
+    And origin/feature/auth has 2 commits not in local feature/auth
+    When /pl-remote-pull is invoked and fast-forwards feature/auth
     Then the isolated worktree at .worktrees/feat1 is not modified
     And .worktrees/feat1 shows BEHIND in subsequent status checks
     """
 
     def test_skill_file_documents_no_cascade(self):
-        with open(COLLAB_PULL_PATH) as f:
+        with open(REMOTE_PULL_PATH) as f:
             content = f.read()
         self.assertIn("No cascade", content)
-        self.assertIn("/pl-local-pull", content)
+        self.assertIn("/pl-isolated-pull", content)
 
 
 def _write_feature_results(feature_name, status):
@@ -1059,11 +1105,11 @@ _FEATURE_PREFIX_MAP = {
     "TestHandoff": "workflow_checklist_system",
     "TestCriticReport": "workflow_checklist_system",
     "TestNoRoleFiltering": "workflow_checklist_system",
-    "TestPlLocalPush": "pl_local_push",
-    "TestPlLocalPull": "pl_local_pull",
-    "TestPostRebaseSync": "pl_local_pull",
-    "TestPlCollabPush": "pl_collab_push",
-    "TestPlCollabPull": "pl_collab_pull",
+    "TestPlIsolatedPush": "pl_isolated_push",
+    "TestPlIsolatedPull": "pl_isolated_pull",
+    "TestPostRebaseSync": "pl_isolated_pull",
+    "TestPlRemotePush": "pl_remote_push",
+    "TestPlRemotePull": "pl_remote_pull",
 }
 
 

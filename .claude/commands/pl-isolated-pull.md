@@ -12,7 +12,7 @@ If the result does NOT start with `isolated/`, abort immediately:
 
 ```
 This command is only valid inside an isolated session.
-Current branch: <branch>. Run /pl-local-pull from a worktree
+Current branch: <branch>. Run /pl-isolated-pull from a worktree
 on an isolated/* branch.
 ```
 
@@ -24,7 +24,7 @@ Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --
 
 ### 2. Detect Collaboration Branch
 
-Read `.purlin/runtime/active_remote_session` from PROJECT_ROOT (the main checkout, not the worktree). If the file exists and is non-empty, the collaboration branch is `collab/<value>` (trimmed). Otherwise, the collaboration branch is `main`.
+Read `.purlin/runtime/active_branch` from PROJECT_ROOT (the main checkout, not the worktree). If the file exists and is non-empty, the collaboration branch is that value (trimmed). Otherwise, the collaboration branch is `main`.
 
 Print: `Collaboration branch: <collaboration-branch>`
 
@@ -63,7 +63,7 @@ Determine and print the state label:
 Print: "Already up to date — nothing to pull or push." Stop.
 
 **AHEAD (N=0, M>0):**
-Print: "M commits ahead, nothing to pull. Run /pl-local-push when ready." Stop.
+Print: "M commits ahead, nothing to pull. Run /pl-isolated-push when ready." Stop.
 
 **BEHIND (N>0, M=0):**
 Run:
@@ -121,17 +121,17 @@ To abandon: `git rebase --abort` (restores your branch to its pre-rebase state).
 
 After rebase, the git checkout may restore command files that were intentionally removed from this worktree. Re-apply the isolation command file setup:
 
-a. List all files in `.claude/commands/`. For each file that is NOT `pl-local-push.md` and NOT `pl-local-pull.md`:
+a. List all files in `.claude/commands/`. For each file that is NOT `pl-isolated-push.md` and NOT `pl-isolated-pull.md`:
    - Delete the file from disk: `rm .claude/commands/<file>`
    - Mark the deletion as intentional: `git update-index --skip-worktree .claude/commands/<file>`
 
-b. Ensure `pl-local-push.md` and `pl-local-pull.md` are present in `.claude/commands/`. If missing, copy from the project root's `.claude/commands/`.
+b. Ensure `pl-isolated-push.md` and `pl-isolated-pull.md` are present in `.claude/commands/`. If missing, copy from the project root's `.claude/commands/`.
 
 c. After re-sync, verify `git status --porcelain` reports no file changes in `.claude/commands/`.
 
 ## Notes
 
 - This command pulls from the local collaboration branch only — it does not fetch from remote. Run `git fetch origin` first if you need remote changes.
-- The collaboration branch is `collab/<session>` when a remote session is active, or `main` when no session is active.
+- The collaboration branch is the value from `.purlin/runtime/active_branch` when an active branch exists, or `main` when no branch is active.
 - Use this when another agent has merged their branch to the collaboration branch and you want those changes before continuing your work.
-- `/pl-local-push` auto-rebases if the branch is BEHIND the collaboration branch (safe, no conflicts). If the branch is DIVERGED, `/pl-local-push` blocks and instructs you to run `/pl-local-pull` manually.
+- `/pl-isolated-push` auto-rebases if the branch is BEHIND the collaboration branch (safe, no conflicts). If the branch is DIVERGED, `/pl-isolated-push` blocks and instructs you to run `/pl-isolated-pull` manually.

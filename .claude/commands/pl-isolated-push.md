@@ -12,7 +12,7 @@ If the result does NOT start with `isolated/`, abort immediately:
 
 ```
 This command is only valid inside an isolated session.
-Current branch: <branch>. Run /pl-local-push from a worktree
+Current branch: <branch>. Run /pl-isolated-push from a worktree
 on an isolated/* branch.
 ```
 
@@ -24,7 +24,7 @@ Use `PURLIN_PROJECT_ROOT` env var if set. Otherwise, parse `git worktree list --
 
 ### 2. Detect Collaboration Branch
 
-Read `.purlin/runtime/active_remote_session` from PROJECT_ROOT (the main checkout, not the worktree). If the file exists and is non-empty, the collaboration branch is `collab/<value>` (trimmed). Otherwise, the collaboration branch is `main`.
+Read `.purlin/runtime/active_branch` from PROJECT_ROOT (the main checkout, not the worktree). If the file exists and is non-empty, the collaboration branch is that value (trimmed). Otherwise, the collaboration branch is `main`.
 
 Print: `Collaboration branch: <collaboration-branch>`
 
@@ -59,7 +59,7 @@ If N > 0 AND M > 0 (DIVERGED):
   Branch is DIVERGED from <collaboration-branch> — cannot auto-resolve.
   <collaboration-branch> has N commit(s) this branch is missing:
     <git log HEAD..<collaboration-branch> --oneline>
-  Run /pl-local-pull to rebase and resolve before retrying /pl-local-push.
+  Run /pl-isolated-pull to rebase and resolve before retrying /pl-isolated-push.
   ```
 - Stop here. Do NOT proceed to handoff checklist.
 
@@ -84,7 +84,7 @@ Run `tools/handoff/run.sh` from within the worktree.
 
 **If all items PASS:**
 - Run from PROJECT_ROOT: `git -C <PROJECT_ROOT> merge --ff-only <current-branch>`
-- If `--ff-only` fails: print "Branches diverged — run /pl-local-pull to rebase, then retry."
+- If `--ff-only` fails: print "Branches diverged — run /pl-isolated-pull to rebase, then retry."
 
 ### 7. Report
 
@@ -95,7 +95,7 @@ Merged <branch> into <collaboration-branch> (N commits).
 
 ## Notes
 
-- Does NOT push to remote. Use `/pl-collab-push` separately if needed.
-- The collaboration branch is `collab/<session>` when a remote session is active, or `main` when no session is active.
+- Does NOT push to remote. Use `/pl-remote-push` separately if needed.
+- The collaboration branch is the value from `.purlin/runtime/active_branch` when an active branch exists, or `main` when no branch is active.
 - Auto-rebase in BEHIND state uses `git rebase <collaboration-branch>` to preserve linear history required by `--ff-only` merge.
 - No role inference or role-specific checklist items — the handoff checklist is generic.

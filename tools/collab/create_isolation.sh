@@ -89,7 +89,7 @@ ROOT_CMD_DIR="$PROJECT_ROOT/.claude/commands"
 # Ensure the worktree's .claude/commands/ exists
 mkdir -p "$WORKTREE_CMD_DIR"
 
-# Copy pl-local-push.md and pl-local-pull.md from project root
+# Copy pl-isolated-push.md and pl-isolated-pull.md from project root
 for cmd_file in pl-isolated-push.md pl-isolated-pull.md; do
     if [[ -f "$ROOT_CMD_DIR/$cmd_file" ]]; then
         cp "$ROOT_CMD_DIR/$cmd_file" "$WORKTREE_CMD_DIR/$cmd_file"
