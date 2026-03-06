@@ -5,6 +5,7 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/release_checklist_core.md
+> Web Testable: http://localhost:9086
 
 ## 1. Overview
 

@@ -4,6 +4,7 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
+> Web Testable: http://localhost:9086
 
 
 ## 1. Overview
