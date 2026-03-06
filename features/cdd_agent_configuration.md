@@ -6,6 +6,7 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/config_layering.md
+> Prerequisite: features/context_guard.md
 > Web Testable: http://localhost:9086
 
 
@@ -37,6 +38,13 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
         *   **Number input:** `type="number"`, `min="5"`, `max="200"`, ~40px wide, with stepper arrows for up/down. Represents `context_guard_threshold` for the agent. Defaults to the global `context_guard_threshold` value, then 45.
         *   **Disabled state:** When the checkbox is unchecked, the number input is `disabled` with `opacity: 0.4`. The threshold value remains visible but is not editable.
         *   **Styling:** Matches dashboard conventions — `var(--purlin-bg)` background, `var(--purlin-border)` border, `var(--purlin-muted)` text, 11px font size. Checkbox uses `accent-color: var(--purlin-accent)`. Focus state: `border-color: var(--purlin-accent)`. **Stepper arrows:** The number input's up/down spinner buttons MUST use `color: var(--purlin-muted)` via `::-webkit-inner-spin-button` styling (and equivalent for other engines) so arrows are visible against dark backgrounds.
+        *   **Live Counter Display:** To the right of the threshold number input, a `<span>` displays the current turn counts of all running agents of that role.
+            *   **Zero agents running:** Empty (no text shown).
+            *   **One agent running:** Plain count (e.g., `12`).
+            *   **Multiple agents running:** Counts joined by `|` with no spaces (e.g., `3|22|35`), sorted ascending.
+            *   Includes agents running in isolated team worktrees, grouped by role regardless of origin.
+            *   **Styling:** `font-family: monospace`, `var(--purlin-muted)` color, 10px font size, ~6px left margin from the threshold input.
+            *   **Refresh:** Updated on each 5-second auto-refresh cycle via `GET /context-guard/counters`. The counter span is read-only — no pending-write locks apply.
 *   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all three rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited.
 *   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until a `POST /config/agents` response confirms the change. While a control is pending, ALL incoming state updates -- both auto-refresh AND POST responses -- MUST NOT overwrite its value. Each pending lock is associated with the POST request that carries its change. When a POST response arrives, only pending locks that were included in that specific request are released; controls changed after that POST was sent remain pending. This ensures that rapid sequential edits are not reverted by a stale response from an earlier save.
@@ -53,6 +61,24 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     *   **Worktree propagation:** When active worktrees exist, the endpoint MUST also propagate agent changes to `config.local.json` in each worktree's `.purlin/` directory.
     *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all three roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present -- it MUST NOT send a partial payload.
 *   **`GET /config.json`:** Serves the resolved config (reads `config.local.json` if present, falls back to `config.json`) via the config resolver. This is transparent to the dashboard frontend.
+
+### 2.3 Live Counter Endpoint
+
+*   **`GET /context-guard/counters`:** Returns a JSON object mapping each role to an array of active turn counts for currently running agents.
+*   **Scan Locations:**
+    1.  `<PROJECT_ROOT>/.purlin/runtime/` — main project directory.
+    2.  `<PROJECT_ROOT>/.worktrees/<name>/.purlin/runtime/` — each active worktree directory (detected via `get_isolation_worktrees()`).
+*   **File Matching:** For each `turn_count_<PID>` file found, read the corresponding `session_meta_<PID>` to determine the role (second line of the three-line format defined in `context_guard.md` Section 2.8). If no `session_meta` file exists for a given PID, that counter is excluded.
+*   **Liveness Check:** Only include counters whose PID suffix corresponds to a currently running process (Python `os.kill(pid, 0)` succeeds). Dead-process files are excluded from the response but NOT deleted by the server — cleanup is the hook's responsibility per `context_guard.md` Section 2.8.
+*   **Response Format:**
+    ```json
+    {
+      "architect": [5, 12],
+      "builder": [3, 22, 35],
+      "qa": []
+    }
+    ```
+    Arrays are sorted ascending. Empty arrays indicate no running agents for that role.
 
 
 ## 3. Scenarios
@@ -124,6 +150,40 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     Then config.local.json contains agents.architect.context_guard as true
     And config.local.json contains agents.architect.context_guard_threshold as 30
 
+#### Scenario: GET /context-guard/counters returns per-role arrays
+    Given turn_count_100 exists in .purlin/runtime/ with value "5"
+    And session_meta_100 exists with role "architect" on line 2
+    And turn_count_200 exists in .purlin/runtime/ with value "12"
+    And session_meta_200 exists with role "builder" on line 2
+    And turn_count_300 exists in .purlin/runtime/ with value "3"
+    And session_meta_300 exists with role "builder" on line 2
+    And processes 100, 200, and 300 are alive
+    When a GET request is sent to /context-guard/counters
+    Then the response contains {"architect": [5], "builder": [3, 12], "qa": []}
+
+#### Scenario: Dead process counters excluded from response
+    Given turn_count_999 exists in .purlin/runtime/ with value "42"
+    And session_meta_999 exists with role "builder" on line 2
+    And process 999 is not running
+    When a GET request is sent to /context-guard/counters
+    Then the builder array does not contain 42
+
+#### Scenario: Worktree agent counters included in response
+    Given turn_count_400 exists in .worktrees/feat1/.purlin/runtime/ with value "7"
+    And session_meta_400 exists in the same directory with role "builder" on line 2
+    And turn_count_500 exists in .purlin/runtime/ with value "20"
+    And session_meta_500 exists with role "builder" on line 2
+    And processes 400 and 500 are alive
+    When a GET request is sent to /context-guard/counters
+    Then the builder array contains [7, 20]
+
+#### Scenario: Counter without session_meta is excluded
+    Given turn_count_600 exists in .purlin/runtime/ with value "10"
+    And no session_meta_600 file exists
+    And process 600 is alive
+    When a GET request is sent to /context-guard/counters
+    Then no role array contains 10
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
@@ -156,6 +216,14 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Then the new threshold value is sent via POST /config/agents
     And on page reload the new value is displayed
 
+#### Scenario: Live Counter Displays Running Agent Counts
+    Given one or more Claude Code agents are running (visible as turn_count_<PID> files in .purlin/runtime/)
+    And the Agents section is expanded
+    When the dashboard auto-refreshes
+    Then each agent row shows the current turn counts to the right of the threshold input
+    And multiple agents of the same role are shown pipe-separated (e.g., "3|22|35")
+    And agents from isolated team worktrees appear alongside main-directory agents
+
 
 ## Visual Specification
 
@@ -182,12 +250,17 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Section collapse/expand state persists across page reloads via localStorage
 - [ ] "Context" / "Guard" column header displays on two lines, aligned with adjacent two-line headers (Startup/Sequence, Suggest/Next)
-- [ ] Context Guard column width is 80px, consistent across all rows
+- [ ] Context Guard column is wide enough to accommodate checkbox, threshold stepper, and live counter text without overflow
 - [ ] Context Guard compound cell shows checkbox and number stepper arranged horizontally with 4px gap
 - [ ] When Context Guard checkbox is unchecked, the threshold input is visually dimmed (opacity 0.4) and non-interactive
 - [ ] Number stepper arrows are visible and functional within the 40px-wide input
 - [ ] Stepper arrows use `var(--purlin-muted)` color, visible against dark blueprint theme background
 - [ ] Toggling the Context Guard checkbox does not cause adjacent columns to shift or resize
+- [ ] Live counter text appears to the right of the threshold input with ~6px gap
+- [ ] Counter text uses monospace font, 10px, `var(--purlin-muted)` color
+- [ ] Multiple counters are pipe-separated (e.g., "3|22|35") with no spaces around pipes
+- [ ] Counter display updates on 5-second refresh without flickering
+- [ ] When no agents are running for a role, no counter text appears (span is empty)
 
 ## User Testing Discoveries
 
