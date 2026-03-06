@@ -23,8 +23,8 @@
         }
     ],
     "agents": {
-        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": true, "context_guard_threshold": 45 },
-        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true, "context_guard": true, "context_guard_threshold": 45 },
-        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": true, "context_guard_threshold": 45 }
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 45 },
+        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 45 },
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 45 }
     }
 }
