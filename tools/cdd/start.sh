@@ -1,6 +1,13 @@
 #!/bin/bash
 # start.sh — Stateless CDD Dashboard lifecycle (cdd_lifecycle)
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+# Resolve symlinks so DIR points to tools/cdd/ even when invoked via root symlink
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+    _dir="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$_dir/$SOURCE"
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 # Project root discovery (Section 2.11)
 if [ -n "${PURLIN_PROJECT_ROOT:-}" ] && [ -d "$PURLIN_PROJECT_ROOT/.purlin" ]; then
     PROJECT_ROOT="$PURLIN_PROJECT_ROOT"
@@ -36,8 +43,13 @@ RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
 PORT_FILE="$RUNTIME_DIR/cdd.port"
 
+# Helper: find CDD process for this project via ps (handles paths with spaces)
+find_cdd_pid() {
+    ps aux | grep "[s]erve.py" | grep -F -- "--project-root" | grep -F "$PROJECT_ROOT" | awk '{print $2}' | head -1
+}
+
 # Stateless process detection (cdd_lifecycle §2.1): ps-based, no PID file
-EXISTING_PID=$(ps aux | grep "[s]erve.py" | grep -- "--project-root $PROJECT_ROOT" | awk '{print $2}' | head -1)
+EXISTING_PID=$(find_cdd_pid)
 
 if [ -n "$EXISTING_PID" ]; then
     # Already running — print URL and exit (idempotent start, §2.9)
@@ -53,14 +65,10 @@ fi
 # Clean stale port file if no process is running (§2.4 step 2)
 rm -f "$PORT_FILE"
 
-# Build serve.py arguments
-SERVE_ARGS="--project-root $PROJECT_ROOT"
-if [ -n "$OVERRIDE_PORT" ]; then
-    SERVE_ARGS="$SERVE_ARGS --port $OVERRIDE_PORT"
-fi
-
-# Launch serve.py (§2.4 step 3)
-nohup $PYTHON_EXE "$DIR/serve.py" $SERVE_ARGS > "$RUNTIME_DIR/cdd.log" 2>&1 &
+# Launch serve.py (§2.4 step 3) — array handles paths with spaces
+nohup "$PYTHON_EXE" "$DIR/serve.py" --project-root "$PROJECT_ROOT" \
+    ${OVERRIDE_PORT:+--port "$OVERRIDE_PORT"} \
+    > "$RUNTIME_DIR/cdd.log" 2>&1 &
 
 # Wait for port file to appear (up to 2 seconds, §2.4 step 4)
 for i in $(seq 1 20); do
@@ -71,7 +79,7 @@ for i in $(seq 1 20); do
 done
 
 # Verify server started
-VERIFY_PID=$(ps aux | grep "[s]erve.py" | grep -- "--project-root $PROJECT_ROOT" | awk '{print $2}' | head -1)
+VERIFY_PID=$(find_cdd_pid)
 
 if [ -n "$VERIFY_PID" ] && [ -f "$PORT_FILE" ]; then
     PORT=$(cat "$PORT_FILE")
