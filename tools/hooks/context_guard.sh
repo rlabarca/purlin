@@ -108,6 +108,16 @@ for f in "$RUNTIME_DIR"/turn_count_* "$RUNTIME_DIR"/session_meta_*; do
     [[ "$stale_id" == "$AGENT_ID" ]] && continue
     if ! kill -0 "$stale_id" 2>/dev/null; then
         rm -f "$f"
+    else
+        # PID is alive — check for PID recycling via process start time
+        stale_meta="$RUNTIME_DIR/session_meta_${stale_id}"
+        if [[ -f "$stale_meta" ]]; then
+            stored_start=$(sed -n '3p' "$stale_meta" 2>/dev/null || echo "")
+            actual_start=$(ps -p "$stale_id" -o lstart= 2>/dev/null || echo "")
+            if [[ -n "$stored_start" && "$stored_start" != "unknown" && -n "$actual_start" && "$stored_start" != "$actual_start" ]]; then
+                rm -f "$f"
+            fi
+        fi
     fi
 done
 
@@ -127,13 +137,20 @@ done
 # - session_id differs   → subagent (same process), read without incrementing.
 IS_SUBAGENT=false
 if [[ -f "$SESSION_META_FILE" ]]; then
-    STORED_SESSION_ID=$(cat "$SESSION_META_FILE" 2>/dev/null || echo "")
+    STORED_SESSION_ID=$(head -1 "$SESSION_META_FILE" 2>/dev/null || echo "")
     if [[ "$STORED_SESSION_ID" != "$SESSION_ID" ]]; then
         IS_SUBAGENT=true
     fi
 else
     # New agent process — initialize tracking files
-    echo "$SESSION_ID" > "$SESSION_META_FILE"
+    # session_meta format: line 1=session_id, line 2=role, line 3=process_start_time
+    META_ROLE="${AGENT_ROLE:-unknown}"
+    if [[ "$AGENT_ID" =~ ^[0-9]+$ ]]; then
+        META_START_TIME=$(ps -p "$AGENT_ID" -o lstart= 2>/dev/null || echo "unknown")
+    else
+        META_START_TIME="unknown"
+    fi
+    printf '%s\n%s\n%s\n' "$SESSION_ID" "$META_ROLE" "$META_START_TIME" > "$SESSION_META_FILE"
     echo "0" > "$TURN_COUNT_FILE"
 fi
 

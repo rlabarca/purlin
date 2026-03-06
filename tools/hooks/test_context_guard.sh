@@ -18,6 +18,12 @@ ERRORS=""
 log_pass() { PASS=$((PASS + 1)); echo "  PASS: $1"; }
 log_fail() { FAIL=$((FAIL + 1)); ERRORS="$ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
 
+# Helper to write 3-line session_meta (session_id, role, process_start_time)
+write_session_meta() {
+    local file="$1" session_id="$2" role="${3:-unknown}" start_time="${4:-unknown}"
+    printf '%s\n%s\n%s\n' "$session_id" "$role" "$start_time" > "$file"
+}
+
 SANDBOX=""
 cleanup_sandbox() {
     if [[ -n "${SANDBOX:-}" && -d "$SANDBOX" ]]; then
@@ -86,7 +92,7 @@ setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
 # Pre-seed session meta and counter (simulates an existing session)
-echo "session-2" > "$SANDBOX/.purlin/runtime/session_meta_agent-2"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-2" "session-2"
 echo "2" > "$SANDBOX/.purlin/runtime/turn_count_agent-2"
 
 OUTPUT=$(run_guard "session-2" "" "agent-2" 2>&1)
@@ -105,7 +111,7 @@ echo "[Scenario] Exceeded threshold appends evacuation instructions"
 setup_sandbox
 
 echo '{"context_guard_threshold": 5}' > "$SANDBOX/.purlin/config.json"
-echo "session-3" > "$SANDBOX/.purlin/runtime/session_meta_agent-3"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-3" "session-3"
 echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-3"
 
 OUTPUT=$(run_guard "session-3" "" "agent-3" 2>&1)
@@ -124,7 +130,7 @@ echo "[Scenario] Counter resets on new agent process"
 setup_sandbox
 
 # Old agent had 25 turns
-echo "old-session" > "$SANDBOX/.purlin/runtime/session_meta_old-agent"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_old-agent" "old-session"
 echo "25" > "$SANDBOX/.purlin/runtime/turn_count_old-agent"
 
 # New agent process (different AGENT_ID) starts fresh
@@ -187,7 +193,7 @@ echo "[Scenario] Per-agent guard disabled suppresses output"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": false, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
-echo "session-7" > "$SANDBOX/.purlin/runtime/session_meta_agent-7"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-7" "session-7"
 echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-7"
 
 OUTPUT=$(run_guard "session-7" "architect" "agent-7" 2>&1)
@@ -226,7 +232,7 @@ echo "[Scenario] Exceeded output repeats on subsequent turns"
 setup_sandbox
 
 echo '{"context_guard_threshold": 2}' > "$SANDBOX/.purlin/config.json"
-echo "session-9" > "$SANDBOX/.purlin/runtime/session_meta_agent-9"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-9" "session-9"
 echo "3" > "$SANDBOX/.purlin/runtime/turn_count_agent-9"
 
 OUTPUT=$(run_guard "session-9" "" "agent-9" 2>&1)
@@ -292,7 +298,7 @@ echo "[Scenario] Counter resets after session_meta deletion"
 setup_sandbox
 
 # Simulate existing session
-echo "old-session" > "$SANDBOX/.purlin/runtime/session_meta_agent-12"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-12" "old-session"
 echo "42" > "$SANDBOX/.purlin/runtime/turn_count_agent-12"
 
 # Delete session_meta (simulates /pl-resume reset)
@@ -394,6 +400,73 @@ for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "sub:$OUTPUT_SUB"; do
 done
 if [[ "$ALL_HAVE_OUTPUT" == "true" ]]; then
     log_pass "All code paths (new, same, subagent) produce CONTEXT GUARD output"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 16: Session meta contains 3 lines (session_id, role, start_time)
+###############################################################################
+echo ""
+echo "[Scenario] Session meta contains 3 lines"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+
+run_guard "session-16" "builder" "agent-16" >/dev/null 2>&1
+
+META_LINES=$(wc -l < "$SANDBOX/.purlin/runtime/session_meta_agent-16" | tr -d ' ')
+META_LINE1=$(sed -n '1p' "$SANDBOX/.purlin/runtime/session_meta_agent-16")
+META_LINE2=$(sed -n '2p' "$SANDBOX/.purlin/runtime/session_meta_agent-16")
+META_LINE3=$(sed -n '3p' "$SANDBOX/.purlin/runtime/session_meta_agent-16")
+
+if [[ "$META_LINES" == "3" ]] && [[ "$META_LINE1" == "session-16" ]] && [[ "$META_LINE2" == "builder" ]] && [[ "$META_LINE3" == "unknown" ]]; then
+    log_pass "session_meta has 3 lines: session_id=session-16, role=builder, start_time=unknown"
+else
+    log_fail "Expected 3-line meta (session-16/builder/unknown), got lines=$META_LINES l1='$META_LINE1' l2='$META_LINE2' l3='$META_LINE3'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 17: PID recycling detected and stale files cleaned up
+###############################################################################
+echo ""
+echo "[Scenario] PID recycling detected and stale files cleaned up"
+setup_sandbox
+
+# Use current shell PID as a "stale" process (it IS alive, but with wrong start time)
+STALE_PID=$$
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_${STALE_PID}" "stale-session" "builder" "Mon Jan  1 00:00:00 2000"
+echo "15" > "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}"
+
+# Run guard with a different agent ID — cleanup should detect recycled PID
+run_guard "test-session" "" "agent-recycled" >/dev/null 2>&1
+
+if [[ ! -f "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}" ]] && \
+   [[ ! -f "$SANDBOX/.purlin/runtime/session_meta_${STALE_PID}" ]]; then
+    log_pass "PID recycling detected: stale files cleaned up"
+else
+    log_fail "Expected stale files to be cleaned up due to PID recycling"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 18: Alive process with matching start time is preserved
+###############################################################################
+echo ""
+echo "[Scenario] Alive process with matching start time is preserved"
+setup_sandbox
+
+LIVE_PID=$$
+ACTUAL_START=$(ps -p $LIVE_PID -o lstart= 2>/dev/null)
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_${LIVE_PID}" "active-session" "builder" "$ACTUAL_START"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}"
+
+run_guard "another-session" "" "agent-no-recycle" >/dev/null 2>&1
+
+if [[ -f "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}" ]]; then
+    log_pass "Alive process with matching start time preserved"
+else
+    log_fail "Alive process with matching start time was incorrectly cleaned up"
 fi
 cleanup_sandbox
 
