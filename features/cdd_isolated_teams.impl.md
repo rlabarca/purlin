@@ -12,21 +12,21 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 
 **Delivery phase detection:** `_read_delivery_phase(worktree_path)` reads `<worktree_path>/.purlin/cache/delivery_plan.md`, parses for a line matching `status: IN_PROGRESS` in a phase block, and extracts current/total. Returns `None` if the file is absent or no IN_PROGRESS phase exists. Parse failures are silently ignored (missing or malformed plans do not block status polling).
 
-**Collaboration branch abstraction:** `_get_collaboration_branch()` returns the branch the project root is currently on (`git rev-parse --abbrev-ref HEAD`). This is `collab/<session>` during active remote collaboration, `main` otherwise. All worktree comparison functions (`_worktree_state`, `_compute_main_diff`) accept a `collab_branch` parameter; `get_isolation_worktrees()` resolves it once and passes it through.
+**Collaboration branch abstraction:** `_get_collaboration_branch()` returns the branch the project root is currently on (`git rev-parse --abbrev-ref HEAD`). This is the active branch during branch collaboration, `main` otherwise. All worktree comparison functions (`_worktree_state`, `_compute_local_branch_diff`) accept a `collab_branch` parameter; `get_isolation_worktrees()` resolves it once and passes it through.
 
 **Retained from prior implementation (tribal knowledge):**
 - `commits_ahead`: uses `git rev-list --count <collab_branch>..HEAD` in `_worktree_state()`.
 - `last_commit`: uses `git log -1 --format='%h %s (%cr)'` in `_worktree_state()`.
-- `main_diff`: computed by `_compute_main_diff(branch, collab_branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..<collab_branch> --oneline` (behind check). Query 2: `git log <collab_branch>..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
+- `local_branch_diff`: computed by `_compute_local_branch_diff(branch, collab_branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..<collab_branch> --oneline` (behind check). Query 2: `git log <collab_branch>..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
 - `committed`: computed via `git diff <collab_branch>...<branch> --name-only` (three-dot) run from PROJECT_ROOT. Three-dot diffs against common ancestor — always empty for SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED. May be all-zero for AHEAD/DIVERGED if commits are `--allow-empty`.
-- `uncommitted`: computed via `git -C <path> status --porcelain` run from the worktree directory. Captures staged, unstaged, and untracked changes. Independent of `main_diff` state — a worktree at SAME can have uncommitted changes. For renames (`XY old -> new`), the new path is used for categorization. `.purlin/` files excluded.
+- `uncommitted`: computed via `git -C <path> status --porcelain` run from the worktree directory. Captures staged, unstaged, and untracked changes. Independent of `local_branch_diff` state — a worktree at SAME can have uncommitted changes. For renames (`XY old -> new`), the new path is used for categorization. `.purlin/` files excluded.
 - `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.local.json` files after the project root write. Failures collected as `warnings`.
 - Agent Config heading annotation applied server-side in `generate_html()`.
 - Kill modal: dedicated overlay element (`kill-modal-overlay`) with 3-state content (dirty / unsynced / clean) and per-isolation name scoping. Populated by `showKillModal(name, dryRunResponse)`.
 
 **Shared helpers:** `_categorize_files(lines)` categorizes a list of file paths into `{specs, tests, other}` counts (shared by committed and uncommitted parsing). `_format_category_counts(counts)` renders a counts dict as space-separated category text for the HTML table cells.
 
-**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, MAIN WORKSPACE, ISOLATED TEAMS. MAIN WORKSPACE and ISOLATED TEAMS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED TEAMS is NOT a child of MAIN WORKSPACE. MAIN WORKSPACE expands to show Local (main) git status; ISOLATED TEAMS expands to show the creation row and Sessions table.
+**Section structure:** The dashboard renders four top-level collapsible sections: ACTIVE, COMPLETE, LOCAL BRANCH, ISOLATED TEAMS. LOCAL BRANCH and ISOLATED TEAMS are peers in the DOM — sibling `<section>` elements at the same level. ISOLATED TEAMS is NOT a child of LOCAL BRANCH. LOCAL BRANCH expands to show Local (main) git status; ISOLATED TEAMS expands to show the creation row and Sessions table.
 
 **Input value persistence:** The name input's value is saved to a JS module-level variable (e.g., `let _pendingIsolationName = ""`) immediately before any DOM refresh. After the DOM update, the value is written back to the input element and the Create button's disabled state is re-evaluated. On successful create, the module-level variable is cleared. This avoids any localStorage dependency and works within the existing polling cycle.
 
@@ -39,11 +39,11 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 - SPEC_DISPUTE — Name length limit raised from 8 to 12 characters: updated HTML `maxlength`, JS `validateIsolationName()`, hint text, and `create_isolation.sh` server-side validation.
 - INTENT_DRIFT — Focus restoration on auto-refresh: `refreshStatus()` saves `document.activeElement === isoInput` before DOM refresh and calls `restoredInput.focus()` after value restore.
 - DISCOVERY (acknowledged) — Creation row padding: added `padding-top:4px` to creation row container div so the input focus ring doesn't clip under the section header. Cosmetic fix, no scenario needed.
-- BUG — `pl-local-push`/`pl-local-pull` isolation startup table: added both commands to startup table in ARCHITECT_BASE.md, BUILDER_BASE.md, and QA_BASE.md. Autocomplete visibility on main is a platform limitation outside instruction-file control.
+- BUG — `pl-isolated-push`/`pl-isolated-pull` isolation startup table: added both commands to startup table in ARCHITECT_BASE.md, BUILDER_BASE.md, and QA_BASE.md. Autocomplete visibility on main is a platform limitation outside instruction-file control.
 
 **Bug fixes preserved from prior implementation (do not regress):**
 - Modal button styling uses `btn-critic` class (not `btn` — no CSS definition).
 - Dirty detection in `kill_isolation.sh` excludes `.purlin/` files (grep -v filter).
-- Four-state `main_diff` + theme colors: SAME -> `st-good` (green), AHEAD -> `st-todo` (yellow), BEHIND -> `st-todo` (yellow), DIVERGED -> `st-disputed` (orange/`--purlin-status-warning`).
+- Four-state `local_branch_diff` + theme colors: SAME -> `st-good` (green), AHEAD -> `st-todo` (yellow), BEHIND -> `st-todo` (yellow), DIVERGED -> `st-disputed` (orange/`--purlin-status-warning`).
 - `committed` uses three-dot diff (`git diff main...<branch>`) not two-dot — three-dot shows only branch-side changes from common ancestor; two-dot shows all differences between tips (including main-side changes, which was a bug for BEHIND state).
 - Auto-refresh timer paused during create/kill requests to prevent error messages being wiped.

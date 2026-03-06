@@ -63,7 +63,7 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 
 **WARN + ALLOW — commits not yet merged to the collaboration branch (unsynced):**
 
-- Detected via: `git -C .worktrees/<name> log <collaboration-branch>..HEAD --oneline` returns commits. The collaboration branch is `collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`.
+- Detected via: `git -C .worktrees/<name> log <collaboration-branch>..HEAD --oneline` returns commits. The collaboration branch is the value from `.purlin/runtime/active_branch` if the file exists and is non-empty at PROJECT_ROOT, otherwise `main`.
 - The commits are NOT at risk — removing a worktree does not delete its branch. The branch `isolated/<name>` survives and can be re-added with `git worktree add`.
 - Script prints a warning listing the unmerged branch and its commit count, then proceeds without user input.
 - The dashboard Kill modal surfaces this warning with an "I understand, the branch still exists" checkbox before enabling Confirm.

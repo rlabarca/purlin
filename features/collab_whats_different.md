@@ -2,7 +2,7 @@
 
 > Label: "CDD: What's Different?"
 > Category: "CDD Dashboard"
-> Prerequisite: features/cdd_remote_collab.md
+> Prerequisite: features/cdd_branch_collab.md
 > Prerequisite: features/design_visual_standards.md
 
 [TODO]
@@ -26,8 +26,8 @@ When collaborators are out of sync with the remote collab branch (AHEAD, BEHIND,
 
 The digest can be generated from two trigger points:
 
-1. **CDD dashboard:** A "What's Different?" button in the active session panel (Section 2.3 of `cdd_remote_collab.md`) triggers fresh generation.
-2. **Post-merge auto-generation:** After a successful merge in `/pl-collab-pull`, a new Step 7 auto-generates the digest.
+1. **CDD dashboard:** A "What's Different?" button in the active branch panel (Section 2.3 of `cdd_branch_collab.md`) triggers fresh generation.
+2. **Post-merge auto-generation:** After a successful merge in `/pl-remote-pull`, a new Step 7 auto-generates the digest.
 
 ### 2.3 Direction-Dependent Content Structure
 
@@ -113,12 +113,12 @@ All matched files are classified as `purlin_config`, which rolls up to the `[N P
 - The dashboard invokes Claude CLI in non-interactive mode (`--print`) via a shell script.
 - The shell script is the agent abstraction point -- swappable for other agents in the future.
 - The extraction tool produces structured JSON; the agent (Claude) synthesizes it into plain English.
-- The post-merge trigger in `/pl-collab-pull` Step 7 also runs the same script.
+- The post-merge trigger in `/pl-remote-pull` Step 7 also runs the same script.
 
 ### 2.7 Dashboard UI: Button
 
-- The "What's Different?" button is visible in the active session panel when sync state is not SAME.
-- The button is absent when there is no active session.
+- The "What's Different?" button is visible in the active branch panel when sync state is not SAME.
+- The button is absent when there is no active branch.
 - When a cached digest exists, the button area shows "Last generated: `<timestamp>`" below the button.
 - **Cached read:** When `features/digests/whats-different.md` exists, clicking the button opens the modal with cached content via `GET /whats-different/read`. No regeneration occurs.
 - **No cache:** When no cached file exists, clicking sends `POST /whats-different/generate` and shows the "Generating" state with animated ellipsis (Section 2.8).
@@ -175,7 +175,7 @@ This creates a visual map: scan the tags for "what changed," then jump to the ma
 
 ### 2.11 Post-Merge Integration (pl-collab-pull Step 7)
 
-After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED merge), a new Step 7 runs:
+After a successful merge in `/pl-remote-pull` (BEHIND fast-forward or DIVERGED merge), a new Step 7 runs:
 
 1. Execute the generation shell script to produce the digest.
 2. Read and display the generated markdown inline in the agent output.
@@ -187,19 +187,19 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 
 - Returns the cached digest if `features/digests/whats-different.md` exists: `{ "status": "ok", "digest": "<content>", "generated_at": "<ISO 8601 timestamp>", "tags": { ... } }`.
 - Returns 404 if no cached file exists.
-- Returns 400 if no active session exists.
+- Returns 400 if no active branch exists.
 
 **`POST /whats-different/generate`:**
 
 - Triggers generation via the generation shell script.
-- Returns 400 when no active session exists.
+- Returns 400 when no active branch exists.
 - Returns 200 with the generated content on success: `{ "status": "ok", "digest": "<content>", "generated_at": "<ISO 8601 timestamp>", "tags": { ... } }`.
 - The `generated_at` field uses ISO 8601 UTC format (e.g., `2026-02-26T20:45:00Z`).
 
 ### 2.13 Dashboard Button Visibility Rules
 
-- Button is present in the HTML when: active session exists AND sync state is not SAME.
-- Button is absent from the HTML when: no active session OR sync state is SAME.
+- Button is present in the HTML when: active branch exists AND sync state is not SAME.
+- Button is absent from the HTML when: no active branch OR sync state is SAME.
 
 ### 2.14 Deep Semantic Analysis ("Summarize Impact")
 
@@ -229,7 +229,7 @@ After a successful merge in `/pl-collab-pull` (BEHIND fast-forward or DIVERGED m
 
 #### 2.14.4 Generation Pipeline
 
-- A new script `tools/collab/generate_whats_different_deep.sh <session>` drives generation.
+- A new script `tools/collab/generate_whats_different_deep.sh <branch>` drives generation.
 - Uses the same extraction tool JSON as the standard digest, but with a different LLM prompt emphasizing:
   - What functionality changed and why it matters.
   - Which workflows or user experiences are affected.
@@ -307,13 +307,13 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 - Returns the cached analysis if `features/digests/whats-different-analysis.md` exists: `{ "status": "ok", "analysis": "<content>", "generated_at": "<ISO 8601 timestamp>" }`.
 - Returns 404 if no cached file exists.
-- Returns 400 if no active session exists.
+- Returns 400 if no active branch exists.
 
 **`POST /whats-different/deep-analysis/generate`:**
 
-- Triggers generation via `tools/collab/generate_whats_different_deep.sh <session>`.
+- Triggers generation via `tools/collab/generate_whats_different_deep.sh <branch>`.
 - Returns 200 with the generated analysis on success: `{ "status": "ok", "analysis": "<content>", "generated_at": "<ISO 8601 timestamp>" }`.
-- Returns 400 if no active session exists.
+- Returns 400 if no active branch exists.
 
 ---
 
@@ -323,34 +323,34 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Extraction Tool Produces Correct JSON for SAME State
 
-    Given local collab/session and origin/collab/session are at the same commit
-    When the extraction tool runs with the session name
+    Given local the collaboration branch (from .purlin/runtime/active_branch) and origin/the collaboration branch (from .purlin/runtime/active_branch) are at the same commit
+    When the extraction tool runs with the branch name
     Then the output JSON has empty arrays for both local_changes and collab_changes
     And the sync_state field is "SAME"
 
 #### Scenario: Extraction Tool Produces Correct JSON for AHEAD State
 
-    Given local collab/session has 3 commits not in origin/collab/session
-    And origin/collab/session has 0 commits not in local collab/session
-    When the extraction tool runs with the session name
+    Given local the collaboration branch (from .purlin/runtime/active_branch) has 3 commits not in origin/the collaboration branch (from .purlin/runtime/active_branch)
+    And origin/the collaboration branch (from .purlin/runtime/active_branch) has 0 commits not in local the collaboration branch (from .purlin/runtime/active_branch)
+    When the extraction tool runs with the branch name
     Then the output JSON has entries in local_changes
     And collab_changes is an empty array
     And the sync_state field is "AHEAD"
 
 #### Scenario: Extraction Tool Produces Correct JSON for BEHIND State
 
-    Given origin/collab/session has 2 commits not in local collab/session
-    And local collab/session has 0 commits not in origin/collab/session
-    When the extraction tool runs with the session name
+    Given origin/the collaboration branch (from .purlin/runtime/active_branch) has 2 commits not in local the collaboration branch (from .purlin/runtime/active_branch)
+    And local the collaboration branch (from .purlin/runtime/active_branch) has 0 commits not in origin/the collaboration branch (from .purlin/runtime/active_branch)
+    When the extraction tool runs with the branch name
     Then the output JSON has entries in collab_changes
     And local_changes is an empty array
     And the sync_state field is "BEHIND"
 
 #### Scenario: Extraction Tool Produces Correct JSON for DIVERGED State
 
-    Given local collab/session has 1 commit not in origin/collab/session
-    And origin/collab/session has 2 commits not in local collab/session
-    When the extraction tool runs with the session name
+    Given local the collaboration branch (from .purlin/runtime/active_branch) has 1 commit not in origin/the collaboration branch (from .purlin/runtime/active_branch)
+    And origin/the collaboration branch (from .purlin/runtime/active_branch) has 2 commits not in local the collaboration branch (from .purlin/runtime/active_branch)
+    When the extraction tool runs with the branch name
     Then the output JSON has entries in both local_changes and collab_changes
     And the sync_state field is "DIVERGED"
 
@@ -381,14 +381,14 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Dashboard Endpoint Returns 400 When No Active Session
 
-    Given no file exists at .purlin/runtime/active_remote_session
+    Given no file exists at .purlin/runtime/active_branch
     When a POST request is sent to /whats-different/generate
     Then the response status is 400
     And the response body contains an error message
 
 #### Scenario: Dashboard Endpoint Returns 200 After Generation
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -397,27 +397,27 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Dashboard HTML Includes Button When Sync State Is Not SAME
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And the sync state is BEHIND
     When the dashboard HTML is generated
-    Then the active session panel contains a "What's Different?" button
+    Then the active branch panel contains a "What's Different?" button
 
 #### Scenario: Dashboard HTML Omits Button When Sync State Is SAME
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And local collab/v0.5-sprint and origin/collab/v0.5-sprint are at the same commit
     When the dashboard HTML is generated
-    Then the active session panel does not contain a "What's Different?" button
+    Then the active branch panel does not contain a "What's Different?" button
 
 #### Scenario: Dashboard HTML Omits Button When No Active Session
 
-    Given no active remote session exists
+    Given no active branch exists
     When the dashboard HTML is generated
     Then no "What's Different?" button is present in the HTML
 
 #### Scenario: Generated Markdown File Exists After Generation
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has commits not in local collab/v0.5-sprint
     When the generation script is executed
     Then features/digests/whats-different.md exists
@@ -426,7 +426,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: GET Read Endpoint Returns Cached Digest
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
     Then the response status is 200
@@ -435,21 +435,21 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: GET Read Endpoint Returns 404 When No Cache
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md does not exist
     When a GET request is sent to /whats-different/read
     Then the response status is 404
 
 #### Scenario: GET Read Endpoint Returns 400 When No Session
 
-    Given no file exists at .purlin/runtime/active_remote_session
+    Given no file exists at .purlin/runtime/active_branch
     When a GET request is sent to /whats-different/read
     Then the response status is 400
     And the response body contains an error message
 
 #### Scenario: POST Generate Endpoint Returns ISO 8601 Timestamp
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -457,7 +457,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: POST Deep Analysis Generate Endpoint Returns Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/deep-analysis/generate
     Then the response status is 200
@@ -466,7 +466,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: GET Deep Analysis Read Endpoint Returns Cached Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a GET request is sent to /whats-different/deep-analysis/read
     Then the response status is 200
@@ -474,7 +474,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: GET Deep Analysis Read Endpoint Returns 404 When No Cache
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md does not exist
     When a GET request is sent to /whats-different/deep-analysis/read
     Then the response status is 404
@@ -483,7 +483,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
     Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
     And a commit range that modifies features/auth.impl.md containing a [DEVIATION] entry
-    When the extraction tool runs with the session name
+    When the extraction tool runs with the branch name
     Then the output JSON contains a decisions array
     And each decision entry has category, feature, summary, and role fields
     And the [INFEASIBLE] entry has role "architect"
@@ -493,18 +493,18 @@ The deep analysis is derived from the same extraction data as the standard diges
 
     Given a commit range that modifies features/login.md containing a [BUG] entry in User Testing Discoveries
     And the entry does not contain "Action Required: Architect"
-    When the extraction tool runs with the session name
+    When the extraction tool runs with the branch name
     Then the decisions array contains the [BUG] entry with role "builder"
 
 #### Scenario: Extraction Tool Routes INFEASIBLE Entries to Architect
 
     Given a commit range that modifies features/login.impl.md containing an [INFEASIBLE] entry
-    When the extraction tool runs with the session name
+    When the extraction tool runs with the branch name
     Then the decisions array contains the [INFEASIBLE] entry with role "architect"
 
 #### Scenario: Standard Digest Generation Deletes Stale Deep Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -512,7 +512,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Impact Summary Content Appears Above File-Level Digest in HTML
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
@@ -523,16 +523,16 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Auto-Generation After pl-collab-pull Merge
 
-    Given the agent is on the collab session branch
-    And an active session exists in BEHIND state
-    When the agent runs /pl-collab-pull and the merge succeeds
+    Given the agent is on the collaboration branch
+    And an active branch exists in BEHIND state
+    When the agent runs /pl-remote-pull and the merge succeeds
     Then the generation script is executed as Step 7
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline after the merge summary
 
 #### Scenario: Stale Impact Summary Absent After Digest Regeneration
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -541,7 +541,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Button Opens Cached Content Without Regeneration
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
     Then the response status is 200
@@ -550,8 +550,8 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: DIVERGED Generation Returns Both Directions via Endpoint
 
-    Given an active session "v0.5-sprint" is set
-    And the session is in DIVERGED state
+    Given an active branch "v0.5-sprint" is set
+    And the branch is in DIVERGED state
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
     And the response digest contains both "Your Local Changes" and "Collab Changes" sections
@@ -559,7 +559,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Regenerate Triggers Fresh Generation via Endpoint
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -568,7 +568,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Deep Analysis Generation Returns Analysis via Endpoint
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/deep-analysis/generate
     Then the response status is 200
@@ -577,7 +577,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Modal Close Button Present in HTML
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     When the dashboard HTML is generated
     Then the What's Different modal template contains an X close button element
     And the modal container has the standard CDD modal overlay pattern
@@ -597,10 +597,10 @@ None
 
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** The "What's Different?" button is rendered within the active session panel of the REMOTE COLLABORATION section, below the sync state row. The button uses standard dashboard button styling with `var(--font-body)` Inter 500 14px text. When a cached digest exists, a "Last generated: `<timestamp>`" line appears below the button in `var(--purlin-muted)` Inter 400 12px. The button is hidden when sync state is SAME or when no active session exists.
-- [ ] Button visible in active session panel when sync state is AHEAD, BEHIND, or DIVERGED
+- **Description:** The "What's Different?" button is rendered within the active branch panel of the REMOTE COLLABORATION section, below the sync state row. The button uses standard dashboard button styling with `var(--font-body)` Inter 500 14px text. When a cached digest exists, a "Last generated: `<timestamp>`" line appears below the button in `var(--purlin-muted)` Inter 400 12px. The button is hidden when sync state is SAME or when no active branch exists.
+- [ ] Button visible in active branch panel when sync state is AHEAD, BEHIND, or DIVERGED
 - [ ] Button hidden when sync state is SAME
-- [ ] Button absent when no active session
+- [ ] Button absent when no active branch
 - [ ] "Last generated" timestamp shown below button when cached digest exists, in `var(--purlin-muted)` 12px
 - [ ] Button styling consistent with other dashboard action buttons
 
@@ -655,7 +655,7 @@ None
 - [ ] Timestamp: "Generated:" label bold (font-weight 700), local timezone AM/PM format (e.g., "Feb 26, 2026 3:45 PM EST")
 - [ ] Change tags bar: `[N Specs]` in `var(--purlin-accent)`, `[N Code]` in `var(--purlin-status-good)`, `[N Discovery]` in `var(--purlin-accent)`, all on `var(--purlin-tag-fill)` background with `var(--purlin-tag-outline)` border
 - [ ] Section header colors: "Spec Changes" in `var(--purlin-accent)`, "Code Changes" in `var(--purlin-status-good)`, "Purlin Changes" in `var(--purlin-status-todo)`
-- [ ] "What's Different?" button visible in active session panel when sync state is not SAME; "Last generated: `<timestamp>`" shown below when cached
+- [ ] "What's Different?" button visible in active branch panel when sync state is not SAME; "Last generated: `<timestamp>`" shown below when cached
 - [ ] "Summarize Impact" button visible inside modal above digest content when no cached analysis exists; uses `btn-critic` styling
 - [ ] Deep Analysis: "Architect Actions" header in `var(--purlin-status-warning)`, `[INFEASIBLE]` in `var(--purlin-status-error)`, `[INTENT_DRIFT]` in `var(--purlin-status-warning)`
 - [ ] Deep Analysis: "Builder Actions" header in `var(--purlin-status-good)`, `[BUG]` in `var(--purlin-status-error)`

@@ -19,9 +19,10 @@ Before pushing, the Architect:
 2. Runs `git branch` to discover local branches.
 3. Identifies the default remote: the upstream tracking remote for the current branch (via `git rev-parse --abbrev-ref @{upstream}`), falling back to `origin` if no upstream is set.
 4. Identifies the default branch: the current branch (via `git rev-parse --abbrev-ref HEAD`).
-5. Presents the user with a confirmation prompt showing the default remote, its URL, and the branch. If multiple remotes exist, lists all available remotes so the user can pick an alternative. If multiple local branches exist, lists them for alternative selection.
-6. The presentation should make it easy to accept defaults (e.g., "Push `main` to `origin` (`git@bitbucket.org:...`)? [Y/n]").
-7. Checks that the selected remote is not ahead of the local branch. If the remote has commits not present locally, the Architect reports the divergence and halts until the user resolves it.
+5. Checks if `.purlin/runtime/active_branch` exists and is non-empty. If it does, and the current branch matches the value in that file, the Architect warns: "Current branch is a collaboration branch (`<branch>`). Pushing directly may bypass the collaboration workflow. Confirm to proceed."
+6. Presents the user with a confirmation prompt showing the default remote, its URL, and the branch. If multiple remotes exist, lists all available remotes so the user can pick an alternative. If multiple local branches exist, lists them for alternative selection.
+7. The presentation should make it easy to accept defaults (e.g., "Push `main` to `origin` (`git@bitbucket.org:...`)? [Y/n]").
+8. Checks that the selected remote is not ahead of the local branch. If the remote has commits not present locally, the Architect reports the divergence and halts until the user resolves it.
 
 ### 2.2 Force-Push Prohibition
 
@@ -100,6 +101,15 @@ This step may be set to `enabled: false` in `.purlin/release/config.json`. When 
     Then the step identifies "origin" as the only remote
     And no remote selection prompt is generated
     And the confirmation prompt shows "Push main to origin (<url>)?"
+
+#### Scenario: Release push from collaboration branch shows branch confirmation
+
+    Given .purlin/runtime/active_branch contains "collab/v0.6-sprint"
+    And the current branch is "collab/v0.6-sprint"
+    When the Architect executes the purlin.push_to_remote step
+    Then the step warns that the current branch is a collaboration branch
+    And the warning message contains "collab/v0.6-sprint"
+    And the Architect must confirm before proceeding
 
 ### Manual Scenarios (Architect Execution)
 

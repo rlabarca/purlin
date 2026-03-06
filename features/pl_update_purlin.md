@@ -78,7 +78,7 @@ The skill MUST analyze GitHub releases between current and target versions:
    Latest version:  v0.8.0
 
    --- Release: v0.7.0 (2026-02-26) ---
-   • Remote collaboration via collab sessions
+   • Branch collaboration via shared branches
    • Spec Map enhancements with topological ordering
    • Auto-fetch and update prompt for upstream sync
    • 5 other changes

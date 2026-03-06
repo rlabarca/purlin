@@ -21,20 +21,20 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 
 ### 2.2 Session Guard
 
-- The command reads `.purlin/runtime/active_remote_session`.
-- If the file is absent or empty, the command aborts with a message directing the user to start or join a remote collab session via the CDD dashboard.
-- The session name is extracted from the file contents (single line, trimmed).
+- The command reads `.purlin/runtime/active_branch`.
+- If the file is absent or empty, the command aborts with a message directing the user to start or join a collaboration branch via the CDD dashboard.
+- The branch name is extracted from the file contents (single line, trimmed).
 
 ### 2.3 Config, Fetch, and Sync State
 
 - The command reads `remote_collab.remote` from `.purlin/config.json`, defaulting to `"origin"`.
-- It fetches the remote collab branch: `git fetch <remote> collab/<session>`.
+- It fetches the remote collab branch: `git fetch <remote> <branch>`.
 - It determines sync state (SAME, AHEAD, BEHIND, DIVERGED) via range queries.
 - If SAME, the command prints an in-sync message and exits without generating.
 
 ### 2.4 Generation
 
-- The command executes `tools/collab/generate_whats_different.sh <session>`.
+- The command executes `tools/collab/generate_whats_different.sh <branch>`.
 - The script runs the extraction tool and invokes the LLM to produce the digest.
 - Output is written to `features/digests/whats-different.md`.
 
@@ -59,15 +59,15 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 #### Scenario: Exits When No Active Session
 
     Given the current branch is "main"
-    And no file exists at .purlin/runtime/active_remote_session
+    And no file exists at .purlin/runtime/active_branch
     When the agent runs /pl-whats-different
-    Then the command aborts with a message containing "No active remote session"
+    Then the command aborts with a message containing "No active collaboration branch"
     And no generation script is executed
 
 #### Scenario: Prints In-Sync Message When SAME
 
     Given the current branch is "main"
-    And an active session "v0.6-sprint" is set
+    And an active branch "v0.6-sprint" is set
     And local main and origin/collab/v0.6-sprint are at the same commit
     When the agent runs /pl-whats-different
     Then the command prints a message containing "in sync"
@@ -76,7 +76,7 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 #### Scenario: Generates and Displays Digest When BEHIND
 
     Given the current branch is "main"
-    And an active session "v0.6-sprint" is set
+    And an active branch "v0.6-sprint" is set
     And origin/collab/v0.6-sprint has 2 commits not in local main
     When the agent runs /pl-whats-different
     Then the generation script is executed with "v0.6-sprint" as argument
@@ -86,9 +86,9 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 #### Scenario: End-to-End Generation via Agent Command
 
     Given the agent is on the main branch
-    And an active session exists in BEHIND state
+    And an active branch exists in BEHIND state
     When the agent runs /pl-whats-different
-    Then the generation script is executed with the active session name as argument
+    Then the generation script is executed with the active branch name as argument
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
