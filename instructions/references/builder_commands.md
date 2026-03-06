@@ -5,7 +5,7 @@
 
 ## Main Branch Variant
 
-Print this variant when the branch is `main` (no active collab session).
+Print this variant when the branch is `main` (no active collaboration branch).
 
 ```
 Purlin Builder — Ready
@@ -24,17 +24,17 @@ Purlin Builder — Ready
   /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-agent-config           Modify agent config in .purlin/config.json
   /pl-whats-different        Compare branches (main checkout only)
-  /pl-collab-push            Push local collab branch to remote (collab session only)
-  /pl-collab-pull            Pull remote collab branch into local (collab session only)
+  /pl-remote-push            Push active branch to remote
+  /pl-remote-pull            Pull remote into active branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## Collab Session Variant
+## Branch Collaboration Variant
 
-Print this variant when the branch starts with `collab/`. Substitute the actual session name for `<session>`.
+Print this variant when `.purlin/runtime/active_branch` exists and is non-empty. Substitute the actual branch name for `<branch>`.
 
 ```
-Purlin Builder — Ready  [Collab: <session>]
+Purlin Builder — Ready  [Branch: <branch>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /pl-status                 Check CDD status and action items
   /pl-resume [save|role]     Save or restore session state across context clears
@@ -49,8 +49,8 @@ Purlin Builder — Ready  [Collab: <session>]
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-agent-config           Modify agent config in .purlin/config.json
-  /pl-collab-push            Push local collab branch to remote (collab session only)
-  /pl-collab-pull            Pull remote collab branch into local (collab session only)
+  /pl-remote-push            Push active branch to remote
+  /pl-remote-pull            Pull remote into active branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -74,7 +74,7 @@ Purlin Builder — Ready  [Isolated: <name>]
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-update-purlin          Intelligent submodule update with conflict resolution
   /pl-agent-config           Modify agent config in .purlin/config.json
-  /pl-local-push             Merge isolation branch to collaboration branch
-  /pl-local-pull             Pull collaboration branch into isolation branch
+  /pl-isolated-push          Merge isolation branch to active branch
+  /pl-isolated-pull          Pull active branch into isolation branch
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

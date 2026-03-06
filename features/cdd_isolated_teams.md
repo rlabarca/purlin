@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the MAIN WORKSPACE section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to the collaboration branch (the branch the project root is currently on — `collab/<session>` during active collaboration, `main` otherwise).
+CDD Isolated Teams Mode is activated automatically when the CDD server detects active named isolated teams (git worktrees under `.worktrees/`) in the project root. The dashboard always renders a standalone ISOLATED TEAMS section, positioned below the LOCAL BRANCH section at the same visual level. When Isolated Teams Mode is active, that section is populated with a Sessions table showing each named isolated team's branch, sync state, and in-flight changes relative to the collaboration branch (the branch the project root is currently on — read from `.purlin/runtime/active_branch` during active collaboration, `main` otherwise).
 
 ---
 
@@ -32,18 +32,18 @@ CDD Isolated Teams Mode is activated automatically when the CDD server detects a
 
 ### 2.3 Dashboard Section Layout
 
-The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, MAIN WORKSPACE, ISOLATED TEAMS. MAIN WORKSPACE and ISOLATED TEAMS are peers — they appear at the same indent level, one after the other. ISOLATED TEAMS is never nested inside MAIN WORKSPACE.
+The dashboard sidebar/content area contains four top-level collapsible sections in this order: ACTIVE, COMPLETE, LOCAL BRANCH, ISOLATED TEAMS. LOCAL BRANCH and ISOLATED TEAMS are peers — they appear at the same indent level, one after the other. ISOLATED TEAMS is never nested inside LOCAL BRANCH.
 
-**MAIN WORKSPACE section:**
-- Collapsible heading labeled "MAIN WORKSPACE (<branch>)" where `<branch>` is the current git branch name from `git rev-parse --abbrev-ref HEAD`.
+**LOCAL BRANCH section:**
+- Collapsible heading labeled "LOCAL BRANCH (<branch>)" where `<branch>` is the current git branch name from `git rev-parse --abbrev-ref HEAD`.
 - The branch name in the heading updates on each dashboard poll cycle.
 - When expanded, shows the Local (main) git status content: branch name, ahead/behind status, clean/dirty state, and last commit summary.
 - When collapsed, shows just the section heading (including the branch label).
-- When the main checkout has no uncommitted changes, the expanded content carries no additional annotations. Text such as "Ready for specs" MUST NOT be appended when the checkout is clean.
+- When the local checkout has no uncommitted changes, the expanded content carries no additional annotations. Text such as "Ready for specs" MUST NOT be appended when the checkout is clean.
 - Files under `.purlin/` are excluded from the clean/dirty determination.
 
 **ISOLATED TEAMS section:**
-- Collapsible heading labeled "ISOLATED TEAMS", positioned directly below the MAIN WORKSPACE section at the same visual indent level.
+- Collapsible heading labeled "ISOLATED TEAMS", positioned directly below the LOCAL BRANCH section at the same visual indent level.
 - Always rendered, regardless of whether any worktrees are active.
 
 **ISOLATED TEAMS heading collapse behavior:**
@@ -57,7 +57,7 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
 2. **Sessions table:** A table listing all active worktrees, appearing below the creation row. When no worktrees are active, only the creation row is shown.
 
-   | Name | Branch | Main Diff | Committed Modified | Uncommitted Modified |
+   | Name | Branch | Local Branch Diff | Committed Modified | Uncommitted Modified |
    |------|--------|-----------|--------------------|-----------------------|
    | feat1 | isolated/feat1 | AHEAD | 2 Specs | 1 Code/Other |
    | ui | isolated/ui | SAME | | 3 Specs |
@@ -66,11 +66,11 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
    Column headers use two-line rendering (`Committed<br>Modified`, `Uncommitted<br>Modified`) to save horizontal space.
 
-**Main Diff** shows the sync state between the worktree's branch and the collaboration branch (the branch the project root is on — `collab/<session>` during active collaboration, `main` otherwise):
+**Local Branch Diff** shows the sync state between the worktree's branch and the collaboration branch (the branch the project root is on — read from `.purlin/runtime/active_branch` during active collaboration, `main` otherwise):
 - `AHEAD` — only this branch has moved: it has commits not yet in the collaboration branch; the collaboration branch has no commits missing from this branch. Committed Modified reflects files the branch changed since its common ancestor with the collaboration branch.
 - `SAME` — branch and the collaboration branch are at identical commit positions. Committed Modified will always be empty.
-- `BEHIND` — only the collaboration branch has moved: it has commits not yet in this branch; this branch has no commits ahead of the collaboration branch. Run `/pl-local-pull` before pushing. Committed Modified will always be empty.
-- `DIVERGED` — both the collaboration branch and this branch have commits beyond their common ancestor. Run `/pl-local-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
+- `BEHIND` — only the collaboration branch has moved: it has commits not yet in this branch; this branch has no commits ahead of the collaboration branch. Run `/pl-isolated-pull` before pushing. Committed Modified will always be empty.
+- `DIVERGED` — both the collaboration branch and this branch have commits beyond their common ancestor. Run `/pl-isolated-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
 
 **Committed Modified** shows files the branch changed since its common ancestor with the collaboration branch — derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `main_diff` is `SAME` or `BEHIND`. It may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
 
@@ -171,7 +171,7 @@ Fields per worktree entry:
 
 ### 2.6 Visual Design
 
-The ISOLATED TEAMS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. MAIN WORKSPACE and ISOLATED TEAMS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The MAIN WORKSPACE heading format (`MAIN WORKSPACE (<branch>)`) is the same regardless of Isolated Teams Mode state. Isolated Teams Mode does not add or remove annotations from the MAIN WORKSPACE heading.
+The ISOLATED TEAMS section uses the same Purlin CSS tokens as the rest of the dashboard. No new design tokens are introduced. LOCAL BRANCH and ISOLATED TEAMS are peer sections: both use identical section heading styling (same typography, same toggle affordance, same indent level). The LOCAL BRANCH heading format (`LOCAL BRANCH (<branch>)`) is the same regardless of Isolated Teams Mode state. Isolated Teams Mode does not add or remove annotations from the LOCAL BRANCH heading.
 
 ### 2.7 No Isolated Teams Mode During Main Checkout
 
@@ -398,26 +398,26 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     When an agent calls GET /status.json
     Then the worktree entry has no delivery_phase field
 
-#### Scenario: MAIN WORKSPACE Heading Includes Branch Name in HTML
+#### Scenario: LOCAL BRANCH Heading Includes Branch Name in HTML
 
     Given the CDD server is running from the project root
     And the current branch is "collab/purlincollab"
     When the dashboard HTML is generated
-    Then the MAIN WORKSPACE section heading contains "MAIN WORKSPACE (collab/purlincollab)"
+    Then the LOCAL BRANCH section heading contains "LOCAL BRANCH (collab/purlincollab)"
 
-#### Scenario: MAIN WORKSPACE Branch Name Matches Git Branch
+#### Scenario: LOCAL BRANCH Name Matches Git Branch
 
     Given the CDD server is running from the project root
     When an agent calls GET /status.json and the dashboard HTML is generated
-    Then the branch name in the MAIN WORKSPACE heading matches the output of git rev-parse --abbrev-ref HEAD
+    Then the branch name in the LOCAL BRANCH heading matches the output of git rev-parse --abbrev-ref HEAD
 
-#### Scenario: MAIN WORKSPACE Heading Updates After Branch Change
+#### Scenario: LOCAL BRANCH Heading Updates After Branch Change
 
     Given the CDD server is running from the project root
     And the current branch is "main"
     When the branch changes to "collab/test"
     And the next dashboard poll cycle completes
-    Then the MAIN WORKSPACE section heading contains "MAIN WORKSPACE (collab/test)"
+    Then the LOCAL BRANCH section heading contains "LOCAL BRANCH (collab/test)"
 
 #### Scenario: Sessions Table Displays Named Isolations in HTML
 
@@ -425,7 +425,7 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And two worktrees exist (.worktrees/feat1 and .worktrees/ui)
     When the dashboard HTML is generated
     Then the Isolated Teams section contains a Sessions table
-    And the table has columns: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified
+    And the table has columns: Name, Branch, Local Branch Diff, Committed Modified, Uncommitted Modified
     And each worktree appears as a row with its isolation name and branch
     And no Role column is present in the table headers
 
@@ -491,23 +491,23 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 ### Screen: CDD Dashboard — Isolated Teams Section
 
 - **Reference:** N/A
-- [ ] MAIN WORKSPACE section heading displays "MAIN WORKSPACE (<branch>)" where `<branch>` is the current git branch name
+- [ ] LOCAL BRANCH section heading displays "LOCAL BRANCH (<branch>)" where `<branch>` is the current git branch name
 - [ ] Branch name in heading updates on each dashboard poll cycle
-- [ ] MAIN WORKSPACE heading format is the same regardless of Isolated Teams Mode state (branch label always present)
-- [ ] ISOLATED TEAMS section appears directly below the MAIN WORKSPACE section at the same indent level (peer sections, not nested)
-- [ ] ISOLATED TEAMS section uses the same collapsible heading style as MAIN WORKSPACE
+- [ ] LOCAL BRANCH heading format is the same regardless of Isolated Teams Mode state (branch label always present)
+- [ ] ISOLATED TEAMS section appears directly below the LOCAL BRANCH section at the same indent level (peer sections, not nested)
+- [ ] ISOLATED TEAMS section uses the same collapsible heading style as LOCAL BRANCH
 - [ ] Collapsed heading with no active worktrees reads "ISOLATED TEAMS" with no annotation
 - [ ] Collapsed heading with N active worktrees reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
 - [ ] When expanded, the creation row "Create An Isolated Team [input] [Create]" is always the first item
 - [ ] Sessions table appears below the creation row
-- [ ] Sessions table has columns: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified (no Role column)
+- [ ] Sessions table has columns: Name, Branch, Local Branch Diff, Committed Modified, Uncommitted Modified (no Role column)
 - [ ] Committed Modified and Uncommitted Modified column headers render as two lines ("Committed" / "Modified" and "Uncommitted" / "Modified") to save horizontal space
 - [ ] Each active worktree appears as a row
 - [ ] Each row has a "Kill" button aligned to the right
-- [ ] Main Diff cell shows "SAME" in `--purlin-status-good` (green)
-- [ ] Main Diff cell shows "AHEAD" in `--purlin-status-todo` (yellow)
-- [ ] Main Diff cell shows "BEHIND" in `--purlin-status-todo` (yellow)
-- [ ] Main Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange)
+- [ ] Local Branch Diff cell shows "SAME" in `--purlin-status-good` (green)
+- [ ] Local Branch Diff cell shows "AHEAD" in `--purlin-status-todo` (yellow)
+- [ ] Local Branch Diff cell shows "BEHIND" in `--purlin-status-todo` (yellow)
+- [ ] Local Branch Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange)
 - [ ] Committed Modified cell is empty when main_diff is SAME or BEHIND
 - [ ] Committed Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when AHEAD or DIVERGED
 - [ ] Uncommitted Modified cell shows category counts when the worktree has uncommitted changes, regardless of main_diff state

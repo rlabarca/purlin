@@ -106,10 +106,10 @@ Run: `git rev-parse --abbrev-ref HEAD`
 **Step 2 — Print the command table:**
 Read `instructions/references/architect_commands.md` and print the appropriate variant based on the current branch:
 - Branch is `main` -> Main Branch Variant
-- Branch starts with `collab/` -> Collab Session Variant (with `[Collab: <session>]` header)
+- `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 - Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-collab-push, /pl-collab-pull, /pl-local-push, /pl-local-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-override-conflicts, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
 
 ### 5.0.1 Read Startup Flags
 
@@ -147,8 +147,8 @@ Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
 3.  **Collaboration Handoff (Isolated Sessions):** If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-    *   Run `/pl-local-push` to verify handoff readiness and merge the branch to the collaboration branch.
-    *   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-local-push` to merge `isolated/<name>` before concluding the session."
+    *   Run `/pl-isolated-push` to verify handoff readiness and merge the branch to the collaboration branch.
+    *   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-isolated-push` to merge `isolated/<name>` before concluding the session."
     *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Strategic Protocols
@@ -200,7 +200,7 @@ This section applies when the Architect is working in an isolated worktree sessi
 Each isolation session is independent. Merges to the collaboration branch happen when the session's work is complete, not in a prescribed order. The merge-before-proceed principle still applies: any agent that needs work from another isolation must wait for that isolation's merge before starting.
 
 1.  Agent completes its work in `.worktrees/<name>/`.
-2.  Agent runs `/pl-local-push` to verify readiness and merge `isolated/<name>` to the collaboration branch.
+2.  Agent runs `/pl-isolated-push` to verify readiness and merge `isolated/<name>` to the collaboration branch.
 3.  User confirms the merge happened before another session that depends on it starts.
 
 ### 10.3 Isolated Teams Dashboard

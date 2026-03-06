@@ -38,7 +38,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 *   The "integration moment" is when an isolation branch merges to the collaboration branch.
 *   Who merges: the agent that completed the session's work (before shutting down).
 *   What it triggers: the next agent that needs the merged work can now see the commits.
-*   For remote collaboration, the merge is followed by `/pl-collab-push` to sync the collaboration branch to the remote.
+*   For remote collaboration, the merge is followed by `/pl-remote-push` to sync the collaboration branch to the remote.
 *   `/pl-local-push` verifies readiness and performs the merge in one step.
 
 ### 2.5 Worktree Location Convention
@@ -112,7 +112,7 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 
 **Local Isolation:** Single machine, multiple named git worktrees, CDD dashboard runs at project root.
 
-**Remote Collaboration:** Multiple machines, collab session branches on the remote. Each collaborator checks out the `collab/<session>` branch locally, making push and pull symmetric same-branch operations. CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
+**Remote Collaboration:** Multiple machines, collaboration branches on the remote. Each collaborator checks out the active collaboration branch locally, making push and pull symmetric same-branch operations. CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
 
 ## Scenarios
 
