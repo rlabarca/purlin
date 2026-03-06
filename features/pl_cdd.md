@@ -33,9 +33,16 @@ Global skill -- available to all roles (architect, builder, qa).
 
 1. Resolve `PURLIN_PROJECT_ROOT` and `tools_root` from `.purlin/config.json`.
 2. Check for a running CDD instance via `ps aux | grep "[s]erve.py" | grep -- "--project-root"`.
-3. If already running: read port from `.purlin/runtime/cdd.port`, print the URL, and return.
+3. If already running: stop the existing instance (invoke `stop.sh`), then start a new one (invoke `start.sh`), preferring the same port. This ensures the server is always running fresh code after Builder changes.
 4. If not running: invoke `tools/cdd/start.sh` via Bash.
 5. Print the URL from the script output.
+
+### 2.3.1 Port Preference
+
+- When restarting an already-running server, read the current port from `.purlin/runtime/cdd.port` before stopping.
+- Pass the preferred port to `start.sh` (e.g., via a `--port` argument or `CDD_PORT` environment variable) so the server binds to the same port if available.
+- If the preferred port is unavailable (e.g., not yet released by the OS), fall back to the default behavior (OS-assigned port).
+- This ensures bookmarks, browser tabs, and agent references to the URL remain valid across restarts.
 
 ### 2.4 Stop Behavior
 
@@ -75,12 +82,21 @@ The CDD server persists after the agent session exits. This is already handled b
     And the CDD server starts
     And the full URL is printed
 
-#### Scenario: Start when already running shows URL
+#### Scenario: Start when already running restarts on same port
 
     Given a CDD server is running for this project on port 9090
     When /pl-cdd is invoked with no arguments
-    Then no new process is started
+    Then stop.sh is executed to stop the existing server
+    And start.sh is executed with port preference 9090
+    And the server restarts on port 9090
     And "http://localhost:9090" is printed
+
+#### Scenario: Restart falls back to new port when preferred port unavailable
+
+    Given a CDD server was running on port 9090 but the port is still held by the OS
+    When /pl-cdd is invoked with no arguments
+    Then start.sh falls back to an OS-assigned port
+    And the new URL is printed
 
 #### Scenario: Stop a running server
 
