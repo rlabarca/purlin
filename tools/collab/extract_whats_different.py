@@ -2,7 +2,7 @@
 """Extraction tool for the What's Different? feature.
 
 Produces structured JSON from git range queries comparing local collab
-branch vs remote collab branch. Input: session name. Output: JSON to stdout.
+branch vs remote collab branch. Input: branch name. Output: JSON to stdout.
 
 Categorizes changed files into specs, code, tests, companion files,
 purlin config, and submodule changes. Parses status commits for
@@ -52,10 +52,10 @@ def _run_git(args, cwd=None):
         return ''
 
 
-def compute_sync_state(session_name):
+def compute_sync_state(branch_name):
     """Determine SAME/AHEAD/BEHIND/DIVERGED between local and remote collab branch."""
-    remote_ref = f'{REMOTE}/collab/{session_name}'
-    local_ref = f'collab/{session_name}'
+    remote_ref = f'{REMOTE}/collab/{branch_name}'
+    local_ref = f'collab/{branch_name}'
 
     # Commits local collab has that remote does not
     ahead_lines = _run_git(
@@ -371,8 +371,8 @@ def extract_direction(range_spec):
     """Extract structured data for one direction (local or collab).
 
     Args:
-        range_spec: git range like 'origin/collab/session..collab/session' or
-                    'collab/session..origin/collab/session'
+        range_spec: git range like 'origin/collab/branch..collab/branch' or
+                    'collab/branch..origin/collab/branch'
 
     Returns dict with: commits, changed_files, categories, transitions,
     discovery_count, decisions.
@@ -394,18 +394,18 @@ def extract_direction(range_spec):
     }
 
 
-def extract(session_name):
+def extract(branch_name):
     """Main extraction function.
 
     Returns the full structured JSON for both directions.
     """
-    remote_ref = f'{REMOTE}/collab/{session_name}'
-    local_ref = f'collab/{session_name}'
-    sync = compute_sync_state(session_name)
+    remote_ref = f'{REMOTE}/collab/{branch_name}'
+    local_ref = f'collab/{branch_name}'
+    sync = compute_sync_state(branch_name)
     state = sync['sync_state']
 
     result = {
-        'session': session_name,
+        'branch': branch_name,
         'sync_state': state,
         'commits_ahead': sync['commits_ahead'],
         'commits_behind': sync['commits_behind'],
@@ -431,12 +431,12 @@ def extract(session_name):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: extract_whats_different.py <session_name>",
+        print("Usage: extract_whats_different.py <branch_name>",
               file=sys.stderr)
         sys.exit(1)
 
-    session_name = sys.argv[1]
-    data = extract(session_name)
+    branch_name = sys.argv[1]
+    data = extract(branch_name)
     json.dump(data, sys.stdout, indent=2)
     print()  # trailing newline
 

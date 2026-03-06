@@ -2,21 +2,21 @@
 """Tests for the What's Different dashboard integration.
 
 Covers automated scenarios from features/collab_whats_different.md:
-- Dashboard Endpoint Returns 400 When No Active Session
+- Dashboard Endpoint Returns 400 When No Active Branch
 - Dashboard Endpoint Returns 200 After Generation
 - Dashboard HTML Includes Button When Sync State Is Not SAME
 - Dashboard HTML Omits Button When Sync State Is SAME
-- Dashboard HTML Omits Button When No Active Session
+- Dashboard HTML Omits Button When No Active Branch
 - Generated Markdown File Exists After Generation
 - GET Read Endpoint Returns Cached Digest
 - GET Read Endpoint Returns 404 When No Cache
-- GET Read Endpoint Returns 400 When No Session
+- GET Read Endpoint Returns 400 When No Branch
 - POST Generate Endpoint Returns ISO 8601 Timestamp
 - POST Deep Analysis Generate Endpoint Returns Analysis
 - GET Deep Analysis Read Endpoint Returns Cached Analysis
 - GET Deep Analysis Read Endpoint Returns 404 When No Cache
 - Impact Summary Content Appears Above File-Level Digest in HTML
-- Auto-Generation After pl-collab-pull Merge
+- Auto-Generation After pl-remote-pull Merge
 - Stale Impact Summary Absent After Digest Regeneration
 - Button Opens Cached Content Without Regeneration
 - DIVERGED Generation Returns Both Directions via Endpoint
@@ -40,17 +40,17 @@ sys.path.insert(0, CDD_DIR)
 import serve
 
 
-class TestEndpointReturns400WhenNoActiveSession(unittest.TestCase):
-    """Scenario: Dashboard Endpoint Returns 400 When No Active Session
+class TestEndpointReturns400WhenNoActiveBranch(unittest.TestCase):
+    """Scenario: Dashboard Endpoint Returns 400 When No Active Branch
 
-    Given no file exists at .purlin/runtime/active_remote_session
+    Given no file exists at .purlin/runtime/active_branch
     When a POST request is sent to /whats-different/generate
     Then the response status is 400
     And the response body contains an error message
     """
 
-    @patch('serve.get_active_remote_session', return_value=None)
-    def test_returns_400_no_session(self, mock_session):
+    @patch('serve.get_active_branch', return_value=None)
+    def test_returns_400_no_branch(self, mock_branch):
         handler = MagicMock()
         handler.headers = {}
         responses = []
@@ -68,7 +68,7 @@ class TestEndpointReturns400WhenNoActiveSession(unittest.TestCase):
 class TestEndpointReturns200AfterGeneration(unittest.TestCase):
     """Scenario: Dashboard Endpoint Returns 200 After Generation
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local main
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -81,8 +81,8 @@ class TestEndpointReturns200AfterGeneration(unittest.TestCase):
         'code': 2, 'tests': 1, 'purlin': 0, 'discoveries': 0,
     })
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_200_with_content(self, mock_session, mock_run, mock_tags):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_200_with_content(self, mock_branch, mock_run, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -117,7 +117,7 @@ class TestEndpointReturns200AfterGeneration(unittest.TestCase):
 class TestDashboardHTMLButtonVisibility(unittest.TestCase):
     """Test button visibility in dashboard HTML based on sync state."""
 
-    def _generate_html_with_sync(self, active_session, sync_state,
+    def _generate_html_with_sync(self, active_branch, sync_state,
                                  commits_ahead=0, commits_behind=0):
         """Helper to generate HTML with specific remote collab state."""
         sync_data = {
@@ -125,15 +125,15 @@ class TestDashboardHTMLButtonVisibility(unittest.TestCase):
             'commits_ahead': commits_ahead,
             'commits_behind': commits_behind,
         }
-        sessions = [{'name': active_session, 'branch': f'collab/{active_session}',
+        branches = [{'name': active_branch, 'branch': f'collab/{active_branch}',
                       'active': True, 'sync_state': sync_state,
                       'commits_ahead': commits_ahead,
-                      'commits_behind': commits_behind}] if active_session else []
+                      'commits_behind': commits_behind}] if active_branch else []
         contributors = []
         last_fetch = '2026-02-27T00:00:00Z'
 
-        return serve._remote_collab_section_html(
-            active_session, sync_data, sessions,
+        return serve._branch_collab_section_html(
+            active_branch, sync_data, branches,
             contributors, last_fetch, True)
 
     def test_button_present_when_behind(self):
@@ -158,9 +158,9 @@ class TestDashboardHTMLButtonVisibility(unittest.TestCase):
         html = self._generate_html_with_sync('v0.5-sprint', 'SAME')
         self.assertNotIn('btn-whats-different', html)
 
-    def test_button_absent_when_no_session(self):
-        """Scenario: Dashboard HTML Omits Button When No Active Session"""
-        html = serve._remote_collab_section_html(
+    def test_button_absent_when_no_branch(self):
+        """Scenario: Dashboard HTML Omits Button When No Active Branch"""
+        html = serve._branch_collab_section_html(
             None, {}, [], [], None, True)
         self.assertNotIn('btn-whats-different', html)
 
@@ -177,8 +177,8 @@ class TestGeneratedMarkdownFile(unittest.TestCase):
         'code': 0, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_digest_file_written(self, mock_session, mock_run, mock_tags):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_digest_file_written(self, mock_branch, mock_run, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -221,7 +221,7 @@ class TestGeneratedMarkdownFile(unittest.TestCase):
 class TestGetReadEndpointReturnsCachedDigest(unittest.TestCase):
     """Scenario: GET Read Endpoint Returns Cached Digest
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
     Then the response status is 200
@@ -233,8 +233,8 @@ class TestGetReadEndpointReturnsCachedDigest(unittest.TestCase):
         'specs': 1, 'anchors': 0, 'visual': 0,
         'code': 0, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_200_with_cached_content(self, mock_session, mock_tags):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_200_with_cached_content(self, mock_branch, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -268,14 +268,14 @@ class TestGetReadEndpointReturnsCachedDigest(unittest.TestCase):
 class TestGetReadEndpointReturns404WhenNoCache(unittest.TestCase):
     """Scenario: GET Read Endpoint Returns 404 When No Cache
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md does not exist
     When a GET request is sent to /whats-different/read
     Then the response status is 404
     """
 
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_404_no_cache(self, mock_session):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_404_no_cache(self, mock_branch):
         tmpdir = tempfile.mkdtemp()
         handler = MagicMock()
         responses = []
@@ -293,17 +293,17 @@ class TestGetReadEndpointReturns404WhenNoCache(unittest.TestCase):
         shutil.rmtree(tmpdir)
 
 
-class TestGetReadEndpointReturns400WhenNoSession(unittest.TestCase):
-    """Scenario: GET Read Endpoint Returns 400 When No Session
+class TestGetReadEndpointReturns400WhenNoBranch(unittest.TestCase):
+    """Scenario: GET Read Endpoint Returns 400 When No Branch
 
-    Given no file exists at .purlin/runtime/active_remote_session
+    Given no file exists at .purlin/runtime/active_branch
     When a GET request is sent to /whats-different/read
     Then the response status is 400
     And the response body contains an error message
     """
 
-    @patch('serve.get_active_remote_session', return_value=None)
-    def test_returns_400_no_session(self, mock_session):
+    @patch('serve.get_active_branch', return_value=None)
+    def test_returns_400_no_branch(self, mock_branch):
         handler = MagicMock()
         responses = []
         def capture_json(status, data):
@@ -320,7 +320,7 @@ class TestGetReadEndpointReturns400WhenNoSession(unittest.TestCase):
 class TestPostGenerateEndpointReturnsISO8601Timestamp(unittest.TestCase):
     """Scenario: POST Generate Endpoint Returns ISO 8601 Timestamp
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local main
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -332,8 +332,8 @@ class TestPostGenerateEndpointReturnsISO8601Timestamp(unittest.TestCase):
         'code': 1, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_iso_8601_timestamp(self, mock_session, mock_run, mock_tags):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_iso_8601_timestamp(self, mock_branch, mock_run, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -365,7 +365,7 @@ class TestPostGenerateEndpointReturnsISO8601Timestamp(unittest.TestCase):
 class TestPostDeepAnalysisGenerateEndpoint(unittest.TestCase):
     """Scenario: POST Deep Analysis Generate Endpoint Returns Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local main
     When a POST request is sent to /whats-different/deep-analysis/generate
     Then the response status is 200
@@ -374,8 +374,8 @@ class TestPostDeepAnalysisGenerateEndpoint(unittest.TestCase):
     """
 
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_200_with_analysis(self, mock_session, mock_run):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_200_with_analysis(self, mock_branch, mock_run):
         tmpdir = tempfile.mkdtemp()
         analysis_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(analysis_dir)
@@ -412,15 +412,15 @@ class TestPostDeepAnalysisGenerateEndpoint(unittest.TestCase):
 class TestGetDeepAnalysisReadEndpointReturnsCached(unittest.TestCase):
     """Scenario: GET Deep Analysis Read Endpoint Returns Cached Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a GET request is sent to /whats-different/deep-analysis/read
     Then the response status is 200
     And the response body contains an "analysis" field with the cached content
     """
 
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_200_with_cached_analysis(self, mock_session):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_200_with_cached_analysis(self, mock_branch):
         tmpdir = tempfile.mkdtemp()
         analysis_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(analysis_dir)
@@ -451,14 +451,14 @@ class TestGetDeepAnalysisReadEndpointReturnsCached(unittest.TestCase):
 class TestGetDeepAnalysisReadEndpointReturns404(unittest.TestCase):
     """Scenario: GET Deep Analysis Read Endpoint Returns 404 When No Cache
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md does not exist
     When a GET request is sent to /whats-different/deep-analysis/read
     Then the response status is 404
     """
 
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_returns_404_no_cache(self, mock_session):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_returns_404_no_cache(self, mock_branch):
         tmpdir = tempfile.mkdtemp()
         handler = MagicMock()
         responses = []
@@ -479,15 +479,15 @@ class TestGetDeepAnalysisReadEndpointReturns404(unittest.TestCase):
 class TestStalenessInvalidation(unittest.TestCase):
     """Scenario: Standard Digest Generation Deletes Stale Deep Analysis
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
     And features/digests/whats-different-analysis.md does not exist on disk
     """
 
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_generate_deletes_stale_analysis(self, mock_session):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_generate_deletes_stale_analysis(self, mock_branch):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -534,7 +534,7 @@ class TestStalenessInvalidation(unittest.TestCase):
 class TestImpactSummaryAboveDigest(unittest.TestCase):
     """Scenario: Impact Summary Content Appears Above File-Level Digest in HTML
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
@@ -548,8 +548,8 @@ class TestImpactSummaryAboveDigest(unittest.TestCase):
         'specs': 1, 'anchors': 0, 'visual': 0,
         'code': 2, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_both_endpoints_return_content(self, mock_session, mock_tags):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_both_endpoints_return_content(self, mock_branch, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -605,12 +605,12 @@ class TestImpactSummaryAboveDigest(unittest.TestCase):
                         'Impact section must appear before modal body in template')
 
 
-class TestAutoGenerationAfterCollabPull(unittest.TestCase):
-    """Scenario: Auto-Generation After pl-collab-pull Merge
+class TestAutoGenerationAfterRemotePull(unittest.TestCase):
+    """Scenario: Auto-Generation After pl-remote-pull Merge
 
-    Given the agent is on the collab session branch
-    And an active session exists in BEHIND state
-    When the agent runs /pl-collab-pull and the merge succeeds
+    Given the agent is on the collaboration branch
+    And an active branch exists in BEHIND state
+    When the agent runs /pl-remote-pull and the merge succeeds
     Then the generation script is executed as Step 7
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline after the merge summary
@@ -623,16 +623,16 @@ class TestAutoGenerationAfterCollabPull(unittest.TestCase):
         self.assertTrue(os.path.isfile(script_path),
                         f'Generation script not found at {script_path}')
 
-    def test_collab_pull_skill_references_step_7(self):
-        """Verify the pl-collab-pull skill file includes Step 7
+    def test_remote_pull_skill_references_step_7(self):
+        """Verify the pl-remote-pull skill file includes Step 7
         for post-merge digest generation."""
         skill_path = os.path.join(PROJECT_ROOT, '.claude', 'commands',
-                                  'pl-collab-pull.md')
+                                  'pl-remote-pull.md')
         with open(skill_path) as f:
             content = f.read()
 
-        self.assertIn('### 7.', content,
-                      'Step 7 heading not found in pl-collab-pull skill')
+        self.assertIn('7.', content,
+                      'Step 7 reference not found in pl-remote-pull skill')
         self.assertIn('generate_whats_different.sh', content,
                       'Generation script not referenced in Step 7')
 
@@ -652,7 +652,7 @@ class TestAutoGenerationAfterCollabPull(unittest.TestCase):
 class TestStalenessInvalidationChain(unittest.TestCase):
     """Scenario: Stale Impact Summary Absent After Digest Regeneration
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different-analysis.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -660,8 +660,8 @@ class TestStalenessInvalidationChain(unittest.TestCase):
     And subsequent GET /whats-different/deep-analysis/read returns 404
     """
 
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_generate_deletes_analysis_and_read_returns_404(self, mock_session):
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_generate_deletes_analysis_and_read_returns_404(self, mock_branch):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
         os.makedirs(digest_dir)
@@ -710,7 +710,7 @@ class TestStalenessInvalidationChain(unittest.TestCase):
 class TestButtonOpensCachedWithoutRegeneration(unittest.TestCase):
     """Scenario: Button Opens Cached Content Without Regeneration
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a GET request is sent to /whats-different/read
     Then the response status is 200
@@ -722,8 +722,8 @@ class TestButtonOpensCachedWithoutRegeneration(unittest.TestCase):
         'specs': 1, 'anchors': 0, 'visual': 0,
         'code': 0, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_read_returns_cached_without_subprocess(self, mock_session,
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_read_returns_cached_without_subprocess(self, mock_branch,
                                                      mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
@@ -755,8 +755,8 @@ class TestButtonOpensCachedWithoutRegeneration(unittest.TestCase):
 class TestDivergedGenerationReturnsBothDirections(unittest.TestCase):
     """Scenario: DIVERGED Generation Returns Both Directions via Endpoint
 
-    Given an active session "v0.5-sprint" is set
-    And the session is in DIVERGED state
+    Given an active branch "v0.5-sprint" is set
+    And the branch is in DIVERGED state
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
     And the response digest contains both "Your Local Changes" and
@@ -769,8 +769,8 @@ class TestDivergedGenerationReturnsBothDirections(unittest.TestCase):
         'code': 3, 'tests': 1, 'purlin': 0, 'discoveries': 1,
     })
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_diverged_returns_both_sections_with_tags(self, mock_session,
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_diverged_returns_both_sections_with_tags(self, mock_branch,
                                                        mock_run, mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
@@ -814,7 +814,7 @@ class TestDivergedGenerationReturnsBothDirections(unittest.TestCase):
 class TestRegenerateTriggersFFreshGeneration(unittest.TestCase):
     """Scenario: Regenerate Triggers Fresh Generation via Endpoint
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And features/digests/whats-different.md exists on disk
     When a POST request is sent to /whats-different/generate
     Then the response status is 200
@@ -827,8 +827,8 @@ class TestRegenerateTriggersFFreshGeneration(unittest.TestCase):
         'code': 1, 'tests': 0, 'purlin': 0, 'discoveries': 0,
     })
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_generate_overwrites_existing(self, mock_session, mock_run,
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_generate_overwrites_existing(self, mock_branch, mock_run,
                                            mock_tags):
         tmpdir = tempfile.mkdtemp()
         digest_dir = os.path.join(tmpdir, 'features', 'digests')
@@ -873,7 +873,7 @@ class TestRegenerateTriggersFFreshGeneration(unittest.TestCase):
 class TestDeepAnalysisGenerationWritesFile(unittest.TestCase):
     """Scenario: Deep Analysis Generation Returns Analysis via Endpoint
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     And origin/collab/v0.5-sprint has 2 commits not in local collab/v0.5-sprint
     When a POST request is sent to /whats-different/deep-analysis/generate
     Then the response status is 200
@@ -882,8 +882,8 @@ class TestDeepAnalysisGenerationWritesFile(unittest.TestCase):
     """
 
     @patch('serve.subprocess.run')
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
-    def test_generate_returns_analysis_and_file_exists(self, mock_session,
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
+    def test_generate_returns_analysis_and_file_exists(self, mock_branch,
                                                         mock_run):
         tmpdir = tempfile.mkdtemp()
         analysis_dir = os.path.join(tmpdir, 'features', 'digests')
@@ -927,7 +927,7 @@ class TestDeepAnalysisGenerationWritesFile(unittest.TestCase):
 class TestModalCloseButtonPresent(unittest.TestCase):
     """Scenario: Modal Close Button Present in HTML
 
-    Given an active session "v0.5-sprint" is set
+    Given an active branch "v0.5-sprint" is set
     When the dashboard HTML is generated
     Then the What's Different modal template contains an X close button element
     And the modal container has the standard CDD modal overlay pattern
@@ -938,12 +938,12 @@ class TestModalCloseButtonPresent(unittest.TestCase):
     @patch('serve.get_remote_contributors', return_value=[])
     @patch('serve.compute_remote_sync_state', return_value={
         'sync_state': 'AHEAD', 'commits_ahead': 1, 'commits_behind': 0})
-    @patch('serve.get_remote_collab_sessions', return_value=[{
+    @patch('serve.get_branch_collab_branches', return_value=[{
         'name': 'v0.5-sprint', 'branch': 'collab/v0.5-sprint',
         'active': True, 'sync_state': 'AHEAD',
         'commits_ahead': 1, 'commits_behind': 0}])
     @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_active_remote_session', return_value='v0.5-sprint')
+    @patch('serve.get_active_branch', return_value='v0.5-sprint')
     @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.generate_api_status_json', return_value={
         'features': [], 'critic_last_run': ''})
@@ -952,7 +952,7 @@ class TestModalCloseButtonPresent(unittest.TestCase):
     def test_modal_has_close_button_and_overlay(self, *mocks):
         with patch.object(serve, 'CONFIG', {
                  'tools_root': 'tools', 'models': [], 'agents': {}}), \
-             patch.object(serve, '_remote_collab_last_fetch',
+             patch.object(serve, '_branch_collab_last_fetch',
                           '2026-02-27T00:00:00Z'):
             html = serve.generate_html()
 

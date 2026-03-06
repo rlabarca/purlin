@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # generate_whats_different.sh — Generate a What's Different? digest.
 #
-# Usage: generate_whats_different.sh <session_name>
+# Usage: generate_whats_different.sh <branch_name>
 #
 # 1. Runs the extraction tool to produce structured JSON.
 # 2. Invokes Claude CLI in non-interactive mode to synthesize a plain-English digest.
@@ -14,9 +14,9 @@
 
 set -euo pipefail
 
-SESSION="${1:-}"
-if [ -z "$SESSION" ]; then
-    echo "Usage: generate_whats_different.sh <session_name>" >&2
+BRANCH="${1:-}"
+if [ -z "$BRANCH" ]; then
+    echo "Usage: generate_whats_different.sh <branch_name>" >&2
     exit 1
 fi
 
@@ -49,7 +49,7 @@ DIGEST_FILE="${DIGEST_DIR}/whats-different.md"
 mkdir -p "$DIGEST_DIR"
 
 # Step 1: Run extraction
-EXTRACTION_JSON=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$EXTRACT_TOOL" "$SESSION" 2>&1) || {
+EXTRACTION_JSON=$(PURLIN_PROJECT_ROOT="$PROJECT_ROOT" python3 "$EXTRACT_TOOL" "$BRANCH" 2>&1) || {
     echo "Extraction failed: $EXTRACTION_JSON" >&2
     exit 1
 }
@@ -62,7 +62,7 @@ if [ "$SYNC_STATE" = "SAME" ]; then
 # What's Different?
 
 **Generated:** ${DATE}
-**Session:** collab/${SESSION}
+**Branch:** collab/${BRANCH}
 
 Local collab branch is in sync with remote. Nothing to summarize.
 EOF
@@ -79,7 +79,7 @@ AGENT_PROMPT="You are a technical writer for the Purlin framework. Given the str
 # What's Different?
 
 **Generated:** ${DATE}
-**Session:** collab/${SESSION}
+**Branch:** collab/${BRANCH}
 **Sync State:** ${SYNC_STATE}
 
 Then include these sections as appropriate based on the sync state:
@@ -146,7 +146,7 @@ lines = []
 lines.append('# What\\'s Different?')
 lines.append('')
 lines.append('**Generated:** ${DATE}')
-lines.append('**Session:** collab/${SESSION}')
+lines.append('**Branch:** collab/${BRANCH}')
 lines.append('**Sync State:** ${SYNC_STATE}')
 lines.append('')
 
