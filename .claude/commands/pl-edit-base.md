@@ -19,7 +19,7 @@ indicate this is a consumer project, not the Purlin repo itself).
 
 1. Confirm which base file to edit and what change is needed and why.
 2. Read the target base file in full.
-3. Run `/pl-override-conflicts` on all `.purlin/` and `purlin-config-sample/` overrides
+3. Run `/pl-override-edit --scan-only` on all `.purlin/` and `purlin-config-sample/` overrides
    that correspond to the file being changed. If proposed changes would break existing overrides,
    surface them before proceeding.
 4. Apply additive-only principle where possible. For revisionary changes (not extensions), state

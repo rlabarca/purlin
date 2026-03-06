@@ -90,6 +90,8 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
      - Unmodified files: auto-copy
      - Modified files: show three-way diff (old upstream, new upstream, local), offer merge strategies
      - New files: auto-copy
+     - Deleted upstream (unmodified locally): auto-delete, report "Removed: <filename> (no longer in upstream)"
+     - Deleted upstream (modified locally): show local modifications, prompt user; delete on confirmation or preserve with warning
      - **pl-edit-base.md is NEVER synced** (silently excluded)
    - **Top-level script changes:** Track and update `run_builder.sh`, `run_architect.sh`, `run_qa.sh`
      - If user modified: show diff, offer merge strategies

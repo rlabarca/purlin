@@ -209,7 +209,8 @@ When changes exist between old and current SHA, the skill MUST analyze:
   - **Unmodified files**: Auto-copy and report `Updated: <filename>`
   - **Modified files**: Analyze the diff, offer merge strategies, require user approval
   - **New files**: Auto-copy and report `Added: <filename> (new command)`
-  - **Deleted upstream**: Report `DELETED upstream: <filename> (manual cleanup may be required)`
+  - **Deleted upstream (unmodified locally)**: Auto-delete the local copy and report `Removed: <filename> (no longer in upstream)`
+  - **Deleted upstream (modified locally)**: Prompt the user with the local modifications shown. If user confirms deletion, delete and report `Removed: <filename> (local modifications discarded)`. If user declines, preserve the file and report `Preserved: <filename> (no longer in upstream — kept by user request)`
 
 #### 2.4.4 Top-Level Script Changes
 The skill MUST track and intelligently update these files:
@@ -346,6 +347,8 @@ When `--dry-run` is specified:
 - Do NOT update `.purlin/.upstream_sha`
 
 ### 2.12 Stale Artifact Cleanup
+
+**Scope clarification:** Deleted-upstream command files (`.claude/commands/pl-*.md`) are handled in Section 2.4.3, not here. This section covers non-command stale artifacts only (scripts, symlinks, test files from previous Purlin versions).
 
 After a successful update, the skill MUST detect and offer to remove stale artifacts from previous Purlin versions that are no longer needed:
 
@@ -485,6 +488,23 @@ The skill MUST detect when invoked in the standalone Purlin repo (not a consumer
     When /pl-update-purlin is invoked
     Then pl-edit-base.md is silently excluded
     And does not appear in any reports or counts
+
+#### Scenario: Unmodified Deleted-Upstream Command Auto-Removed
+    Given pl-old-command.md exists in `.claude/commands/` and matches the old upstream version
+    And the new upstream version no longer includes pl-old-command.md
+    When /pl-update-purlin is invoked
+    Then pl-old-command.md is auto-deleted from `.claude/commands/`
+    And the report shows "Removed: pl-old-command.md (no longer in upstream)"
+
+#### Scenario: Modified Deleted-Upstream Command Requires Confirmation
+    Given pl-old-command.md exists in `.claude/commands/` with local modifications
+    And the new upstream version no longer includes pl-old-command.md
+    When /pl-update-purlin is invoked
+    Then the skill shows the local modifications
+    And prompts the user: "pl-old-command.md was deleted upstream but has local modifications. Remove it?"
+    When the user confirms
+    Then pl-old-command.md is deleted
+    And the report shows "Removed: pl-old-command.md (local modifications discarded)"
 
 #### Scenario: Standalone Mode Guard Prevents Update in Purlin Repo
     Given the current project IS the Purlin repository (not a consumer project)

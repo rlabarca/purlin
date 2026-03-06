@@ -97,8 +97,7 @@ The Architect owns specs and policies. The Builder owns code, tests, and impleme
 | `/pl-status` | Check CDD status and role-specific action items |
 | `/pl-resume [save\|role]` | Save or restore session state across context clears |
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
-| `/pl-override-edit` | Edit an override file (role-scoped: Builder/QA can only edit their own file; Architect can edit any) |
-| `/pl-override-conflicts` | Check an override file against its base layer for contradictions |
+| `/pl-override-edit` | Edit an override file with built-in conflict scanning (role-scoped: Builder/QA own file only; Architect any). Use `--scan-only` for read-only conflict scan. |
 | `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
 | `/pl-local-push` | Merge isolation branch to collaboration branch -- runs pre-merge handoff checklist (isolated sessions only) |
 | `/pl-local-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |

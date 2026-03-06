@@ -146,11 +146,11 @@ Agents in the Purlin framework's own repository (not a consumer project) may mod
 **Override Editing Rules (apply in all contexts):**
 1. Read existing content first. Never overwrite without reading.
 2. Additive only. Do not delete or contradict existing rules.
-3. No contradictions with base. Surface conflicts with `/pl-override-conflicts` before committing.
+3. No contradictions with base. Surface conflicts with `/pl-override-edit --scan-only` before committing.
 4. No code or script content. Override files are prose instruction documents only.
 5. Commit after editing.
 
-**Commands:** `/pl-override-edit` (role-scoped edit), `/pl-override-conflicts` (conflict scan, all roles), `/pl-edit-base` (base file edit — Purlin repo only, never distributed to consumers).
+**Commands:** `/pl-override-edit` (role-scoped edit with built-in conflict scan; use `--scan-only` for read-only conflict scanning), `/pl-edit-base` (base file edit — Purlin repo only, never distributed to consumers).
 
 ### Path Resolution Conventions
 In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
