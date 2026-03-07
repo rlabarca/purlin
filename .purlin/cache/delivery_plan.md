@@ -6,9 +6,9 @@
 ## Summary
 24 features reset to builder TODO by Architect spec updates. All were previously COMPLETE. Phased delivery manages context across spec-change reviews, grouped by dependency tier and logical cohesion.
 
-## Phase 1 -- Foundations & Infrastructure [IN_PROGRESS]
+## Phase 1 -- Foundations & Infrastructure [COMPLETE]
 **Features:** policy_critic.md, project_init.md, impl_notes_companion.md, context_guard.md, config_layering.md
-**Completion Commit:** --
+**Completion Commit:** fede443
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Core Tools & Process [PENDING]
