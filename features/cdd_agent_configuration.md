@@ -7,6 +7,7 @@
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/context_guard.md
+> Prerequisite: features/test_fixture_repo.md
 > Web Testable: http://localhost:9086
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd

@@ -115,9 +115,11 @@ For agent startup/resume scenarios:
 4. Assert output patterns.
 5. Cleanup.
 
-### 2.10 Critic Validation (Optional)
+### 2.10 Critic Validation
 
-The Critic MAY validate that fixture tags exist for scenarios that reference them. When a feature has `> Test Fixtures:` metadata and a scenario's Given step references a fixture tag, the Critic can check `fixture list` output to confirm the tag exists. This is informational (MEDIUM priority), not blocking.
+The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Builder action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
+
+This validation is also triggered when a feature has `> Test Fixtures:` metadata and a scenario's Given step references a fixture tag by name.
 
 ---
 

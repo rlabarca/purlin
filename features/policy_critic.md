@@ -119,7 +119,14 @@ When a feature has `change_scope: "targeted:..."` and `builder: "DONE"`, the Cri
 *   **Exemption:** Features with `change_scope: "full"`, `"cosmetic"`, or `"dependency-only"` are exempt from this check. Only `targeted:` scopes are audited.
 *   **Suppression when builder is TODO:** When `builder: "TODO"`, the targeted scope completeness check is suppressed entirely. The Builder already has a HIGH-priority action item to implement the feature, which inherently covers all scenarios in the spec. Generating an additional Architect warning for unscoped scenarios is redundant noise.
 
-### 2.11 CDD Decoupling
+### 2.11 Fixture Tag Validation
+When a feature spec declares fixture tags (via a `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags` section, or via `> Test Fixtures:` metadata with Given steps referencing tags), the Critic MUST validate that the declared tags exist in the fixture repo. Missing tags produce a MEDIUM-priority Builder action item.
+
+*   **Purpose:** Prevents features from being marked complete when their declared test infrastructure does not exist. Without this check, specs can declare fixture tags that remain aspirational indefinitely.
+*   **Mechanism:** The Critic parses fixture tag sections from feature specs and cross-references against `fixture list` output. Tags that are declared but missing are flagged.
+*   **Gate impact:** Missing fixture tags do not FAIL the Implementation Gate (they are MEDIUM, not CRITICAL). They generate Builder action items that block `builder: DONE` status until resolved.
+
+### 2.12 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
 ## 3. Configuration
@@ -132,7 +139,7 @@ The following keys in `.purlin/config.json` govern Critic behavior:
 | `critic_llm_enabled` | boolean | `false` | Whether the LLM-based logic drift engine is active. |
 | `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
 
-### 2.12 Verification Effort Classification
+### 2.13 Verification Effort Classification
 The Critic MUST compute a `verification_effort` block for each feature, classifying pending QA work into auto-resolvable and human-required categories. This block is included in the per-feature `critic.json` output alongside `role_status`.
 
 **Taxonomy:**
