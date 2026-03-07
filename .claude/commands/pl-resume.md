@@ -97,12 +97,12 @@ Execute this 8-step sequence:
 Reset the turn counter and session marker so the restore flow starts with a clean context guard state:
 
 ```
-find .purlin/runtime -maxdepth 1 -name 'session_id*' -delete 2>/dev/null; true
+find .purlin/runtime -maxdepth 1 -name 'session_meta*' -delete 2>/dev/null; true
 echo "0" > .purlin/runtime/turn_count
 find .purlin/runtime -maxdepth 1 -name 'turn_count_*' -exec sh -c 'echo "0" > "$1"' _ {} \; 2>/dev/null; true
 ```
 
-This clears both the counter and the session_id files. The session_id deletion is critical: `/clear` may or may not change Claude Code's `session_id`, and concurrent agents write different session_ids to the same directory. Without clearing, the hook's subagent detection sees a stale session_id mismatch and exits silently — producing no output and no counter tracking.
+This clears both the counter and the session_meta files. The session_meta deletion is critical: `/clear` may or may not change Claude Code's `session_id`, and concurrent agents write different session_ids to the same directory. Without clearing, the hook's subagent detection sees a stale session_id mismatch and treats every call as a subagent — reading the counter without incrementing it.
 
 ### Step 1 -- Role Detection (3-Tier Fallback)
 
@@ -183,7 +183,7 @@ Uncommitted:    <none | summary>
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
 - **Final counter reset:** Reset the context guard turn counter and session marker one more time so the user's actual work starts from a clean budget (the restore flow itself may have consumed many turns):
   ```
-  find .purlin/runtime -maxdepth 1 -name 'session_id*' -delete 2>/dev/null; true
+  find .purlin/runtime -maxdepth 1 -name 'session_meta*' -delete 2>/dev/null; true
   echo "0" > .purlin/runtime/turn_count
   find .purlin/runtime -maxdepth 1 -name 'turn_count_*' -exec sh -c 'echo "0" > "$1"' _ {} \; 2>/dev/null; true
   ```
