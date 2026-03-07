@@ -27,6 +27,7 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-muted` | `#64748B` | Secondary text |
 | `--purlin-border` | `#E2E8F0` | Borders, separators |
 | `--purlin-status-good` | `#059669` | DONE/CLEAN |
+| `--purlin-status-auto` | `#65A30D` | AUTO (auto-resolvable QA) |
 | `--purlin-status-todo` | `#D97706` | TODO/WIP |
 | `--purlin-status-warning` | `#EA580C` | Warning states |
 | `--purlin-status-error` | `#DC2626` | FAIL/INFEASIBLE |
@@ -47,6 +48,7 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-muted` | `#94A3B8` |
 | `--purlin-border` | `#1E293B` |
 | `--purlin-status-good` | `#34D399` |
+| `--purlin-status-auto` | `#A3E635` |
 | `--purlin-status-todo` | `#FCD34D` |
 | `--purlin-status-warning` | `#FB923C` |
 | `--purlin-status-error` | `#F87171` |
