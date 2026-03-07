@@ -90,12 +90,14 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 ### 2.7 Builder Workflow
 
-1. The Builder reads the feature spec, sees `> Test Fixtures: <repo-url>` metadata.
-2. The Builder creates tags in the fixture repo following the convention: `<project-ref>/<feature>/<scenario-slug>`.
+1. The Builder reads the feature spec and identifies fixture tag sections declaring needed states.
+2. The Builder creates tags in the fixture repo (at the convention path or per-feature override) following the convention: `<project-ref>/<feature>/<scenario-slug>`.
 3. Each tag points to a commit containing the project state for that scenario.
 4. Each tagged commit has a clear message describing the state it represents.
 5. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
-6. For Purlin-internal fixtures (features in `dev/`), the Builder creates a setup script (`dev/setup_<name>_fixtures.sh`) that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. Test runners SHOULD auto-invoke this script when the fixture repo is missing.
+6. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. Test runners SHOULD auto-invoke this script when the fixture repo is missing.
+   - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_behavior_fixtures.sh`). These are Purlin-specific and not distributed to consumers.
+   - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
 ### 2.8 Integration with /pl-web-verify
 
