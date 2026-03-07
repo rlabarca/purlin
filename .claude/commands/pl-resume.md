@@ -94,15 +94,13 @@ Execute this 8-step sequence:
 
 ### Step 0 -- Reset Context Guard
 
-Reset the turn counter and session marker so the restore flow starts with a clean context guard state:
+Reset the current session's context guard counter:
 
 ```
-find .purlin/runtime -maxdepth 1 -name 'session_meta*' -delete 2>/dev/null; true
-echo "0" > .purlin/runtime/turn_count
-find .purlin/runtime -maxdepth 1 -name 'turn_count_*' -exec sh -c 'echo "0" > "$1"' _ {} \; 2>/dev/null; true
+echo "0" > .purlin/runtime/turn_count_$PPID
 ```
 
-This clears both the counter and the session_meta files. The session_meta deletion is critical: `/clear` may or may not change Claude Code's `session_id`, and concurrent agents write different session_ids to the same directory. Without clearing, the hook's subagent detection sees a stale session_id mismatch and treats every call as a subagent — reading the counter without incrementing it.
+`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. This targets only the current session's counter. Other concurrent agents' counters are unaffected. No wildcard resets or `session_id` file deletions are needed — the PPID-based design makes each agent's files inherently isolated.
 
 ### Step 1 -- Role Detection (3-Tier Fallback)
 
@@ -178,15 +176,9 @@ Uncommitted:    <none | summary>
 ---
 ```
 
-### Step 8 -- Cleanup and Confirm
+### Step 7 -- Cleanup and Confirm
 
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
-- **Final counter reset:** Reset the context guard turn counter and session marker one more time so the user's actual work starts from a clean budget (the restore flow itself may have consumed many turns):
-  ```
-  find .purlin/runtime -maxdepth 1 -name 'session_meta*' -delete 2>/dev/null; true
-  echo "0" > .purlin/runtime/turn_count
-  find .purlin/runtime -maxdepth 1 -name 'turn_count_*' -exec sh -c 'echo "0" > "$1"' _ {} \; 2>/dev/null; true
-  ```
 - Ask: **"Ready to continue from here, or would you like to adjust?"**
 - If the user says "go" (or equivalent), begin executing the work plan.
 - If the user provides modifications, adjust accordingly.
