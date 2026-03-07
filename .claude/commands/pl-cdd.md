@@ -42,39 +42,24 @@ Parse the argument from `$ARGUMENTS`:
 - **`restart`:** Action is `restart`.
 - **Anything else:** Abort with: `Error: Unknown argument '<arg>'. Valid: stop, restart`
 
-### 3. Detect Running Instance
+### 3. Execute Action
 
-Run:
-```bash
-ps aux | grep "[s]erve.py" | grep -- "--project-root"
-```
+#### 3a. Start
 
-Check if the output contains a line matching the current project root. If it does, a CDD server is already running for this project.
+Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<START_SCRIPT>"`
 
-### 4. Execute Action
+The script handles all restart logic internally (see `cdd_lifecycle.md` Section 2.9): if a server is already running, it stops the existing instance and starts fresh on the same port. Print the output from the script (restart notice if applicable, followed by URL).
 
-#### 4a. Start
+If the script exits non-zero, print the error and suggest checking `.purlin/runtime/cdd.log`.
 
-If already running:
-- Read the current port from `.purlin/runtime/cdd.port` and save it as `PREFERRED_PORT`.
-- Stop the existing instance: Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<STOP_SCRIPT>"`
-- Start a new instance with port preference: Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<START_SCRIPT>" -p <PREFERRED_PORT>`
-- If the start fails (non-zero exit, e.g., preferred port still held by OS), retry without `-p` to let the OS assign a new port.
-- Print the URL from the start output.
-
-If not running:
-- Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<START_SCRIPT>"`
-- The script prints the URL on success. Relay the output.
-- If the script exits non-zero, print the error and suggest checking `.purlin/runtime/cdd.log`.
-
-#### 4b. Stop
+#### 3b. Stop
 
 - Run via Bash: `PURLIN_PROJECT_ROOT="<project_root>" bash "<STOP_SCRIPT>"`
 - Relay the output (either confirmation or "not running" message).
 
-#### 4c. Restart
+#### 3c. Restart
 
-- Execute Stop (4b), then Start (4a) sequentially.
+- Execute Stop (3b), then Start (3a) sequentially.
 - Print the new URL from the start output.
 
 ---
@@ -83,6 +68,5 @@ If not running:
 
 - The server runs in the background via `nohup` and persists after the agent session exits.
 - Process detection uses `ps` -- no PID files are involved.
-- When restarting an already-running server, the skill reads the current port from `cdd.port` and passes it via `-p` to preserve the URL across restarts.
-- If the preferred port is unavailable after stop (OS still holding it), the skill retries without `-p` for an OS-assigned port.
+- `start.sh` handles restart-on-rerun internally: it detects existing instances, stops them, and restarts on the same port.
 - To use a specific port manually, invoke `start.sh` directly with `-p`: `bash tools/cdd/start.sh -p 9090`
