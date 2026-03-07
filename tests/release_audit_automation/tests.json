@@ -1,0 +1,84 @@
+{
+  "status": "PASS",
+  "tests_run": 19,
+  "failures": 0,
+  "errors": 0,
+  "details": [
+    {
+      "test": "test_critic_consistency_check (__main__.TestAllScriptsValidJSON.test_critic_consistency_check)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_doc_consistency_check (__main__.TestAllScriptsValidJSON.test_doc_consistency_check)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_instruction_audit (__main__.TestAllScriptsValidJSON.test_instruction_audit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_submodule_safety_audit (__main__.TestAllScriptsValidJSON.test_submodule_safety_audit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verify_dependency_integrity (__main__.TestAllScriptsValidJSON.test_verify_dependency_integrity)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verify_zero_queue (__main__.TestAllScriptsValidJSON.test_verify_zero_queue)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_deprecated_term (__main__.TestCriticConsistencyDeprecated.test_detects_deprecated_term)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_broken_link (__main__.TestDepIntegrityBrokenLink.test_detects_broken_link)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_clean_graph (__main__.TestDepIntegrityClean.test_passes_clean_graph)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_cycle (__main__.TestDepIntegrityCycle.test_detects_cycle)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_reverse_reference (__main__.TestDepIntegrityReverseRef.test_detects_reverse_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_stale_reference (__main__.TestDocConsistencyStaleRef.test_detects_stale_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_contradiction (__main__.TestInstructionAuditContradiction.test_detects_contradiction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_stale_path (__main__.TestInstructionAuditStalePath.test_detects_stale_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_artifact_in_tools (__main__.TestSubmoduleSafetyArtifactInTools.test_detects_artifact_in_tools)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_clean (__main__.TestSubmoduleSafetyClean.test_passes_clean)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_env (__main__.TestSubmoduleSafetyMissingEnv.test_detects_missing_env)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reports_blocking (__main__.TestZeroQueueBlocking.test_reports_blocking)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_all_clean (__main__.TestZeroQueueClean.test_passes_all_clean)",
+      "status": "PASS"
+    }
+  ]
+}

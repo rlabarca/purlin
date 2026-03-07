@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Release audit: verify dependency integrity.
+
+Checks: cycle detection, broken prerequisite links, reverse reference audit.
+Reuses tools/cdd/graph.py for graph construction.
+See features/release_audit_automation.md Section 2.4.
+"""
+import os
+import re
+import sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Add parent paths so we can import graph.py and audit_common
+_framework_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+if _framework_root not in sys.path:
+    sys.path.insert(0, _framework_root)
+
+from tools.release.audit_common import (
+    detect_project_root, make_finding, make_output, output_and_exit,
+)
+from tools.cdd.graph import parse_features, detect_cycles
+
+
+def check_broken_links(features, features_dir):
+    """Check that all prerequisite links resolve to existing feature files."""
+    findings = []
+    for node_id, data in sorted(features.items()):
+        for prereq_id in data["prerequisites"]:
+            # Check if the prerequisite exists as a parsed feature
+            if prereq_id not in features:
+                prereq_file = prereq_id.replace("_", ".") + ".md"
+                # Also try underscore-only version
+                if not os.path.exists(os.path.join(features_dir, prereq_file)):
+                    prereq_file = prereq_id + ".md"
+                findings.append(make_finding(
+                    "CRITICAL", "broken_link",
+                    os.path.join("features", data["filename"]),
+                    f"Prerequisite '{prereq_file}' does not exist",
+                ))
+    return findings
+
+
+def check_reverse_references(features, features_dir):
+    """Check for parent features that reference child filenames in body text."""
+    findings = []
+    # Build parent -> children map (parent is the prerequisite, children depend on it)
+    parent_to_children = {}
+    for node_id, data in features.items():
+        for prereq_id in data["prerequisites"]:
+            if prereq_id in features:
+                parent_to_children.setdefault(prereq_id, []).append(node_id)
+
+    # For each parent, check if its body references any child filename
+    for parent_id, child_ids in parent_to_children.items():
+        parent_data = features[parent_id]
+        parent_path = os.path.join(features_dir, parent_data["filename"])
+        try:
+            with open(parent_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except (IOError, OSError):
+            continue
+
+        # Skip prerequisite lines themselves
+        lines = content.split('\n')
+        body_lines = [
+            l for l in lines
+            if not l.strip().startswith('> Prerequisite:')
+        ]
+        body_text = '\n'.join(body_lines)
+
+        for child_id in child_ids:
+            child_filename = features[child_id]["filename"]
+            if child_filename in body_text:
+                findings.append(make_finding(
+                    "CRITICAL", "reverse_reference",
+                    os.path.join("features", parent_data["filename"]),
+                    f"Parent references child '{child_filename}' in body text "
+                    f"(structural reversal)",
+                ))
+    return findings
+
+
+def main(project_root=None):
+    if project_root is None:
+        project_root = detect_project_root(SCRIPT_DIR)
+
+    features_dir = os.path.join(project_root, "features")
+    features = parse_features(features_dir)
+    findings = []
+
+    # 1. Cycle detection
+    cycles = detect_cycles(features)
+    for cycle_path in cycles:
+        findings.append(make_finding(
+            "CRITICAL", "cycle",
+            "features/",
+            f"Dependency cycle detected: {cycle_path}",
+        ))
+
+    # 2. Broken links
+    findings.extend(check_broken_links(features, features_dir))
+
+    # 3. Reverse reference audit
+    findings.extend(check_reverse_references(features, features_dir))
+
+    result = make_output("verify_dependency_integrity", findings)
+    return result
+
+
+if __name__ == "__main__":
+    output_and_exit(main())
