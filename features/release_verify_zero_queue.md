@@ -43,30 +43,33 @@ If all features satisfy the conditions, the Architect reports the total feature 
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: All features satisfy zero-queue conditions
+#### Scenario: All features satisfy zero-queue conditions (auto-test-only)
 Given `tools/cdd/status.sh` reports every feature with `architect: "DONE"`, `builder: "DONE"`, and `qa` as `"CLEAN"` or `"N/A"`,
 When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the total feature count and confirms the queue is clear,
 And proceeds to the next release step.
 
-#### Scenario: Feature with outstanding Builder work
+#### Scenario: Feature with outstanding Builder work (auto-test-only)
 Given at least one feature has `builder: "TODO"`,
 When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
-#### Scenario: Feature with open QA discoveries
+#### Scenario: Feature with open QA discoveries (auto-test-only)
 Given at least one feature has `qa: "HAS_OPEN_ITEMS"`,
 When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
-#### Scenario: Feature with outstanding Architect work
+#### Scenario: Feature with outstanding Architect work (auto-test-only)
 Given at least one feature has `architect: "TODO"`,
 When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
+
+### Manual Scenarios (Architect Execution)
+
+None.

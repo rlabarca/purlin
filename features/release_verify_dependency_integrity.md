@@ -51,45 +51,48 @@ The classification is a judgment call by the Architect. The audit reports all ma
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: Graph is current and valid
+#### Scenario: Graph is current and valid (auto-test-only)
 Given `.purlin/cache/dependency_graph.json` is up to date and contains no cycles or broken links,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the total node count and confirms graph integrity,
 And proceeds to the next release step.
 
-#### Scenario: Graph file is stale or absent
+#### Scenario: Graph file is stale or absent (auto-test-only)
 Given `.purlin/cache/dependency_graph.json` is missing or older than the most recently modified feature file,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect runs `tools/cdd/status.sh --graph` to regenerate the cache file,
 And proceeds with the freshly generated graph.
 
-#### Scenario: Cycle detected in dependency graph
+#### Scenario: Cycle detected in dependency graph (auto-test-only)
 Given a chain of `> Prerequisite:` links forms a cycle in the feature graph,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the specific cycle path (list of feature files forming the cycle),
 And halts the release until the cycle is broken.
 
-#### Scenario: Broken prerequisite link detected
+#### Scenario: Broken prerequisite link detected (auto-test-only)
 Given a feature file declares a `> Prerequisite:` link to a file that does not exist in `features/`,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the specific broken link (source file and missing target path),
 And halts the release until the link is corrected.
 
-#### Scenario: Reverse reference audit detects structural reversal
+#### Scenario: Reverse reference audit detects structural reversal (auto-test-only)
 Given a parent feature that lists a child feature as one of its own trigger points or describes the child's runtime behavior,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports the structural reversal and halts the release.
 
-#### Scenario: Reverse reference audit detects example coupling
+#### Scenario: Reverse reference audit detects example coupling (auto-test-only)
 Given a parent feature that uses a child's filename as a concrete example in Gherkin scenarios,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports it as a warning but does not halt the release.
 
-#### Scenario: Reverse reference audit finds no issues
+#### Scenario: Reverse reference audit finds no issues (auto-test-only)
 Given no parent feature body-references any of its children,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports "reverse reference audit: clean" and proceeds.
+
+### Manual Scenarios (Architect Execution)
+
+None.

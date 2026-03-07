@@ -54,28 +54,29 @@ This step is registered in `tools/release/global_steps.json` as:
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: Clean audit with no issues
+#### Scenario: Clean audit with no issues (auto-test-only)
 Given all four `.purlin/` override files are present and consistent with the base layer,
 When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect reports "Instruction audit: CLEAN — no contradictions, stale paths, or terminology mismatches found."
 And no commits are made.
 
-#### Scenario: Contradiction detected and corrected
+#### Scenario: Contradiction detected and corrected (auto-test-only)
 Given an override file contains a rule that directly negates a base-layer rule,
 When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect identifies the specific contradiction (file, rule, conflicting base text),
 And revises the override to remove or reconcile the contradiction,
 And commits with message `fix(overrides): <description>`.
 
-#### Scenario: Stale path reference corrected
+#### Scenario: Stale path reference corrected (auto-test-only)
 Given an override file references a file path that no longer exists in the current codebase,
 When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect updates the path reference to the correct current location,
 And commits with message `fix(overrides): update stale path reference in <file>`.
+
+### Manual Scenarios (Architect Execution)
 
 #### Scenario: Audit blocked by unresolvable base-layer conflict
 Given an override rule reveals a genuine error in the base layer that cannot be corrected in the override alone,

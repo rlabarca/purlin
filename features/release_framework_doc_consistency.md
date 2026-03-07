@@ -51,32 +51,35 @@ Any inconsistency found is corrected using `/pl-edit-base` (for base instruction
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: All instruction files are internally consistent
+#### Scenario: All instruction files are internally consistent (auto-test-only)
 Given all five instruction files and README.md are mutually consistent,
 When the Architect executes the `doc_consistency_framework` step,
 Then the Architect reports "Framework instruction audit: CLEAN."
 And no commits are made.
 
-#### Scenario: Terminology mismatch between instruction files
+#### Scenario: Terminology mismatch between instruction files (auto-test-only)
 Given one instruction file uses a deprecated role name or lifecycle status label that differs from another,
 When the Architect executes the `doc_consistency_framework` step,
 Then the Architect identifies the specific mismatch (file, section, conflicting term),
 And corrects the stale file using `/pl-edit-base`,
 And commits with message `fix(instructions): align terminology in <file>`.
 
-#### Scenario: Stale path reference in instruction file
+#### Scenario: Stale path reference in instruction file (auto-test-only)
 Given an instruction file references a tool path or config path that no longer exists,
 When the Architect executes the `doc_consistency_framework` step,
 Then the Architect updates the reference to the correct current path using `/pl-edit-base`,
 And commits the correction.
 
-#### Scenario: README inconsistent with instruction file content
+#### Scenario: README inconsistent with instruction file content (auto-test-only)
 Given README.md describes framework behavior that no longer matches the current instruction files,
 When the Architect executes the `doc_consistency_framework` step,
 Then the Architect identifies the specific discrepancy,
 And updates README.md to match the current instruction content,
 And commits the correction.
+
+### Manual Scenarios (Architect Execution)
+
+None.

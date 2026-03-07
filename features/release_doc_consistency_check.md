@@ -62,33 +62,34 @@ If the user declines all gaps, proceed without changes.
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: Documentation is fully consistent
+#### Scenario: Documentation is fully consistent (auto-test-only)
 Given README.md and all documentation files accurately reflect the current feature set and file layout,
 When the Architect executes the `purlin.doc_consistency_check` step,
 Then the Architect reports "Documentation check: CLEAN — no inconsistencies found."
 And no commits are made.
 
-#### Scenario: Stale feature description corrected
+#### Scenario: Stale feature description corrected (auto-test-only)
 Given README.md describes a feature behavior that was changed in the current release cycle,
 When the Architect executes the `purlin.doc_consistency_check` step,
 Then the Architect updates the description to match the current spec,
 And commits with message `docs(readme): <description of change>`.
 
-#### Scenario: Reference to removed functionality corrected
+#### Scenario: Reference to removed functionality corrected (auto-test-only)
 Given README.md references a command, config option, or behavior that no longer exists in the spec,
 When the Architect executes the `purlin.doc_consistency_check` step,
 Then the Architect removes or replaces the stale reference,
 And commits the correction.
 
-#### Scenario: Stale file path corrected
+#### Scenario: Stale file path corrected (auto-test-only)
 Given documentation references a directory or file path that has been renamed or relocated,
 When the Architect executes the `purlin.doc_consistency_check` step,
 Then the Architect updates the path to its current correct location,
 And commits with message `docs(<scope>): update stale path reference`.
+
+### Manual Scenarios (Architect Execution)
 
 #### Scenario: Coverage gaps exist and user approves some additions
 Given the feature set contains areas not represented in README.md,

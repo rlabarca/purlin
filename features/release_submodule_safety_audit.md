@@ -174,36 +174,37 @@ not this file).
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: Clean audit — all checks pass
+#### Scenario: Clean audit — all checks pass (auto-test-only)
 Given all Python tools, shell scripts, and instruction files comply with the submodule safety contract,
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect reports "Submodule Safety Audit: CLEAN — all 7 check categories passed."
 And no commits are made.
 
-#### Scenario: CRITICAL finding — missing PURLIN_PROJECT_ROOT check in Python tool
+#### Scenario: CRITICAL finding — missing PURLIN_PROJECT_ROOT check in Python tool (auto-test-only)
 Given a Python tool performs directory climbing without first checking os.environ.get('PURLIN_PROJECT_ROOT'),
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect identifies the specific tool file and line,
 And reports a CRITICAL finding in Check Category 1,
 And halts the release without executing subsequent steps.
 
-#### Scenario: CRITICAL finding — reversed climbing priority
+#### Scenario: CRITICAL finding — reversed climbing priority (auto-test-only)
 Given a Python tool checks ../../.purlin/config.json (nearer path) before ../../../.purlin/config.json,
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect identifies the specific tool and the incorrect path order,
 And reports a CRITICAL finding in Check Category 2,
 And halts the release.
 
-#### Scenario: CRITICAL finding — artifact written inside tools/
+#### Scenario: CRITICAL finding — artifact written inside tools/ (auto-test-only)
 Given a script writes a .pid or .log file to a path inside the tools/ directory tree,
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect identifies the specific script and write target,
 And reports a CRITICAL finding in Check Category 3,
 And halts the release.
+
+### Manual Scenarios (Architect Execution)
 
 #### Scenario: WARNING finding — unguarded json.load confirmed by user
 Given a Python tool calls json.load() on a config file without a try/except block,

@@ -55,31 +55,34 @@ The Architect commits with message `docs(readme): update Role of the Critic sect
 ## 3. Scenarios
 
 ### Automated Scenarios
-None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
-#### Scenario: Clean audit — README updated
+#### Scenario: Clean audit — README updated (auto-test-only)
 Given all Critic-related files are consistent with no deprecated terminology, routing conflicts, or missing mandates,
 When the Architect executes the `critic_consistency_check` step,
 Then the Architect produces a findings table with all items at OK,
 And writes or updates the `## The Critic` section in README.md,
 And commits with message `docs(readme): update Role of the Critic section`.
 
-#### Scenario: Deprecated "quality gate" terminology found
+#### Scenario: Deprecated "quality gate" terminology found (auto-test-only)
 Given one or more files still use "quality gate" instead of "coordination engine",
 When the Architect executes Phase 1 of the `critic_consistency_check` step,
 Then the Architect reports the finding as CRITICAL with the specific file and location,
 And halts without proceeding to Phase 2 or the next release step.
 
-#### Scenario: Routing rule inconsistency found
+#### Scenario: Routing rule inconsistency found (auto-test-only)
 Given the SPEC_DISPUTE routing rule differs between `policy_critic.md` and HOW_WE_WORK_BASE Section 7.5,
 When the Architect executes Phase 1 of the `critic_consistency_check` step,
 Then the Architect reports the specific discrepancy as a CRITICAL finding,
 And halts until the inconsistency is resolved and the step is re-run.
 
-#### Scenario: WARNING-level finding does not halt
+#### Scenario: WARNING-level finding does not halt (auto-test-only)
 Given a finding is classified as WARNING (non-critical inconsistency),
 When the Architect completes Phase 1,
 Then the Architect proceeds to Phase 2 (README update) after reporting the warning,
 And notes the warning in the README update commit message.
+
+### Manual Scenarios (Architect Execution)
+
+None.
