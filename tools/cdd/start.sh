@@ -52,14 +52,32 @@ find_cdd_pid() {
 EXISTING_PID=$(find_cdd_pid)
 
 if [ -n "$EXISTING_PID" ]; then
-    # Already running — print URL and exit (idempotent start, §2.9)
+    # Restart-on-rerun (§2.9): stop existing, start fresh on same port
+    PREVIOUS_PORT=""
     if [ -f "$PORT_FILE" ]; then
-        RUNNING_PORT=$(cat "$PORT_FILE")
-        echo "http://localhost:$RUNNING_PORT"
-    else
-        echo "CDD server already running (PID $EXISTING_PID) but port file missing"
+        PREVIOUS_PORT=$(cat "$PORT_FILE")
     fi
-    exit 0
+
+    # Stop existing process (same logic as stop.sh §2.5)
+    kill "$EXISTING_PID" 2>/dev/null
+    for i in $(seq 1 20); do
+        if ! kill -0 "$EXISTING_PID" 2>/dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+    if kill -0 "$EXISTING_PID" 2>/dev/null; then
+        kill -9 "$EXISTING_PID" 2>/dev/null
+    fi
+    rm -f "$PORT_FILE"
+
+    # Prefer previous port unless user specified -p
+    if [ -z "$OVERRIDE_PORT" ] && [ -n "$PREVIOUS_PORT" ]; then
+        OVERRIDE_PORT="$PREVIOUS_PORT"
+    fi
+    RESTARTING=true
+else
+    RESTARTING=false
 fi
 
 # Clean stale port file if no process is running (§2.4 step 2)
@@ -83,6 +101,9 @@ VERIFY_PID=$(find_cdd_pid)
 
 if [ -n "$VERIFY_PID" ] && [ -f "$PORT_FILE" ]; then
     PORT=$(cat "$PORT_FILE")
+    if [ "$RESTARTING" = true ]; then
+        echo "Restarted CDD server on port $PORT"
+    fi
     echo "http://localhost:$PORT"
 else
     echo "ERROR: CDD Monitor failed to start. Check $RUNTIME_DIR/cdd.log" >&2

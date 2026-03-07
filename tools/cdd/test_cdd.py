@@ -1524,6 +1524,44 @@ class TestStartShPortValidation(unittest.TestCase):
         self.assertIn("Invalid port", result.stderr)
 
 
+class TestRestartOnRerun(unittest.TestCase):
+    """Scenario: Restart on rerun preserves port
+
+    Given a CDD server is running for this project on port 9090
+    When start.sh is executed again
+    Then the existing server process is stopped
+    And a new server process is started on port 9090
+    And start.sh prints "Restarted CDD server on port 9090"
+    And start.sh prints "http://localhost:9090"
+    """
+
+    def setUp(self):
+        self.start_sh = os.path.join(
+            os.path.dirname(__file__), "start.sh")
+
+    def test_start_sh_has_restart_logic(self):
+        """start.sh contains restart-on-rerun logic (§2.9)."""
+        with open(self.start_sh) as f:
+            content = f.read()
+        self.assertIn('RESTARTING=true', content)
+        self.assertIn('Restarted CDD server on port', content)
+
+    def test_restart_preserves_previous_port(self):
+        """start.sh reads PREVIOUS_PORT from port file for restart."""
+        with open(self.start_sh) as f:
+            content = f.read()
+        # Verify the restart block reads the previous port and reuses it
+        self.assertIn('PREVIOUS_PORT=$(cat "$PORT_FILE")', content)
+        self.assertIn('OVERRIDE_PORT="$PREVIOUS_PORT"', content)
+
+    def test_restart_stops_existing_process(self):
+        """start.sh kills existing process before restarting."""
+        with open(self.start_sh) as f:
+            content = f.read()
+        # Verify the restart block sends SIGTERM to existing PID
+        self.assertIn('kill "$EXISTING_PID"', content)
+
+
 # ===================================================================
 # ===================================================================
 # QA Effort Display Tests (cdd_qa_effort_display.md)

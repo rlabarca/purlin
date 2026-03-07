@@ -17,6 +17,8 @@
 #         Must use hookSpecificOutput.additionalContext for agent visibility.
 
 set -uo pipefail
+# Advisory hook — must NEVER block the agent. Trap ensures exit 0 on any failure.
+trap 'exit 0' ERR
 
 # Read hook input from stdin (Claude Code sends JSON with session_id, etc.)
 INPUT=$(cat 2>/dev/null || echo '{}')
