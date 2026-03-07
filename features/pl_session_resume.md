@@ -141,9 +141,9 @@ The skill determines the agent's role using the following priority:
 
 #### 2.3.2 Step 2 -- Checkpoint Detection
 
-- Check if `.purlin/cache/session_checkpoint.md` exists.
-- If **found:** Read the file. Present the saved state as a summary block. Use it to orient the session (the checkpoint's "Next" list becomes the starting work plan).
-- If **not found:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
+- Use a non-erroring existence check (e.g., Bash `test -f .purlin/cache/session_checkpoint.md && echo EXISTS || echo MISSING`) to detect the checkpoint file. Do NOT use the Read tool for existence detection — it errors on missing files and cancels sibling parallel tool calls.
+- If **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. Use it to orient the session (the checkpoint's "Next" list becomes the starting work plan).
+- If **MISSING:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
 
 #### 2.3.3 Step 3 -- Instruction Reload (Fresh Sessions Only)
 

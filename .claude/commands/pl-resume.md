@@ -114,10 +114,10 @@ rm -f .purlin/runtime/turn_count_${PPID}_* && rm -f .purlin/runtime/session_meta
 
 ### Step 2 -- Checkpoint Detection
 
-Check if `.purlin/cache/session_checkpoint.md` exists.
+Use Bash `test -f .purlin/cache/session_checkpoint.md && echo EXISTS || echo MISSING` to check for the checkpoint file. Do NOT use the Read tool for this check — Read errors on missing files and cancels sibling parallel calls.
 
-- **Found:** Read the file. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan.
-- **Not found:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
+- **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan.
+- **MISSING:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
 
 ### Step 3 -- Instruction Reload (Fresh Sessions Only)
 
