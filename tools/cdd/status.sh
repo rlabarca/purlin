@@ -32,6 +32,10 @@ run_critic_if_needed() {
     fi
 }
 
+# Suppress Python SyntaxWarnings from serve.py (e.g., invalid escape sequences)
+# so they don't pollute JSON output when callers pipe stdout to a parser.
+export PYTHONWARNINGS=ignore
+
 if [ "${1:-}" = "--graph" ]; then
     exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-graph
 elif [ "${1:-}" = "--incomplete" ]; then
