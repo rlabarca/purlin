@@ -144,6 +144,7 @@ Present the user with:
 *   Critic report summary for this feature (spec gate status, implementation gate status, any warnings).
 *   **Verification scope:** the regression scope mode and which scenarios are queued.
 *   Number of manual scenarios to verify (after scope filtering).
+*   **Fixture awareness:** If the Critic report for this feature includes a `fixture_repo_unavailable` finding, inform the user that the fixture infrastructure has not been created yet. Web-verify and automated test results for fixture-backed scenarios will be INCONCLUSIVE until the Builder creates the fixture repo. This is a Builder-routable item, not a QA failure -- do not record it as a discovery.
 
 ### 5.2 Scenario-by-Scenario Walkthrough
 For each Manual Scenario in the feature file:
