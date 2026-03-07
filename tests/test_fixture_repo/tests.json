@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "tests_run": 10,
+  "failures": 0,
+  "errors": 0,
+  "details": [
+    {
+      "test": "test_checkout_creates_temp_dir (__main__.TestCheckout.test_checkout_creates_temp_dir)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checkout_prints_path_to_stdout (__main__.TestCheckout.test_checkout_prints_path_to_stdout)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checkout_to_explicit_dir (__main__.TestCheckoutExplicitDir.test_checkout_to_explicit_dir)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cleanup_removes_dir (__main__.TestCleanup.test_cleanup_removes_dir)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_refuses_non_temp_path (__main__.TestCleanupRefusesNonTemp.test_refuses_non_temp_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_list_all_tags (__main__.TestListAll.test_list_all_tags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_list_sorted_alphabetically (__main__.TestListAll.test_list_sorted_alphabetically)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_filter_by_ref (__main__.TestListFilter.test_filter_by_ref)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prune_identifies_orphan (__main__.TestPruneOrphans.test_prune_identifies_orphan)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prune_detects_tombstoned (__main__.TestPruneTombstone.test_prune_detects_tombstoned)",
+      "status": "PASS"
+    }
+  ]
+}
