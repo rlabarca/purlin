@@ -576,6 +576,75 @@ class TestSummaryReporting(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Test runner auto-creates fixtures when missing
+# ===================================================================
+
+class TestAutoCreateFixtures(unittest.TestCase):
+    """Scenario: Test runner auto-creates fixtures when missing
+
+    Given the fixture repo does not exist at the expected path
+    When the test runner is invoked
+    Then the runner executes dev/setup_behavior_fixtures.sh
+    And the fixture repo is created with all required tags
+    And tests proceed normally after setup
+    """
+
+    def test_setup_script_creates_fixture_repo(self):
+        """Setup script creates a valid fixture repo at the target path."""
+        target = tempfile.mkdtemp(prefix="fixture-autocreate-")
+        shutil.rmtree(target)  # Remove so the script creates it fresh
+
+        result = subprocess.run(
+            ["bash", SETUP_SCRIPT, target],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(
+            result.returncode, 0,
+            f"setup script failed: {result.stderr}",
+        )
+        self.assertTrue(os.path.isdir(target), "Fixture repo should be created")
+
+        # Verify tags exist
+        tag_result = subprocess.run(
+            ["git", "-C", target, "tag"],
+            capture_output=True, text=True,
+        )
+        tags = tag_result.stdout.strip().split("\n")
+        self.assertGreater(len(tags), 0, "Fixture repo should have tags")
+
+        # Check for required tags from the spec
+        required_prefixes = [
+            "main/cdd_startup_controls/",
+            "main/pl_session_resume/",
+            "main/pl_help/",
+        ]
+        for prefix in required_prefixes:
+            matching = [t for t in tags if t.startswith(prefix)]
+            self.assertGreater(
+                len(matching), 0,
+                f"Expected at least one tag with prefix '{prefix}'",
+            )
+
+        shutil.rmtree(target)
+
+    def test_test_runner_has_auto_creation_logic(self):
+        """The bash test runner contains auto-creation logic."""
+        with open(TEST_HARNESS) as f:
+            content = f.read()
+
+        self.assertIn(
+            "setup_behavior_fixtures.sh",
+            content,
+            "Test runner should reference the setup script",
+        )
+        self.assertIn(
+            "Auto-creating",
+            content,
+            "Test runner should have auto-creation message",
+        )
+
+
+# ===================================================================
 # Test result output
 # ===================================================================
 

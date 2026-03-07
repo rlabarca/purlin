@@ -31,19 +31,23 @@ PREVIOUS_FIXTURE_DIR=""
 
 usage() {
     cat <<'USAGE'
-Usage: test_agent_behavior.sh --fixture-repo <path-or-url> [options]
+Usage: test_agent_behavior.sh [options]
 
 Agent behavior test harness. Runs claude --print against fixture repo
 states to verify agent startup, resume, and help behavior.
 
 Options:
-  --fixture-repo <url>   Path or URL to fixture repo (required)
+  --fixture-repo <url>   Path or URL to fixture repo (default: /tmp/purlin-behavior-fixtures)
+                         Auto-created via dev/setup_behavior_fixtures.sh if missing
   --model <model>        Claude model (default: claude-haiku-4-5-20251001)
   --write-results        Write tests.json to tests/agent_behavior_tests/
   -h, --help             Show this help
 
 Examples:
-  # Run with local fixture repo
+  # Run with auto-created fixtures (simplest)
+  ./dev/test_agent_behavior.sh
+
+  # Run with explicit fixture repo
   ./dev/test_agent_behavior.sh --fixture-repo /tmp/purlin-behavior-fixtures
 
   # Run with specific model and write results
@@ -65,8 +69,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$FIXTURE_REPO" ]]; then
-    echo "Error: --fixture-repo is required" >&2
-    usage
+    # Default to standard fixture path
+    FIXTURE_REPO="/tmp/purlin-behavior-fixtures"
+fi
+
+# Auto-create fixture repo if it doesn't exist
+if [[ ! -d "$FIXTURE_REPO" ]]; then
+    echo "Fixture repo not found at: $FIXTURE_REPO"
+    echo "Auto-creating via dev/setup_behavior_fixtures.sh..."
+    bash "$SCRIPT_DIR/setup_behavior_fixtures.sh" "$FIXTURE_REPO"
+    echo ""
 fi
 
 # --- Helper Functions ---

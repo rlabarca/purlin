@@ -1,9 +1,17 @@
 {
   "status": "PASS",
-  "tests_run": 18,
+  "tests_run": 20,
   "failures": 0,
   "errors": 0,
   "details": [
+    {
+      "test": "test_setup_script_creates_fixture_repo (__main__.TestAutoCreateFixtures.test_setup_script_creates_fixture_repo)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_test_runner_has_auto_creation_logic (__main__.TestAutoCreateFixtures.test_test_runner_has_auto_creation_logic)",
+      "status": "PASS"
+    },
     {
       "test": "test_assertion_detects_builder_header (__main__.TestCommandTableAssertion.test_assertion_detects_builder_header)",
       "status": "PASS"
