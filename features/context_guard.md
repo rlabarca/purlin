@@ -70,6 +70,23 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 - **When guard is disabled** (`context_guard: false` for the current agent): No JSON output is produced. The counter still increments in the background so that re-enabling the guard mid-session shows an accurate count.
 - **Context cost:** ~8-12 tokens per message. At 45 turns = ~360-540 tokens (<0.3% of usable context).
 
+### 2.4.1 Color-Coded Stderr Output
+
+The user-visible stderr status line uses ANSI true-color (24-bit) escape codes to signal proximity to the threshold. Colors are drawn from the project's design tokens (`design_visual_standards.md`). The JSON `additionalContext` output remains uncolored (plain text) — ANSI codes in JSON would not render correctly.
+
+**Color zones (based on percentage of threshold consumed):**
+
+| Zone | Condition | Color Token | Hex | ANSI Code |
+|------|-----------|-------------|-----|-----------|
+| Normal | COUNT < 80% of THRESHOLD | No color | — | (default terminal color) |
+| Warning | COUNT >= 80% of THRESHOLD | `--purlin-status-warning` | `#FB923C` | `\033[38;2;251;146;60m` |
+| Critical | COUNT >= 92% of THRESHOLD | `--purlin-status-error` | `#F87171` | `\033[38;2;248;113;113m` |
+
+- **Boundary math:** Warning triggers at `COUNT >= THRESHOLD * 0.80` (within 20% of the limit). Critical triggers at `COUNT >= THRESHOLD * 0.92` (within 8% of the limit). Use integer arithmetic: `WARN_AT = THRESHOLD * 80 / 100`, `CRIT_AT = THRESHOLD * 92 / 100`.
+- **Exceeded state** (COUNT >= THRESHOLD): Uses the Critical color. The evacuation instructions are also colored.
+- **Reset code:** Every colored stderr line MUST end with `\033[0m` to reset the terminal color.
+- **No color when piped:** If stderr is not a terminal (`! -t 2`), omit ANSI codes entirely (plain text fallback). This prevents garbled output when stderr is redirected to a file or pipe.
+
 ### 2.5 Hook Registration
 
 - The hook is registered in the project-level `.claude/settings.json` under the `hooks` key, as a `PostToolUse` hook.
@@ -252,6 +269,61 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     When the context guard script runs stale file cleanup
     Then session_meta_<PID> is deleted
     And turn_count_<PID> is deleted
+
+#### Scenario: Stderr output is uncolored in normal zone
+
+    Given the context_guard_threshold is set to 50
+    And the turn count for the current AGENT_ID is currently 9
+    And stderr is a terminal
+    When the context guard script runs
+    Then stderr contains "CONTEXT GUARD: 10 / 50 used" without ANSI escape codes
+
+#### Scenario: Stderr output is warning-colored when within 20% of limit
+
+    Given the context_guard_threshold is set to 50
+    And the turn count for the current AGENT_ID is currently 39
+    And stderr is a terminal
+    When the context guard script runs
+    Then stderr contains the warning color code "\033[38;2;251;146;60m"
+    And stderr contains "CONTEXT GUARD: 40 / 50 used"
+    And stderr ends with the reset code "\033[0m"
+
+#### Scenario: Stderr output is critical-colored when within 8% of limit
+
+    Given the context_guard_threshold is set to 50
+    And the turn count for the current AGENT_ID is currently 45
+    And stderr is a terminal
+    When the context guard script runs
+    Then stderr contains the critical color code "\033[38;2;248;113;113m"
+    And stderr contains "CONTEXT GUARD: 46 / 50 used"
+    And stderr ends with the reset code "\033[0m"
+
+#### Scenario: Exceeded threshold uses critical color
+
+    Given the context_guard_threshold is set to 10
+    And the turn count for the current AGENT_ID is currently 10
+    And stderr is a terminal
+    When the context guard script runs
+    Then stderr contains the critical color code "\033[38;2;248;113;113m"
+    And stderr contains "CONTEXT GUARD: 11 / 10 used -- Run /pl-resume save"
+    And stderr ends with the reset code "\033[0m"
+
+#### Scenario: No ANSI codes when stderr is not a terminal
+
+    Given the context_guard_threshold is set to 50
+    And the turn count for the current AGENT_ID is currently 45
+    And stderr is redirected to a file
+    When the context guard script runs
+    Then stderr output contains no ANSI escape codes
+    And stderr contains "CONTEXT GUARD: 46 / 50 used"
+
+#### Scenario: JSON additionalContext remains uncolored regardless of zone
+
+    Given the context_guard_threshold is set to 50
+    And the turn count for the current AGENT_ID is currently 45
+    And stderr is a terminal
+    When the context guard script runs
+    Then stdout JSON additionalContext contains "CONTEXT GUARD: 46 / 50 used" without ANSI codes
 
 ### Manual Scenarios (Human Verification Required)
 
