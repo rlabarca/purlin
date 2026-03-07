@@ -542,6 +542,216 @@ fi
 cleanup_sandbox
 
 ###############################################################################
+# Scenario 22: Stderr output is uncolored in normal zone
+###############################################################################
+echo ""
+echo "[Scenario] Stderr output is uncolored in normal zone"
+setup_sandbox
+
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-22" "session-22"
+echo "9" > "$SANDBOX/.purlin/runtime/turn_count_agent-22"
+
+# Use script(1) to simulate a terminal for stderr
+STDERR_FILE="$SANDBOX/stderr_normal"
+if [[ "$(uname)" == "Darwin" ]]; then
+    script -q "$STDERR_FILE" bash -c '
+        echo "{\"session_id\":\"session-22\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-22" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' >/dev/null 2>&1
+else
+    script -qc '
+        echo "{\"session_id\":\"session-22\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-22" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' "$STDERR_FILE" >/dev/null 2>&1
+fi
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 10 / 50 used" && \
+   ! echo "$STDERR_OUTPUT" | grep -q $'\033\[38;2;'; then
+    log_pass "Normal zone: no ANSI color codes in stderr"
+else
+    log_fail "Expected uncolored 'CONTEXT GUARD: 10 / 50 used', got: '$STDERR_OUTPUT'"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 23: Stderr output is warning-colored when within 20% of limit
+###############################################################################
+echo ""
+echo "[Scenario] Stderr output is warning-colored when within 20% of limit"
+setup_sandbox
+
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-23" "session-23"
+echo "39" > "$SANDBOX/.purlin/runtime/turn_count_agent-23"
+
+STDERR_FILE="$SANDBOX/stderr_warning"
+if [[ "$(uname)" == "Darwin" ]]; then
+    script -q "$STDERR_FILE" bash -c '
+        echo "{\"session_id\":\"session-23\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-23" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' >/dev/null 2>&1
+else
+    script -qc '
+        echo "{\"session_id\":\"session-23\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-23" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' "$STDERR_FILE" >/dev/null 2>&1
+fi
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 40 / 50 used" && \
+   echo "$STDERR_OUTPUT" | grep -qP '\x1b\[38;2;251;146;60m' 2>/dev/null || \
+   echo "$STDERR_OUTPUT" | LC_ALL=C grep -q $'\033\[38;2;251;146;60m'; then
+    log_pass "Warning zone: stderr contains warning color code"
+else
+    log_fail "Expected warning color \\033[38;2;251;146;60m in stderr, got: $(cat -v "$STDERR_FILE")"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 24: Stderr output is critical-colored when within 8% of limit
+###############################################################################
+echo ""
+echo "[Scenario] Stderr output is critical-colored when within 8% of limit"
+setup_sandbox
+
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-24" "session-24"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-24"
+
+STDERR_FILE="$SANDBOX/stderr_critical"
+if [[ "$(uname)" == "Darwin" ]]; then
+    script -q "$STDERR_FILE" bash -c '
+        echo "{\"session_id\":\"session-24\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-24" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' >/dev/null 2>&1
+else
+    script -qc '
+        echo "{\"session_id\":\"session-24\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-24" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' "$STDERR_FILE" >/dev/null 2>&1
+fi
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 46 / 50 used" && \
+   echo "$STDERR_OUTPUT" | LC_ALL=C grep -q $'\033\[38;2;248;113;113m'; then
+    log_pass "Critical zone: stderr contains critical color code"
+else
+    log_fail "Expected critical color \\033[38;2;248;113;113m in stderr, got: $(cat -v "$STDERR_FILE")"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 25: Exceeded threshold uses critical color
+###############################################################################
+echo ""
+echo "[Scenario] Exceeded threshold uses critical color"
+setup_sandbox
+
+echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-25" "session-25"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-25"
+
+STDERR_FILE="$SANDBOX/stderr_exceeded_color"
+if [[ "$(uname)" == "Darwin" ]]; then
+    script -q "$STDERR_FILE" bash -c '
+        echo "{\"session_id\":\"session-25\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-25" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' >/dev/null 2>&1
+else
+    script -qc '
+        echo "{\"session_id\":\"session-25\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-25" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" >/dev/null
+    ' "$STDERR_FILE" >/dev/null 2>&1
+fi
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 11 / 10 used -- Run /pl-resume save" && \
+   echo "$STDERR_OUTPUT" | LC_ALL=C grep -q $'\033\[38;2;248;113;113m'; then
+    log_pass "Exceeded: stderr uses critical color with evacuation instructions"
+else
+    log_fail "Expected critical color + exceeded message, got: $(cat -v "$STDERR_FILE")"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 26: No ANSI codes when stderr is not a terminal
+###############################################################################
+echo ""
+echo "[Scenario] No ANSI codes when stderr is not a terminal"
+setup_sandbox
+
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-26" "session-26"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-26"
+
+# Redirect stderr to file (NOT a terminal) — should produce no ANSI codes
+STDERR_FILE="$SANDBOX/stderr_piped"
+STDOUT_OUTPUT=$(run_guard "session-26" "" "agent-26" 2>"$STDERR_FILE")
+STDERR_OUTPUT=$(cat "$STDERR_FILE")
+
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 46 / 50 used" && \
+   ! cat -v "$STDERR_FILE" | grep -q '\^\\['; then
+    log_pass "No ANSI codes in stderr when not a terminal"
+else
+    log_fail "Expected plain text (no ANSI) when piped, got: $(cat -v "$STDERR_FILE")"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario 27: JSON additionalContext remains uncolored regardless of zone
+###############################################################################
+echo ""
+echo "[Scenario] JSON additionalContext remains uncolored regardless of zone"
+setup_sandbox
+
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-27" "session-27"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-27"
+
+STDERR_FILE="$SANDBOX/stderr_json_check"
+if [[ "$(uname)" == "Darwin" ]]; then
+    STDOUT_OUTPUT=$(script -q "$STDERR_FILE" bash -c '
+        echo "{\"session_id\":\"session-27\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-27" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" 2>/dev/null
+    ' 2>/dev/null)
+else
+    STDOUT_OUTPUT=$(script -qc '
+        echo "{\"session_id\":\"session-27\"}" | \
+            PURLIN_PROJECT_ROOT="'"$SANDBOX"'" \
+            CONTEXT_GUARD_AGENT_ID="agent-27" \
+            bash "'"$SANDBOX"'/tools/hooks/context_guard.sh" 2>/dev/null
+    ' /dev/null 2>/dev/null)
+fi
+
+if echo "$STDOUT_OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 46 / 50 used"' && \
+   ! echo "$STDOUT_OUTPUT" | cat -v | grep -q '\^\\['; then
+    log_pass "JSON additionalContext is plain text (no ANSI codes)"
+else
+    log_fail "Expected uncolored JSON output, got: $(echo "$STDOUT_OUTPUT" | cat -v)"
+fi
+cleanup_sandbox
+
+###############################################################################
 # Summary
 ###############################################################################
 TOTAL=$((PASS + FAIL))

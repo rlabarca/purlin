@@ -175,13 +175,36 @@ fi
 # Output context status on every turn via additionalContext.
 # PostToolUse hooks MUST output JSON with additionalContext for agent visibility.
 # Format: "COUNT / THRESHOLD used" where COUNT = turns consumed (higher = closer to limit).
-# Also emit plain-text status line to stderr for user visibility in terminal.
+# Also emit color-coded status line to stderr for user visibility in terminal.
 if [[ $COUNT -lt $THRESHOLD ]]; then
     STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"
 else
     STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
 fi
-echo "$STATUS_MSG" >&2
+
+# Color-coded stderr output (Section 2.4.1).
+# Zones: Normal (no color), Warning (>=80%), Critical (>=92%).
+# ANSI true-color (24-bit) from design tokens. No color when stderr is not a terminal.
+WARN_AT=$((THRESHOLD * 80 / 100))
+CRIT_AT=$((THRESHOLD * 92 / 100))
+
+if [[ -t 2 ]]; then
+    if [[ $COUNT -ge $CRIT_AT ]] || [[ $COUNT -ge $THRESHOLD ]]; then
+        # Critical zone (or exceeded): --purlin-status-error #F87171
+        printf '\033[38;2;248;113;113m%s\033[0m\n' "$STATUS_MSG" >&2
+    elif [[ $COUNT -ge $WARN_AT ]]; then
+        # Warning zone: --purlin-status-warning #FB923C
+        printf '\033[38;2;251;146;60m%s\033[0m\n' "$STATUS_MSG" >&2
+    else
+        # Normal zone: no color
+        echo "$STATUS_MSG" >&2
+    fi
+else
+    # Not a terminal — plain text, no ANSI codes
+    echo "$STATUS_MSG" >&2
+fi
+
+# JSON additionalContext — always uncolored (plain text)
 cat <<GUARDJSON
 {"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${STATUS_MSG}"}}
 GUARDJSON
