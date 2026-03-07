@@ -5534,7 +5534,10 @@ class TestValidateFixtureTags(unittest.TestCase):
             'repo_url': None,
             'section_found': True,
         }
-        result = validate_fixture_tags(fixture_data)
+        # Use a temp dir as project_root so the convention path doesn't exist
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = validate_fixture_tags(fixture_data, project_root=tmpdir)
         self.assertEqual(result['missing'], [])
         self.assertTrue(result['repo_unavailable'])
 
