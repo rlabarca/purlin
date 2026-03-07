@@ -134,43 +134,41 @@ Purlin Builder — Ready
     Then it returns HTTP 200
     And config.json is updated with the new values
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Startup Print Sequence Appears First
+#### Scenario: Startup Print Sequence Appears First (auto-test-only)
     Given any agent is launched with any combination of startup controls
     When the agent produces its first output
     Then the command vocabulary table appears before any other text
     And the table includes the shared commands and all role-specific commands
 
-#### Scenario: Expert Mode Bypasses Orientation
+#### Scenario: Expert Mode Bypasses Orientation (auto-test-only)
     Given agents.builder has startup_sequence false and recommend_next_actions false in config.json
     When the Builder is launched
     Then the command table is printed first
     And the agent outputs "startup_sequence disabled — awaiting instruction."
     And no status check, Critic report, or dependency graph analysis is performed
 
-#### Scenario: Guided Mode Presents Work Plan
+#### Scenario: Guided Mode Presents Work Plan (auto-test-only)
     Given agents.builder has startup_sequence true and recommend_next_actions true in config.json
     When the Builder is launched
     Then orientation runs in full
     And a prioritized work plan is presented
     And the agent explicitly asks for confirmation or adjustment before beginning work
 
-#### Scenario: Orient-Only Mode Skips Work Plan
+#### Scenario: Orient-Only Mode Skips Work Plan (auto-test-only)
     Given agents.builder has startup_sequence true and recommend_next_actions false in config.json
     When the Builder is launched
     Then orientation runs in full
     And a brief status summary is output
     And no work plan is presented; the agent awaits user direction
 
-#### Scenario: Dashboard Toggle Controls Render in Agents Section
+#### Scenario: Dashboard Toggle Controls Render in Agents Section (auto-web)
     Given the CDD Dashboard is loaded and the Agents section is expanded
     When the user views any agent row
     Then the Startup Sequence and Suggest Next checkboxes appear to the right of YOLO
     And their column headers appear in the section header row on two lines each
     And their checked state matches the values in config.json
 
-#### Scenario: Suggest Next Disables When Startup Sequence Unchecked
+#### Scenario: Suggest Next Disables When Startup Sequence Unchecked (auto-web)
     Given the Agents section is expanded
     When the user unchecks the Startup Sequence control for an agent
     Then the Suggest Next checkbox for that agent is immediately disabled and unchecked
@@ -178,32 +176,7 @@ Purlin Builder — Ready
 
 ### Manual Scenarios (Human Verification Required)
 
-#### Scenario: Startup Print Sequence Appears First
-    Given any agent is launched with any combination of startup controls
-    When the agent produces its first output
-    Then the command vocabulary table appears before any other text
-    And the table includes the shared commands and all role-specific commands
-
-#### Scenario: Expert Mode Bypasses Orientation
-    Given agents.builder has startup_sequence false and recommend_next_actions false in config.json
-    When the Builder is launched
-    Then the command table is printed first
-    And the agent outputs "startup_sequence disabled — awaiting instruction."
-    And no status check, Critic report, or dependency graph analysis is performed
-
-#### Scenario: Guided Mode Presents Work Plan
-    Given agents.builder has startup_sequence true and recommend_next_actions true in config.json
-    When the Builder is launched
-    Then orientation runs in full
-    And a prioritized work plan is presented
-    And the agent explicitly asks for confirmation or adjustment before beginning work
-
-#### Scenario: Orient-Only Mode Skips Work Plan
-    Given agents.builder has startup_sequence true and recommend_next_actions false in config.json
-    When the Builder is launched
-    Then orientation runs in full
-    And a brief status summary is output
-    And no work plan is presented; the agent awaits user direction
+None.
 
 
 ## User Testing Discoveries

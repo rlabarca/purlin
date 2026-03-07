@@ -285,6 +285,16 @@ The CDD Dashboard port can be overridden at runtime, bypassing the `cdd_port` va
 *   **Validation:** If the `-p` value is not a valid integer or is outside the range 1-65535, `start.sh` MUST print an error message and exit with a non-zero status without starting the server.
 *   **No Config Mutation:** The `-p` flag MUST NOT modify `.purlin/config.json`. It is a runtime-only override.
 
+### 2.14 Web-Verify Fixture Tags
+
+The following fixture tags provide deterministic project states for web-verify testing:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_status_monitor/mixed-states` | Features in TODO, DONE, FAIL, and CLEAN states for verifying badge colors, section sorting, and search filtering |
+| `main/cdd_status_monitor/tombstone-present` | A tombstone file exists at features/tombstones/ for testing red styling and deletion modal |
+| `main/cdd_status_monitor/empty-active` | All features complete, Active section empty for verifying empty-state badge behavior |
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -506,17 +516,14 @@ These scenarios are validated by the Builder's automated test suite.
     When the User runs tools/cdd/start.sh without -p
     Then the server starts listening on port 8086
 
-### Manual Scenarios (Human Verification Required)
-These scenarios MUST NOT be validated through automated tests. The Builder must start the server and instruct the User to verify the web dashboard visually.
-
-#### Scenario: Search Filters Status View
+#### Scenario: Search Filters Status View (auto-web)
     Given the User is viewing the Status view
     And multiple features are displayed in the Active and Complete sections
     When the User types a partial feature name in the search box
     Then only matching features are displayed in both Active and Complete sections
     And sections with no matching features are hidden
 
-#### Scenario: Feature Click Opens Modal
+#### Scenario: Feature Click Opens Modal (auto-web)
     Given the User is viewing the Status view
     When the User clicks a feature name in the Active or Complete table
     Then the feature detail modal opens showing the rendered markdown content
@@ -524,7 +531,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     When the User clicks the X button or clicks outside the modal or presses Escape
     Then the modal closes
 
-#### Scenario: Section Collapse and Expand
+#### Scenario: Section Collapse and Expand (auto-web)
     Given the User is viewing the Status view
     When the User clicks the "ACTIVE" section heading
     Then the Active section collapses showing only the heading with a summary badge
@@ -533,7 +540,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the Active section expands showing all feature rows
     And the chevron changes from right to down
 
-#### Scenario: Section State Persists Across Reloads
+#### Scenario: Section State Persists Across Reloads (auto-web)
     Given the User is viewing the Status view
     And the Active section is expanded and the Complete section is collapsed (defaults)
     When the User collapses the Active section and expands the Complete section
@@ -542,24 +549,13 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the Complete section is still expanded
     And the saved states override the default expand/collapse behavior
 
-#### Scenario: Web Dashboard Auto-Refresh
+#### Scenario: Web Dashboard Auto-Refresh (auto-web)
     Given the User is viewing the web dashboard
     When a feature status changes (e.g., a status commit is made)
     Then the dashboard reflects the updated status within 5 seconds
     And the refresh is incremental (no full page reload)
 
-#### Scenario: Server Start/Stop Lifecycle
-    Given the CDD server is not running
-    When the User runs tools/cdd/start.sh
-    Then the server starts on the configured port on the first invocation
-    And a PID file is written to .purlin/runtime/cdd.pid
-    When the User runs tools/cdd/stop.sh
-    Then the server process is terminated
-    And the PID file is removed
-    When the User runs tools/cdd/start.sh again
-    Then the server starts successfully on the first invocation without requiring a second run
-
-#### Scenario: Run Critic Button
+#### Scenario: Run Critic Button (auto-web)
     Given the CDD server is running
     And the User opens the web dashboard
     When the User locates the header's second row (Row 2)
@@ -572,7 +568,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the annotation updates automatically on subsequent 5-second refresh cycles
     And if the Critic was run less than 60 seconds ago, no annotation is appended and the label reads "Run Critic"
 
-#### Scenario: Tombstone Feature Appears Red in Active Section
+#### Scenario: Tombstone Feature Appears Red in Active Section (auto-web)
     Given a tombstone file exists at features/tombstones/some_retired_feature.md
     And the User opens the CDD dashboard Status view
     When the User views the Active section
@@ -581,7 +577,7 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the Builder badge shows TODO and the QA badge shows N/A
     And the Architect badge shows DONE
 
-#### Scenario: Tombstone Feature Modal Displays Deletion State
+#### Scenario: Tombstone Feature Modal Displays Deletion State (auto-web)
     Given a tombstone entry is visible in the Active section
     When the User clicks the tombstone feature name
     Then a modal opens with the tombstone file's markdown content
@@ -589,6 +585,19 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     And the modal title is rendered in red (--purlin-status-error)
     And a "READY FOR DELETION" banner is prominently displayed at the top of the content area
     And no tabs are shown in the tombstone modal
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Server Start/Stop Lifecycle
+    Given the CDD server is not running
+    When the User runs tools/cdd/start.sh
+    Then the server starts on the configured port on the first invocation
+    And a PID file is written to .purlin/runtime/cdd.pid
+    When the User runs tools/cdd/stop.sh
+    Then the server process is terminated
+    And the PID file is removed
+    When the User runs tools/cdd/start.sh again
+    Then the server starts successfully on the first invocation without requiring a second run
 
 ## Visual Specification
 

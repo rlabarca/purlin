@@ -4,6 +4,9 @@
 > Category: "Skills"
 > Prerequisite: features/context_guard.md
 > Prerequisite: features/config_layering.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 [TODO]
 
@@ -163,19 +166,21 @@ Error: Unknown role '<role>'. Must be one of: architect, builder, qa
     Then config.local.json is created as a copy of config.json
     And agents.builder.context_guard_threshold is set to 25
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Dashboard reflects threshold change from skill
+#### Scenario: Dashboard reflects threshold change from skill (auto-web)
 
     Given the CDD Dashboard is running with the Agents section expanded
     And the builder Context Guard threshold shows 45
-    When /pl-context-guard builder 30 is invoked from a Builder session
+    When config.local.json is modified to set agents.builder.context_guard_threshold to 30
     Then within 5 seconds the Dashboard's builder threshold input updates to 30
 
-#### Scenario: Dashboard reflects guard toggle from skill
+#### Scenario: Dashboard reflects guard toggle from skill (auto-web)
 
     Given the CDD Dashboard is running with the Agents section expanded
     And the qa Context Guard checkbox is checked
-    When /pl-context-guard qa off is invoked from a QA session
+    When config.local.json is modified to set agents.qa.context_guard to false
     Then within 5 seconds the Dashboard's qa Context Guard checkbox becomes unchecked
     And the qa threshold input becomes disabled with opacity 0.4
+
+### Manual Scenarios (Human Verification Required)
+
+None.

@@ -169,6 +169,17 @@ When an active branch exists, the `/status.json` response includes:
 
 `branch_collab_branches`: always present (may be empty array). Lists all branches discovered from remote tracking refs (filtered to exclude `HEAD`, `main`/`master`). Each entry includes per-branch sync state computed from locally cached refs (same rules as Section 2.5, applied per branch).
 
+### 2.9 Integration Test Fixture Tags
+
+The following fixture tags provide real git branch topology for integration-level tests, replacing mocked subprocess output with actual git state:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_branch_collab/ahead-3` | Branch 3 commits ahead of collaboration branch |
+| `main/cdd_branch_collab/behind-2` | Branch 2 commits behind collaboration branch |
+| `main/cdd_branch_collab/diverged` | Both branch and collaboration branch have unique commits |
+| `main/cdd_branch_collab/same` | Branch at same position as collaboration branch |
+
 ---
 
 ## 3. Scenarios

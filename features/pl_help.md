@@ -40,26 +40,26 @@ Agents print their command vocabulary table at startup, but there is no way to r
 
 ### Automated Scenarios
 
-None.
-
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Architect re-displays command table
+#### Scenario: Architect re-displays command table (auto-test-only)
 
     Given an Architect session on the main branch
     When the user runs /pl-help
     Then the Main Branch Variant from architect_commands.md is printed verbatim
 
-#### Scenario: Builder re-displays command table on isolated branch
+#### Scenario: Builder re-displays command table on isolated branch (auto-test-only)
 
     Given a Builder session on branch isolated/feat1
     When the user runs /pl-help
     Then the Isolated Session Variant from builder_commands.md is printed
     And the header shows [Isolated: feat1]
 
-#### Scenario: QA re-displays command table on collaboration branch
+#### Scenario: QA re-displays command table on collaboration branch (auto-test-only)
 
     Given a QA session with .purlin/runtime/active_branch containing "collab/v2"
     When the user runs /pl-help
     Then the Branch Collaboration Variant from qa_commands.md is printed
     And the header shows [Branch: collab/v2]
+
+### Manual Scenarios (Human Verification Required)
+
+None.

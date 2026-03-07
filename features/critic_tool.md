@@ -290,6 +290,18 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
     When the audit does not trigger (non-targeted scope, or builder is not DONE), the block is omitted.
 *   **Aggregate Report:** Targeted scope gaps appear in the Architect action items section of `CRITIC_REPORT.md`, grouped under a `### Targeted Scope Gaps` subsection.
 
+### 2.13 Integration Test Fixture Tags
+
+The following fixture tags provide deterministic project states for integration-level Critic tests. These complement the existing 237+ unit tests by running `tools/critic/run.sh` against fixture checkouts and verifying the full `CRITIC_REPORT.md` + `critic.json` output.
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/critic_tool/spec-gate-fail` | Project with a feature missing required sections |
+| `main/critic_tool/traceability-gap` | Feature with automated scenarios but no matching test files |
+| `main/critic_tool/cascade-reset` | Anchor node + 3 dependent features for testing status cascade on anchor edit |
+| `main/critic_tool/mixed-discoveries` | Features with BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE entries |
+| `main/critic_tool/builder-decisions` | Companion files with acknowledged/unacknowledged DEVIATION and DISCOVERY tags |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

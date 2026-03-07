@@ -109,6 +109,14 @@ Individual count values in **both** the collapsed summary (Section 2.4) and the 
 *   **Disabled guard:** When `context_guard` is `false` for an agent, counts still display but always use `--purlin-muted` color (no threshold coloring applies).
 *   **Boundary math:** Warning triggers at `count >= threshold * 0.80`. Critical triggers at `count >= threshold * 0.92`. Matches the shell hook zones defined in `context_guard.md` Section 2.4.1.
 
+### 2.5 Web-Verify Fixture Tags
+
+The following fixture tags provide deterministic project states for web-verify testing:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_agent_configuration/mixed-models` | Different models per agent for verifying model badges and capability-gated controls |
+
 
 ## 3. Scenarios
 

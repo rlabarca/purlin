@@ -142,6 +142,14 @@ The server MUST validate that:
 *   Each `id` in the request body corresponds to a known step (present in global or local steps). Unknown IDs are accepted but logged as warnings, consistent with the auto-discovery orphan behavior.
 *   No `id` appears more than once in the request.
 
+### 2.10 Web-Verify Fixture Tags
+
+The following fixture tags provide deterministic project states for web-verify testing:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_checklist_ui/mixed-enabled` | 7 enabled and 2 disabled steps for verifying drag handles, step numbering, dimming, and modal content |
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -190,9 +198,7 @@ The server MUST validate that:
     Then that step's row contains a "LOCAL" badge element
     And the step detail modal header for that step contains a "LOCAL" source badge
 
-### Manual Scenarios
-
-#### Scenario: Drag Handle Reorders Steps in Display
+#### Scenario: Drag Handle Reorders Steps in Display (auto-web)
 Given the release checklist is expanded showing at least 3 steps in their current order,
 And the step currently at position 3 has a known friendly name (e.g. "Push to Remote"),
 When the user grabs that step by its drag handle (`⠿`) and drops it at position 1,
@@ -201,7 +207,7 @@ And the steps formerly at positions 1 and 2 are now displayed at positions 2 and
 And the step number labels on all rows update to reflect their new positions,
 And no page reload is required for these changes to appear.
 
-#### Scenario: Config File Change Refreshes Without Visual Disruption
+#### Scenario: Config File Change Refreshes Without Visual Disruption (auto-web)
 Given the CDD Dashboard is open in a browser with the RELEASE CHECKLIST section expanded,
 And the user has scrolled down so that the release checklist is visible,
 When `.purlin/release/config.json` is edited externally to change the enabled state of one step or its order,
@@ -210,6 +216,10 @@ And the section remains expanded (it does not collapse and re-expand),
 And no row flickers or disappears and reappears during the update,
 And the scroll position of the page does not change,
 And rows whose content did not change appear visually undisturbed.
+
+### Manual Scenarios (Human Verification Required)
+
+None.
 
 ## Visual Specification
 

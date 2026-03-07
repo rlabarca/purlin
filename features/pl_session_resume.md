@@ -266,9 +266,7 @@ Uncommitted:    [none | summary]
     When the agent completes the restore sequence
     Then .purlin/cache/session_checkpoint.md no longer exists on disk
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Builder Mid-Feature Resume
+#### Scenario: Builder Mid-Feature Resume (auto-test-only)
 
     Given a Builder agent is mid-implementation of a feature at protocol step 2
     When the Builder invokes /pl-resume save
@@ -277,7 +275,7 @@ Uncommitted:    [none | summary]
     Then the recovery summary shows the correct feature and protocol step
     And the Builder continues implementation from the saved step without repeating completed work
 
-#### Scenario: QA Mid-Verification Resume
+#### Scenario: QA Mid-Verification Resume (auto-test-only)
 
     Given a QA agent has verified 5 of 8 scenarios for a feature
     When the QA agent invokes /pl-resume save
@@ -286,7 +284,7 @@ Uncommitted:    [none | summary]
     Then the recovery summary shows "5 of 8 scenarios completed"
     And the QA agent resumes verification at scenario 6
 
-#### Scenario: Full Reboot Without Launcher
+#### Scenario: Full Reboot Without Launcher (auto-test-only)
 
     Given a fresh Claude session is started without a launcher script (no system prompt)
     When the user types /pl-resume architect

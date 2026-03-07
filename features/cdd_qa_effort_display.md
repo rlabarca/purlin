@@ -51,6 +51,14 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 *   `AUTO` uses `var(--purlin-status-auto)` in both themes.
 *   The tooltip MUST be legible in both light and dark themes.
 
+### 2.5 Web-Verify Fixture Tags
+
+The following fixture tags provide deterministic project states for web-verify testing:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_qa_effort_display/auto-and-todo` | Features with AUTO vs TODO QA states for verifying green vs yellow distinction and hover tooltips |
+
 ---
 
 ## 3. Scenarios
@@ -91,22 +99,24 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
     When a client requests `/status.json`
     Then each feature object includes the `verification_effort` block
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Effort tooltip displays full breakdown on hover
+#### Scenario: Effort tooltip displays full breakdown on hover (auto-web)
 
     Given a feature's QA cell shows "TODO" with manual and auto items
     When the user hovers over the TODO text
     Then a tooltip displays the category breakdown (e.g., "Auto: 3 web | Manual: 2 interactive, 4 visual")
     And zero-count categories are omitted
 
-#### Scenario: AUTO badge is visually distinct from TODO
+#### Scenario: AUTO badge is visually distinct from TODO (auto-web)
 
     Given the CDD dashboard is rendered
     And one feature has QA status AUTO and another has TODO
     When both are visible in the Status view
     Then AUTO uses a green color (`var(--purlin-status-auto)`) distinct from TODO's yellow (`var(--purlin-status-todo)`)
     And the color difference is clear in both light and dark themes
+
+### Manual Scenarios (Human Verification Required)
+
+None.
 
 ## Visual Specification
 

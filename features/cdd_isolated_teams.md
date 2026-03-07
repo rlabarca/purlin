@@ -248,6 +248,16 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - The `(Phase N/M)` annotation uses the same orange color (`--purlin-status-warning`) as the ACTIVE section header's phase annotation.
 - No badge is shown when `delivery_phase` is absent.
 
+### 2.12 Web-Verify Fixture Tags
+
+The following fixture tags provide deterministic project states for web-verify testing:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_isolated_teams/two-worktrees` | Two worktrees at AHEAD and SAME states for verifying Sessions table and category counts |
+| `main/cdd_isolated_teams/delivery-phase-active` | Worktree with an active delivery plan for verifying Phase N/M orange badge |
+| `main/cdd_isolated_teams/two-worktrees-mixed` | Two worktrees with different sync states and uncommitted changes for git state integration tests |
+
 ---
 
 ## 3. Scenarios
@@ -477,15 +487,17 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And the modal instructs the user to commit or stash before killing
     And the Confirm button is disabled
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Name Input Focus Restored After Auto-refresh
+#### Scenario: Name Input Focus Restored After Auto-refresh (auto-web)
 
     Given the CDD dashboard is open
     And the User has clicked into the name input and typed "feat3"
     When the 5-second auto-refresh cycle triggers a DOM update
     Then the name input still contains "feat3"
     And the name input retains keyboard focus without requiring a click to resume typing
+
+### Manual Scenarios (Human Verification Required)
+
+None.
 
 ---
 
