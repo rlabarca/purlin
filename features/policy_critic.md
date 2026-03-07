@@ -111,12 +111,13 @@ Feature files MAY contain a `## Visual Specification` section for features with 
 *   The Critic MUST flag screens that have a `- **Reference:**` but no `- **Description:**` as HIGH-priority Architect action items with category `unprocessed_artifact`. These represent design artifacts that have been stored but not yet converted to structured markdown.
 
 ### 2.10 Targeted Scope Completeness
-When a feature has `change_scope: "targeted:..."` and `builder: "TODO"`, the Critic MUST compare the scenario names in the targeted scope list against all scenario headings (`#### Scenario:` titles) in the feature file. If scenarios exist in the feature spec that are NOT listed in the targeted scope, and the feature has `builder: "TODO"`, the Critic MUST generate a MEDIUM-priority Architect action item identifying the unscoped scenarios.
+When a feature has `change_scope: "targeted:..."` and `builder: "DONE"`, the Critic MUST compare the scenario names in the targeted scope list against all scenario headings (`#### Scenario:` titles) in the feature file. If scenarios exist in the feature spec that are NOT listed in the targeted scope, the Critic MUST generate a MEDIUM-priority Architect action item identifying the unscoped scenarios.
 
-*   **Purpose:** Targeted scopes created during phased delivery may become stale after the delivery plan is completed. This audit ensures unbuilt scenarios are never invisible.
+*   **Purpose:** Targeted scopes created during phased delivery may become stale after the delivery plan is completed. This audit catches cases where the Builder has marked work as done but the targeted scope does not cover all scenarios -- indicating either a stale scope or incomplete work.
 *   **Routing:** Architect (scope decisions are an Architect/user concern). The Architect can then reset the scope to `full` or consciously re-scope.
 *   **Visual items:** Visual spec items (`### Screen:` titles) that are not in the targeted scope are also flagged, using the same naming convention as Section 2.8 (`Visual:<screen name>`).
 *   **Exemption:** Features with `change_scope: "full"`, `"cosmetic"`, or `"dependency-only"` are exempt from this check. Only `targeted:` scopes are audited.
+*   **Suppression when builder is TODO:** When `builder: "TODO"`, the targeted scope completeness check is suppressed entirely. The Builder already has a HIGH-priority action item to implement the feature, which inherently covers all scenarios in the spec. Generating an additional Architect warning for unscoped scenarios is redundant noise.
 
 ### 2.11 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.

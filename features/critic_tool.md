@@ -271,9 +271,10 @@ The Critic MUST detect untracked files in the working directory and generate Arc
 *   **No Per-Feature Association:** Untracked file items are project-level, not tied to a specific feature. They appear in the aggregate report only (not in per-feature `critic.json` files).
 
 ### 2.15 Targeted Scope Completeness Audit
-The Critic MUST detect features where a `targeted:` scope leaves scenarios unaccounted for while the Builder still has work to do.
+The Critic MUST detect features where a `targeted:` scope leaves scenarios unaccounted for after the Builder has marked work as done.
 
-*   **Trigger Conditions:** The audit runs for features where (a) `change_scope` starts with `"targeted:"`, AND (b) `role_status.builder` is `"TODO"`.
+*   **Trigger Conditions:** The audit runs for features where (a) `change_scope` starts with `"targeted:"`, AND (b) `role_status.builder` is `"DONE"`.
+*   **Suppression when builder is TODO:** When `builder: "TODO"`, the targeted scope completeness check is suppressed entirely. The Builder already has a HIGH-priority action item to implement the feature, which inherently covers all scenarios in the spec. Generating an additional Architect warning for unscoped scenarios is redundant.
 *   **Comparison:** Parse the comma-separated scenario names from the `targeted:` scope string. Parse all `#### Scenario:` titles from the feature file (both automated and manual). Also parse `### Screen:` titles and prefix them with `Visual:` per the Section 2.12 naming convention. Compare the two sets.
 *   **Action Item Generation:** For each scenario or visual screen in the feature spec that is NOT listed in the targeted scope, generate a single aggregate MEDIUM-priority Architect action item:
     *   Category: `targeted_scope_gap`.
@@ -286,7 +287,7 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
         "unscoped": ["Double-Click Category Zooms to Fit", "Anchor Nodes Have Green Border", "Clicks on Edges Pass Through"]
     }
     ```
-    When the audit does not trigger (non-targeted scope, or builder is not TODO), the block is omitted.
+    When the audit does not trigger (non-targeted scope, or builder is not DONE), the block is omitted.
 *   **Aggregate Report:** Targeted scope gaps appear in the Architect action items section of `CRITIC_REPORT.md`, grouped under a `### Targeted Scope Gaps` subsection.
 
 ## 3. Scenarios
@@ -753,8 +754,8 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
     Then all checks report PASS with "N/A - anchor node exempt"
     And the overall implementation_gate status is PASS
 
-#### Scenario: Targeted Scope Gap Detected for TODO Feature
-    Given a feature is in TODO lifecycle state with builder status TODO
+#### Scenario: Targeted Scope Gap Detected When Builder Is DONE
+    Given a feature has builder status DONE
     And the most recent status commit contains [Scope: targeted:Scenario A,Scenario B]
     And the feature spec contains 5 scenario headings: Scenario A, Scenario B, Scenario C, Scenario D, Scenario E
     When the Critic runs the targeted scope completeness audit
@@ -763,20 +764,21 @@ The Critic MUST detect features where a `targeted:` scope leaves scenarios unacc
     And the per-feature critic.json contains targeted_scope_audit with scoped_count 2 and total_count 5
 
 #### Scenario: Targeted Scope Gap Not Triggered for Full Scope
-    Given a feature is in TODO lifecycle state with builder status TODO
+    Given a feature has builder status DONE
     And the change_scope is "full"
     When the Critic runs the targeted scope completeness audit
     Then no targeted_scope_gap action item is created
     And the per-feature critic.json does not contain a targeted_scope_audit block
 
-#### Scenario: Targeted Scope Gap Not Triggered When Builder Is DONE
-    Given a feature has builder status DONE
+#### Scenario: Targeted Scope Gap Not Triggered When Builder Is TODO
+    Given a feature is in TODO lifecycle state with builder status TODO
     And the change_scope is "targeted:Scenario A"
     When the Critic runs the targeted scope completeness audit
     Then no targeted_scope_gap action item is created
+    And the per-feature critic.json does not contain a targeted_scope_audit block
 
 #### Scenario: Targeted Scope Gap Includes Visual Screens
-    Given a feature is in TODO lifecycle state with builder status TODO
+    Given a feature has builder status DONE
     And the most recent status commit contains [Scope: targeted:Scenario A]
     And the feature spec contains Scenario A, Scenario B, and a Visual Specification with Screen: Dashboard Overview
     When the Critic runs the targeted scope completeness audit
@@ -798,4 +800,14 @@ None
 - [ ] Badge values match the role_status values from critic.json (TODO, DONE, FAIL, BLOCKED, INFEASIBLE, CLEAN, N/A, DISPUTED)
 - [ ] Features without critic.json show "??" placeholder in all role columns
 - [ ] Badge styling uses existing CDD dashboard status badge pattern and color tokens
+
+## User Testing Discoveries
+
+### [BUG] Scenario classification check ignores "None." declaration under Manual Scenarios
+- **Status:** OPEN
+- **Found by:** Architect
+- **Affected scenarios:** Scenario classification (Spec Gate §2.1)
+- **Description:** Features that have both `### Automated Scenarios` and `### Manual Scenarios (Human Verification Required)` subsections, where the Manual subsection contains an explicit `None.` declaration, are reported as WARN ("Only Automated subsection present") instead of PASS. The spec (§2.1 table, scenario classification row) defines PASS as "Both subsections present (with content or explicit 'None' declaration)." The Critic implementation does not recognize `None.` as a valid empty-section sentinel. Affected features: `pl_web_verify.md`, `qa_verification_effort.md`.
+- **Expected:** Scenario classification = PASS when `### Manual Scenarios` heading exists with `None.` underneath.
+- **Actual:** Scenario classification = WARN with "Only Automated subsection present."
 
