@@ -1,0 +1,80 @@
+{
+  "status": "PASS",
+  "tests_run": 18,
+  "failures": 0,
+  "errors": 0,
+  "details": [
+    {
+      "test": "test_assertion_detects_builder_header (__main__.TestCommandTableAssertion.test_assertion_detects_builder_header)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_assertion_detects_isolated_variant (__main__.TestCommandTableAssertion.test_assertion_detects_isolated_variant)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_assertion_fails_for_missing_table (__main__.TestCommandTableAssertion.test_assertion_fails_for_missing_table)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_assertion_passes_for_valid_table (__main__.TestCommandTableAssertion.test_assertion_passes_for_valid_table)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_expected_output_pattern_detected (__main__.TestExpertModeOutput.test_expected_output_pattern_detected)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_checkout_creates_directory (__main__.TestFixtureCheckoutAndPromptConstruction.test_fixture_checkout_creates_directory)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prompt_construction_contains_all_layers (__main__.TestFixtureCheckoutAndPromptConstruction.test_prompt_construction_contains_all_layers)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prompt_handles_missing_layer (__main__.TestFixtureCheckoutAndPromptConstruction.test_prompt_handles_missing_layer)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cleanup_is_safe_for_nonexistent_dir (__main__.TestFixtureCleanup.test_cleanup_is_safe_for_nonexistent_dir)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cleanup_removes_checkout_directory (__main__.TestFixtureCleanup.test_cleanup_removes_checkout_directory)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_collab_variant_has_branch_header (__main__.TestHelpVariantDetection.test_collab_variant_has_branch_header)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_isolated_variant_has_correct_commands (__main__.TestHelpVariantDetection.test_isolated_variant_has_correct_commands)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_main_variant_has_whats_different (__main__.TestHelpVariantDetection.test_main_variant_has_whats_different)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_checkpoint_fields_are_parseable (__main__.TestResumeCheckpointEcho.test_checkpoint_fields_are_parseable)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_json_results_structure (__main__.TestSummaryReporting.test_json_results_structure)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_nonzero_exit_on_failure (__main__.TestSummaryReporting.test_nonzero_exit_on_failure)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_summary_format (__main__.TestSummaryReporting.test_summary_format)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_zero_exit_on_all_pass (__main__.TestSummaryReporting.test_zero_exit_on_all_pass)",
+      "status": "PASS"
+    }
+  ]
+}
