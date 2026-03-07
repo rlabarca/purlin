@@ -36,8 +36,11 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 2. **If available:**
    a. Verify headless mode by reading the MCP server configuration. Check these files in order until one contains a `playwright` MCP entry:
       - `<project_root>/.claude/settings.local.json` → key `mcpServers.playwright.args`
-      - `~/.claude.json` → key `mcpServers.playwright.args`
-      If neither file exists or has a playwright entry, run `claude mcp list` and parse the output for the playwright server's arguments.
+      - `<project_root>/.claude/settings.json` → key `mcpServers.playwright.args`
+      - `~/.claude.json` → key `projects.<project_path>.mcpServers.playwright.args` (per-project config)
+      - `~/.claude/settings.json` → key `mcpServers.playwright.args`
+      - `~/.claude/plugins/**/playwright/.mcp.json` → key `playwright.args` (plugin marketplace)
+      If no file has a playwright entry, run `claude mcp list` and parse the output for the playwright server's arguments.
    b. **If the args array does NOT contain `--headless`:** Instruct the user to reconfigure:
       ```
       Playwright MCP is configured but not in headless mode.

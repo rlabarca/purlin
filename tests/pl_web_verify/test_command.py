@@ -1085,9 +1085,15 @@ class TestHeadedPlaywrightDetection(unittest.TestCase):
         self.assertIn('--headless', self.command_content)
 
     def test_skill_references_mcp_config_files(self):
-        """Skill file references MCP config file locations."""
+        """Skill file references all MCP config file locations."""
+        # Project-level settings
         self.assertIn('settings.local.json', self.command_content)
+        self.assertIn('settings.json', self.command_content)
         self.assertIn('mcpServers.playwright', self.command_content)
+        # Per-project config in ~/.claude.json (projects.<path> key)
+        self.assertIn('projects.', self.command_content)
+        # Plugin marketplace
+        self.assertIn('plugins/', self.command_content)
 
     def test_skill_provides_reconfigure_command(self):
         """Skill file provides the reconfigure commands."""
