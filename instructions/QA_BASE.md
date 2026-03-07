@@ -55,7 +55,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull, /pl-fixture
 
 ### 3.0.1 Read Startup Flags
 
@@ -144,7 +144,7 @@ Present the user with:
 *   Critic report summary for this feature (spec gate status, implementation gate status, any warnings).
 *   **Verification scope:** the regression scope mode and which scenarios are queued.
 *   Number of manual scenarios to verify (after scope filtering).
-*   **Fixture awareness:** If the Critic report for this feature includes a `fixture_repo_unavailable` finding, inform the user that the fixture infrastructure has not been created yet. Web-verify and automated test results for fixture-backed scenarios will be INCONCLUSIVE until the Builder creates the fixture repo. This is a Builder-routable item, not a QA failure -- do not record it as a discovery.
+*   **Fixture awareness:** If the Critic report includes `fixture_repo_unavailable`, the fixture infrastructure has not been created yet. Results for fixture-backed scenarios will be INCONCLUSIVE. This is Builder-routable, not a QA failure -- do not record as a discovery. Run `/pl-fixture` for details.
 
 ### 5.2 Scenario-by-Scenario Walkthrough
 For each Manual Scenario in the feature file:

@@ -37,6 +37,7 @@ specs.
   /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer specs from existing code
+  /pl-fixture                Test fixture convention and workflow
 
   Release
   ──────
@@ -87,6 +88,7 @@ specs.
   /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer specs from existing code
+  /pl-fixture                Test fixture convention and workflow
 
   Release
   ──────
@@ -136,6 +138,7 @@ specs.
   /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer specs from existing code
+  /pl-fixture                Test fixture convention and workflow
 
   Release
   ──────

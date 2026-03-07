@@ -33,6 +33,7 @@ Tell it what to build or let it pick up the next item.
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-web-verify [name]      Verify web-testable features via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-fixture                Test fixture convention and setup workflow
 
   Cross-Agent Communication
   ──────
@@ -78,6 +79,7 @@ Tell it what to build or let it pick up the next item.
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-web-verify [name]      Verify web-testable features via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-fixture                Test fixture convention and setup workflow
 
   Cross-Agent Communication
   ──────
@@ -122,6 +124,7 @@ Tell it what to build or let it pick up the next item.
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-web-verify [name]      Verify web-testable features via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
+  /pl-fixture                Test fixture convention and setup workflow
 
   Cross-Agent Communication
   ──────
