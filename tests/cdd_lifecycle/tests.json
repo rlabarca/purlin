@@ -1,1 +1,1 @@
-{"status": "PASS", "test_file": "tools/cdd/test_cdd.py", "classes": ["TestPortResolution", "TestStartShPortValidation", "TestRestartOnRerun"], "tests_run": 9, "tests_passed": 9, "timestamp": "2026-03-07T01:45:00Z"}
+{"status": "PASS", "test_file": "tools/cdd/test_cdd.py", "classes": ["TestPortResolution", "TestStartShPortValidation", "TestRestartOnRerun", "TestQaBadgeHtml", "TestVerificationEffortInApiStatus"], "tests_run": 84, "tests_passed": 84, "timestamp": "2026-03-07T23:59:00Z"}

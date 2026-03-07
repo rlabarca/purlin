@@ -11,9 +11,9 @@
 **Completion Commit:** 15ead36
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic Reset Detection + Agent Config [PENDING]
+## Phase 2 -- Critic Reset Detection + Agent Config [COMPLETE]
 **Features:** policy_critic.md, cdd_agent_configuration.md
-**Completion Commit:** --
+**Completion Commit:** e03dffc
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Web Verify + Lifecycle Fixtures [PENDING]
