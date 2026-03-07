@@ -142,6 +142,15 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
      - `tools/sync_upstream.sh` (replaced by `/pl-update-purlin`)
      - `tools/bootstrap.sh` (removed when `tools/init.sh` superseded it)
      - `tools/test_bootstrap.sh` (removed with `bootstrap.sh`; tests moved to `tools/test_init.sh`)
+     - `run_architect.sh` (renamed to `pl-run-architect.sh`)
+     - `run_builder.sh` (renamed to `pl-run-builder.sh`)
+     - `run_qa.sh` (renamed to `pl-run-qa.sh`)
+     - `purlin_init.sh` (renamed to `pl-init.sh`)
+     - `purlin_cdd_start.sh` (renamed to `pl-cdd-start.sh`)
+     - `purlin_cdd_stop.sh` (renamed to `pl-cdd-stop.sh`)
+     - `init.sh` at framework root (renamed to `pl-init.sh`)
+     - `cdd_start.sh` at framework root (renamed to `pl-cdd-start.sh`)
+     - `cdd_stop.sh` at framework root (renamed to `pl-cdd-stop.sh`)
    - Report format:
      ```
      Stale artifacts detected from previous Purlin version:
