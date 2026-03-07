@@ -165,7 +165,7 @@ The ISOLATED TEAMS section is a peer section rendered directly below WORKSPACE a
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
 *   **Output:** Writes the same JSON schema as the `/status.json` API endpoint to stdout. The output MUST be valid JSON parseable by `python3 json.load()`.
 *   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first.
-*   **Side Effect:** Regenerates `.purlin/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic).
+*   **Side Effect:** Regenerates `.purlin/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic) and `.purlin/cache/status.json` (the full API response, identical to the `/status.json` web endpoint schema). Both files are written on every status regeneration (CLI invocation, HTTP API request, and dashboard page load). The `status.json` file enables agents to read current project status as a file without depending on the web server.
 *   **Project Root Detection:** Uses `PURLIN_PROJECT_ROOT` if set, then climbing fallback (per project_init.md Section 2.1).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
 *   **Shared Logic:** The status computation logic MUST be consistent with the web server's `/status.json` endpoint. Implementation MAY share code with `serve.py` or extract a common module.
