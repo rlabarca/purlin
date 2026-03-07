@@ -103,12 +103,12 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 
 ### 2.12 Fixture-Backed Testing
 
-When a feature has both `> Web Testable:` and `> Test Fixtures: <repo-url>` metadata, `/pl-web-verify` can execute scenarios against fixture-provided project states rather than the live project. This solves the "complex setup" problem -- scenarios requiring specific branch states, worktree layouts, or config values get their preconditions from immutable fixture tags.
+When a feature has `> Web Testable:` metadata and the project has a fixture repo (resolved via the three-tier lookup: per-feature `> Test Fixtures:` metadata → config `fixture_repo_url` → convention path `.purlin/runtime/fixture-repo`), `/pl-web-verify` can execute scenarios against fixture-provided project states rather than the live project. This solves the "complex setup" problem -- scenarios requiring specific branch states, worktree layouts, or config values get their preconditions from immutable fixture tags.
 
 **Workflow:**
 
-1. **Fixture detection:** During pre-flight (Section 2.4), if a feature has `> Test Fixtures:` metadata, check whether any in-scope scenario's Given steps reference a fixture tag (pattern: `fixture tag "<tag-path>"`).
-2. **Fixture checkout:** For each scenario referencing a fixture tag, run `tools/test_support/fixture.sh checkout <repo-url> <tag>` to obtain the fixture state in a temp directory.
+1. **Fixture detection:** During pre-flight (Section 2.4), resolve the fixture repo path using the three-tier lookup. If a fixture repo is accessible, check whether any in-scope scenario's Given steps reference a fixture tag (pattern: `fixture tag "<tag-path>"`).
+2. **Fixture checkout:** For each scenario referencing a fixture tag, run `tools/test_support/fixture.sh checkout <repo-path> <tag>` to obtain the fixture state in a temp directory.
 3. **Server startup against fixture:** Start the CDD server against the fixture checkout: `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0`. The `--port 0` flag tells the server to bind an ephemeral port. The server prints the actual bound port to stdout (e.g., `Serving on port 52341`). The skill reads this port from the server's stdout.
 4. **URL construction:** Construct the test URL using `http://localhost:<ephemeral-port>`. This bypasses the `> Web Testable:` static URL and `> Web Port File:` entirely -- the ephemeral port from the fixture-backed server is the only port used.
 5. **Scenario execution:** Execute the scenario's When/Then steps against the fixture-backed server using the standard Playwright MCP flow (Sections 2.8-2.9).
