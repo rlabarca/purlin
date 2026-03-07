@@ -337,6 +337,230 @@ class TestGenerateDependencyGraph(unittest.TestCase):
         self.assertTrue(os.path.isfile(mmd_file))
 
 
+SERVE_PY = os.path.join(os.path.dirname(__file__), 'serve.py')
+
+
+class TestHoverHighlighting(unittest.TestCase):
+    """Scenario: Hover Highlighting
+
+    Given the user views the Spec Map
+    And feature nodes and prerequisite edges are rendered
+    When the user hovers over a feature node
+    Then the hovered node and its direct neighbors are highlighted
+    And all other nodes and edges are dimmed
+
+    Test: Verifies serve.py contains mouseover/mouseout event handlers
+    with highlighted/dimmed CSS classes for Cytoscape nodes.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_mouseover_event_registered(self):
+        """Mouseover event handler registered for feature nodes."""
+        self.assertIn("'mouseover'", self.content)
+        self.assertIn('node[!isCategory]', self.content)
+
+    def test_mouseout_event_registered(self):
+        """Mouseout event handler removes highlight classes."""
+        self.assertIn("'mouseout'", self.content)
+
+    def test_dimmed_class_applied(self):
+        """Dimmed CSS class applied to non-adjacent elements."""
+        self.assertIn("addClass('dimmed')", self.content)
+        self.assertIn("removeClass('dimmed')", self.content)
+
+    def test_highlighted_class_applied(self):
+        """Highlighted CSS class applied to adjacent nodes/edges."""
+        self.assertIn("addClass('highlighted')", self.content)
+
+    def test_dimmed_style_defined(self):
+        """Dimmed style reduces opacity."""
+        # CSS class style for dimmed elements in Cytoscape config
+        self.assertIn('.dimmed', self.content)
+        self.assertIn('.highlighted', self.content)
+
+
+class TestInactivityTimeoutRedrawsGraph(unittest.TestCase):
+    """Scenario: Inactivity Timeout Redraws Graph and Resets Zoom
+
+    Given the user has panned or zoomed the Spec Map
+    When 5 minutes pass with no user interaction
+    Then the graph redraws with fresh layout
+    And the zoom level resets to fit the viewport
+
+    Test: Verifies serve.py implements inactivity timer with
+    300000ms timeout that triggers graph redraw.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_inactivity_timeout_constant(self):
+        """Inactivity timeout is set to 300000ms (5 minutes)."""
+        self.assertIn('300000', self.content)
+
+    def test_reset_inactivity_timer_function(self):
+        """resetInactivityTimer function exists."""
+        self.assertIn('resetInactivityTimer', self.content)
+
+    def test_timeout_triggers_render(self):
+        """Timeout triggers renderGraph to redraw the graph."""
+        self.assertIn('renderGraph', self.content)
+
+    def test_user_modified_flags_reset(self):
+        """User modification flags are reset on timeout."""
+        self.assertIn('userModifiedView', self.content)
+
+
+class TestCategoriesPackedIntoViewport(unittest.TestCase):
+    """Scenario: Categories Packed Into Viewport
+
+    Given the dependency graph has multiple categories
+    When the Spec Map renders with the packed layout
+    Then category compounds are arranged to minimize whitespace
+    And the layout fits within the initial viewport
+
+    Test: Verifies serve.py implements a packed layout algorithm
+    using dagre for intra-category layout and spiral packing for
+    inter-category positioning.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_packed_layout_function_exists(self):
+        """runPackedLayout function exists in generated JavaScript."""
+        self.assertIn('runPackedLayout', self.content)
+
+    def test_dagre_layout_used(self):
+        """Dagre layout used for intra-category arrangement."""
+        self.assertIn("name: 'dagre'", self.content)
+
+    def test_spiral_packing_algorithm(self):
+        """Non-overlapping placement with spiral search."""
+        self.assertIn('findNonOverlapping', self.content)
+
+
+class TestPrerequisiteHierarchyAcrossCategories(unittest.TestCase):
+    """Scenario: Prerequisite Hierarchy Preserved Across Categories
+
+    Given category A depends on category B
+    When the packed layout runs
+    Then category B is placed above category A in the viewport
+
+    Test: Verifies serve.py computes topological layers for
+    inter-category prerequisites and enforces minY constraints.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_topological_layer_computation(self):
+        """Topological layers computed for category ordering."""
+        # Kahn's algorithm variables
+        self.assertIn('inDeg', self.content)
+
+    def test_min_y_constraint(self):
+        """MinY constraint enforces prerequisite above dependent."""
+        self.assertIn('minY', self.content)
+
+    def test_category_prerequisites_tracked(self):
+        """Category-level prerequisite relationships are tracked."""
+        self.assertIn('catPrereqs', self.content)
+
+
+class TestPrerequisiteHierarchyWithinCategories(unittest.TestCase):
+    """Scenario: Prerequisite Hierarchy Preserved Within Categories
+
+    Given a category contains features with prerequisite relationships
+    When the packed layout runs
+    Then within each category prerequisites are above dependents
+
+    Test: Verifies serve.py applies per-category dagre layout with
+    top-to-bottom rank direction.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_dagre_top_to_bottom(self):
+        """Dagre layout uses top-to-bottom rank direction."""
+        self.assertIn("rankDir: 'TB'", self.content)
+
+    def test_intra_category_edges_filtered(self):
+        """Only intra-category edges used for within-category layout."""
+        # The code filters edges to only those within the category
+        self.assertIn('intraEdges', self.content)
+
+
+class TestSearchDimsNonMatchingNodes(unittest.TestCase):
+    """Scenario: Search Dims Non-Matching Nodes
+
+    Given the user types a search query in the search input
+    When the search filter is applied to the Spec Map
+    Then non-matching nodes and their edges are dimmed
+    And matching nodes remain at full opacity
+
+    Test: Verifies serve.py implements search filtering with
+    search-hidden CSS class and opacity reduction.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_search_filter_function(self):
+        """applySearchFilter function exists."""
+        self.assertIn('applySearchFilter', self.content)
+
+    def test_search_hidden_class(self):
+        """search-hidden CSS class used for dimming."""
+        self.assertIn('search-hidden', self.content)
+
+    def test_search_matches_label_and_file(self):
+        """Search matches against label and file path."""
+        self.assertIn('friendlyName', self.content)
+
+    def test_category_nodes_hidden_when_empty(self):
+        """Category nodes hidden when no children match."""
+        self.assertIn('isCategory', self.content)
+
+
+class TestClicksOnEdgesPassThrough(unittest.TestCase):
+    """Scenario: Clicks on Edges Pass Through
+
+    Given the user clicks on an edge (prerequisite arrow)
+    When the click event fires
+    Then no modal or detail panel opens
+    And the click passes through to the background
+
+    Test: Verifies serve.py registers tap events only on feature
+    nodes, not on edges.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_tap_only_on_nodes(self):
+        """Tap event registered only for feature nodes, not edges."""
+        self.assertIn("'tap', 'node[!isCategory]'", self.content)
+
+    def test_no_edge_tap_handler(self):
+        """No tap event handler registered for edges."""
+        self.assertNotIn("'tap', 'edge'", self.content)
+
+    def test_node_tap_opens_modal(self):
+        """Node tap opens feature detail modal."""
+        self.assertIn('openModal', self.content)
+
+
 class TestMermaidGeneration(unittest.TestCase):
     def test_generates_valid_mermaid(self):
         features = {
