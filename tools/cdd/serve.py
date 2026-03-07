@@ -2038,30 +2038,7 @@ def generate_html(cache=None):
 
     active_summary = _section_summary_badge(active_features)
 
-    # QA Queue aggregate summary (cdd_qa_effort_display Section 2.3)
-    qa_queue_html = ''
-    if active_features:
-        total_auto = 0
-        total_manual = 0
-        features_with_effort = 0
-        for e in active_features:
-            ve = e.get('verification_effort')
-            if ve:
-                a = ve.get('total_auto', 0)
-                m = ve.get('total_manual', 0)
-                if a > 0 or m > 0:
-                    total_auto += a
-                    total_manual += m
-                    features_with_effort += 1
-        if features_with_effort > 0:
-            qa_queue_html = (
-                f'<span class="qa-queue-summary">'
-                f'QA Queue: {total_auto} auto-resolvable, '
-                f'{total_manual} manual across '
-                f'{features_with_effort} feature'
-                f'{"s" if features_with_effort != 1 else ""}'
-                f'</span>'
-            )
+    # No aggregate QA queue summary (cdd_qa_effort_display Section 2.1.1)
 
     complete_summary = ''  # Complete section shows no badge when collapsed (spec 2.2.2)
 
@@ -2233,7 +2210,6 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
 .effort-breakdown{{cursor:help;position:relative}}
 .effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-fg);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
-.qa-queue-summary{{color:var(--purlin-muted);font-size:12px;font-weight:500;margin-left:8px}}
 /* Feature Detail Modal */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
@@ -2343,7 +2319,6 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         <span class="section-badge" id="active-section-badge" style="display:none">{active_summary}</span>
       </div>
       <div class="section-body" id="active-section">
-        {qa_queue_html}
         {active_html or '<p class="dim">No active features.</p>'}
       </div>
       <div class="section-hdr" onclick="toggleSection('complete-section')">
