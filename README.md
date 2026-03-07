@@ -322,9 +322,9 @@ git submodule update --init
 
 This creates in your project root:
 *   `.purlin/` -- override templates and config (MUST be committed to your project)
-*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- layered launcher scripts
-*   `purlin_init.sh` -- a shim for collaborators to initialize or refresh Purlin (commit this)
-*   `purlin_cdd_start.sh` / `purlin_cdd_stop.sh` -- CDD dashboard convenience symlinks
+*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` -- layered launcher scripts
+*   `pl-init.sh` -- a shim for collaborators to initialize or refresh Purlin (commit this)
+*   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard convenience symlinks
 *   `features/` directory
 *   `.claude/commands/` -- agent slash commands
 
@@ -341,7 +341,7 @@ Your Architect agent will guide you through customizing the overrides for your p
 When a team member clones your repository (even without `--recurse-submodules`), a single command handles everything:
 
 ```bash
-./purlin_init.sh
+./pl-init.sh
 ```
 
 This automatically initializes the Purlin submodule if needed, then runs the init script in refresh mode -- creating or repairing launchers, commands, and symlinks without touching project-specific config or overrides.
@@ -349,16 +349,16 @@ This automatically initializes the Purlin submodule if needed, then runs the ini
 ### 4. Launch Agents
 
 ```bash
-./run_architect.sh   # Architect agent
-./run_builder.sh     # Builder agent
-./run_qa.sh          # QA agent
+./pl-run-architect.sh   # Architect agent
+./pl-run-builder.sh     # Builder agent
+./pl-run-qa.sh          # QA agent
 ```
 
 ### 5. Run the CDD Dashboard
 
 ```bash
-./purlin_cdd_start.sh                  # uses port from config (default: 8086)
-./purlin_cdd_start.sh -p 9090         # override port at runtime
+./pl-cdd-start.sh                  # uses port from config (default: 8086)
+./pl-cdd-start.sh -p 9090         # override port at runtime
 ```
 
 Open **http://localhost:8086** (or your chosen port) in your browser. The `-p` flag overrides the `cdd_port` value in `.purlin/config.json` without modifying it -- useful when running multiple projects on the same machine or when collaborators use different ports. The dashboard has two modes:
@@ -393,7 +393,7 @@ Works on macOS, Linux, and Windows via WSL or Git Bash.
 Use the `/pl-update-purlin` agent skill to intelligently update Purlin:
 
 ```bash
-./run_architect.sh   # or run_builder.sh / run_qa.sh
+./pl-run-architect.sh   # or pl-run-builder.sh / pl-run-qa.sh
 # In the Claude Code session:
 /pl-update-purlin
 ```
@@ -423,8 +423,8 @@ Created by `init.sh` in your project root:
 *   `purlin/` -- The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` -- Your project-specific overrides and config.
 *   `features/` -- Your feature specifications.
-*   `run_architect.sh` / `run_builder.sh` / `run_qa.sh` -- Agent launcher scripts.
-*   `purlin_init.sh` -- Collaborator setup shim. Commit this.
-*   `purlin_cdd_start.sh` / `purlin_cdd_stop.sh` -- CDD dashboard start/stop scripts.
+*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` -- Agent launcher scripts.
+*   `pl-init.sh` -- Collaborator setup shim. Commit this.
+*   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard start/stop scripts.
 
 

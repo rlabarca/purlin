@@ -65,7 +65,7 @@ Purlin Builder — Ready
 
 ### 2.3 Launcher Validation
 
-*   Each launcher (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST read `startup_sequence` and `recommend_next_actions` for its role from `config.json` at startup, before invoking Claude.
+*   Each launcher (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) MUST read `startup_sequence` and `recommend_next_actions` for its role from `config.json` at startup, before invoking Claude.
 *   **Invalid combination check:** When `startup_sequence` is `false` and `recommend_next_actions` is `true`, the launcher MUST print an error message to stderr describing the invalid combination and exit with status 1 without invoking Claude.
 *   **No behavioral injection:** The launchers do not conditionally modify the prompt or session message based on these flags. Actual conditional startup behavior is driven by the agent's instruction files (which read the flags from `config.json` directly).
 
@@ -102,20 +102,20 @@ Purlin Builder — Ready
 
 #### Scenario: Launcher Rejects Invalid Flag Combination
     Given config.json contains agents.builder with startup_sequence false and recommend_next_actions true
-    When run_builder.sh is executed
+    When pl-run-builder.sh is executed
     Then the script prints an error message describing the invalid combination to stderr
     And exits with status 1
     And does not invoke the claude CLI
 
 #### Scenario: Launcher Accepts Valid Combinations Without Error
     Given config.json contains agents.builder with startup_sequence true and recommend_next_actions false
-    When run_builder.sh is executed
+    When pl-run-builder.sh is executed
     Then the script exits without an error related to startup controls
     And invokes the claude CLI normally
 
 #### Scenario: Launcher Defaults Missing Fields to True
     Given config.json does not contain startup_sequence or recommend_next_actions for agents.architect
-    When run_architect.sh reads agent config
+    When pl-run-architect.sh reads agent config
     Then AGENT_STARTUP defaults to true
     And AGENT_RECOMMEND defaults to true
 

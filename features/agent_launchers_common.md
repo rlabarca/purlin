@@ -8,13 +8,13 @@
 ## 1. Overview
 Shell scripts that launch Purlin agents (Architect, Builder, QA) using the Claude CLI. The scripts read agent configuration from `config.json`, assemble the layered instruction prompt, and dispatch to Claude.
 
-Scripts are named `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` and live at the project root.
+Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh` and live at the project root.
 
 
 ## 2. Requirements
 
 ### 2.1 Script Names and Location
-*   **Files:** `run_architect.sh`, `run_builder.sh`, and `run_qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
+*   **Files:** `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Submodule detection:** Each script MUST check for `$SCRIPT_DIR/purlin/instructions/` and fall back to `$SCRIPT_DIR/instructions/` when not in a submodule consumer context.
 *   **Project root export:** Each script MUST export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
 *   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by PostToolUse hooks (e.g., `context_guard.sh`) for per-agent configuration resolution.
@@ -58,19 +58,19 @@ Session messages are passed as the trailing positional argument to the Claude CL
 
 #### Scenario: Claude Launcher Dispatches with Model and Effort
     Given config.json contains agents.architect with model "claude-sonnet-4-6", effort "high", bypass_permissions false
-    When run_architect.sh is executed
+    When pl-run-architect.sh is executed
     Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
     And it passes --allowedTools with the Architect role restrictions
     And it passes --append-system-prompt-file pointing to the assembled prompt
 
 #### Scenario: Launcher Exports PURLIN_PROJECT_ROOT
     Given a launcher script is invoked from any working directory
-    When any launcher script (run_architect.sh, run_builder.sh, run_qa.sh) is executed
+    When any launcher script (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh) is executed
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of the project root
 
 #### Scenario: Launcher Exports AGENT_ROLE
     Given a launcher script is invoked
-    When run_architect.sh is executed
+    When pl-run-architect.sh is executed
     Then AGENT_ROLE is exported as "architect"
     And the env var is visible to child processes and PostToolUse hooks
 

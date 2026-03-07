@@ -56,7 +56,7 @@ All existing config consumers MUST be updated to use the resolver instead of dir
 - Any other Python file that reads `.purlin/config.json` directly.
 
 **Shell consumers** (call `resolve_config.py` CLI):
-- `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (launcher scripts)
+- `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh` (launcher scripts)
 - `tools/cdd/start.sh`
 - `tools/cdd/context_guard.sh`
 - Any other shell script that reads `.purlin/config.json` via inline `python3 -c`.

@@ -12,7 +12,7 @@ The `/pl-update-purlin` agent skill provides intelligent synchronization of the 
 This skill replaces `tools/sync_upstream.sh` with a smarter, interactive approach that:
 - Analyzes upstream changes semantically (not just textually)
 - Preserves user customizations in `.purlin/` overrides
-- Tracks and updates top-level scripts (`run_builder.sh`, launcher scripts, etc.)
+- Tracks and updates top-level scripts (`pl-run-builder.sh`, launcher scripts, etc.)
 - Provides migration plans for breaking changes
 - Handles multi-file updates atomically
 - Offers context-aware merge strategies
@@ -113,7 +113,7 @@ The skill MUST detect and report ALL user customizations:
        - Always report current SHA (no modification check needed)
 
 2. **Top-Level Scripts Analysis:**
-   - For each tracked script (`run_builder.sh`, `run_architect.sh`, `run_qa.sh`):
+   - For each tracked script (`pl-run-builder.sh`, `pl-run-architect.sh`, `pl-run-qa.sh`):
      - Compare against what init.sh would have generated at current submodule version
      - If differs, report: "Modified: <script> (custom logic added)"
 
@@ -138,7 +138,7 @@ The skill MUST detect and report ALL user customizations:
      ✓ HOW_WE_WORK_OVERRIDES.md: 23 lines of custom workflow
 
    Scripts:
-     ⚠ run_builder.sh: Modified (custom environment setup)
+     ⚠ pl-run-builder.sh: Modified (custom environment setup)
 
    Commands:
      ⚠ pl-status.md: Modified (custom output format)
@@ -164,7 +164,7 @@ Will be UPDATED:
   → Unmodified top-level scripts
 
 Will REQUIRE REVIEW:
-  ⚠ run_builder.sh (modified) - merge strategies will be offered
+  ⚠ pl-run-builder.sh (modified) - merge strategies will be offered
   ⚠ pl-status.md (modified) - merge strategies will be offered
 
 New config keys from upstream:
@@ -214,9 +214,9 @@ When changes exist between old and current SHA, the skill MUST analyze:
 
 #### 2.4.4 Top-Level Script Changes
 The skill MUST track and intelligently update these files:
-- `run_builder.sh`
-- `run_architect.sh`
-- `run_qa.sh`
+- `pl-run-builder.sh`
+- `pl-run-architect.sh`
+- `pl-run-qa.sh`
 - Any launcher scripts in project root
 
 For each changed top-level script:
@@ -291,7 +291,7 @@ After the atomic update is complete (Section 2.7) and before config sync, the sk
 
 *   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic).
 *   CDD convenience symlinks (repaired if missing).
-*   Project-root shim (`purlin_init.sh` updated with new SHA and version).
+*   Project-root shim (`pl-init.sh` updated with new SHA and version).
 *   `.purlin/.upstream_sha` (updated to current submodule HEAD).
 
 This delegates the mechanical copy/symlink/shim work to the canonical init script, replacing the skill's own post-update file-copy logic. The skill's step 7 (Section 2.4.3: command file changes with three-way diff) remains for conflict resolution on files that have both upstream and local modifications — init's timestamp-based skip preserves locally modified files but does not resolve content conflicts.
@@ -324,7 +324,7 @@ Updated: <old_sha_short> → <new_sha_short>
 Changes Applied:
   ✓ 3 command files updated
   ✓ 1 new command added (pl-new-feature.md)
-  ✓ run_builder.sh updated
+  ✓ pl-run-builder.sh updated
   ⚠ 2 files require manual review:
     - .purlin/ARCHITECT_OVERRIDES.md (structural changes detected)
     - custom_script.sh (breaking tool signature change)
@@ -357,6 +357,12 @@ After a successful update, the skill MUST detect and offer to remove stale artif
    - `tools/sync_upstream.sh` — removed when `/pl-update-purlin` replaced it
    - `tools/bootstrap.sh` — removed when `tools/init.sh` superseded it
    - `tools/test_bootstrap.sh` — removed with `bootstrap.sh` (tests moved to `tools/test_init.sh`)
+   - `run_architect.sh` — renamed to `pl-run-architect.sh`
+   - `run_builder.sh` — renamed to `pl-run-builder.sh`
+   - `run_qa.sh` — renamed to `pl-run-qa.sh`
+   - `purlin_init.sh` — renamed to `pl-init.sh`
+   - `purlin_cdd_start.sh` — renamed to `pl-cdd-start.sh`
+   - `purlin_cdd_stop.sh` — renamed to `pl-cdd-stop.sh`
 3. **Report Format:**
    ```
    Stale artifacts detected from previous Purlin version:
@@ -425,15 +431,15 @@ The skill MUST detect when invoked in the standalone Purlin repo (not a consumer
     And waits for user decision
 
 #### Scenario: Top-Level Script Updated Automatically
-    Given run_builder.sh changed upstream
-    And the consumer's run_builder.sh matches the old version
+    Given pl-run-builder.sh changed upstream
+    And the consumer's pl-run-builder.sh matches the old version
     When /pl-update-purlin is invoked
-    Then run_builder.sh is auto-updated
-    And the report shows "✓ run_builder.sh updated"
+    Then pl-run-builder.sh is auto-updated
+    And the report shows "✓ pl-run-builder.sh updated"
 
 #### Scenario: Top-Level Script with Local Changes
-    Given run_builder.sh changed upstream
-    And the consumer has modified run_builder.sh locally
+    Given pl-run-builder.sh changed upstream
+    And the consumer has modified pl-run-builder.sh locally
     When /pl-update-purlin is invoked
     Then the skill shows the diff between user changes and upstream changes
     And offers merge strategies
@@ -557,9 +563,9 @@ For modified files:
 ### 4.5 Top-Level File Tracking
 Create `.purlin/.tracked_files` manifest listing files synced to project root:
 ```
-run_builder.sh
-run_architect.sh
-run_qa.sh
+pl-run-builder.sh
+pl-run-architect.sh
+pl-run-qa.sh
 ```
 The skill updates this manifest on each sync.
 

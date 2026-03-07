@@ -20,9 +20,9 @@ All Python consumers follow the Section 2.13 safe-read pattern (`try/except` wit
 
 | File | Current Pattern | Migration |
 |------|----------------|-----------|
-| `run_architect.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py architect)` |
-| `run_builder.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py builder)` |
-| `run_qa.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py qa)` |
+| `pl-run-architect.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py architect)` |
+| `pl-run-builder.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py builder)` |
+| `pl-run-qa.sh` | `python3 -c "import json; ..."` inline | `eval $(python3 tools/config/resolve_config.py qa)` |
 | `tools/cdd/start.sh` | `python3 -c "import json; ..."` for port | `CDD_PORT=$(python3 tools/config/resolve_config.py --key cdd_port)` |
 | `tools/cdd/context_guard.sh` | `python3 -c "import json; ..."` | Replace with `resolve_config.py --key` calls |
 

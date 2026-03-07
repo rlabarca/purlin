@@ -61,7 +61,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
        ✓ QA_OVERRIDES.md: 12 lines of custom rules
 
      Scripts:
-       ⚠ run_builder.sh: Modified (custom setup)
+       ⚠ pl-run-builder.sh: Modified (custom setup)
 
      Commands:
        ⚠ pl-status.md: Modified
@@ -93,7 +93,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
      - Deleted upstream (unmodified locally): auto-delete, report "Removed: <filename> (no longer in upstream)"
      - Deleted upstream (modified locally): show local modifications, prompt user; delete on confirmation or preserve with warning
      - **pl-edit-base.md is NEVER synced** (silently excluded)
-   - **Top-level script changes:** Track and update `run_builder.sh`, `run_architect.sh`, `run_qa.sh`
+   - **Top-level script changes:** Track and update `pl-run-builder.sh`, `pl-run-architect.sh`, `pl-run-qa.sh`
      - If user modified: show diff, offer merge strategies
      - If unmodified: auto-update
    - **.purlin/ folder intelligence:**
@@ -123,7 +123,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
 
 11. **Post-Update Init Refresh:**
    - After the atomic update completes successfully, run `tools/init.sh --quiet` to refresh all project-root artifacts
-   - This refreshes: command files (new/updated `.claude/commands/pl-*.md`), CDD convenience symlinks, project-root shim (`purlin_init.sh`), and `.purlin/.upstream_sha`
+   - This refreshes: command files (new/updated `.claude/commands/pl-*.md`), CDD convenience symlinks, project-root shim (`pl-init.sh`), and `.purlin/.upstream_sha`
    - Init's timestamp logic preserves locally modified files — the three-way diff in step 7 handles content conflicts for modified files
    - Note in the summary report that init/refresh ran (e.g., "Init refresh completed")
 
@@ -164,7 +164,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
      ✓ Init refresh completed
      ✓ 3 command files updated
      ✓ 1 new command added
-     ✓ run_builder.sh updated
+     ✓ pl-run-builder.sh updated
      ⚠ 2 files require manual review
 
    Migration Plan: .purlin/migration_plan_<timestamp>.md

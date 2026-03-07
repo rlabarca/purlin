@@ -74,7 +74,7 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 2. Check dirty (hard block), then unsynced (soft warn).
 3. If dirty and `--force` is not set: exit code 1, list files, instruct user to commit/stash first.
 4. If unsynced (but not dirty, or `--force` is set): list branch + commit count with a warning, then proceed.
-5. Delete the three generated launcher scripts from `$PROJECT_ROOT/` if they exist: `run_<name>_architect.sh`, `run_<name>_builder.sh`, `run_<name>_qa.sh`.
+5. Delete the three generated launcher scripts from `$PROJECT_ROOT/` if they exist: `pl-run-<name>-architect.sh`, `pl-run-<name>-builder.sh`, `pl-run-<name>-qa.sh`.
 6. Remove the worktree: `git worktree remove .worktrees/<name>`.
 7. Remove the `isolated/<name>` branch: `git branch -d isolated/<name>` (skip if unsynced commits exist — branch has unmerged work).
 8. Remove `.worktrees/` directory if now empty.
@@ -101,9 +101,9 @@ This replaces the rigid three-role setup of the retired `agent_launchers_multius
 ### 2.6 Per-Team Launcher Scripts
 
 When `create_isolation.sh <name>` succeeds, it MUST generate three scripts in `$PROJECT_ROOT/`:
-- `run_<name>_architect.sh`
-- `run_<name>_builder.sh`
-- `run_<name>_qa.sh`
+- `pl-run-<name>-architect.sh`
+- `pl-run-<name>-builder.sh`
+- `pl-run-<name>-qa.sh`
 
 **Script contract:**
 - Each script MUST `cd` into the worktree directory and then `exec` the corresponding launcher: `cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_<role>.sh" "$@"`.
@@ -111,7 +111,7 @@ When `create_isolation.sh <name>` succeeds, it MUST generate three scripts in `$
 - Each script sets `PURLIN_PROJECT_ROOT` indirectly: `exec` replaces the wrapper subshell with the worktree's launcher, which sets `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` (resolved to the worktree path via `dirname "${BASH_SOURCE[0]}"`). No explicit `PURLIN_PROJECT_ROOT` override is needed.
 - **CWD preservation (user's shell):** The `cd` inside the generated script does NOT change the user's interactive shell working directory. Because `exec` replaces only the child subshell (not the user's interactive shell), the user's working directory at the project root is preserved after the agent exits. A comment in each generated script MUST document this guarantee.
 - If the worktree does not exist at execution time, the script exits with code 1 and a descriptive error message.
-- Generated scripts MUST NOT be tracked by git. `.gitignore` MUST contain patterns `run_*_architect.sh`, `run_*_builder.sh`, `run_*_qa.sh`.
+- Generated scripts MUST NOT be tracked by git. `.gitignore` MUST contain patterns `pl-run-*-architect.sh`, `pl-run-*-builder.sh`, `pl-run-*-qa.sh`.
 
 **On kill:** `kill_isolation.sh <name>` MUST delete these three scripts (if they exist) from `$PROJECT_ROOT/` as part of its cleanup sequence, before removing the worktree.
 
@@ -128,7 +128,7 @@ When `create_isolation.sh <name>` succeeds, it MUST generate three scripts in `$
 
 ### 2.5 PURLIN_PROJECT_ROOT in Worktrees
 
-The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) already export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"`. When run from within a worktree, `$SCRIPT_DIR` resolves to the worktree directory — which is the correct value. No modification to the launcher scripts is required.
+The standard launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) already export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"`. When run from within a worktree, `$SCRIPT_DIR` resolves to the worktree directory — which is the correct value. No modification to the launcher scripts is required.
 
 **Verification:** A worktree launched with `PURLIN_PROJECT_ROOT` set to the worktree path will:
 
@@ -236,7 +236,7 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
 
 #### Scenario: PURLIN_PROJECT_ROOT Resolves to Worktree Path
 
-    Given the user runs run_architect.sh from .worktrees/feat1/
+    Given the user runs pl-run-architect.sh from .worktrees/feat1/
     When the launcher script executes
     Then PURLIN_PROJECT_ROOT is exported as the absolute path of .worktrees/feat1/
     And features/ scanning targets the worktree's features/ directory
@@ -247,40 +247,40 @@ The standard launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`
     Given the project root has no worktree at .worktrees/feat1/
     And .worktrees/ is gitignored
     When create_isolation.sh feat1 is run
-    Then run_feat1_architect.sh exists at $PROJECT_ROOT/ and is executable
-    And run_feat1_builder.sh exists at $PROJECT_ROOT/ and is executable
-    And run_feat1_qa.sh exists at $PROJECT_ROOT/ and is executable
+    Then pl-run-feat1-architect.sh exists at $PROJECT_ROOT/ and is executable
+    And pl-run-feat1-builder.sh exists at $PROJECT_ROOT/ and is executable
+    And pl-run-feat1-qa.sh exists at $PROJECT_ROOT/ and is executable
 
 #### Scenario: Generated Launcher Scripts cd Into Worktree Before Exec
 
     Given create_isolation.sh feat1 is run successfully
-    When run_feat1_architect.sh is inspected
+    When pl-run-feat1-architect.sh is inspected
     Then it contains: cd "$WORKTREE_PATH"
-    And it contains: exec "$WORKTREE_PATH/run_architect.sh" "$@"
+    And it contains: exec "$WORKTREE_PATH/pl-run-architect.sh" "$@"
 
 #### Scenario: Generated Launcher Scripts Delegate to Correct Worktree Launcher Per Role
 
     Given create_isolation.sh feat1 is run successfully
     When each generated launcher script is inspected
-    Then run_feat1_architect.sh delegates to .worktrees/feat1/run_architect.sh
-    And run_feat1_builder.sh delegates to .worktrees/feat1/run_builder.sh
-    And run_feat1_qa.sh delegates to .worktrees/feat1/run_qa.sh
+    Then pl-run-feat1-architect.sh delegates to .worktrees/feat1/pl-run-architect.sh
+    And pl-run-feat1-builder.sh delegates to .worktrees/feat1/pl-run-builder.sh
+    And pl-run-feat1-qa.sh delegates to .worktrees/feat1/pl-run-qa.sh
 
 #### Scenario: kill_isolation Removes All Three Launcher Scripts
 
-    Given .worktrees/feat1/ exists and run_feat1_architect.sh, run_feat1_builder.sh, run_feat1_qa.sh exist at $PROJECT_ROOT/
+    Given .worktrees/feat1/ exists and pl-run-feat1-architect.sh, pl-run-feat1-builder.sh, pl-run-feat1-qa.sh exist at $PROJECT_ROOT/
     When kill_isolation.sh feat1 is run
-    Then run_feat1_architect.sh no longer exists at $PROJECT_ROOT/
-    And run_feat1_builder.sh no longer exists at $PROJECT_ROOT/
-    And run_feat1_qa.sh no longer exists at $PROJECT_ROOT/
+    Then pl-run-feat1-architect.sh no longer exists at $PROJECT_ROOT/
+    And pl-run-feat1-builder.sh no longer exists at $PROJECT_ROOT/
+    And pl-run-feat1-qa.sh no longer exists at $PROJECT_ROOT/
 
 #### Scenario: Launcher Scripts Are Not Modified on Idempotent Create
 
     Given .worktrees/feat1/ already exists
-    And run_feat1_architect.sh already exists at $PROJECT_ROOT/ with known content
+    And pl-run-feat1-architect.sh already exists at $PROJECT_ROOT/ with known content
     When create_isolation.sh feat1 is run again
     Then the script exits with code 0
-    And run_feat1_architect.sh still has the same content as before
+    And pl-run-feat1-architect.sh still has the same content as before
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -304,14 +304,14 @@ The `create_isolation.sh` approach avoids modifying the main checkout during set
 
 **`.worktrees/` detection:** The `.worktrees/` directory convention is required for the CDD Isolated Teams dashboard to detect active isolated teams. The dashboard uses `git worktree list --porcelain` and filters to paths under `.worktrees/` relative to the project root.
 
-**Per-team launcher scripts:** `create_isolation.sh` generates `run_<name>_architect.sh`, `run_<name>_builder.sh`, and `run_<name>_qa.sh` in `$PROJECT_ROOT/` using `cd "$WORKTREE_PATH" && exec` to delegate to the corresponding launchers inside the worktree. The `cd` before `exec` is required so the agent process inherits the worktree as its working directory — without it, `git rev-parse --abbrev-ref HEAD` returns `main` (the caller's CWD) instead of `isolated/<name>`, suppressing the `/pl-isolated-push`/`/pl-isolated-pull` commands in the startup print. `PURLIN_PROJECT_ROOT` is still resolved correctly by the worktree's own launcher (`SCRIPT_DIR` → worktree path via `dirname "${BASH_SOURCE[0]}"`). The user's interactive shell working directory is preserved because `exec` replaces only the child subshell, not the interactive shell. These scripts are gitignored and removed by `kill_isolation.sh` before worktree removal.
+**Per-team launcher scripts:** `create_isolation.sh` generates `pl-run-<name>-architect.sh`, `pl-run-<name>-builder.sh`, and `pl-run-<name>-qa.sh` in `$PROJECT_ROOT/` using `cd "$WORKTREE_PATH" && exec` to delegate to the corresponding launchers inside the worktree. The `cd` before `exec` is required so the agent process inherits the worktree as its working directory — without it, `git rev-parse --abbrev-ref HEAD` returns `main` (the caller's CWD) instead of `isolated/<name>`, suppressing the `/pl-isolated-push`/`/pl-isolated-pull` commands in the startup print. `PURLIN_PROJECT_ROOT` is still resolved correctly by the worktree's own launcher (`SCRIPT_DIR` → worktree path via `dirname "${BASH_SOURCE[0]}"`). The user's interactive shell working directory is preserved because `exec` replaces only the child subshell, not the interactive shell. These scripts are gitignored and removed by `kill_isolation.sh` before worktree removal.
 
 ---
 
 ## User Testing Discoveries
 
 **[BUG] RESOLVED — Generated launcher scripts do not cd into worktree before exec** (Severity: HIGH)
-- **Observed:** Running `./run_<team>_architect.sh` from the project root does not print `/pl-isolated-push` and `/pl-isolated-pull` in the Architect startup command table. Running the same session by cd-ing into the worktree and running `./run_architect.sh` directly does show them.
+- **Observed:** Running `./run_<team>_architect.sh` from the project root does not print `/pl-isolated-push` and `/pl-isolated-pull` in the Architect startup command table. Running the same session by cd-ing into the worktree and running `./pl-run-architect.sh` directly does show them.
 - **Root cause:** The generated scripts delegate via `exec` without first `cd`-ing into the worktree. Claude inherits the caller's CWD (project root, branch `main`), so `git rev-parse --abbrev-ref HEAD` returns `main` instead of `isolated/<name>`, causing the startup protocol to skip the isolation command table variant.
 - **Fix required (Builder):** In `tools/collab/create_isolation.sh`, change the generated script's delegation line from `exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"` to `cd "$WORKTREE_PATH" && exec "$WORKTREE_PATH/run_${ROLE}.sh" "$@"`. The `cd` occurs in the child subshell; `exec` replaces it — the user's interactive shell CWD is unaffected.
 - **Spec updated:** Section 2.6 now mandates `cd` before `exec` and explains why.

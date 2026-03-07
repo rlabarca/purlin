@@ -30,7 +30,7 @@ Purlin uses named git worktrees (local isolations) to allow any number of agent 
 *   In a git worktree, the `.git` entry is a file (gitdir: pointer), not a directory.
 *   Path-climbing fallback may skip the worktree root and land on the parent repo root.
 *   Each agent session in a worktree MUST set `PURLIN_PROJECT_ROOT` to the worktree directory path.
-*   The launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) are responsible for this export.
+*   The launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) are responsible for this export.
 *   Without this, `features/` scanning and cache writes target the wrong root.
 
 ### 2.4 Integration Moment Protocol

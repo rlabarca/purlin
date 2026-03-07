@@ -10,7 +10,7 @@
 
 Provides a single, idempotent entry point for initializing and refreshing a consumer project that uses Purlin as a git submodule. The unified `init.sh` auto-detects project state and does the right thing — whether it is the first run or the hundredth.
 
-The design uses a two-script architecture: a canonical `tools/init.sh` containing all logic, and a thin `purlin_init.sh` shim at the project root that works even before the submodule is initialized.
+The design uses a two-script architecture: a canonical `tools/init.sh` containing all logic, and a thin `pl-init.sh` shim at the project root that works even before the submodule is initialized.
 
 ---
 
@@ -38,11 +38,11 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 2.  **Config Patching:** Set the `tools_root` value in the copied `config.json` to the correct relative path from the project root to the submodule's `tools/` directory (e.g., `purlin/tools`). MUST use precise `sed` that replaces only the value portion and validate with `python3 json.load()`.
 3.  **Provider Detection:** Run `tools/detect-providers.sh` and merge available providers into config. For each provider reported as `available: true`, merge its `models` array into the installed config under `llm_providers.<provider>`. Non-blocking if the script fails or is missing.
 4.  **Upstream SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha` (40-character SHA, single line).
-5.  **Launcher Script Generation:** Generate `run_architect.sh`, `run_builder.sh`, `run_qa.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
+5.  **Launcher Script Generation:** Generate `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
 6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
 8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Append recommended ignores (including `.purlin/runtime/` and `.purlin/cache/`) if not already present.
-9.  **Shim Generation:** Generate `purlin_init.sh` at the project root (Section 2.5).
+9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
 12. **Summary Output:** Print a concise summary (Section 2.7).
@@ -57,7 +57,7 @@ When `.purlin/` already exists, the script MUST perform only these updates:
     *   If the destination file exists AND is older than or same age as the source: overwrite it.
     *   `pl-edit-base.md` MUST NEVER be copied.
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
-3.  **Shim Self-Update:** If `purlin_init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
+3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
 5.  **Refresh Summary:** Print a concise summary (Section 2.8).
 
@@ -70,11 +70,11 @@ Refresh mode MUST NEVER modify:
 *   `.purlin/release/` (any file)
 *   `.gitignore`
 *   `features/` directory
-*   Launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) — UNLESS the `--regenerate-launchers` flag is passed (Section 2.9).
+*   Launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) — UNLESS the `--regenerate-launchers` flag is passed (Section 2.9).
 
-### 2.5 Project-Root Shim (`purlin_init.sh`)
+### 2.5 Project-Root Shim (`pl-init.sh`)
 
-The script MUST generate a `purlin_init.sh` file at the project root with the following properties:
+The script MUST generate a `pl-init.sh` file at the project root with the following properties:
 
 *   **Executable:** Marked `chmod +x`.
 *   **Header Metadata:** The file header MUST embed:
@@ -95,8 +95,8 @@ The script MUST generate a `purlin_init.sh` file at the project root with the fo
 
 On both full init and refresh, the script MUST create these symlinks at the project root:
 
-*   `purlin_cdd_start.sh` -> `<submodule>/tools/cdd/start.sh`
-*   `purlin_cdd_stop.sh` -> `<submodule>/tools/cdd/stop.sh`
+*   `pl-cdd-start.sh` -> `<submodule>/tools/cdd/start.sh`
+*   `pl-cdd-stop.sh` -> `<submodule>/tools/cdd/stop.sh`
 
 The symlinks MUST use relative paths (not absolute) so they remain valid after repository relocation. If a symlink already exists and points to the correct target, leave it unchanged. If it exists but points to the wrong target, replace it.
 
@@ -107,12 +107,12 @@ The full init summary MUST be concise — no verbose logs, just the essentials:
 ```
 Purlin initialized.
 
-  purlin_init.sh          Run anytime to refresh
-  ./run_architect.sh      Start Architect session
-  ./run_builder.sh        Start Builder session
-  ./run_qa.sh             Start QA session
-  ./purlin_cdd_start.sh   Start CDD dashboard
-  ./purlin_cdd_stop.sh    Stop CDD dashboard
+  pl-init.sh              Run anytime to refresh
+  ./pl-run-architect.sh   Start Architect session
+  ./pl-run-builder.sh     Start Builder session
+  ./pl-run-qa.sh          Start QA session
+  ./pl-cdd-start.sh       Start CDD dashboard
+  ./pl-cdd-stop.sh        Stop CDD dashboard
 
 Next: git add -A && git commit -m "init purlin"
 ```
@@ -131,7 +131,7 @@ If CDD symlinks were repaired or the shim was updated, append a brief note.
 
 ### 2.9 CLI Flags
 
-*   **`--regenerate-launchers`:** When passed, refresh mode ALSO regenerates launcher scripts (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`), overwriting existing ones. Without this flag, launchers are never touched in refresh mode.
+*   **`--regenerate-launchers`:** When passed, refresh mode ALSO regenerates launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`), overwriting existing ones. Without this flag, launchers are never touched in refresh mode.
 *   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `/pl-update-purlin`). Errors still print to stderr.
 
 ### 2.10 Idempotency
@@ -166,14 +166,14 @@ The test script MUST include assertions for all of the following. Each test MUST
 1.  **Fresh init creates `.purlin/`:** Run `init.sh` in a clean sandbox. Assert `.purlin/` exists with `config.json`, all `*_OVERRIDES.md` templates, and `.upstream_sha`.
 2.  **Config JSON validity:** Assert the patched `config.json` is valid JSON via `python3 -c "import json; json.load(open(...))"`.
 3.  **Config `tools_root` is correct:** Assert `config.json` contains the expected `tools_root` value for the submodule path.
-4.  **Launcher scripts created:** Assert `run_architect.sh`, `run_builder.sh`, `run_qa.sh` exist and are executable.
+4.  **Launcher scripts created:** Assert `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh` exist and are executable.
 5.  **Launcher scripts export PURLIN_PROJECT_ROOT:** Assert each launcher contains `export PURLIN_PROJECT_ROOT`.
 6.  **Command files copied:** Assert `.claude/commands/` exists and contains `pl-*.md` files.
 7.  **`pl-edit-base.md` excluded:** Assert `.claude/commands/pl-edit-base.md` does NOT exist.
 8.  **`features/` directory created:** Assert `features/` exists at the project root.
-9.  **Shim generated:** Assert `purlin_init.sh` exists and is executable.
-10. **Shim contains metadata:** Assert `purlin_init.sh` header contains the submodule remote URL, SHA, and version tag (or "untagged").
-11. **CDD symlinks created:** Assert `purlin_cdd_start.sh` and `purlin_cdd_stop.sh` exist as symlinks pointing to the correct targets.
+9.  **Shim generated:** Assert `pl-init.sh` exists and is executable.
+10. **Shim contains metadata:** Assert `pl-init.sh` header contains the submodule remote URL, SHA, and version tag (or "untagged").
+11. **CDD symlinks created:** Assert `pl-cdd-start.sh` and `pl-cdd-stop.sh` exist as symlinks pointing to the correct targets.
 12. **CDD symlinks use relative paths:** Assert the symlink targets are relative (not absolute).
 13. **Output is concise:** Assert stdout contains "Purlin initialized" and the expected summary lines.
 
@@ -193,8 +193,8 @@ The test script MUST include assertions for all of the following. Each test MUST
 
 23. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
 24. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
-25. **`--regenerate-launchers` regenerates scripts:** Modify `run_architect.sh` content. Run `init.sh --regenerate-launchers`. Assert `run_architect.sh` was overwritten with fresh content.
-26. **Refresh without `--regenerate-launchers` preserves launchers:** Modify `run_architect.sh` content. Run `init.sh` (no flag). Assert `run_architect.sh` was NOT overwritten.
+25. **`--regenerate-launchers` regenerates scripts:** Modify `pl-run-architect.sh` content. Run `init.sh --regenerate-launchers`. Assert `pl-run-architect.sh` was overwritten with fresh content.
+26. **Refresh without `--regenerate-launchers` preserves launchers:** Modify `pl-run-architect.sh` content. Run `init.sh` (no flag). Assert `pl-run-architect.sh` was NOT overwritten.
 
 **Standalone Guard Tests:**
 
@@ -233,18 +233,18 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     Then .purlin/ is created with config.json, all override templates, and .upstream_sha
     And config.json contains the correct tools_root for the submodule path
     And config.json is valid JSON (parseable by python3 json.load)
-    And run_architect.sh, run_builder.sh, run_qa.sh exist at the project root and are executable
+    And pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist at the project root and are executable
     And .claude/commands/ contains pl-*.md files from the submodule (excluding pl-edit-base.md)
     And features/ directory exists at the project root
-    And purlin_init.sh exists at the project root and is executable
+    And pl-init.sh exists at the project root and is executable
 
 #### Scenario: Full Init Creates CDD Convenience Symlinks
 
     Given Purlin is added as a submodule at "purlin/"
     And no .purlin/ directory exists at the project root
     When the user runs "purlin/tools/init.sh"
-    Then purlin_cdd_start.sh exists at the project root as a symlink to purlin/tools/cdd/start.sh
-    And purlin_cdd_stop.sh exists at the project root as a symlink to purlin/tools/cdd/stop.sh
+    Then pl-cdd-start.sh exists at the project root as a symlink to purlin/tools/cdd/start.sh
+    And pl-cdd-stop.sh exists at the project root as a symlink to purlin/tools/cdd/stop.sh
     And both symlinks use relative paths
 
 #### Scenario: Shim Contains Repo URL, SHA, and Version
@@ -253,16 +253,16 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     And the submodule remote URL is "https://github.com/rlabarca/purlin.git"
     And the submodule HEAD is at SHA "abc1234..." with tag "v0.9.0"
     When the user runs "purlin/tools/init.sh"
-    Then purlin_init.sh contains the remote URL in its header comments
-    And purlin_init.sh contains the SHA in its header comments
-    And purlin_init.sh contains "v0.9.0" in its header comments
+    Then pl-init.sh contains the remote URL in its header comments
+    And pl-init.sh contains the SHA in its header comments
+    And pl-init.sh contains "v0.9.0" in its header comments
 
 #### Scenario: Shim Initializes Submodule on Fresh Clone
 
     Given a consumer project was cloned without --recurse-submodules
     And the submodule directory exists but is empty (not initialized)
-    And purlin_init.sh exists at the project root (previously committed)
-    When the user runs "./purlin_init.sh"
+    And pl-init.sh exists at the project root (previously committed)
+    When the user runs "./pl-init.sh"
     Then git submodule update --init is run for the submodule
     And tools/init.sh is executed (delegated via exec)
 
@@ -301,9 +301,9 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: Shim Self-Update on Refresh
 
     Given .purlin/ already exists at the project root
-    And purlin_init.sh at the project root has an older pinned SHA than the current submodule HEAD
+    And pl-init.sh at the project root has an older pinned SHA than the current submodule HEAD
     When the user runs "purlin/tools/init.sh"
-    Then purlin_init.sh is regenerated with the current SHA and version
+    Then pl-init.sh is regenerated with the current SHA and version
 
 #### Scenario: Refresh Mode Never Touches Config or Overrides
 
@@ -318,10 +318,10 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: CDD Symlinks Created on Refresh if Missing
 
     Given .purlin/ already exists at the project root
-    And purlin_cdd_start.sh does NOT exist at the project root
+    And pl-cdd-start.sh does NOT exist at the project root
     When the user runs "purlin/tools/init.sh"
-    Then purlin_cdd_start.sh is created as a symlink to purlin/tools/cdd/start.sh
-    And purlin_cdd_stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
+    Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
+    And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
 
 #### Scenario: Idempotent Repeated Runs
 
@@ -334,9 +334,9 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: --regenerate-launchers Flag
 
     Given .purlin/ already exists at the project root
-    And run_architect.sh exists at the project root
+    And pl-run-architect.sh exists at the project root
     When the user runs "purlin/tools/init.sh --regenerate-launchers"
-    Then run_architect.sh, run_builder.sh, run_qa.sh are regenerated
+    Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh are regenerated
     And the regenerated scripts match current launcher spec (concatenation order, PURLIN_PROJECT_ROOT export)
 
 #### Scenario: --quiet Flag Suppresses Output
@@ -367,8 +367,8 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: Fresh Clone Collaborator Flow
 
     Given a collaborator has cloned a consumer project (without --recurse-submodules)
-    And purlin_init.sh was committed to the repository
-    When the collaborator runs "./purlin_init.sh"
+    And pl-init.sh was committed to the repository
+    When the collaborator runs "./pl-init.sh"
     Then the submodule is initialized and populated
     And all Purlin artifacts (launchers, commands, symlinks) are created or refreshed
-    And the collaborator can immediately run ./run_architect.sh
+    And the collaborator can immediately run ./pl-run-architect.sh
