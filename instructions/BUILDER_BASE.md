@@ -42,7 +42,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 *   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 2.1–2.3 in full (default guided behavior).
 
 ### 2.1 Gather Project State
-1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
+1.  Run `tools/cdd/status.sh` to regenerate the Critic report and CDD feature status. Do NOT re-read or re-parse the raw JSON output — use `CRITIC_REPORT.md` (step 2) as the sole source for Builder action items and feature status.
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
 3.  Read `.purlin/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
 4.  **Spec-Level Gap Analysis (Critical):** **If a delivery plan exists** (step 2.1.5), only read feature specs for features in the **current phase**. Gap analysis for other phases is deferred to the session that works on those phases. **If no delivery plan exists**, read specs for all features in TODO or TESTING state. For each feature in scope, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
@@ -192,7 +192,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   Example: `git commit --allow-empty -m "status(cdd): [Ready for Verification features/cdd_status_monitor.md] [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]"`
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
     *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
-*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). (The Critic runs automatically, keeping `critic.json` files and `CRITIC_REPORT.md` current.) If the status did not update as expected, investigate and correct before moving on.
+*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). If the status did not update as expected, investigate and correct before moving on.
 *   **E. Phase Completion Check:** If a delivery plan exists at `.purlin/cache/delivery_plan.md` and the completed feature belongs to the current phase:
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
@@ -217,7 +217,7 @@ When you see the exceeded message, stop current work, run `/pl-resume save`, the
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
-1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
+1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status.
 2.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain: **you reached this shutdown because a phase just completed and you halted as required.** Output:
     ```
