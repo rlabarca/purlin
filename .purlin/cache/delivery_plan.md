@@ -6,12 +6,12 @@
 ## Summary
 Implement fixture tag infrastructure (tool + Critic validation) and re-certify 7 features that were reset to TODO by the addition of `> Prerequisite: features/test_fixture_repo.md` in commit 48307d9. Phases 1-2 build infrastructure; Phases 3-5 are mechanical re-tags (no code changes, only prerequisite link added).
 
-## Phase 1 -- Fixture Tool [IN_PROGRESS]
+## Phase 1 -- Fixture Tool [COMPLETE]
 **Features:** test_fixture_repo.md
-**Completion Commit:** --
+**Completion Commit:** 8875971
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic Fixture Validation [PENDING]
+## Phase 2 -- Critic Fixture Validation [IN_PROGRESS]
 **Features:** critic_tool.md, policy_critic.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
