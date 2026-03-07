@@ -555,6 +555,39 @@ def _get_fixture_list(repo_url, project_root=None):
     return None
 
 
+def _resolve_fixture_repo(fixture_data, project_root=None):
+    """Resolve fixture repo URL using three-tier lookup.
+
+    Resolution order (first accessible repo wins):
+      1. Per-feature ``> Test Fixtures:`` metadata
+      2. Project-level ``fixture_repo_url`` in config
+      3. Convention path ``.purlin/runtime/fixture-repo``
+
+    Returns the resolved repo URL/path string, or None if no repo is
+    accessible.
+    """
+    root = project_root or PROJECT_ROOT
+
+    # Tier 1: per-feature metadata
+    if fixture_data.get('repo_url'):
+        return fixture_data['repo_url']
+
+    # Tier 2: project config
+    config_url = CONFIG.get('fixture_repo_url')
+    if config_url:
+        # Resolve relative paths against project root
+        if not config_url.startswith(('http://', 'https://', '/')):
+            config_url = os.path.join(root, config_url)
+        return config_url
+
+    # Tier 3: convention path
+    convention_path = os.path.join(root, '.purlin', 'runtime', 'fixture-repo')
+    if os.path.isdir(convention_path):
+        return convention_path
+
+    return None
+
+
 def validate_fixture_tags(fixture_data, project_root=None):
     """Validate declared fixture tags against the fixture repo.
 
@@ -562,18 +595,31 @@ def validate_fixture_tags(fixture_data, project_root=None):
         fixture_data: dict from parse_fixture_tags()
         project_root: optional project root override
 
-    Returns list of missing tag strings. Empty list if all tags exist
-    or if validation cannot be performed (no repo URL).
+    Returns dict:
+        missing: list of missing tag strings
+        repo_unavailable: bool -- True when tags are declared but no repo
+            is accessible via the three-tier lookup
+        resolved_repo: str or None -- the repo URL/path that was used
     """
-    if not fixture_data['tags'] or not fixture_data['repo_url']:
-        return []
+    if not fixture_data['tags']:
+        return {'missing': [], 'repo_unavailable': False,
+                'resolved_repo': None}
 
-    available = _get_fixture_list(fixture_data['repo_url'], project_root)
+    resolved = _resolve_fixture_repo(fixture_data, project_root)
+    if resolved is None:
+        # Tags declared but no repo accessible
+        return {'missing': [], 'repo_unavailable': True,
+                'resolved_repo': None}
+
+    available = _get_fixture_list(resolved, project_root)
     if available is None:
-        # Command failed or fixture.sh not found; can't validate
-        return []
+        # Repo path resolved but fixture.sh failed / not found
+        return {'missing': [], 'repo_unavailable': True,
+                'resolved_repo': resolved}
 
-    return [tag for tag in fixture_data['tags'] if tag not in available]
+    missing = [tag for tag in fixture_data['tags'] if tag not in available]
+    return {'missing': missing, 'repo_unavailable': False,
+            'resolved_repo': resolved}
 
 
 def is_policy_file(filename):
@@ -1053,6 +1099,7 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
             'status': traceability_result['status'],
             'coverage': traceability_result['coverage'],
             'detail': traceability_result['detail'],
+            '_matched': traceability_result.get('matched', []),
         },
         'policy_adherence': policy_result,
         'structural_completeness': check_structural_completeness(feature_stem),
@@ -1276,15 +1323,76 @@ def generate_action_items(feature_result, cdd_status=None):
         lifecycle_state = _get_feature_lifecycle_state(feature_file, cdd_status)
 
     # Feature in TODO lifecycle state -> HIGH (spec modified, needs review)
+    # Use diff-aware detection to enrich the description (Section 2.12)
+    scenario_diff = None
     if lifecycle_state == 'todo':
+        feature_path = os.path.join(
+            FEATURES_DIR, os.path.basename(feature_file))
+        if os.path.isfile(feature_path):
+            _content = read_feature_file(feature_path)
+            scenario_diff = _get_scenario_diff(
+                feature_path, _content)
+
+        desc = f'Review and implement spec changes for {feature_name}'
+        if scenario_diff and scenario_diff['has_diff']:
+            parts = []
+            if scenario_diff['new']:
+                titles = ', '.join(scenario_diff['new'][:5])
+                parts.append(
+                    f'{len(scenario_diff["new"])} new scenario(s) '
+                    f'[{titles}]')
+            if scenario_diff['modified']:
+                parts.append(f'{len(scenario_diff["modified"])} modified')
+            if scenario_diff['removed']:
+                parts.append(f'{len(scenario_diff["removed"])} removed')
+            desc = (
+                f'Implement spec changes for {feature_name}: '
+                + ', '.join(parts))
+
         builder_items.append({
             'priority': 'HIGH',
             'category': 'lifecycle_reset',
             'feature': feature_name,
-            'description': (
-                f'Review and implement spec changes for {feature_name}'
-            ),
+            'description': desc,
         })
+
+    # Weak traceability match detection for new scenarios (Section 2.12)
+    # When new scenarios are detected in the diff and have keyword-only
+    # traceability matches to pre-existing tests, flag them.
+    if scenario_diff and scenario_diff['new']:
+        traceability_matched = impl_gate['checks'].get(
+            'traceability', {}).get('_matched', [])
+        matched_by_title = {
+            m['scenario']: m for m in traceability_matched
+        }
+        commit_hash = scenario_diff.get('commit_hash')
+
+        for new_title in scenario_diff['new']:
+            match_info = matched_by_title.get(new_title)
+            if match_info and match_info.get('via') == 'keyword':
+                # Check if matched test functions existed before the
+                # spec edit by checking if any were added after the
+                # status commit.
+                has_new_test = False
+                if commit_hash:
+                    for test_name in match_info.get('tests', []):
+                        if _test_added_after_commit(
+                                test_name, feature_name,
+                                commit_hash):
+                            has_new_test = True
+                            break
+
+                if not has_new_test:
+                    builder_items.append({
+                        'priority': 'HIGH',
+                        'category': 'weak_traceability',
+                        'feature': feature_name,
+                        'description': (
+                            f"New scenario '{new_title}' has no dedicated "
+                            f"test — existing keyword match is likely a "
+                            f"false positive"
+                        ),
+                    })
 
     # Structural completeness FAIL -> HIGH
     struct = impl_gate['checks'].get('structural_completeness', {})
@@ -1355,18 +1463,31 @@ def generate_action_items(feature_result, cdd_status=None):
     # Fixture tag validation (policy_critic Section 2.11):
     # When a feature declares fixture tags and a repo URL is available,
     # missing tags produce MEDIUM Builder action items.
+    # When no repo is accessible, produce a fixture_repo_unavailable item.
     fixture_tags = feature_result.get('fixture_tags', {})
-    missing_tags = fixture_tags.get('missing', [])
-    if missing_tags:
+    if fixture_tags.get('repo_unavailable') and fixture_tags.get(
+            'declared_count', 0) > 0:
         builder_items.append({
             'priority': 'MEDIUM',
-            'category': 'fixture_tags',
+            'category': 'fixture_repo_unavailable',
             'feature': feature_name,
             'description': (
-                f'Create {len(missing_tags)} missing fixture tag(s) '
-                f'for {feature_name}: {", ".join(missing_tags)}'
+                f'Fixture repo not found for {feature_name} — run the '
+                f'setup script to create it at .purlin/runtime/fixture-repo'
             ),
         })
+    else:
+        missing_tags = fixture_tags.get('missing', [])
+        if missing_tags:
+            builder_items.append({
+                'priority': 'MEDIUM',
+                'category': 'fixture_tags',
+                'feature': feature_name,
+                'description': (
+                    f'Create {len(missing_tags)} missing fixture tag(s) '
+                    f'for {feature_name}: {", ".join(missing_tags)}'
+                ),
+            })
 
     # NOTE: SPEC_UPDATED discoveries do NOT generate Builder action items.
     # Builder signaling comes from the feature lifecycle: spec edits reset
@@ -1624,6 +1745,141 @@ def audit_untracked_files(project_root=None):
         })
 
     return items
+
+
+# ===================================================================
+# Diff-Aware Lifecycle Reset Detection (policy_critic Section 2.12)
+# ===================================================================
+
+def _get_last_status_commit_hash(feature_file, project_root=None):
+    """Find the commit hash of the last status tag for a feature.
+
+    Searches git log for commits whose message contains a status tag
+    referencing this feature file (e.g. ``[Ready for Verification ...]``
+    or ``[Complete ...]``).
+
+    Returns the commit hash string, or None if no status commit exists.
+    """
+    root = project_root or PROJECT_ROOT
+    basename = os.path.basename(feature_file)
+    # Status commit messages contain the feature path like
+    # "features/critic_tool.md" inside bracket tags.
+    search_pattern = f'features/{basename}'
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--all', '--fixed-strings',
+             '--grep', search_pattern,
+             '--format=%H', '-n', '1'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+        return result.stdout.strip().split('\n')[0]
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return None
+
+
+def _get_file_at_commit(feature_file, commit_hash, project_root=None):
+    """Get the content of a feature file at a specific git commit.
+
+    Returns the file content string, or None if the file didn't exist
+    at that commit or the command fails.
+    """
+    root = project_root or PROJECT_ROOT
+    # Build the git path relative to project root
+    try:
+        rel_path = os.path.relpath(feature_file, root)
+    except ValueError:
+        rel_path = feature_file
+    try:
+        result = subprocess.run(
+            ['git', 'show', f'{commit_hash}:{rel_path}'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0:
+            return None
+        return result.stdout
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return None
+
+
+def _get_scenario_diff(feature_file, current_content, project_root=None):
+    """Compare current scenarios against the version at last status commit.
+
+    Returns dict:
+        new: list of scenario title strings added since last status commit
+        modified: list of scenario title strings whose body changed
+        removed: list of scenario title strings no longer present
+        has_diff: bool -- True if any changes detected
+        commit_hash: str or None -- the reference commit used
+    """
+    root = project_root or PROJECT_ROOT
+    commit_hash = _get_last_status_commit_hash(feature_file, root)
+    empty_result = {
+        'new': [], 'modified': [], 'removed': [],
+        'has_diff': False, 'commit_hash': None,
+    }
+    if commit_hash is None:
+        return empty_result
+
+    old_content = _get_file_at_commit(feature_file, commit_hash, root)
+    if old_content is None:
+        return empty_result
+
+    current_scenarios = parse_scenarios(current_content)
+    old_scenarios = parse_scenarios(old_content)
+
+    # Build lookup by title (automated only)
+    current_by_title = {
+        s['title']: s['body'] for s in current_scenarios
+        if not s['is_manual']
+    }
+    old_by_title = {
+        s['title']: s['body'] for s in old_scenarios
+        if not s['is_manual']
+    }
+
+    new = [t for t in current_by_title if t not in old_by_title]
+    removed = [t for t in old_by_title if t not in current_by_title]
+    modified = [
+        t for t in current_by_title
+        if t in old_by_title and current_by_title[t] != old_by_title[t]
+    ]
+
+    return {
+        'new': new,
+        'modified': modified,
+        'removed': removed,
+        'has_diff': bool(new or modified or removed),
+        'commit_hash': commit_hash,
+    }
+
+
+def _test_added_after_commit(test_name, feature_stem, commit_hash,
+                             project_root=None):
+    """Check if a test function was added after a given commit.
+
+    Uses ``git log`` to see if any commit after ``commit_hash``
+    introduced a function matching ``test_name`` in the feature's
+    test directory.
+
+    Returns True if the test appears to have been added after the commit.
+    """
+    root = project_root or PROJECT_ROOT
+    try:
+        # Check if the test function name appears in commits after
+        # the status commit
+        result = subprocess.run(
+            ['git', 'log', f'{commit_hash}..HEAD', '-S', test_name,
+             '--format=%H', '--', f'tests/{feature_stem}/*',
+             f'tools/**/test_*.py'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return True
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        pass
+    return False
 
 
 # ===================================================================
@@ -2185,12 +2441,14 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Fixture tag parsing and validation (policy_critic Section 2.11)
     fixture_data = parse_fixture_tags(content)
-    missing_fixture_tags = validate_fixture_tags(fixture_data)
+    fixture_validation = validate_fixture_tags(fixture_data)
     fixture_tags_result = {
         'declared_count': len(fixture_data['tags']),
-        'missing_count': len(missing_fixture_tags),
-        'missing': missing_fixture_tags,
-        'repo_url': fixture_data['repo_url'],
+        'missing_count': len(fixture_validation['missing']),
+        'missing': fixture_validation['missing'],
+        'repo_url': fixture_validation.get('resolved_repo')
+                    or fixture_data.get('repo_url'),
+        'repo_unavailable': fixture_validation['repo_unavailable'],
     }
 
     # Regression scope computation (Section 2.12)
@@ -2263,6 +2521,10 @@ def generate_critic_json(feature_path, cdd_status=None):
     # Clean up internal-only keys before returning
     result.pop('_visual_ref_items', None)
     result.pop('_fixture_data', None)
+    # Remove internal traceability matched data from output
+    impl_checks = result.get('implementation_gate', {}).get('checks', {})
+    if 'traceability' in impl_checks:
+        impl_checks['traceability'].pop('_matched', None)
 
     return result
 

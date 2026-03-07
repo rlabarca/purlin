@@ -60,6 +60,11 @@ from critic import (
     compute_role_status,
     parse_fixture_tags,
     validate_fixture_tags,
+    _resolve_fixture_repo,
+    _get_last_status_commit_hash,
+    _get_file_at_commit,
+    _get_scenario_diff,
+    _test_added_after_commit,
     parse_builder_decisions,
     parse_visual_spec,
     validate_visual_references,
@@ -5520,16 +5525,18 @@ class TestValidateFixtureTags(unittest.TestCase):
     def test_no_tags_returns_empty(self):
         fixture_data = {'tags': [], 'repo_url': None, 'section_found': False}
         result = validate_fixture_tags(fixture_data)
-        self.assertEqual(result, [])
+        self.assertEqual(result['missing'], [])
+        self.assertFalse(result['repo_unavailable'])
 
-    def test_no_repo_url_returns_empty(self):
+    def test_no_repo_url_returns_repo_unavailable(self):
         fixture_data = {
             'tags': ['main/feat/s1'],
             'repo_url': None,
             'section_found': True,
         }
         result = validate_fixture_tags(fixture_data)
-        self.assertEqual(result, [])
+        self.assertEqual(result['missing'], [])
+        self.assertTrue(result['repo_unavailable'])
 
     @patch('critic._get_fixture_list')
     def test_all_tags_present(self, mock_list):
@@ -5541,7 +5548,8 @@ class TestValidateFixtureTags(unittest.TestCase):
             'section_found': True,
         }
         result = validate_fixture_tags(fixture_data)
-        self.assertEqual(result, [])
+        self.assertEqual(result['missing'], [])
+        self.assertFalse(result['repo_unavailable'])
 
     @patch('critic._get_fixture_list')
     def test_missing_tags_returned(self, mock_list):
@@ -5552,10 +5560,12 @@ class TestValidateFixtureTags(unittest.TestCase):
             'section_found': True,
         }
         result = validate_fixture_tags(fixture_data)
-        self.assertEqual(sorted(result), ['main/feat/s2', 'main/feat/s3'])
+        self.assertEqual(sorted(result['missing']),
+                         ['main/feat/s2', 'main/feat/s3'])
+        self.assertFalse(result['repo_unavailable'])
 
     @patch('critic._get_fixture_list')
-    def test_fixture_list_failure_returns_empty(self, mock_list):
+    def test_fixture_list_failure_returns_repo_unavailable(self, mock_list):
         mock_list.return_value = None
         fixture_data = {
             'tags': ['main/feat/s1'],
@@ -5563,7 +5573,8 @@ class TestValidateFixtureTags(unittest.TestCase):
             'section_found': True,
         }
         result = validate_fixture_tags(fixture_data)
-        self.assertEqual(result, [])
+        self.assertEqual(result['missing'], [])
+        self.assertTrue(result['repo_unavailable'])
 
 
 class TestFixtureTagActionItems(unittest.TestCase):
@@ -5743,6 +5754,573 @@ See no_tags.impl.md
             critic.TESTS_DIR = orig_tests
             critic.PROJECT_ROOT = orig_root
             shutil.rmtree(root)
+
+
+# ===================================================================
+# Three-Tier Fixture Repo Resolution Tests (policy_critic Section 2.11)
+# ===================================================================
+
+class TestResolveFixtureRepo(unittest.TestCase):
+    """Test _resolve_fixture_repo() three-tier lookup."""
+
+    def test_per_feature_url_takes_precedence(self):
+        """Tier 1: per-feature > Test Fixtures: metadata wins."""
+        fixture_data = {
+            'tags': ['main/feat/s1'],
+            'repo_url': '/tmp/custom-fixture-repo',
+            'section_found': True,
+        }
+        result = _resolve_fixture_repo(fixture_data)
+        self.assertEqual(result, '/tmp/custom-fixture-repo')
+
+    @patch('critic.CONFIG', {'fixture_repo_url': '/tmp/alt-fixture-repo'})
+    def test_config_url_used_when_no_per_feature(self):
+        """Tier 2: config fixture_repo_url used when no per-feature URL."""
+        fixture_data = {
+            'tags': ['main/feat/s1'],
+            'repo_url': None,
+            'section_found': True,
+        }
+        result = _resolve_fixture_repo(fixture_data)
+        self.assertEqual(result, '/tmp/alt-fixture-repo')
+
+    @patch('critic.CONFIG', {'fixture_repo_url': '/tmp/alt-fixture-repo'})
+    def test_per_feature_overrides_config(self):
+        """Tier 1 beats Tier 2."""
+        fixture_data = {
+            'tags': ['main/feat/s1'],
+            'repo_url': '/tmp/custom-fixture-repo',
+            'section_found': True,
+        }
+        result = _resolve_fixture_repo(fixture_data)
+        self.assertEqual(result, '/tmp/custom-fixture-repo')
+
+    def test_convention_path_used_when_exists(self):
+        """Tier 3: convention path .purlin/runtime/fixture-repo."""
+        root = tempfile.mkdtemp()
+        try:
+            convention_dir = os.path.join(
+                root, '.purlin', 'runtime', 'fixture-repo')
+            os.makedirs(convention_dir)
+
+            fixture_data = {
+                'tags': ['main/feat/s1'],
+                'repo_url': None,
+                'section_found': True,
+            }
+            with patch('critic.CONFIG', {}):
+                result = _resolve_fixture_repo(
+                    fixture_data, project_root=root)
+            self.assertEqual(result, convention_dir)
+        finally:
+            shutil.rmtree(root)
+
+    def test_none_when_no_repo_accessible(self):
+        """No tier resolves -> None."""
+        root = tempfile.mkdtemp()
+        try:
+            fixture_data = {
+                'tags': ['main/feat/s1'],
+                'repo_url': None,
+                'section_found': True,
+            }
+            with patch('critic.CONFIG', {}):
+                result = _resolve_fixture_repo(
+                    fixture_data, project_root=root)
+            self.assertIsNone(result)
+        finally:
+            shutil.rmtree(root)
+
+    @patch('critic.CONFIG', {'fixture_repo_url': '/tmp/alt-fixture-repo'})
+    def test_config_overrides_convention_path(self):
+        """Tier 2 beats Tier 3."""
+        root = tempfile.mkdtemp()
+        try:
+            convention_dir = os.path.join(
+                root, '.purlin', 'runtime', 'fixture-repo')
+            os.makedirs(convention_dir)
+
+            fixture_data = {
+                'tags': ['main/feat/s1'],
+                'repo_url': None,
+                'section_found': True,
+            }
+            result = _resolve_fixture_repo(
+                fixture_data, project_root=root)
+            self.assertEqual(result, '/tmp/alt-fixture-repo')
+        finally:
+            shutil.rmtree(root)
+
+
+class TestFixtureRepoNotFoundActionItem(unittest.TestCase):
+    """Test fixture_repo_unavailable action items (critic_tool.md scenario)."""
+
+    def _make_feature_result(self, repo_unavailable=False,
+                             declared_count=2):
+        return {
+            'feature_file': 'features/my_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': declared_count,
+                'missing_count': 0,
+                'missing': [],
+                'repo_url': None,
+                'repo_unavailable': repo_unavailable,
+            },
+        }
+
+    def test_repo_unavailable_generates_builder_item(self):
+        """Fixture repo not found produces MEDIUM fixture_repo_unavailable."""
+        result = self._make_feature_result(repo_unavailable=True)
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        unavailable = [
+            i for i in builder_items
+            if i['category'] == 'fixture_repo_unavailable'
+        ]
+        self.assertEqual(len(unavailable), 1)
+        self.assertEqual(unavailable[0]['priority'], 'MEDIUM')
+        self.assertIn('setup script', unavailable[0]['description'])
+        self.assertIn('.purlin/runtime/fixture-repo',
+                      unavailable[0]['description'])
+
+    def test_repo_unavailable_skips_missing_tag_check(self):
+        """When repo unavailable, no fixture_tags items generated."""
+        result = self._make_feature_result(repo_unavailable=True)
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        tag_items = [
+            i for i in builder_items
+            if i['category'] == 'fixture_tags'
+        ]
+        self.assertEqual(len(tag_items), 0)
+
+    def test_no_declared_tags_no_unavailable_item(self):
+        """Repo unavailable but no tags declared -> no action item."""
+        result = self._make_feature_result(
+            repo_unavailable=True, declared_count=0)
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        unavailable = [
+            i for i in builder_items
+            if i['category'] == 'fixture_repo_unavailable'
+        ]
+        self.assertEqual(len(unavailable), 0)
+
+
+class TestConventionPathFixtureRepo(unittest.TestCase):
+    """Test convention path fixture repo validation (critic_tool.md scenario)."""
+
+    @patch('critic._get_fixture_list')
+    @patch('critic.CONFIG', {})
+    def test_convention_path_used_for_validation(self, mock_list):
+        """Convention path validates tags when no config/metadata URL."""
+        root = tempfile.mkdtemp()
+        try:
+            convention_dir = os.path.join(
+                root, '.purlin', 'runtime', 'fixture-repo')
+            os.makedirs(convention_dir)
+
+            mock_list.return_value = {'main/feat/s1'}
+            fixture_data = {
+                'tags': ['main/feat/s1', 'main/feat/s2'],
+                'repo_url': None,
+                'section_found': True,
+            }
+            result = validate_fixture_tags(fixture_data, project_root=root)
+            self.assertEqual(result['missing'], ['main/feat/s2'])
+            self.assertFalse(result['repo_unavailable'])
+            mock_list.assert_called_once_with(convention_dir, root)
+        finally:
+            shutil.rmtree(root)
+
+
+class TestPerFeatureOverridesConventionPath(unittest.TestCase):
+    """Test per-feature URL override (critic_tool.md scenario)."""
+
+    @patch('critic._get_fixture_list')
+    @patch('critic.CONFIG', {})
+    def test_per_feature_url_overrides_convention(self, mock_list):
+        """Per-feature > Test Fixtures: URL wins over convention path."""
+        root = tempfile.mkdtemp()
+        try:
+            convention_dir = os.path.join(
+                root, '.purlin', 'runtime', 'fixture-repo')
+            os.makedirs(convention_dir)
+
+            mock_list.return_value = {'main/feat/s1'}
+            fixture_data = {
+                'tags': ['main/feat/s1'],
+                'repo_url': '/tmp/custom-fixture-repo',
+                'section_found': True,
+            }
+            result = validate_fixture_tags(fixture_data, project_root=root)
+            # Should use per-feature URL, not convention path
+            mock_list.assert_called_once_with(
+                '/tmp/custom-fixture-repo', root)
+        finally:
+            shutil.rmtree(root)
+
+
+class TestConfigOverridesConventionPath(unittest.TestCase):
+    """Test config fixture_repo_url override (critic_tool.md scenario)."""
+
+    @patch('critic._get_fixture_list')
+    @patch('critic.CONFIG',
+           {'fixture_repo_url': '/tmp/alt-fixture-repo'})
+    def test_config_url_overrides_convention(self, mock_list):
+        """Config fixture_repo_url wins over convention path."""
+        root = tempfile.mkdtemp()
+        try:
+            convention_dir = os.path.join(
+                root, '.purlin', 'runtime', 'fixture-repo')
+            os.makedirs(convention_dir)
+
+            mock_list.return_value = {'main/feat/s1'}
+            fixture_data = {
+                'tags': ['main/feat/s1'],
+                'repo_url': None,
+                'section_found': True,
+            }
+            result = validate_fixture_tags(fixture_data, project_root=root)
+            # Should use config URL, not convention path
+            mock_list.assert_called_once_with(
+                '/tmp/alt-fixture-repo', root)
+        finally:
+            shutil.rmtree(root)
+
+
+# ===================================================================
+# Diff-Aware Lifecycle Reset Detection Tests (policy_critic Section 2.12)
+# ===================================================================
+
+class TestScenarioDiff(unittest.TestCase):
+    """Test _get_scenario_diff() scenario comparison."""
+
+    @patch('critic._get_file_at_commit')
+    @patch('critic._get_last_status_commit_hash')
+    def test_detects_new_scenarios(self, mock_hash, mock_content):
+        """New scenarios not in old version are detected."""
+        mock_hash.return_value = 'abc123'
+        mock_content.return_value = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: Existing Scenario
+    Given something
+    Then something else
+"""
+        current = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: Existing Scenario
+    Given something
+    Then something else
+
+#### Scenario: Brand New Scenario
+    Given a new thing
+    Then new behavior
+"""
+        result = _get_scenario_diff('/tmp/feat.md', current)
+        self.assertTrue(result['has_diff'])
+        self.assertEqual(result['new'], ['Brand New Scenario'])
+        self.assertEqual(result['modified'], [])
+        self.assertEqual(result['removed'], [])
+
+    @patch('critic._get_file_at_commit')
+    @patch('critic._get_last_status_commit_hash')
+    def test_detects_modified_scenarios(self, mock_hash, mock_content):
+        """Modified scenario body is detected."""
+        mock_hash.return_value = 'abc123'
+        mock_content.return_value = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: My Scenario
+    Given old condition
+    Then old result
+"""
+        current = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: My Scenario
+    Given new condition
+    Then new result
+"""
+        result = _get_scenario_diff('/tmp/feat.md', current)
+        self.assertTrue(result['has_diff'])
+        self.assertEqual(result['new'], [])
+        self.assertEqual(result['modified'], ['My Scenario'])
+        self.assertEqual(result['removed'], [])
+
+    @patch('critic._get_file_at_commit')
+    @patch('critic._get_last_status_commit_hash')
+    def test_detects_removed_scenarios(self, mock_hash, mock_content):
+        """Removed scenarios are detected."""
+        mock_hash.return_value = 'abc123'
+        mock_content.return_value = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+#### Scenario: Will Be Removed
+    Given something
+    Then something
+"""
+        current = """# Feature
+## 3. Scenarios
+### Automated Scenarios
+None
+"""
+        result = _get_scenario_diff('/tmp/feat.md', current)
+        self.assertTrue(result['has_diff'])
+        self.assertEqual(result['new'], [])
+        self.assertEqual(result['modified'], [])
+        self.assertEqual(result['removed'], ['Will Be Removed'])
+
+    @patch('critic._get_last_status_commit_hash')
+    def test_no_status_commit_returns_empty(self, mock_hash):
+        """No status commit -> empty diff."""
+        mock_hash.return_value = None
+        result = _get_scenario_diff('/tmp/feat.md', 'content')
+        self.assertFalse(result['has_diff'])
+        self.assertIsNone(result['commit_hash'])
+
+
+class TestLifecycleResetActionItemWithDiff(unittest.TestCase):
+    """Test enriched lifecycle_reset action item descriptions."""
+
+    def _make_feature_result(self):
+        return {
+            'feature_file': 'features/my_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                    'traceability': {
+                        'status': 'PASS',
+                        '_matched': [],
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': 0,
+                'missing_count': 0,
+                'missing': [],
+                'repo_url': None,
+                'repo_unavailable': False,
+            },
+        }
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_enriched_description_with_new_scenarios(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff):
+        """Lifecycle reset with new scenarios includes count and titles."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = {
+            'new': ['Scenario A', 'Scenario B', 'Scenario C'],
+            'modified': [],
+            'removed': [],
+            'has_diff': True,
+            'commit_hash': 'abc123',
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        builder_items = items['builder']
+        reset_items = [
+            i for i in builder_items
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        desc = reset_items[0]['description']
+        self.assertIn('3 new scenario(s)', desc)
+        self.assertIn('Scenario A', desc)
+        self.assertNotIn('Review and implement spec changes', desc)
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_enriched_description_with_modified_scenarios(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff):
+        """Lifecycle reset with modified scenarios includes count."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = {
+            'new': [],
+            'modified': ['Existing Scenario'],
+            'removed': [],
+            'has_diff': True,
+            'commit_hash': 'abc123',
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        self.assertIn('1 modified', reset_items[0]['description'])
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_generic_description_when_no_diff(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff):
+        """Fallback to generic description when no scenario diff."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = {
+            'new': [], 'modified': [], 'removed': [],
+            'has_diff': False, 'commit_hash': 'abc123',
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        self.assertIn('Review and implement spec changes',
+                      reset_items[0]['description'])
+
+
+class TestWeakTraceabilityMatch(unittest.TestCase):
+    """Test weak traceability match detection for new scenarios."""
+
+    def _make_feature_result(self, matched=None):
+        return {
+            'feature_file': 'features/my_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                    'traceability': {
+                        'status': 'PASS',
+                        '_matched': matched or [],
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': 0,
+                'missing_count': 0,
+                'missing': [],
+                'repo_url': None,
+                'repo_unavailable': False,
+            },
+        }
+
+    @patch('critic._test_added_after_commit')
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_weak_match_flagged(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff,
+            mock_test_added):
+        """New scenario with pre-existing keyword match is flagged."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = {
+            'new': ['Convention Path Fixture Repo Used'],
+            'modified': [],
+            'removed': [],
+            'has_diff': True,
+            'commit_hash': 'abc123',
+        }
+        mock_test_added.return_value = False  # test existed before
+
+        result = self._make_feature_result(matched=[{
+            'scenario': 'Convention Path Fixture Repo Used',
+            'tests': ['test_convention_path'],
+            'via': 'keyword',
+        }])
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        weak_items = [
+            i for i in items['builder']
+            if i['category'] == 'weak_traceability'
+        ]
+        self.assertEqual(len(weak_items), 1)
+        self.assertEqual(weak_items[0]['priority'], 'HIGH')
+        self.assertIn('no dedicated test', weak_items[0]['description'])
+        self.assertIn('false positive', weak_items[0]['description'])
+
+    @patch('critic._test_added_after_commit')
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_new_test_not_flagged(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff,
+            mock_test_added):
+        """New scenario with dedicated new test is NOT flagged."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = {
+            'new': ['Convention Path Fixture Repo Used'],
+            'modified': [],
+            'removed': [],
+            'has_diff': True,
+            'commit_hash': 'abc123',
+        }
+        mock_test_added.return_value = True  # test added after commit
+
+        result = self._make_feature_result(matched=[{
+            'scenario': 'Convention Path Fixture Repo Used',
+            'tests': ['test_convention_path_fixture_repo'],
+            'via': 'keyword',
+        }])
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        weak_items = [
+            i for i in items['builder']
+            if i['category'] == 'weak_traceability'
+        ]
+        self.assertEqual(len(weak_items), 0)
 
 
 # ===================================================================
