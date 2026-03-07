@@ -25,6 +25,35 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
 - `> Web Testable: <url>` -- declares the feature's web UI is accessible at `<url>` for automated verification via `/pl-web-verify`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Testable: http://localhost:9086`.
 
+## Category and Label Consistency
+
+When creating a new feature file, the Architect MUST scan existing features to ensure the new
+file uses a consistent category and label. Do NOT invent a new category when an existing one
+applies.
+
+**How to scan:** Read `.purlin/cache/dependency_graph.json` and extract the `category` and
+`label` fields from each entry. Identify the naming patterns below and match the new feature
+to the best-fitting category.
+
+**Established naming conventions by category:**
+
+| Category | Label Pattern | Example |
+|---|---|---|
+| Agent Skills | `/pl-<command> Descriptive Name` | `/pl-help Purlin Help` |
+| CDD Dashboard | `CDD <Feature Name>` or `CDD: <Feature Name>` | `CDD Monitor`, `CDD: QA Effort Breakdown` |
+| Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Policy: Critic Coordination Engine`, `Handoff Checklist System` |
+| Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
+| Install, Update & Scripts | `Tool: <Name>` | `Tool: Agent Launchers`, `Tool: Config Layering` |
+| Process | `Process: <Name>` | `Process: Context Guard` |
+| Release Process | `Release Step: <Name>` or `Tool: <Name>` | `Release Step: Push to Remote Repository` |
+| Test Infrastructure | `Dev: <Name>` or `Tool: <Name>` | `Dev: Agent Behavior Tests`, `Tool: Test Fixture Repo` |
+
+**Rules:**
+1. **Prefer existing categories.** Only create a new category when no existing one fits.
+2. **Match the label prefix pattern** of the chosen category (e.g., Agent Skills labels always start with the slash command name).
+3. **Slash command features** (`/pl-*`) always belong in "Agent Skills" with the label format `/pl-<command> Descriptive Name`.
+4. If unsure between two categories, choose the one with more existing members (higher gravity).
+
 ## Regular Feature Files
 
 **Required section headings** (Critic checks for these words, case-insensitive, substring match):

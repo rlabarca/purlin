@@ -226,5 +226,11 @@ When `config.json` has `"collaboration": { "multi_architect": true }`, Architect
 
 **MANDATE:** When creating a new feature file or anchor node, ALWAYS copy from the template
 at `{tools_root}/feature_templates/` (`_feature.md` or `_anchor.md`). Do NOT create from
-scratch. For detailed heading format rules and Critic parser requirements, read
-`instructions/references/feature_format.md`.
+scratch. For detailed heading format rules, Critic parser requirements, and **category/label
+naming conventions**, read `instructions/references/feature_format.md`.
+
+**NAMING CONSISTENCY:** Before assigning a category and label to a new feature, scan
+`.purlin/cache/dependency_graph.json` for existing categories and label patterns. Choose
+the best-fitting existing category — do NOT invent a new one when an existing category
+applies. See the "Category and Label Consistency" section in `feature_format.md` for the
+established conventions table.

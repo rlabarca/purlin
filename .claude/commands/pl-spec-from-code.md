@@ -60,19 +60,20 @@ Before starting, check for an existing state file at `.purlin/cache/sfc_state.js
 ## Phase 2 — Taxonomy Review
 
 1. Read `.purlin/cache/sfc_inventory.md`.
-2. Propose a category taxonomy grouping feature candidates into logical categories. For each category, present: name, feature count, and per-feature name + one-line description.
-3. Ask the user (via `AskUserQuestion`, in batches of 2-3 categories) to validate each category: confirm the name, confirm feature membership, and identify missed features. Adjust based on feedback.
-4. Propose anchor nodes derived from detected cross-cutting concerns, classified by type:
+2. **Check for existing features:** If `features/*.md` files already exist, read `.purlin/cache/dependency_graph.json` to extract existing categories and label patterns. The proposed taxonomy MUST reuse existing category names where applicable and follow established label naming conventions (see `instructions/references/feature_format.md` "Category and Label Consistency"). Only propose new categories when no existing one fits.
+3. Propose a category taxonomy grouping feature candidates into logical categories. For each category, present: name, feature count, and per-feature name + one-line description.
+4. Ask the user (via `AskUserQuestion`, in batches of 2-3 categories) to validate each category: confirm the name, confirm feature membership, and identify missed features. Adjust based on feedback.
+5. Propose anchor nodes derived from detected cross-cutting concerns, classified by type:
    - `arch_*` for technical constraints
    - `design_*` for visual/UX standards
    - `policy_*` for governance rules
-5. Ask the user to validate the proposed anchor nodes.
-6. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md` containing:
+6. Ask the user to validate the proposed anchor nodes.
+7. Write the validated taxonomy to `.purlin/cache/sfc_taxonomy.md` containing:
    - Ordered anchor node list (with type prefix and description)
    - Ordered category list with features
    - Per-feature: proposed file name, description, and anchor node references
-7. Update state: `phase: 2, status: "complete"`.
-8. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
+8. Update state: `phase: 2, status: "complete"`.
+9. Commit: `git commit -m "chore(sfc): taxonomy review complete (Phase 2)"`
 
 ---
 

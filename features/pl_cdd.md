@@ -1,7 +1,7 @@
 # Feature: CDD Dashboard Skill
 
-> Label: "Skill: CDD Dashboard"
-> Category: "Skills"
+> Label: "/pl-cdd CDD Dashboard"
+> Category: "Agent Skills"
 > Prerequisite: features/cdd_lifecycle.md
 
 [TODO]

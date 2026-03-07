@@ -1,7 +1,7 @@
 # Feature: Context Guard Skill
 
-> Label: "Skill: Context Guard"
-> Category: "Skills"
+> Label: "/pl-context-guard Context Guard"
+> Category: "Agent Skills"
 > Prerequisite: features/context_guard.md
 > Prerequisite: features/config_layering.md
 > Web Testable: http://localhost:9086
