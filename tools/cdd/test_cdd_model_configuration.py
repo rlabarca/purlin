@@ -490,7 +490,7 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
 
             # Create turn_count and session_meta for current PID (guaranteed alive)
             pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
                 f.write('5')
             with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
                 f.write(f'uuid-123\narchitect\n2026-01-01\n')
@@ -517,7 +517,7 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             os.makedirs(runtime)
 
             # Use PID 99999999 — almost certainly not running
-            with open(os.path.join(runtime, 'turn_count_99999999'), 'w') as f:
+            with open(os.path.join(runtime, 'turn_count_99999999_abc123'), 'w') as f:
                 f.write('42')
             with open(os.path.join(runtime, 'session_meta_99999999'), 'w') as f:
                 f.write('uuid\nbuilder\n2026-01-01\n')
@@ -540,7 +540,7 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             os.makedirs(runtime)
 
             pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
                 f.write('10')
             # No session_meta file
 
@@ -564,7 +564,7 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             runtime = os.path.join(tmpdir, '.purlin', 'runtime')
             os.makedirs(runtime)
             pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
                 f.write('20')
             with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
                 f.write(f'uuid\nbuilder\n2026-01-01\n')
@@ -573,7 +573,7 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             wt_runtime = os.path.join(tmpdir, '.worktrees', 'team-a',
                                       '.purlin', 'runtime')
             os.makedirs(wt_runtime)
-            with open(os.path.join(wt_runtime, f'turn_count_{pid}'), 'w') as f:
+            with open(os.path.join(wt_runtime, f'turn_count_{pid}_abc123'), 'w') as f:
                 f.write('7')
             with open(os.path.join(wt_runtime, f'session_meta_{pid}'), 'w') as f:
                 f.write(f'uuid2\nbuilder\n2026-01-01\n')
@@ -600,11 +600,11 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             pid = os.getpid()
             # Use current PID for one, parent PID for another (both alive)
             ppid = os.getppid()
-            with open(os.path.join(runtime, f'turn_count_{pid}'), 'w') as f:
+            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
                 f.write('30')
             with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
                 f.write(f'uuid\nbuilder\n2026-01-01\n')
-            with open(os.path.join(runtime, f'turn_count_{ppid}'), 'w') as f:
+            with open(os.path.join(runtime, f'turn_count_{ppid}_def456'), 'w') as f:
                 f.write('5')
             with open(os.path.join(runtime, f'session_meta_{ppid}'), 'w') as f:
                 f.write(f'uuid2\nbuilder\n2026-01-01\n')
@@ -617,6 +617,32 @@ class TestContextGuardCountersEndpoint(unittest.TestCase):
             body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
             data = json.loads(body)
             self.assertEqual(data['builder'], [5, 30])
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    def test_multiple_session_files_reports_highest(self, mock_wt):
+        """Multiple session files for same PID reports highest count."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
+            os.makedirs(runtime)
+
+            pid = os.getpid()
+            # Two session files for the same PID — different hashes
+            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
+                f.write('30')
+            with open(os.path.join(runtime, f'turn_count_{pid}_def456'), 'w') as f:
+                f.write('5')
+            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
+                f.write(f'uuid\narchitect\n2026-01-01\n')
+
+            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
+                handler = self._make_handler()
+                handler._handle_context_guard_counters()
+
+            handler.wfile.seek(0)
+            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
+            data = json.loads(body)
+            self.assertEqual(data['architect'], [30])
 
 
 class TestContextGuardCounterFrontend(unittest.TestCase):

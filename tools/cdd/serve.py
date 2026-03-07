@@ -5196,20 +5196,41 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if os.path.isdir(wt_runtime):
                 runtime_dirs.append(wt_runtime)
 
-        # Scan for turn_count_<PID> files, match with session_meta_<PID>
+        # Scan for turn_count_<PID>_<HASH> files, match with session_meta_<PID>.
+        # Multiple session files per PID: report highest count per PID.
         role_counts = {'architect': [], 'builder': [], 'qa': []}
         for runtime_dir in runtime_dirs:
             if not os.path.isdir(runtime_dir):
                 continue
+            # First pass: collect highest count per PID in this directory
+            pid_max = {}  # pid_str -> highest count
             for fname in os.listdir(runtime_dir):
                 if not fname.startswith('turn_count_'):
                     continue
-                pid_str = fname[len('turn_count_'):]
+                suffix = fname[len('turn_count_'):]
+                # Extract PID: segment before the first underscore
+                parts = suffix.split('_', 1)
+                if len(parts) < 2:
+                    continue  # old format (no hash) — skip
+                pid_str = parts[0]
                 try:
-                    pid = int(pid_str)
+                    int(pid_str)  # validate numeric PID
                 except ValueError:
                     continue
 
+                # Read turn count
+                tc_path = os.path.join(runtime_dir, fname)
+                try:
+                    with open(tc_path, 'r') as f:
+                        count = int(f.read().strip())
+                except (IOError, OSError, ValueError):
+                    continue
+                if pid_str not in pid_max or count > pid_max[pid_str]:
+                    pid_max[pid_str] = count
+
+            # Second pass: resolve role and liveness for each PID
+            for pid_str, count in pid_max.items():
+                pid = int(pid_str)
                 # Liveness check
                 try:
                     os.kill(pid, 0)
@@ -5229,14 +5250,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 except (IOError, OSError):
                     continue
                 if role not in role_counts:
-                    continue
-
-                # Read turn count
-                tc_path = os.path.join(runtime_dir, fname)
-                try:
-                    with open(tc_path, 'r') as f:
-                        count = int(f.read().strip())
-                except (IOError, OSError, ValueError):
                     continue
                 role_counts[role].append(count)
 
