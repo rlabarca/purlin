@@ -18,13 +18,12 @@ The fixture repo eliminates the "complex setup" problem: scenarios that require 
 
 ### 2.1 Feature Metadata Convention
 
-- Feature files MAY include a `> Test Fixtures: <repo-url>` blockquote metadata line (e.g., `> Test Fixtures: https://github.com/org/my-project-fixtures.git`), placed alongside other `>` metadata (Label, Category, Prerequisite, Web Testable).
-- The URL declares the git repository containing fixture states for that feature's scenarios.
-- Multiple features MAY reference the same fixture repo URL.
-- The expected pattern is **one fixture repo per project**. Tags are namespaced by feature name (`<project-ref>/<feature-name>/<scenario-slug>`), so a single repo holds fixtures for all features. Multiple repos per project are supported but not recommended unless there's a specific reason (e.g., access control separation).
-- When present, automated test tools can look up fixture tags by feature name and scenario slug.
-- **Project-level default:** `.purlin/config.json` MAY include a `fixture_repo_url` key (e.g., `"fixture_repo_url": ".purlin/runtime/fixture-repo"`). This serves as the default fixture repo URL for all features in the project. Per-feature `> Test Fixtures:` metadata overrides the project-level config. The Critic and fixture tools resolve URLs in this order: per-feature metadata first, then project-level config, then flag as missing.
-- Relative paths (in either per-feature metadata or project-level config) are resolved against `PURLIN_PROJECT_ROOT`.
+- **Convention path:** The fixture repo lives at `.purlin/runtime/fixture-repo` (a local bare git repo). This is the default location — no configuration is needed. Setup scripts in `dev/` generate this repo deterministically from the project's own files.
+- The expected pattern is **one fixture repo per project**. Tags are namespaced by feature name (`<project-ref>/<feature-name>/<scenario-slug>`), so a single repo holds fixtures for all features.
+- When the fixture repo exists at the convention path, automated test tools and the Critic can look up fixture tags by feature name and scenario slug without any per-feature metadata.
+- **Optional overrides:** Feature files MAY include a `> Test Fixtures: <repo-url>` blockquote metadata line to point at a different repo (e.g., a remote URL or alternate local path). `.purlin/config.json` MAY include a `fixture_repo_url` key to override the convention path project-wide. These are for unusual cases only — most projects use the convention path exclusively.
+- **Resolution order:** The Critic and fixture tools resolve the fixture repo in this order: (1) per-feature `> Test Fixtures:` metadata, (2) project-level `fixture_repo_url` config, (3) convention path `.purlin/runtime/fixture-repo`. The first one that exists wins.
+- Relative paths (in any source) are resolved against `PURLIN_PROJECT_ROOT`.
 
 ### 2.2 Tag Convention (Immutable Fixture States)
 
@@ -125,11 +124,10 @@ This validation is also triggered when a feature has `> Test Fixtures:` metadata
 
 **Validation Gap Coverage:**
 
-The Critic handles three distinct states when fixture tags are declared:
+The Critic handles two distinct states when fixture tags are declared:
 
-1. **Tags declared, repo URL resolved, repo accessible:** Normal path — validate each tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
-2. **Tags declared, no repo URL available:** Neither per-feature `> Test Fixtures:` metadata nor project-level `fixture_repo_url` config exists. The Critic generates a MEDIUM Architect action item (category: `fixture_no_repo_url`) instructing the Architect to configure a fixture repo URL. Individual tag validation is skipped (no repo to check against).
-3. **Tags declared, repo URL resolved, repo unreachable:** The URL resolves but `fixture list` fails (path doesn't exist, repo not initialized, network unreachable). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script. Individual tag validation is skipped (repo must be created first).
+1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
+2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
 ### 2.11 Integration Test Fixture Tags
 
