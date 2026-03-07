@@ -24,6 +24,11 @@ write_session_meta() {
     printf '%s\n%s\n%s\n' "$session_id" "$role" "$start_time" > "$file"
 }
 
+# Compute SESSION_HASH matching the hook's algorithm: cksum of session_id
+compute_hash() {
+    echo -n "$1" | cksum | cut -d' ' -f1
+}
+
 SANDBOX=""
 cleanup_sandbox() {
     if [[ -n "${SANDBOX:-}" && -d "$SANDBOX" ]]; then
@@ -71,11 +76,12 @@ echo ""
 echo "[Scenario] Counter increments on each invocation"
 setup_sandbox
 
+HASH1=$(compute_hash "session-1")
 run_guard "session-1" "" "agent-1" >/dev/null 2>&1
 run_guard "session-1" "" "agent-1" >/dev/null 2>&1
 run_guard "session-1" "" "agent-1" >/dev/null 2>&1
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-1")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-1_${HASH1}")
 if [[ "$ACTUAL" == "3" ]]; then
     log_pass "Turn count is 3 after 3 invocations"
 else
@@ -92,8 +98,9 @@ setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
 # Pre-seed session meta and counter (simulates an existing session)
+HASH2=$(compute_hash "session-2")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-2" "session-2"
-echo "2" > "$SANDBOX/.purlin/runtime/turn_count_agent-2"
+echo "2" > "$SANDBOX/.purlin/runtime/turn_count_agent-2_${HASH2}"
 
 OUTPUT=$(run_guard "session-2" "" "agent-2" 2>&1)
 if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 3 / 10 used"'; then
@@ -111,8 +118,9 @@ echo "[Scenario] Exceeded threshold appends evacuation instructions"
 setup_sandbox
 
 echo '{"context_guard_threshold": 5}' > "$SANDBOX/.purlin/config.json"
+HASH3=$(compute_hash "session-3")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-3" "session-3"
-echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-3"
+echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-3_${HASH3}"
 
 OUTPUT=$(run_guard "session-3" "" "agent-3" 2>&1)
 if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 6 / 5 used -- Run /pl-resume save"; then
@@ -130,20 +138,22 @@ echo "[Scenario] Counter resets on new agent process"
 setup_sandbox
 
 # Old agent had 25 turns
+OLD_HASH=$(compute_hash "old-session")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_old-agent" "old-session"
-echo "25" > "$SANDBOX/.purlin/runtime/turn_count_old-agent"
+echo "25" > "$SANDBOX/.purlin/runtime/turn_count_old-agent_${OLD_HASH}"
 
 # New agent process (different AGENT_ID) starts fresh
+NEW_HASH=$(compute_hash "new-session")
 run_guard "new-session" "" "new-agent" >/dev/null 2>&1
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_new-agent")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_new-agent_${NEW_HASH}")
 if [[ "$ACTUAL" == "1" ]]; then
     log_pass "New agent starts at count 1 (fresh counter)"
 else
     log_fail "Expected turn count 1 for new agent, got '$ACTUAL'"
 fi
 # Old agent's file should be untouched
-OLD=$(cat "$SANDBOX/.purlin/runtime/turn_count_old-agent")
+OLD=$(cat "$SANDBOX/.purlin/runtime/turn_count_old-agent_${OLD_HASH}")
 if [[ "$OLD" == "25" ]]; then
     log_pass "Old agent's counter untouched at 25"
 else
@@ -193,11 +203,12 @@ echo "[Scenario] Per-agent guard disabled suppresses output"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": false, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
+HASH7=$(compute_hash "session-7")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-7" "session-7"
-echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-7"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-7_${HASH7}"
 
 OUTPUT=$(run_guard "session-7" "architect" "agent-7" 2>&1)
-COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-7")
+COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-7_${HASH7}")
 
 if [[ -z "$OUTPUT" ]] && [[ "$COUNTER" == "11" ]]; then
     log_pass "No output when guard disabled, counter still incremented to 11"
@@ -232,8 +243,9 @@ echo "[Scenario] Exceeded output repeats on subsequent turns"
 setup_sandbox
 
 echo '{"context_guard_threshold": 2}' > "$SANDBOX/.purlin/config.json"
+HASH9=$(compute_hash "session-9")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-9" "session-9"
-echo "3" > "$SANDBOX/.purlin/runtime/turn_count_agent-9"
+echo "3" > "$SANDBOX/.purlin/runtime/turn_count_agent-9_${HASH9}"
 
 OUTPUT=$(run_guard "session-9" "" "agent-9" 2>&1)
 if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 4 / 2 used -- Run /pl-resume save"; then
@@ -261,61 +273,82 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 11: Subagent detection via session_meta mismatch
+# Scenario 11: Context clear produces fresh counter
 ###############################################################################
 echo ""
-echo "[Scenario] Subagent detection via session_meta mismatch"
+echo "[Scenario] Context clear produces fresh counter"
 setup_sandbox
 
-echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH_A=$(compute_hash "session-A")
 
-# Main agent runs 3 times (creates session_meta and increments)
-run_guard "main-session" "" "agent-11" >/dev/null 2>&1
-run_guard "main-session" "" "agent-11" >/dev/null 2>&1
-run_guard "main-session" "" "agent-11" >/dev/null 2>&1
+# Session A runs 3 times — accumulates count
+run_guard "session-A" "" "agent-11" >/dev/null 2>&1
+run_guard "session-A" "" "agent-11" >/dev/null 2>&1
+run_guard "session-A" "" "agent-11" >/dev/null 2>&1
 
-# Subagent call: same AGENT_ID but different session_id → no increment
-OUTPUT=$(run_guard "subagent-session" "" "agent-11" 2>&1)
-COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11")
-
-if [[ "$COUNTER" == "3" ]]; then
-    log_pass "Counter NOT incremented (stays at 3 for subagent)"
+# Verify session A counter
+COUNTER_A=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11_${HASH_A}" 2>/dev/null || echo "MISSING")
+if [[ "$COUNTER_A" == "3" ]]; then
+    log_pass "Session A counter at 3"
 else
-    log_fail "Expected count=3 (subagent no-increment), got '$COUNTER'"
+    log_fail "Expected session A count=3, got '$COUNTER_A'"
 fi
-if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 3 / 10 used"'; then
-    log_pass "Subagent outputs guard status with current count: 3 / 10 used"
+
+# Context clear → new session_id (session B)
+HASH_B=$(compute_hash "session-B")
+run_guard "session-B" "" "agent-11" >/dev/null 2>&1
+
+# Session B should start at 1
+COUNTER_B=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11_${HASH_B}" 2>/dev/null || echo "MISSING")
+if [[ "$COUNTER_B" == "1" ]]; then
+    log_pass "Fresh session B starts at count 1"
 else
-    log_fail "Expected 'CONTEXT GUARD: 3 / 10 used' from subagent, got: '$OUTPUT'"
+    log_fail "Expected session B count=1, got '$COUNTER_B'"
+fi
+
+# Session A counter should be unaffected
+COUNTER_A_AFTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11_${HASH_A}" 2>/dev/null || echo "MISSING")
+if [[ "$COUNTER_A_AFTER" == "3" ]]; then
+    log_pass "Session A counter still at 3 after session B started"
+else
+    log_fail "Expected session A count=3 after session B, got '$COUNTER_A_AFTER'"
 fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 12: Counter resets after session_meta deletion
+# Scenario 12: Subagent gets independent counter
 ###############################################################################
 echo ""
-echo "[Scenario] Counter resets after session_meta deletion"
+echo "[Scenario] Subagent gets independent counter"
 setup_sandbox
 
-# Simulate existing session
-write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-12" "old-session"
-echo "42" > "$SANDBOX/.purlin/runtime/turn_count_agent-12"
+echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH_PARENT=$(compute_hash "parent-session")
+HASH_SUB=$(compute_hash "subagent-session")
 
-# Delete session_meta (simulates /pl-resume reset)
-rm -f "$SANDBOX/.purlin/runtime/session_meta_agent-12"
+# Parent session runs 5 times
+for i in $(seq 1 5); do
+    run_guard "parent-session" "" "agent-12" >/dev/null 2>&1
+done
 
-OUTPUT=$(run_guard "new-session" "" "agent-12" 2>&1)
-COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-12")
+# Subagent runs with different session_id under same PPID
+run_guard "subagent-session" "" "agent-12" >/dev/null 2>&1
 
-if [[ "$COUNTER" == "1" ]]; then
-    log_pass "Counter reset to 1 after session_meta deletion"
+# Parent counter should still be at 5 (subagent didn't inflate it)
+PARENT_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-12_${HASH_PARENT}" 2>/dev/null || echo "MISSING")
+if [[ "$PARENT_COUNT" == "5" ]]; then
+    log_pass "Parent counter at 5 (subagent did not inflate)"
 else
-    log_fail "Expected count=1 after meta deletion, got '$COUNTER'"
+    log_fail "Expected parent count=5, got '$PARENT_COUNT'"
 fi
-if echo "$OUTPUT" | grep -q "CONTEXT GUARD: 1 /"; then
-    log_pass "Output shows count 1 after reset"
+
+# Subagent counter should be at 1 (independent file)
+SUB_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-12_${HASH_SUB}" 2>/dev/null || echo "MISSING")
+if [[ "$SUB_COUNT" == "1" ]]; then
+    log_pass "Subagent counter at 1 (independent file)"
 else
-    log_fail "Expected 'CONTEXT GUARD: 1 /' in output, got: '$OUTPUT'"
+    log_fail "Expected subagent count=1, got '$SUB_COUNT'"
 fi
 cleanup_sandbox
 
@@ -327,12 +360,13 @@ echo "[Scenario] Parallel invocations count correctly"
 setup_sandbox
 
 # Run 10 instances in parallel with the same session and agent
+HASH13=$(compute_hash "session-13")
 for i in $(seq 1 10); do
     run_guard "session-13" "" "agent-13" >/dev/null 2>&1 &
 done
 wait
 
-ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-13")
+ACTUAL=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-13_${HASH13}")
 if [[ "$ACTUAL" == "10" ]]; then
     log_pass "Parallel invocations all counted: 10/10"
 else
@@ -361,8 +395,10 @@ run_guard "session-b" "" "agent-b" >/dev/null 2>&1
 run_guard "session-b" "" "agent-b" >/dev/null 2>&1
 run_guard "session-b" "" "agent-b" >/dev/null 2>&1
 
-A_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-a" 2>/dev/null || echo "MISSING")
-B_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-b" 2>/dev/null || echo "MISSING")
+HASH_A=$(compute_hash "session-a")
+HASH_B=$(compute_hash "session-b")
+A_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-a_${HASH_A}" 2>/dev/null || echo "MISSING")
+B_COUNT=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-b_${HASH_B}" 2>/dev/null || echo "MISSING")
 
 if [[ "$A_COUNT" == "3" ]] && [[ "$B_COUNT" == "5" ]]; then
     log_pass "Agent-A=3, Agent-B=5 in separate files"
@@ -386,11 +422,11 @@ OUTPUT_NEW=$(run_guard "session-15" "" "agent-15" 2>&1)
 # Same session call
 OUTPUT_SAME=$(run_guard "session-15" "" "agent-15" 2>&1)
 
-# Subagent call (different session_id, same agent — no increment)
-OUTPUT_NEWCONV=$(run_guard "subagent-session-15" "" "agent-15" 2>&1)
+# New session via context clear (different session_id, same agent)
+OUTPUT_NEWCONV=$(run_guard "session-15-cleared" "" "agent-15" 2>&1)
 
 ALL_HAVE_OUTPUT=true
-for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "subagent:$OUTPUT_NEWCONV"; do
+for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "context-clear:$OUTPUT_NEWCONV"; do
     label="${label_output%%:*}"
     output="${label_output#*:}"
     if ! echo "$output" | grep -q "CONTEXT GUARD:"; then
@@ -399,7 +435,7 @@ for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "subagent:$OUTPUT_NEWC
     fi
 done
 if [[ "$ALL_HAVE_OUTPUT" == "true" ]]; then
-    log_pass "All code paths (new, same, subagent) produce CONTEXT GUARD output"
+    log_pass "All code paths (new, same, context-clear) produce CONTEXT GUARD output"
 fi
 cleanup_sandbox
 
@@ -435,13 +471,14 @@ setup_sandbox
 
 # Use current shell PID as a "stale" process (it IS alive, but with wrong start time)
 STALE_PID=$$
+STALE_HASH=$(compute_hash "stale-session")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_${STALE_PID}" "stale-session" "builder" "Mon Jan  1 00:00:00 2000"
-echo "15" > "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}"
+echo "15" > "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}_${STALE_HASH}"
 
 # Run guard with a different agent ID — cleanup should detect recycled PID
 run_guard "test-session" "" "agent-recycled" >/dev/null 2>&1
 
-if [[ ! -f "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}" ]] && \
+if [[ ! -f "$SANDBOX/.purlin/runtime/turn_count_${STALE_PID}_${STALE_HASH}" ]] && \
    [[ ! -f "$SANDBOX/.purlin/runtime/session_meta_${STALE_PID}" ]]; then
     log_pass "PID recycling detected: stale files cleaned up"
 else
@@ -457,13 +494,14 @@ echo "[Scenario] Alive process with matching start time is preserved"
 setup_sandbox
 
 LIVE_PID=$$
+LIVE_HASH=$(compute_hash "active-session")
 ACTUAL_START=$(ps -p $LIVE_PID -o lstart= 2>/dev/null)
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_${LIVE_PID}" "active-session" "builder" "$ACTUAL_START"
-echo "10" > "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}_${LIVE_HASH}"
 
 run_guard "another-session" "" "agent-no-recycle" >/dev/null 2>&1
 
-if [[ -f "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}" ]]; then
+if [[ -f "$SANDBOX/.purlin/runtime/turn_count_${LIVE_PID}_${LIVE_HASH}" ]]; then
     log_pass "Alive process with matching start time preserved"
 else
     log_fail "Alive process with matching start time was incorrectly cleaned up"
@@ -478,8 +516,9 @@ echo "[Scenario] User-visible status line emitted to stderr"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45}' > "$SANDBOX/.purlin/config.json"
+HASH19=$(compute_hash "session-19")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-19" "session-19"
-echo "4" > "$SANDBOX/.purlin/runtime/turn_count_agent-19"
+echo "4" > "$SANDBOX/.purlin/runtime/turn_count_agent-19_${HASH19}"
 
 STDERR_FILE="$SANDBOX/stderr_output"
 STDOUT_OUTPUT=$(run_guard "session-19" "" "agent-19" 2>"$STDERR_FILE")
@@ -505,8 +544,9 @@ echo "[Scenario] Exceeded status line emitted to stderr"
 setup_sandbox
 
 echo '{"context_guard_threshold": 5}' > "$SANDBOX/.purlin/config.json"
+HASH20=$(compute_hash "session-20")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-20" "session-20"
-echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-20"
+echo "5" > "$SANDBOX/.purlin/runtime/turn_count_agent-20_${HASH20}"
 
 STDERR_FILE="$SANDBOX/stderr_exceeded"
 STDOUT_OUTPUT=$(run_guard "session-20" "" "agent-20" 2>"$STDERR_FILE")
@@ -520,24 +560,26 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 21: Subagent also emits stderr status line
+# Scenario 21: New session via context clear also emits stderr
 ###############################################################################
 echo ""
-echo "[Scenario] Subagent also emits stderr status line"
+echo "[Scenario] New session via context clear also emits stderr"
 setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+HASH21_MAIN=$(compute_hash "main-session-21")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-21" "main-session-21"
-echo "7" > "$SANDBOX/.purlin/runtime/turn_count_agent-21"
+echo "7" > "$SANDBOX/.purlin/runtime/turn_count_agent-21_${HASH21_MAIN}"
 
-STDERR_FILE="$SANDBOX/stderr_subagent"
-STDOUT_OUTPUT=$(run_guard "subagent-session-21" "" "agent-21" 2>"$STDERR_FILE")
+# Context clear → new session_id → fresh counter file starting at 1
+STDERR_FILE="$SANDBOX/stderr_context_clear"
+STDOUT_OUTPUT=$(run_guard "cleared-session-21" "" "agent-21" 2>"$STDERR_FILE")
 STDERR_OUTPUT=$(cat "$STDERR_FILE")
 
-if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 7 / 10 used"; then
-    log_pass "Subagent emits stderr status line with current count (no increment)"
+if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 1 / 10 used"; then
+    log_pass "Context-cleared session emits stderr status line with count 1"
 else
-    log_fail "Expected subagent stderr 'CONTEXT GUARD: 7 / 10 used', got: '$STDERR_OUTPUT'"
+    log_fail "Expected stderr 'CONTEXT GUARD: 1 / 10 used', got: '$STDERR_OUTPUT'"
 fi
 cleanup_sandbox
 
@@ -549,8 +591,9 @@ echo "[Scenario] Stderr output is uncolored in normal zone"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH22=$(compute_hash "session-22")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-22" "session-22"
-echo "9" > "$SANDBOX/.purlin/runtime/turn_count_agent-22"
+echo "9" > "$SANDBOX/.purlin/runtime/turn_count_agent-22_${HASH22}"
 
 # Use script(1) to simulate a terminal for stderr
 STDERR_FILE="$SANDBOX/stderr_normal"
@@ -587,8 +630,9 @@ echo "[Scenario] Stderr output is warning-colored when within 20% of limit"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH23=$(compute_hash "session-23")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-23" "session-23"
-echo "39" > "$SANDBOX/.purlin/runtime/turn_count_agent-23"
+echo "39" > "$SANDBOX/.purlin/runtime/turn_count_agent-23_${HASH23}"
 
 STDERR_FILE="$SANDBOX/stderr_warning"
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -625,8 +669,9 @@ echo "[Scenario] Stderr output is critical-colored when within 8% of limit"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH24=$(compute_hash "session-24")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-24" "session-24"
-echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-24"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-24_${HASH24}"
 
 STDERR_FILE="$SANDBOX/stderr_critical"
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -662,8 +707,9 @@ echo "[Scenario] Exceeded threshold uses critical color"
 setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
+HASH25=$(compute_hash "session-25")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-25" "session-25"
-echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-25"
+echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-25_${HASH25}"
 
 STDERR_FILE="$SANDBOX/stderr_exceeded_color"
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -699,8 +745,9 @@ echo "[Scenario] No ANSI codes when stderr is not a terminal"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH26=$(compute_hash "session-26")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-26" "session-26"
-echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-26"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-26_${HASH26}"
 
 # Redirect stderr to file (NOT a terminal) — should produce no ANSI codes
 STDERR_FILE="$SANDBOX/stderr_piped"
@@ -723,8 +770,9 @@ echo "[Scenario] JSON additionalContext remains uncolored regardless of zone"
 setup_sandbox
 
 echo '{"context_guard_threshold": 50}' > "$SANDBOX/.purlin/config.json"
+HASH27=$(compute_hash "session-27")
 write_session_meta "$SANDBOX/.purlin/runtime/session_meta_agent-27" "session-27"
-echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-27"
+echo "45" > "$SANDBOX/.purlin/runtime/turn_count_agent-27_${HASH27}"
 
 STDERR_FILE="$SANDBOX/stderr_json_check"
 if [[ "$(uname)" == "Darwin" ]]; then

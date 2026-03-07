@@ -2,13 +2,15 @@
 # context_guard.sh — PostToolUse hook that monitors session turn count
 # and outputs context budget status on every tool call.
 #
-# Each Claude Code process gets its own counter file, keyed by PPID.
-# This eliminates the fragile file-age heuristic for session detection:
-# - New process = new PPID = fresh counter (no reset logic needed)
+# Per-session counter design: each combination of Claude Code process and
+# session gets its own counter file. This eliminates the ambiguity between
+# subagents and context clears:
+# - New process = new PPID = fresh counter
+# - Context clear = new session_id = new SESSION_HASH = fresh counter file
+# - Subagents = different session_id = independent counter file
 # - Multiple agents (even same role) = different PPIDs = no collision
-# - Subagents (same PPID, different session_id) = detected deterministically
 #
-# Files per agent: turn_count_<AGENT_ID>, session_meta_<AGENT_ID>
+# Files: turn_count_<AGENT_ID>_<SESSION_HASH>, session_meta_<AGENT_ID>
 # AGENT_ID defaults to $PPID; override via CONTEXT_GUARD_AGENT_ID for testing.
 #
 # Input: JSON on stdin from Claude Code (contains session_id, cwd, etc.)
@@ -46,8 +48,6 @@ fi
 # Agent identity: PPID uniquely identifies the Claude Code process.
 # CONTEXT_GUARD_AGENT_ID overrides for testing (PPID is read-only in bash).
 AGENT_ID="${CONTEXT_GUARD_AGENT_ID:-$PPID}"
-TURN_COUNT_FILE="$RUNTIME_DIR/turn_count_${AGENT_ID}"
-SESSION_META_FILE="$RUNTIME_DIR/session_meta_${AGENT_ID}"
 
 # Read per-agent config via resolver --dump + inline Python.
 # AGENT_ROLE is set by launcher scripts (agent_launchers_common.md Section 2.1).
@@ -83,8 +83,13 @@ if [ -z "$GUARD_ENABLED" ]; then
     GUARD_ENABLED="true"
 fi
 
-# Use hook session_id, fall back to agent-ID
+# Compute SESSION_HASH from session_id for per-session counter files.
+# Each session gets its own counter file: turn_count_<AGENT_ID>_<SESSION_HASH>.
+# Fallback: when session_id unavailable, hash "agent-<AGENT_ID>" for single file per PPID.
 SESSION_ID="${HOOK_SESSION_ID:-agent-$AGENT_ID}"
+SESSION_HASH=$(echo -n "$SESSION_ID" | cksum | cut -d' ' -f1)
+TURN_COUNT_FILE="$RUNTIME_DIR/turn_count_${AGENT_ID}_${SESSION_HASH}"
+SESSION_META_FILE="$RUNTIME_DIR/session_meta_${AGENT_ID}"
 
 # Acquire file lock to prevent race conditions with parallel tool calls.
 # mkdir is atomic on POSIX; used as a portable mutex (flock unavailable on macOS).
@@ -101,15 +106,38 @@ done
 trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
 # Clean up stale files from dead processes (runs every invocation, very cheap).
+# For per-session counter files (turn_count_<PID>_<HASH>), extract PID as the
+# middle segment between first underscore after "turn_count_" and the next underscore.
+# Uses space-padded strings for PID tracking (portable — no bash 4+ associative arrays).
+_DEAD_PIDS=" "
+_ALIVE_PIDS=" "
 for f in "$RUNTIME_DIR"/turn_count_* "$RUNTIME_DIR"/session_meta_*; do
     [[ -f "$f" ]] || continue
-    basename="${f##*/}"
-    stale_id="${basename##*_}"
+    fname="${f##*/}"
+    # Extract PID: for turn_count_<PID>_<HASH>, strip prefix then take first segment
+    # For session_meta_<PID>, strip prefix and use the whole suffix
+    if [[ "$fname" == turn_count_* ]]; then
+        suffix="${fname#turn_count_}"
+        stale_id="${suffix%%_*}"
+    elif [[ "$fname" == session_meta_* ]]; then
+        stale_id="${fname#session_meta_}"
+    else
+        continue
+    fi
     # Only auto-clean numeric IDs (PIDs); non-numeric are test artifacts
     [[ "$stale_id" =~ ^[0-9]+$ ]] || continue
     [[ "$stale_id" == "$AGENT_ID" ]] && continue
-    if ! kill -0 "$stale_id" 2>/dev/null; then
+    # Skip if we already checked this PID
+    if [[ "$_DEAD_PIDS" == *" $stale_id "* ]]; then
         rm -f "$f"
+        continue
+    elif [[ "$_ALIVE_PIDS" == *" $stale_id "* ]]; then
+        continue
+    fi
+    if ! kill -0 "$stale_id" 2>/dev/null; then
+        _DEAD_PIDS="${_DEAD_PIDS}${stale_id} "
+        # Dead process — delete all its files
+        rm -f "$RUNTIME_DIR"/turn_count_${stale_id}_* "$RUNTIME_DIR/session_meta_${stale_id}"
     else
         # PID is alive — check for PID recycling via process start time
         stale_meta="$RUNTIME_DIR/session_meta_${stale_id}"
@@ -117,40 +145,52 @@ for f in "$RUNTIME_DIR"/turn_count_* "$RUNTIME_DIR"/session_meta_*; do
             stored_start=$(sed -n '3p' "$stale_meta" 2>/dev/null || echo "")
             actual_start=$(ps -p "$stale_id" -o lstart= 2>/dev/null || echo "")
             if [[ -n "$stored_start" && "$stored_start" != "unknown" && -n "$actual_start" && "$stored_start" != "$actual_start" ]]; then
-                rm -f "$f"
+                _DEAD_PIDS="${_DEAD_PIDS}${stale_id} "
+                rm -f "$RUNTIME_DIR"/turn_count_${stale_id}_* "$RUNTIME_DIR/session_meta_${stale_id}"
+            else
+                _ALIVE_PIDS="${_ALIVE_PIDS}${stale_id} "
             fi
+        else
+            _ALIVE_PIDS="${_ALIVE_PIDS}${stale_id} "
         fi
     fi
 done
 
-# Remove legacy role-suffixed and unsuffixed files (one-time migration).
+# Remove legacy single-file-per-PPID counter files (one-time migration).
+# Old format: turn_count_<PID> (no session hash). Also legacy role-suffixed files.
 for f in "$RUNTIME_DIR"/turn_count "$RUNTIME_DIR"/turn_count_architect \
          "$RUNTIME_DIR"/turn_count_builder "$RUNTIME_DIR"/turn_count_qa \
          "$RUNTIME_DIR"/session_id "$RUNTIME_DIR"/session_id_architect \
          "$RUNTIME_DIR"/session_id_builder "$RUNTIME_DIR"/session_id_qa; do
     [[ -f "$f" ]] && rm -f "$f"
 done
+# Migrate old turn_count_<PID> files (no underscore after PID = old format)
+for f in "$RUNTIME_DIR"/turn_count_*; do
+    [[ -f "$f" ]] || continue
+    basename="${f##*/}"
+    suffix="${basename#turn_count_}"
+    # Old format has no second underscore (just a PID). New format has PID_HASH.
+    if [[ "$suffix" =~ ^[0-9]+$ ]]; then
+        rm -f "$f"
+    fi
+done
 
-# Session detection using PPID + session_id.
-#
-# session_meta_<AGENT_ID> stores the session_id of the current conversation.
-# - Meta file missing    → new agent process, initialize tracking files.
-# - session_id matches   → same conversation, increment counter.
-# - session_id differs   → subagent (Task tool) running under the same Claude Code
-#                          process. Read counter without incrementing. Counter reset
-#                          for /clear is handled by /pl-resume deleting session_meta,
-#                          which triggers the "no meta" path → fresh start at 1.
-IS_SUBAGENT=false
+# Session meta: write/update on first invocation per AGENT_ID or when session_id changes.
+# session_meta format: line 1=session_id, line 2=role, line 3=process_start_time
 if [[ -f "$SESSION_META_FILE" ]]; then
     STORED_SESSION_ID=$(head -1 "$SESSION_META_FILE" 2>/dev/null || echo "")
     if [[ "$STORED_SESSION_ID" != "$SESSION_ID" ]]; then
-        # Session ID mismatch — subagent running under same Claude Code process.
-        # Read counter without incrementing. Still output guard status.
-        IS_SUBAGENT=true
+        # Session ID changed — update meta (new session or subagent)
+        META_ROLE="${AGENT_ROLE:-unknown}"
+        if [[ "$AGENT_ID" =~ ^[0-9]+$ ]]; then
+            META_START_TIME=$(ps -p "$AGENT_ID" -o lstart= 2>/dev/null || echo "unknown")
+        else
+            META_START_TIME="unknown"
+        fi
+        printf '%s\n%s\n%s\n' "$SESSION_ID" "$META_ROLE" "$META_START_TIME" > "$SESSION_META_FILE"
     fi
 else
-    # New agent process — initialize tracking files
-    # session_meta format: line 1=session_id, line 2=role, line 3=process_start_time
+    # New agent process — initialize session meta
     META_ROLE="${AGENT_ROLE:-unknown}"
     if [[ "$AGENT_ID" =~ ^[0-9]+$ ]]; then
         META_START_TIME=$(ps -p "$AGENT_ID" -o lstart= 2>/dev/null || echo "unknown")
@@ -158,16 +198,14 @@ else
         META_START_TIME="unknown"
     fi
     printf '%s\n%s\n%s\n' "$SESSION_ID" "$META_ROLE" "$META_START_TIME" > "$SESSION_META_FILE"
-    echo "0" > "$TURN_COUNT_FILE"
 fi
 
-# Read current count and increment (unless subagent — subagents read without incrementing).
-# Counter always increments when not a subagent, even when guard disabled.
+# Read current count and increment. Each session has its own counter file,
+# so subagents and context clears automatically get independent counters.
+# Counter always increments, even when guard disabled.
 COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
-if [[ "$IS_SUBAGENT" != "true" ]]; then
-    COUNT=$((COUNT + 1))
-    echo "$COUNT" > "$TURN_COUNT_FILE"
-fi
+COUNT=$((COUNT + 1))
+echo "$COUNT" > "$TURN_COUNT_FILE"
 
 # When guard is disabled, no output — counter still increments in background.
 if [[ "$GUARD_ENABLED" != "true" ]]; then
