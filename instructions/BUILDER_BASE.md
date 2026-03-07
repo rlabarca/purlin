@@ -123,6 +123,14 @@ Before starting work on each feature from the approved plan:
 *   **Visual Design Source of Truth:** When the feature has a `## Visual Specification` section, read the `- **Description:**` markdown as your working source of truth for visual design — NOT the binary image/PDF artifacts in `features/design/`. The descriptions have already been processed and mapped to the project's design token system by the Architect. Binary artifacts are audit references for the Architect and QA, not Builder inputs.
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
+*   **Fixture Detection (MANDATORY):** Check whether the feature spec contains a fixture tag section (a heading matching `### 2.x ... Fixture Tags`).
+    1.  If yes: resolve the fixture repo via the three-tier lookup (per-feature `> Test Fixtures:` metadata, project-level `fixture_repo_url` in config, convention path `.purlin/runtime/fixture-repo`).
+    2.  If no fixture repo exists at any tier: check for a setup script. In the Purlin framework repo, look for `dev/setup_fixture_repo.sh`. In consumer projects, check the companion file (`features/<name>.impl.md`) or `BUILDER_OVERRIDES.md` for the setup script location. Run the setup script if found. If no setup script exists, create one:
+        *   Use `fixture init` to create the bare repo at the convention path.
+        *   For each declared tag: construct the required project state in a temp directory, then run `fixture add-tag <tag> --from-dir <tmpdir> --message "<state description>"`.
+        *   Save the setup script at the project-appropriate location (Purlin: `dev/`; consumer: Builder's choice, documented in companion file).
+    3.  Verify all declared fixture tags exist by running `fixture list` against the resolved repo URL and checking each tag from the spec's table.
+    4.  **State construction guidance:** Start with a minimal valid project structure (config files, basic features directory), then layer the specific state the scenario requires. Each tag's temp directory should contain only the files needed for that scenario's Given preconditions.
 
 ### 1. Acknowledge and Plan
 *   State which feature file you are implementing.
