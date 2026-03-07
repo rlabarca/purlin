@@ -1646,6 +1646,40 @@ class TestQaBadgeHtml(unittest.TestCase):
         self.assertIn("CLEAN", html)
         self.assertNotIn("effort-breakdown", html)
 
+    def test_auto_badge_uses_status_auto_color(self):
+        """AUTO badge uses var(--purlin-status-auto) color, not warning."""
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {
+                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "manual_interactive": 0, "manual_visual": 0,
+                "manual_hardware": 0,
+                "total_auto": 5, "total_manual": 0,
+                "summary": "5 auto, 0 manual",
+            },
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn('class="st-auto"', html)
+        # Verify the st-auto CSS class uses --purlin-status-auto token
+        serve_path = os.path.join(os.path.dirname(__file__), "serve.py")
+        with open(serve_path) as f:
+            source = f.read()
+        self.assertIn(
+            '.st-auto{{color:var(--purlin-status-auto)', source)
+        # Must NOT use --purlin-status-warning for AUTO
+        self.assertNotIn(
+            '.st-auto{{color:var(--purlin-status-warning)', source)
+
+    def test_css_token_exists_in_both_themes(self):
+        """--purlin-status-auto token is defined in both dark and light themes."""
+        serve_path = os.path.join(os.path.dirname(__file__), "serve.py")
+        with open(serve_path) as f:
+            source = f.read()
+        # Dark theme (Blueprint) — :root block
+        self.assertIn('--purlin-status-auto:#A3E635', source)
+        # Light theme (Architect) — [data-theme='light'] block
+        self.assertIn('--purlin-status-auto:#65A30D', source)
+
     def test_todo_no_verification_effort_key(self):
         entry = {"qa": "TODO"}
         html = _qa_badge_html(entry)

@@ -1,1 +1,1 @@
-{"status": "PASS", "test_file": "tools/cdd/test_cdd.py", "class": "TestQaBadgeHtml", "tests_run": 7, "tests_passed": 7, "timestamp": "2026-03-06T20:50:00Z"}
+{"status": "PASS", "test_file": "tools/cdd/test_cdd.py", "test_classes": ["TestQaBadgeHtml", "TestVerificationEffortInApiStatus"], "passed": 10, "failed": 0}
