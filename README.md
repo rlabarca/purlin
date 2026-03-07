@@ -317,7 +317,7 @@ Add Purlin as a submodule and run the init script:
 ```bash
 git submodule add https://github.com/rlabarca/purlin purlin
 git submodule update --init
-./purlin/init.sh
+./purlin/pl-init.sh
 ```
 
 This creates in your project root:

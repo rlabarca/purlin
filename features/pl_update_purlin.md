@@ -363,6 +363,9 @@ After a successful update, the skill MUST detect and offer to remove stale artif
    - `purlin_init.sh` — renamed to `pl-init.sh`
    - `purlin_cdd_start.sh` — renamed to `pl-cdd-start.sh`
    - `purlin_cdd_stop.sh` — renamed to `pl-cdd-stop.sh`
+   - `init.sh` (framework root) — renamed to `pl-init.sh`
+   - `cdd_start.sh` (framework root) — renamed to `pl-cdd-start.sh`
+   - `cdd_stop.sh` (framework root) — renamed to `pl-cdd-stop.sh`
 3. **Report Format:**
    ```
    Stale artifacts detected from previous Purlin version:

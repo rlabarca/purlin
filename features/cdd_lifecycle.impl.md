@@ -11,6 +11,6 @@ The grep pattern `grep "[s]erve.py" | grep -F "--project-root" | grep -F "$PROJE
 
 ### Symlink Resolution in start.sh / stop.sh
 Both scripts use a `while [ -L "$SOURCE" ]` loop to resolve symlinks before computing `DIR`. This is critical because:
-- Purlin standalone: `cdd_start.sh -> tools/cdd/start.sh` (one level)
+- Purlin standalone: `pl-cdd-start.sh -> tools/cdd/start.sh` (one level)
 - Consumer submodule: `pl-cdd-start.sh -> purlin/tools/cdd/start.sh` (one level)
 Without resolution, `DIR` would be the invoking directory (project root), not `tools/cdd/`, and relative paths like `$DIR/../resolve_python.sh` would fail. macOS `readlink` does not support `-f`, so the loop is required.

@@ -19,7 +19,7 @@ The design uses a two-script architecture: a canonical `tools/init.sh` containin
 ### 2.1 Script Location and Ergonomic Access
 
 *   **Canonical Location:** `tools/init.sh` (executable, `chmod +x`).
-*   **Submodule Root Symlink:** A symlink at `<submodule>/init.sh` MUST point to `tools/init.sh` for ergonomic access (e.g., `purlin/init.sh`).
+*   **Submodule Root Symlink:** A symlink at `<submodule>/pl-init.sh` MUST point to `tools/init.sh` for ergonomic access (e.g., `purlin/pl-init.sh`). The `pl-` prefix follows the same naming convention used by consumer-facing symlinks.
 *   **Project Root Detection:** The script MUST detect the consumer project root as the parent of the submodule directory. Detection MUST work when invoked from any working directory.
 *   **Submodule Path:** The script MUST detect the submodule directory name dynamically from its own location.
 
@@ -202,8 +202,8 @@ The test script MUST include assertions for all of the following. Each test MUST
 
 **Ergonomic Symlink Tests:**
 
-28. **Submodule root symlink exists:** Assert `<submodule>/init.sh` is a symlink to `tools/init.sh`.
-29. **Submodule root symlink works:** Run `<submodule>/init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
+28. **Submodule root symlink exists:** Assert `<submodule>/pl-init.sh` is a symlink to `tools/init.sh`.
+29. **Submodule root symlink works:** Run `<submodule>/pl-init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
 
 #### 2.12.3 Test Output Format
 
@@ -358,9 +358,9 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 #### Scenario: Ergonomic Symlink at Submodule Root
 
     Given Purlin is the submodule at "purlin/"
-    When the user inspects "purlin/init.sh"
+    When the user inspects "purlin/pl-init.sh"
     Then it is a symlink pointing to "tools/init.sh"
-    And running "purlin/init.sh" behaves identically to running "purlin/tools/init.sh"
+    And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
 
 ### Manual Scenarios (Human Verification Required)
 
