@@ -193,7 +193,6 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
     *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
 *   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). (The Critic runs automatically, keeping `critic.json` files and `CRITIC_REPORT.md` current.) If the status did not update as expected, investigate and correct before moving on.
-*   **D2. Per-Feature Checkpoint (MANDATORY):** After the status tag commit is verified, execute `/pl-resume save` automatically. This ensures session state is always recoverable if context is cleared or the session ends unexpectedly. Do NOT skip this step — it is the Builder's safety net against context exhaustion.
 *   **E. Phase Completion Check:** If a delivery plan exists at `.purlin/cache/delivery_plan.md` and the completed feature belongs to the current phase:
     1.  Check whether all features in the current phase have been implemented and status-tagged.
     2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
