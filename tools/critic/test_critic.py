@@ -58,6 +58,8 @@ from critic import (
     _policy_exempt_implementation_gate,
     audit_untracked_files,
     compute_role_status,
+    parse_fixture_tags,
+    validate_fixture_tags,
     parse_builder_decisions,
     parse_visual_spec,
     validate_visual_references,
@@ -5382,6 +5384,360 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
             self.assertIn('total_auto', ve)
             self.assertIn('total_manual', ve)
             self.assertIn('summary', ve)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+            shutil.rmtree(root)
+
+
+# ===================================================================
+# Fixture Tag Parsing and Validation Tests (policy_critic Section 2.11)
+# ===================================================================
+
+class TestParseFixtureTags(unittest.TestCase):
+    """Test parse_fixture_tags() extraction from feature specs."""
+
+    def test_extracts_web_verify_fixture_tags(self):
+        content = """# Feature: Test
+## 2. Requirements
+### 2.5 Web-Verify Fixture Tags
+
+The following fixture tags:
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/my_feature/scenario-one` | First scenario state |
+| `main/my_feature/scenario-two` | Second scenario state |
+
+## 3. Scenarios
+"""
+        result = parse_fixture_tags(content)
+        self.assertTrue(result['section_found'])
+        self.assertEqual(len(result['tags']), 2)
+        self.assertIn('main/my_feature/scenario-one', result['tags'])
+        self.assertIn('main/my_feature/scenario-two', result['tags'])
+        self.assertIsNone(result['repo_url'])
+
+    def test_extracts_integration_test_fixture_tags(self):
+        content = """# Feature: Critic
+### 2.13 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/critic_tool/spec-gate-fail` | Missing sections |
+| `main/critic_tool/traceability-gap` | No matching tests |
+"""
+        result = parse_fixture_tags(content)
+        self.assertTrue(result['section_found'])
+        self.assertEqual(len(result['tags']), 2)
+        self.assertIn('main/critic_tool/spec-gate-fail', result['tags'])
+
+    def test_extracts_fixture_tags_required_variant(self):
+        content = """### 2.3 Fixture Tags Required
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/startup/expert-mode` | Expert mode state |
+"""
+        result = parse_fixture_tags(content)
+        self.assertTrue(result['section_found'])
+        self.assertEqual(len(result['tags']), 1)
+        self.assertIn('main/startup/expert-mode', result['tags'])
+
+    def test_extracts_fixture_tags_for_testing_variant(self):
+        content = """### 2.8 Fixture Tags for Testing
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release/clean-graph` | Clean graph |
+| `main/release/broken-link` | Broken link |
+"""
+        result = parse_fixture_tags(content)
+        self.assertTrue(result['section_found'])
+        self.assertEqual(len(result['tags']), 2)
+
+    def test_extracts_repo_url_from_metadata(self):
+        content = """> Label: "My Feature"
+> Test Fixtures: https://github.com/org/fixtures.git
+> Prerequisite: features/policy_critic.md
+
+## 1. Overview
+"""
+        result = parse_fixture_tags(content)
+        self.assertEqual(
+            result['repo_url'],
+            'https://github.com/org/fixtures.git')
+
+    def test_no_fixture_tags_returns_empty(self):
+        content = """# Feature: Simple
+## 1. Overview
+Something here.
+## 2. Requirements
+Nothing fancy.
+## 3. Scenarios
+"""
+        result = parse_fixture_tags(content)
+        self.assertFalse(result['section_found'])
+        self.assertEqual(len(result['tags']), 0)
+        self.assertIsNone(result['repo_url'])
+
+    def test_skips_header_row(self):
+        """The 'Tag' header in markdown table should not be extracted."""
+        content = """### 2.1 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/feat/s1` | State one |
+"""
+        result = parse_fixture_tags(content)
+        self.assertEqual(result['tags'], ['main/feat/s1'])
+        self.assertNotIn('Tag', result['tags'])
+
+    def test_multiple_fixture_tag_sections(self):
+        content = """### 2.5 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/feat/web-tag` | Web state |
+
+### 2.6 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/feat/int-tag` | Int state |
+"""
+        result = parse_fixture_tags(content)
+        self.assertTrue(result['section_found'])
+        self.assertEqual(len(result['tags']), 2)
+        self.assertIn('main/feat/web-tag', result['tags'])
+        self.assertIn('main/feat/int-tag', result['tags'])
+
+
+class TestValidateFixtureTags(unittest.TestCase):
+    """Test validate_fixture_tags() cross-referencing."""
+
+    def test_no_tags_returns_empty(self):
+        fixture_data = {'tags': [], 'repo_url': None, 'section_found': False}
+        result = validate_fixture_tags(fixture_data)
+        self.assertEqual(result, [])
+
+    def test_no_repo_url_returns_empty(self):
+        fixture_data = {
+            'tags': ['main/feat/s1'],
+            'repo_url': None,
+            'section_found': True,
+        }
+        result = validate_fixture_tags(fixture_data)
+        self.assertEqual(result, [])
+
+    @patch('critic._get_fixture_list')
+    def test_all_tags_present(self, mock_list):
+        mock_list.return_value = {
+            'main/feat/s1', 'main/feat/s2', 'main/other/s1'}
+        fixture_data = {
+            'tags': ['main/feat/s1', 'main/feat/s2'],
+            'repo_url': 'https://github.com/org/fixtures.git',
+            'section_found': True,
+        }
+        result = validate_fixture_tags(fixture_data)
+        self.assertEqual(result, [])
+
+    @patch('critic._get_fixture_list')
+    def test_missing_tags_returned(self, mock_list):
+        mock_list.return_value = {'main/feat/s1'}
+        fixture_data = {
+            'tags': ['main/feat/s1', 'main/feat/s2', 'main/feat/s3'],
+            'repo_url': 'https://github.com/org/fixtures.git',
+            'section_found': True,
+        }
+        result = validate_fixture_tags(fixture_data)
+        self.assertEqual(sorted(result), ['main/feat/s2', 'main/feat/s3'])
+
+    @patch('critic._get_fixture_list')
+    def test_fixture_list_failure_returns_empty(self, mock_list):
+        mock_list.return_value = None
+        fixture_data = {
+            'tags': ['main/feat/s1'],
+            'repo_url': 'https://github.com/org/fixtures.git',
+            'section_found': True,
+        }
+        result = validate_fixture_tags(fixture_data)
+        self.assertEqual(result, [])
+
+
+class TestFixtureTagActionItems(unittest.TestCase):
+    """Test that missing fixture tags generate MEDIUM Builder action items."""
+
+    def _make_feature_result(self, missing_tags=None):
+        return {
+            'feature_file': 'features/my_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': len(missing_tags) if missing_tags else 0,
+                'missing_count': len(missing_tags) if missing_tags else 0,
+                'missing': missing_tags or [],
+                'repo_url': 'https://example.com/repo.git'
+                    if missing_tags else None,
+            },
+        }
+
+    def test_no_missing_tags_no_action_item(self):
+        result = self._make_feature_result()
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        fixture_items = [
+            i for i in builder_items if i['category'] == 'fixture_tags']
+        self.assertEqual(len(fixture_items), 0)
+
+    def test_missing_tags_generate_medium_builder_item(self):
+        result = self._make_feature_result(
+            missing_tags=['main/feat/s1', 'main/feat/s2'])
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        fixture_items = [
+            i for i in builder_items if i['category'] == 'fixture_tags']
+        self.assertEqual(len(fixture_items), 1)
+        self.assertEqual(fixture_items[0]['priority'], 'MEDIUM')
+        self.assertIn('2 missing fixture tag(s)',
+                       fixture_items[0]['description'])
+        self.assertIn('main/feat/s1', fixture_items[0]['description'])
+        self.assertIn('main/feat/s2', fixture_items[0]['description'])
+
+    def test_fixture_tag_item_has_correct_feature_name(self):
+        result = self._make_feature_result(
+            missing_tags=['main/feat/s1'])
+        items = generate_action_items(result)
+        fixture_items = [
+            i for i in items['builder']
+            if i['category'] == 'fixture_tags']
+        self.assertEqual(fixture_items[0]['feature'], 'my_feature')
+
+
+class TestFixtureTagsInCriticJson(unittest.TestCase):
+    """Test that fixture_tags block appears in generate_critic_json output."""
+
+    def test_fixture_tags_block_in_output(self):
+        """Features with fixture tag sections include fixture_tags in JSON."""
+        import critic
+        root = tempfile.mkdtemp()
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        try:
+            features_dir = os.path.join(root, 'features')
+            tests_dir = os.path.join(root, 'tests')
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            content = """# Feature: With Tags
+> Label: "Test"
+> Category: "Test"
+> Prerequisite: features/policy_critic.md
+
+## 1. Overview
+Test feature.
+
+## 2. Requirements
+### 2.1 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/with_tags/scenario-one` | State one |
+
+## 3. Scenarios
+
+### Automated Scenarios
+None.
+
+### Manual Scenarios (Human Verification Required)
+None.
+
+## Implementation Notes
+See with_tags.impl.md
+"""
+            feature_path = os.path.join(features_dir, 'with_tags.md')
+            with open(feature_path, 'w') as f:
+                f.write(content)
+
+            critic.FEATURES_DIR = features_dir
+            critic.TESTS_DIR = tests_dir
+            critic.PROJECT_ROOT = root
+
+            result = generate_critic_json(feature_path)
+
+            self.assertIn('fixture_tags', result)
+            ft = result['fixture_tags']
+            self.assertEqual(ft['declared_count'], 1)
+            self.assertIsNone(ft['repo_url'])
+            self.assertEqual(ft['missing_count'], 0)
+            self.assertEqual(ft['missing'], [])
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+            shutil.rmtree(root)
+
+    def test_no_fixture_tags_block_has_zero_counts(self):
+        """Features without fixture tag sections report zero counts."""
+        import critic
+        root = tempfile.mkdtemp()
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        try:
+            features_dir = os.path.join(root, 'features')
+            tests_dir = os.path.join(root, 'tests')
+            os.makedirs(features_dir)
+            os.makedirs(tests_dir)
+
+            content = """# Feature: No Tags
+> Label: "Test"
+> Category: "Test"
+
+## 1. Overview
+Simple feature.
+
+## 2. Requirements
+Nothing here.
+
+## 3. Scenarios
+
+### Automated Scenarios
+None.
+
+### Manual Scenarios (Human Verification Required)
+None.
+
+## Implementation Notes
+See no_tags.impl.md
+"""
+            feature_path = os.path.join(features_dir, 'no_tags.md')
+            with open(feature_path, 'w') as f:
+                f.write(content)
+
+            critic.FEATURES_DIR = features_dir
+            critic.TESTS_DIR = tests_dir
+            critic.PROJECT_ROOT = root
+
+            result = generate_critic_json(feature_path)
+
+            self.assertIn('fixture_tags', result)
+            ft = result['fixture_tags']
+            self.assertEqual(ft['declared_count'], 0)
+            self.assertEqual(ft['missing_count'], 0)
         finally:
             critic.FEATURES_DIR = orig_features
             critic.TESTS_DIR = orig_tests

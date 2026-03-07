@@ -453,6 +453,129 @@ def validate_visual_references(visual_spec, project_root=None):
     return items
 
 
+# ===================================================================
+# Fixture Tag Parsing (policy_critic Section 2.11)
+# ===================================================================
+
+# Per-run cache for fixture list results (keyed by repo URL)
+_fixture_list_cache = {}
+
+
+def parse_fixture_tags(content):
+    """Parse fixture tag declarations from a feature spec.
+
+    Detects:
+    - ``### 2.x Web-Verify Fixture Tags`` sections (and variants like
+      ``Integration Test Fixture Tags``, ``Fixture Tags Required``,
+      ``Fixture Tags for Testing``)
+    - ``> Test Fixtures: <repo-url>`` metadata lines
+
+    Returns dict:
+        tags: list of tag strings extracted from markdown tables
+        repo_url: str or None (from ``> Test Fixtures:`` metadata)
+        section_found: bool (True if any fixture tag section exists)
+    """
+    tags = []
+    repo_url = None
+    section_found = False
+
+    # Extract repo URL from metadata
+    url_match = re.search(
+        r'^>\s*Test\s+Fixtures:\s*(.+)', content, re.MULTILINE)
+    if url_match:
+        repo_url = url_match.group(1).strip()
+
+    # Find fixture tag sections: ### 2.x ... Fixture Tags ...
+    # Matches headings like:
+    #   ### 2.5 Web-Verify Fixture Tags
+    #   ### 2.13 Integration Test Fixture Tags
+    #   ### 2.3 Fixture Tags Required
+    #   ### 2.8 Fixture Tags for Testing
+    fixture_section_re = re.compile(
+        r'^###\s+\d+\.\d+\s+.*Fixture\s+Tags.*$',
+        re.MULTILINE | re.IGNORECASE)
+
+    for match in fixture_section_re.finditer(content):
+        section_found = True
+        # Extract the section body (until next heading of same or higher level)
+        start = match.end()
+        next_heading = re.search(r'^#{1,3}\s+', content[start:], re.MULTILINE)
+        if next_heading:
+            section_body = content[start:start + next_heading.start()]
+        else:
+            section_body = content[start:]
+
+        # Parse backtick-quoted tags from markdown table rows
+        # Format: | `main/feature/scenario-slug` | Description |
+        for row_match in re.finditer(
+                r'\|\s*`([^`]+)`\s*\|', section_body):
+            tag = row_match.group(1).strip()
+            if tag and tag != 'Tag':  # Skip header row
+                tags.append(tag)
+
+    return {
+        'tags': tags,
+        'repo_url': repo_url,
+        'section_found': section_found,
+    }
+
+
+def _get_fixture_list(repo_url, project_root=None):
+    """Get available fixture tags from a repo via ``fixture list``.
+
+    Results are cached per repo URL for the duration of a single Critic run.
+    Returns a set of tag strings, or None if the command fails.
+    """
+    if repo_url in _fixture_list_cache:
+        return _fixture_list_cache[repo_url]
+
+    root = project_root or PROJECT_ROOT
+    tools_root = CONFIG.get('tools_root', 'tools')
+    fixture_sh = os.path.join(root, tools_root, 'test_support', 'fixture.sh')
+
+    if not os.path.isfile(fixture_sh):
+        _fixture_list_cache[repo_url] = None
+        return None
+
+    try:
+        result = subprocess.run(
+            ['bash', fixture_sh, 'list', repo_url],
+            capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            tag_set = {
+                line.strip() for line in result.stdout.strip().split('\n')
+                if line.strip()
+            }
+            _fixture_list_cache[repo_url] = tag_set
+            return tag_set
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+    _fixture_list_cache[repo_url] = None
+    return None
+
+
+def validate_fixture_tags(fixture_data, project_root=None):
+    """Validate declared fixture tags against the fixture repo.
+
+    Args:
+        fixture_data: dict from parse_fixture_tags()
+        project_root: optional project root override
+
+    Returns list of missing tag strings. Empty list if all tags exist
+    or if validation cannot be performed (no repo URL).
+    """
+    if not fixture_data['tags'] or not fixture_data['repo_url']:
+        return []
+
+    available = _get_fixture_list(fixture_data['repo_url'], project_root)
+    if available is None:
+        # Command failed or fixture.sh not found; can't validate
+        return []
+
+    return [tag for tag in fixture_data['tags'] if tag not in available]
+
+
 def is_policy_file(filename):
     """Check if a filename is an anchor node (arch_*.md, design_*.md, policy_*.md)."""
     base = os.path.basename(filename)
@@ -1228,6 +1351,22 @@ def generate_action_items(feature_result, cdd_status=None):
                     f'Fix scope declaration for {feature_name}: {warning}'
                 ),
             })
+
+    # Fixture tag validation (policy_critic Section 2.11):
+    # When a feature declares fixture tags and a repo URL is available,
+    # missing tags produce MEDIUM Builder action items.
+    fixture_tags = feature_result.get('fixture_tags', {})
+    missing_tags = fixture_tags.get('missing', [])
+    if missing_tags:
+        builder_items.append({
+            'priority': 'MEDIUM',
+            'category': 'fixture_tags',
+            'feature': feature_name,
+            'description': (
+                f'Create {len(missing_tags)} missing fixture tag(s) '
+                f'for {feature_name}: {", ".join(missing_tags)}'
+            ),
+        })
 
     # NOTE: SPEC_UPDATED discoveries do NOT generate Builder action items.
     # Builder signaling comes from the feature lifecycle: spec edits reset
@@ -2044,6 +2183,16 @@ def generate_critic_json(feature_path, cdd_status=None):
     visual_spec = parse_visual_spec(content)
     visual_ref_items = validate_visual_references(visual_spec)
 
+    # Fixture tag parsing and validation (policy_critic Section 2.11)
+    fixture_data = parse_fixture_tags(content)
+    missing_fixture_tags = validate_fixture_tags(fixture_data)
+    fixture_tags_result = {
+        'declared_count': len(fixture_data['tags']),
+        'missing_count': len(missing_fixture_tags),
+        'missing': missing_fixture_tags,
+        'repo_url': fixture_data['repo_url'],
+    }
+
     # Regression scope computation (Section 2.12)
     lifecycle_state = _get_feature_lifecycle_state(rel_path, cdd_status)
     if lifecycle_state == 'testing':
@@ -2065,10 +2214,12 @@ def generate_critic_json(feature_path, cdd_status=None):
         'user_testing': user_testing,
         'visual_spec': visual_spec,
         'regression_scope': regression_scope,
+        'fixture_tags': fixture_tags_result,
     }
 
-    # Store visual reference items for action item generation
+    # Store internal-only keys for action item generation
     result['_visual_ref_items'] = visual_ref_items
+    result['_fixture_data'] = fixture_data
 
     # Generate action items (pass visual_spec and regression_scope)
     result['action_items'] = generate_action_items(result, cdd_status)
@@ -2111,6 +2262,7 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Clean up internal-only keys before returning
     result.pop('_visual_ref_items', None)
+    result.pop('_fixture_data', None)
 
     return result
 
