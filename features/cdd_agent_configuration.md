@@ -81,6 +81,33 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     Arrays are sorted ascending. Empty arrays indicate no running agents for that role.
 
 
+### 2.4 Collapsed Context Guard Summary
+
+*   **Visibility:** When the Agent Config section is **collapsed**, an inline context guard summary is displayed between the "Agent Config" heading text and the existing model-count badge (right side).
+*   **Position:** The summary is a **separate element**, left-justified immediately after the heading text, before the model badge. The existing model-count badge (e.g., "2x Opus 4.6 | 1x Sonnet 4.6") remains unchanged in position, content, and styling on the right side.
+*   **Format:** `(<role>: <counts>, <role>: <counts>, ...)` where counts use the same `value|value` pipe-separated format as the expanded live counter display (Section 2.1).
+*   **Role Filtering:** Only include roles that have at least one active agent process (from `GET /context-guard/counters`). If no agents are running across any role, show nothing (empty — no parentheses).
+*   **Role Order:** Architect, Builder, QA (fixed order when present).
+*   **Text Styling:** Agent role names use `var(--purlin-primary)` color. Count values are individually colored using the threshold zones defined in Section 2.5. Counts use `font-family: monospace`, 10px font size, matching the expanded counter styling.
+*   **Show/Hide:** The summary is visible only when the section is collapsed. When expanded, the summary is hidden (same show/hide behavior as the existing model badge).
+*   **Refresh:** Updated on the same 5-second auto-refresh cycle as the expanded counters via `GET /context-guard/counters`.
+
+### 2.5 Counter Color Thresholds
+
+Individual count values in **both** the collapsed summary (Section 2.4) and the expanded per-agent counter span (Section 2.1) are colored based on proximity to the agent's configured threshold:
+
+| Zone | Condition | Color Token |
+|------|-----------|-------------|
+| Normal | count < 80% of threshold | `--purlin-muted` (existing default) |
+| Warning | count >= 80% of threshold | `--purlin-status-warning` |
+| Critical | count >= 92% of threshold | `--purlin-status-error` |
+
+*   **Per-value coloring:** Each individual count value is colored independently based on its agent's configured threshold. In a pipe-separated display (e.g., `3|22|35`), each number may have a different color.
+*   **Threshold source:** The threshold for each agent is sourced from the already-loaded `agentsConfig` — per-agent `context_guard_threshold`, falling back to global `context_guard_threshold`, then hardcoded `45`.
+*   **Disabled guard:** When `context_guard` is `false` for an agent, counts still display but always use `--purlin-muted` color (no threshold coloring applies).
+*   **Boundary math:** Warning triggers at `count >= threshold * 0.80`. Critical triggers at `count >= threshold * 0.92`. Matches the shell hook zones defined in `context_guard.md` Section 2.4.1.
+
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -184,6 +211,53 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     When a GET request is sent to /context-guard/counters
     Then no role array contains 10
 
+#### Scenario: Collapsed Summary Shows Active Agent Counts with Role Labels
+    Given turn_count_100 exists with value "5" and session_meta_100 has role "architect"
+    And turn_count_200 exists with value "12" and session_meta_200 has role "builder"
+    And processes 100 and 200 are alive
+    And the Agent Config section is collapsed
+    When the dashboard renders the collapsed heading
+    Then the heading displays an inline summary "(Architect: 5, Builder: 12)" between the heading text and the model badge
+
+#### Scenario: Collapsed Summary Omits Roles with No Active Processes
+    Given turn_count_100 exists with value "5" and session_meta_100 has role "architect"
+    And no builder or qa agents are running
+    And the Agent Config section is collapsed
+    When the dashboard renders the collapsed heading
+    Then the heading displays "(Architect: 5)" with no Builder or QA entries
+
+#### Scenario: Collapsed Summary Hidden When Section Expanded
+    Given agents are running and context guard counters are available
+    When the user expands the Agent Config section
+    Then the inline context guard summary is not visible
+    And the model badge is not visible
+
+#### Scenario: Counter Values Colored Warning at >= 80% Threshold
+    Given the architect agent has context_guard_threshold 50
+    And a running architect agent has turn count 40 (80% of 50)
+    When the counter value is rendered (collapsed summary or expanded counter)
+    Then the count "40" is styled with var(--purlin-status-warning) color
+
+#### Scenario: Counter Values Colored Critical at >= 92% Threshold
+    Given the builder agent has context_guard_threshold 50
+    And a running builder agent has turn count 46 (92% of 50)
+    When the counter value is rendered (collapsed summary or expanded counter)
+    Then the count "46" is styled with var(--purlin-status-error) color
+
+#### Scenario: Counter Values Use Muted Color When Guard Disabled
+    Given the qa agent has context_guard false and context_guard_threshold 50
+    And a running qa agent has turn count 48
+    When the counter value is rendered
+    Then the count "48" is styled with var(--purlin-muted) color regardless of threshold proximity
+
+#### Scenario: Collapsed Summary Pipe-Separates Multiple Agents of Same Role
+    Given turn_count_100 exists with value "3" and session_meta_100 has role "builder"
+    And turn_count_200 exists with value "22" and session_meta_200 has role "builder"
+    And processes 100 and 200 are alive
+    And the Agent Config section is collapsed
+    When the dashboard renders the collapsed heading
+    Then the heading displays "(Builder: 3|22)" with counts sorted ascending
+
 ### Manual Scenarios (Human Verification Required)
 These scenarios require the running CDD Dashboard server and human interaction to verify.
 
@@ -215,6 +289,13 @@ These scenarios require the running CDD Dashboard server and human interaction t
     When the user clicks the threshold stepper up arrow to increase the value
     Then the new threshold value is sent via POST /config/agents
     And on page reload the new value is displayed
+
+#### Scenario: Collapsed Summary Updates on 5-Second Refresh Cycle
+    Given one or more Claude Code agents are running
+    And the Agent Config section is collapsed
+    When the dashboard auto-refreshes on the 5-second cycle
+    Then the inline context guard summary updates with current counter values
+    And counter colors update to reflect current threshold proximity
 
 #### Scenario: Live Counter Displays Running Agent Counts
     Given one or more Claude Code agents are running (visible as turn_count_<PID> files in .purlin/runtime/)
@@ -261,4 +342,13 @@ These scenarios require the running CDD Dashboard server and human interaction t
 - [ ] Multiple counters are pipe-separated (e.g., "3|22|35") with no spaces around pipes
 - [ ] Counter display updates on 5-second refresh without flickering
 - [ ] When no agents are running for a role, no counter text appears (span is empty)
+- [ ] Collapsed heading shows inline context guard summary "(Role: counts, ...)" between heading text and model badge
+- [ ] Collapsed summary role names use `var(--purlin-primary)` color
+- [ ] Collapsed summary count values use monospace font, 10px, matching expanded counter styling
+- [ ] Collapsed summary disappears when section is expanded; reappears when collapsed
+- [ ] Counter values below 80% threshold use `var(--purlin-muted)` color in both collapsed summary and expanded display
+- [ ] Counter values at or above 80% threshold use `var(--purlin-status-warning)` color (orange)
+- [ ] Counter values at or above 92% threshold use `var(--purlin-status-error)` color (red)
+- [ ] Counter colors update on 5-second refresh cycle as counts change
+- [ ] When guard is disabled for an agent, counter values always use `var(--purlin-muted)` regardless of count
 
