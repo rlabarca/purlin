@@ -2392,6 +2392,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
         <h3>{agents_heading}</h3>
+        <span id="agents-cg-summary" style="font-family:monospace;font-size:10px;margin-left:8px"></span>
         <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
       </div>
       <div class="section-body collapsed" id="agents-section">
@@ -2707,14 +2708,17 @@ function applySectionStates() {{
     var chevron = document.getElementById(id + '-chevron');
     var badge = document.getElementById(id + '-badge');
     if (!body) return;
+    var cgSum = (id === 'agents-section') ? document.getElementById('agents-cg-summary') : null;
     if (saved === 'collapsed') {{
       body.classList.add('collapsed');
       if (chevron) chevron.classList.remove('expanded');
       if (badge) badge.style.display = '';
+      if (cgSum) cgSum.style.display = '';
     }} else {{
       body.classList.remove('collapsed');
       if (chevron) chevron.classList.add('expanded');
       if (badge) badge.style.display = 'none';
+      if (cgSum) cgSum.style.display = 'none';
     }}
   }});
   // Apply isolation sub-heading label swap
@@ -2728,14 +2732,17 @@ function toggleSection(sectionId) {{
   var badge = document.getElementById(sectionId + '-badge');
   if (!body) return;
   var isCollapsed = body.classList.contains('collapsed');
+  var cgSummary = (sectionId === 'agents-section') ? document.getElementById('agents-cg-summary') : null;
   if (isCollapsed) {{
     body.classList.remove('collapsed');
     if (chevron) chevron.classList.add('expanded');
     if (badge) badge.style.display = 'none';
+    if (cgSummary) cgSummary.style.display = 'none';
   }} else {{
     body.classList.add('collapsed');
     if (chevron) chevron.classList.remove('expanded');
     if (badge) badge.style.display = '';
+    if (cgSummary) cgSummary.style.display = '';
   }}
   // Isolation sub-heading: swap heading text on collapse/expand
   if (sectionId === 'isolation-section') {{
@@ -4821,6 +4828,23 @@ function saveAgentConfig() {{
 // ============================
 // Context Guard Live Counters
 // ============================
+function getCounterColor(count, role) {{
+  if (!agentsConfig) return 'var(--purlin-muted)';
+  var acfg = (agentsConfig.agents || {{}})[role] || {{}};
+  if (acfg.context_guard === false) return 'var(--purlin-muted)';
+  var threshold = acfg.context_guard_threshold || agentsConfig.context_guard_threshold || 45;
+  if (count >= threshold * 0.92) return 'var(--purlin-status-error)';
+  if (count >= threshold * 0.80) return 'var(--purlin-status-warning)';
+  return 'var(--purlin-muted)';
+}}
+
+function renderColoredCounts(counts, role) {{
+  if (counts.length === 0) return '';
+  return counts.map(function(c) {{
+    return '<span style="color:' + getCounterColor(c, role) + '">' + c + '</span>';
+  }}).join('|');
+}}
+
 function refreshContextGuardCounters() {{
   fetch('/context-guard/counters')
     .then(function(r) {{ return r.json(); }})
@@ -4829,16 +4853,29 @@ function refreshContextGuardCounters() {{
         var span = document.getElementById('agent-cg-counter-' + role);
         if (!span) return;
         var counts = data[role] || [];
-        if (counts.length === 0) {{
-          span.textContent = '';
-        }} else if (counts.length === 1) {{
-          span.textContent = '' + counts[0];
-        }} else {{
-          span.textContent = counts.join('|');
-        }}
+        span.innerHTML = renderColoredCounts(counts, role);
       }});
+      updateCollapsedCgSummary(data);
     }})
     .catch(function() {{}});
+}}
+
+function updateCollapsedCgSummary(data) {{
+  var el = document.getElementById('agents-cg-summary');
+  if (!el) return;
+  var roles = ['architect', 'builder', 'qa'];
+  var parts = [];
+  roles.forEach(function(role) {{
+    var counts = data[role] || [];
+    if (counts.length === 0) return;
+    var colored = renderColoredCounts(counts, role);
+    parts.push('<span style="color:var(--purlin-primary)">' + role.charAt(0).toUpperCase() + role.slice(1) + '</span>: ' + colored);
+  }});
+  if (parts.length === 0) {{
+    el.innerHTML = '';
+  }} else {{
+    el.innerHTML = '(' + parts.join(', ') + ')';
+  }}
 }}
 
 // ============================

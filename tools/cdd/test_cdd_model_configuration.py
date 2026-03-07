@@ -670,6 +670,163 @@ class TestContextGuardCounterFrontend(unittest.TestCase):
         self.assertIn("font-size:10px", html)
 
 
+class TestCounterColorThresholds(unittest.TestCase):
+    """Scenario: Counter Values Colored by Threshold Proximity"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_get_counter_color_function_exists(self, mock_run, mock_status):
+        """getCounterColor helper function is defined in JS."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("function getCounterColor(count, role)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_render_colored_counts_function_exists(self, mock_run, mock_status):
+        """renderColoredCounts helper function is defined in JS."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("function renderColoredCounts(counts, role)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_warning_threshold_at_80_percent(self, mock_run, mock_status):
+        """Color logic uses 0.80 threshold for warning."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("threshold * 0.80", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_critical_threshold_at_92_percent(self, mock_run, mock_status):
+        """Color logic uses 0.92 threshold for critical."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("threshold * 0.92", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_warning_uses_status_warning_token(self, mock_run, mock_status):
+        """Warning zone uses --purlin-status-warning color."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("--purlin-status-warning", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_critical_uses_status_error_token(self, mock_run, mock_status):
+        """Critical zone uses --purlin-status-error color."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("--purlin-status-error", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_disabled_guard_uses_muted(self, mock_run, mock_status):
+        """Disabled context guard always returns --purlin-muted."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("context_guard === false", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_counter_uses_innerhtml_for_colored_spans(self, mock_run, mock_status):
+        """Counter span updated via innerHTML (not textContent) for colored spans."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("span.innerHTML = renderColoredCounts(counts, role)", html)
+
+
+class TestCollapsedContextGuardSummary(unittest.TestCase):
+    """Scenario: Collapsed Summary Shows Active Agent Counts"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_span_exists(self, mock_run, mock_status):
+        """agents-cg-summary span exists in HTML."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('id="agents-cg-summary"', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_between_heading_and_badge(self, mock_run, mock_status):
+        """Summary span appears before the badge span."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        summary_pos = html.find('agents-cg-summary')
+        badge_pos = html.find('agents-section-badge')
+        self.assertGreater(summary_pos, 0)
+        self.assertGreater(badge_pos, summary_pos)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_update_function_exists(self, mock_run, mock_status):
+        """updateCollapsedCgSummary function is defined."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("function updateCollapsedCgSummary(data)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_called_from_refresh(self, mock_run, mock_status):
+        """refreshContextGuardCounters calls updateCollapsedCgSummary."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("updateCollapsedCgSummary(data)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_hidden_when_expanded(self, mock_run, mock_status):
+        """toggleSection hides agents-cg-summary when section is expanded."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("agents-cg-summary", html)
+        # Check that toggleSection handles cgSummary display
+        self.assertIn("cgSummary) cgSummary.style.display = 'none'", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_uses_role_primary_color(self, mock_run, mock_status):
+        """Role names in summary use --purlin-primary color."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("var(--purlin-primary)", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_summary_omits_empty_roles(self, mock_run, mock_status):
+        """Summary logic checks counts.length === 0 to skip roles."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("counts.length === 0) return", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_apply_section_states_handles_summary(self, mock_run, mock_status):
+        """applySectionStates also handles agents-cg-summary visibility."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("cgSum) cgSum.style.display = 'none'", html)
+
+
 # =============================================================================
 # Test runner: writes results to tests/cdd_agent_configuration/tests.json
 # =============================================================================
