@@ -140,7 +140,8 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Architect** | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | "Acknowledge Builder decision in critic_tool: [tag title]" |
 | **Architect** | Spec Gate WARN (no manual scenarios, empty impl notes) | "Improve spec: scenario_classification -- only Automated" |
 | **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
-| **Builder** | Feature in TODO lifecycle state (spec modified after last status commit) | "Review and implement spec changes for critic_tool" |
+| **Builder** | Feature in TODO lifecycle state with new scenarios (spec modified after last status commit) | "Implement spec changes for critic_tool: 4 new scenario(s) [Fixture Repo Not Found..., Convention Path...], 0 modified, 0 removed" |
+| **Builder** | New scenario matched only to pre-existing tests (weak traceability match) | "New scenario 'Fixture Repo Not Found Produces Builder Warning' has no dedicated test — existing keyword match is likely a false positive" |
 | **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
@@ -831,6 +832,41 @@ The following fixture tags provide deterministic project states for integration-
     When the Critic resolves the fixture repo for the feature
     Then it uses `/tmp/alt-fixture-repo` (the config override)
     And the convention path is not consulted
+
+#### Scenario: Lifecycle Reset Action Item Includes Scenario Diff
+    Given a feature was previously at COMPLETE lifecycle state
+    And the Architect edits the spec adding 3 new automated scenarios
+    And the feature resets to TODO lifecycle state
+    When the Critic generates action items
+    Then a Builder action item is created with priority HIGH and category lifecycle_reset
+    And the description includes "3 new scenario(s)" with their titles
+    And the description is NOT the generic "Review and implement spec changes"
+
+#### Scenario: New Scenario With Only Weak Traceability Match Flagged
+    Given a feature has a new automated scenario "Convention Path Fixture Repo Used Without Configuration"
+    And the scenario was added after the last status commit (detected via scenario diff)
+    And the traceability engine matches it to an existing test via keyword overlap
+    And that test existed before the spec edit (pre-existing test)
+    When the Critic runs traceability analysis
+    Then an additional HIGH-priority Builder action item is created
+    And the description says the new scenario has no dedicated test
+    And the existing keyword match is flagged as likely false positive
+
+#### Scenario: New Scenario With Dedicated Test Not Flagged
+    Given a feature has a new automated scenario "Convention Path Fixture Repo Used Without Configuration"
+    And the scenario was added after the last status commit
+    And a test function test_convention_path_fixture_repo was added after the same commit
+    When the Critic runs traceability analysis
+    Then no weak-match action item is generated for the scenario
+    And normal traceability PASS is reported
+
+#### Scenario: Modified Scenario Included in Diff Summary
+    Given a feature was previously at COMPLETE lifecycle state
+    And the Architect modifies the Given/When/Then of an existing automated scenario
+    And the feature resets to TODO lifecycle state
+    When the Critic generates the lifecycle_reset action item
+    Then the description includes "1 modified" in the scenario diff summary
+    And the modified scenario title is listed
 
 ### Manual Scenarios (Human Verification Required)
 

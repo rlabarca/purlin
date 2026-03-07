@@ -128,7 +128,17 @@ When a feature spec declares fixture tags (via a `### 2.x Web-Verify Fixture Tag
 *   **Repo Resolution (Convention Over Configuration):** The Critic resolves the fixture repo using a three-tier lookup: (1) per-feature `> Test Fixtures:` metadata, (2) project-level `fixture_repo_url` in `.purlin/config.json`, (3) convention path `.purlin/runtime/fixture-repo`. The first path that resolves to an accessible git repo wins. Relative paths are resolved against `PURLIN_PROJECT_ROOT`. Most projects use the convention path exclusively — no configuration needed.
 *   **Fixture repo not found:** When a feature declares fixture tags but no fixture repo is accessible (none of the three resolution tiers point to a valid repo), the Critic MUST generate a MEDIUM-priority Builder action item with category `fixture_repo_unavailable`: `"Fixture repo not found for <name> — run the setup script to create it at .purlin/runtime/fixture-repo"`. This is a Builder item because creating fixture repos via setup scripts is an implementation task.
 
-### 2.12 CDD Decoupling
+### 2.12 Diff-Aware Lifecycle Reset Detection
+When a feature resets to TODO lifecycle state (spec modified after last status commit), the Critic MUST perform a **scenario diff** to determine what changed. The Critic compares the current set of automated scenario titles against the set that existed at the time of the last status commit (extracted from git history of the feature file).
+
+*   **New scenarios:** Scenario titles present in the current spec but absent from the last-committed version. These represent NEW requirements that need NEW tests and NEW implementation code. Re-tagging without implementing them is incorrect.
+*   **Modified scenarios:** Scenario titles that exist in both versions but whose Given/When/Then content has changed. These may require test updates.
+*   **Removed scenarios:** Scenario titles present in the last-committed version but absent from the current spec. These may require test cleanup.
+*   **Action item enrichment:** The lifecycle_reset Builder action item MUST include the scenario diff summary. Instead of the generic `"Review and implement spec changes for <feature>"`, the description MUST list new, modified, and removed scenarios explicitly: `"Implement spec changes for <feature>: N new scenario(s) [<titles>], M modified, K removed"`.
+*   **Priority:** HIGH (unchanged from current lifecycle_reset behavior).
+*   **Traceability cross-check:** When new scenarios are detected, the Critic MUST verify that each new scenario has a **strong traceability match** (not just keyword overlap with pre-existing tests). A new scenario matched only to tests that existed before the spec edit is flagged as a **weak match** — the existing test likely does not cover the new behavior. Weak matches for new scenarios produce an additional HIGH-priority Builder action item: `"New scenario '<title>' has no dedicated test — existing keyword match is likely a false positive"`.
+
+### 2.13 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
 ## 3. Configuration
@@ -141,7 +151,7 @@ The following keys in `.purlin/config.json` govern Critic behavior:
 | `critic_llm_enabled` | boolean | `false` | Whether the LLM-based logic drift engine is active. |
 | `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
 
-### 2.13 Verification Effort Classification
+### 2.14 Verification Effort Classification
 The Critic MUST compute a `verification_effort` block for each feature, classifying pending QA work into auto-resolvable and human-required categories. This block is included in the per-feature `critic.json` output alongside `role_status`.
 
 **Taxonomy:**
