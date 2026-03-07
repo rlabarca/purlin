@@ -16,9 +16,9 @@
 **Completion Commit:** e4b3923
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Agent Behavior Tests [PENDING]
+## Phase 3 -- Agent Behavior Tests [COMPLETE]
 **Features:** agent_behavior_tests.md
-**Completion Commit:** --
+**Completion Commit:** 4851763
 **QA Bugs Addressed:** --
 
 ## Phase 4 -- Spec-Reset Re-tagging [PENDING]
