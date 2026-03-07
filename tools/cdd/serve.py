@@ -2630,6 +2630,9 @@ function refreshStatus() {{
   if (isoInput && document.activeElement === isoInput) return;
   var brInput = document.getElementById('new-branch-name');
   if (brInput && document.activeElement === brInput) return;
+  // Skip refresh while user is editing a context guard threshold input
+  var activeEl = document.activeElement;
+  if (activeEl && activeEl.id && activeEl.id.startsWith('agent-cgt-')) return;
   // Save isolation name input value before DOM refresh
   var _isoHadFocus = false;
   if (isoInput) _pendingIsolationName = isoInput.value;
