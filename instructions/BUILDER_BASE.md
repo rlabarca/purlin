@@ -45,13 +45,13 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and CDD feature status. Do NOT re-read or re-parse the raw JSON output — use `CRITIC_REPORT.md` (step 2) as the sole source for Builder action items and feature status.
 2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
 3.  Read `.purlin/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
-4.  **Spec-Level Gap Analysis (Critical):** **If a delivery plan exists** (step 2.1.5), only read feature specs for features in the **current phase**. Gap analysis for other phases is deferred to the session that works on those phases. **If no delivery plan exists**, read specs for all features in TODO or TESTING state. For each feature in scope, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth. This step is especially important when the Critic tool itself is in TODO state, since a stale Critic cannot accurately self-report its own gaps.
+4.  **Spec-Level Gap Analysis (Critical):** **If a delivery plan exists** (step 2.1.5), only read feature specs for features in the **current phase**. Gap analysis for other phases is deferred to the session that works on those phases. **If no delivery plan exists**, read specs for all features in TODO or TESTING state. For each feature in scope, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth.
 5.  **Delivery Plan Check:** Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
 6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
     *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
-7.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`. (When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` is a valid secondary confirmation — in a git worktree, the `.git` entry is a file pointer rather than a directory.)
+7.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`.
 8.  **Anchor Preload (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) once. Identify every FORBIDDEN pattern and INVARIANT from each anchor and keep them active in working context for the entire session. This replaces per-feature anchor reads — anchors are loaded once at session start, not re-read for each feature.
 
 ### 2.2 Propose a Work Plan
@@ -119,7 +119,7 @@ For each feature in the approved work plan, execute this protocol:
 
 ### 0. Per-Feature Pre-Flight (MANDATORY)
 Before starting work on each feature from the approved plan:
-*   **Anchor Review (MANDATORY):** Review the session-preloaded anchor constraints (loaded in step 2.1.8) and identify FORBIDDEN patterns and INVARIANTs applicable to this feature. Do NOT re-read the anchor files — they were loaded once at session start. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
+*   **Anchor Review (MANDATORY):** Review the session-preloaded anchor constraints (loaded in step 2.1.8) and identify FORBIDDEN patterns and INVARIANTs applicable to this feature. Do NOT re-read anchor files. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
 *   **Visual Design Source of Truth:** When the feature has a `## Visual Specification` section, read the `- **Description:**` markdown as your working source of truth for visual design — NOT the binary image/PDF artifacts in `features/design/`. The descriptions have already been processed and mapped to the project's design token system by the Architect. Binary artifacts are audit references for the Architect and QA, not Builder inputs.
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
@@ -188,6 +188,8 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
 
     **Guidance:** When in doubt, use `full`. A broader scope is always safe; a narrower scope risks missing regressions.
 
+    **Targeted Scope Validation:** When using `targeted`, each name MUST exactly match a `#### Scenario:` title in the feature spec. Grep the spec to verify before committing — mismatches cause `scope_validation` failure, keeping `builder: TODO`. If no scenario matches, use `full`.
+
 *   **C. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
     *   Example: `git commit --allow-empty -m "status(cdd): [Ready for Verification features/cdd_status_monitor.md] [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]"`
     *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
@@ -203,7 +205,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
         Recommended next step: run QA to verify Phase N features.
         Relaunch Builder (new session) to continue with Phase N+1.
         ```
-        This rule has no exceptions. Even if the context window is fresh or the next phase seems small — halt.
+        No exceptions.
 
 ## 5.4 Context Guard Awareness
 

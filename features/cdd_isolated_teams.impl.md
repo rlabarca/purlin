@@ -34,6 +34,8 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 
 **Collapsed section label severity logic:** `_collapsed_label(worktrees)` computes the severity order: DIVERGED > BEHIND > AHEAD > SAME. It iterates the list once, tracking the highest-severity state seen, then returns the CSS class and label string. If `worktrees` is empty, it returns `("", "ISOLATED TEAMS")`.
 
+**Worktree detection alternative:** When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` confirms a worktree — in a git worktree the `.git` entry is a file pointer, not a directory. The primary detection method (`git rev-parse --abbrev-ref HEAD` matching `^isolated/`) is sufficient; this is a secondary option.
+
 **Resolved discoveries (pruned from User Testing Discoveries):**
 - SPEC_DISPUTE — Length validation: `maxlength` attribute prevents over-length input at the browser level; no inline message needed. Character validation (non-`[a-zA-Z0-9_-]`) still shows disabled button + inline message. Scenario renamed to "New Isolation Input Rejects Invalid Characters" (feat@1 test input). Verified 2026-02-24.
 - SPEC_DISPUTE — Name length limit raised from 8 to 12 characters: updated HTML `maxlength`, JS `validateIsolationName()`, hint text, and `create_isolation.sh` server-side validation.
