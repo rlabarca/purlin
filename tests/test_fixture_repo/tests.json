@@ -1,9 +1,33 @@
 {
   "status": "PASS",
-  "tests_run": 10,
+  "tests_run": 19,
   "failures": 0,
   "errors": 0,
   "details": [
+    {
+      "test": "test_add_tag_creates_tagged_commit (__main__.TestAddTagCreatesCommit.test_add_tag_creates_tagged_commit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_add_tag_defaults_from_dir (__main__.TestAddTagDefaultsToProjectRoot.test_add_tag_defaults_from_dir)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_force_overwrites_tag (__main__.TestAddTagForceOverwrites.test_force_overwrites_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_refuses_existing_tag (__main__.TestAddTagRefusesExisting.test_refuses_existing_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_rejects_no_slashes (__main__.TestAddTagRejectsInvalidFormat.test_rejects_no_slashes)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_rejects_two_segments (__main__.TestAddTagRejectsInvalidFormat.test_rejects_two_segments)",
+      "status": "PASS"
+    },
     {
       "test": "test_checkout_creates_temp_dir (__main__.TestCheckout.test_checkout_creates_temp_dir)",
       "status": "PASS"
@@ -22,6 +46,18 @@
     },
     {
       "test": "test_refuses_non_temp_path (__main__.TestCleanupRefusesNonTemp.test_refuses_non_temp_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_init_creates_bare_repo (__main__.TestInitCreatesRepo.test_init_creates_bare_repo)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_init_explicit_path (__main__.TestInitExplicitPath.test_init_explicit_path)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_init_idempotent (__main__.TestInitIdempotent.test_init_idempotent)",
       "status": "PASS"
     },
     {

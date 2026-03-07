@@ -2084,6 +2084,37 @@ rm -rf "$EMPTY_BARE"
 commit_and_tag "main/test_fixture_repo/empty-repo" \
     "Bare git fixture repo initialized but containing no tags"
 
+# repo-with-duplicate-tag: a fixture repo with a pre-existing tag for overwrite testing
+reset_workdir
+create_base_project
+
+DUP_BARE="$(mktemp -d)"
+git init --bare "$DUP_BARE" >/dev/null 2>&1
+
+DUP_WORK="$(mktemp -d)"
+cd "$DUP_WORK"
+git init >/dev/null 2>&1
+git remote add origin "$DUP_BARE"
+git config user.email "fixture@purlin.dev"
+git config user.name "Purlin Fixture Builder"
+
+echo "original content" > file.txt
+git add -A >/dev/null 2>&1
+git commit -m "State for existing tag" >/dev/null 2>&1
+git tag "main/test_feature/existing-state" >/dev/null 2>&1
+
+git push origin --all >/dev/null 2>&1
+git push origin --tags >/dev/null 2>&1
+
+cd "$WORK_DIR"
+cp -r "$DUP_BARE" .purlin/runtime/nested-fixture-repo-duplicate
+rm -rf "$DUP_BARE" "$DUP_WORK"
+
+create_feature "test_fixture_repo.md" "Test Fixture Repo" "Test Infrastructure" "policy_critic.md" "TESTING"
+
+commit_and_tag "main/test_fixture_repo/repo-with-duplicate-tag" \
+    "Bare git fixture repo with a pre-existing tag for overwrite testing"
+
 # =====================================================================
 echo ""
 echo "--- workflow_checklist_system ---"

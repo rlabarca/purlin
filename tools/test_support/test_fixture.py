@@ -331,6 +331,294 @@ class TestPruneTombstone(unittest.TestCase):
         self.assertIn("main/old_feature/s1", stdout)
 
 
+class TestInitCreatesRepo(unittest.TestCase):
+    """Scenario: Init creates bare repo at convention path"""
+
+    def test_init_creates_bare_repo(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-init-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        os.makedirs(os.path.join(fake_root, ".purlin", "runtime"), exist_ok=True)
+
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+
+        rc, stdout, stderr = run_fixture(
+            "init",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"init failed: {stderr}")
+        self.assertTrue(os.path.isdir(repo_path), "Bare repo dir should exist")
+        self.assertIn(repo_path, stdout, "Should print repo path to stdout")
+
+        # Verify it's a bare repo
+        check = subprocess.run(
+            ["git", "-C", repo_path, "rev-parse", "--is-bare-repository"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(check.stdout.strip(), "true")
+
+        subprocess.run(["rm", "-rf", fake_root], capture_output=True)
+
+
+class TestInitIdempotent(unittest.TestCase):
+    """Scenario: Init is idempotent when repo exists"""
+
+    def test_init_idempotent(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-init-idem-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+
+        # First init
+        rc1, stdout1, _ = run_fixture(
+            "init",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc1, 0)
+
+        # Record mtime of HEAD file to verify repo is not recreated
+        head_path = os.path.join(repo_path, "HEAD")
+        mtime_before = os.path.getmtime(head_path)
+
+        # Second init
+        rc2, stdout2, stderr2 = run_fixture(
+            "init",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc2, 0, f"second init failed: {stderr2}")
+        self.assertIn("already exists", stderr2)
+        self.assertIn(repo_path, stdout2)
+
+        # HEAD file should not be recreated
+        mtime_after = os.path.getmtime(head_path)
+        self.assertEqual(mtime_before, mtime_after, "Existing repo should not be modified")
+
+        subprocess.run(["rm", "-rf", fake_root], capture_output=True)
+
+
+class TestInitExplicitPath(unittest.TestCase):
+    """Scenario: Init with explicit path"""
+
+    def test_init_explicit_path(self):
+        custom_path = os.path.join(tempfile.mkdtemp(prefix="fixture-custom-"), "my-fixture-repo")
+
+        rc, stdout, stderr = run_fixture("init", "--path", custom_path)
+        self.assertEqual(rc, 0, f"init failed: {stderr}")
+        self.assertTrue(os.path.isdir(custom_path), "Custom path repo should exist")
+        self.assertIn(custom_path, stdout, "Should print custom path to stdout")
+
+        check = subprocess.run(
+            ["git", "-C", custom_path, "rev-parse", "--is-bare-repository"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(check.stdout.strip(), "true")
+
+        subprocess.run(["rm", "-rf", os.path.dirname(custom_path)], capture_output=True)
+
+
+class TestAddTagCreatesCommit(unittest.TestCase):
+    """Scenario: Add-tag creates tagged commit from directory"""
+
+    def test_add_tag_creates_tagged_commit(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-")
+        os.makedirs(os.path.join(fake_root, "features"))
+
+        # Init fixture repo
+        rc, _, stderr = run_fixture(
+            "init",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"init failed: {stderr}")
+
+        # Create source directory with project state
+        source_dir = tempfile.mkdtemp(prefix="fixture-source-")
+        os.makedirs(os.path.join(source_dir, "features"))
+        with open(os.path.join(source_dir, "features", "test.md"), "w") as f:
+            f.write("# Test Feature\n")
+        with open(os.path.join(source_dir, "config.txt"), "w") as f:
+            f.write("key=value\n")
+
+        # Add tag
+        rc, stdout, stderr = run_fixture(
+            "add-tag", "main/test_feature/my-state",
+            "--from-dir", source_dir,
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"add-tag failed: {stderr}")
+        self.assertIn("Created tag", stdout)
+
+        # Verify tag exists by listing
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+        rc2, list_out, _ = run_fixture("list", repo_path)
+        self.assertEqual(rc2, 0)
+        self.assertIn("main/test_feature/my-state", list_out)
+
+        # Verify checkout yields the source files
+        rc3, checkout_path, _ = run_fixture(
+            "checkout", repo_path, "main/test_feature/my-state",
+        )
+        self.assertEqual(rc3, 0)
+        self.assertTrue(
+            os.path.isfile(os.path.join(checkout_path, "features", "test.md")),
+            "Checked out tag should contain source files",
+        )
+
+        subprocess.run(["rm", "-rf", fake_root, source_dir, checkout_path], capture_output=True)
+
+
+class TestAddTagDefaultsToProjectRoot(unittest.TestCase):
+    """Scenario: Add-tag defaults to project root when from-dir omitted"""
+
+    def test_add_tag_defaults_from_dir(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-default-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        with open(os.path.join(fake_root, "features", "sample.md"), "w") as f:
+            f.write("# Sample\n")
+
+        # Init
+        rc, _, stderr = run_fixture(
+            "init",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"init failed: {stderr}")
+
+        # Add tag without --from-dir
+        rc, stdout, stderr = run_fixture(
+            "add-tag", "main/test_feature/default-source",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"add-tag failed: {stderr}")
+
+        # Checkout and verify files from project root
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+        rc2, checkout_path, _ = run_fixture(
+            "checkout", repo_path, "main/test_feature/default-source",
+        )
+        self.assertEqual(rc2, 0)
+        self.assertTrue(
+            os.path.isfile(os.path.join(checkout_path, "features", "sample.md")),
+            "Tag should contain project root files",
+        )
+
+        subprocess.run(["rm", "-rf", fake_root, checkout_path], capture_output=True)
+
+
+class TestAddTagRejectsInvalidFormat(unittest.TestCase):
+    """Scenario: Add-tag rejects invalid tag format"""
+
+    def test_rejects_no_slashes(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-invalid-")
+        os.makedirs(os.path.join(fake_root, "features"))
+
+        # Init
+        run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": fake_root})
+
+        rc, _, stderr = run_fixture(
+            "add-tag", "invalid-tag-no-slashes",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertNotEqual(rc, 0, "Should fail for invalid tag format")
+        self.assertIn("Invalid tag format", stderr)
+
+        # Verify no tag was created
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+        rc2, list_out, _ = run_fixture("list", repo_path)
+        self.assertNotIn("invalid-tag-no-slashes", list_out)
+
+        subprocess.run(["rm", "-rf", fake_root], capture_output=True)
+
+    def test_rejects_two_segments(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-invalid2-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": fake_root})
+
+        rc, _, stderr = run_fixture(
+            "add-tag", "main/only-two",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertNotEqual(rc, 0)
+        self.assertIn("Invalid tag format", stderr)
+
+        subprocess.run(["rm", "-rf", fake_root], capture_output=True)
+
+
+class TestAddTagRefusesExisting(unittest.TestCase):
+    """Scenario: Add-tag refuses existing tag without force"""
+
+    def test_refuses_existing_tag(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-exists-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": fake_root})
+
+        # Create initial tag
+        source_dir = tempfile.mkdtemp(prefix="fixture-source-")
+        with open(os.path.join(source_dir, "file1.txt"), "w") as f:
+            f.write("original")
+
+        rc, _, stderr = run_fixture(
+            "add-tag", "main/test_feature/existing-state",
+            "--from-dir", source_dir,
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"first add-tag failed: {stderr}")
+
+        # Try to create same tag again without --force
+        with open(os.path.join(source_dir, "file1.txt"), "w") as f:
+            f.write("updated")
+
+        rc2, _, stderr2 = run_fixture(
+            "add-tag", "main/test_feature/existing-state",
+            "--from-dir", source_dir,
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertNotEqual(rc2, 0, "Should fail when tag exists without --force")
+        self.assertIn("already exists", stderr2)
+
+        subprocess.run(["rm", "-rf", fake_root, source_dir], capture_output=True)
+
+
+class TestAddTagForceOverwrites(unittest.TestCase):
+    """Scenario: Add-tag with force overwrites existing tag"""
+
+    def test_force_overwrites_tag(self):
+        fake_root = tempfile.mkdtemp(prefix="fixture-addtag-force-")
+        os.makedirs(os.path.join(fake_root, "features"))
+        run_fixture("init", env_override={"PURLIN_PROJECT_ROOT": fake_root})
+
+        repo_path = os.path.join(fake_root, ".purlin", "runtime", "fixture-repo")
+
+        # Create initial tag
+        source_dir = tempfile.mkdtemp(prefix="fixture-source-")
+        with open(os.path.join(source_dir, "file1.txt"), "w") as f:
+            f.write("original")
+
+        run_fixture(
+            "add-tag", "main/test_feature/existing-state",
+            "--from-dir", source_dir,
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+
+        # Overwrite with --force
+        with open(os.path.join(source_dir, "file1.txt"), "w") as f:
+            f.write("updated-content")
+
+        rc, stdout, stderr = run_fixture(
+            "add-tag", "main/test_feature/existing-state",
+            "--from-dir", source_dir, "--force",
+            env_override={"PURLIN_PROJECT_ROOT": fake_root},
+        )
+        self.assertEqual(rc, 0, f"force add-tag failed: {stderr}")
+
+        # Checkout and verify updated content
+        rc2, checkout_path, _ = run_fixture(
+            "checkout", repo_path, "main/test_feature/existing-state",
+        )
+        self.assertEqual(rc2, 0)
+        with open(os.path.join(checkout_path, "file1.txt")) as f:
+            content = f.read()
+        self.assertEqual(content, "updated-content", "Force should update tag contents")
+
+        subprocess.run(["rm", "-rf", fake_root, source_dir, checkout_path], capture_output=True)
+
+
 # ===================================================================
 # Test result output
 # ===================================================================
