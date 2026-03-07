@@ -117,7 +117,7 @@ rm -f .purlin/runtime/turn_count_${PPID}_* && rm -f .purlin/runtime/session_meta
 Check if `.purlin/cache/session_checkpoint.md` exists.
 
 - **Found:** Read the file. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan.
-- **Not found:** Print `"No checkpoint found -- recovering from project state only."` and continue.
+- **Not found:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
 
 ### Step 3 -- Instruction Reload (Fresh Sessions Only)
 
@@ -131,37 +131,38 @@ When instruction reload is needed:
    - `.purlin/{ROLE}_OVERRIDES.md`
 2. Present a condensed "Role Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules.
 
-When the system prompt already contains the role instructions (agent was started via launcher), skip this step entirely and print: `"Instructions already loaded via launcher -- skipping reload."`
+When the system prompt already contains the role instructions (agent was started via launcher), skip this step silently (no output).
 
-### Step 4 -- Command Table
+### Step 4 -- Command Reference
 
-1. Read `instructions/references/{role}_commands.md` (where role is `architect`, `builder`, or `qa`).
-2. Detect the current branch via `git rev-parse --abbrev-ref HEAD`.
-3. Check if `.purlin/runtime/active_branch` exists and is non-empty to determine if this is a collaboration branch.
-4. Print the appropriate variant (main branch, collaboration branch, or isolated branch) verbatim.
+Print a single line: `Commands: /pl-help for full list`
+
+Do NOT read or print the full command table file. The one-liner is sufficient for resumed sessions.
 
 ### Step 5 -- Gather Fresh Project State
 
-Execute the standard state-gathering sequence:
+Execute the core state-gathering sequence (always, both cases):
 
 1. Read `.purlin/config.json` for role-specific settings.
 2. Run `tools/cdd/status.sh` to regenerate the Critic report.
 3. Read `CRITIC_REPORT.md` -- the role-specific subsection under "Action Items by Role".
-4. Read `.purlin/cache/dependency_graph.json` for the feature graph.
-5. Run `git status` for uncommitted changes.
-6. Run `git log --oneline -10` for recent commit history.
+4. Run `git status` for uncommitted changes.
+5. Run `git log --oneline -10` for recent commit history.
 
-Role-specific additions:
+**When no checkpoint exists (cold start):** additionally gather:
+- Read `.purlin/cache/dependency_graph.json` for the feature graph.
 - **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state.
 - **QA:** Identify features in TESTING state from the Critic report.
 - **Architect:** Perform spec-level gap analysis on TODO/TESTING features.
+
+**When a checkpoint exists:** skip the dependency graph read and role-specific analysis (the checkpoint's work plan already incorporates these). Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
 
 ### Step 6 -- Present Recovery Summary
 
 Print this structured summary:
 
 ```
---- Context Restored ---
+Context Restored
 Role:           <Architect | Builder | QA>
 Branch:         <main | isolated/<name>>
 Checkpoint:     <found -- resuming from <timestamp> | none>
@@ -177,12 +178,9 @@ Action Items:   <count> items from Critic report
 <Builder only>  Delivery plan: Phase X of Y -- next: <feature>
 <QA only>       Verification queue: N features in TESTING
 Uncommitted:    <none | summary>
----
 ```
 
-### Step 7 -- Cleanup and Confirm
+### Step 7 -- Cleanup and Continue
 
 - If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
-- Ask: **"Ready to continue from here, or would you like to adjust?"**
-- If the user says "go" (or equivalent), begin executing the work plan.
-- If the user provides modifications, adjust accordingly.
+- Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 6) gives the user visibility; they can interrupt if needed.

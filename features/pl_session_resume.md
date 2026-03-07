@@ -143,7 +143,7 @@ The skill determines the agent's role using the following priority:
 
 - Check if `.purlin/cache/session_checkpoint.md` exists.
 - If **found:** Read the file. Present the saved state as a summary block. Use it to orient the session (the checkpoint's "Next" list becomes the starting work plan).
-- If **not found:** Print "No checkpoint found -- recovering from project state only." Proceed to Step 3.
+- If **not found:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
 
 #### 2.3.3 Step 3 -- Instruction Reload (Fresh Sessions Only)
 
@@ -157,37 +157,37 @@ When instruction reload is needed:
    - `.purlin/{ROLE}_OVERRIDES.md`
 2. Present a condensed "Role Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules for the role.
 
-When the system prompt already contains the role instructions (agent was started via launcher), skip this step entirely.
+When the system prompt already contains the role instructions (agent was started via launcher), skip this step silently (no output).
 
-#### 2.3.4 Step 4 -- Command Table
+#### 2.3.4 Step 4 -- Command Reference
 
-- Read `instructions/references/{role}_commands.md`.
-- Detect the current branch via `git rev-parse --abbrev-ref HEAD`.
-- Check if `.purlin/runtime/active_branch` exists and is non-empty to determine if this is a collaboration branch.
-- Print the appropriate variant (main branch, collaboration branch, or isolated branch) verbatim.
+- Print a single line: `Commands: /pl-help for full list`
+- Do NOT read or print the full command table file. The one-liner is sufficient for resumed sessions (the agent already knows its commands from the system prompt or instruction reload).
 
 #### 2.3.5 Step 5 -- Gather Fresh Project State
 
-Execute the role's startup state-gathering sequence:
+Execute the core state-gathering sequence (always, both cases):
 
 - Read `.purlin/config.json` for role-specific settings.
 - Run `tools/cdd/status.sh` to regenerate the Critic report.
 - Read `CRITIC_REPORT.md` -- the role-specific subsection under "Action Items by Role".
-- Read `.purlin/cache/dependency_graph.json` for the feature graph.
 - Check `git status` for uncommitted changes.
 - Check `git log --oneline -10` for recent commit history.
 
-Additionally, gather role-specific state:
+**When no checkpoint exists (cold start):** additionally gather:
+- Read `.purlin/cache/dependency_graph.json` for the feature graph.
 - **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state.
 - **QA:** Identify features in TESTING state from the Critic report.
 - **Architect:** Perform spec-level gap analysis on TODO/TESTING features.
+
+**When a checkpoint exists:** skip the dependency graph read, skip role-specific analysis (the checkpoint's work plan already incorporates these). Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
 
 #### 2.3.6 Step 6 -- Present Recovery Summary
 
 Print a structured recovery summary:
 
 ```
---- Context Restored ---
+Context Restored
 Role:           [Architect | Builder | QA]
 Branch:         [main | isolated/<name>]
 Checkpoint:     [found -- resuming from <timestamp> | none]
@@ -203,15 +203,12 @@ Action Items:   [count] items from Critic report
 [Builder only]  Delivery plan: Phase X of Y -- next: <feature>
 [QA only]       Verification queue: N features in TESTING
 Uncommitted:    [none | summary]
----
 ```
 
-#### 2.3.7 Step 7 -- Cleanup and Confirm
+#### 2.3.7 Step 7 -- Cleanup and Continue
 
 - If a checkpoint file was read in Step 2, delete it (it has been consumed).
-- Ask: "Ready to continue from here, or would you like to adjust?"
-- If the user says "go" (or equivalent), begin executing the work plan starting with the first item.
-- If the user provides modifications, adjust accordingly.
+- Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 6) gives the user visibility; they can interrupt if needed.
 
 ---
 
@@ -237,21 +234,22 @@ Uncommitted:    [none | summary]
     And the recovery summary displays "Checkpoint: found -- resuming from 2026-02-28T15:30:00Z"
     And the checkpoint's Next list is presented as the work plan
     And the checkpoint file is deleted after presentation
+    And the agent begins executing the work plan without asking for confirmation
 
 #### Scenario: Restore Without Checkpoint
 
     Given .purlin/cache/session_checkpoint.md does not exist
     When the agent invokes /pl-resume builder
-    Then the output contains "No checkpoint found -- recovering from project state only"
-    And the Critic report is regenerated via tools/cdd/status.sh
+    Then the Critic report is regenerated via tools/cdd/status.sh
     And the recovery summary is displayed with "Checkpoint: none"
+    And the agent begins executing the work plan without asking for confirmation
 
 #### Scenario: Role From Explicit Argument
 
     Given the agent's system prompt does not contain role identity markers
     When the agent invokes /pl-resume architect
     Then the role is set to "architect" without prompting the user
-    And the Architect command table is printed
+    And the output contains "Commands: /pl-help for full list"
     And the Architect-specific state gathering runs
 
 #### Scenario: Invalid Argument Prints Error
