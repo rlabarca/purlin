@@ -71,7 +71,7 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
     - Example at turn 48 of 45: `CONTEXT GUARD: 48 / 45 used -- Run /pl-resume save, then /clear, then /pl-resume to continue.`
 - **User-visible status line:** In addition to the JSON `additionalContext` output (agent-only), the hook MUST also emit a plain-text status line to stderr showing the same `CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used` format (and the exceeded variant when applicable). This ensures the human user sees the context budget in the terminal alongside each tool call, not only in the CDD Dashboard. Stderr is used because plain stdout text would interfere with the JSON output that Claude Code parses for the agent.
 - **No silent exits:** The hook MUST produce output on every tool call when the guard is enabled (both the JSON `additionalContext` for the agent AND the stderr status line for the user). Early exits for subagent detection or other conditions MUST still output the context guard status. The only exception is when `context_guard` is explicitly set to `false` for the current agent.
-- **When guard is disabled** (`context_guard: false` for the current agent): No JSON output is produced. The counter still increments in the background so that re-enabling the guard mid-session shows an accurate count.
+- **When guard is disabled** (`context_guard: false` for the current agent): The hook exits immediately after config resolution — no counter increment, no JSON output, no stderr output. The counter file is not created or updated. Re-enabling the guard mid-session starts the counter from wherever it was when the guard was last active (or from 0 if it was never active).
 - **Context cost:** ~8-12 tokens per message. At 45 turns = ~360-540 tokens (<0.3% of usable context).
 
 ### 2.4.1 Color-Coded Stderr Output
@@ -179,14 +179,15 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
     When the context guard script reads the threshold
     Then the threshold value is 30
 
-#### Scenario: Per-agent guard disabled suppresses output
+#### Scenario: Per-agent guard disabled skips counter and output
 
     Given agents.architect.context_guard is false in config.json
     And AGENT_ROLE is "architect"
     And the turn count for the current AGENT_ID is currently 10
     When the context guard script runs
     Then no JSON output is produced on stdout
-    And the turn count file contains "11"
+    And no stderr output is produced
+    And the turn count file still contains "10" (not incremented)
 
 #### Scenario: Missing AGENT_ROLE falls back to global
 

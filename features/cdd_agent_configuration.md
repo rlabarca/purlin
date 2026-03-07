@@ -89,7 +89,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 *   **Visibility:** When the Agent Config section is **collapsed**, an inline context guard summary is displayed between the "Agent Config" heading text and the existing model-count badge (right side).
 *   **Position:** The summary is a **separate element**, left-justified immediately after the heading text, before the model badge. The existing model-count badge (e.g., "2x Opus 4.6 | 1x Sonnet 4.6") remains unchanged in position, content, and styling on the right side.
 *   **Format:** `(<role>: <counts>, <role>: <counts>, ...)` where counts use the same `value|value` pipe-separated format as the expanded live counter display (Section 2.1).
-*   **Role Filtering:** Only include roles that have at least one active agent process (from `GET /context-guard/counters`). If no agents are running across any role, show nothing (empty — no parentheses).
+*   **Role Filtering:** Only include roles that have at least one active agent process (from `GET /context-guard/counters`) AND have `context_guard` enabled. Roles with `context_guard: false` are excluded from the summary regardless of running processes. If no qualifying roles exist, show nothing (empty — no parentheses).
 *   **Role Order:** Architect, Builder, QA (fixed order when present).
 *   **Text Styling:** Agent role names use `var(--purlin-primary)` color. Count values are individually colored using the threshold zones defined in Section 2.5. Counts use `font-family: monospace`, 10px font size, matching the expanded counter styling.
 *   **Show/Hide:** The summary is visible only when the section is collapsed. When expanded, the summary is hidden (same show/hide behavior as the existing model badge).
@@ -107,7 +107,7 @@ Individual count values in **both** the collapsed summary (Section 2.4) and the 
 
 *   **Per-value coloring:** Each individual count value is colored independently based on its agent's configured threshold. In a pipe-separated display (e.g., `3|22|35`), each number may have a different color.
 *   **Threshold source:** The threshold for each agent is sourced from the already-loaded `agentsConfig` — per-agent `context_guard_threshold`, falling back to global `context_guard_threshold`, then hardcoded `45`.
-*   **Disabled guard:** When `context_guard` is `false` for an agent, counts still display but always use `--purlin-muted` color (no threshold coloring applies).
+*   **Disabled guard:** When `context_guard` is `false` for an agent, no counter values are displayed. The counter span is empty, matching the "zero agents running" state. Since the hook does not increment the counter when disabled (see `context_guard.md` Section 2.4), there are no meaningful counts to show.
 *   **Boundary math:** Warning triggers at `count >= threshold * 0.80`. Critical triggers at `count >= threshold * 0.92`. Matches the shell hook zones defined in `context_guard.md` Section 2.4.1.
 
 ### 2.5 Web-Verify Fixture Tags
@@ -263,11 +263,12 @@ The following fixture tags provide deterministic project states for web-verify t
     When the counter value is rendered (collapsed summary or expanded counter)
     Then the count "46" is styled with var(--purlin-status-error) color
 
-#### Scenario: Counter Values Use Muted Color When Guard Disabled
-    Given the qa agent has context_guard false and context_guard_threshold 50
-    And a running qa agent has turn count 48
+#### Scenario: Counter Values Hidden When Guard Disabled
+    Given the qa agent has context_guard false
+    And a running qa agent has a turn_count file
     When the counter value is rendered
-    Then the count "48" is styled with var(--purlin-muted) color regardless of threshold proximity
+    Then the counter span for qa is empty (no count displayed)
+    And the collapsed summary excludes qa from the context guard display
 
 #### Scenario: Collapsed Summary Pipe-Separates Multiple Agents of Same Role
     Given turn_count_100 exists with value "3" and session_meta_100 has role "builder"
@@ -368,5 +369,5 @@ The following fixture tags provide deterministic project states for web-verify t
 - [ ] Counter values at or above 80% threshold use `var(--purlin-status-warning)` color (orange)
 - [ ] Counter values at or above 92% threshold use `var(--purlin-status-error)` color (red)
 - [ ] Counter colors update on 5-second refresh cycle as counts change
-- [ ] When guard is disabled for an agent, counter values always use `var(--purlin-muted)` regardless of count
+- [ ] When guard is disabled for an agent, no counter values are displayed (counter span is empty)
 
