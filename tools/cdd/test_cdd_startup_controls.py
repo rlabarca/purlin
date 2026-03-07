@@ -23,7 +23,7 @@ class TestLauncherRejectsInvalidFlagCombination(unittest.TestCase):
     """Scenario: Launcher Rejects Invalid Flag Combination
 
     Given config.json contains agents.builder with startup_sequence false
-    and recommend_next_actions true, when run_builder.sh is executed,
+    and recommend_next_actions true, when pl-run-builder.sh is executed,
     the script prints an error to stderr and exits with status 1.
     """
 

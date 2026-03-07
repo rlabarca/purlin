@@ -141,7 +141,7 @@ echo ""
 echo "[Scenario] Claude Launcher Dispatches with Model and Effort"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
@@ -155,7 +155,7 @@ cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 }
 EOF
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--model claude-sonnet-4-6'; then
@@ -189,10 +189,10 @@ echo ""
 echo "[Scenario] Launcher Falls Back When Config is Missing"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
 # No config.json written — .purlin/ is empty
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -qv -- '--model'; then
@@ -215,7 +215,7 @@ echo ""
 echo "[Scenario] Builder Launcher Has No AllowedTools"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_builder.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
@@ -229,7 +229,7 @@ cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 }
 EOF
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_builder.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -qv -- '--allowedTools'; then
@@ -251,7 +251,7 @@ echo ""
 echo "[Scenario] QA Launcher Has Correct AllowedTools"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_qa.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-qa.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
@@ -265,7 +265,7 @@ cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 }
 EOF
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_qa.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-qa.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
@@ -293,7 +293,7 @@ echo ""
 echo "[Scenario] Bypass Permissions Passes Dangerously Skip"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_qa.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-qa.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
@@ -307,7 +307,7 @@ cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 }
 EOF
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_qa.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-qa.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
@@ -329,7 +329,7 @@ echo ""
 echo "[Scenario] Launcher Exports PURLIN_PROJECT_ROOT"
 setup_launcher_sandbox
 
-cp "$PROJECT_ROOT/run_architect.sh" "$SANDBOX/"
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
 
 cat > "$SANDBOX/.purlin/config.json" << 'EOF'
 {
@@ -351,7 +351,7 @@ exit 0
 MOCK_EOF
 chmod +x "$MOCK_DIR/claude"
 
-PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/run_architect.sh" > /dev/null 2>&1
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
 CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
 
 if echo "$CAPTURED" | grep -q "PURLIN_PROJECT_ROOT=$SANDBOX"; then
@@ -367,7 +367,7 @@ echo ""
 echo "[Scenario] Launchers Have No Provider Dispatch"
 
 HAS_CASE=0
-for LAUNCHER in run_architect.sh run_builder.sh run_qa.sh; do
+for LAUNCHER in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
     if grep -q 'case.*AGENT_PROVIDER\|gemini\|AGENT_PROVIDER' "$PROJECT_ROOT/$LAUNCHER"; then
         log_fail "$LAUNCHER still contains provider dispatch or Gemini references"
         HAS_CASE=1
@@ -377,7 +377,7 @@ if [ $HAS_CASE -eq 0 ]; then
     log_pass "No launcher scripts contain provider dispatch or Gemini references"
 fi
 
-for LAUNCHER in run_architect.sh run_builder.sh run_qa.sh; do
+for LAUNCHER in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
     if grep -q 'provider' "$PROJECT_ROOT/$LAUNCHER"; then
         log_fail "$LAUNCHER still references 'provider'"
         HAS_CASE=1

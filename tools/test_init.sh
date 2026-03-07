@@ -118,7 +118,7 @@ echo "[Test 4] Launcher scripts created and executable"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-for launcher in run_architect.sh run_builder.sh run_qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
     if [ -x "$PROJECT/$launcher" ]; then
         log_pass "$launcher exists and is executable"
     else
@@ -134,7 +134,7 @@ echo "[Test 5] Launcher scripts export PURLIN_PROJECT_ROOT"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-for launcher in run_architect.sh run_builder.sh run_qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
     if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/$launcher"; then
         log_pass "$launcher exports PURLIN_PROJECT_ROOT"
     else
@@ -202,10 +202,10 @@ echo "[Test 9] Shim generated"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-if [ -x "$PROJECT/purlin_init.sh" ]; then
-    log_pass "purlin_init.sh exists and is executable"
+if [ -x "$PROJECT/pl-init.sh" ]; then
+    log_pass "pl-init.sh exists and is executable"
 else
-    log_fail "purlin_init.sh missing or not executable"
+    log_fail "pl-init.sh missing or not executable"
 fi
 
 cleanup_sandbox
@@ -216,7 +216,7 @@ echo "[Test 10] Shim contains metadata"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-SHIM_CONTENT="$(cat "$PROJECT/purlin_init.sh")"
+SHIM_CONTENT="$(cat "$PROJECT/pl-init.sh")"
 EXPECTED_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
 
 if echo "$SHIM_CONTENT" | grep -q "SHA:"; then
@@ -248,15 +248,15 @@ echo "[Test 11] CDD symlinks created"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-if [ -L "$PROJECT/purlin_cdd_start.sh" ]; then
-    log_pass "purlin_cdd_start.sh is a symlink"
+if [ -L "$PROJECT/pl-cdd-start.sh" ]; then
+    log_pass "pl-cdd-start.sh is a symlink"
 else
-    log_fail "purlin_cdd_start.sh is not a symlink"
+    log_fail "pl-cdd-start.sh is not a symlink"
 fi
-if [ -L "$PROJECT/purlin_cdd_stop.sh" ]; then
-    log_pass "purlin_cdd_stop.sh is a symlink"
+if [ -L "$PROJECT/pl-cdd-stop.sh" ]; then
+    log_pass "pl-cdd-stop.sh is a symlink"
 else
-    log_fail "purlin_cdd_stop.sh is not a symlink"
+    log_fail "pl-cdd-stop.sh is not a symlink"
 fi
 
 cleanup_sandbox
@@ -267,18 +267,18 @@ echo "[Test 12] CDD symlinks use relative paths"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-START_TARGET="$(readlink "$PROJECT/purlin_cdd_start.sh")"
-STOP_TARGET="$(readlink "$PROJECT/purlin_cdd_stop.sh")"
+START_TARGET="$(readlink "$PROJECT/pl-cdd-start.sh")"
+STOP_TARGET="$(readlink "$PROJECT/pl-cdd-stop.sh")"
 
 if [[ "$START_TARGET" != /* ]]; then
-    log_pass "purlin_cdd_start.sh uses relative path: $START_TARGET"
+    log_pass "pl-cdd-start.sh uses relative path: $START_TARGET"
 else
-    log_fail "purlin_cdd_start.sh uses absolute path: $START_TARGET"
+    log_fail "pl-cdd-start.sh uses absolute path: $START_TARGET"
 fi
 if [[ "$STOP_TARGET" != /* ]]; then
-    log_pass "purlin_cdd_stop.sh uses relative path: $STOP_TARGET"
+    log_pass "pl-cdd-stop.sh uses relative path: $STOP_TARGET"
 else
-    log_fail "purlin_cdd_stop.sh uses absolute path: $STOP_TARGET"
+    log_fail "pl-cdd-stop.sh uses absolute path: $STOP_TARGET"
 fi
 
 cleanup_sandbox
@@ -295,15 +295,15 @@ if echo "$OUTPUT" | grep -q "Purlin initialized"; then
 else
     log_fail "Output missing 'Purlin initialized'"
 fi
-if echo "$OUTPUT" | grep -q "run_architect.sh"; then
-    log_pass "Output mentions run_architect.sh"
+if echo "$OUTPUT" | grep -q "pl-run-architect.sh"; then
+    log_pass "Output mentions pl-run-architect.sh"
 else
-    log_fail "Output missing run_architect.sh"
+    log_fail "Output missing pl-run-architect.sh"
 fi
-if echo "$OUTPUT" | grep -q "purlin_cdd_start.sh"; then
-    log_pass "Output mentions purlin_cdd_start.sh"
+if echo "$OUTPUT" | grep -q "pl-cdd-start.sh"; then
+    log_pass "Output mentions pl-cdd-start.sh"
 else
-    log_fail "Output missing purlin_cdd_start.sh"
+    log_fail "Output missing pl-cdd-start.sh"
 fi
 
 cleanup_sandbox
@@ -504,11 +504,11 @@ setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
 # Delete one symlink
-rm -f "$PROJECT/purlin_cdd_start.sh"
+rm -f "$PROJECT/pl-cdd-start.sh"
 
 "$INIT_SH" > /dev/null 2>&1
 
-if [ -L "$PROJECT/purlin_cdd_start.sh" ]; then
+if [ -L "$PROJECT/pl-cdd-start.sh" ]; then
     log_pass "CDD symlink repaired on refresh"
 else
     log_fail "CDD symlink NOT repaired on refresh"
@@ -531,7 +531,7 @@ NEW_SHA="$(git -C "$PROJECT/purlin" rev-parse HEAD)"
 
 "$INIT_SH" > /dev/null 2>&1
 
-if grep -q "$NEW_SHA" "$PROJECT/purlin_init.sh"; then
+if grep -q "$NEW_SHA" "$PROJECT/pl-init.sh"; then
     log_pass "Shim updated with new SHA"
 else
     log_fail "Shim NOT updated with new SHA"
@@ -590,15 +590,15 @@ echo "[Scenario] --regenerate-launchers Flag"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-# Modify run_architect.sh
-echo "# MODIFIED BY TEST" > "$PROJECT/run_architect.sh"
+# Modify pl-run-architect.sh
+echo "# MODIFIED BY TEST" > "$PROJECT/pl-run-architect.sh"
 
 "$INIT_SH" --regenerate-launchers > /dev/null 2>&1
 
-if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/run_architect.sh"; then
-    log_pass "--regenerate-launchers overwrote run_architect.sh"
+if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/pl-run-architect.sh"; then
+    log_pass "--regenerate-launchers overwrote pl-run-architect.sh"
 else
-    log_fail "--regenerate-launchers did NOT overwrite run_architect.sh"
+    log_fail "--regenerate-launchers did NOT overwrite pl-run-architect.sh"
 fi
 
 cleanup_sandbox
@@ -609,12 +609,12 @@ echo "[Test 26] Refresh without --regenerate-launchers preserves launchers"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-# Modify run_architect.sh
-echo "# MODIFIED BY TEST" > "$PROJECT/run_architect.sh"
+# Modify pl-run-architect.sh
+echo "# MODIFIED BY TEST" > "$PROJECT/pl-run-architect.sh"
 
 "$INIT_SH" > /dev/null 2>&1
 
-if grep -q "MODIFIED BY TEST" "$PROJECT/run_architect.sh"; then
+if grep -q "MODIFIED BY TEST" "$PROJECT/pl-run-architect.sh"; then
     log_pass "Launcher preserved without --regenerate-launchers"
 else
     log_fail "Launcher overwritten without --regenerate-launchers flag"
@@ -718,7 +718,7 @@ setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
 # Save the generated shim
-SHIM="$PROJECT/purlin_init.sh"
+SHIM="$PROJECT/pl-init.sh"
 
 # Simulate uninitialized submodule: remove init.sh (shim checks for this)
 rm -f "$PROJECT/purlin/tools/init.sh"
