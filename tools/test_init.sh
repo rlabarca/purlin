@@ -49,7 +49,7 @@ setup_sandbox() {
     chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
     # Create submodule root symlink
-    ln -sf tools/init.sh "$PROJECT/purlin/init.sh"
+    ln -sf tools/init.sh "$PROJECT/purlin/pl-init.sh"
 
     # Register as a submodule in .gitmodules (so git submodule commands work)
     cat > "$PROJECT/.gitmodules" << 'GITMOD_EOF'
@@ -677,15 +677,15 @@ echo "=== Ergonomic Symlink Tests ==="
 echo ""
 echo "[Test 27] Submodule root symlink exists"
 
-if [ -L "$SUBMODULE_SRC/init.sh" ]; then
-    TARGET="$(readlink "$SUBMODULE_SRC/init.sh")"
+if [ -L "$SUBMODULE_SRC/pl-init.sh" ]; then
+    TARGET="$(readlink "$SUBMODULE_SRC/pl-init.sh")"
     if [ "$TARGET" = "tools/init.sh" ]; then
-        log_pass "init.sh symlink points to tools/init.sh"
+        log_pass "pl-init.sh symlink points to tools/init.sh"
     else
-        log_fail "init.sh symlink points to '$TARGET' (expected 'tools/init.sh')"
+        log_fail "pl-init.sh symlink points to '$TARGET' (expected 'tools/init.sh')"
     fi
 else
-    log_fail "init.sh is not a symlink at submodule root"
+    log_fail "pl-init.sh is not a symlink at submodule root"
 fi
 
 # --- Test 28: Submodule root symlink works ---
@@ -694,14 +694,14 @@ echo "[Test 28] Submodule root symlink works"
 setup_sandbox
 
 # Run via the symlink
-"$PROJECT/purlin/init.sh" > /dev/null 2>&1
+"$PROJECT/purlin/pl-init.sh" > /dev/null 2>&1
 EXIT_CODE=$?
 
-if [ $EXIT_CODE -eq 0 ]; then log_pass "purlin/init.sh symlink works"; else log_fail "purlin/init.sh symlink failed (exit $EXIT_CODE)"; fi
+if [ $EXIT_CODE -eq 0 ]; then log_pass "purlin/pl-init.sh symlink works"; else log_fail "purlin/pl-init.sh symlink failed (exit $EXIT_CODE)"; fi
 if [ -d "$PROJECT/.purlin" ]; then
-    log_pass "purlin/init.sh created .purlin/ correctly"
+    log_pass "purlin/pl-init.sh created .purlin/ correctly"
 else
-    log_fail "purlin/init.sh did NOT create .purlin/"
+    log_fail "purlin/pl-init.sh did NOT create .purlin/"
 fi
 
 cleanup_sandbox
