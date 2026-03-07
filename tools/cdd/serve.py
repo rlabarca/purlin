@@ -94,6 +94,7 @@ COMPLETE_CAP = 10
 CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
+API_STATUS_PATH = os.path.join(CACHE_DIR, "status.json")
 DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
 TOOLS_ROOT = CONFIG.get("tools_root", "tools")
 POLL_INTERVAL = 2  # seconds for file watcher polling
@@ -521,6 +522,14 @@ def write_internal_feature_status(cache=None):
     """Writes internal feature_status.json to disk."""
     data = generate_internal_feature_status(cache)
     with open(FEATURE_STATUS_PATH, 'w') as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+        f.write('\n')
+
+
+def write_api_status_json(cache=None):
+    """Writes public status.json to disk so agents can read it without HTTP."""
+    data = generate_api_status_json(cache)
+    with open(API_STATUS_PATH, 'w') as f:
         json.dump(data, f, indent=2, sort_keys=True)
         f.write('\n')
 
@@ -4987,8 +4996,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             cache = build_status_commit_cache()
             api_data = generate_api_status_json(cache)
 
-            # Also write internal feature_status.json (old format)
+            # Also write cached artifacts to disk
             write_internal_feature_status(cache)
+            write_api_status_json(cache)
 
             self._send_json(200, api_data)
         elif self.path == '/workspace.json':
@@ -5022,9 +5032,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/context-guard/counters':
             self._handle_context_guard_counters()
         else:
-            # Dashboard request: also regenerate internal file
+            # Dashboard request: also regenerate cached artifacts
             cache = build_status_commit_cache()
             write_internal_feature_status(cache)
+            write_api_status_json(cache)
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
@@ -5927,10 +5938,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--cli-status":
-        # CLI mode: output API JSON to stdout, regenerate internal file
+        # CLI mode: output API JSON to stdout, regenerate cached artifacts
         cache = build_status_commit_cache()
         write_internal_feature_status(cache)
         api_data = generate_api_status_json(cache)
+        write_api_status_json(cache)
         json.dump(api_data, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write('\n')
     elif len(sys.argv) > 1 and sys.argv[1] == "--cli-graph":
