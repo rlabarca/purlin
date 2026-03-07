@@ -4,31 +4,31 @@
 **Total Phases:** 5
 
 ## Summary
-Implement fixture tag infrastructure (tool + Critic validation) and re-certify 7 features that were reset to TODO by the addition of `> Prerequisite: features/test_fixture_repo.md` in commit 48307d9. Phases 1-2 build infrastructure; Phases 3-5 are mechanical re-tags (no code changes, only prerequisite link added).
+24 features reset to builder TODO by Architect spec updates. All were previously COMPLETE. Phased delivery manages context across spec-change reviews, grouped by dependency tier and logical cohesion.
 
-## Phase 1 -- Fixture Tool [COMPLETE]
-**Features:** test_fixture_repo.md
-**Completion Commit:** 8875971
+## Phase 1 -- Foundations & Infrastructure [IN_PROGRESS]
+**Features:** policy_critic.md, project_init.md, impl_notes_companion.md, context_guard.md, config_layering.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic Fixture Validation [COMPLETE]
-**Features:** critic_tool.md, policy_critic.md
-**Completion Commit:** 015bd5c
+## Phase 2 -- Core Tools & Process [PENDING]
+**Features:** test_fixture_repo.md, critic_tool.md, qa_verification_effort.md, spec_code_audit_role_clarity.md, release_checklist_core.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Re-tag CDD Core [COMPLETE]
-**Features:** cdd_status_monitor.md, cdd_agent_configuration.md
-**Completion Commit:** 096ab02
+## Phase 3 -- Release Steps [PENDING]
+**Features:** release_critic_consistency_check.md, release_doc_consistency_check.md, release_submodule_safety_audit.md, release_verify_dependency_integrity.md, release_verify_zero_queue.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Re-tag CDD Collab [COMPLETE]
-**Features:** cdd_branch_collab.md, cdd_isolated_teams.md
-**Completion Commit:** 39e7f48
+## Phase 4 -- CDD Dashboard [PENDING]
+**Features:** cdd_spec_map.md, cdd_lifecycle.md, cdd_agent_configuration.md, cdd_startup_controls.md, collab_whats_different.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Re-tag CDD Effort + Release [COMPLETE]
-**Features:** cdd_qa_effort_display.md, release_checklist_ui.md
-**Completion Commit:** e867aef
+## Phase 5 -- Agent Skills & Process [PENDING]
+**Features:** pl_web_verify.md, pl_context_guard.md, pl_spec_code_audit.md, workflow_checklist_system.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
