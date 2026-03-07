@@ -57,6 +57,12 @@ The companion file contains the extracted implementation notes content. The file
 - When no companion file exists, the modal shows content without tabs (same as current behavior).
 - Tab content is lazy-loaded and cached for instant switching.
 
+### 2.9 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/impl_notes_companion/companion-with-decisions` | Project with features having DEVIATION, DISCOVERY, and AUTONOMOUS tags in companion files |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

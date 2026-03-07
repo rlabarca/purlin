@@ -40,6 +40,13 @@ If all features satisfy the conditions, the Architect reports the total feature 
 | Code | null |
 | Agent Instructions | "Run `tools/cdd/status.sh` and confirm that every entry in the `features` array has `architect: \"DONE\"`, `builder: \"DONE\"`, and `qa` is either `\"CLEAN\"` or `\"N/A\"`. If any feature fails this check, halt the release and report which features are not ready." |
 
+### 2.5 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_verify_zero_queue/all-clean` | Project where all features have DONE/CLEAN status across all roles |
+| `main/release_verify_zero_queue/features-with-open-items` | Project with features having TODO/BUG items blocking release |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

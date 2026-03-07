@@ -130,6 +130,12 @@ The following instruction files MUST be updated by the Builder to reference the 
 - `instructions/references/qa_commands.md` -- Add `/pl-web-verify [name]` entry to all three command table variants (Main, Collab, Isolated), placed after `/pl-verify`.
 - `instructions/references/builder_commands.md` -- Add `/pl-web-verify [name]` entry to all three command table variants (Main, Collab, Isolated), placed after `/pl-propose`.
 
+### 2.14 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/pl_web_verify/web-testable-features` | Project with multiple web-testable features for verifying discovery and execution flow |
+
 ---
 
 ## 3. Scenarios

@@ -97,6 +97,12 @@ Valid roles: `architect`, `builder`, `qa`. If an invalid role is provided, abort
 Error: Unknown role '<role>'. Must be one of: architect, builder, qa
 ```
 
+### 2.9 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/pl_context_guard/mixed-thresholds` | Project with different context guard thresholds and enabled states per role |
+
 ---
 
 ## 3. Scenarios

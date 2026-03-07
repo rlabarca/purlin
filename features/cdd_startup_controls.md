@@ -98,6 +98,12 @@ Purlin Builder — Ready
     *   The combination `startup_sequence: false` + `recommend_next_actions: true` for any agent MUST be rejected with HTTP 400.
 *   **`GET /status` (config portion):** The status endpoint response MUST include `startup_sequence` and `recommend_next_actions` in the agent config it returns, so the dashboard can restore checkbox state on load.
 
+### 2.7 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_startup_controls/all-disabled` | Project with startup_sequence false for all roles |
+| `main/cdd_startup_controls/expert-mode` | Project with both startup_sequence and recommend_next_actions disabled for all roles |
 
 ## 3. Scenarios
 

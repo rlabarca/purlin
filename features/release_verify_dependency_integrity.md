@@ -48,6 +48,13 @@ The Architect performs a body-text scan of every parent node in the dependency g
 
 The classification is a judgment call by the Architect. The audit reports all matches and the Architect assigns the classification.
 
+### 2.7 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_verify_dependency_integrity/acyclic-graph` | Project with a valid acyclic dependency graph |
+| `main/release_verify_dependency_integrity/circular-dependency` | Project with a circular dependency cycle in prerequisite links |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

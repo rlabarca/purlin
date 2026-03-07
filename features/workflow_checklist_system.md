@@ -68,6 +68,12 @@ Behavior:
 *   `purlin.handoff.git_clean` — working directory has no uncommitted changes (excludes `.purlin/`)
 *   `purlin.handoff.critic_report` — Critic report is current (run `tools/cdd/status.sh`)
 
+### 2.6 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/workflow_checklist_system/mixed-step-statuses` | Project with checklist containing passed, failed, and skipped steps |
+
 ---
 
 ## 3. Scenarios

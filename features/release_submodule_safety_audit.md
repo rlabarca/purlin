@@ -171,6 +171,13 @@ not this file).
    HALT if any CRITICAL. Confirm with user if any WARNING. Report CLEAN if all pass.
 ```
 
+### 2.7 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_submodule_safety_audit/clean-submodule` | Project where all tool paths resolve correctly for submodule consumption |
+| `main/release_submodule_safety_audit/violations-present` | Project with hardcoded paths, artifacts in tools/, and bare json.load() calls |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

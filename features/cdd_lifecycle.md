@@ -92,6 +92,13 @@ The start script follows this sequence:
 - All code that reads or resolves `cdd_port` from config is removed from `start.sh` and `serve.py`.
 - The `resolve_config.py` resolver does not need changes -- it dynamically resolves whatever keys exist. Removing the key from the config file is sufficient.
 
+### 2.11 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_lifecycle/mixed-statuses` | Project with features in TODO, TESTING, and COMPLETE lifecycle states |
+| `main/cdd_lifecycle/all-complete` | Project where every feature is at COMPLETE lifecycle state |
+
 ---
 
 ## 3. Scenarios

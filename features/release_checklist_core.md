@@ -162,6 +162,12 @@ The `order` field is a derived value computed after the resolution algorithm (Se
 *   **Disabled** steps receive `order: null`.
 *   When a step's enabled state changes, all `order` values are recomputed.
 
+### 2.10 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_checklist_core/mixed-enabled-disabled` | Project with release steps in various enabled/disabled states |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

@@ -23,6 +23,8 @@ The fixture repo eliminates the "complex setup" problem: scenarios that require 
 - Multiple features MAY reference the same fixture repo URL.
 - The expected pattern is **one fixture repo per project**. Tags are namespaced by feature name (`<project-ref>/<feature-name>/<scenario-slug>`), so a single repo holds fixtures for all features. Multiple repos per project are supported but not recommended unless there's a specific reason (e.g., access control separation).
 - When present, automated test tools can look up fixture tags by feature name and scenario slug.
+- **Project-level default:** `.purlin/config.json` MAY include a `fixture_repo_url` key (e.g., `"fixture_repo_url": ".purlin/runtime/fixture-repo"`). This serves as the default fixture repo URL for all features in the project. Per-feature `> Test Fixtures:` metadata overrides the project-level config. The Critic and fixture tools resolve URLs in this order: per-feature metadata first, then project-level config, then flag as missing.
+- Relative paths (in either per-feature metadata or project-level config) are resolved against `PURLIN_PROJECT_ROOT`.
 
 ### 2.2 Tag Convention (Immutable Fixture States)
 
@@ -120,6 +122,21 @@ For agent startup/resume scenarios:
 The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Builder action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
 
 This validation is also triggered when a feature has `> Test Fixtures:` metadata and a scenario's Given step references a fixture tag by name.
+
+**Validation Gap Coverage:**
+
+The Critic handles three distinct states when fixture tags are declared:
+
+1. **Tags declared, repo URL resolved, repo accessible:** Normal path — validate each tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
+2. **Tags declared, no repo URL available:** Neither per-feature `> Test Fixtures:` metadata nor project-level `fixture_repo_url` config exists. The Critic generates a MEDIUM Architect action item (category: `fixture_no_repo_url`) instructing the Architect to configure a fixture repo URL. Individual tag validation is skipped (no repo to check against).
+3. **Tags declared, repo URL resolved, repo unreachable:** The URL resolves but `fixture list` fails (path doesn't exist, repo not initialized, network unreachable). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script. Individual tag validation is skipped (repo must be created first).
+
+### 2.11 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/test_fixture_repo/repo-with-tags` | Bare git fixture repo with 3 example tags at known commits |
+| `main/test_fixture_repo/empty-repo` | Bare git fixture repo initialized but containing no tags |
 
 ---
 

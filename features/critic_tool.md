@@ -798,6 +798,40 @@ The following fixture tags provide deterministic project states for integration-
     Then the unscoped list includes "Scenario B" and "Visual:Dashboard Overview"
     And the targeted_scope_audit.total_count includes both scenarios and visual screens
 
+#### Scenario: Fixture Tags Declared Without Repo URL Produce Architect Warning
+    Given a feature spec contains a fixture tag section with declared tags
+    And the feature has no `> Test Fixtures:` metadata
+    And `.purlin/config.json` has no `fixture_repo_url` key
+    When the Critic tool runs fixture tag validation
+    Then an Architect action item is created with priority MEDIUM and category fixture_no_repo_url
+    And the description instructs to add a fixture repo URL via metadata or config
+    And no Builder action item is generated for the missing tags
+
+#### Scenario: Fixture Tags With Unreachable Repo Produce Builder Warning
+    Given a feature spec contains a fixture tag section with declared tags
+    And a fixture repo URL resolves (per-feature or project-level config)
+    And `fixture list` fails because the repo does not exist at the resolved path
+    When the Critic tool runs fixture tag validation
+    Then a Builder action item is created with priority MEDIUM and category fixture_repo_unavailable
+    And the description includes the resolved URL and instructs to run the setup script
+    And individual missing-tag checks are skipped (repo is entirely unavailable)
+
+#### Scenario: Project-Level Fixture Repo URL Used as Fallback
+    Given a feature spec contains a fixture tag section with declared tags
+    And the feature has no `> Test Fixtures:` metadata
+    And `.purlin/config.json` has `fixture_repo_url` set to `.purlin/runtime/fixture-repo`
+    And the fixture repo exists at that path
+    When the Critic tool runs fixture tag validation
+    Then the Critic uses the project-level URL to validate tags
+    And missing tags produce MEDIUM-priority Builder action items as normal
+
+#### Scenario: Per-Feature Test Fixtures URL Overrides Project-Level Config
+    Given a feature has `> Test Fixtures: /tmp/custom-fixture-repo`
+    And `.purlin/config.json` has `fixture_repo_url` set to `.purlin/runtime/fixture-repo`
+    When the Critic resolves the fixture repo URL for the feature
+    Then it uses `/tmp/custom-fixture-repo` (the per-feature URL)
+    And the project-level URL is not consulted
+
 ### Manual Scenarios (Human Verification Required)
 
 None

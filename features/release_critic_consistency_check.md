@@ -52,6 +52,13 @@ The Architect commits with message `docs(readme): update Role of the Critic sect
 | Code | null |
 | Agent Instructions | See Sections 2.1–2.3 above (two-phase execution). |
 
+### 2.5 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/release_critic_consistency_check/consistent-docs` | Project where README matches Critic output and feature counts |
+| `main/release_critic_consistency_check/stale-references` | Project where README has outdated feature counts and stale references |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

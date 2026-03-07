@@ -156,6 +156,12 @@ The command MUST assess each feature against these 10 dimensions:
 - **Builder ESCALATE:** Create or update companion files with `[DISCOVERY]` or `[SPEC_PROPOSAL]` entries. Commit together. Critic surfaces these at next Architect session.
 - Post-remediation: run `${TOOLS_ROOT}/cdd/status.sh`, delete `.purlin/cache/audit_state.json`, and summarize results (N fixed, N escalated, N deferred).
 
+### 2.15 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/pl_spec_code_audit/spec-code-gaps` | Project with feature specs that have known divergence from implementation code |
+
 ---
 
 ## 3. Scenarios

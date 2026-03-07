@@ -73,6 +73,12 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
 *   **Not yet implemented (qa: N/A):** All counts are zero, summary is `"no QA items"`.
 *   **Builder not done (builder: TODO/FAIL):** All counts are zero, summary is `"awaiting builder"`.
 
+### 2.6 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/qa_verification_effort/varied-effort-types` | Project with features having auto-only, manual, and mixed QA classifications |
+
 ---
 
 ## 3. Scenarios

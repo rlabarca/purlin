@@ -94,6 +94,13 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 - `init.sh` MUST add this entry to the consumer project's `.gitignore` during initialization.
 - The `purlin-config-sample/.gitignore` template (if it contains recommended ignores) MUST include this entry.
 
+### 2.7 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/config_layering/local-override-present` | Project with config.local.json overriding values from config.json |
+| `main/config_layering/config-json-only` | Project with config.json only, no local override file |
+
 ---
 
 ## 3. Scenarios

@@ -117,6 +117,12 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 *   **Agent Contract:** This file is the ONLY interface agents should use to query the dependency graph. Agents MUST NOT scrape the web UI or parse Mermaid files. CLI access is via `tools/cdd/status.sh --graph`.
 *   **API Endpoint:** The dependency graph is served via the `/dependency_graph.json` endpoint defined in `cdd_status_monitor.md` Section 2.4.
 
+### 2.10 Web-Verify Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/cdd_spec_map/varied-scenarios` | Project with features having 0, 5, and 20+ scenarios for verifying spec map rendering |
+
 ## 3. Scenarios
 
 ### Automated Scenarios

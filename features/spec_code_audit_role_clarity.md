@@ -19,6 +19,12 @@ The `/pl-spec-code-audit` command's remediation plan section uses role-ambiguous
 - The remediation plan instructions in `.claude/commands/pl-spec-code-audit.md` MUST distinguish between Architect FIX edits (targeting feature specs and anchor nodes only) and Builder FIX edits (targeting source code and tests only).
 - The existing line "For each FIX item, describe the specific edit (which file, which section, what changes)." MUST be replaced with role-scoped guidance that names the artifact types each role owns.
 
+### 2.2 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/spec_code_audit_role_clarity/features-needing-audit` | Project with features whose implementation code does not match spec |
+
 ---
 
 ## 3. Scenarios

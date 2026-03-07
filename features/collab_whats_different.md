@@ -318,6 +318,12 @@ The deep analysis is derived from the same extraction data as the standard diges
 - Returns 200 with the generated analysis on success: `{ "status": "ok", "analysis": "<content>", "generated_at": "<ISO 8601 timestamp>" }`.
 - Returns 400 if no active branch exists.
 
+### 2.16 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/collab_whats_different/divergent-branches` | Main and collab branches with different file changes for testing diff extraction |
+
 ---
 
 ## 3. Scenarios

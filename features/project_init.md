@@ -219,6 +219,13 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 *   **Error Message:** The error MUST be printed to stderr and explain that `init.sh` is for consumer projects only, not for the Purlin repository itself.
 *   **No Side Effects:** The guard MUST fire before any file creation or modification. No files outside the Purlin repo may be created or modified.
 
+### 2.14 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/project_init/fresh-directory` | Empty project directory with no .purlin or purlin submodule |
+| `main/project_init/partially-initialized` | Project directory with .purlin directory but incomplete initialization (missing override files) |
+
 ---
 
 ## 3. Scenarios
