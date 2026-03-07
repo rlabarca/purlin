@@ -21,14 +21,14 @@ Implement fixture tag infrastructure (tool + Critic validation) and re-certify 7
 **Completion Commit:** 096ab02
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Re-tag CDD Collab [PENDING]
+## Phase 4 -- Re-tag CDD Collab [COMPLETE]
 **Features:** cdd_branch_collab.md, cdd_isolated_teams.md
-**Completion Commit:** --
+**Completion Commit:** 39e7f48
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Re-tag CDD Effort + Release [PENDING]
+## Phase 5 -- Re-tag CDD Effort + Release [COMPLETE]
 **Features:** cdd_qa_effort_display.md, release_checklist_ui.md
-**Completion Commit:** --
+**Completion Commit:** e867aef
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
