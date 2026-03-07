@@ -21,6 +21,7 @@ The fixture repo eliminates the "complex setup" problem: scenarios that require 
 - Feature files MAY include a `> Test Fixtures: <repo-url>` blockquote metadata line (e.g., `> Test Fixtures: https://github.com/org/my-project-fixtures.git`), placed alongside other `>` metadata (Label, Category, Prerequisite, Web Testable).
 - The URL declares the git repository containing fixture states for that feature's scenarios.
 - Multiple features MAY reference the same fixture repo URL.
+- The expected pattern is **one fixture repo per project**. Tags are namespaced by feature name (`<project-ref>/<feature-name>/<scenario-slug>`), so a single repo holds fixtures for all features. Multiple repos per project are supported but not recommended unless there's a specific reason (e.g., access control separation).
 - When present, automated test tools can look up fixture tags by feature name and scenario slug.
 
 ### 2.2 Tag Convention (Immutable Fixture States)
@@ -93,6 +94,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 3. Each tag points to a commit containing the project state for that scenario.
 4. Each tagged commit has a clear message describing the state it represents.
 5. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
+6. For Purlin-internal fixtures (features in `dev/`), the Builder creates a setup script (`dev/setup_<name>_fixtures.sh`) that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. Test runners SHOULD auto-invoke this script when the fixture repo is missing.
 
 ### 2.8 Integration with /pl-web-verify
 

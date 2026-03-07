@@ -30,6 +30,7 @@ This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not
 - The test runner uses `tools/test_support/fixture.sh checkout` to obtain the fixture state.
 - Fixture tags follow the convention: `main/<feature-name>/<scenario-slug>`.
 - Fixture cleanup happens after each scenario via `tools/test_support/fixture.sh cleanup`.
+- If the fixture repo does not exist when the test runner starts, the runner MUST invoke `dev/setup_behavior_fixtures.sh` to create it before proceeding. This removes the manual prerequisite of running the setup script separately.
 
 ### 2.3 System Prompt Construction
 
@@ -172,6 +173,14 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
     When the test runner prints the summary
     Then the output reads "8/10 tests passed"
     And the exit code is non-zero
+
+#### Scenario: Test runner auto-creates fixtures when missing
+
+    Given the fixture repo does not exist at the expected path
+    When the test runner is invoked
+    Then the runner executes dev/setup_behavior_fixtures.sh
+    And the fixture repo is created with all required tags
+    And tests proceed normally after setup
 
 ### Manual Scenarios (Human Verification Required)
 
