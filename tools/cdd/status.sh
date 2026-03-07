@@ -19,7 +19,9 @@ if [ -z "${PURLIN_PROJECT_ROOT:-}" ]; then
 fi
 
 # Source shared Python resolver (python_environment.md §2.2)
-source "$SCRIPT_DIR/../resolve_python.sh"
+# Suppress resolve_python diagnostics so agents piping stdout to a JSON
+# parser (even with accidental 2>&1) get clean output.
+source "$SCRIPT_DIR/../resolve_python.sh" 2>/dev/null
 
 # Helper: run Critic before status to ensure critic.json files are fresh.
 run_critic_if_needed() {
