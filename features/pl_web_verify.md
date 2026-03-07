@@ -101,7 +101,24 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - **QA Agent invocation:** If all scenarios and visual items pass (zero failures, zero inconclusive), prompt: "All web verification passed. Run `/pl-complete <name>` to mark done?" If confirmed, run `/pl-complete`.
 - **Builder invocation:** If all pass, print summary only. Do not mark complete. Suggest the QA agent run `/pl-complete`.
 
-### 2.12 Instruction Updates
+### 2.12 Fixture-Backed Testing
+
+When a feature has both `> Web Testable:` and `> Test Fixtures: <repo-url>` metadata, `/pl-web-verify` can execute scenarios against fixture-provided project states rather than the live project. This solves the "complex setup" problem -- scenarios requiring specific branch states, worktree layouts, or config values get their preconditions from immutable fixture tags.
+
+**Workflow:**
+
+1. **Fixture detection:** During pre-flight (Section 2.4), if a feature has `> Test Fixtures:` metadata, check whether any in-scope scenario's Given steps reference a fixture tag (pattern: `fixture tag "<tag-path>"`).
+2. **Fixture checkout:** For each scenario referencing a fixture tag, run `tools/test_support/fixture.sh checkout <repo-url> <tag>` to obtain the fixture state in a temp directory.
+3. **Server startup against fixture:** Start the CDD server against the fixture checkout: `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0`. The `--port 0` flag tells the server to bind an ephemeral port. The server prints the actual bound port to stdout (e.g., `Serving on port 52341`). The skill reads this port from the server's stdout.
+4. **URL construction:** Construct the test URL using `http://localhost:<ephemeral-port>`. This bypasses the `> Web Testable:` static URL and `> Web Port File:` entirely -- the ephemeral port from the fixture-backed server is the only port used.
+5. **Scenario execution:** Execute the scenario's When/Then steps against the fixture-backed server using the standard Playwright MCP flow (Sections 2.8-2.9).
+6. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed CDD server and run `tools/test_support/fixture.sh cleanup <fixture-dir>`.
+
+**Non-fixture scenarios:** Scenarios without fixture tag references in the same feature continue using the normal port resolution flow (Section 2.6) against the live project.
+
+**Error handling:** If fixture checkout fails (tag not found, repo unreachable), the scenario is marked INCONCLUSIVE with a note about the missing fixture. Other scenarios in the feature continue normally.
+
+### 2.13 Instruction Updates
 
 The following instruction files MUST be updated by the Builder to reference the new skill:
 
@@ -260,12 +277,39 @@ The following instruction files MUST be updated by the Builder to reference the 
 #### Scenario: Instruction files updated with web-verify references
 
     Given the skill file has been created
-    When instruction updates are applied per Section 2.12
+    When instruction updates are applied per Section 2.13
     Then `/pl-web-verify` appears in both QA and Builder authorized command lists
     And `/pl-web-verify [name]` appears in all variants of both command tables
     And `> Web Testable:` is documented in feature_format.md
     And visual_spec_convention.md references the automated alternative
     And visual_verification_protocol.md has a Section 5.4.7 for Playwright MCP
+
+#### Scenario: Fixture-backed server started for scenario with fixture tag
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Test Fixtures: https://github.com/org/fixtures.git`
+    And a scenario's Given step references fixture tag "main/feature/scenario-one"
+    When `/pl-web-verify` processes that scenario
+    Then the fixture tag is checked out to a temp directory
+    And a CDD server is started with `--project-root <fixture-dir> --port 0`
+    And the ephemeral port from the server's stdout is used for navigation
+    And the static URL port (9086) is NOT used
+
+#### Scenario: Fixture checkout failure marks scenario inconclusive
+
+    Given a feature has `> Test Fixtures: https://github.com/org/fixtures.git`
+    And a scenario references fixture tag "main/feature/nonexistent-tag"
+    When `/pl-web-verify` attempts to check out the fixture
+    Then the checkout fails (tag not found)
+    And the scenario is marked INCONCLUSIVE
+    And other scenarios in the feature continue normally
+
+#### Scenario: Fixture cleanup after scenario completion
+
+    Given a fixture-backed scenario has completed (pass or fail)
+    When `/pl-web-verify` moves to the next scenario
+    Then the fixture-backed CDD server has been stopped
+    And the fixture checkout directory has been removed
 
 ### Manual Scenarios (Human Verification Required)
 

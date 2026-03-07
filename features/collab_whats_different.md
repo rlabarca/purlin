@@ -4,6 +4,9 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_branch_collab.md
 > Prerequisite: features/design_visual_standards.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 [TODO]
 

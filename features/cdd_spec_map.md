@@ -5,6 +5,8 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 > Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 
 ## 1. Overview
@@ -138,9 +140,6 @@ These scenarios are validated by the Builder's automated test suite.
     Then only critic_tool.md appears as a node
     And critic_tool.impl.md is not included
 
-### Manual Scenarios (Human Verification Required)
-These scenarios MUST NOT be validated through automated tests. The Builder must instruct the User to start the CDD Dashboard server (`tools/cdd/start.sh`) and verify the web UI visually.
-
 #### Scenario: Reactive Update on Feature Change
     Given the CDD Dashboard server is running
     And the Spec Map view is active
@@ -265,6 +264,10 @@ These scenarios MUST NOT be validated through automated tests. The Builder must 
     Then the click passes through to the layer below
     And no edge selection, tooltip, or modal is triggered
     And edge hover highlighting during node hover still functions normally
+
+### Manual Scenarios (Human Verification Required)
+
+None.
 
 ## Visual Specification
 

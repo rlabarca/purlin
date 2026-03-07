@@ -8,6 +8,8 @@
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/context_guard.md
 > Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 
 ## 1. Overview
@@ -266,18 +268,6 @@ Individual count values in **both** the collapsed summary (Section 2.4) and the 
     When the dashboard renders the collapsed heading
     Then the heading displays "(Builder: 3|22)" with counts sorted ascending
 
-### Manual Scenarios (Human Verification Required)
-These scenarios require the running CDD Dashboard server and human interaction to verify.
-
-#### Scenario: Pending Change is Not Overwritten by Concurrent State Updates
-    Given the user changes the architect threshold to 50
-    And a POST /config/agents request is in-flight for that change
-    And the user then changes the builder threshold to 30 before the POST response arrives
-    When the first POST response arrives with stale builder config
-    Then the architect threshold lock is released and shows the confirmed value
-    And the builder threshold remains 30 (still pending, not overwritten)
-    And the 5-second auto-refresh also does not overwrite the pending builder value
-
 #### Scenario: Agents Section State Persists Across Reloads
     Given the user expands the Agents section
     When the page is reloaded
@@ -312,6 +302,17 @@ These scenarios require the running CDD Dashboard server and human interaction t
     Then each agent row shows the current turn counts to the right of the threshold input
     And multiple agents of the same role are shown pipe-separated (e.g., "3|22|35")
     And agents from isolated team worktrees appear alongside main-directory agents
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Pending Change is Not Overwritten by Concurrent State Updates
+    Given the user changes the architect threshold to 50
+    And a POST /config/agents request is in-flight for that change
+    And the user then changes the builder threshold to 30 before the POST response arrives
+    When the first POST response arrives with stale builder config
+    Then the architect threshold lock is released and shows the confirmed value
+    And the builder threshold remains 30 (still pending, not overwritten)
+    And the 5-second auto-refresh also does not overwrite the pending builder value
 
 
 ## Visual Specification

@@ -362,13 +362,19 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     Then it is a symlink pointing to "tools/init.sh"
     And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
 
-### Manual Scenarios (Human Verification Required)
-
 #### Scenario: Fresh Clone Collaborator Flow
 
-    Given a collaborator has cloned a consumer project (without --recurse-submodules)
-    And pl-init.sh was committed to the repository
-    When the collaborator runs "./pl-init.sh"
-    Then the submodule is initialized and populated
-    And all Purlin artifacts (launchers, commands, symlinks) are created or refreshed
-    And the collaborator can immediately run ./pl-run-architect.sh
+    Given a sandbox consumer project has been initialized with Purlin (full init completed)
+    And pl-init.sh has been committed to the repository
+    And the sandbox is re-cloned without --recurse-submodules (simulating a collaborator fresh clone)
+    When the collaborator runs "./pl-init.sh" in the re-cloned sandbox
+    Then git submodule update --init is triggered for the submodule
+    And .purlin/ exists with config.json and override templates
+    And launcher scripts (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh) exist and are executable
+    And .claude/commands/ contains pl-*.md files
+    And CDD convenience symlinks exist
+    And the collaborator environment matches a normal full init
+
+### Manual Scenarios (Human Verification Required)
+
+None.

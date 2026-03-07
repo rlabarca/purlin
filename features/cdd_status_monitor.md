@@ -5,6 +5,9 @@
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/impl_notes_companion.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 
 ## 1. Overview

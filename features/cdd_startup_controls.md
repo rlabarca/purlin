@@ -5,6 +5,9 @@
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/agent_launchers_common.md
 > Prerequisite: features/cdd_agent_configuration.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 
 ## 1. Overview
@@ -172,6 +175,35 @@ Purlin Builder — Ready
     When the user unchecks the Startup Sequence control for an agent
     Then the Suggest Next checkbox for that agent is immediately disabled and unchecked
     And POST /config/agents is called with startup_sequence false and recommend_next_actions false for that agent
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Startup Print Sequence Appears First
+    Given any agent is launched with any combination of startup controls
+    When the agent produces its first output
+    Then the command vocabulary table appears before any other text
+    And the table includes the shared commands and all role-specific commands
+
+#### Scenario: Expert Mode Bypasses Orientation
+    Given agents.builder has startup_sequence false and recommend_next_actions false in config.json
+    When the Builder is launched
+    Then the command table is printed first
+    And the agent outputs "startup_sequence disabled — awaiting instruction."
+    And no status check, Critic report, or dependency graph analysis is performed
+
+#### Scenario: Guided Mode Presents Work Plan
+    Given agents.builder has startup_sequence true and recommend_next_actions true in config.json
+    When the Builder is launched
+    Then orientation runs in full
+    And a prioritized work plan is presented
+    And the agent explicitly asks for confirmation or adjustment before beginning work
+
+#### Scenario: Orient-Only Mode Skips Work Plan
+    Given agents.builder has startup_sequence true and recommend_next_actions false in config.json
+    When the Builder is launched
+    Then orientation runs in full
+    And a brief status summary is output
+    And no work plan is presented; the agent awaits user direction
 
 
 ## User Testing Discoveries

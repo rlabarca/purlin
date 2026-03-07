@@ -5,6 +5,9 @@
 > Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 [TODO]
 
@@ -466,8 +469,6 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     And .worktrees/feat2/ is created on branch isolated/feat2
     And subsequent dashboard HTML contains a row with name "feat2" in the Sessions table
 
-### Manual Scenarios (Human Verification Required)
-
 #### Scenario: Kill Button Shows Safety Modal for Named Worktree
 
     Given a worktree at .worktrees/feat1 has uncommitted changes
@@ -475,6 +476,8 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
     Then a modal appears listing the uncommitted files
     And the modal instructs the user to commit or stash before killing
     And the Confirm button is disabled
+
+### Manual Scenarios (Human Verification Required)
 
 #### Scenario: Name Input Focus Restored After Auto-refresh
 
