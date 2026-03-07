@@ -19,7 +19,31 @@
 #         Must use hookSpecificOutput.additionalContext for agent visibility.
 
 set -uo pipefail
-# Advisory hook — must NEVER block the agent. Trap ensures exit 0 on any failure.
+
+# Guaranteed clean exit with JSON output on any failure path.
+# Problem: the old ERR trap did `exit 0` which skipped JSON output entirely.
+# Claude Code interprets missing JSON as "hook error" even with exit code 0.
+# Fix: EXIT trap always produces fallback JSON if the normal path didn't.
+_JSON_DONE=0
+_LOCK_ACQUIRED=0
+LOCK_DIR=""
+STATUS_MSG=""
+
+_on_exit() {
+    # Always produce JSON — missing JSON causes "hook error" in Claude Code.
+    if [[ "$_JSON_DONE" -eq 0 ]]; then
+        _JSON_DONE=1
+        local msg="${STATUS_MSG:-CONTEXT GUARD: unavailable}"
+        printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' "$msg"
+    fi
+    # Release lock if acquired.
+    if [[ "$_LOCK_ACQUIRED" -eq 1 && -n "$LOCK_DIR" ]]; then
+        rmdir "$LOCK_DIR" 2>/dev/null || true
+    fi
+}
+
+trap '_on_exit' EXIT
+# ERR trap: any error → exit 0 → EXIT trap fires → JSON + lock cleanup.
 trap 'exit 0' ERR
 
 # Read hook input from stdin (Claude Code sends JSON with session_id, etc.)
@@ -103,7 +127,7 @@ while ! mkdir "$LOCK_DIR" 2>/dev/null; do
         rmdir "$LOCK_DIR" 2>/dev/null || rm -rf "$LOCK_DIR" 2>/dev/null || true
     fi
 done
-trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+_LOCK_ACQUIRED=1
 
 # Clean up stale files from dead processes (runs every invocation, very cheap).
 # For per-session counter files (turn_count_<PID>_<HASH>), extract PID as the
@@ -209,6 +233,7 @@ echo "$COUNT" > "$TURN_COUNT_FILE"
 
 # When guard is disabled, no output — counter still increments in background.
 if [[ "$GUARD_ENABLED" != "true" ]]; then
+    _JSON_DONE=1  # Suppress JSON output — guard disabled
     exit 0
 fi
 
@@ -245,6 +270,7 @@ else
 fi
 
 # JSON additionalContext — always uncolored (plain text)
+_JSON_DONE=1
 cat <<GUARDJSON
 {"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${STATUS_MSG}"}}
 GUARDJSON
