@@ -129,16 +129,21 @@ for f in "$RUNTIME_DIR"/turn_count "$RUNTIME_DIR"/turn_count_architect \
     [[ -f "$f" ]] && rm -f "$f"
 done
 
-# Session/subagent detection using PPID + session_id (deterministic).
+# Session detection using PPID + session_id.
 #
-# session_meta_<AGENT_ID> stores the session_id of the main agent for this process.
+# session_meta_<AGENT_ID> stores the session_id of the current conversation.
 # - Meta file missing    → new agent process, initialize tracking files.
-# - session_id matches   → same main agent, increment counter.
-# - session_id differs   → subagent (same process), read without incrementing.
+# - session_id matches   → same conversation, increment counter.
+# - session_id differs   → subagent (Task tool) running under the same Claude Code
+#                          process. Read counter without incrementing. Counter reset
+#                          for /clear is handled by /pl-resume deleting session_meta,
+#                          which triggers the "no meta" path → fresh start at 1.
 IS_SUBAGENT=false
 if [[ -f "$SESSION_META_FILE" ]]; then
     STORED_SESSION_ID=$(head -1 "$SESSION_META_FILE" 2>/dev/null || echo "")
     if [[ "$STORED_SESSION_ID" != "$SESSION_ID" ]]; then
+        # Session ID mismatch — subagent running under same Claude Code process.
+        # Read counter without incrementing. Still output guard status.
         IS_SUBAGENT=true
     fi
 else
@@ -154,27 +159,13 @@ else
     echo "0" > "$TURN_COUNT_FILE"
 fi
 
-# Subagents: output parent's status without incrementing counter.
-if [[ "$IS_SUBAGENT" == "true" ]]; then
-    if [[ "$GUARD_ENABLED" == "true" ]]; then
-        COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
-        if [[ $COUNT -lt $THRESHOLD ]]; then
-            STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used"
-        else
-            STATUS_MSG="CONTEXT GUARD: ${COUNT} / ${THRESHOLD} used -- Run /pl-resume save, then /clear, then /pl-resume to continue."
-        fi
-        echo "$STATUS_MSG" >&2
-        cat <<GUARDJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${STATUS_MSG}"}}
-GUARDJSON
-    fi
-    exit 0
-fi
-
-# Read current count and increment (counter always increments, even when guard disabled)
+# Read current count and increment (unless subagent — subagents read without incrementing).
+# Counter always increments when not a subagent, even when guard disabled.
 COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
-COUNT=$((COUNT + 1))
-echo "$COUNT" > "$TURN_COUNT_FILE"
+if [[ "$IS_SUBAGENT" != "true" ]]; then
+    COUNT=$((COUNT + 1))
+    echo "$COUNT" > "$TURN_COUNT_FILE"
+fi
 
 # When guard is disabled, no output — counter still increments in background.
 if [[ "$GUARD_ENABLED" != "true" ]]; then

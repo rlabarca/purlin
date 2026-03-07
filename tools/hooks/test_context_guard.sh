@@ -261,30 +261,30 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 11: Subagent detection outputs status without incrementing
+# Scenario 11: Subagent detection via session_meta mismatch
 ###############################################################################
 echo ""
-echo "[Scenario] Subagent detection outputs status without incrementing"
+echo "[Scenario] Subagent detection via session_meta mismatch"
 setup_sandbox
 
 echo '{"context_guard_threshold": 10}' > "$SANDBOX/.purlin/config.json"
 
-# Main agent runs first (creates session_meta and increments)
+# Main agent runs 3 times (creates session_meta and increments)
 run_guard "main-session" "" "agent-11" >/dev/null 2>&1
 run_guard "main-session" "" "agent-11" >/dev/null 2>&1
 run_guard "main-session" "" "agent-11" >/dev/null 2>&1
 
-# Subagent has same AGENT_ID but different session_id
+# Subagent call: same AGENT_ID but different session_id → no increment
 OUTPUT=$(run_guard "subagent-session" "" "agent-11" 2>&1)
 COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-11")
 
 if [[ "$COUNTER" == "3" ]]; then
-    log_pass "Counter stays at 3 (subagent did not increment)"
+    log_pass "Counter NOT incremented (stays at 3 for subagent)"
 else
-    log_fail "Expected count=3, got '$COUNTER'"
+    log_fail "Expected count=3 (subagent no-increment), got '$COUNTER'"
 fi
 if echo "$OUTPUT" | grep -q '"additionalContext":"CONTEXT GUARD: 3 / 10 used"'; then
-    log_pass "Subagent still outputs parent's status: 3 / 10 used"
+    log_pass "Subagent outputs guard status with current count: 3 / 10 used"
 else
     log_fail "Expected 'CONTEXT GUARD: 3 / 10 used' from subagent, got: '$OUTPUT'"
 fi
@@ -386,11 +386,11 @@ OUTPUT_NEW=$(run_guard "session-15" "" "agent-15" 2>&1)
 # Same session call
 OUTPUT_SAME=$(run_guard "session-15" "" "agent-15" 2>&1)
 
-# Subagent call
-OUTPUT_SUB=$(run_guard "subagent-15" "" "agent-15" 2>&1)
+# Subagent call (different session_id, same agent — no increment)
+OUTPUT_NEWCONV=$(run_guard "subagent-session-15" "" "agent-15" 2>&1)
 
 ALL_HAVE_OUTPUT=true
-for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "sub:$OUTPUT_SUB"; do
+for label_output in "new:$OUTPUT_NEW" "same:$OUTPUT_SAME" "subagent:$OUTPUT_NEWCONV"; do
     label="${label_output%%:*}"
     output="${label_output#*:}"
     if ! echo "$output" | grep -q "CONTEXT GUARD:"; then
@@ -535,7 +535,7 @@ STDOUT_OUTPUT=$(run_guard "subagent-session-21" "" "agent-21" 2>"$STDERR_FILE")
 STDERR_OUTPUT=$(cat "$STDERR_FILE")
 
 if echo "$STDERR_OUTPUT" | grep -q "CONTEXT GUARD: 7 / 10 used"; then
-    log_pass "Subagent emits stderr status line"
+    log_pass "Subagent emits stderr status line with current count (no increment)"
 else
     log_fail "Expected subagent stderr 'CONTEXT GUARD: 7 / 10 used', got: '$STDERR_OUTPUT'"
 fi
