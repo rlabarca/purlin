@@ -94,13 +94,15 @@ Execute this 8-step sequence:
 
 ### Step 0 -- Reset Context Guard
 
-Reset the current session's context guard counter AND session meta (both are required — the meta file stores the pre-`/clear` session_id, and if stale, the hook will treat all calls as subagents and never increment the counter):
+Remove stale context guard files from the previous session:
 
 ```
-echo "0" > .purlin/runtime/turn_count_$PPID && rm -f .purlin/runtime/session_meta_$PPID
+rm -f .purlin/runtime/turn_count_${PPID}_* && rm -f .purlin/runtime/session_meta_$PPID
 ```
 
-`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. This targets only the current session's files. Other concurrent agents' files are unaffected. Deleting `session_meta` forces the hook to re-initialize with the new post-`/clear` session_id on its next invocation.
+`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. The wildcard `turn_count_${PPID}_*` removes all per-session counter files for this process. Other concurrent agents' counters are unaffected. Deleting `session_meta` forces the hook to re-initialize with the new post-`/clear` session_id on its next invocation.
+
+**Note:** This step is optional cleanup. The per-session counter design ensures that context clears are handled automatically — each new `session_id` produces a fresh counter file starting at 1. This cleanup removes stale files from previous sessions for tidiness.
 
 **CRITICAL: This is the ONE AND ONLY context guard reset.** Do NOT reset the counter again at any later step, at the end of the resume process, or before presenting work to the user. The counter must increment normally from this point forward for the remainder of the session.
 

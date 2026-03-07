@@ -431,6 +431,33 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
 
+class TestContextGuardResetCommand(unittest.TestCase):
+    """Scenario: Context Clear Step 0 Reset
+
+    The /pl-resume command file Step 0 must use the per-session counter
+    file cleanup format (rm -f wildcard) rather than the old single-file
+    overwrite format.
+    """
+
+    def test_step0_uses_wildcard_rm(self):
+        """Step 0 uses 'rm -f .purlin/runtime/turn_count_${PPID}_*'."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('turn_count_${PPID}_*', content)
+
+    def test_step0_removes_session_meta(self):
+        """Step 0 removes session_meta_$PPID."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('session_meta_$PPID', content)
+
+    def test_step0_does_not_use_echo_overwrite(self):
+        """Step 0 does NOT use the old 'echo 0 > turn_count' format."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertNotIn('echo "0" > .purlin/runtime/turn_count_$PPID', content)
+
+
 class TestCheckpointCleanupAfterRestore(unittest.TestCase):
     """Scenario: Checkpoint Cleanup After Restore
 
