@@ -24,6 +24,9 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Category: "Category Name"` -- grouping for CDD dashboard.
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
 - `> Web Testable: <url>` -- declares the feature's web UI is accessible at `<url>` for automated verification via `/pl-web-verify`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Testable: http://localhost:9086`.
+- `> Web Port File: <path>` -- path to a dynamic port file (relative to project root). When present, the port read from this file overrides the port in the `Web Testable` URL. Used when the server binds to a dynamic port.
+- `> Web Start: <command>` -- auto-start command for the web server. When the server at the `Web Testable` URL is not reachable, this command is executed to start it before verification.
+- `> Test Fixtures: <url>` -- non-default fixture repo URL (local path or remote URL). Most features use the convention path (`.purlin/runtime/fixture-repo`) and do not need this field. Only add when the feature's fixtures live in a different repo.
 
 ## Category and Label Consistency
 
@@ -91,3 +94,34 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check. The heading text mu
 the word "purpose" -- e.g., `## Purpose`, `## 1. Purpose`.
 
 Scenario classification and gherkin quality checks are automatically skipped for anchor nodes.
+
+## Fixture Tag Section Format
+
+Features that use test fixtures declare their fixture tags in a dedicated subsection within
+Requirements. The Critic parses this section to validate that declared tags exist in the
+fixture repo.
+
+**Heading convention:** Use a three-hash heading with a numbered subsection:
+
+    ### 2.x Integration Test Fixture Tags
+
+or:
+
+    ### 2.x Web-Verify Fixture Tags
+
+**Table format:**
+
+    | Tag | State Description |
+    |-----|-------------------|
+    | `main/feature_name/slug` | Description of the project state this tag represents |
+
+**Tag naming:** `<project-ref>/<feature-name>/<slug>`. The slug is Architect-chosen (2-4
+words, kebab-case) and describes the fixture state, not the scenario title. Examples:
+`ahead-3`, `empty-repo`, `expert-mode`.
+
+**Placement:** The fixture tag section is the last subsection in Requirements, immediately
+before the `---` separator that precedes the Scenarios section.
+
+**Cross-feature tag references:** When a scenario in feature A needs a fixture tag declared
+in feature B, the scenario's Given step references the full tag path. No duplication of the
+tag table is needed -- the Critic resolves tags across all feature files in the project.
