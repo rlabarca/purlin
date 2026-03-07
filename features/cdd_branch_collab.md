@@ -27,7 +27,7 @@ The BRANCH COLLABORATION section is always rendered in the dashboard, regardless
 
 The section is always visible because it IS the entry point for branch collaboration. Hiding it behind config creates a chicken-and-egg problem (user cannot discover the feature without editing config).
 
-The expanded heading text is `"BRANCH COLLABORATION (<shortened-url>)"` where `<shortened-url>` is the remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `branch_collab.remote` config, default `"origin"`; falls back to `remote_collab.remote` if `branch_collab` absent). When no git remote is configured, the expanded heading remains plain `"BRANCH COLLABORATION"` (no parenthetical). The `data-expanded` attribute on the `bc-heading` span includes the URL. Collapsed text behavior is unchanged (already shows branch name + sync state in active mode).
+The expanded heading text is always `"BRANCH COLLABORATION"` (plain, no parenthetical). The shortened remote URL appears only on the **collapsed badge** when a branch is actively joined (see Section 2.3). The shortened URL format: remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `branch_collab.remote` config, default `"origin"`; falls back to `remote_collab.remote` if `branch_collab` absent).
 
 Exception: if `git remote` returns empty (no remote configured at all), the section body shows "No git remote configured. Add a remote to enable branch collaboration."
 
@@ -35,7 +35,7 @@ Exception: if `git remote` returns empty (no remote configured at all), the sect
 
 When `.purlin/runtime/active_branch` is absent or empty:
 
-**Collapsed badge:** "BRANCH COLLABORATION" (no annotation) or "N Remote Branches" (if known branches exist on remote, `--purlin-muted` color).
+**Collapsed badge:** "BRANCH COLLABORATION" (no annotation, no branch count).
 
 **Expanded content (in order):**
 
@@ -61,13 +61,13 @@ When `.purlin/runtime/active_branch` is absent or empty:
 
 When `.purlin/runtime/active_branch` contains a branch name:
 
-**Collapsed badge:** `"<branch-name> <STATE annotation>"` where STATE is the sync state, framed from the remote's perspective. Annotation format: SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local)"`, BEHIND -> `"BEHIND (Remote is N ahead of local)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local)"`. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`). Same tokens as ISOLATED TEAMS.
+**Collapsed badge:** `"BRANCH COLLABORATION (<shortened-url>)"` where `<shortened-url>` is the remote URL with protocol stripped, trailing `.git` removed, and `git@host:path` converted to `host/path` (same computation as the expanded heading in Section 2.1).
 
 **Expanded content (in order):**
 
 1. **Active branch panel** (replaces creation row):
    - **Branch row (single line):** `[branch-dropdown ▾] [Leave]`. The branch dropdown is a `<select>` populated with all known branches from remote (current branch pre-selected). Changing selection -> `POST /branch-collab/join`. The "Leave" button is right-aligned on the same row -> `POST /branch-collab/leave`. Does NOT delete any branches. Branch remains joinable.
-   - **Sync state row:** badge with remote-perspective annotation (same format as collapsed badge) + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /branch-collab/fetch`.
+   - **Sync state row:** badge with remote-perspective sync annotation + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /branch-collab/fetch`. Annotation format: SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local)"`, BEHIND -> `"BEHIND (Remote is N ahead of local)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local)"`. Color: SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`).
    - **Panel alignment:** The branch row and sync state row MUST share a consistent left edge. The dropdown's left edge on Row 1 and the sync badge's left edge on Row 2 MUST be horizontally aligned, giving the active branch panel a coherent vertical alignment.
 
 2. **CONTRIBUTORS table:**
@@ -407,19 +407,28 @@ When an active branch exists, the `/status.json` response includes:
     Then the response contains { "status": "ok" } with a fetched_at timestamp
     And the branches table re-renders with the newly discovered branch
 
-#### Scenario: Section Heading Shows Shortened Remote URL
+#### Scenario: Collapsed Badge Shows URL When Branch Active
 
     Given the CDD server is running
+    And an active branch is set in .purlin/runtime/active_branch
     And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section heading expanded text includes "(github.com/rlabarca/purlin)"
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION (github.com/rlabarca/purlin)"
 
-#### Scenario: Section Heading Without Remote
+#### Scenario: Collapsed Badge Shows Plain Title When No Branch Active
 
     Given the CDD server is running
+    And no file exists at .purlin/runtime/active_branch
+    When the dashboard HTML is generated
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
+
+#### Scenario: Collapsed Badge Shows Plain Title When No Remote Configured
+
+    Given the CDD server is running
+    And an active branch is set in .purlin/runtime/active_branch
     And no git remote is configured
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section heading expanded text is "BRANCH COLLABORATION" with no parenthetical
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -449,8 +458,9 @@ None.
 - [ ] Leave click transitions section from active mode back to setup mode (creation row + branches table visible)
 - [ ] "Refresh Branches" button positioned to the right of the branches table heading in setup mode
 - [ ] "Refresh Branches" button shows "Refreshing..." text and is disabled while fetch-all is in flight
-- [ ] Expanded heading text includes shortened remote URL in parentheses (e.g., `BRANCH COLLABORATION (github.com/rlabarca/purlin)`) when remote is configured
-- [ ] Expanded heading shows plain "BRANCH COLLABORATION" when no remote is configured
+- [ ] Collapsed badge shows "BRANCH COLLABORATION (github.com/rlabarca/purlin)" when a branch is active and remote is configured
+- [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when no branch is active
+- [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when branch is active but no remote is configured
 
 ## User Testing Discoveries
 
