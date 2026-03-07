@@ -1778,36 +1778,18 @@ def _compute_digest_tags(branch_name):
     return tags
 
 
-def _collapsed_branch_collab_label(active_branch, sync_data, branches):
+def _collapsed_branch_collab_label(active_branch, shortened_url):
     """Compute collapsed badge text for BRANCH COLLABORATION section.
 
-    Returns (badge_css, heading_text, badge_text) tuple.
+    Returns the heading text string for the collapsed state.
+    - No active branch: plain "BRANCH COLLABORATION"
+    - Active branch + URL: "BRANCH COLLABORATION (<shortened-url>)"
+    - Active branch + no URL: plain "BRANCH COLLABORATION"
     """
-    if not active_branch:
-        n = len(branches)
-        if n > 0:
-            return ("", f"{n} Remote Branch{'es' if n != 1 else ''}", "")
-        return ("", "BRANCH COLLABORATION", "")
-
-    state = sync_data.get('sync_state')
-    commits_ahead = sync_data.get('commits_ahead', 0)
-    commits_behind = sync_data.get('commits_behind', 0)
-    if state is None:
-        return ("st-todo", active_branch, "?")
-    if state == 'NO_MAIN':
-        return ("st-disputed", active_branch, "NO MAIN")
-    # Flip AHEAD<->BEHIND: compute_remote_sync_state uses local perspective, display uses remote
-    if state == 'AHEAD':
-        annotation = f'BEHIND (Remote is {commits_ahead} behind local)'
-        return ("st-todo", active_branch, annotation)
-    elif state == 'BEHIND':
-        annotation = f'AHEAD (Remote is {commits_behind} ahead of local)'
-        return ("st-todo", active_branch, annotation)
-    elif state == 'DIVERGED':
-        annotation = f'DIVERGED (Remote is {commits_behind} ahead, {commits_ahead} behind local)'
-        return ("st-disputed", active_branch, annotation)
-    else:
-        return ("st-good", active_branch, state)
+    if active_branch and shortened_url:
+        url_esc = shortened_url.replace('&', '&amp;')
+        return f"BRANCH COLLABORATION ({url_esc})"
+    return "BRANCH COLLABORATION"
 
 
 def _feature_urgency(entry):
@@ -1921,19 +1903,10 @@ def generate_html(cache=None):
         bc_active_branch, bc_sync, bc_branches, bc_contributors,
         _branch_collab_last_fetch, bc_has_remote)
 
-    bc_badge_css, bc_badge_text, bc_badge_sev = _collapsed_branch_collab_label(
-        bc_active_branch, bc_sync, bc_branches)
-    if bc_badge_css and bc_badge_sev:
-        bc_collab_badge = f'<span class="{bc_badge_css}">{bc_badge_sev}</span>'
-    else:
-        bc_collab_badge = ''
-
-    # Shortened remote URL for heading (spec Section 2.1)
+    # Shortened remote URL for collapsed badge (spec Section 2.3)
     bc_short_url = _get_shortened_remote_url() if bc_has_remote else ''
+    bc_badge_text = _collapsed_branch_collab_label(bc_active_branch, bc_short_url)
     bc_heading_expanded = 'BRANCH COLLABORATION'
-    if bc_short_url:
-        url_esc = bc_short_url.replace('&', '&amp;').replace('"', '&quot;')
-        bc_heading_expanded = f'BRANCH COLLABORATION ({url_esc})'
 
     # Cross-section annotation in LOCAL BRANCH body (spec 2.6)
     workspace_remote_sync = ''
@@ -2132,6 +2105,8 @@ def generate_html(cache=None):
   --purlin-dim:#94A3B8;--purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
   --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
+input[type=number]{{color-scheme:dark}}
+[data-theme='light'] input[type=number]{{color-scheme:light}}
 *{{box-sizing:border-box;margin:0;padding:0}}
 html,body{{height:100%;overflow:hidden}}
 body{{
@@ -2397,7 +2372,6 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <div class="section-hdr" onclick="toggleSection('branch-collab-section')">
         <span class="chevron" id="branch-collab-section-chevron">&#9654;</span>
         <span id="bc-heading" data-expanded="{bc_heading_expanded}" data-collapsed-text="{bc_badge_text}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purlin-dim);border-bottom:1px solid var(--purlin-border);padding-bottom:3px;flex:1">BRANCH COLLABORATION</span>
-        <span class="section-badge" id="branch-collab-section-badge" style="display:none">{bc_collab_badge}</span>
       </div>
       <div class="section-body collapsed" id="branch-collab-section">
         {bc_section_html}
@@ -4502,6 +4476,7 @@ function stopMapRefresh() {{
 var agentsConfig = null;
 var agentsSaveTimer = null;
 var pendingWrites = new Map();
+var cgtDirty = {{}};
 
 function applyPendingWrites() {{
   if (pendingWrites.size === 0) return;
@@ -4626,13 +4601,36 @@ function renderAgentsRows(cfg) {{
       }}
       scheduleAgentSave();
     }});
-    if (cgtInput) cgtInput.addEventListener('change', function() {{
-      var v = parseInt(cgtInput.value, 10);
-      if (v >= 5 && v <= 200) {{
-        pendingWrites.set(role + '.context_guard_threshold', v);
-        scheduleAgentSave();
-      }}
-    }});
+    if (cgtInput) {{
+      cgtInput.dataset.savedValue = cgtInput.value;
+      cgtDirty[role] = false;
+      cgtInput.addEventListener('input', function() {{
+        var setBtn = document.getElementById('agent-cgt-set-' + role);
+        var revBtn = document.getElementById('agent-cgt-revert-' + role);
+        var changed = cgtInput.value !== cgtInput.dataset.savedValue;
+        cgtDirty[role] = changed;
+        if (setBtn) setBtn.style.display = changed ? 'inline-block' : 'none';
+        if (revBtn) revBtn.style.display = changed ? 'inline-block' : 'none';
+      }});
+      var setBtn = document.getElementById('agent-cgt-set-' + role);
+      var revBtn = document.getElementById('agent-cgt-revert-' + role);
+      if (setBtn) setBtn.addEventListener('click', function() {{
+        var v = parseInt(cgtInput.value, 10);
+        if (v >= 5 && v <= 200) {{
+          cgtInput.dataset.savedValue = String(v);
+          cgtDirty[role] = false;
+          setBtn.style.display = 'none';
+          if (revBtn) revBtn.style.display = 'none';
+          scheduleAgentSave();
+        }}
+      }});
+      if (revBtn) revBtn.addEventListener('click', function() {{
+        cgtInput.value = cgtInput.dataset.savedValue;
+        cgtDirty[role] = false;
+        if (setBtn) setBtn.style.display = 'none';
+        revBtn.style.display = 'none';
+      }});
+    }}
     syncCapabilityControls(role);
   }});
 }}
@@ -4677,7 +4675,7 @@ function diffUpdateAgentRows(cfg) {{
       if (cgtInput) {{ cgtInput.disabled = !cgVal; cgtInput.style.opacity = cgVal ? '1' : '0.4'; }}
     }}
     var cgtVal = acfg.context_guard_threshold || (cfg.context_guard_threshold) || 45;
-    if (cgtInput && !pendingWrites.has(role + '.context_guard_threshold') && parseInt(cgtInput.value,10) !== cgtVal) cgtInput.value = cgtVal;
+    if (cgtInput && !cgtDirty[role] && parseInt(cgtInput.value,10) !== cgtVal) {{ cgtInput.value = cgtVal; cgtInput.dataset.savedValue = String(cgtVal); }}
     syncCapabilityControls(role);
   }});
 }}
@@ -4715,6 +4713,8 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<div style="display:flex;gap:4px;align-items:center">' +
       '<input type="checkbox" id="agent-cg-' + role + '" style="accent-color:var(--purlin-accent)"' + (cgEnabled ? ' checked' : '') + '>' +
       '<input type="number" id="agent-cgt-' + role + '" min="5" max="200" value="' + cgThreshold + '" style="width:40px;background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;padding:2px;outline:none' + (!cgEnabled ? ';opacity:0.4' : '') + '"' + (!cgEnabled ? ' disabled' : '') + '>' +
+      '<button id="agent-cgt-set-' + role + '" style="display:none;font-size:9px;padding:1px 5px;background:var(--purlin-accent);color:var(--purlin-bg);border:none;border-radius:3px;cursor:pointer;font-family:var(--font-body)">Set</button>' +
+      '<button id="agent-cgt-revert-' + role + '" style="display:none;font-size:9px;padding:1px 5px;background:var(--purlin-tag-fill);color:var(--purlin-muted);border:1px solid var(--purlin-border);border-radius:3px;cursor:pointer;font-family:var(--font-body)">Revert</button>' +
       '<span id="agent-cg-counter-' + role + '" style="font-family:monospace;font-size:10px;color:var(--purlin-muted);margin-left:6px"></span>' +
     '</div>' +
   '</div>';
@@ -4794,7 +4794,7 @@ function saveAgentConfig() {{
       startup_sequence: startupChk ? startupChk.checked : true,
       recommend_next_actions: recommendChk ? recommendChk.checked : true,
       context_guard: cgChk ? cgChk.checked : true,
-      context_guard_threshold: cgtInput ? parseInt(cgtInput.value, 10) || 45 : 45
+      context_guard_threshold: cgtInput ? parseInt(cgtDirty[role] ? cgtInput.dataset.savedValue : cgtInput.value, 10) || 45 : 45
     }};
   }});
   // Snapshot pending keys included in this request (per-request lock association)
@@ -5005,6 +5005,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_whats_different_read()
         elif self.path == '/whats-different/deep-analysis/read':
             self._handle_deep_analysis_read()
+        elif self.path == '/context-guard/counters':
+            self._handle_context_guard_counters()
         else:
             # Dashboard request: also regenerate internal file
             cache = build_status_commit_cache()

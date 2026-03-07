@@ -1021,13 +1021,37 @@ class TestRefreshBranchesButtonFetchesAllRemoteRefs(unittest.TestCase):
         self.assertIn('error', data)
 
 
-class TestSectionHeadingShowsShortenedRemoteUrl(unittest.TestCase):
-    """Scenario: Section Heading Shows Shortened Remote URL
+class TestCollapsedBadgeShowsUrlWhenBranchActive(unittest.TestCase):
+    """Scenario: Collapsed Badge Shows URL When Branch Active
 
     Given the CDD server is running
+    And an active branch is set in .purlin/runtime/active_branch
     And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section heading expanded text includes "(github.com/rlabarca/purlin)"
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION (github.com/rlabarca/purlin)"
+    """
+
+    @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value='feature/auth')
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_collapsed_badge_shows_url_when_active(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('data-collapsed-text="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
+        # Expanded heading is always plain
+        self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
+        self.assertNotIn('data-expanded="BRANCH COLLABORATION (', html)
+
+
+class TestCollapsedBadgeShowsPlainTitleWhenNoBranchActive(unittest.TestCase):
+    """Scenario: Collapsed Badge Shows Plain Title When No Branch Active
+
+    Given the CDD server is running
+    And no file exists at .purlin/runtime/active_branch
+    When the dashboard HTML is generated
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
     """
 
     @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
@@ -1036,31 +1060,34 @@ class TestSectionHeadingShowsShortenedRemoteUrl(unittest.TestCase):
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_heading_includes_shortened_url(self, *mocks):
+    def test_collapsed_badge_plain_when_no_active_branch(self, *mocks):
         html = serve.generate_html()
-        self.assertIn('BRANCH COLLABORATION (github.com/rlabarca/purlin)', html)
-        self.assertIn('data-expanded="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
+        self.assertIn('data-collapsed-text="BRANCH COLLABORATION"', html)
+        self.assertNotIn('data-collapsed-text="BRANCH COLLABORATION (', html)
+        self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
 
 
-class TestSectionHeadingWithoutRemote(unittest.TestCase):
-    """Scenario: Section Heading Without Remote
+class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase):
+    """Scenario: Collapsed Badge Shows Plain Title When No Remote Configured
 
     Given the CDD server is running
+    And an active branch is set in .purlin/runtime/active_branch
     And no git remote is configured
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section heading expanded text is "BRANCH COLLABORATION" with no parenthetical
+    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
     """
 
     @patch('serve._get_shortened_remote_url', return_value='')
     @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve.get_active_branch', return_value='feature/auth')
     @patch('serve._has_git_remote', return_value=False)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_heading_plain_without_remote(self, *mocks):
+    def test_collapsed_badge_plain_when_no_remote(self, *mocks):
         html = serve.generate_html()
+        self.assertIn('data-collapsed-text="BRANCH COLLABORATION"', html)
+        self.assertNotIn('data-collapsed-text="BRANCH COLLABORATION (', html)
         self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
-        self.assertNotIn('data-expanded="BRANCH COLLABORATION (', html)
 
 
 def run_tests():
