@@ -2391,8 +2391,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
-        <h3>{agents_heading}</h3>
-        <span id="agents-cg-summary" style="font-family:monospace;font-size:10px;margin-left:8px"></span>
+        <h3>{agents_heading} <span id="agents-cg-summary" style="font-family:monospace;font-size:10px;margin-left:8px;font-weight:400;letter-spacing:normal;text-transform:none"></span></h3>
         <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
       </div>
       <div class="section-body collapsed" id="agents-section">
