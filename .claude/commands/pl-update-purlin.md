@@ -93,7 +93,7 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
      - Deleted upstream (unmodified locally): auto-delete, report "Removed: <filename> (no longer in upstream)"
      - Deleted upstream (modified locally): show local modifications, prompt user; delete on confirmation or preserve with warning
      - **pl-edit-base.md is NEVER synced** (silently excluded)
-   - **Top-level script changes:** Track and update `pl-run-builder.sh`, `pl-run-architect.sh`, `pl-run-qa.sh`
+   - **Top-level script changes:** Check for both current naming (`pl-run-*.sh`, `pl-init.sh`, `pl-cdd-*.sh`) AND legacy naming (`run_*.sh`, `purlin_init.sh`, `purlin_cdd_*.sh`). If legacy-named scripts exist at the project root without current-named equivalents, generate current-named replacements. Port user modifications from legacy scripts to new-named versions if present (use merge strategies from step 8). Track and update `pl-run-builder.sh`, `pl-run-architect.sh`, `pl-run-qa.sh`
      - If user modified: show diff, offer merge strategies
      - If unmodified: auto-update
    - **.purlin/ folder intelligence:**
@@ -137,24 +137,19 @@ Update the Purlin submodule with semantic change analysis, smart conflict resolu
 
 13. **Stale Artifact Cleanup:**
    - After update, detect artifacts from previous Purlin versions that are no longer needed
+   - Detection targets the **consumer project root** only; files inside the submodule directory are managed by git and are never candidates for stale artifact cleanup
    - Compare files installed by the old version against what the new version expects; identify orphaned artifacts
-   - Known stale artifacts include:
-     - `tools/sync_upstream.sh` (replaced by `/pl-update-purlin`)
-     - `tools/bootstrap.sh` (removed when `tools/init.sh` superseded it)
-     - `tools/test_bootstrap.sh` (removed with `bootstrap.sh`; tests moved to `tools/test_init.sh`)
+   - Known stale artifacts (all at project root):
      - `run_architect.sh` (renamed to `pl-run-architect.sh`)
      - `run_builder.sh` (renamed to `pl-run-builder.sh`)
      - `run_qa.sh` (renamed to `pl-run-qa.sh`)
      - `purlin_init.sh` (renamed to `pl-init.sh`)
      - `purlin_cdd_start.sh` (renamed to `pl-cdd-start.sh`)
      - `purlin_cdd_stop.sh` (renamed to `pl-cdd-stop.sh`)
-     - `init.sh` at framework root (renamed to `pl-init.sh`)
-     - `cdd_start.sh` at framework root (renamed to `pl-cdd-start.sh`)
-     - `cdd_stop.sh` at framework root (renamed to `pl-cdd-stop.sh`)
    - Report format:
      ```
      Stale artifacts detected from previous Purlin version:
-       • tools/sync_upstream.sh (replaced by /pl-update-purlin)
+       • run_builder.sh (renamed to pl-run-builder.sh)
        • <other stale file> (<reason>)
 
      Remove these files? (y/n)

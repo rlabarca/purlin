@@ -219,6 +219,8 @@ The skill MUST track and intelligently update these files:
 - `pl-run-qa.sh`
 - Any launcher scripts in project root
 
+The skill MUST check for both current naming (`pl-run-*.sh`, `pl-init.sh`, `pl-cdd-*.sh`) AND legacy naming (`run_*.sh`, `purlin_init.sh`, `purlin_cdd_*.sh`). If legacy-named scripts exist at the project root but current-named equivalents do not, this is a **naming transition** — the skill MUST generate current-named scripts as replacements. If legacy-named scripts contain user modifications (differ from what init would have generated at the old version), the skill MUST port those modifications to the new-named versions using the merge strategies from Section 2.5. Legacy-named scripts are then candidates for stale artifact cleanup (Section 2.12).
+
 For each changed top-level script:
 1. Compare current version against what was at old SHA
 2. If user has local modifications:
@@ -352,24 +354,18 @@ When `--dry-run` is specified:
 
 After a successful update, the skill MUST detect and offer to remove stale artifacts from previous Purlin versions that are no longer needed:
 
-1. **Detection:** Compare the list of files that the old Purlin version installed (scripts, symlinks, command files) against what the new version expects. Identify orphaned artifacts — files that were installed by a previous version but are no longer part of the current version.
-2. **Known Stale Artifacts:** Maintain awareness of historically removed scripts:
-   - `tools/sync_upstream.sh` — removed when `/pl-update-purlin` replaced it
-   - `tools/bootstrap.sh` — removed when `tools/init.sh` superseded it
-   - `tools/test_bootstrap.sh` — removed with `bootstrap.sh` (tests moved to `tools/test_init.sh`)
-   - `run_architect.sh` — renamed to `pl-run-architect.sh`
-   - `run_builder.sh` — renamed to `pl-run-builder.sh`
-   - `run_qa.sh` — renamed to `pl-run-qa.sh`
-   - `purlin_init.sh` — renamed to `pl-init.sh`
-   - `purlin_cdd_start.sh` — renamed to `pl-cdd-start.sh`
-   - `purlin_cdd_stop.sh` — renamed to `pl-cdd-stop.sh`
-   - `init.sh` (framework root) — renamed to `pl-init.sh`
-   - `cdd_start.sh` (framework root) — renamed to `pl-cdd-start.sh`
-   - `cdd_stop.sh` (framework root) — renamed to `pl-cdd-stop.sh`
+1. **Detection:** Compare the list of files that the old Purlin version installed (scripts, symlinks, command files) against what the new version expects. Identify orphaned artifacts — files that were installed by a previous version but are no longer part of the current version. Detection targets files at the **consumer project root** only. Files inside the submodule directory are managed by git and are never candidates for stale artifact cleanup.
+2. **Known Stale Artifacts:** Maintain awareness of historically removed scripts at the consumer project root:
+   - `run_architect.sh` (project root) — renamed to `pl-run-architect.sh`
+   - `run_builder.sh` (project root) — renamed to `pl-run-builder.sh`
+   - `run_qa.sh` (project root) — renamed to `pl-run-qa.sh`
+   - `purlin_init.sh` (project root) — renamed to `pl-init.sh`
+   - `purlin_cdd_start.sh` (project root) — renamed to `pl-cdd-start.sh`
+   - `purlin_cdd_stop.sh` (project root) — renamed to `pl-cdd-stop.sh`
 3. **Report Format:**
    ```
    Stale artifacts detected from previous Purlin version:
-     • tools/sync_upstream.sh (replaced by /pl-update-purlin)
+     • run_builder.sh (renamed to pl-run-builder.sh)
      • <other stale file> (<reason>)
 
    Remove these files? (y/n)
@@ -474,10 +470,10 @@ The skill MUST detect when invoked in the standalone Purlin repo (not a consumer
     And the summary report notes that init/refresh ran
 
 #### Scenario: Stale Artifacts Detected and Cleaned
-    Given the previous Purlin version installed tools/sync_upstream.sh
-    And the current Purlin version no longer includes that script
+    Given the consumer project has run_builder.sh at the project root (legacy naming)
+    And the current Purlin version expects pl-run-builder.sh instead
     When /pl-update-purlin completes the update
-    Then the skill detects tools/sync_upstream.sh as a stale artifact
+    Then the skill detects run_builder.sh as a stale artifact
     And prompts the user: "Stale artifacts detected. Remove these files?"
     When the user confirms
     Then the stale files are deleted
@@ -514,6 +510,14 @@ The skill MUST detect when invoked in the standalone Purlin repo (not a consumer
     When the user confirms
     Then pl-old-command.md is deleted
     And the report shows "Removed: pl-old-command.md (local modifications discarded)"
+
+#### Scenario: Legacy-Named Launcher Scripts Replaced
+    Given the consumer project has run_builder.sh at the project root (old naming)
+    And pl-run-builder.sh does not exist
+    When /pl-update-purlin is invoked
+    Then the skill detects the legacy-named launcher
+    And generates pl-run-builder.sh as the current-named replacement
+    And the stale artifact cleanup offers to remove run_builder.sh
 
 #### Scenario: Standalone Mode Guard Prevents Update in Purlin Repo
     Given the current project IS the Purlin repository (not a consumer project)
