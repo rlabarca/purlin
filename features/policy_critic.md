@@ -152,16 +152,6 @@ The block is only meaningful for TESTING features (qa: TODO). Non-TESTING featur
 
 See `features/qa_verification_effort.md` for the full classification rules, output schema, and scenarios.
 
-## 3. Configuration
-
-The following keys in `.purlin/config.json` govern Critic behavior:
-
-| Key | Type | Default | Meaning |
-|-----|------|---------|---------|
-| `critic_llm_model` | string | `claude-sonnet-4-20250514` | Model used for logic drift detection. |
-| `critic_llm_enabled` | boolean | `false` | Whether the LLM-based logic drift engine is active. |
-| `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
-
 ## 4. Output Contract
 The Critic tool MUST produce:
 
