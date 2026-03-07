@@ -14,6 +14,9 @@ Covers automated scenarios from features/pl_web_verify.md:
 - QA completion gate prompts for completion
 - Builder completion gate is summary only
 - Instruction files updated with web-verify references
+- Fixture-backed server started for scenario with fixture tag
+- Fixture checkout failure marks scenario inconclusive
+- Fixture cleanup after scenario completion
 
 The agent command is a Claude skill defined in .claude/commands/pl-web-verify.md.
 These tests verify the underlying behaviors that the command depends on:
@@ -176,6 +179,37 @@ SAMPLE_CRITIC_DEPENDENCY_ONLY = """\
 }
 """
 
+# Sample feature spec with Test Fixtures metadata for fixture-backed testing
+SAMPLE_WEB_TESTABLE_WITH_FIXTURES = """\
+# Feature: Sample Web Feature with Fixtures
+
+> Label: "Sample Feature"
+> Category: "CDD"
+> Prerequisite: features/policy_critic.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
+> Test Fixtures: https://github.com/org/fixtures.git
+
+[TESTING]
+
+## 1. Overview
+A sample feature with fixture-backed testing.
+
+## 3. Scenarios
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Dashboard Shows Fixture State
+    Given a CDD server loaded with fixture tag "main/feature/scenario-one"
+    When the user navigates to the dashboard
+    Then the dashboard displays fixture project data
+
+#### Scenario: Normal Dashboard Loads
+    Given the server is running
+    When the user navigates to the dashboard
+    Then the page loads successfully
+"""
+
 # BUG discovery format per spec Section 2.9
 BUG_DISCOVERY_PATTERN = re.compile(
     r'### \[BUG\] .+ \(Discovered: \d{4}-\d{2}-\d{2}\)\n'
@@ -265,6 +299,22 @@ def _parse_url_override(args):
         else:
             features.append(arg)
     return features, url_override
+
+
+def _extract_test_fixtures_url(content):
+    """Extract the Test Fixtures repo URL from feature file content."""
+    match = re.search(r'>\s*Test Fixtures:\s*(\S+)', content)
+    return match.group(1) if match else None
+
+
+def _detect_fixture_tag_in_steps(scenario_text):
+    """Detect fixture tag references in scenario Given steps.
+
+    Looks for pattern: fixture tag "<tag-path>" in Given lines.
+    Returns the tag path or None.
+    """
+    match = re.search(r'fixture tag "([^"]+)"', scenario_text)
+    return match.group(1) if match else None
 
 
 def _extract_web_port_file(content):
@@ -1142,6 +1192,156 @@ class TestDynamicPortResolutionInSkillFile(unittest.TestCase):
         self.assertIn(
             'skip this feature (continue with others)',
             self.command_content)
+
+
+class TestFixtureBackedServerStarted(unittest.TestCase):
+    """Scenario: Fixture-backed server started for scenario with fixture tag
+
+    Given a feature has `> Web Testable: http://localhost:9086`
+    And the feature has `> Test Fixtures: https://github.com/org/fixtures.git`
+    And a scenario's Given step references fixture tag "main/feature/scenario-one"
+    When `/pl-web-verify` processes that scenario
+    Then the fixture tag is checked out to a temp directory
+    And a CDD server is started with `--project-root <fixture-dir> --port 0`
+    And the ephemeral port from the server's stdout is used for navigation
+    And the static URL port (9086) is NOT used
+
+    Test: Verifies fixture metadata parsing, tag detection, and skill file
+    instructions for fixture-backed server startup.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_test_fixtures_metadata_extracted(self):
+        """Test Fixtures URL is correctly extracted from feature metadata."""
+        url = _extract_test_fixtures_url(
+            SAMPLE_WEB_TESTABLE_WITH_FIXTURES)
+        self.assertEqual(url, 'https://github.com/org/fixtures.git')
+
+    def test_no_test_fixtures_returns_none(self):
+        """Feature without Test Fixtures metadata returns None."""
+        url = _extract_test_fixtures_url(SAMPLE_WEB_TESTABLE_FEATURE)
+        self.assertIsNone(url)
+
+    def test_fixture_tag_detected_in_given_step(self):
+        """Fixture tag reference is detected in scenario Given steps."""
+        scenario = (
+            '    Given a CDD server loaded with '
+            'fixture tag "main/feature/scenario-one"\n'
+            '    When the user navigates to the dashboard\n'
+            '    Then the dashboard displays fixture project data')
+        tag = _detect_fixture_tag_in_steps(scenario)
+        self.assertEqual(tag, 'main/feature/scenario-one')
+
+    def test_no_fixture_tag_returns_none(self):
+        """Scenario without fixture tag reference returns None."""
+        scenario = (
+            '    Given the server is running\n'
+            '    When the user navigates to the dashboard\n'
+            '    Then the page loads successfully')
+        tag = _detect_fixture_tag_in_steps(scenario)
+        self.assertIsNone(tag)
+
+    def test_skill_references_fixture_checkout(self):
+        """Skill file references fixture.sh checkout command."""
+        self.assertIn('fixture.sh checkout', self.command_content)
+
+    def test_skill_references_ephemeral_port(self):
+        """Skill file references --port 0 for ephemeral port binding."""
+        self.assertIn('--port 0', self.command_content)
+
+    def test_skill_references_project_root_flag(self):
+        """Skill file references --project-root for fixture directory."""
+        self.assertIn('--project-root', self.command_content)
+
+    def test_skill_documents_fixture_detection(self):
+        """Skill file documents fixture tag detection pattern."""
+        self.assertIn('fixture tag', self.command_content)
+
+
+class TestFixtureCheckoutFailureInconclusive(unittest.TestCase):
+    """Scenario: Fixture checkout failure marks scenario inconclusive
+
+    Given a feature has `> Test Fixtures: https://github.com/org/fixtures.git`
+    And a scenario references fixture tag "main/feature/nonexistent-tag"
+    When `/pl-web-verify` attempts to check out the fixture
+    Then the checkout fails (tag not found)
+    And the scenario is marked INCONCLUSIVE
+    And other scenarios in the feature continue normally
+
+    Test: Verifies skill file documents error handling for failed fixture
+    checkouts and INCONCLUSIVE classification.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_skill_documents_fixture_error_handling(self):
+        """Skill file documents handling of fixture checkout failures."""
+        self.assertIn('INCONCLUSIVE', self.command_content)
+        self.assertIn('checkout fail', self.command_content.lower())
+
+    def test_skill_continues_after_fixture_failure(self):
+        """Skill file continues with other scenarios after fixture failure."""
+        self.assertIn(
+            'Continue with other scenarios',
+            self.command_content)
+
+    def test_fixture_and_non_fixture_scenarios_coexist(self):
+        """Feature with both fixture and non-fixture scenarios is valid."""
+        url = _extract_test_fixtures_url(
+            SAMPLE_WEB_TESTABLE_WITH_FIXTURES)
+        self.assertIsNotNone(url)
+        scenarios = _extract_manual_scenarios(
+            SAMPLE_WEB_TESTABLE_WITH_FIXTURES)
+        # Should have both fixture-tagged and normal scenarios
+        self.assertEqual(len(scenarios), 2)
+        fixture_tagged = [
+            s for s in scenarios
+            if 'Fixture' in s or 'fixture' in s.lower()]
+        non_fixture = [
+            s for s in scenarios
+            if 'Fixture' not in s and 'fixture' not in s.lower()]
+        self.assertGreaterEqual(len(fixture_tagged), 1)
+        self.assertGreaterEqual(len(non_fixture), 1)
+
+
+class TestFixtureCleanupAfterCompletion(unittest.TestCase):
+    """Scenario: Fixture cleanup after scenario completion
+
+    Given a fixture-backed scenario has completed (pass or fail)
+    When `/pl-web-verify` moves to the next scenario
+    Then the fixture-backed CDD server has been stopped
+    And the fixture checkout directory has been removed
+
+    Test: Verifies skill file documents cleanup protocol for fixture
+    resources after scenario execution.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_skill_documents_server_stop(self):
+        """Skill file documents stopping the fixture-backed server."""
+        # The cleanup section should mention stopping the server
+        self.assertIn('stop', self.command_content.lower())
+        self.assertIn('fixture', self.command_content.lower())
+
+    def test_skill_references_fixture_cleanup(self):
+        """Skill file references fixture.sh cleanup command."""
+        self.assertIn('fixture.sh cleanup', self.command_content)
+
+    def test_skill_cleanup_on_both_pass_and_fail(self):
+        """Skill file specifies cleanup regardless of pass/fail."""
+        self.assertIn('pass or fail', self.command_content.lower())
+
+    def test_non_fixture_scenarios_use_normal_flow(self):
+        """Skill file documents that non-fixture scenarios use normal flow."""
+        self.assertIn('Non-fixture scenarios', self.command_content)
 
 
 # =============================================================================

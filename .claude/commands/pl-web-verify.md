@@ -106,6 +106,24 @@ For each eligible feature, resolve the final URL before navigating:
 
 4. **No start command:** If the server is not reachable and no `> Web Start:` metadata exists, report: "Server not reachable at `<resolved_url>`. No `> Web Start:` command configured." and skip this feature (continue with others).
 
+### Step 3.6 — Fixture-Backed Testing (Per Scenario)
+
+When a feature has both `> Web Testable:` and `> Test Fixtures: <repo-url>` metadata, individual scenarios may reference fixture tags to run against pre-built project states instead of the live project.
+
+**Fixture detection:** For each in-scope scenario, check whether any Given step references a fixture tag (pattern: `fixture tag "<tag-path>"`). If no Given step references a fixture, use the normal port resolution from Step 3.5.
+
+**For each scenario with a fixture tag reference:**
+
+1. **Checkout:** Run `tools/test_support/fixture.sh checkout <repo-url> <tag>` via Bash to obtain the fixture state in a temp directory. The command prints the checkout path to stdout.
+2. **Start server:** Run `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0` via Bash (background). The `--port 0` flag binds an ephemeral port. Read the actual port from the server's stdout (e.g., `Serving on port 52341`).
+3. **URL construction:** Use `http://localhost:<ephemeral-port>` as the test URL for this scenario. This overrides both the `> Web Testable:` URL and `> Web Port File:` resolution entirely.
+4. **Execute scenario:** Run the scenario's When/Then steps against the fixture-backed server using Steps 5-6 below.
+5. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `tools/test_support/fixture.sh cleanup <fixture-dir>` via Bash.
+
+**Error handling:** If fixture checkout fails (tag not found, repo unreachable), mark the scenario as INCONCLUSIVE with a note: "Fixture checkout failed for tag `<tag>`: <error>". Continue with other scenarios in the feature normally.
+
+**Non-fixture scenarios:** Scenarios without fixture tag references in the same feature continue using the normal port resolution flow (Step 3.5) against the live project.
+
 ### Step 4 — Browser Setup
 
 For each eligible feature:
