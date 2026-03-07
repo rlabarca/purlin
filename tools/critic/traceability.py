@@ -46,7 +46,7 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
     test_files = []
 
     def _is_test_file(fname):
-        return fname.startswith('test')
+        return fname.startswith('test') and not fname.endswith('.pyc')
 
     # Primary: tests/<feature_stem>/
     tests_dir = os.path.join(project_root, 'tests', feature_stem)
@@ -59,6 +59,8 @@ def discover_test_files(project_root, feature_stem, tools_root='tools'):
     tools_abs = os.path.join(project_root, tools_root)
     if os.path.isdir(tools_abs):
         for entry in os.listdir(tools_abs):
+            if entry == '__pycache__':
+                continue
             entry_path = os.path.join(tools_abs, entry)
             if os.path.isdir(entry_path):
                 for fname in os.listdir(entry_path):
@@ -153,9 +155,9 @@ def extract_generic_test_entry(filepath):
     Returns list of dicts: [{"name": str, "body": str}]
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return []
 
     basename = os.path.splitext(os.path.basename(filepath))[0]
