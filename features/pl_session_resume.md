@@ -205,7 +205,6 @@ Uncommitted:    [none | summary]
 
 #### 2.3.7 Step 7 -- Cleanup and Confirm
 
-- Reset the current session's context guard counter: write `0` to `.purlin/runtime/turn_count_$PPID`. This zeroes only the current session's counter. Other concurrent agents are unaffected.
 - If a checkpoint file was read in Step 2, delete it (it has been consumed).
 - Ask: "Ready to continue from here, or would you like to adjust?"
 - If the user says "go" (or equivalent), begin executing the work plan starting with the first item.
