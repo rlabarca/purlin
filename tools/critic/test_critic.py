@@ -4173,7 +4173,7 @@ Reqs.
         try:
             scope = 'targeted:Auto Alpha,Manual Gamma'
             result = self._make_result(scope)
-            cdd = self._make_cdd_status('todo', scope)
+            cdd = self._make_cdd_status('testing', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
                           if i['category'] == 'targeted_scope_gap']
@@ -4196,7 +4196,7 @@ Reqs.
         critic.FEATURES_DIR = self.features_dir
         try:
             result = self._make_result('full')
-            cdd = self._make_cdd_status('todo', 'full')
+            cdd = self._make_cdd_status('testing', 'full')
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
                           if i['category'] == 'targeted_scope_gap']
@@ -4204,15 +4204,15 @@ Reqs.
         finally:
             critic.FEATURES_DIR = orig_features
 
-    def test_no_flag_when_lifecycle_is_testing(self):
-        """Features in TESTING state are exempt (only TODO is audited)."""
+    def test_no_flag_when_lifecycle_is_todo(self):
+        """Features in TODO state are exempt (only TESTING/COMPLETE is audited)."""
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
         try:
             scope = 'targeted:Auto Alpha'
             result = self._make_result(scope)
-            cdd = self._make_cdd_status('testing', scope)
+            cdd = self._make_cdd_status('todo', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
                           if i['category'] == 'targeted_scope_gap']
@@ -4230,7 +4230,7 @@ Reqs.
                      'Manual Delta,Visual:Dashboard Overview,'
                      'Visual:Settings Panel')
             result = self._make_result(scope)
-            cdd = self._make_cdd_status('todo', scope)
+            cdd = self._make_cdd_status('testing', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
                           if i['category'] == 'targeted_scope_gap']
@@ -4247,7 +4247,7 @@ Reqs.
             scope = ('targeted:Auto Alpha,Auto Beta,Manual Gamma,'
                      'Manual Delta')
             result = self._make_result(scope)
-            cdd = self._make_cdd_status('todo', scope)
+            cdd = self._make_cdd_status('testing', scope)
             items = generate_action_items(result, cdd_status=cdd)
             arch_scope = [i for i in items['architect']
                           if i['category'] == 'targeted_scope_gap']
