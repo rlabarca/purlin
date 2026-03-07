@@ -571,8 +571,8 @@ def check_scenario_classification(scenarios, content=''):
 def _has_explicit_none_manual(content):
     """Check if Manual Scenarios subsection explicitly declares 'None'."""
     match = re.search(
-        r'###\s+Manual\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
-        content, re.DOTALL | re.IGNORECASE)
+        r'^###\s+Manual\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
+        content, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if match:
         body = match.group(1).strip()
         return body.lower() == 'none' or body.lower().startswith('none')
@@ -582,8 +582,8 @@ def _has_explicit_none_manual(content):
 def _has_explicit_none_automated(content):
     """Check if Automated Scenarios subsection explicitly declares 'None'."""
     match = re.search(
-        r'###\s+Automated\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
-        content, re.DOTALL | re.IGNORECASE)
+        r'^###\s+Automated\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
+        content, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if match:
         body = match.group(1).strip()
         return body.lower() == 'none' or body.lower().startswith('none')
@@ -1235,9 +1235,12 @@ def generate_action_items(feature_result, cdd_status=None):
     # See spec Section 2.10 "SPEC_UPDATED Lifecycle Routing".
 
     # Targeted Scope Completeness audit (policy_critic Section 2.10):
-    # When a feature has change_scope "targeted:..." and builder "TODO",
+    # When a feature has change_scope "targeted:..." and builder "DONE",
     # flag scenarios/screens in the spec that are NOT listed in the scope.
-    if lifecycle_state == 'todo' and cdd_status is not None:
+    # Suppressed when builder is TODO — the HIGH action item already covers
+    # the work. Use lifecycle_state as proxy since role_status is computed
+    # after action items (lifecycle testing/complete implies builder DONE).
+    if lifecycle_state in ('testing', 'complete') and cdd_status is not None:
         change_scope = _get_feature_change_scope(feature_file, cdd_status)
         if change_scope and change_scope.startswith('targeted:'):
             targeted_names = [
