@@ -25,11 +25,15 @@ setup_launcher_sandbox() {
     CAPTURE_FILE="$MOCK_DIR/captured_args"
 
     # Minimal instruction stubs so launcher cat commands don't fail
-    mkdir -p "$SANDBOX/instructions" "$SANDBOX/.purlin"
+    mkdir -p "$SANDBOX/instructions" "$SANDBOX/.purlin" "$SANDBOX/.purlin/runtime"
     echo "# stub" > "$SANDBOX/instructions/HOW_WE_WORK_BASE.md"
     echo "# stub" > "$SANDBOX/instructions/BUILDER_BASE.md"
     echo "# stub" > "$SANDBOX/instructions/ARCHITECT_BASE.md"
     echo "# stub" > "$SANDBOX/instructions/QA_BASE.md"
+
+    # Copy config resolver so launchers can read agent config
+    mkdir -p "$SANDBOX/tools/config"
+    cp "$SCRIPT_DIR/config/resolve_config.py" "$SANDBOX/tools/config/"
 
     # Mock claude that captures its args and exits 0
     cat > "$MOCK_DIR/claude" << MOCK_EOF
