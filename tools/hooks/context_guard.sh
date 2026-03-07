@@ -107,6 +107,13 @@ if [ -z "$GUARD_ENABLED" ]; then
     GUARD_ENABLED="true"
 fi
 
+# When guard is disabled, exit immediately — no counter increment, no output.
+# Re-enabling mid-session resumes from wherever the counter was (or 0 if never active).
+if [[ "$GUARD_ENABLED" != "true" ]]; then
+    _JSON_DONE=1  # Suppress fallback JSON from EXIT trap
+    exit 0
+fi
+
 # Compute SESSION_HASH from session_id for per-session counter files.
 # Each session gets its own counter file: turn_count_<AGENT_ID>_<SESSION_HASH>.
 # Fallback: when session_id unavailable, hash "agent-<AGENT_ID>" for single file per PPID.
@@ -226,16 +233,9 @@ fi
 
 # Read current count and increment. Each session has its own counter file,
 # so subagents and context clears automatically get independent counters.
-# Counter always increments, even when guard disabled.
 COUNT=$(cat "$TURN_COUNT_FILE" 2>/dev/null || echo "0")
 COUNT=$((COUNT + 1))
 echo "$COUNT" > "$TURN_COUNT_FILE"
-
-# When guard is disabled, no output — counter still increments in background.
-if [[ "$GUARD_ENABLED" != "true" ]]; then
-    _JSON_DONE=1  # Suppress JSON output — guard disabled
-    exit 0
-fi
 
 # Output context status on every turn via additionalContext.
 # PostToolUse hooks MUST output JSON with additionalContext for agent visibility.

@@ -196,10 +196,10 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario 7: Per-agent guard disabled suppresses output
+# Scenario 7: Per-agent guard disabled skips counter and output
 ###############################################################################
 echo ""
-echo "[Scenario] Per-agent guard disabled suppresses output"
+echo "[Scenario] Per-agent guard disabled skips counter and output"
 setup_sandbox
 
 echo '{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": false, "model": "claude-opus-4-6"}}}' > "$SANDBOX/.purlin/config.json"
@@ -210,10 +210,10 @@ echo "10" > "$SANDBOX/.purlin/runtime/turn_count_agent-7_${HASH7}"
 OUTPUT=$(run_guard "session-7" "architect" "agent-7" 2>&1)
 COUNTER=$(cat "$SANDBOX/.purlin/runtime/turn_count_agent-7_${HASH7}")
 
-if [[ -z "$OUTPUT" ]] && [[ "$COUNTER" == "11" ]]; then
-    log_pass "No output when guard disabled, counter still incremented to 11"
+if [[ -z "$OUTPUT" ]] && [[ "$COUNTER" == "10" ]]; then
+    log_pass "No output when guard disabled, counter not incremented (still 10)"
 else
-    log_fail "Expected no output and count=11, got output='$OUTPUT' count='$COUNTER'"
+    log_fail "Expected no output and count=10, got output='$OUTPUT' count='$COUNTER'"
 fi
 cleanup_sandbox
 
