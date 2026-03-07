@@ -33,7 +33,7 @@ Fixture states are git tags (not branches). Tags are immutable -- once created, 
 
 - `<project-ref>` is the project branch or version the fixtures target (e.g., `main`, `v2`, `release-1.x`). Most single-branch projects use `main/`.
 - `<feature-name>` matches the feature file name without extension (e.g., `cdd_branch_collab`).
-- `<scenario-slug>` is a kebab-case slug derived from the scenario title (e.g., `sync-state-ahead`).
+- `<scenario-slug>` is an Architect-chosen, short descriptive identifier (2-4 words, kebab-case). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`.
 
 **Examples:**
 - `main/cdd_branch_collab/sync-state-ahead`
@@ -63,6 +63,8 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 **Subcommands:**
 
+- `fixture init [--path <path>]` -- Creates a bare git repo at the convention path (`.purlin/runtime/fixture-repo`). Idempotent: if the repo already exists, prints a message and exits 0. Uses `git init --bare`. The `--path` option overrides the convention path. Prints the repo path to stdout.
+- `fixture add-tag <tag> [--from-dir <path>] [--message <msg>] [--force]` -- Creates a tagged commit in the fixture repo from a source directory. The tag MUST follow the `<ref>/<feature>/<slug>` convention (validated: 3 path segments, lowercase alphanumeric plus hyphens in each segment). `--from-dir` defaults to `$PURLIN_PROJECT_ROOT`. `--message` defaults to `"State for <tag>"`. Errors if the tag already exists unless `--force` is specified. Implementation: temp clone of bare repo, copy source files, commit, tag, push to bare, cleanup temp clone. If the fixture repo does not exist, errors with "Run `fixture init` first."
 - `fixture checkout <repo-url> <tag> [--dir <path>]` -- Shallow clone at the specified tag into a temp directory (or the path specified by `--dir`). Prints the checkout path to stdout. Uses `git clone --depth 1 --branch <tag>` for efficiency.
 - `fixture cleanup <path>` -- Remove the checked-out fixture directory (`rm -rf`). Validates the path is under `/tmp/` or the system temp directory before removing, as a safety guard.
 - `fixture list <repo-url> [--ref <project-ref>]` -- List available fixture tags via `git ls-remote --tags`. Optionally filter by `<project-ref>/` prefix. Output: one tag per line, sorted alphabetically.
@@ -91,12 +93,13 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 ### 2.7 Builder Workflow
 
 1. The Builder reads the feature spec and identifies fixture tag sections declaring needed states.
-2. The Builder creates tags in the fixture repo (at the convention path or per-feature override) following the convention: `<project-ref>/<feature>/<scenario-slug>`.
-3. Each tag points to a commit containing the project state for that scenario.
-4. Each tagged commit has a clear message describing the state it represents.
-5. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
-6. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. Test runners SHOULD auto-invoke this script when the fixture repo is missing.
-   - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_behavior_fixtures.sh`). These are Purlin-specific and not distributed to consumers.
+2. The Builder MUST check whether the fixture repo exists at the convention path (or per-feature override). If it does not exist, the Builder runs the setup script (see step 6) or creates one. The Builder MUST prompt the user when the fixture repo is missing and explain what will be created.
+3. The Builder uses `fixture init` to create the bare repo (if not already present) and `fixture add-tag` to create each declared tag from a constructed state directory.
+4. Each tag points to a commit containing the project state for that scenario.
+5. Each tagged commit has a clear message describing the state it represents.
+6. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
+7. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
+   - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
    - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
 ### 2.8 Integration with /pl-web-verify
@@ -137,6 +140,7 @@ The Critic handles two distinct states when fixture tags are declared:
 |-----|-------------------|
 | `main/test_fixture_repo/repo-with-tags` | Bare git fixture repo with 3 example tags at known commits |
 | `main/test_fixture_repo/empty-repo` | Bare git fixture repo initialized but containing no tags |
+| `main/test_fixture_repo/repo-with-duplicate-tag` | Bare git fixture repo with a pre-existing tag for overwrite testing |
 
 ---
 
@@ -201,6 +205,71 @@ The Critic handles two distinct states when fixture tags are declared:
     And the current project has features/tombstones/old_feature.md
     When `fixture prune <repo-url>` is run
     Then main/old_feature/s1 is listed as an orphan
+
+#### Scenario: Init creates bare repo at convention path
+
+    Given no fixture repo exists at `.purlin/runtime/fixture-repo`
+    When `fixture init` is run
+    Then a bare git repo is created at `.purlin/runtime/fixture-repo`
+    And the repo path is printed to stdout
+    And `git rev-parse --is-bare-repository` in that path returns "true"
+
+#### Scenario: Init is idempotent when repo exists
+
+    Given a fixture repo already exists at `.purlin/runtime/fixture-repo`
+    When `fixture init` is run
+    Then the command exits 0
+    And prints a message indicating the repo already exists
+    And the existing repo is not modified
+
+#### Scenario: Init with explicit path
+
+    Given no fixture repo exists at `/tmp/custom-fixture-repo`
+    When `fixture init --path /tmp/custom-fixture-repo` is run
+    Then a bare git repo is created at `/tmp/custom-fixture-repo`
+    And the custom path is printed to stdout
+
+#### Scenario: Add-tag creates tagged commit from directory
+
+    Given a fixture repo exists at the convention path
+    And a source directory contains files representing project state
+    When `fixture add-tag main/test_feature/my-state --from-dir <source-dir>` is run
+    Then the tag `main/test_feature/my-state` exists in the fixture repo
+    And checking out that tag yields the files from the source directory
+    And the commit message defaults to "State for main/test_feature/my-state"
+
+#### Scenario: Add-tag defaults to project root when from-dir omitted
+
+    Given a fixture repo exists at the convention path
+    And PURLIN_PROJECT_ROOT is set
+    When `fixture add-tag main/test_feature/default-source` is run without --from-dir
+    Then the tag is created from the files in PURLIN_PROJECT_ROOT
+
+#### Scenario: Add-tag rejects invalid tag format
+
+    Given a fixture repo exists at the convention path
+    When `fixture add-tag invalid-tag-no-slashes` is run
+    Then the command exits with a non-zero status
+    And prints an error about invalid tag format
+    And no tag is created
+
+#### Scenario: Add-tag refuses existing tag without force
+
+    Given a fixture repo exists at the convention path
+    And the tag `main/test_feature/existing-state` already exists
+    When `fixture add-tag main/test_feature/existing-state` is run without --force
+    Then the command exits with a non-zero status
+    And prints an error that the tag already exists
+    And the existing tag is not modified
+
+#### Scenario: Add-tag with force overwrites existing tag
+
+    Given a fixture repo exists at the convention path
+    And the tag `main/test_feature/existing-state` already exists
+    When `fixture add-tag main/test_feature/existing-state --force` is run
+    Then the command exits 0
+    And the tag `main/test_feature/existing-state` points to a new commit
+    And checking out that tag yields the updated files
 
 ### Manual Scenarios (Human Verification Required)
 
