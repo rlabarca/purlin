@@ -120,13 +120,16 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 
 Restore mode follows an 8-step sequence. Each step is mandatory unless noted otherwise.
 
-#### 2.3.0 Step 0 -- Reset Context Guard
+#### 2.3.0 Step 0 -- Clean Up Previous Session Files
 
-Before any other restore step, reset the current session's context guard counter:
+Before any other restore step, remove stale context guard files from the previous session:
 
-1. Write `0` to `.purlin/runtime/turn_count_$PPID`.
+1. `rm -f .purlin/runtime/turn_count_${PPID}_*`
+2. `rm -f .purlin/runtime/session_meta_$PPID`
 
-**Rationale:** `$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. This targets only the current session's counter. Other concurrent agents' counters are unaffected. No wildcard resets or `session_id` file deletions are needed — the PPID-based design makes each agent's files inherently isolated.
+**Rationale:** `$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. The wildcard `turn_count_${PPID}_*` removes all per-session counter files for this process. Other concurrent agents' counters are unaffected.
+
+**Note:** This step is optional cleanup. The per-session counter design (see `context_guard.md` Section 2.3) ensures that context clears are handled automatically — each new `session_id` produces a fresh counter file starting at 1. This cleanup removes stale files from previous sessions for tidiness and ensures a clean slate when resuming.
 
 #### 2.3.1 Step 1 -- Role Detection (3-Tier Fallback)
 

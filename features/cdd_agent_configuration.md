@@ -68,7 +68,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 *   **Scan Locations:**
     1.  `<PROJECT_ROOT>/.purlin/runtime/` — main project directory.
     2.  `<PROJECT_ROOT>/.worktrees/<name>/.purlin/runtime/` — each active worktree directory (detected via `get_isolation_worktrees()`).
-*   **File Matching:** For each `turn_count_<PID>` file found, read the corresponding `session_meta_<PID>` to determine the role (second line of the three-line format defined in `context_guard.md` Section 2.8). If no `session_meta` file exists for a given PID, that counter is excluded.
+*   **File Matching:** Counter files use the per-session format `turn_count_<PID>_<SESSION_HASH>` (see `context_guard.md` Section 2.3). For each file, extract the PID from the middle segment (between `turn_count_` and the second underscore). Read the corresponding `session_meta_<PID>` to determine the role (second line of the three-line format defined in `context_guard.md` Section 2.8). If no `session_meta` file exists for a given PID, that counter is excluded. When multiple counter files exist for the same PID (multiple sessions), report the **highest count** among them (the active session has the highest count; old sessions have stale lower counts).
 *   **Liveness Check:** Only include counters whose PID suffix corresponds to a currently running process (Python `os.kill(pid, 0)` succeeds). Dead-process files are excluded from the response but NOT deleted by the server — cleanup is the hook's responsibility per `context_guard.md` Section 2.8.
 *   **Response Format:**
     ```json
@@ -178,34 +178,42 @@ Individual count values in **both** the collapsed summary (Section 2.4) and the 
     And config.local.json contains agents.architect.context_guard_threshold as 30
 
 #### Scenario: GET /context-guard/counters returns per-role arrays
-    Given turn_count_100 exists in .purlin/runtime/ with value "5"
+    Given turn_count_100_abc123 exists in .purlin/runtime/ with value "5"
     And session_meta_100 exists with role "architect" on line 2
-    And turn_count_200 exists in .purlin/runtime/ with value "12"
+    And turn_count_200_def456 exists in .purlin/runtime/ with value "12"
     And session_meta_200 exists with role "builder" on line 2
-    And turn_count_300 exists in .purlin/runtime/ with value "3"
+    And turn_count_300_ghi789 exists in .purlin/runtime/ with value "3"
     And session_meta_300 exists with role "builder" on line 2
     And processes 100, 200, and 300 are alive
     When a GET request is sent to /context-guard/counters
     Then the response contains {"architect": [5], "builder": [3, 12], "qa": []}
 
+#### Scenario: Multiple session files for same PID reports highest count
+    Given turn_count_100_abc123 exists in .purlin/runtime/ with value "30"
+    And turn_count_100_def456 exists in .purlin/runtime/ with value "5"
+    And session_meta_100 exists with role "architect" on line 2
+    And process 100 is alive
+    When a GET request is sent to /context-guard/counters
+    Then the architect array contains [30] (highest of the two session files)
+
 #### Scenario: Dead process counters excluded from response
-    Given turn_count_999 exists in .purlin/runtime/ with value "42"
+    Given turn_count_999_abc123 exists in .purlin/runtime/ with value "42"
     And session_meta_999 exists with role "builder" on line 2
     And process 999 is not running
     When a GET request is sent to /context-guard/counters
     Then the builder array does not contain 42
 
 #### Scenario: Worktree agent counters included in response
-    Given turn_count_400 exists in .worktrees/feat1/.purlin/runtime/ with value "7"
+    Given turn_count_400_abc123 exists in .worktrees/feat1/.purlin/runtime/ with value "7"
     And session_meta_400 exists in the same directory with role "builder" on line 2
-    And turn_count_500 exists in .purlin/runtime/ with value "20"
+    And turn_count_500_def456 exists in .purlin/runtime/ with value "20"
     And session_meta_500 exists with role "builder" on line 2
     And processes 400 and 500 are alive
     When a GET request is sent to /context-guard/counters
     Then the builder array contains [7, 20]
 
 #### Scenario: Counter without session_meta is excluded
-    Given turn_count_600 exists in .purlin/runtime/ with value "10"
+    Given turn_count_600_abc123 exists in .purlin/runtime/ with value "10"
     And no session_meta_600 file exists
     And process 600 is alive
     When a GET request is sent to /context-guard/counters

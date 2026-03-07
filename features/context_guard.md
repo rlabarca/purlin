@@ -17,9 +17,9 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 ### 2.1 Turn Counter
 
 - A shell script (`tools/hooks/context_guard.sh`) runs after every tool call via Claude Code's `PostToolUse` hook system.
-- The script increments an integer counter stored in `.purlin/runtime/turn_count_<AGENT_ID>`, where `AGENT_ID` is the Claude Code process PID (`$PPID` from the hook script's perspective).
+- The script increments an integer counter stored in `.purlin/runtime/turn_count_<AGENT_ID>_<SESSION_HASH>`, where `AGENT_ID` is the Claude Code process PID (`$PPID` from the hook script's perspective) and `SESSION_HASH` is a short deterministic hash of the session_id (see Section 2.3).
 - `AGENT_ID` may be overridden via the `CONTEXT_GUARD_AGENT_ID` environment variable (for testing).
-- Each Claude Code process gets its own counter file. No counter files are shared between processes.
+- Each combination of Claude Code process and session gets its own counter file. No counter files are shared between processes or sessions.
 - The counter file contains only the integer count (no other data).
 
 ### 2.2 Threshold Configuration
@@ -47,14 +47,18 @@ A Claude Code `PostToolUse` hook that monitors session turn count and triggers a
 - **Fallback chain:** per-agent `context_guard_threshold` > global `context_guard_threshold` > hardcoded 45.
 - **Enabled chain:** per-agent `context_guard` > default `true`.
 
-### 2.3 Session Detection
+### 2.3 Per-Session Counter Design
 
 - Each Claude Code process is identified by its OS PID (`$PPID` from the hook script's perspective), referred to as `AGENT_ID`.
-- **New process** = new PPID = no existing `turn_count_<AGENT_ID>` or `session_meta_<AGENT_ID>` files → create fresh files, start counter at 1.
-- **Same process** = same PPID = existing files → read `session_id` from `session_meta_<AGENT_ID>` and compare with the `session_id` in the hook's stdin input:
-    - **Match:** This is the parent Claude Code process → increment counter.
-    - **Mismatch:** This is a subagent (Task tool) running under the same Claude Code process → read counter without incrementing.
-- No file-age heuristics or timestamp-based detection is used.
+- Counter files are keyed to both `AGENT_ID` and a `SESSION_HASH`: `turn_count_<AGENT_ID>_<SESSION_HASH>`.
+- `SESSION_HASH` is a short deterministic hash of the `session_id` from Claude Code's PostToolUse hook stdin JSON input, computed as `echo -n "$SESSION_ID" | cksum | cut -d' ' -f1` (8-10 digit decimal string).
+- **session_id unavailable:** When stdin parsing fails or `session_id` is absent, fall back to a hash of `"agent-<AGENT_ID>"`. This produces a single counter file per PPID, equivalent to pre-per-session behavior (graceful degradation).
+- On every invocation: compute `SESSION_HASH` from the hook input's `session_id`, read or create the matching `turn_count_<AGENT_ID>_<SESSION_HASH>` file, and increment.
+- **Context clear:** When Claude Code clears context (e.g., after plan mode exit), a new `session_id` is issued. The hook automatically creates a new counter file starting at 1. The previous session's counter file is unaffected.
+- **Subagents:** Task-launched subagents (Explore, Plan, etc.) run with a different `session_id` under the same PPID. They get their own counter file and do not inflate the parent session's count.
+- **Same session continuity:** Consecutive tool calls within the same session produce the same `SESSION_HASH` and increment the same counter file.
+- `session_meta_<AGENT_ID>` still stores `session_id` (informational/debugging), role, and process start time. It is written on the first invocation for each `AGENT_ID` and updated when the session_id changes.
+- No session_id mismatch detection or `IS_SUBAGENT` flag is needed. The per-session file design eliminates the ambiguity between subagents and context clears entirely.
 
 ### 2.4 Context Status Output
 
@@ -99,17 +103,19 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
 ### 2.7 Multi-Instance Isolation
 
 - Each Claude Code process is identified by its OS PID (`$PPID` from the hook script's perspective), overridable via `CONTEXT_GUARD_AGENT_ID` for testing.
-- File naming: `turn_count_<PID>`, `session_meta_<PID>`.
-- Multiple agents of the same role running concurrently in different terminals get different PIDs and track independently.
+- File naming: `turn_count_<PID>_<SESSION_HASH>`, `session_meta_<PID>`.
+- Multiple sessions within the same PID produce multiple counter files (one per session). Multiple agents of the same role running concurrently in different terminals get different PIDs and track independently.
 - No agent can read, write, or reset another agent's counter files (except during cleanup of dead processes per Section 2.8).
 
 ### 2.8 Stale File Cleanup
 
 - On every hook invocation (within the lock), scan `turn_count_*` and `session_meta_*` files in `.purlin/runtime/`.
-- For each file with a numeric PID suffix that is NOT the current `AGENT_ID`:
+- For per-session counter files (`turn_count_<PID>_<HASH>`), extract the PID from the filename: the segment between the first underscore after `turn_count_` and the next underscore (i.e., `turn_count_<PID>_<HASH>` → PID is the middle segment).
+- For each extracted PID that is NOT the current `AGENT_ID`:
     - Check process liveness via `kill -0 $PID`.
-    - If the process is dead → delete the file.
-    - If the process is alive → verify process identity by comparing the stored process start time (third line of `session_meta_<PID>`) with the actual process start time (`ps -p $PID -o lstart=`). If they differ → PID was recycled → delete the file.
+    - If the process is dead → delete all matching `turn_count_<PID>_*` files and `session_meta_<PID>`.
+    - If the process is alive → verify process identity by comparing the stored process start time (third line of `session_meta_<PID>`) with the actual process start time (`ps -p $PID -o lstart=`). If they differ → PID was recycled → delete all matching files.
+- Optionally: for the current `AGENT_ID`, clean up counter files from previous sessions — delete any `turn_count_<AGENT_ID>_*` that does not match the current `SESSION_HASH`.
 - `session_meta` format (three lines):
     ```
     <session_id>
@@ -120,9 +126,10 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
 ### 2.9 Counter Reset Protocol
 
 - Counter reset is **PPID-scoped**: only the current Claude Code process's files are affected.
-- The `/pl-resume` protocol resets the counter by writing `0` to `turn_count_$PPID` (where `$PPID` is available in bash commands run by the same Claude Code process).
-- No wildcard resets. No other agent's files are touched.
-- After reset, the next hook invocation for this session reads 0 and increments to 1.
+- The `/pl-resume` protocol resets by deleting all per-session counter files for the current PPID: `rm -f .purlin/runtime/turn_count_${PPID}_*` and `rm -f .purlin/runtime/session_meta_$PPID`.
+- No other agent's files are touched.
+- After reset, the next hook invocation creates a fresh counter file for the new session starting at 1.
+- **Note:** This reset is optional cleanup, not required for correctness. The per-session counter design ensures that context clears (which produce a new `session_id`) automatically get a fresh counter file. The reset removes stale files from previous sessions for tidiness.
 
 ---
 
@@ -205,22 +212,27 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
     When the context guard script runs
     Then stdout contains "CONTEXT GUARD: 1 / 60 used"
 
-#### Scenario: Subagent detection via session_meta mismatch
+#### Scenario: Context clear produces fresh counter
 
-    Given session_meta_<AGENT_ID> exists with a stored session_id
-    And the hook receives a different session_id in its stdin input
-    And the guard is enabled
-    When the context guard script runs
-    Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
-    And the turn count file is NOT incremented
+    Given turn_count_<AGENT_ID>_<HASH_A> exists with value "30" for session A
+    When the hook runs with a different session_id (session B)
+    Then a new turn_count_<AGENT_ID>_<HASH_B> file is created with value "1"
+    And turn_count_<AGENT_ID>_<HASH_A> still contains "30"
+
+#### Scenario: Subagent gets independent counter
+
+    Given the parent session has turn_count_<AGENT_ID>_<HASH_PARENT> with value "20"
+    When a subagent runs with a different session_id under the same PPID
+    Then a new turn_count_<AGENT_ID>_<HASH_SUB> file is created with value "1"
+    And turn_count_<AGENT_ID>_<HASH_PARENT> still contains "20"
 
 #### Scenario: Counter resets via PPID-scoped reset command
 
-    Given turn_count_<AGENT_ID> exists with value "42"
-    When "0" is written to turn_count_<AGENT_ID>
-    And the context guard script runs
-    Then the turn count file contains "1"
-    And stdout contains "CONTEXT GUARD: 1 /"
+    Given turn_count_<AGENT_ID>_<HASH_A> exists with value "42"
+    And turn_count_<AGENT_ID>_<HASH_B> exists with value "10"
+    When "rm -f turn_count_<AGENT_ID>_*" is executed
+    Then no turn_count files exist for AGENT_ID
+    And the next hook invocation creates a fresh counter file with value "1"
 
 #### Scenario: User-visible status line emitted to stderr
 
@@ -234,7 +246,7 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
 #### Scenario: Guard output on every tool call with no silent exits
 
     Given the guard is enabled for the current agent
-    When the context guard script runs under any condition (new session, existing session, subagent)
+    When the context guard script runs under any condition (new session, existing session, new session via context clear)
     Then stdout contains JSON with additionalContext matching "CONTEXT GUARD:"
     And stderr contains a line matching "CONTEXT GUARD:"
 
@@ -246,29 +258,30 @@ The user-visible stderr status line uses ANSI true-color (24-bit) escape codes t
     And turn_count_<PID_B> contains "5"
     And neither counter affected the other
 
-#### Scenario: Reset only affects current session
+#### Scenario: Reset only affects current agent's files
 
-    Given turn_count_<PID_A> exists with value "30"
-    And turn_count_<PID_B> exists with value "20"
-    When "0" is written to turn_count_<PID_A>
-    Then turn_count_<PID_A> contains "0"
-    And turn_count_<PID_B> still contains "20"
+    Given turn_count_<PID_A>_<HASH_X> exists with value "30"
+    And turn_count_<PID_B>_<HASH_Y> exists with value "20"
+    When "rm -f turn_count_<PID_A>_*" is executed
+    Then no turn_count files exist for PID_A
+    And turn_count_<PID_B>_<HASH_Y> still contains "20"
 
 #### Scenario: Stale file cleanup removes dead process files
 
-    Given turn_count_<DEAD_PID> and session_meta_<DEAD_PID> exist
+    Given turn_count_<DEAD_PID>_<HASH> and session_meta_<DEAD_PID> exist
     And the process with DEAD_PID is no longer running
     When the context guard script runs for a different AGENT_ID
-    Then turn_count_<DEAD_PID> is deleted
+    Then all turn_count_<DEAD_PID>_* files are deleted
     And session_meta_<DEAD_PID> is deleted
 
 #### Scenario: PID recycling does not prevent cleanup
 
     Given session_meta_<PID> exists with a stored process start time
+    And turn_count_<PID>_<HASH> exists
     And a different process now occupies that PID (different start time)
     When the context guard script runs stale file cleanup
     Then session_meta_<PID> is deleted
-    And turn_count_<PID> is deleted
+    And all turn_count_<PID>_* files are deleted
 
 #### Scenario: Stderr output is uncolored in normal zone
 
