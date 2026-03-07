@@ -4838,6 +4838,11 @@ function refreshContextGuardCounters() {{
       ['architect', 'builder', 'qa'].forEach(function(role) {{
         var span = document.getElementById('agent-cg-counter-' + role);
         if (!span) return;
+        var acfg = agentsConfig && agentsConfig.agents ? (agentsConfig.agents[role] || {{}}) : {{}};
+        if (acfg.context_guard === false) {{
+          span.innerHTML = '';
+          return;
+        }}
         var counts = data[role] || [];
         span.innerHTML = renderColoredCounts(counts, role);
       }});
@@ -4854,6 +4859,8 @@ function updateCollapsedCgSummary(data) {{
   roles.forEach(function(role) {{
     var counts = data[role] || [];
     if (counts.length === 0) return;
+    var acfg = agentsConfig && agentsConfig.agents ? (agentsConfig.agents[role] || {{}}) : {{}};
+    if (acfg.context_guard === false) return;
     var colored = renderColoredCounts(counts, role);
     parts.push('<span style="color:var(--purlin-primary)">' + role.charAt(0).toUpperCase() + role.slice(1) + '</span>: ' + colored);
   }});

@@ -853,6 +853,61 @@ class TestCollapsedContextGuardSummary(unittest.TestCase):
         self.assertIn("cgSum) cgSum.style.display = 'none'", html)
 
 
+class TestCounterValuesHiddenWhenGuardDisabled(unittest.TestCase):
+    """Scenario: Counter Values Hidden When Guard Disabled
+
+    Given the qa agent has context_guard false
+    And a running qa agent has a turn_count file
+    When the counter value is rendered
+    Then the counter span for qa is empty (no count displayed)
+    And the collapsed summary excludes qa from the context guard display
+    """
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_refresh_skips_disabled_guard_agents(self, mock_run, mock_status):
+        """refreshContextGuardCounters sets empty innerHTML when guard disabled."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # The refresh function must check context_guard before rendering
+        self.assertIn("acfg.context_guard === false", html)
+        # When guard disabled, span.innerHTML is set to empty string
+        self.assertIn("span.innerHTML = ''", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_collapsed_summary_excludes_disabled_guard(self, mock_run, mock_status):
+        """updateCollapsedCgSummary skips roles with context_guard false."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # Extract the updateCollapsedCgSummary function body
+        summary_fn_start = html.find("function updateCollapsedCgSummary")
+        self.assertGreater(summary_fn_start, 0)
+        # The function must check context_guard before including a role
+        summary_section = html[summary_fn_start:summary_fn_start + 600]
+        self.assertIn("context_guard === false", summary_section)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_guard_check_precedes_count_render(self, mock_run, mock_status):
+        """Guard disabled check occurs before renderColoredCounts in refresh."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # In refreshContextGuardCounters, the guard check must come before
+        # the renderColoredCounts call
+        refresh_start = html.find("function refreshContextGuardCounters")
+        refresh_section = html[refresh_start:refresh_start + 800]
+        guard_check_pos = refresh_section.find("acfg.context_guard === false")
+        render_pos = refresh_section.find("renderColoredCounts(counts, role)")
+        self.assertGreater(guard_check_pos, 0)
+        self.assertGreater(render_pos, 0)
+        self.assertLess(guard_check_pos, render_pos,
+                        "Guard disabled check must precede renderColoredCounts")
+
+
 # =============================================================================
 # Test runner: writes results to tests/cdd_agent_configuration/tests.json
 # =============================================================================
