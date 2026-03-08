@@ -4,7 +4,7 @@
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
-[TODO]
+[TODO] <!-- reset: role-scoped checkpoint files need Builder implementation -->
 
 ## 1. Overview
 
