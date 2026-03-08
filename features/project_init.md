@@ -59,7 +59,8 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
-5.  **Refresh Summary:** Print a concise summary (Section 2.8).
+5.  **Launcher Repair:** For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`), if the file does NOT exist at the project root, generate it. Existing launchers are never modified without `--regenerate-launchers`. This ensures that renamed or newly introduced launchers are created on upgrade without overwriting user customizations.
+6.  **Refresh Summary:** Print a concise summary (Section 2.8).
 
 ### 2.4.1 Refresh Mode Exclusions
 
@@ -70,7 +71,7 @@ Refresh mode MUST NEVER modify:
 *   `.purlin/release/` (any file)
 *   `.gitignore`
 *   `features/` directory
-*   Launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) — UNLESS the `--regenerate-launchers` flag is passed (Section 2.9).
+*   Launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) that already exist — UNLESS the `--regenerate-launchers` flag is passed (Section 2.9). Missing launchers are always created (Section 2.4 step 5).
 
 ### 2.5 Project-Root Shim (`pl-init.sh`)
 
@@ -131,7 +132,7 @@ If CDD symlinks were repaired or the shim was updated, append a brief note.
 
 ### 2.9 CLI Flags
 
-*   **`--regenerate-launchers`:** When passed, refresh mode ALSO regenerates launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`), overwriting existing ones. Without this flag, launchers are never touched in refresh mode.
+*   **`--regenerate-launchers`:** When passed, refresh mode ALSO regenerates launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`), overwriting existing ones. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist at the project root. Without this flag, existing launchers are never modified (but missing launchers are still created per Section 2.4 step 5).
 *   **`--quiet`:** Suppresses all non-error output. Intended for scripted use (e.g., called by `/pl-update-purlin`). Errors still print to stderr.
 
 ### 2.10 Idempotency
@@ -187,23 +188,25 @@ The test script MUST include assertions for all of the following. Each test MUST
 19. **Upstream SHA updated on refresh:** Modify the submodule HEAD (e.g., create a commit). Run refresh. Assert `.purlin/.upstream_sha` contains the new SHA.
 20. **Config and overrides untouched on refresh:** Record checksums of `.purlin/config.json` and all `*_OVERRIDES.md` before refresh. Run refresh. Assert checksums match.
 21. **CDD symlinks repaired on refresh:** Delete one CDD symlink. Run refresh. Assert it is recreated.
-22. **Shim self-update on refresh:** Modify the submodule HEAD (new commit). Run refresh. Assert `purlin_init.sh` header contains the updated SHA.
+22. **Missing launchers created on refresh:** Delete `pl-run-architect.sh`. Run refresh (no `--regenerate-launchers` flag). Assert `pl-run-architect.sh` is recreated and executable. Assert existing `pl-run-builder.sh` was NOT modified.
+23. **Shim self-update on refresh:** Modify the submodule HEAD (new commit). Run refresh. Assert `purlin_init.sh` header contains the updated SHA.
 
 **CLI Flag Tests:**
 
-23. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
-24. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
-25. **`--regenerate-launchers` regenerates scripts:** Modify `pl-run-architect.sh` content. Run `init.sh --regenerate-launchers`. Assert `pl-run-architect.sh` was overwritten with fresh content.
-26. **Refresh without `--regenerate-launchers` preserves launchers:** Modify `pl-run-architect.sh` content. Run `init.sh` (no flag). Assert `pl-run-architect.sh` was NOT overwritten.
+24. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
+25. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
+26. **`--regenerate-launchers` regenerates scripts:** Modify `pl-run-architect.sh` content. Run `init.sh --regenerate-launchers`. Assert `pl-run-architect.sh` was overwritten with fresh content.
+27. **`--regenerate-launchers` removes stale launchers:** Create stale `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (old naming convention). Run `init.sh --regenerate-launchers`. Assert stale launchers are removed. Assert only `pl-run-*.sh` launchers remain.
+28. **Refresh without `--regenerate-launchers` preserves launchers:** Modify `pl-run-architect.sh` content. Run `init.sh` (no flag). Assert `pl-run-architect.sh` was NOT overwritten.
 
 **Standalone Guard Tests:**
 
-27. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
+29. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
 
 **Ergonomic Symlink Tests:**
 
-28. **Submodule root symlink exists:** Assert `<submodule>/pl-init.sh` is a symlink to `tools/init.sh`.
-29. **Submodule root symlink works:** Run `<submodule>/pl-init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
+30. **Submodule root symlink exists:** Assert `<submodule>/pl-init.sh` is a symlink to `tools/init.sh`.
+31. **Submodule root symlink works:** Run `<submodule>/pl-init.sh`. Assert it behaves identically to `<submodule>/tools/init.sh`.
 
 #### 2.12.3 Test Output Format
 
@@ -330,6 +333,16 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
     And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
 
+#### Scenario: Missing Launchers Created on Refresh Without Flag
+
+    Given .purlin/ already exists at the project root
+    And pl-run-architect.sh does NOT exist at the project root (e.g., after an upgrade that renamed launchers)
+    And pl-run-builder.sh exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then pl-run-architect.sh is generated at the project root and is executable
+    And pl-run-builder.sh is NOT modified (existing launcher preserved)
+    And the refresh summary notes the launcher creation
+
 #### Scenario: Idempotent Repeated Runs
 
     Given Purlin is added as a submodule at "purlin/"
@@ -345,6 +358,14 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     When the user runs "purlin/tools/init.sh --regenerate-launchers"
     Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh are regenerated
     And the regenerated scripts match current launcher spec (concatenation order, PURLIN_PROJECT_ROOT export)
+
+#### Scenario: --regenerate-launchers Removes Stale Launchers
+
+    Given .purlin/ already exists at the project root
+    And stale launcher scripts run_architect.sh, run_builder.sh, run_qa.sh exist at the project root
+    When the user runs "purlin/tools/init.sh --regenerate-launchers"
+    Then run_architect.sh, run_builder.sh, run_qa.sh are removed
+    And only pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh exist as launchers
 
 #### Scenario: --quiet Flag Suppresses Output
 
