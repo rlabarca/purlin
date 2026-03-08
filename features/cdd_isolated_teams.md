@@ -61,7 +61,7 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
 2. **Sessions table:** A table listing all active worktrees, appearing below the creation row. When no worktrees are active, only the creation row is shown.
 
-   | Name | Branch | Local Branch Diff | Committed Modified | Uncommitted Modified |
+   | Name | Branch | Sync State | Committed Modified | Uncommitted Modified |
    |------|--------|-----------|--------------------|-----------------------|
    | feat1 | isolated/feat1 | AHEAD | 2 Specs | 1 Code/Other |
    | ui | isolated/ui | SAME | | 3 Specs |
@@ -70,15 +70,15 @@ The dashboard sidebar/content area contains four top-level collapsible sections 
 
    Column headers use two-line rendering (`Committed<br>Modified`, `Uncommitted<br>Modified`) to save horizontal space.
 
-**Local Branch Diff** shows the sync state between the worktree's branch and the collaboration branch (the branch the project root is on — read from `.purlin/runtime/active_branch` during active collaboration, `main` otherwise):
+**Sync State** shows the sync state between the worktree's branch and the collaboration branch (the branch the project root is on — read from `.purlin/runtime/active_branch` during active collaboration, `main` otherwise):
 - `AHEAD` — only this branch has moved: it has commits not yet in the collaboration branch; the collaboration branch has no commits missing from this branch. Committed Modified reflects files the branch changed since its common ancestor with the collaboration branch.
 - `SAME` — branch and the collaboration branch are at identical commit positions. Committed Modified will always be empty.
 - `BEHIND` — only the collaboration branch has moved: it has commits not yet in this branch; this branch has no commits ahead of the collaboration branch. Run `/pl-isolated-pull` before pushing. Committed Modified will always be empty.
 - `DIVERGED` — both the collaboration branch and this branch have commits beyond their common ancestor. Run `/pl-isolated-pull` before pushing. Committed Modified reflects files the branch changed since the common ancestor.
 
-**Committed Modified** shows files the branch changed since its common ancestor with the collaboration branch — derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `main_diff` is `SAME` or `BEHIND`. It may be empty even when `main_diff` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
+**Committed Modified** shows files the branch changed since its common ancestor with the collaboration branch — derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot). This column reflects only committed changes, not uncommitted working tree state. Committed Modified is always empty when `sync_state` is `SAME` or `BEHIND`. It may be empty even when `sync_state` is `AHEAD` or `DIVERGED` if the branch's commits contain no file changes (e.g., `--allow-empty` status commits). When non-empty, it shows space-separated category counts in order: Specs (files under `features/`), Tests (files under `tests/`), Code/Other (all other files). Zero-count categories are omitted. Example: `"2 Specs"`, `"1 Tests 4 Code/Other"`, `"3 Specs 1 Tests 6 Code/Other"`. Files under `.purlin/` are excluded from all categories.
 
-**Uncommitted Modified** shows files in the worktree's working tree that have not yet been committed — derived from `git -C <path> status --porcelain` run from the worktree directory. This includes staged, unstaged, and untracked files. The column is independent of `main_diff` state: a worktree at `SAME` can still have uncommitted changes. When non-empty, it uses the same category format as Committed Modified. Files under `.purlin/` are excluded from all categories.
+**Uncommitted Modified** shows files in the worktree's working tree that have not yet been committed — derived from `git -C <path> status --porcelain` run from the worktree directory. This includes staged, unstaged, and untracked files. The column is independent of `sync_state` state: a worktree at `SAME` can still have uncommitted changes. When non-empty, it uses the same category format as Committed Modified. Files under `.purlin/` are excluded from all categories.
 
 ### 2.4 Worktree State Reading
 
@@ -94,16 +94,16 @@ CDD reads each worktree's state using read-only git commands:
 - `git -C <path> status --porcelain` — uncommitted files in the worktree's working tree. Captures staged, unstaged, and untracked changes. Output format: `XY filename` where the filename starts at column 3. For renames, the format is `XY old -> new`; the new path is used. Parsed by the same path-prefix categorization as committed (`.purlin/` excluded, `features/` → Specs, `tests/` → Tests, rest → Code/Other).
 - `git -C <path> log -1 --format='%h %s (%cr)'` — last commit per worktree.
 - `git -C <path> rev-list --count <collaboration-branch>..HEAD` → `commits_ahead` (int).
-- Two `git log` range queries to determine `main_diff` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name and the collaboration branch:
+- Two `git log` range queries to determine `sync_state` — run from the **project root** (not via `git -C <worktree-path>`), using the worktree's branch name and the collaboration branch:
 
   1. `git log <branch>..<collaboration-branch> --oneline` — commits on the collaboration branch not in branch (branch is behind).
   2. `git log <collaboration-branch>..<branch> --oneline` — commits on branch not in the collaboration branch (branch is ahead).
 
   Evaluation:
-  - If query 1 is non-empty AND query 2 is non-empty → `main_diff: "DIVERGED"`
-  - If query 1 is non-empty AND query 2 is empty → `main_diff: "BEHIND"`
-  - If query 1 is empty AND query 2 is non-empty → `main_diff: "AHEAD"`
-  - If both empty → `main_diff: "SAME"`
+  - If query 1 is non-empty AND query 2 is non-empty → `sync_state: "DIVERGED"`
+  - If query 1 is non-empty AND query 2 is empty → `sync_state: "BEHIND"`
+  - If query 1 is empty AND query 2 is non-empty → `sync_state: "AHEAD"`
+  - If both empty → `sync_state: "SAME"`
 
 CDD writes nothing to worktree paths. No interference with running agent sessions.
 
@@ -119,7 +119,7 @@ When Isolated Teams Mode is active, the `/status.json` response includes additio
       "name": "feat1",
       "path": ".worktrees/feat1",
       "branch": "isolated/feat1",
-      "main_diff": "AHEAD",
+      "sync_state": "AHEAD",
       "commits_ahead": 3,
       "last_commit": "abc1234 feat: add filtering scenarios (45 min ago)",
       "committed": {
@@ -141,7 +141,7 @@ When Isolated Teams Mode is active, the `/status.json` response includes additio
       "name": "ui",
       "path": ".worktrees/ui",
       "branch": "isolated/ui",
-      "main_diff": "SAME",
+      "sync_state": "SAME",
       "commits_ahead": 0,
       "last_commit": "def5678 feat(ui): implement dashboard component (12 min ago)",
       "committed": {
@@ -166,12 +166,16 @@ Fields per worktree entry:
 - `name` — isolation name, parsed from worktree path (e.g., `.worktrees/feat1` → `"feat1"`).
 - `path` — relative path from project root.
 - `branch` — current branch name.
-- `main_diff` — four-state sync indicator (`"SAME"`, `"AHEAD"`, `"BEHIND"`, `"DIVERGED"`). Computed via two `git log` range queries from the project root using the collaboration branch as reference.
+- `sync_state` — four-state sync indicator (`"SAME"`, `"AHEAD"`, `"BEHIND"`, `"DIVERGED"`). Computed via two `git log` range queries from the project root using the collaboration branch as reference.
 - `commits_ahead` — integer count of commits in this branch not yet in the collaboration branch. Always present (0 when none).
 - `last_commit` — formatted string: `"<hash> <subject> (<relative-time>)"`.
 - `committed` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git diff <collaboration-branch>...<branch> --name-only` (three-dot) run from project root. Files under `.purlin/` are excluded.
 - `uncommitted` — object with integer sub-fields `specs`, `tests`, and `other` (all ≥ 0). Derived from `git -C <path> status --porcelain` run from the worktree directory. Files under `.purlin/` are excluded.
 - `delivery_phase` — optional object with `current` (int) and `total` (int). Present only when the worktree's `.purlin/cache/delivery_plan.md` exists and has an IN_PROGRESS phase. Absent when no delivery plan exists or all phases are COMPLETE.
+- `whats_different` — optional object, present only when a cached digest exists for this isolation at `features/digests/isolation-<name>-whats-different.md`. Fields:
+  - `cached` (bool) — true when a digest file exists.
+  - `generated_at` (string) — ISO 8601 UTC timestamp of digest generation.
+  - `stale` (bool) — true when the branch tips recorded in the digest header no longer match the current branch tips. The UI shows "(may be outdated)" when stale.
 
 ### 2.6 Visual Design
 
@@ -249,7 +253,56 @@ Each worktree row in the Sessions table MAY display an orange `(Phase N/M)` badg
 - The `(Phase N/M)` annotation uses the same orange color (`--purlin-status-warning`) as the ACTIVE section header's phase annotation.
 - No badge is shown when `delivery_phase` is absent.
 
-### 2.12 Web-Verify Fixture Tags
+### 2.13 Isolation Staleness Banner
+
+When the ISOLATED TEAMS section is expanded and at least one worktree has `sync_state` of `BEHIND` or `DIVERGED`, a staleness banner is displayed between the creation row and the Sessions table.
+
+- **Text:** "N isolation(s) out of sync with `<collab_branch>`" where N is the count of worktrees with `BEHIND` or `DIVERGED` sync state, and `<collab_branch>` is the collaboration branch name.
+- **Color:** `var(--purlin-status-todo)` (yellow) — matches the BEHIND/AHEAD badge color.
+- **Visibility:** Hidden when all worktrees have sync_state `SAME` or `AHEAD`.
+- **Update frequency:** Re-evaluated on each dashboard poll cycle (5 seconds).
+
+### 2.14 What's Different? (Isolation Digest)
+
+Each isolation can generate a "What's Different?" digest comparing its branch against the collaboration branch. This mirrors the branch collab What's Different feature (see `collab_whats_different.md`) but operates at the isolation layer: `isolated/<name>` vs the local collaboration branch (local-to-local comparison, no fetch needed).
+
+**Button placement:**
+
+- A "What's Different?" button appears per-row in the Sessions table, alongside the Kill button in the same actions area.
+- The button is hidden when `sync_state` is `SAME`.
+- When a cached digest exists, a "Last generated" timestamp annotation appears below the button.
+
+**Comparison targets:**
+
+- `AHEAD` — digest contains a "Your Isolation Changes" section (what the isolation has that the collaboration branch does not).
+- `BEHIND` — digest contains a "Collaboration Changes" section (what the collaboration branch has that the isolation does not).
+- `DIVERGED` — digest contains both "Your Isolation Changes" and "Collaboration Changes" sections.
+
+**Modal:**
+
+- Same structure as the branch collab What's Different modal (700px max-width, 80vh max-height, scrollable body).
+- Title: "What's Different? — `<name>`" where `<name>` is the isolation name.
+- Tags bar, section header colors, and regenerate button follow the same patterns as the branch collab modal.
+- No "Summarize Impact" button — deep analysis is excluded from isolation digests to keep scope small.
+
+**Digest files:**
+
+- Each isolation's digest is written to `features/digests/isolation-<name>-whats-different.md`.
+- The `features/digests/` directory is gitignored (per-machine artifact, not committed).
+- The file is overwritten on each generation.
+
+**Staleness detection:**
+
+- The digest file header stores the branch tips (commit SHAs) of both the isolation branch and the collaboration branch at generation time.
+- On read, the server compares the stored tips against the current branch tips.
+- If either tip has moved, the response includes `"stale": true` and the UI shows "(may be outdated)" next to the timestamp.
+
+**Endpoints:**
+
+- `POST /isolate/<name>/whats-different/generate` — generates a fresh digest for the named isolation. Returns 200 with digest content, 404 if the isolation does not exist, 400 if `sync_state` is `SAME`.
+- `GET /isolate/<name>/whats-different/read` — returns cached digest content with stale flag. Returns 200 with `{ "status": "ok", "digest": "<content>", "generated_at": "<ISO 8601>", "stale": <bool> }`, 404 if no cached digest exists.
+
+### 2.15 Web-Verify Fixture Tags
 
 The following fixture tags provide deterministic project states for web-verify testing:
 
@@ -258,6 +311,7 @@ The following fixture tags provide deterministic project states for web-verify t
 | `main/cdd_isolated_teams/two-worktrees` | Two worktrees at AHEAD and SAME states for verifying Sessions table and category counts |
 | `main/cdd_isolated_teams/delivery-phase-active` | Worktree with an active delivery plan for verifying Phase N/M orange badge |
 | `main/cdd_isolated_teams/two-worktrees-mixed` | Two worktrees with different sync states and uncommitted changes for git state integration tests |
+| `main/cdd_isolated_teams/ahead-with-digest` | Worktree AHEAD of collaboration branch with pre-generated isolation digest for testing cached read and staleness detection |
 
 ---
 
@@ -359,44 +413,44 @@ The following fixture tags provide deterministic project states for web-verify t
     When an agent calls GET /status.json
     Then the worktree entry's uncommitted field has specs=1, tests=0, other=2
 
-#### Scenario: Uncommitted Modified Non-Empty When Local Branch Diff Is SAME
+#### Scenario: Uncommitted Modified Non-Empty When Sync State Is SAME
 
     Given a worktree at .worktrees/ui on a branch at SAME position as the collaboration branch
     And the worktree has uncommitted changes to three files under features/
     When an agent calls GET /status.json
-    Then the worktree entry's main_diff is "SAME"
+    Then the worktree entry's sync_state is "SAME"
     And the worktree entry's committed field has specs=0, tests=0, other=0
     And the worktree entry's uncommitted field has specs=3, tests=0, other=0
 
-#### Scenario: Local Branch Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits
+#### Scenario: Sync State BEHIND When Worktree Branch Is Missing Collaboration Branch Commits
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And the collaboration branch has commits that are not in isolated/feat1
     When an agent calls GET /status.json
-    Then the worktree entry has main_diff "BEHIND"
+    Then the worktree entry has sync_state "BEHIND"
 
-#### Scenario: Local Branch Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch
+#### Scenario: Sync State AHEAD When Worktree Branch Has Commits Not In Collaboration Branch
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And isolated/feat1 has commits that are not in the collaboration branch
     And the collaboration branch has no commits that are missing from isolated/feat1
     When an agent calls GET /status.json
-    Then the worktree entry has main_diff "AHEAD"
+    Then the worktree entry has sync_state "AHEAD"
 
-#### Scenario: Local Branch Diff SAME When Branch And Collaboration Branch Are Identical
+#### Scenario: Sync State SAME When Branch And Collaboration Branch Are Identical
 
     Given a worktree at .worktrees/ui on branch isolated/ui
     And isolated/ui and the collaboration branch point to the same commit
     When an agent calls GET /status.json
-    Then the worktree entry has main_diff "SAME"
+    Then the worktree entry has sync_state "SAME"
 
-#### Scenario: Local Branch Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor
+#### Scenario: Sync State DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor
 
     Given a worktree at .worktrees/feat1 on branch isolated/feat1
     And isolated/feat1 has commits not in the collaboration branch
     And the collaboration branch has commits not in isolated/feat1
     When an agent calls GET /status.json
-    Then the worktree entry has main_diff "DIVERGED"
+    Then the worktree entry has sync_state "DIVERGED"
 
 #### Scenario: Delivery Phase Badge Present When Delivery Plan Has Active Phase
 
@@ -439,7 +493,7 @@ The following fixture tags provide deterministic project states for web-verify t
     And two worktrees exist (.worktrees/feat1 and .worktrees/ui)
     When the dashboard HTML is generated
     Then the Isolated Teams section contains a Sessions table
-    And the table has columns: Name, Branch, Local Branch Diff, Committed Modified, Uncommitted Modified
+    And the table has columns: Name, Branch, Sync State, Committed Modified, Uncommitted Modified
     And each worktree appears as a row with its isolation name and branch
     And no Role column is present in the table headers
 
@@ -496,6 +550,125 @@ The following fixture tags provide deterministic project states for web-verify t
     Then the name input still contains "feat3"
     And the name input retains keyboard focus without requiring a click to resume typing
 
+#### Scenario: Staleness Banner Shown When Isolations Behind
+
+    Given two worktrees are active under .worktrees/
+    And one worktree has sync_state "BEHIND" and the other has sync_state "SAME"
+    When the dashboard HTML is generated with the ISOLATED TEAMS section expanded
+    Then a staleness banner appears between the creation row and the Sessions table
+    And the banner text reads "1 isolation(s) out of sync with <collab_branch>"
+    And the banner uses var(--purlin-status-todo) color
+
+#### Scenario: Staleness Banner Hidden When All In Sync
+
+    Given two worktrees are active under .worktrees/
+    And both worktrees have sync_state "SAME"
+    When the dashboard HTML is generated with the ISOLATED TEAMS section expanded
+    Then no staleness banner appears between the creation row and the Sessions table
+
+#### Scenario: Staleness Banner Counts DIVERGED Worktrees
+
+    Given three worktrees are active under .worktrees/
+    And one has sync_state "BEHIND", one has sync_state "DIVERGED", and one has sync_state "AHEAD"
+    When the dashboard HTML is generated
+    Then the staleness banner text reads "2 isolation(s) out of sync with <collab_branch>"
+
+#### Scenario: What's Different Button Hidden When Sync State Is SAME
+
+    Given a worktree at .worktrees/ui has sync_state "SAME"
+    When the dashboard HTML is generated
+    Then the ui row does not contain a "What's Different?" button
+
+#### Scenario: What's Different Button Visible When Sync State Is AHEAD
+
+    Given a worktree at .worktrees/feat1 has sync_state "AHEAD"
+    When the dashboard HTML is generated
+    Then the feat1 row contains a "What's Different?" button alongside the Kill button
+
+#### Scenario: What's Different Button Visible When Sync State Is BEHIND
+
+    Given a worktree at .worktrees/feat1 has sync_state "BEHIND"
+    When the dashboard HTML is generated
+    Then the feat1 row contains a "What's Different?" button alongside the Kill button
+
+#### Scenario: What's Different Button Visible When Sync State Is DIVERGED
+
+    Given a worktree at .worktrees/feat1 has sync_state "DIVERGED"
+    When the dashboard HTML is generated
+    Then the feat1 row contains a "What's Different?" button alongside the Kill button
+
+#### Scenario: Generate Isolation Digest Success
+
+    Given a worktree at .worktrees/feat1 with sync_state "AHEAD"
+    When a POST request is sent to /isolate/feat1/whats-different/generate
+    Then the response status is 200
+    And the response contains a digest field with generated content
+    And features/digests/isolation-feat1-whats-different.md exists on disk
+
+#### Scenario: Generate Isolation Digest 404 For Nonexistent Isolation
+
+    Given no worktree exists at .worktrees/bogus
+    When a POST request is sent to /isolate/bogus/whats-different/generate
+    Then the response status is 404
+
+#### Scenario: Generate Isolation Digest 400 When SAME
+
+    Given a worktree at .worktrees/ui with sync_state "SAME"
+    When a POST request is sent to /isolate/ui/whats-different/generate
+    Then the response status is 400
+
+#### Scenario: Read Cached Isolation Digest
+
+    Given a worktree at .worktrees/feat1 exists
+    And features/digests/isolation-feat1-whats-different.md exists on disk
+    When a GET request is sent to /isolate/feat1/whats-different/read
+    Then the response status is 200
+    And the response contains digest, generated_at, and stale fields
+
+#### Scenario: Read Isolation Digest 404 When No Cache
+
+    Given a worktree at .worktrees/feat1 exists
+    And features/digests/isolation-feat1-whats-different.md does not exist
+    When a GET request is sent to /isolate/feat1/whats-different/read
+    Then the response status is 404
+
+#### Scenario: AHEAD Digest Shows Isolation Changes Only
+
+    Given a worktree at .worktrees/feat1 with sync_state "AHEAD"
+    When a POST request is sent to /isolate/feat1/whats-different/generate
+    Then the response digest contains a "Your Isolation Changes" section
+    And the response digest does not contain a "Collaboration Changes" section
+
+#### Scenario: BEHIND Digest Shows Collaboration Changes Only
+
+    Given a worktree at .worktrees/feat1 with sync_state "BEHIND"
+    When a POST request is sent to /isolate/feat1/whats-different/generate
+    Then the response digest contains a "Collaboration Changes" section
+    And the response digest does not contain a "Your Isolation Changes" section
+
+#### Scenario: DIVERGED Digest Shows Both Directions
+
+    Given a worktree at .worktrees/feat1 with sync_state "DIVERGED"
+    When a POST request is sent to /isolate/feat1/whats-different/generate
+    Then the response digest contains both "Your Isolation Changes" and "Collaboration Changes" sections
+
+#### Scenario: Staleness Detected When Branch Moves After Digest Generation
+
+    Given a worktree at .worktrees/feat1 with sync_state "AHEAD"
+    And a cached digest exists at features/digests/isolation-feat1-whats-different.md
+    And the isolation branch has moved since the digest was generated
+    When a GET request is sent to /isolate/feat1/whats-different/read
+    Then the response has stale equal to true
+
+#### Scenario: Isolation Whats Different Field in Status JSON
+
+    Given a worktree at .worktrees/feat1 exists
+    And features/digests/isolation-feat1-whats-different.md exists on disk
+    When an agent calls GET /status.json
+    Then the feat1 worktree entry contains a whats_different object
+    And whats_different.cached is true
+    And whats_different.generated_at is a valid ISO 8601 timestamp
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
@@ -516,17 +689,17 @@ None.
 - [ ] Collapsed heading with N active worktrees reads "N Isolated Teams" (e.g., "2 Isolated Teams") in the normal section heading color (`--purlin-muted`) — NOT colored by worktree severity state
 - [ ] When expanded, the creation row "Create An Isolated Team [input] [Create]" is always the first item
 - [ ] Sessions table appears below the creation row
-- [ ] Sessions table has columns: Name, Branch, Local Branch Diff, Committed Modified, Uncommitted Modified (no Role column)
+- [ ] Sessions table has columns: Name, Branch, Sync State, Committed Modified, Uncommitted Modified (no Role column)
 - [ ] Committed Modified and Uncommitted Modified column headers render as two lines ("Committed" / "Modified" and "Uncommitted" / "Modified") to save horizontal space
 - [ ] Each active worktree appears as a row
 - [ ] Each row has a "Kill" button aligned to the right
-- [ ] Local Branch Diff cell shows "SAME" in `--purlin-status-good` (green)
-- [ ] Local Branch Diff cell shows "AHEAD" in `--purlin-status-todo` (yellow)
-- [ ] Local Branch Diff cell shows "BEHIND" in `--purlin-status-todo` (yellow)
-- [ ] Local Branch Diff cell shows "DIVERGED" in `--purlin-status-warning` (orange)
-- [ ] Committed Modified cell is empty when main_diff is SAME or BEHIND
+- [ ] Sync State cell shows "SAME" in `--purlin-status-good` (green)
+- [ ] Sync State cell shows "AHEAD" in `--purlin-status-todo` (yellow)
+- [ ] Sync State cell shows "BEHIND" in `--purlin-status-todo` (yellow)
+- [ ] Sync State cell shows "DIVERGED" in `--purlin-status-warning` (orange)
+- [ ] Committed Modified cell is empty when sync_state is SAME or BEHIND
 - [ ] Committed Modified cell shows category counts (e.g., "2 Specs", "1 Tests 4 Code/Other") when AHEAD or DIVERGED
-- [ ] Uncommitted Modified cell shows category counts when the worktree has uncommitted changes, regardless of main_diff state
+- [ ] Uncommitted Modified cell shows category counts when the worktree has uncommitted changes, regardless of sync_state state
 - [ ] Uncommitted Modified cell is empty when the worktree has no uncommitted changes
 - [ ] When delivery_phase is present, Name cell shows "name (Phase N/M)" with orange badge text
 
@@ -551,6 +724,29 @@ None.
 - [ ] Create button is disabled and inline validation message appears when input contains invalid characters (e.g., "feat@1")
 - [ ] Name input value is preserved across 5-second auto-refresh cycle (typing is not erased by DOM update)
 - [ ] Newly created isolation row appears in Sessions table with correct name and branch after successful creation
+
+### Screen: CDD Dashboard — Isolation Staleness Banner
+
+- **Reference:** N/A
+- [ ] Staleness banner appears between the creation row and the Sessions table when >= 1 worktree has sync_state BEHIND or DIVERGED
+- [ ] Banner text reads "N isolation(s) out of sync with `<collab_branch>`" in `var(--purlin-status-todo)` color
+- [ ] Banner is hidden when all worktrees have sync_state SAME or AHEAD
+- [ ] Banner updates on each 5-second dashboard poll cycle
+
+### Screen: CDD Dashboard — Isolation What's Different? Button and Modal
+
+- **Reference:** N/A
+- [ ] "What's Different?" button appears per-row in the Sessions table alongside the Kill button
+- [ ] Button is hidden when the row's sync_state is SAME
+- [ ] Button is visible when sync_state is AHEAD, BEHIND, or DIVERGED
+- [ ] "Last generated" timestamp annotation appears below button when a cached digest exists
+- [ ] "(may be outdated)" appears next to the timestamp when the digest is stale
+- [ ] Modal title reads "What's Different? — `<name>`"
+- [ ] Modal follows the standard CDD modal pattern: 700px max-width, 80vh max-height, scrollable body
+- [ ] Tags bar and section header colors match the branch collab What's Different modal
+- [ ] Regenerate button inside modal uses `btn-critic` styling
+- [ ] Close via X button, Escape key, or click outside modal
+- [ ] No "Summarize Impact" button present in the isolation modal (excluded from isolation digests)
 
 ---
 

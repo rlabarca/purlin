@@ -114,6 +114,31 @@ Git auto-merges non-overlapping hunks. True conflicts only arise when two Archit
 
 **Remote Collaboration:** Multiple machines, collaboration branches on the remote. Each collaborator checks out the active collaboration branch locally, making push and pull symmetric same-branch operations. CDD Isolated Teams Mode shows remote branch status via `git branch -r`.
 
+### 4.1 Three-Layer Sync Stack
+
+The collaboration system forms a three-layer stack. Each layer boundary uses the same four-state sync vocabulary (`SAME`, `AHEAD`, `BEHIND`, `DIVERGED`) and the same badge color mapping, but the merge strategies differ because the branches serve different purposes.
+
+```
+remote (origin/<collab-branch>)
+     |  sync_state: local collab <-> remote collab
+     |  actions: /pl-remote-push, /pl-remote-pull
+     |  strategy: merge (shared history, merge commits acceptable)
+local collaboration branch
+     |  sync_state: isolation <-> local collab
+     |  actions: /pl-isolated-push, /pl-isolated-pull
+     |  strategy: rebase + ff-only (linear history on collab branch)
+isolation branches (isolated/<name>)
+```
+
+**Why merge strategies differ:**
+
+*   **Remote layer (merge):** The collaboration branch is shared between collaborators. Merge commits are acceptable because they preserve the independent authorship history from each collaborator.
+*   **Isolation layer (rebase + ff-only):** Isolation branches are personal workspaces on a single machine. Rebasing onto the collaboration branch before merging keeps the collaboration branch history linear, making `git log` and the Critic's branch-scope queries predictable.
+
+**Cascade effect:** When the collaboration branch moves forward (via `/pl-remote-pull` or another isolation's `/pl-isolated-push`), all other isolation branches become stale relative to it. Their sync state shifts from `SAME` to `BEHIND` (or from `AHEAD` to `DIVERGED` if they also have local commits). Each isolation must run `/pl-isolated-pull` to rebase before it can push.
+
+**Shared vocabulary:** The term "Sync State" and the four-state model (`SAME`, `AHEAD`, `BEHIND`, `DIVERGED`) are used identically at both layer boundaries. The CDD dashboard renders both with the same badge colors: `SAME` in green (`--purlin-status-good`), `AHEAD` and `BEHIND` in yellow (`--purlin-status-todo`), `DIVERGED` in orange (`--purlin-status-warning`). The "What's Different?" digest feature is available at both layers, comparing the appropriate branch pair for each.
+
 ## Scenarios
 
 No automated or manual scenarios. This is a policy anchor node — its "scenarios" are process invariants enforced by the handoff protocol and instruction files.
