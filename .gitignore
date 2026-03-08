@@ -40,3 +40,4 @@ tools/critic/.cache/
 tmp/
 dist/
 build/
+.playwright-mcp/
