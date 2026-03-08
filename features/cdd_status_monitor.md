@@ -591,10 +591,10 @@ These scenarios are validated by the Builder's automated test suite.
     Given the CDD server is not running
     When the User runs tools/cdd/start.sh
     Then the server starts on the configured port on the first invocation
-    And a PID file is written to .purlin/runtime/cdd.pid
+    And a port file is written to .purlin/runtime/cdd.port
     When the User runs tools/cdd/stop.sh
     Then the server process is terminated
-    And the PID file is removed
+    And the port file is removed
     When the User runs tools/cdd/start.sh again
     Then the server starts successfully on the first invocation without requiring a second run
 
