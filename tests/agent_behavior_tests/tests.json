@@ -1,8 +1,9 @@
 {
   "status": "PASS",
-  "tests_run": 20,
-  "failures": 0,
-  "errors": 0,
+  "passed": 20,
+  "failed": 0,
+  "total": 20,
+  "test_file": "dev/test_behavior_harness.py",
   "details": [
     {
       "test": "test_setup_script_creates_fixture_repo (__main__.TestAutoCreateFixtures.test_setup_script_creates_fixture_repo)",

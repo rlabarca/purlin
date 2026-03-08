@@ -1,1 +1,29 @@
-{"status": "PASS", "passed": 0, "failed": 0, "total": 0}
+{
+  "status": "PASS",
+  "passed": 5,
+  "failed": 0,
+  "total": 5,
+  "test_file": "tools/release/test_release_audit.py",
+  "details": [
+    {
+      "test": "test_verify_zero_queue (__main__.TestAllScriptsValidJSON.test_verify_zero_queue)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reports_architect_blocking (__main__.TestZeroQueueArchitectBlocking.test_reports_architect_blocking)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reports_blocking (__main__.TestZeroQueueBlocking.test_reports_blocking)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_all_clean (__main__.TestZeroQueueClean.test_passes_all_clean)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reports_qa_blocking (__main__.TestZeroQueueQABlocking.test_reports_qa_blocking)",
+      "status": "PASS"
+    }
+  ]
+}

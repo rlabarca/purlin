@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 19,
+  "passed": 25,
   "failed": 0,
-  "total": 19,
+  "total": 25,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -34,6 +34,14 @@
       "status": "PASS"
     },
     {
+      "test": "test_detects_routing_inconsistency (__main__.TestCriticConsistencyRouting.test_detects_routing_inconsistency)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_warning_status_not_fail (__main__.TestCriticConsistencyWarningLevel.test_warning_status_not_fail)",
+      "status": "PASS"
+    },
+    {
       "test": "test_detects_broken_link (__main__.TestDepIntegrityBrokenLink.test_detects_broken_link)",
       "status": "PASS"
     },
@@ -50,7 +58,15 @@
       "status": "PASS"
     },
     {
+      "test": "test_detects_coverage_gap (__main__.TestDocConsistencyCoverageGap.test_detects_coverage_gap)",
+      "status": "PASS"
+    },
+    {
       "test": "test_detects_stale_reference (__main__.TestDocConsistencyStaleRef.test_detects_stale_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_tombstone_reference (__main__.TestDocConsistencyTombstone.test_detects_tombstone_reference)",
       "status": "PASS"
     },
     {
@@ -74,11 +90,19 @@
       "status": "PASS"
     },
     {
+      "test": "test_reports_architect_blocking (__main__.TestZeroQueueArchitectBlocking.test_reports_architect_blocking)",
+      "status": "PASS"
+    },
+    {
       "test": "test_reports_blocking (__main__.TestZeroQueueBlocking.test_reports_blocking)",
       "status": "PASS"
     },
     {
       "test": "test_passes_all_clean (__main__.TestZeroQueueClean.test_passes_all_clean)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_reports_qa_blocking (__main__.TestZeroQueueQABlocking.test_reports_qa_blocking)",
       "status": "PASS"
     }
   ]

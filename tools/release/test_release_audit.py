@@ -473,6 +473,189 @@ class TestInstructionAuditStalePath(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Zero queue script reports QA blocking features
+# ===================================================================
+
+class TestZeroQueueQABlocking(unittest.TestCase):
+    """Scenario: Feature with open QA discoveries"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "tests/feature_a/critic.json": json.dumps({
+                "role_status": {
+                    "architect": "DONE",
+                    "builder": "DONE",
+                    "qa": "TODO",
+                }
+            }),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_reports_qa_blocking(self):
+        result = verify_zero_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        blocking = [f for f in result["findings"] if f["category"] == "blocking_feature"]
+        self.assertGreater(len(blocking), 0)
+        self.assertIn("qa: TODO", blocking[0]["message"])
+
+
+# ===================================================================
+# Scenario: Zero queue script reports architect blocking features
+# ===================================================================
+
+class TestZeroQueueArchitectBlocking(unittest.TestCase):
+    """Scenario: Feature with outstanding Architect work"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "tests/feature_a/critic.json": json.dumps({
+                "role_status": {
+                    "architect": "TODO",
+                    "builder": "TODO",
+                    "qa": "N/A",
+                }
+            }),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_reports_architect_blocking(self):
+        result = verify_zero_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        blocking = [f for f in result["findings"] if f["category"] == "blocking_feature"]
+        self.assertGreater(len(blocking), 0)
+        self.assertIn("architect: TODO", blocking[0]["message"])
+
+
+# ===================================================================
+# Scenario: Critic consistency detects routing rule inconsistency
+# ===================================================================
+
+class TestCriticConsistencyRouting(unittest.TestCase):
+    """Scenario: Routing rule inconsistency found"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "features/policy_critic.md": (
+                '# Policy: Critic\n'
+                '## Routing\n'
+                'BUG entries are routed to the Builder.\n'
+                'DISCOVERY entries are routed to the Architect.\n'
+                'INTENT_DRIFT entries are routed to the Architect.\n'
+                'SPEC_DISPUTE entries are routed to the Architect.\n'
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                '# How We Work\n'
+                '## Critic\n'
+                'The Critic coordinates.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_routing_inconsistency(self):
+        result = critic_consistency_main(self.root)
+        routing = [f for f in result["findings"] if f["category"] == "routing_inconsistency"]
+        self.assertGreater(len(routing), 0)
+        self.assertEqual(routing[0]["severity"], "WARNING")
+
+
+# ===================================================================
+# Scenario: WARNING-level finding does not produce FAIL status
+# ===================================================================
+
+class TestCriticConsistencyWarningLevel(unittest.TestCase):
+    """Scenario: WARNING-level finding does not halt"""
+
+    def setUp(self):
+        # No deprecated terms (no CRITICAL), but routing inconsistency (WARNING)
+        self.root = create_fixture({
+            "features/policy_critic.md": (
+                '# Policy: Critic\n'
+                '## Routing\n'
+                'BUG entries are routed to the Builder.\n'
+            ),
+            "instructions/HOW_WE_WORK_BASE.md": (
+                '# How We Work\n'
+                '## Coordination\n'
+                'The coordination engine handles routing.\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_warning_status_not_fail(self):
+        result = critic_consistency_main(self.root)
+        # With only WARNING-level findings, status should be WARNING, not FAIL
+        self.assertNotEqual(result["status"], "FAIL")
+        if result["findings"]:
+            self.assertEqual(result["status"], "WARNING")
+
+
+# ===================================================================
+# Scenario: Doc consistency detects coverage gap
+# ===================================================================
+
+class TestDocConsistencyCoverageGap(unittest.TestCase):
+    """Scenario: Stale feature description corrected"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                '# Project\n'
+                'This project has features.\n'
+            ),
+            "features/my_feature.md": '# My Feature\n',
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_coverage_gap(self):
+        result = doc_consistency_main(self.root)
+        gap = [f for f in result["findings"] if f["category"] == "coverage_gap"]
+        self.assertGreater(len(gap), 0)
+        self.assertIn("my_feature", gap[0]["file"])
+
+
+# ===================================================================
+# Scenario: Doc consistency detects tombstone reference
+# ===================================================================
+
+class TestDocConsistencyTombstone(unittest.TestCase):
+    """Scenario: Reference to removed functionality corrected"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                '# Project\n'
+                'The old_feature module handles legacy logic.\n'
+            ),
+            "features/tombstones/old_feature.md": '# Tombstone: old_feature\n',
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_tombstone_reference(self):
+        result = doc_consistency_main(self.root)
+        tombstone = [f for f in result["findings"] if f["category"] == "tombstone_reference"]
+        self.assertGreater(len(tombstone), 0)
+        self.assertIn("old_feature", tombstone[0]["message"])
+
+
+# ===================================================================
 # Scenario: All scripts produce valid JSON output
 # ===================================================================
 
@@ -564,6 +747,106 @@ class JsonTestResult(unittest.TextTestResult):
         })
 
 
+# ===================================================================
+# Per-feature result distribution
+# ===================================================================
+
+# Maps test class name -> list of feature directory names in tests/
+CLASS_FEATURE_MAP = {
+    "TestDepIntegrityCycle": ["release_verify_dependency_integrity"],
+    "TestDepIntegrityClean": ["release_verify_dependency_integrity"],
+    "TestDepIntegrityBrokenLink": ["release_verify_dependency_integrity"],
+    "TestDepIntegrityReverseRef": ["release_verify_dependency_integrity"],
+    "TestZeroQueueBlocking": ["release_verify_zero_queue"],
+    "TestZeroQueueClean": ["release_verify_zero_queue"],
+    "TestZeroQueueQABlocking": ["release_verify_zero_queue"],
+    "TestZeroQueueArchitectBlocking": ["release_verify_zero_queue"],
+    "TestSubmoduleSafetyMissingEnv": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyArtifactInTools": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyClean": ["release_submodule_safety_audit"],
+    "TestCriticConsistencyDeprecated": ["release_critic_consistency_check"],
+    "TestCriticConsistencyRouting": ["release_critic_consistency_check"],
+    "TestCriticConsistencyWarningLevel": ["release_critic_consistency_check"],
+    "TestDocConsistencyStaleRef": ["release_doc_consistency_check",
+                                   "release_framework_doc_consistency"],
+    "TestDocConsistencyCoverageGap": ["release_doc_consistency_check"],
+    "TestDocConsistencyTombstone": ["release_doc_consistency_check"],
+    "TestInstructionAuditContradiction": ["instruction_audit",
+                                          "release_framework_doc_consistency"],
+    "TestInstructionAuditStalePath": ["instruction_audit",
+                                      "release_framework_doc_consistency"],
+}
+
+# TestAllScriptsValidJSON sub-tests map by method name
+VALID_JSON_METHOD_MAP = {
+    "test_verify_dependency_integrity": ["release_verify_dependency_integrity"],
+    "test_verify_zero_queue": ["release_verify_zero_queue"],
+    "test_submodule_safety_audit": ["release_submodule_safety_audit"],
+    "test_critic_consistency_check": ["release_critic_consistency_check"],
+    "test_doc_consistency_check": ["release_doc_consistency_check",
+                                    "release_framework_doc_consistency"],
+    "test_instruction_audit": ["instruction_audit",
+                                "release_framework_doc_consistency"],
+}
+
+
+def _extract_class_name(test_str):
+    """Extract class name from test result string like
+    'test_foo (module.ClassName.test_foo)'."""
+    import re
+    match = re.search(r'\.(\w+)\.\w+\)', test_str)
+    return match.group(1) if match else None
+
+
+def _extract_method_name(test_str):
+    """Extract method name from test result string."""
+    import re
+    match = re.search(r'\.(\w+)\)', test_str)
+    return match.group(1) if match else None
+
+
+def distribute_results(results, project_root):
+    """Write per-feature tests.json based on CLASS_FEATURE_MAP."""
+    feature_results = {}  # feature_name -> list of test result dicts
+
+    for entry in results:
+        class_name = _extract_class_name(entry["test"])
+        if not class_name:
+            continue
+
+        features = []
+        if class_name == "TestAllScriptsValidJSON":
+            method = _extract_method_name(entry["test"])
+            features = VALID_JSON_METHOD_MAP.get(method, [])
+        else:
+            features = CLASS_FEATURE_MAP.get(class_name, [])
+
+        for feat in features:
+            feature_results.setdefault(feat, []).append(entry)
+
+    for feat, entries in feature_results.items():
+        out_dir = os.path.join(project_root, "tests", feat)
+        os.makedirs(out_dir, exist_ok=True)
+        out_file = os.path.join(out_dir, "tests.json")
+
+        passed = sum(1 for e in entries if e["status"] == "PASS")
+        failed = len(entries) - passed
+        with open(out_file, "w") as f:
+            json.dump(
+                {
+                    "status": "PASS" if failed == 0 else "FAIL",
+                    "passed": passed,
+                    "failed": failed,
+                    "total": len(entries),
+                    "test_file": "tools/release/test_release_audit.py",
+                    "details": entries,
+                },
+                f,
+                indent=2,
+            )
+        print(f"  {feat}: {passed}/{len(entries)} passed")
+
+
 if __name__ == "__main__":
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
@@ -571,7 +854,7 @@ if __name__ == "__main__":
     runner = unittest.TextTestRunner(resultclass=JsonTestResult, verbosity=2)
     result = runner.run(suite)
 
-    # Write tests.json
+    # Write aggregate tests.json
     if PROJECT_ROOT:
         out_dir = os.path.join(PROJECT_ROOT, "tests", "release_audit_automation")
         os.makedirs(out_dir, exist_ok=True)
@@ -592,6 +875,10 @@ if __name__ == "__main__":
                 f,
                 indent=2,
             )
-        print(f"\nResults written to {out_file}")
+        print(f"\nAggregate results written to {out_file}")
+
+        # Distribute per-feature results
+        print("\nPer-feature distribution:")
+        distribute_results(result.results, PROJECT_ROOT)
 
     sys.exit(0 if result.wasSuccessful() else 1)

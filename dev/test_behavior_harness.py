@@ -686,18 +686,46 @@ if __name__ == "__main__":
         out_file = os.path.join(out_dir, "tests.json")
 
         all_passed = len(result.failures) == 0 and len(result.errors) == 0
+        failed = len(result.failures) + len(result.errors)
         with open(out_file, "w") as f:
             json.dump(
                 {
                     "status": "PASS" if all_passed else "FAIL",
-                    "tests_run": result.testsRun,
-                    "failures": len(result.failures),
-                    "errors": len(result.errors),
+                    "passed": result.testsRun - failed,
+                    "failed": failed,
+                    "total": result.testsRun,
+                    "test_file": "dev/test_behavior_harness.py",
                     "details": result.results,
                 },
                 f,
                 indent=2,
             )
         print(f"\nResults written to {out_file}")
+
+        # Distribute pl_help results from TestHelpVariantDetection
+        pl_help_results = [
+            r for r in result.results
+            if "TestHelpVariantDetection" in r["test"]
+        ]
+        if pl_help_results:
+            help_dir = os.path.join(PROJECT_ROOT, "tests", "pl_help")
+            os.makedirs(help_dir, exist_ok=True)
+            help_file = os.path.join(help_dir, "tests.json")
+            hp = sum(1 for r in pl_help_results if r["status"] == "PASS")
+            hf = len(pl_help_results) - hp
+            with open(help_file, "w") as f:
+                json.dump(
+                    {
+                        "status": "PASS" if hf == 0 else "FAIL",
+                        "passed": hp,
+                        "failed": hf,
+                        "total": len(pl_help_results),
+                        "test_file": "dev/test_behavior_harness.py",
+                        "details": pl_help_results,
+                    },
+                    f,
+                    indent=2,
+                )
+            print(f"  pl_help: {hp}/{len(pl_help_results)} passed")
 
     sys.exit(0 if result.wasSuccessful() else 1)

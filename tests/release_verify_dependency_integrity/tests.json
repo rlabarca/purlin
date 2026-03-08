@@ -1,1 +1,29 @@
-{"status": "PASS", "passed": 0, "failed": 0, "total": 0}
+{
+  "status": "PASS",
+  "passed": 5,
+  "failed": 0,
+  "total": 5,
+  "test_file": "tools/release/test_release_audit.py",
+  "details": [
+    {
+      "test": "test_verify_dependency_integrity (__main__.TestAllScriptsValidJSON.test_verify_dependency_integrity)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_broken_link (__main__.TestDepIntegrityBrokenLink.test_detects_broken_link)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_clean_graph (__main__.TestDepIntegrityClean.test_passes_clean_graph)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_cycle (__main__.TestDepIntegrityCycle.test_detects_cycle)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_reverse_reference (__main__.TestDepIntegrityReverseRef.test_detects_reverse_reference)",
+      "status": "PASS"
+    }
+  ]
+}

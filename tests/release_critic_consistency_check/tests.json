@@ -1,1 +1,25 @@
-{"status": "PASS", "passed": 0, "failed": 0, "total": 0}
+{
+  "status": "PASS",
+  "passed": 4,
+  "failed": 0,
+  "total": 4,
+  "test_file": "tools/release/test_release_audit.py",
+  "details": [
+    {
+      "test": "test_critic_consistency_check (__main__.TestAllScriptsValidJSON.test_critic_consistency_check)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_deprecated_term (__main__.TestCriticConsistencyDeprecated.test_detects_deprecated_term)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_routing_inconsistency (__main__.TestCriticConsistencyRouting.test_detects_routing_inconsistency)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_warning_status_not_fail (__main__.TestCriticConsistencyWarningLevel.test_warning_status_not_fail)",
+      "status": "PASS"
+    }
+  ]
+}

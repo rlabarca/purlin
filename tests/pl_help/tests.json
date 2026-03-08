@@ -1,9 +1,21 @@
 {
   "status": "PASS",
-  "test_files": [],
-  "results": {},
-  "total_passed": 0,
-  "total_failed": 0,
-  "note": "No automated scenarios. All scenarios are manual (human verification).",
-  "timestamp": "2026-03-06T18:50:00Z"
+  "passed": 3,
+  "failed": 0,
+  "total": 3,
+  "test_file": "dev/test_behavior_harness.py",
+  "details": [
+    {
+      "test": "test_collab_variant_has_branch_header (__main__.TestHelpVariantDetection.test_collab_variant_has_branch_header)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_isolated_variant_has_correct_commands (__main__.TestHelpVariantDetection.test_isolated_variant_has_correct_commands)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_main_variant_has_whats_different (__main__.TestHelpVariantDetection.test_main_variant_has_whats_different)",
+      "status": "PASS"
+    }
+  ]
 }
