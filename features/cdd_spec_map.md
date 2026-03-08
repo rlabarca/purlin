@@ -29,6 +29,12 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 
 ### 2.3 Interactive Graph View
 *   **Scope:** The graph view is for human consumption only. Agents must use `dependency_graph.json` via `tools/cdd/status.sh --graph`.
+*   **Viewport Containment:** The Spec Map canvas MUST fill exactly the available viewport area below the dashboard header -- no more, no less. The canvas MUST NOT cause page-level scrollbars or overflow the viewable area under any circumstances. Specifically:
+    *   The `#map-view` container MUST use `overflow: hidden` to prevent any content from escaping its bounds.
+    *   The Cytoscape container (`#cy`) MUST be sized to exactly fill `#map-view` without overflowing. Use `position: absolute; inset: 0` (pinned to all four edges of the parent) instead of `width: 100%; height: 100%`, as percentage-based sizing can produce subpixel overflow at non-default browser zoom levels.
+    *   The layout chain from `<body>` to `#cy` MUST be a strict flex containment hierarchy: each ancestor uses `flex: 1; overflow: hidden; min-height: 0` so that the Cytoscape container is always exactly the remaining space after the header.
+    *   `min-height: 0` MUST be set on all flex children in the chain (`body > .content-area > .view-panel > #map-view`) to prevent flex items from exceeding their container when content is larger than available space.
+    *   On browser zoom changes (Cmd+Plus/Minus, pinch-to-zoom), the canvas MUST resize to fit the new viewport dimensions. No manual resize handler is needed if CSS containment is correct -- the browser reflows flex layout automatically. Cytoscape's `cy.resize()` is called on the `window` `resize` event to sync the canvas.
 *   **Graph Display:** The dependency graph MUST be rendered as an interactive diagram with feature nodes and directed edges representing prerequisite links. Uses Cytoscape.js for rendering.
 *   **Edge Arrows:** Edges MUST render with arrowheads at the target (dependent/child) end. Arrow direction: prerequisite → dependent (arrows point TO the child node).
 *   **Category Grouping:** Feature nodes MUST be visually grouped by their `Category` metadata (as defined in each feature file's `> Category:` line). Each group MUST be clearly delineated (e.g., via labeled bounding boxes or distinct spatial clusters) so that the category structure is immediately apparent.
@@ -259,6 +265,15 @@ These scenarios are validated by the Builder's automated test suite.
     And the category box fills as much of the viewable area as possible while remaining fully visible
     And the interaction state is set to modified so auto-refresh preserves the zoom level
 
+#### Scenario: Spec Map Canvas Does Not Overflow Viewport
+
+    Given the User is viewing the Spec Map view
+    When the graph is rendered with any number of nodes
+    Then the Cytoscape canvas fills exactly the available viewport area below the header
+    And no page-level scrollbars appear on the body or html elements
+    And changing the browser zoom level causes the canvas to resize to the new viewport dimensions
+    And the Cytoscape canvas never extends beyond the visible screen area
+
 #### Scenario: Double-Click Background Recenters Graph
 
     Given the User is viewing the Spec Map view
@@ -294,6 +309,8 @@ None.
 
 ### Screen: CDD Dashboard -- Spec Map View
 - **Reference:** N/A
+- [ ] Spec Map canvas fills exactly the viewport area below the header -- no scrollbars, no overflow
+- [ ] Canvas resizes correctly at different browser zoom levels (Cmd+Plus/Minus)
 - [ ] Dependency graph rendered with feature nodes and directed edges
 - [ ] Feature nodes visually grouped by Category metadata with clear delineation
 - [ ] Each node displays both Label (friendly name) and filename
