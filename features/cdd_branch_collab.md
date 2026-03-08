@@ -96,22 +96,32 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 8. Return `{ "status": "ok", "branch": "<name>" }`.
 9. On push failure: return `{ "error": "..." }`, do NOT write runtime file or checkout.
 
-**`POST /branch-collab/join`** -- `{ "branch": "<name>" }`
+**`POST /branch-collab/join`** -- `{ "branch": "<name>" }` (Phase 1: Assessment)
 
-Join MUST reconcile local and remote state before completing the checkout. A join is not just a `git checkout` — it is a fetch + reconcile + checkout sequence. The reconciliation strategy depends on the sync state between the local and remote versions of the target branch.
+Join uses a two-phase flow: **assessment** (fetch + compute state) then **confirmation** (act on user choice). This endpoint performs Phase 1 only — it returns state information without switching branches.
 
-1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
-2. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
-3. Check if a local branch `<name>` already exists.
-4. **If no local branch exists:** Create it tracking the remote: `git checkout -b <name> origin/<name>`. No reconciliation needed — skip to step 8.
-5. **If local branch exists:** Compute sync state between local `<name>` and `origin/<name>`:
-   - **SAME:** No reconciliation needed. Checkout: `git checkout <name>`.
-   - **BEHIND (remote is ahead of local):** Fast-forward local to remote. Checkout then fast-forward: `git checkout <name> && git merge --ff-only origin/<name>`. This is always safe because the local branch is a strict ancestor of the remote. Include `"reconciled": "fast-forward"` in the response.
-   - **AHEAD (local is ahead of remote):** Checkout: `git checkout <name>`. Include `"action_required": "push"` and `"warning": "Local branch has N unpushed commits — run /pl-remote-push to sync remote"` in the response. The modal should display this prominently so the user knows to push.
-   - **DIVERGED (both have unique commits):** Checkout: `git checkout <name>`. Do NOT attempt an inline merge — diverged state requires proper conflict resolution. Include `"action_required": "pull"` and `"warning": "Branch is diverged — run /pl-remote-pull to reconcile"` in the response. The modal should display this as a required next step.
-6. Record the base branch (current branch before checkout) in `.purlin/runtime/branch_collab_base_branch` if not already set.
-7. Write branch name to `.purlin/runtime/active_branch`.
-8. Return `{ "status": "ok", "branch": "<name>" }` (plus optional `"action_required"` and `"warning"` fields per step 5).
+1. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
+2. Check if a local branch `<name>` already exists.
+3. **If no local branch exists:** Check if working tree is dirty. If dirty, return error with `"dirty": true` and `"dirty_files": [...]`. If clean, create tracking branch: `git checkout -b <name> origin/<name>`, record base branch, write active_branch, and return `{ "status": "ok", "branch": "<name>", "completed": true }`. No Phase 2 needed.
+4. **If local branch exists:** Compute sync state between local `<name>` and `origin/<name>`. Check if working tree is dirty (uncommitted changes outside `.purlin/`).
+5. Return assessment: `{ "status": "ok", "sync_state": "SAME|BEHIND|AHEAD|DIVERGED", "commits_ahead": N, "commits_behind": M, "dirty": bool, "dirty_files": [...] }`. The UI uses this to present options in Phase 2.
+
+**`POST /branch-collab/join-confirm`** -- `{ "branch": "<name>", "action": "<action>" }` (Phase 2: Confirm)
+
+Executes the user-chosen action from the assessment modal.
+
+| Action | Sync State | Behavior | Clean Tree Required |
+|--------|-----------|----------|-------------------|
+| `"checkout"` | SAME | `git checkout <name>`. | Yes |
+| `"fast-forward"` | BEHIND | `git checkout <name> && git merge --ff-only origin/<name>`. | Yes |
+| `"push"` | AHEAD | `git checkout <name>`. Return guidance to run `/pl-remote-push`. | Yes |
+| `"guide-pull"` | DIVERGED | No checkout. Return copyable `/pl-remote-pull origin/<branch>` command. | No |
+
+For `checkout`, `fast-forward`, and `push`: abort with error if working tree is dirty. Record base branch in `.purlin/runtime/branch_collab_base_branch` if not already set. Write branch name to `.purlin/runtime/active_branch`. Return `{ "status": "ok", "branch": "<name>" }` (plus `"reconciled": "fast-forward"` for fast-forward, or `"action_required": "push"` with warning for push).
+
+For `guide-pull`: return `{ "status": "ok", "action_required": "pull", "command": "/pl-remote-pull origin/<branch>", "warning": "Branch is diverged — run /pl-remote-pull to reconcile" }`. No git operations performed. No runtime files written.
+
+**Builder Guidance — Git State Validation:** Tests MUST use temporary local branches and temporary remote refs that do not interfere with real project branches. Use fixture repos with pre-built branch topologies. If testing against a real remote, use namespaced throwaway branch names (e.g., `test-fixture/behind-2-<timestamp>`) and clean up in teardown. Tests MUST NOT create, modify, or delete branches that other agents might use.
 
 **`POST /branch-collab/leave`** -- `{}`
 
@@ -212,13 +222,13 @@ Branch operations (join, leave, create, switch) involve git checkouts, fetches, 
 - **Title:** Operation-specific. "Joining Branch", "Leaving Branch", or "Creating Branch".
 - **Spinner:** A CSS-only animated spinner (small, inline with status message). Hidden when the operation completes (success or error).
 - **Status message:** Operation-specific progress text, updated as the operation progresses through steps:
-  - Join/Switch: Initial `"Fetching <branch>..."`, then `"Reconciling with remote..."` (only shown when local branch exists and is BEHIND or DIVERGED), then `"Switching to <branch>..."`. Uses "Switching" for both join and switch since the git operation is identical.
+  - Join/Switch Phase 1: `"Fetching and checking sync state..."` while the assessment request is in flight.
   - Leave: `"Returning to <base-branch>..."`
   - Create: `"Creating <branch>..."`
 - **Error block:** Hidden by default. On error, the spinner is replaced with an error icon (red text), the status message updates to the error text from the server response (`d.error`), and the block becomes visible. The error text uses `color: var(--purlin-status-error)`.
 - **Close button:** Always visible in the footer. During progress, clicking Close is a no-op (button disabled). On completion (success or error), the button is enabled.
-- **Auto-close on success:** When the operation succeeds with no `action_required` field, the modal closes automatically after a brief delay (400ms) and `refreshStatus()` is called. The user sees the spinner resolve to a success state momentarily before the modal dismisses.
-- **Hold on action_required:** When the response includes an `action_required` field (e.g., join on DIVERGED or AHEAD branch), the modal does NOT auto-close. Instead, it displays the warning message prominently (styled distinctly from errors — informational, not red). The Close button is enabled and the user must explicitly dismiss the modal. `refreshStatus()` is called on dismissal.
+- **Auto-close on success:** For leave/create: auto-close after 400ms on success, call `refreshStatus()`. For join Phase 1: if `completed: true` (new branch created), auto-close. Otherwise transition to Phase 2 content. For join Phase 2 confirm: auto-close on success unless `action_required` is present.
+- **Hold on action_required:** When a join-confirm response includes `action_required` (AHEAD with push guidance), the modal does NOT auto-close. Displays the warning prominently (informational styling, not red). Close button enabled; `refreshStatus()` called on dismissal.
 - **No close on overlay click during progress:** While the operation is in flight, clicking the overlay background does NOT close the modal. After completion (success or error), overlay click closes normally.
 - **Escape key:** Same behavior as overlay click -- blocked during progress, allowed after completion.
 
@@ -233,6 +243,28 @@ The existing `joinBranch()`, `leaveBranch()`, `switchBranch()`, and `createBranc
 
 The `bcRemotePending` guard is preserved -- the modal is the visual manifestation of that guard state.
 
+**Join Modal Two-Phase Content:**
+
+Phase 1 (automatic): spinner + "Fetching and checking sync state..." while the assessment request is in flight. On completion, transition to Phase 2.
+
+Phase 2 (interactive): the modal body replaces the spinner with sync-state-specific content:
+
+| Sync State | Dirty? | Modal Content |
+|---|---|---|
+| SAME | No | "Branch is in sync." + [Join] button |
+| SAME | Yes | "Branch is in sync, but you have uncommitted changes:" + file list + "Commit or stash before joining." |
+| BEHIND | No | "Remote is N commits ahead." + [Fast-Forward & Join] button |
+| BEHIND | Yes | "Remote is N commits ahead, but you have uncommitted changes:" + file list |
+| AHEAD | No | "Local is N commits ahead." + [Join] button + push guidance |
+| AHEAD | Yes | "Local is N commits ahead, but you have uncommitted changes:" + file list |
+| DIVERGED | any | "Branch has diverged (N local, M remote)." + copyable command block: `/pl-remote-pull origin/<branch>` + [Close] button only (no join action) |
+
+Phase 2 action buttons ([Join], [Fast-Forward & Join]) call `POST /branch-collab/join-confirm` with the appropriate action. While the confirm request is in flight, the button is replaced with a spinner. On success, auto-close (unless `action_required` present). On error, show error in modal.
+
+The DIVERGED copyable command block uses monospace font with subtle background, matching existing dashboard code styling. Includes a copy-to-clipboard button.
+
+When dirty files are shown, the file list uses monospace font. Action buttons are absent (dirty tree blocks checkout/fast-forward/push actions). Only the [Close] button is available.
+
 ### 2.9 Integration Test Fixture Tags
 
 The following fixture tags provide real git branch topology for integration-level tests, replacing mocked subprocess output with actual git state:
@@ -243,6 +275,8 @@ The following fixture tags provide real git branch topology for integration-leve
 | `main/cdd_branch_collab/behind-2` | Branch 2 commits behind collaboration branch |
 | `main/cdd_branch_collab/diverged` | Both branch and collaboration branch have unique commits |
 | `main/cdd_branch_collab/same` | Branch at same position as collaboration branch |
+| `main/cdd_branch_collab/behind-dirty` | Branch behind remote, working tree has uncommitted changes |
+| `main/cdd_branch_collab/diverged-dirty` | Branch diverged, working tree has uncommitted changes |
 
 ---
 
@@ -291,19 +325,20 @@ The following fixture tags provide real git branch topology for integration-leve
     And no branch is created
     And the current branch is unchanged
 
-#### Scenario: Join Branch Fetches Then Checks Out and Updates Runtime File
+#### Scenario: Join Branch Assessment Creates Tracking Branch When No Local Exists
 
     Given feature/auth exists as a remote tracking branch
     And no local branch feature/auth exists
     And no active branch is set
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth before checkout
+    Then git fetch is called for feature/auth
     And a local branch feature/auth is created tracking origin/feature/auth
+    And the response contains "completed": true
     And .purlin/runtime/active_branch contains "feature/auth"
     And GET /status.json shows branch_collab.active_branch as "feature/auth"
 
-#### Scenario: Join Branch Fast-Forwards When Local Is Behind Remote
+#### Scenario: Join Branch Assessment Returns BEHIND Sync State
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -311,13 +346,12 @@ The following fixture tags provide real git branch topology for integration-leve
     And local feature/auth has no commits not in origin/feature/auth
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth
-    And local feature/auth is checked out
-    And local feature/auth is fast-forwarded to origin/feature/auth
-    And the response contains "reconciled": "fast-forward"
-    And .purlin/runtime/active_branch contains "feature/auth"
+    Then the response contains "sync_state": "BEHIND"
+    And the response contains "commits_behind": 2
+    And the response contains "dirty": false
+    And no branch checkout has occurred (current branch unchanged)
 
-#### Scenario: Join Branch Routes Diverged to pl-remote-pull
+#### Scenario: Join Branch Assessment Returns DIVERGED Sync State
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -325,13 +359,12 @@ The following fixture tags provide real git branch topology for integration-leve
     And local feature/auth has 1 commit not in origin/feature/auth
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth
-    And local feature/auth is checked out (no inline merge attempted)
-    And the response contains "action_required": "pull"
-    And the response contains a warning to run /pl-remote-pull
-    And .purlin/runtime/active_branch contains "feature/auth"
+    Then the response contains "sync_state": "DIVERGED"
+    And the response contains "commits_ahead": 1
+    And the response contains "commits_behind": 2
+    And no branch checkout has occurred (current branch unchanged)
 
-#### Scenario: Join Branch Warns When Local Is Ahead and Suggests Push
+#### Scenario: Join Branch Assessment Returns AHEAD Sync State
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -339,19 +372,21 @@ The following fixture tags provide real git branch topology for integration-leve
     And origin/feature/auth has no commits not in local feature/auth
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth
-    And local feature/auth is checked out
-    And the response contains "action_required": "push"
-    And the response contains a warning to run /pl-remote-push
-    And .purlin/runtime/active_branch contains "feature/auth"
+    Then the response contains "sync_state": "AHEAD"
+    And the response contains "commits_ahead": 3
+    And the response contains "dirty": false
+    And no branch checkout has occurred (current branch unchanged)
 
-#### Scenario: Join Branch With Dirty Working Tree Returns Error
+#### Scenario: Join Branch Assessment Returns Sync State With Dirty File List
 
     Given the branch "feature/auth" exists as a remote tracking branch
+    And a local branch feature/auth exists
     And the working tree has uncommitted changes outside .purlin/
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then the response contains an error message about dirty working tree
-    And the current branch is unchanged
+    Then the response contains "dirty": true
+    And the response contains "dirty_files" as a non-empty array
+    And the response contains a "sync_state" field
+    And no branch checkout has occurred (current branch unchanged)
 
 #### Scenario: Join Branch With Nonexistent Remote Branch Returns Error
 
@@ -359,6 +394,65 @@ The following fixture tags provide real git branch topology for integration-leve
     When a POST request is sent to /branch-collab/join with body {"branch": "nonexistent"}
     Then the response contains an error message
     And no branch checkout occurs
+
+#### Scenario: Join Confirm Fast-Forward Checks Out and Merges
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is BEHIND origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "fast-forward"}
+    Then local feature/auth is checked out
+    And local feature/auth is fast-forwarded to origin/feature/auth
+    And the response contains "reconciled": "fast-forward"
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Confirm Fast-Forward Requires Clean Tree
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is BEHIND origin/feature/auth
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "fast-forward"}
+    Then the response contains an error message about dirty working tree
+    And the current branch is unchanged
+
+#### Scenario: Join Confirm Checkout Requires Clean Tree
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists at SAME as origin/feature/auth
+    And the working tree has uncommitted changes outside .purlin/
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "checkout"}
+    Then the response contains an error message about dirty working tree
+    And the current branch is unchanged
+
+#### Scenario: Join Confirm Checkout Switches Branch for SAME State
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists at SAME as origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "checkout"}
+    Then local feature/auth is checked out
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Confirm Push Checks Out and Returns Push Guidance
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is AHEAD of origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "push"}
+    Then local feature/auth is checked out
+    And the response contains "action_required": "push"
+    And the response contains a warning to run /pl-remote-push
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Confirm Guide-Pull Returns Command Without Checkout
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is DIVERGED from origin/feature/auth
+    When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "guide-pull"}
+    Then the response contains "action_required": "pull"
+    And the response contains a "command" field with "/pl-remote-pull"
+    And no branch checkout has occurred (current branch unchanged)
+    And .purlin/runtime/active_branch is unchanged
 
 #### Scenario: Leave Checks Out Base Branch and Clears Active Branch
 
@@ -574,41 +668,49 @@ The following fixture tags provide real git branch topology for integration-leve
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
 
-#### Scenario: Join Branch Shows Operation Modal With Multi-Step Progress
+#### Scenario: Join Branch Shows Two-Phase Operation Modal
 
     Given the CDD server is running
     And an active branch is not set
     And feature/auth exists as a remote tracking branch
     When the user clicks the Join button for feature/auth
     Then an operation modal appears with title "Joining Branch"
-    And the modal initially shows a spinner with text "Fetching feature/auth..."
-    And the status message updates to "Switching to feature/auth..." during checkout
-    And the Close button is disabled while the operation is in flight
+    And the modal initially shows a spinner with text "Fetching and checking sync state..."
+    And the Close button is disabled while the assessment is in flight
     And clicking the overlay background does not close the modal
+    And on assessment completion the modal transitions to Phase 2 content
 
-#### Scenario: Join Branch Modal Shows Reconciliation Step for Behind
+#### Scenario: Join Branch Modal Shows Fast-Forward Option for Behind
 
     Given the CDD server is running
     And a local branch feature/auth exists that is BEHIND origin/feature/auth
+    And the working tree is clean
     When the user clicks the Join button for feature/auth
-    Then the modal status message progresses through "Fetching feature/auth..." then "Reconciling with remote..." then "Switching to feature/auth..."
+    Then the modal assessment completes and shows "Remote is 2 commits ahead."
+    And a [Fast-Forward & Join] button is visible
+    And clicking the button sends a join-confirm request with action "fast-forward"
 
-#### Scenario: Join Branch Modal Shows Action Required for Diverged
+#### Scenario: Join Branch Modal Shows Copyable Pull Command for Diverged
 
     Given the CDD server is running
     And a local branch feature/auth exists that is DIVERGED from origin/feature/auth
     When the user clicks the Join button for feature/auth
-    Then the modal completes successfully (branch is joined)
-    And the modal displays a prominent message: "Branch is diverged — run /pl-remote-pull to reconcile"
-    And the message persists until the user dismisses the modal
+    Then the modal assessment completes and shows "Branch has diverged"
+    And a copyable command block with "/pl-remote-pull origin/feature/auth" is displayed
+    And the command block uses monospace font with subtle background
+    And no Join action button is present (only Close)
+    And the branch is NOT checked out
 
-#### Scenario: Join Branch Modal Shows Action Required for Ahead
+#### Scenario: Join Branch Modal Shows Join Button and Push Guidance for Ahead
 
     Given the CDD server is running
     And a local branch feature/auth exists that is AHEAD of origin/feature/auth
+    And the working tree is clean
     When the user clicks the Join button for feature/auth
-    Then the modal completes successfully (branch is joined)
-    And the modal displays a message: "Local branch has N unpushed commits — run /pl-remote-push to sync remote"
+    Then the modal assessment completes and shows "Local is 3 commits ahead."
+    And a [Join] button is visible
+    And push guidance text is displayed
+    And clicking the button sends a join-confirm request with action "push"
 
 #### Scenario: Join Branch Modal Auto-Closes on Success
 
@@ -626,12 +728,13 @@ The following fixture tags provide real git branch topology for integration-leve
     And the Close button is enabled
     And clicking Close dismisses the modal
 
-#### Scenario: Join Branch Modal Auto-Close Delayed When Action Required
+#### Scenario: Join Branch Modal Holds Open When Confirm Returns Action Required
 
-    Given the operation modal is showing for a join on a DIVERGED branch
-    When the server returns { "status": "ok", "action_required": "pull" }
-    Then the modal does NOT auto-close (unlike a clean success)
-    And the user must click Close or acknowledge the action required message
+    Given the operation modal is showing a join-confirm response for an AHEAD branch
+    When the server returns { "status": "ok", "action_required": "push" }
+    Then the modal does NOT auto-close
+    And the push guidance message is displayed prominently
+    And the user must click Close to dismiss the modal
     And after dismissal refreshStatus() is called to update the dashboard
 
 #### Scenario: Leave Branch Shows Operation Modal During Request
@@ -658,14 +761,14 @@ The following fixture tags provide real git branch topology for integration-leve
     Then an operation modal appears with title "Creating Branch"
     And the modal shows a spinner with text "Creating feature/new..."
 
-#### Scenario: Switch Branch Shows Operation Modal During Request
+#### Scenario: Switch Branch Shows Two-Phase Operation Modal
 
     Given the CDD server is running
     And an active branch "feature/auth" is set
     When the user selects "hotfix/urgent" from the branch dropdown
     Then an operation modal appears with title "Joining Branch"
-    And the modal initially shows a spinner with text "Fetching hotfix/urgent..."
-    And the status message updates through reconciliation and checkout steps
+    And the modal initially shows a spinner with text "Fetching and checking sync state..."
+    And on assessment completion the modal transitions to Phase 2 content
 
 #### Scenario: Operation Modal Blocks Escape Key During Progress
 
@@ -701,6 +804,55 @@ The following fixture tags provide real git branch topology for integration-leve
     Then "feature/new" is shown in the branches table
     And "feature/auth" is still shown in the branches table
 
+#### Scenario: Join BEHIND Branch Shows Fast-Forward Option in Modal
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/behind-2
+    When the user navigates to the dashboard
+    And clicks Join on the BEHIND branch
+    Then the modal shows "Remote is 2 commits ahead."
+    And a [Fast-Forward & Join] button is visible
+    When the user clicks [Fast-Forward & Join]
+    Then the branch is joined successfully
+    And the modal auto-closes
+
+#### Scenario: Join AHEAD Branch Shows Push Guidance in Modal
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/ahead-3
+    When the user navigates to the dashboard
+    And clicks Join on the AHEAD branch
+    Then the modal shows "Local is 3 commits ahead."
+    And push guidance is displayed
+    And a [Join] button is visible
+
+#### Scenario: Join DIVERGED Branch Shows Copyable Pull Command
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/diverged
+    When the user navigates to the dashboard
+    And clicks Join on the DIVERGED branch
+    Then the modal shows a diverged message with commit counts
+    And a copyable command block with "/pl-remote-pull" is displayed
+    And the command block has monospace font with subtle background
+    And no Join action button is present (only Close)
+
+#### Scenario: Join Branch With Dirty Tree Shows Files and Blocks Action
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/behind-dirty
+    When the user navigates to the dashboard
+    And clicks Join on the branch
+    Then the modal shows sync state information
+    And a dirty file list is displayed in monospace font
+    And action buttons (Join, Fast-Forward) are absent
+    And only the Close button is available
+
+#### Scenario: Sync Badge Colors Match Design Spec
+
+    Given the CDD server is running against fixture tags with branches in various sync states
+    When the user navigates to the dashboard
+    Then SAME branches show a green badge (--purlin-status-good)
+    And AHEAD/BEHIND branches show a yellow badge (--purlin-status-todo)
+    And DIVERGED branches show an orange badge (--purlin-status-warning)
+    And EMPTY branches show normal text (--purlin-fg) without badge background
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
@@ -733,7 +885,9 @@ None.
 - [ ] Collapsed badge shows plain "BRANCH COLLABORATION" only when no remote is configured
 - [ ] Operation modal: centered overlay with semi-transparent background, matching Kill Isolation modal styling
 - [ ] Operation modal: CSS spinner (small, inline) visible during in-flight state
-- [ ] Operation modal: join/switch status message updates through steps: "Fetching..." -> "Reconciling..." (if needed) -> "Switching..."
+- [ ] Operation modal: join/switch Phase 1 shows "Fetching and checking sync state..." then transitions to Phase 2 interactive content
+- [ ] Operation modal: join Phase 2 shows sync-state-specific content with action buttons or dirty file list
+- [ ] Operation modal: DIVERGED state shows copyable command block with monospace font and copy button
 - [ ] Operation modal: spinner hidden and replaced with error text (red) on failure
 - [ ] Operation modal: Close button disabled (greyed) during in-flight, enabled on completion/error
 - [ ] Operation modal: auto-closes on success with brief visible transition (~400ms)
