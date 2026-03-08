@@ -11,7 +11,7 @@
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd
 
-[TODO]
+[TODO] <!-- reset: Builder must implement HEAD-based sync, operation modals, --prune -->
 
 ## 1. Overview
 
