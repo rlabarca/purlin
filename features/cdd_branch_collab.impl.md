@@ -18,6 +18,8 @@
 
 **[CLARIFICATION]** The spec references `--purlin-fg` for the EMPTY badge color, but this CSS custom property is not defined in the design token system (`design_visual_standards.md`). Used `--purlin-primary` instead, which is the defined token for primary/heading text color and achieves the same "normal text" visual intent. (Severity: INFO)
 
+**[DISCOVERY]** The spec (Section 2.5) defines EMPTY detection as requiring BOTH directions to be zero: `git log main..<branch>` AND `git log <branch>..main` must both return zero lines. This only works when the branch tip is identical to main — it breaks when main moves ahead after the branch was created (branch has no unique commits but main has progressed). Fixed to check only one direction: if `git log main..<branch>` returns zero lines, the branch has no unique work = EMPTY. Also removed the non-spec `NO_LOCAL` state for remote-only branches; when a remote-only branch is not EMPTY, sync is now computed against main using `origin/<branch>`. The spec's EMPTY detection criteria needs Architect update to reflect the one-directional check. (Severity: HIGH)
+
 ## Pruned Discoveries
 
 BUG -- IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.

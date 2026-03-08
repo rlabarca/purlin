@@ -326,19 +326,20 @@ class TestSwitchBranchUpdatesActiveBranch(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'hotfix-auth')
 
 
-class TestSyncStateNoLocal(unittest.TestCase):
-    """When local branch does not exist, sync state returns NO_LOCAL.
+class TestSyncStateNoLocalWithCommits(unittest.TestCase):
+    """When local branch does not exist but remote has unique commits,
+    sync state is computed against main using the remote ref.
 
-    Given an active branch "v0.5-sprint" is set
-    And the remote tracking ref origin/v0.5-sprint exists
+    Given the remote tracking ref origin/v0.5-sprint exists
     But local branch "v0.5-sprint" does not exist
+    And origin/v0.5-sprint has 1 commit not in main
     When compute_remote_sync_state is called
-    Then sync_state is "NO_LOCAL"
+    Then sync_state is "AHEAD" with commits_ahead 1
     """
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_no_local_state(self, mock_config, mock_run):
+    def test_no_local_computes_vs_main(self, mock_config, mock_run):
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
@@ -349,7 +350,7 @@ class TestSyncStateNoLocal(unittest.TestCase):
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
                 if range_arg.startswith('main..'):
-                    # Branch has commits relative to main (not EMPTY)
+                    # Branch has 1 unique commit relative to main
                     result.stdout = 'abc commit1\n'
                 else:
                     result.stdout = ''
@@ -359,8 +360,8 @@ class TestSyncStateNoLocal(unittest.TestCase):
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("v0.5-sprint")
-        self.assertEqual(state['sync_state'], 'NO_LOCAL')
-        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['sync_state'], 'AHEAD')
+        self.assertEqual(state['commits_ahead'], 1)
         self.assertEqual(state['commits_behind'], 0)
 
 
@@ -1435,6 +1436,38 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("feature/empty")
+        self.assertEqual(state['sync_state'], 'EMPTY')
+        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['commits_behind'], 0)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_empty_when_no_local_and_main_moved_ahead(self, mock_config, mock_run):
+        """Remote-only branch with no unique commits is EMPTY even if main moved ahead."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                ref = cmd[-1] if cmd else ''
+                if ref == 'RC0.8.0':
+                    # No local branch
+                    raise subprocess.CalledProcessError(128, cmd)
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has no unique commits vs main
+                    result.stdout = ''
+                elif range_arg.endswith('..main'):
+                    # Main has moved ahead (10 commits)
+                    result.stdout = '\n'.join([f'abc{i} commit{i}' for i in range(10)]) + '\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("RC0.8.0")
         self.assertEqual(state['sync_state'], 'EMPTY')
         self.assertEqual(state['commits_ahead'], 0)
         self.assertEqual(state['commits_behind'], 0)

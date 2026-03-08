@@ -1,7 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 50,
-  "failed": 0,
-  "total": 50,
-  "test_file": "tools/cdd/test_cdd_branch_collab.py"
-}
+{"status": "PASS", "passed": 51, "failed": 0, "total": 51, "runner": "pytest", "timestamp": "2026-03-08T19:30:00Z"}

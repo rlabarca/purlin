@@ -1174,31 +1174,52 @@ def compute_remote_sync_state(branch_name):
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         local_exists = False
 
-    # EMPTY check: branch has zero commits relative to main (branch tip = main tip)
-    # Use local ref if available, otherwise remote ref
+    # EMPTY check: branch has zero unique commits relative to main.
+    # A branch is EMPTY when it has no work committed to it, regardless of
+    # whether main has moved ahead since the branch was created.
+    # Use local ref if available, otherwise remote ref.
     check_ref = local_ref if local_exists else remote_ref
     try:
-        # Commits on branch not in main
+        # Commits on branch not in main (unique work on the branch)
         branch_ahead = subprocess.run(
             ['git', 'log', f'main..{check_ref}', '--oneline'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
         branch_ahead_lines = [l for l in branch_ahead.stdout.strip().splitlines() if l]
-        # Commits on main not in branch
-        branch_behind = subprocess.run(
-            ['git', 'log', f'{check_ref}..main', '--oneline'],
-            capture_output=True, text=True, check=True,
-            cwd=PROJECT_ROOT, timeout=5)
-        branch_behind_lines = [l for l in branch_behind.stdout.strip().splitlines() if l]
-        if len(branch_ahead_lines) == 0 and len(branch_behind_lines) == 0:
+        if len(branch_ahead_lines) == 0:
             return {'sync_state': 'EMPTY', 'commits_ahead': 0,
                     'commits_behind': 0}
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         pass  # main ref may not exist; skip EMPTY check
 
     if not local_exists:
-        return {'sync_state': 'NO_LOCAL', 'commits_ahead': 0,
-                'commits_behind': 0}
+        # Branch has unique commits but no local checkout.
+        # Compare remote ref against main to provide useful sync info.
+        try:
+            ahead_result = subprocess.run(
+                ['git', 'log', f'main..{remote_ref}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            ahead_lines = [l for l in ahead_result.stdout.strip().splitlines() if l]
+            behind_result = subprocess.run(
+                ['git', 'log', f'{remote_ref}..main', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            behind_lines = [l for l in behind_result.stdout.strip().splitlines() if l]
+            ca, cb = len(ahead_lines), len(behind_lines)
+            if ca == 0 and cb == 0:
+                state = 'SAME'
+            elif ca > 0 and cb == 0:
+                state = 'AHEAD'
+            elif ca == 0 and cb > 0:
+                state = 'BEHIND'
+            else:
+                state = 'DIVERGED'
+            return {'sync_state': state, 'commits_ahead': ca,
+                    'commits_behind': cb}
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            return {'sync_state': None, 'commits_ahead': 0,
+                    'commits_behind': 0}
 
     try:
         # Commits local has that remote doesn't (local ahead)
