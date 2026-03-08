@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 59, "failed": 0, "total": 59}
+{"status": "PASS", "passed": 59, "failed": 0, "total": 59, "test_file": "tools/cdd/test_cdd_model_configuration.py"}

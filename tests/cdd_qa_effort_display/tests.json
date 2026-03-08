@@ -1,1 +1,1 @@
-{"status": "PASS", "tests": 84, "failures": 0, "runner": "pytest", "timestamp": "2026-03-07T03:52:00Z"}
+{"status": "PASS", "passed": 84, "failed": 0, "total": 84, "test_file": "tools/cdd/test_cdd.py"}

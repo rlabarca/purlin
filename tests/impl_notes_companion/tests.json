@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "tests_run": 7,
-  "failures": 0,
-  "errors": 0
+  "passed": 7,
+  "failed": 0,
+  "total": 7
 }

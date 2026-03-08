@@ -1,8 +1,9 @@
 {
   "status": "PASS",
-  "tests_run": 19,
-  "failures": 0,
-  "errors": 0,
+  "passed": 19,
+  "failed": 0,
+  "total": 19,
+  "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
       "test": "test_add_tag_creates_tagged_commit (__main__.TestAddTagCreatesCommit.test_add_tag_creates_tagged_commit)",

@@ -1,8 +1,9 @@
 {
   "status": "PASS",
-  "tests_run": 19,
-  "failures": 0,
-  "errors": 0,
+  "passed": 19,
+  "failed": 0,
+  "total": 19,
+  "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
       "test": "test_critic_consistency_check (__main__.TestAllScriptsValidJSON.test_critic_consistency_check)",

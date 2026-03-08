@@ -1,1 +1,1 @@
-{"status": "PASS", "test_file": "tools/cdd/test_cdd.py", "classes": ["TestPortResolution", "TestStartShPortValidation", "TestRestartOnRerun", "TestQaBadgeHtml", "TestVerificationEffortInApiStatus"], "tests_run": 84, "tests_passed": 84, "timestamp": "2026-03-07T23:59:00Z"}
+{"status": "FAIL", "passed": 3, "failed": 4, "total": 7, "test_file": "tools/cdd/test_lifecycle.sh"}

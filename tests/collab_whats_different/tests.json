@@ -1,1 +1,1 @@
-{"status": "PASS", "tests_run": 59, "tests_passed": 59, "tests_failed": 0, "runner": "pytest", "timestamp": "2026-03-06T15:50:00Z"}
+{"status": "PASS", "passed": 27, "failed": 0, "total": 27}
