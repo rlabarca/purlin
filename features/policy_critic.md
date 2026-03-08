@@ -141,6 +141,19 @@ When a feature resets to TODO lifecycle state (spec modified after last status c
 ### 2.13 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
+### 2.15 Structural Completeness Integrity
+The `structural_completeness` check in the Implementation Gate validates that `tests/<feature>/tests.json` represents genuine test execution, not hand-written stubs. The following invariants MUST hold:
+
+1.  **Minimum Test Count Rule:** A `tests.json` file with `status: "PASS"` MUST have `total > 0`. A PASS with zero tests is semantically invalid — it means no code was exercised. The Critic MUST treat `total: 0` (or missing `total` field) combined with `status: "PASS"` as a FAIL with detail `"PASS with zero tests is invalid"`.
+
+2.  **Test File Existence Rule:** When `tests.json` reports `status: "PASS"`, at least one executable test file (`.py`, `.sh`, `.bats`) MUST exist either in `tests/<feature>/` or at a path declared in a `test_file` field within `tests.json`. A PASS with no discoverable test files is treated as FAIL with detail `"No test files found backing tests.json"`.
+
+3.  **Internal Consistency Rule:** If `tests.json` contains `failures` or `failed` fields with numeric values > 0, `status` MUST NOT be `"PASS"`. The Critic MUST treat this contradiction as FAIL with detail `"Internal inconsistency: status PASS with failures > 0"`.
+
+4.  **Schema Minimum Fields:** `tests.json` MUST contain at minimum: `status` (string), `passed` (int), `failed` (int), `total` (int). A file missing any of these required fields is treated as FAIL with detail `"Missing required fields: <list>"`. The bare `{"status": "PASS"}` format is no longer valid.
+
+**Constraint:** These invariants apply equally to the `structural_completeness` check in `critic.json` and to the Builder's `DONE` status computation. A feature cannot be Builder `DONE` if its `tests.json` violates any of these rules.
+
 ## 3. Configuration
 
 The following keys in `.purlin/config.json` govern Critic behavior:

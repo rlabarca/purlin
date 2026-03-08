@@ -33,7 +33,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 |-------|------|------|------|
 | Traceability | All automated scenarios have matching tests | >80% scenario coverage | <80% scenario coverage |
 | Policy adherence | No FORBIDDEN pattern violations | N/A | Any FORBIDDEN violation detected |
-| Structural completeness | `tests/<feature>/tests.json` exists with `"status": "PASS"` | Exists with `"status": "FAIL"` | Missing `tests.json` |
+| Structural completeness | `tests/<feature>/tests.json` exists with `"status": "PASS"`, `total > 0`, all required fields present, no internal inconsistencies, and at least one backing test file exists | Exists with `"status": "FAIL"` | Missing `tests.json`, OR `status: "PASS"` with `total: 0`, OR missing required fields (`status`, `passed`, `failed`, `total`), OR internal inconsistency (`status: "PASS"` with `failed > 0`), OR no backing test file found |
 | Builder decisions | All entries are INFO/CLARIFICATION | Has AUTONOMOUS entries | Has DEVIATION, unresolved DISCOVERY, or INFEASIBLE |
 | Logic drift (LLM) | All pairs ALIGNED | Some PARTIAL | Any DIVERGENT |
 
@@ -142,7 +142,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
 | **Builder** | Feature in TODO lifecycle state with new scenarios (spec modified after last status commit) | "Implement spec changes for critic_tool: 4 new scenario(s) [Fixture Repo Not Found..., Convention Path...], 0 modified, 0 removed" |
 | **Builder** | New scenario matched only to pre-existing tests (weak traceability match) | "New scenario 'Fixture Repo Not Found Produces Builder Warning' has no dedicated test — existing keyword match is likely a false positive" |
-| **Builder** | Structural completeness FAIL (missing/failing tests) | "Fix failing tests for submodule_bootstrap" |
+| **Builder** | Structural completeness FAIL (missing/failing tests, zero total, no backing test file, missing fields, internal inconsistency) | "Fix failing tests for submodule_bootstrap" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
 | **Builder** | Cross-validation warnings in regression scope (invalid targeted scope names) | "Fix scope declaration for critic_tool: Targeted scope name 'Bad Name' does not match any #### Scenario: title" |
@@ -172,7 +172,7 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 *   `DONE`: No HIGH or CRITICAL Architect action items.
 
 **Builder Status:**
-*   `DONE`: structural_completeness PASS (tests.json exists with PASS), no open BUGs, no FAIL-level traceability issues, AND feature is NOT in TODO lifecycle state.
+*   `DONE`: structural_completeness PASS (tests.json exists with PASS, `total > 0`, all required fields present, no internal inconsistencies, backing test file exists), no open BUGs, no FAIL-level traceability issues, AND feature is NOT in TODO lifecycle state.
 *   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit, implementation review needed), OR has other Builder action items to address (traceability gaps, open BUGs, etc.).
 *   `FAIL`: tests.json exists with status FAIL.
 *   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes (Builder halted, escalated to Architect).
@@ -532,9 +532,37 @@ The following fixture tags provide deterministic project states for integration-
     Then role_status.architect is DONE
 
 #### Scenario: Role Status Builder DONE
-    Given a feature has structural_completeness PASS and no open BUGs
+    Given a feature has structural_completeness PASS (tests.json with status PASS, total > 0, all required fields, backing test file exists)
+    And the feature has no open BUGs
     When the Critic tool computes role_status
     Then role_status.builder is DONE
+
+#### Scenario: Structural Completeness FAIL When Tests JSON Has Zero Total
+    Given a feature has tests/<feature>/tests.json with {"status": "PASS", "passed": 0, "failed": 0, "total": 0}
+    When the Critic tool runs the Implementation Gate structural completeness check
+    Then structural_completeness reports FAIL
+    And the detail says "PASS with zero tests is invalid"
+    And role_status.builder is NOT DONE
+
+#### Scenario: Structural Completeness FAIL When No Test File Exists
+    Given a feature has tests/<feature>/tests.json with {"status": "PASS", "passed": 5, "failed": 0, "total": 5}
+    And no executable test file (.py, .sh, .bats) exists in tests/<feature>/ or at a path declared in tests.json
+    When the Critic tool runs the Implementation Gate structural completeness check
+    Then structural_completeness reports FAIL
+    And the detail says "No test files found backing tests.json"
+
+#### Scenario: Structural Completeness FAIL On Internal Inconsistency
+    Given a feature has tests/<feature>/tests.json with {"status": "PASS", "passed": 3, "failed": 2, "total": 5}
+    When the Critic tool runs the Implementation Gate structural completeness check
+    Then structural_completeness reports FAIL
+    And the detail says "Internal inconsistency: status PASS with failures > 0"
+
+#### Scenario: Structural Completeness FAIL On Missing Required Fields
+    Given a feature has tests/<feature>/tests.json with {"status": "PASS"}
+    And the file is missing the required fields: passed, failed, total
+    When the Critic tool runs the Implementation Gate structural completeness check
+    Then structural_completeness reports FAIL
+    And the detail lists the missing required fields
 
 #### Scenario: Role Status Builder FAIL
     Given a feature has tests.json with status FAIL
