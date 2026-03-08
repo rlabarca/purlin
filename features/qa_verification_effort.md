@@ -20,14 +20,14 @@ The Critic MUST classify each feature's pending QA work into exactly six categor
 
 | Category | Key | Definition | Resolution Method |
 |----------|-----|------------|-------------------|
-| Auto:Web | `auto_web` | Manual scenarios + visual spec items on features with `> Web Testable:` metadata | Agent runs `/pl-web-verify` autonomously |
+| Auto:Web | `auto_web` | Visual spec items on features with `> Web Testable:` metadata | Agent runs `/pl-web-verify` autonomously |
 | Auto:TestOnly | `auto_test_only` | Feature has ONLY automated scenarios (no manual scenarios, no visual spec). QA confirms tests pass | Agent reads `tests.json`, ACKs pass status |
 | Auto:Skip | `auto_skip` | Regression scope is `cosmetic` -- skip entirely | Agent skips and logs |
 | Manual:Interactive | `manual_interactive` | Manual scenarios on non-web-testable features requiring human interaction | `/pl-verify` with human |
 | Manual:Visual | `manual_visual` | Visual spec checklist items on non-web-testable features | `/pl-verify` with screenshot exchange |
 | Manual:Hardware | `manual_hardware` | Steps explicitly requiring physical hardware or non-browser environment | Human-in-the-loop only |
 
-A single feature MAY have BOTH auto and manual items (e.g., some scenarios are web-testable but one was marked INCONCLUSIVE in a prior run). Counts reflect individual scenarios and visual checklist items, not whole features.
+A single feature MAY have BOTH auto and manual items. Counts reflect individual scenarios and visual checklist items, not whole features. If a manual scenario CAN be fully verified via browser automation, the Architect SHOULD move it to `### Automated Scenarios` with an `(auto-web)` tag -- at that point it is counted by traceability, not effort classification.
 
 ### 2.2 Classification Rules
 
@@ -36,7 +36,8 @@ A single feature MAY have BOTH auto and manual items (e.g., some scenarios are w
 *   **Visual checklist item count:** The number of `- [ ]` items under `## Visual Specification`.
 *   **Automated-only detection:** A feature is `auto_test_only` when it has automated scenarios, zero manual scenarios, zero visual spec items, and `tests/<feature>/tests.json` exists with `status: "PASS"`.
 *   **Cosmetic detection:** A feature is `auto_skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard (policy_critic.md Section 2.8) did not escalate it to `full`.
-*   **Hardware classification:** Manual scenario steps that reference physical hardware, serial ports, GPIO, USB devices, or non-browser environments are classified as `manual_hardware`. The Critic uses keyword matching on scenario step text: `hardware`, `serial`, `GPIO`, `USB`, `device`, `physical`. If no hardware keywords are found, manual scenarios on non-web features default to `manual_interactive`.
+*   **Web-testable visual reclassification:** On web-testable features, visual spec items are classified as `auto_web`. Manual scenarios on web-testable features follow the same classification as non-web features (`manual_interactive` or `manual_hardware`).
+*   **Hardware classification:** Manual scenario steps that reference physical hardware, serial ports, GPIO, USB devices, or non-browser environments are classified as `manual_hardware`. The Critic uses keyword matching on scenario step text: `hardware`, `serial`, `GPIO`, `USB`, `device`, `physical`. If no hardware keywords are found, manual scenarios default to `manual_interactive`.
 *   **Scope filtering:** Classification respects regression scoping. A `targeted:` scope reduces the count to only named scenarios/screens. A `cosmetic` scope sets all counts to zero and `auto_skip` to 1. A `dependency-only` scope counts only scenarios in the Critic's computed `regression_scope.scenarios` list.
 
 ### 2.3 Output Schema
@@ -85,15 +86,14 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
 
 ### Automated Scenarios
 
-#### Scenario: Web-testable feature classifies manual scenarios as auto_web
+#### Scenario: Web-testable feature classifies visual items as auto_web and manual scenarios normally
 
     Given a feature has `> Web Testable: http://localhost:9086` metadata
     And the feature has 3 manual scenarios and 2 visual checklist items
     When the Critic computes verification_effort for this feature
-    Then `auto_web` is 5 (3 scenarios + 2 visual items)
-    And `manual_interactive` is 0
-    And `manual_visual` is 0
-    And `summary` is "5 auto, 0 manual"
+    Then `auto_web` is 2 (visual items only)
+    And `manual_interactive` is 3
+    And `summary` is "2 auto, 3 manual"
 
 #### Scenario: Non-web feature classifies manual scenarios as manual_interactive
 
@@ -114,15 +114,15 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
     And all other category counts are 0
     And `summary` is "1 auto, 0 manual"
 
-#### Scenario: Mixed feature splits counts correctly
+#### Scenario: Web-testable feature with mixed manual types and visual items
 
-    Given a web-testable feature has 3 manual scenarios
-    And 1 scenario was previously marked INCONCLUSIVE by `/pl-web-verify`
+    Given a web-testable feature has 2 interactive manual scenarios and 1 hardware manual scenario
     And the feature has 2 visual checklist items
     When the Critic computes verification_effort
-    Then `auto_web` is 4 (2 remaining web scenarios + 2 visual items)
-    And `manual_interactive` is 1 (the INCONCLUSIVE scenario)
-    And `summary` is "4 auto, 1 manual"
+    Then `auto_web` is 2 (visual items only)
+    And `manual_interactive` is 2
+    And `manual_hardware` is 1
+    And `summary` is "2 auto, 3 manual"
 
 #### Scenario: Visual spec items classified by web-testability
 

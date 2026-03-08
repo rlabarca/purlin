@@ -173,7 +173,7 @@ The Critic MUST compute a `verification_effort` block for each feature, classify
 
 | Category | Key | Condition |
 |----------|-----|-----------|
-| Auto:Web | `auto_web` | Manual scenarios + visual items on `> Web Testable:` features |
+| Auto:Web | `auto_web` | Visual spec items on `> Web Testable:` features |
 | Auto:TestOnly | `auto_test_only` | Feature has only automated scenarios, tests pass, no manual/visual items |
 | Auto:Skip | `auto_skip` | Regression scope is `cosmetic` (not escalated) |
 | Manual:Interactive | `manual_interactive` | Manual scenarios on non-web features |

@@ -587,9 +587,7 @@ These scenarios are validated by the Builder's automated test suite.
     And a "READY FOR DELETION" banner is prominently displayed at the top of the content area
     And no tabs are shown in the tombstone modal
 
-### Manual Scenarios (Human Verification Required)
-
-#### Scenario: Server Start/Stop Lifecycle
+#### Scenario: Server Start/Stop Lifecycle (auto-web)
     Given the CDD server is not running
     When the User runs tools/cdd/start.sh
     Then the server starts on the configured port on the first invocation
@@ -599,6 +597,10 @@ These scenarios are validated by the Builder's automated test suite.
     And the PID file is removed
     When the User runs tools/cdd/start.sh again
     Then the server starts successfully on the first invocation without requiring a second run
+
+### Manual Scenarios (Human Verification Required)
+
+None.
 
 ## Visual Specification
 
