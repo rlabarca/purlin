@@ -124,6 +124,7 @@ Before starting work on each feature from the approved plan:
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
 *   **Fixture Detection (MANDATORY):** Check whether the feature spec contains a fixture tag section (heading matching `### 2.x ... Fixture Tags`). If yes, run `/pl-fixture` for the full setup workflow: three-tier repo lookup, setup script creation, and tag verification.
+*   **New Scenario Detection (MANDATORY):** Before concluding that a spec change requires no code, check the Critic report for HIGH-priority items on this feature (new scenarios, traceability gaps). If the Critic lists new unimplemented scenarios, the feature has real implementation work — you MUST NOT skip Steps 1-3. Additionally, diff the spec's `#### Scenario:` headings against existing test files in `tests/<feature_name>/`. New scenario headings with no corresponding test coverage = real work, not a cosmetic or dependency-only change.
 
 ### 1. Acknowledge and Plan
 *   State which feature file you are implementing.
@@ -186,6 +187,8 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
     | `targeted:Scenario A,Scenario B` | Only specific manual scenarios are affected by the change. |
     | `cosmetic` | Non-functional change (formatting, logging, internal refactor with no behavioral impact). |
     | `dependency-only` | Change propagated by a prerequisite update (no direct code changes to this feature). |
+
+    **Cosmetic Scope Guardrail:** Before using `cosmetic` or `dependency-only` scope, verify the Critic report has ZERO HIGH or CRITICAL implementation items for this feature. If the Critic reports new unimplemented scenarios, traceability gaps, or missing test coverage, you MUST use `full` scope and you MUST have completed Steps 1-3 (implementation and testing) first. Marking a feature Complete with cosmetic scope while the Critic shows unimplemented scenarios is a protocol violation.
 
     **Guidance:** When in doubt, use `full`. A broader scope is always safe; a narrower scope risks missing regressions.
 
