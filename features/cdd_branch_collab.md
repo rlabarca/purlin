@@ -51,7 +51,8 @@ When `.purlin/runtime/active_branch` is absent or empty:
 
 2. **Branches table** (below creation row):
    - Populated from `git branch -r` filtered to exclude `HEAD`, `main`/`master`.
-   - Columns: Branch | Action
+   - Columns: Branch | State | Action
+   - The **State** column shows the per-branch sync state badge using the same styling as the active-branch sync badge: EMPTY=normal text (`--purlin-fg`, no badge), SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange. State is computed from the `branch_collab_branches` data (Section 2.7).
    - Each row has a **Join** button in the Action column.
    - Empty state: "No remote branches found."
 
