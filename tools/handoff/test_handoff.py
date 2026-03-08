@@ -1092,12 +1092,18 @@ class TestPlRemotePullDoesNotCascade(unittest.TestCase):
         self.assertIn("/pl-isolated-pull", content)
 
 
-def _write_feature_results(feature_name, status):
+def _write_feature_results(feature_name, status, passed=0, failed=0, total=0):
     """Write tests.json for a specific feature."""
     tests_dir = os.path.join(PROJECT_ROOT, "tests", feature_name)
     os.makedirs(tests_dir, exist_ok=True)
     with open(os.path.join(tests_dir, "tests.json"), 'w') as f:
-        json.dump({"status": status}, f)
+        json.dump({
+            "status": status,
+            "passed": passed,
+            "failed": failed,
+            "total": total,
+            "test_file": "tools/handoff/test_handoff.py",
+        }, f, indent=2)
 
 
 # Map test class name prefixes to feature names
@@ -1122,26 +1128,57 @@ def _classify_test(test_id):
     return "workflow_checklist_system"
 
 
+def _classify_by_class(test):
+    """Return feature name for a test case using its class name directly."""
+    class_name = test.__class__.__name__
+    for prefix, feature in _FEATURE_PREFIX_MAP.items():
+        if class_name.startswith(prefix):
+            return feature
+    return "workflow_checklist_system"
+
+
+def _iter_tests(suite):
+    """Recursively iterate all test cases in a suite."""
+    for item in suite:
+        if isinstance(item, unittest.TestSuite):
+            yield from _iter_tests(item)
+        else:
+            yield item
+
+
 def run_tests():
     """Run all tests and write per-feature results."""
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
+
+    # Pre-count totals per feature before running (suite is consumed by run)
+    feature_totals = {}
+    all_tests = list(_iter_tests(suite))
+    for test in all_tests:
+        feature = _classify_by_class(test)
+        feature_totals[feature] = feature_totals.get(feature, 0) + 1
+
+    # Reload suite (list() consumed it) and run
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    # Partition failures by feature
+    # Count failures by feature
     feature_failures = {}
     for test, _ in result.failures + result.errors:
-        feature = _classify_test(str(test))
-        feature_failures.setdefault(feature, 0)
-        feature_failures[feature] += 1
+        feature = _classify_by_class(test)
+        feature_failures[feature] = feature_failures.get(feature, 0) + 1
 
     # Write per-feature tests.json
     all_features = set(_FEATURE_PREFIX_MAP.values())
     for feature in all_features:
-        status = "FAIL" if feature_failures.get(feature, 0) > 0 else "PASS"
-        _write_feature_results(feature, status)
-        print(f"  tests/{feature}/tests.json: {status}")
+        total = feature_totals.get(feature, 0)
+        failed = feature_failures.get(feature, 0)
+        passed = total - failed
+        status = "FAIL" if failed > 0 else "PASS"
+        _write_feature_results(feature, status, passed=passed,
+                               failed=failed, total=total)
+        print(f"  tests/{feature}/tests.json: {status} ({passed}/{total})")
 
     overall = "PASS" if result.wasSuccessful() else "FAIL"
     print(f"\nOverall: {overall}")

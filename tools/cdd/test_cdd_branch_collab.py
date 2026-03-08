@@ -1100,8 +1100,15 @@ def run_tests():
     tests_dir = os.path.join(PROJECT_ROOT, 'tests', 'cdd_branch_collab')
     os.makedirs(tests_dir, exist_ok=True)
     status = "PASS" if result.wasSuccessful() else "FAIL"
+    failed = len(result.failures) + len(result.errors)
     with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
-        json.dump({"status": status}, f)
+        json.dump({
+            "status": status,
+            "passed": result.testsRun - failed,
+            "failed": failed,
+            "total": result.testsRun,
+            "test_file": "tools/cdd/test_cdd_branch_collab.py",
+        }, f, indent=2)
 
     print(f"\ntests.json: {status}")
     return 0 if result.wasSuccessful() else 1

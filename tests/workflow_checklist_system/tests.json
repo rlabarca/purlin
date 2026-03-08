@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "passed": 8,
+  "failed": 0,
+  "total": 8,
+  "test_file": "tools/handoff/test_handoff.py"
+}
