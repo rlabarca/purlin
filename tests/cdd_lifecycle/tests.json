@@ -1,1 +1,1 @@
-{"status": "FAIL", "passed": 3, "failed": 4, "total": 7, "test_file": "tools/cdd/test_lifecycle.sh"}
+{"status": "PASS", "passed": 6, "failed": 0, "total": 6, "test_file": "tools/cdd/test_lifecycle.sh"}

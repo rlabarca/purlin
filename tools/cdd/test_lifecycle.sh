@@ -167,7 +167,7 @@ fi
 # ============================================================
 
 mkdir -p "$TEMP_TESTS_DIR"
-echo '{"status": "PASS"}' > "$TEMP_TESTS_DIR/tests.json"
+echo '{"status": "PASS", "passed": 1, "failed": 0, "total": 1, "test_file": "tools/cdd/test_lifecycle.sh"}' > "$TEMP_TESTS_DIR/tests.json"
 git add -f "$TEMP_TESTS_DIR/tests.json"
 git commit -m "test(lifecycle): add temp test results" --quiet
 
