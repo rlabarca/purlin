@@ -68,7 +68,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
 
-**Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, determine the collaboration branch (`collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`) and run `git merge <collaboration-branch>` to pull the merged implementation branch before starting verification. If the collaboration branch does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to the collaboration branch yet. Coordinate with the Builder before proceeding."
+**Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, determine the collaboration branch (`collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`) and run `git merge <collaboration-branch>` to pull the merged implementation branch before starting verification. If the collaboration branch does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to the collaboration branch yet. Coordinate with the Builder before proceeding." For isolation naming conventions and branch-scope limitations, see `instructions/references/collaboration_protocol.md`.
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
@@ -185,12 +185,7 @@ After all scenarios (functional and visual) for a feature are verified:
 
 ## 5.4 Context Guard Awareness
 
-The `PostToolUse` hook displays a context budget message after every tool call:
-
-- **Normal:** `CONTEXT GUARD: X / Y used` — X is turns consumed, Y is the configured threshold. Higher X means closer to the limit.
-- **Exceeded:** `CONTEXT GUARD: X / Y used -- Run /pl-resume save, then /clear, then /pl-resume to continue.` — X has reached or passed Y. Save your work immediately.
-
-When you see the exceeded message, stop current work, run `/pl-resume save`, then `/clear`, then `/pl-resume` to continue in a fresh context.
+The `PostToolUse` hook displays context budget messages. When the exceeded message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for message format details.
 
 ## 6. Session Conclusion
 

@@ -19,12 +19,20 @@ indicate this is a consumer project, not the Purlin repo itself).
 
 1. Confirm which base file to edit and what change is needed and why.
 2. Read the target base file in full.
-3. Run `/pl-override-edit --scan-only` on all `.purlin/` and `purlin-config-sample/` overrides
+3. **Context Budget Classification:** Before writing any new content, classify each addition as either:
+   - **Bright-line rule** (behavioral mandate, "MUST"/"MUST NOT", gate condition) -- belongs in the base file.
+   - **Protocol detail** (format spec, state machine, routing table, multi-step procedure, architectural description) -- belongs in a reference file (`instructions/references/*.md`) with a 2-3 line stub in the base file.
+   Apply this test: "If this content were missing from context, would the agent violate a rule on their next action?" If yes, it is a bright-line rule. If no, it is protocol detail.
+4. **Reference file check:** If the change adds protocol detail, either:
+   - Append to an existing reference file that covers the same domain, or
+   - Create a new reference file with a clear trigger condition in the stub.
+   The stub in the base file MUST include: (1) the trigger condition ("when X happens"), (2) the reference path, and (3) any bright-line constraint that cannot be deferred.
+5. Run `/pl-override-edit --scan-only` on all `.purlin/` and `purlin-config-sample/` overrides
    that correspond to the file being changed. If proposed changes would break existing overrides,
    surface them before proceeding.
-4. Apply additive-only principle where possible. For revisionary changes (not extensions), state
+6. Apply additive-only principle where possible. For revisionary changes (not extensions), state
    explicitly and get explicit user confirmation.
-5. Show the proposed edit and ask for user confirmation before writing.
-6. After approval, apply and commit:
+7. Show the proposed edit and ask for user confirmation before writing.
+8. After approval, apply and commit:
    `git commit -m "arch(instructions): <brief description of base file change>"`
-7. Run `tools/cdd/status.sh` to regenerate the Critic report.
+9. Run `tools/cdd/status.sh` to regenerate the Critic report.

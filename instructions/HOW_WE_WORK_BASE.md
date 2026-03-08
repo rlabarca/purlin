@@ -92,72 +92,10 @@ Releases are synchronization points where the entire project state -- Specs, Arc
 
 ## 6. Layered Instruction Architecture
 
-### Overview
-The Purlin framework uses a two-layer instruction model to separate framework rules from project-specific context:
-
-*   **Base Layer** (`instructions/` directory in the framework): Contains the framework's core rules, protocols, and philosophies. These are read-only from the consumer project's perspective and are updated by pulling new versions of the framework.
-*   **Override Layer** (`.purlin/` directory in the consumer project): Contains project-specific customizations, domain context, and workflow additions. These are owned and maintained by the consumer project.
-
-### How It Works
-At agent launch time, the launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) concatenate the base and override files into a single prompt:
-
-1. Base HOW_WE_WORK is loaded first (framework philosophy).
-2. Role-specific base instructions are appended (framework rules).
-3. HOW_WE_WORK overrides are appended (project workflow additions).
-4. Role-specific overrides are appended (project-specific rules).
-
-This ordering ensures that project-specific rules can refine or extend (but not silently contradict) the framework's base rules.
-
-### Submodule Consumption Pattern
-When used as a git submodule (e.g., at `purlin/`):
-1. The submodule provides the base layer (`purlin/instructions/`) and all tools (`purlin/tools/`).
-2. The consumer project runs `purlin/tools/init.sh` to initialize `.purlin/` with override templates.
-3. Tools resolve their paths via `tools_root` in `.purlin/config.json`.
-4. Upstream updates use the `/pl-update-purlin` agent skill for intelligent synchronization.
+Instructions use a two-layer model (base in `instructions/` + override in `.purlin/`). See `instructions/references/layered_instructions.md` for the full architecture, override management protocol, and path resolution conventions.
 
 ### Submodule Immutability Mandate
-**Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `purlin/`). The submodule is a read-only dependency. Specifically:
-*   **NEVER** edit files in `<submodule>/instructions/`, `<submodule>/tools/`, `<submodule>/features/`, or any other path inside the submodule.
-*   **NEVER** commit changes to the submodule from a consumer project. The submodule is only modified from its own repository.
-*   All project-specific customizations go in the consumer project's own files: `.purlin/` overrides, `features/`, and root-level launcher scripts.
-*   If an agent needs to change framework behavior, it MUST do so via the override layer (`.purlin/*_OVERRIDES.md`), never by editing base files.
-
-### Override Management Protocol
-
-**Override File Ownership (Role-Scoped Write Access):**
-
-Each override file has a designated set of agents permitted to modify it:
-
-| Override File | Who May Edit |
-|---|---|
-| `.purlin/HOW_WE_WORK_OVERRIDES.md` | Architect only |
-| `.purlin/ARCHITECT_OVERRIDES.md` | Architect only |
-| `.purlin/BUILDER_OVERRIDES.md` | Builder (own) and Architect |
-| `.purlin/QA_OVERRIDES.md` | QA (own) and Architect |
-
-No agent may modify another agent's exclusive override file. The Architect has universal override access as the process owner.
-
-**Base File Protection:**
-
-Consumer project agents MUST NOT modify base instruction files under any circumstances — governed by the Submodule Immutability Mandate above. If a consumer project needs to change framework behavior, changes go into the appropriate override file in `.purlin/`.
-
-Agents in the Purlin framework's own repository (not a consumer project) may modify base files, but MUST use `/pl-edit-base` to do so. Direct editing without this command is prohibited.
-
-**Override Editing Rules (apply in all contexts):**
-1. Read existing content first. Never overwrite without reading.
-2. Additive only. Do not delete or contradict existing rules.
-3. No contradictions with base. Surface conflicts with `/pl-override-edit --scan-only` before committing.
-4. No code or script content. Override files are prose instruction documents only.
-5. Commit after editing.
-
-**Commands:** `/pl-override-edit` (role-scoped edit with built-in conflict scan; use `--scan-only` for read-only conflict scanning), `/pl-edit-base` (base file edit — Purlin repo only, never distributed to consumers).
-
-### Path Resolution Conventions
-In a submodule setup, the project tree contains two `features/` directories and two `tools/` directories. The following conventions prevent ambiguity:
-
-*   **`features/` directory:** Always refers to `<project_root>/features/` -- the **consumer project's** feature specs. In a submodule setup, this is NOT the framework submodule's own `features/` directory. The framework's features are internal to the submodule and are not scanned by consumer project tools.
-*   **`tools/` references:** All `tools/` references in instruction files are shorthand that resolves against the `tools_root` value from `.purlin/config.json`. In standalone mode, `tools_root` is `"tools"`. In submodule mode, `tools_root` is `"<submodule>/tools"` (e.g., `"purlin/tools"`). Agents MUST read `tools_root` from config before constructing tool paths -- do NOT assume `tools/` is a direct child of the project root.
-*   **`PURLIN_PROJECT_ROOT`:** All launcher scripts (both standalone and bootstrap-generated) export this environment variable as the authoritative project root. All Python and shell tools check this variable first, falling back to directory-climbing detection only when it is not set.
+**Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `purlin/`). All project-specific customizations go in `.purlin/` overrides, `features/`, and root-level launcher scripts. If an agent needs to change framework behavior, it MUST use the override layer (`.purlin/*_OVERRIDES.md`), never edit base files.
 
 ## 7. User Testing Protocol
 
@@ -170,31 +108,7 @@ Feature files MAY contain a `## User Testing Discoveries` section as the last se
 *   **[INTENT_DRIFT]** -- Behavior matches the spec literally but misses the actual intent.
 *   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable.
 
-### 7.3 Discovery Lifecycle
-Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
-
-**Shortcut — No Spec Change Needed:** When the Architect (for DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE) or Builder (for BUG) reviews an OPEN entry and confirms no specification or implementation change is required, the entry moves directly to `RESOLVED` with a resolution note explaining why no change was needed. The SPEC_UPDATED step is skipped. QA prunes it normally.
-
-*   **OPEN:** Any agent records the finding.
-*   **SPEC_UPDATED:** Architect updates Gherkin scenarios to address it.
-*   **RESOLVED:** The fix is complete (or no fix was needed). QA prunes the entry — this is unconditional regardless of the `Action Required` field value.
-*   **PRUNED:** QA removes entry from Discoveries, adds one-liner to Implementation Notes. Git history preserves full record. **Format:** Pruned one-liners MUST use unbracketed type labels (e.g., `BUG —`, `DISCOVERY —`), never bracket-style tags (`[BUG]`, `[DISCOVERY]`). Bracket tags in Implementation Notes are reserved for Builder Decisions (see policy_critic.md Section 2.3).
-
-### 7.4 Queue Hygiene
-*   The section only contains OPEN and SPEC_UPDATED entries (active work).
-*   RESOLVED entries are pruned by the QA Agent.
-*   An empty `## User Testing Discoveries` section (or its absence) means the feature is clean.
-
-### 7.5 Feedback Routing
-
-**From User Testing Discoveries (any agent may record, routed by type):**
-*   **BUG** -> Builder must fix implementation. **Exception:** when the BUG is in instruction-file-driven agent behavior (startup protocol ordering, role compliance, slash command gating), the recorder MUST set `Action Required: Architect` in the discovery entry. The Architect fixes it by strengthening the relevant instruction file. The Critic routes BUG action items by reading the `Action Required` field — the default is Builder, but `Action Required: Architect` overrides this for instruction-level bugs.
-*   **DISCOVERY** -> Architect must add missing scenarios, then Builder re-implements.
-*   **INTENT_DRIFT** -> Architect must refine scenario intent, then Builder re-implements.
-*   **SPEC_DISPUTE** -> Architect must review the disputed scenario with the user and revise or reaffirm it. The scenario is **suspended** (QA skips it) until the Architect resolves the dispute.
-
-**Builder-to-Architect (from Implementation):**
-*   **INFEASIBLE** -> The feature cannot be implemented as specified (technical constraints, contradictory requirements, or dependency issues). Builder halts work on the feature, records a detailed rationale in Implementation Notes, and skips to the next feature. Architect must revise the spec before the Builder can resume.
+For discovery lifecycle (status progression), queue hygiene, and feedback routing details, see `instructions/references/user_testing_protocol.md`.
 
 ## 8. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `tools/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
@@ -232,13 +146,7 @@ Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggrega
 *   **Builder:** Features in TODO lifecycle, failing automated tests, traceability gaps, open BUG entries.
 *   **QA:** Features in TESTING lifecycle, SPEC_UPDATED discoveries awaiting re-verification, visual verification passes.
 
-### 8.3 Automated Test Status in the CDD Dashboard
-Automated test results are NOT reported as a separate column. They are surfaced through the existing Builder and QA role columns:
-
-*   **Builder column:** `DONE` means the spec is structurally complete and no open BUGs exist (automated tests passed). `FAIL` means `tests/<feature>/tests.json` exists with `status: "FAIL"` (automated tests failed).
-*   **QA column:** `CLEAN` requires `tests/<feature>/tests.json` to exist with `status: "PASS"` (automated tests exist and passed). `N/A` means no `tests.json` exists (no automated test coverage).
-
-In short: Builder `DONE` implies automated tests passed. QA `CLEAN` vs `N/A` signals whether automated test coverage exists at all. There is no separate "test status" indicator -- automated test health is embedded in the role status model.
+For how automated test status maps to Builder/QA dashboard columns, see `instructions/references/cdd_internals.md`.
 
 ## 9. Visual Specification Convention
 

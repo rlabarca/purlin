@@ -21,6 +21,9 @@ When reviewing or modifying feature specs that touch tool behavior, verify the s
 *   **Config access patterns** MUST specify `PURLIN_PROJECT_ROOT` as the primary detection mechanism, with climbing as fallback.
 *   Reference `features/submodule_bootstrap.md` Sections 2.10-2.14 as the canonical submodule safety contract.
 
+## Base File Soft Check
+Although Architect write access includes `instructions/*.md`, base files MUST NOT be modified without using `/pl-edit-base`. This command confirms the Purlin framework context and enforces the additive-only principle. In consumer projects, base files are inside the submodule and are governed by the Submodule Immutability Mandate -- they are never editable regardless of tool used.
+
 ## Script Classification Mandate
 
 When designing features that require implementation scripts, you MUST classify each script before delegating to the Builder:
