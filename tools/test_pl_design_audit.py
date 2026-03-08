@@ -423,7 +423,7 @@ if __name__ == '__main__':
     outdir = os.path.join(PROJECT_ROOT, 'tests', 'pl_design_audit')
     os.makedirs(outdir, exist_ok=True)
     status = "PASS" if failed == 0 else "FAIL"
-    results = {"status": status, "passed": passed, "failed": failed, "total": total}
+    results = {"status": status, "passed": passed, "failed": failed, "total": total, "test_file": "tools/test_pl_design_audit.py"}
     outpath = os.path.join(outdir, 'tests.json')
     with open(outpath, 'w') as f:
         json.dump(results, f)

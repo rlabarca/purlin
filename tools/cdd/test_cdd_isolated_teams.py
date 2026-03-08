@@ -1220,6 +1220,7 @@ if __name__ == '__main__':
             "passed": passed,
             "failed": failed,
             "total": total,
+            "test_file": "tools/cdd/test_cdd_isolated_teams.py"
         }, f)
 
     print(f"\nResults: {passed} passed, {failed} failed out of {total}")

@@ -86,11 +86,12 @@ def run_tests_and_write_json():
     for test, traceback in result.failures + result.errors:
         failures.append({"test": str(test), "message": traceback})
 
+    failed_count = len(result.failures) + len(result.errors)
     report = {
         "status": status,
-        "tests_run": result.testsRun,
-        "failures": len(result.failures),
-        "errors": len(result.errors),
+        "passed": result.testsRun - failed_count,
+        "failed": failed_count,
+        "total": result.testsRun,
         "details": failures,
     }
 

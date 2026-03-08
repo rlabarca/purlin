@@ -493,14 +493,16 @@ write_results() {
     local results
     results=$(jq -n \
         --arg status "$status" \
-        --argjson tests_run "$TESTS_TOTAL" \
-        --argjson failures "$TESTS_FAILED" \
+        --argjson passed "$TESTS_PASSED" \
+        --argjson failed "$TESTS_FAILED" \
+        --argjson total "$TESTS_TOTAL" \
         --argjson details "$TEST_DETAILS_JSON" \
         '{
             status: $status,
-            tests_run: $tests_run,
-            failures: $failures,
-            errors: 0,
+            passed: $passed,
+            failed: $failed,
+            total: $total,
+            test_file: "dev/test_agent_behavior.sh",
             details: $details
         }')
 

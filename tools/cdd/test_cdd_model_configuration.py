@@ -936,6 +936,7 @@ if __name__ == '__main__':
             'status': status,
             'passed': passed,
             'failed': failed,
-            'total': result.testsRun
+            'total': result.testsRun,
+            'test_file': 'tools/cdd/test_cdd_model_configuration.py'
         }, f)
     print(f"\ntests.json: {status}")

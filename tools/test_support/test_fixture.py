@@ -657,13 +657,15 @@ if __name__ == "__main__":
         out_file = os.path.join(out_dir, "tests.json")
 
         all_passed = len(result.failures) == 0 and len(result.errors) == 0
+        failed = len(result.failures) + len(result.errors)
         with open(out_file, "w") as f:
             json.dump(
                 {
                     "status": "PASS" if all_passed else "FAIL",
-                    "tests_run": result.testsRun,
-                    "failures": len(result.failures),
-                    "errors": len(result.errors),
+                    "passed": result.testsRun - failed,
+                    "failed": failed,
+                    "total": result.testsRun,
+                    "test_file": "tools/test_support/test_fixture.py",
                     "details": result.results,
                 },
                 f,

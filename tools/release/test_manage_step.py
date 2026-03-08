@@ -539,6 +539,7 @@ def write_results(r):
         "passed": r.passed,
         "failed": r.failed,
         "total": r.total(),
+        "test_file": "tools/release/test_manage_step.py"
     }
     with open(os.path.join(TESTS_DIR, "tests.json"), 'w') as f:
         json.dump(result, f)

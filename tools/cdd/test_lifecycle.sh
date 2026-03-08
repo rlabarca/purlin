@@ -297,11 +297,11 @@ else
     STATUS="FAIL"
 fi
 
-# Write to tests/cdd_status_monitor/tests.json
-RESULTS_DIR="tests/cdd_status_monitor"
+# Write to tests/cdd_lifecycle/tests.json
+RESULTS_DIR="tests/cdd_lifecycle"
 mkdir -p "$RESULTS_DIR"
 cat > "$RESULTS_DIR/tests.json" << EOF
-{"status": "$STATUS", "tests": $TOTAL, "failures": $FAILED, "tool": "cdd_lifecycle", "runner": "bash"}
+{"status": "$STATUS", "passed": $PASSED, "failed": $FAILED, "total": $TOTAL, "test_file": "tools/cdd/test_lifecycle.sh"}
 EOF
 
 echo ""

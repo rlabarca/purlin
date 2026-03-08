@@ -5,7 +5,9 @@ for all automated scenarios. Since skills are agent instructions (not
 executable code), tests verify instruction presence rather than runtime behavior.
 """
 
+import json
 import os
+import sys
 import unittest
 
 
@@ -52,4 +54,17 @@ class TestPlCddSkill(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    failed = len(result.failures) + len(result.errors)
+    out_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(out_dir, 'tests.json'), 'w') as f:
+        json.dump({
+            'status': 'PASS' if result.wasSuccessful() else 'FAIL',
+            'passed': result.testsRun - failed,
+            'failed': failed,
+            'total': result.testsRun,
+        }, f)
+    sys.exit(0 if result.wasSuccessful() else 1)

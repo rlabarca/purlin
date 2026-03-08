@@ -252,12 +252,13 @@ if __name__ == '__main__':
     result = runner.run(suite)
 
     status = 'PASS' if result.wasSuccessful() else 'FAIL'
+    failed = len(result.failures) + len(result.errors)
     with open(status_file, 'w') as f:
         json.dump({
             'status': status,
-            'tests_run': result.testsRun,
-            'failures': len(result.failures),
-            'errors': len(result.errors),
+            'passed': result.testsRun - failed,
+            'failed': failed,
+            'total': result.testsRun,
         }, f, indent=2)
 
     print(f'\nResult: {status} ({result.testsRun} tests)')

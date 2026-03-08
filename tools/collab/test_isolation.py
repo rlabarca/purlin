@@ -509,4 +509,5 @@ if __name__ == "__main__":
         "passed": passed,
         "failed": failures,
         "total": total,
+        "test_file": "tools/collab/test_isolation.py"
     })

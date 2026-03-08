@@ -587,13 +587,14 @@ if __name__ == '__main__':
     result = runner.run(suite)
 
     status = "PASS" if result.wasSuccessful() else "FAIL"
+    failed = len(result.failures) + len(result.errors)
     with open(status_file, 'w') as f:
         json.dump({
             "status": status,
-            "tests": result.testsRun,
-            "failures": len(result.failures) + len(result.errors),
-            "tool": "cdd_spec_map",
-            "runner": "unittest"
+            "passed": result.testsRun - failed,
+            "failed": failed,
+            "total": result.testsRun,
+            "test_file": "tools/cdd/test_spec_map.py"
         }, f)
     print(f"\n{status_file}: {status}")
 

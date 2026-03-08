@@ -455,11 +455,12 @@ def generate_test_results():
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
+    failed = len(result.failures) + len(result.errors)
     test_results = {
         "status": "PASS" if result.wasSuccessful() else "FAIL",
-        "tests_run": result.testsRun,
-        "failures": len(result.failures),
-        "errors": len(result.errors),
+        "passed": result.testsRun - failed,
+        "failed": failed,
+        "total": result.testsRun,
         "details": []
     }
 

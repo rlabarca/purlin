@@ -1775,14 +1775,22 @@ if __name__ == '__main__':
     result = runner.run(suite)
 
     status = "PASS" if result.wasSuccessful() else "FAIL"
+    failed = len(result.failures) + len(result.errors)
+    report = {
+        "status": status,
+        "passed": result.testsRun - failed,
+        "failed": failed,
+        "total": result.testsRun,
+        "test_file": "tools/cdd/test_cdd.py"
+    }
     with open(status_file, 'w') as f:
-        json.dump({
-            "status": status,
-            "tests": result.testsRun,
-            "failures": len(result.failures) + len(result.errors),
-            "tool": "cdd",
-            "runner": "unittest"
-        }, f)
+        json.dump(report, f)
+    # Also write to cdd_qa_effort_display (covered by TestQaBadgeHtml,
+    # TestVerificationEffortInApiStatus in this same test suite)
+    qa_effort_dir = os.path.join(project_root, "tests", "cdd_qa_effort_display")
+    os.makedirs(qa_effort_dir, exist_ok=True)
+    with open(os.path.join(qa_effort_dir, "tests.json"), 'w') as f:
+        json.dump(report, f)
     print(f"\n{status_file}: {status}")
 
     sys.exit(0 if result.wasSuccessful() else 1)
