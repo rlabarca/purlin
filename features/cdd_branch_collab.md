@@ -134,7 +134,15 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 - Uses locally cached remote tracking refs -- never triggers a network fetch during the 5-second poll.
 - `git log origin/<branch>..<branch> --oneline` -> commits local branch is ahead.
 - `git log <branch>..origin/<branch> --oneline` -> commits remote is ahead.
-- EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. EMPTY is a new state: when the branch has zero commits relative to the base branch (main/master), it shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background. This indicates the branch was created but no work has been committed to it. Detection: `git log main..<branch> --oneline` returns zero lines (branch has no unique commits beyond main). The reverse direction (`<branch>..main`) is NOT checked -- main may have progressed after the branch was created, but the branch is still considered EMPTY if it has no unique work. SAME/AHEAD/BEHIND/DIVERGED compare local vs remote as before.
+- EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. For branches in the branches table (setup mode, no local checkout), sync state is computed by comparing `origin/<branch>` against the current HEAD:
+  - `git log HEAD..origin/<branch> --oneline` -> commits the branch has that HEAD does not.
+  - `git log origin/<branch>..HEAD --oneline` -> commits HEAD has that the branch does not.
+  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit. The branch was just created and has no work. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
+  - **SAME:** Both directions return zero lines (identical to EMPTY detection -- in practice, EMPTY and SAME are equivalent for remote-only branches; use EMPTY as the label since it better communicates the branch state to the user).
+  - **AHEAD:** Branch has unique commits HEAD does not, but HEAD has none the branch lacks. Shows yellow badge.
+  - **BEHIND:** HEAD has commits the branch lacks, but the branch has none HEAD lacks. This is a stale branch. Shows yellow badge.
+  - **DIVERGED:** Both have unique commits. Shows orange badge.
+- For the active branch panel (operational mode), sync state compares local vs remote of the same branch (existing logic): `git log origin/<branch>..<branch>` and `git log <branch>..origin/<branch>`. SAME/AHEAD/BEHIND/DIVERGED four-state. EMPTY applies when the branch has zero unique commits relative to main (`git log main..<branch>` returns zero lines AND `git log <branch>..main` returns zero lines -- both directions must be zero, meaning branch tip equals main tip).
 - When remote tracking ref `origin/<branch>` does not exist yet (pre-first-fetch): show inline note "Run Check Remote to see sync state" instead of a badge.
 
 ### 2.6 Cross-Section Annotation in LOCAL BRANCH
@@ -325,10 +333,10 @@ The following fixture tags provide real git branch topology for integration-leve
     Then .purlin/runtime/active_branch contains "hotfix/urgent"
     And GET /status.json shows branch_collab.active_branch as "hotfix/urgent"
 
-#### Scenario: Sync State EMPTY When Branch Has No Commits Relative to Base
+#### Scenario: Sync State EMPTY When Branch Tip Equals Main Tip
 
     Given an active branch "feature/empty" is set
-    And feature/empty has zero unique commits beyond main (git log main..feature/empty is empty)
+    And feature/empty tip equals main tip (both directions of git log return zero lines)
     When an agent calls GET /status.json
     Then branch_collab.sync_state is "EMPTY"
     And branch_collab.commits_ahead is 0
@@ -337,10 +345,20 @@ The following fixture tags provide real git branch topology for integration-leve
 #### Scenario: EMPTY Badge Rendered Without Badge Background
 
     Given an active branch "feature/empty" is set
-    And feature/empty has zero unique commits beyond main
+    And feature/empty tip equals main tip
     When the dashboard HTML is generated
     Then the sync state position shows "EMPTY" in normal text color (--purlin-fg)
     And the text does not use a badge class (no st-good, st-todo, st-disputed)
+
+#### Scenario: Branches Table Shows BEHIND For Stale Remote Branch
+
+    Given no active branch is set
+    And origin/RC0.8.0 exists as a remote tracking branch
+    And origin/RC0.8.0 is a strict ancestor of HEAD (HEAD has commits RC0.8.0 does not)
+    And origin/RC0.8.0 has no unique commits beyond HEAD
+    When the dashboard HTML is generated
+    Then the branches table shows "BEHIND" badge for RC0.8.0
+    And the badge uses yellow color (--purlin-status-todo)
 
 #### Scenario: Sync State SAME When Local and Remote Are Identical
 
