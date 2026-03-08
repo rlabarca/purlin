@@ -15,7 +15,9 @@ Save or restore agent session state across context clears and terminal restarts.
 
 ## Save Mode (`/pl-resume save`)
 
-Write a structured checkpoint to `.purlin/cache/session_checkpoint.md`. Compose the file based on your own understanding of your current session state. Do NOT commit the file (`.purlin/cache/` is gitignored).
+Write a structured checkpoint to a **role-scoped** file: `.purlin/cache/session_checkpoint_<role>.md` (e.g., `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`). The agent determines `<role>` from its own identity. Compose the file based on your own understanding of your current session state. Do NOT commit the file (`.purlin/cache/` is gitignored).
+
+Role-scoped files ensure that concurrent agents can save checkpoints independently without overwriting each other. Each role's checkpoint is isolated.
 
 ### Checkpoint Format
 
@@ -81,7 +83,7 @@ Append these sections after the common fields:
 Print confirmation:
 
 ```
-Checkpoint saved to .purlin/cache/session_checkpoint.md
+Checkpoint saved to .purlin/cache/session_checkpoint_<role>.md
 Role: <role> | Branch: <branch> | Feature: <feature or "none">
 You can now /clear or close the terminal. Run /pl-resume to recover.
 ```
@@ -106,15 +108,16 @@ find .purlin/runtime -maxdepth 1 -name "turn_count_${PPID}_*" -delete 2>/dev/nul
 
 **CRITICAL: This is the ONE AND ONLY context guard reset.** Do NOT reset the counter again at any later step, at the end of the resume process, or before presenting work to the user. The counter must increment normally from this point forward for the remainder of the session.
 
-### Step 1 -- Role Detection (3-Tier Fallback)
+### Step 1 -- Role Detection (4-Tier Fallback)
 
 1. **Explicit argument:** If the user invoked `/pl-resume <role>`, use that role.
 2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "Role Definition: The Builder", "Role Definition: The Architect", "Role Definition: The QA"). If found, use the detected role.
-3. **Ask user:** If neither method succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
+3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
+4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
 
 ### Step 2 -- Checkpoint Detection
 
-Use Bash `test -f .purlin/cache/session_checkpoint.md && echo EXISTS || echo MISSING` to check for the checkpoint file. Do NOT use the Read tool for this check — Read errors on missing files and cancels sibling parallel calls.
+Use Bash `test -f .purlin/cache/session_checkpoint_<role>.md && echo EXISTS || echo MISSING` to check for the role-scoped checkpoint file. The `<role>` value comes from Step 1. Do NOT use the Read tool for this check — Read errors on missing files and cancels sibling parallel calls.
 
 - **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. The checkpoint's "Next" list becomes the starting work plan.
 - **MISSING:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
@@ -182,5 +185,5 @@ Uncommitted:    <none | summary>
 
 ### Step 7 -- Cleanup and Continue
 
-- If a checkpoint file was read in Step 2, **delete it** (it has been consumed).
+- If a checkpoint file was read in Step 2, **delete it** (the role-scoped file `session_checkpoint_<role>.md` has been consumed). Any other role's checkpoint files remain untouched.
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 6) gives the user visibility; they can interrupt if needed.

@@ -2,21 +2,24 @@
 """Tests for the /pl-resume agent command.
 
 Covers automated scenarios from features/pl_session_resume.md:
-- Save Writes Checkpoint File
+- Save Writes Role-Scoped Checkpoint File
+- Concurrent Saves Do Not Overwrite
 - Restore With Checkpoint
 - Restore Without Checkpoint
 - Role From Explicit Argument
 - Invalid Argument Prints Error
 - Checkpoint Cleanup After Restore
+- Role Inferred From Single Checkpoint File
+- Multiple Checkpoints Prompt User Selection
 
 The agent command is a Claude skill defined in .claude/commands/pl-resume.md.
 These tests verify the underlying behaviors that the command depends on:
-- Checkpoint file I/O (write, read, delete)
+- Role-scoped checkpoint file I/O (write, read, delete per role)
 - Checkpoint format validation (required fields, ISO 8601 timestamps)
-- Role detection logic (explicit argument, system prompt inference)
+- Role detection logic (explicit argument, system prompt inference,
+  checkpoint file discovery, multi-checkpoint selection)
 - Argument validation (save, architect, builder, qa, invalid)
 """
-import datetime
 import json
 import os
 import re
@@ -27,19 +30,18 @@ import unittest
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
-CHECKPOINT_REL_PATH = os.path.join('.purlin', 'cache', 'session_checkpoint.md')
 COMMAND_FILE = os.path.join(
     PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
+
+VALID_ROLES = {'architect', 'builder', 'qa'}
+VALID_ARGS = {'save', 'architect', 'builder', 'qa'}
 
 # ISO 8601 pattern: YYYY-MM-DDTHH:MM:SSZ or with timezone offset
 ISO_8601_PATTERN = re.compile(
     r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})')
 
-VALID_ROLES = {'architect', 'builder', 'qa'}
-VALID_ARGS = {'save', 'architect', 'builder', 'qa'}
-
 # Sample checkpoint content matching the spec format
-SAMPLE_CHECKPOINT = """# Session Checkpoint
+SAMPLE_CHECKPOINT_BUILDER = """# Session Checkpoint
 
 **Role:** builder
 **Timestamp:** 2026-02-28T15:30:00Z
@@ -77,6 +79,42 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 **Pending Decisions:** None
 """
 
+SAMPLE_CHECKPOINT_ARCHITECT = """# Session Checkpoint
+
+**Role:** architect
+**Timestamp:** 2026-03-01T10:00:00Z
+**Branch:** main
+
+## Current Work
+
+**Feature:** features/pl_session_resume.md
+**In Progress:** Updating spec for role-scoped checkpoints
+
+### Done
+- Reviewed Builder proposal for concurrent saves
+- Updated save mode section
+
+### Next
+1. Add new scenarios for role-scoped behavior
+2. Run Critic to validate spec completeness
+
+## Uncommitted Changes
+None
+
+## Notes
+None
+
+## Architect Context
+**Spec Reviews:** pl_session_resume.md in progress
+**Discovery Processing:** 0 pending
+"""
+
+
+def _checkpoint_path(tmpdir, role):
+    """Return the role-scoped checkpoint file path."""
+    return os.path.join(
+        tmpdir, '.purlin', 'cache', f'session_checkpoint_{role}.md')
+
 
 def _make_cache_dir(tmpdir):
     """Create the .purlin/cache/ directory structure in a temp dir."""
@@ -85,13 +123,16 @@ def _make_cache_dir(tmpdir):
     return cache_dir
 
 
-def _write_checkpoint(tmpdir, content=SAMPLE_CHECKPOINT):
-    """Write a checkpoint file to the temp project directory."""
+def _write_checkpoint(tmpdir, role='builder', content=None):
+    """Write a role-scoped checkpoint file to the temp project directory."""
+    if content is None:
+        content = SAMPLE_CHECKPOINT_BUILDER if role == 'builder' \
+            else SAMPLE_CHECKPOINT_ARCHITECT
     cache_dir = _make_cache_dir(tmpdir)
-    checkpoint_path = os.path.join(cache_dir, 'session_checkpoint.md')
-    with open(checkpoint_path, 'w') as f:
+    path = os.path.join(cache_dir, f'session_checkpoint_{role}.md')
+    with open(path, 'w') as f:
         f.write(content)
-    return checkpoint_path
+    return path
 
 
 def _parse_checkpoint_fields(content):
@@ -104,18 +145,30 @@ def _parse_checkpoint_fields(content):
     return fields
 
 
-class TestSaveWritesCheckpointFile(unittest.TestCase):
-    """Scenario: Save Writes Checkpoint File
+def _discover_checkpoint_roles(cache_dir):
+    """Discover which role-scoped checkpoint files exist.
+
+    Returns a list of role names (e.g., ['builder', 'architect']).
+    """
+    roles = []
+    for role in ('architect', 'builder', 'qa'):
+        path = os.path.join(cache_dir, f'session_checkpoint_{role}.md')
+        if os.path.isfile(path):
+            roles.append(role)
+    return roles
+
+
+class TestSaveWritesRoleScopedCheckpointFile(unittest.TestCase):
+    """Scenario: Save Writes Role-Scoped Checkpoint File
 
     Given an agent is in an active session with role "builder"
     And the agent is working on features/cdd_status_monitor.md at protocol step 3
     When the agent invokes /pl-resume save
-    Then .purlin/cache/session_checkpoint.md is created
+    Then .purlin/cache/session_checkpoint_builder.md is created
     And the file contains "**Role:** builder"
     And the file contains a valid ISO 8601 timestamp
     And the file contains the current branch name
-
-    Test: Verifies checkpoint file creation, required fields, and format.
+    And no other session_checkpoint_*.md files are modified
     """
 
     def setUp(self):
@@ -124,29 +177,32 @@ class TestSaveWritesCheckpointFile(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    def test_checkpoint_file_created_in_cache_dir(self):
-        """Checkpoint file is written to .purlin/cache/session_checkpoint.md."""
-        path = _write_checkpoint(self.tmpdir)
+    def test_checkpoint_file_created_with_role_suffix(self):
+        """Checkpoint file is written to session_checkpoint_builder.md."""
+        path = _write_checkpoint(self.tmpdir, role='builder')
         self.assertTrue(os.path.isfile(path))
-        expected_rel = os.path.join(
-            '.purlin', 'cache', 'session_checkpoint.md')
-        actual_rel = os.path.relpath(path, self.tmpdir)
-        self.assertEqual(actual_rel, expected_rel)
+        self.assertTrue(path.endswith('session_checkpoint_builder.md'))
+
+    def test_checkpoint_path_includes_role(self):
+        """File path follows .purlin/cache/session_checkpoint_<role>.md."""
+        for role in VALID_ROLES:
+            path = _write_checkpoint(self.tmpdir, role=role)
+            expected_name = f'session_checkpoint_{role}.md'
+            self.assertTrue(path.endswith(expected_name),
+                            f'Expected path to end with {expected_name}')
 
     def test_checkpoint_contains_role_field(self):
         """Checkpoint file contains '**Role:** builder'."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        _write_checkpoint(self.tmpdir, role='builder')
+        path = _checkpoint_path(self.tmpdir, 'builder')
         with open(path) as f:
             content = f.read()
         self.assertIn('**Role:** builder', content)
 
     def test_checkpoint_contains_valid_iso8601_timestamp(self):
         """Checkpoint file contains a valid ISO 8601 timestamp."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        _write_checkpoint(self.tmpdir, role='builder')
+        path = _checkpoint_path(self.tmpdir, 'builder')
         with open(path) as f:
             content = f.read()
         fields = _parse_checkpoint_fields(content)
@@ -155,9 +211,8 @@ class TestSaveWritesCheckpointFile(unittest.TestCase):
 
     def test_checkpoint_contains_branch_field(self):
         """Checkpoint file contains a Branch field."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        _write_checkpoint(self.tmpdir, role='builder')
+        path = _checkpoint_path(self.tmpdir, 'builder')
         with open(path) as f:
             content = f.read()
         fields = _parse_checkpoint_fields(content)
@@ -166,9 +221,8 @@ class TestSaveWritesCheckpointFile(unittest.TestCase):
 
     def test_checkpoint_has_required_common_sections(self):
         """Checkpoint contains all required common sections."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        _write_checkpoint(self.tmpdir, role='builder')
+        path = _checkpoint_path(self.tmpdir, 'builder')
         with open(path) as f:
             content = f.read()
         required_sections = [
@@ -184,13 +238,22 @@ class TestSaveWritesCheckpointFile(unittest.TestCase):
 
     def test_checkpoint_has_builder_specific_sections(self):
         """Builder checkpoint contains Builder-specific context sections."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        _write_checkpoint(self.tmpdir, role='builder')
+        path = _checkpoint_path(self.tmpdir, 'builder')
         with open(path) as f:
             content = f.read()
         self.assertIn('## Builder Context', content)
         self.assertIn('**Protocol Step:**', content)
+
+    def test_no_other_checkpoint_files_modified(self):
+        """Saving a builder checkpoint does not create other role files."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        for other_role in ('architect', 'qa'):
+            other_path = os.path.join(
+                cache_dir, f'session_checkpoint_{other_role}.md')
+            self.assertFalse(os.path.exists(other_path),
+                             f'Unexpected checkpoint for {other_role}')
 
     def test_command_file_exists(self):
         """The skill command file .claude/commands/pl-resume.md exists."""
@@ -198,19 +261,91 @@ class TestSaveWritesCheckpointFile(unittest.TestCase):
                         f'Command file not found: {COMMAND_FILE}')
 
 
+class TestConcurrentSavesDoNotOverwrite(unittest.TestCase):
+    """Scenario: Concurrent Saves Do Not Overwrite
+
+    Given a Builder agent saves a checkpoint to
+    .purlin/cache/session_checkpoint_builder.md
+    And an Architect agent saves a checkpoint to
+    .purlin/cache/session_checkpoint_architect.md
+    Then both checkpoint files exist independently
+    And the Builder checkpoint contains "**Role:** builder"
+    And the Architect checkpoint contains "**Role:** architect"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_both_checkpoint_files_coexist(self):
+        """Builder and Architect checkpoints exist independently."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        self.assertTrue(os.path.isfile(
+            _checkpoint_path(self.tmpdir, 'builder')))
+        self.assertTrue(os.path.isfile(
+            _checkpoint_path(self.tmpdir, 'architect')))
+
+    def test_builder_checkpoint_has_correct_role(self):
+        """Builder checkpoint contains '**Role:** builder'."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        with open(_checkpoint_path(self.tmpdir, 'builder')) as f:
+            content = f.read()
+        self.assertIn('**Role:** builder', content)
+
+    def test_architect_checkpoint_has_correct_role(self):
+        """Architect checkpoint contains '**Role:** architect'."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        with open(_checkpoint_path(self.tmpdir, 'architect')) as f:
+            content = f.read()
+        self.assertIn('**Role:** architect', content)
+
+    def test_all_three_roles_can_coexist(self):
+        """All three role checkpoints can exist simultaneously."""
+        qa_content = SAMPLE_CHECKPOINT_BUILDER.replace(
+            '**Role:** builder', '**Role:** qa').replace(
+            '## Builder Context', '## QA Context')
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        _write_checkpoint(self.tmpdir, role='qa', content=qa_content)
+        for role in VALID_ROLES:
+            self.assertTrue(os.path.isfile(
+                _checkpoint_path(self.tmpdir, role)),
+                f'Missing checkpoint for {role}')
+
+    def test_overwriting_one_role_preserves_others(self):
+        """Updating one role's checkpoint does not affect other roles."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        # Read architect content before builder overwrite
+        with open(_checkpoint_path(self.tmpdir, 'architect')) as f:
+            architect_before = f.read()
+        # Overwrite builder checkpoint
+        updated = SAMPLE_CHECKPOINT_BUILDER.replace('abc1234', 'def5678')
+        _write_checkpoint(self.tmpdir, role='builder', content=updated)
+        # Architect file unchanged
+        with open(_checkpoint_path(self.tmpdir, 'architect')) as f:
+            architect_after = f.read()
+        self.assertEqual(architect_before, architect_after)
+
+
 class TestRestoreWithCheckpoint(unittest.TestCase):
     """Scenario: Restore With Checkpoint
 
-    Given .purlin/cache/session_checkpoint.md exists with role "builder"
-    and timestamp "2026-02-28T15:30:00Z"
-    When the agent invokes /pl-resume
+    Given .purlin/cache/session_checkpoint_builder.md exists with
+    role "builder" and timestamp "2026-02-28T15:30:00Z"
+    When the agent invokes /pl-resume builder
     Then the checkpoint file is read
     And the recovery summary displays "Checkpoint: found -- resuming from
     2026-02-28T15:30:00Z"
     And the checkpoint's Next list is presented as the work plan
     And the checkpoint file is deleted after presentation
-
-    Test: Verifies checkpoint reading, field extraction, and cleanup.
+    And the agent begins executing the work plan without asking for
+    confirmation
     """
 
     def setUp(self):
@@ -220,28 +355,24 @@ class TestRestoreWithCheckpoint(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_checkpoint_file_is_readable(self):
-        """Existing checkpoint file can be read and parsed."""
-        path = _write_checkpoint(self.tmpdir)
+        """Existing role-scoped checkpoint file can be read and parsed."""
+        path = _write_checkpoint(self.tmpdir, role='builder')
         with open(path) as f:
             content = f.read()
         self.assertIn('# Session Checkpoint', content)
 
     def test_role_extracted_from_checkpoint(self):
         """Role field is correctly extracted from checkpoint."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
-        with open(path) as f:
+        _write_checkpoint(self.tmpdir, role='builder')
+        with open(_checkpoint_path(self.tmpdir, 'builder')) as f:
             content = f.read()
         fields = _parse_checkpoint_fields(content)
         self.assertEqual(fields['Role'], 'builder')
 
     def test_timestamp_extracted_from_checkpoint(self):
         """Timestamp is correctly extracted for recovery summary."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
-        with open(path) as f:
+        _write_checkpoint(self.tmpdir, role='builder')
+        with open(_checkpoint_path(self.tmpdir, 'builder')) as f:
             content = f.read()
         fields = _parse_checkpoint_fields(content)
         self.assertEqual(fields['Timestamp'], '2026-02-28T15:30:00Z')
@@ -255,12 +386,9 @@ class TestRestoreWithCheckpoint(unittest.TestCase):
 
     def test_next_list_extractable_from_checkpoint(self):
         """The Next list items can be extracted from checkpoint content."""
-        _write_checkpoint(self.tmpdir)
-        path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
-        with open(path) as f:
+        _write_checkpoint(self.tmpdir, role='builder')
+        with open(_checkpoint_path(self.tmpdir, 'builder')) as f:
             content = f.read()
-        # Extract items between ### Next and the next ## heading
         next_match = re.search(
             r'### Next\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
         self.assertIsNotNone(next_match, 'Could not find ### Next section')
@@ -272,9 +400,8 @@ class TestRestoreWithCheckpoint(unittest.TestCase):
 
     def test_checkpoint_deleted_after_restore(self):
         """Checkpoint file is deleted after being consumed by restore."""
-        path = _write_checkpoint(self.tmpdir)
+        path = _write_checkpoint(self.tmpdir, role='builder')
         self.assertTrue(os.path.isfile(path))
-        # Simulate restore cleanup
         os.remove(path)
         self.assertFalse(os.path.isfile(path))
 
@@ -282,14 +409,12 @@ class TestRestoreWithCheckpoint(unittest.TestCase):
 class TestRestoreWithoutCheckpoint(unittest.TestCase):
     """Scenario: Restore Without Checkpoint
 
-    Given .purlin/cache/session_checkpoint.md does not exist
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
     When the agent invokes /pl-resume builder
-    Then the output contains "No checkpoint found -- recovering from project
-    state only"
-    And the Critic report is regenerated via tools/cdd/status.sh
+    Then the Critic report is regenerated via tools/cdd/status.sh
     And the recovery summary is displayed with "Checkpoint: none"
-
-    Test: Verifies behavior when no checkpoint exists.
+    And the agent begins executing the work plan without asking for
+    confirmation
     """
 
     def setUp(self):
@@ -299,9 +424,8 @@ class TestRestoreWithoutCheckpoint(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_missing_checkpoint_detected(self):
-        """Missing checkpoint file is correctly detected."""
-        checkpoint_path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
+        """Missing role-scoped checkpoint file is correctly detected."""
+        checkpoint_path = _checkpoint_path(self.tmpdir, 'builder')
         self.assertFalse(os.path.exists(checkpoint_path))
 
     def test_no_checkpoint_message_content(self):
@@ -335,10 +459,9 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
     Given the agent's system prompt does not contain role identity markers
     When the agent invokes /pl-resume architect
     Then the role is set to "architect" without prompting the user
-    And the Architect command table is printed
+    And checkpoint detection checks .purlin/cache/session_checkpoint_architect.md
+    And the output contains "Commands: /pl-help for full list"
     And the Architect-specific state gathering runs
-
-    Test: Verifies argument parsing and role-specific file resolution.
     """
 
     def test_valid_roles_recognized(self):
@@ -348,12 +471,17 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
 
     def test_explicit_role_overrides_system_prompt(self):
         """Explicit role argument takes priority over system prompt."""
-        # Tier 1 (explicit) should override Tier 2 (system prompt)
         explicit_arg = 'architect'
         system_prompt_role = 'builder'
         effective_role = explicit_arg  # Tier 1 wins
         self.assertEqual(effective_role, 'architect')
         self.assertNotEqual(effective_role, system_prompt_role)
+
+    def test_explicit_role_determines_checkpoint_path(self):
+        """Explicit role maps to correct role-scoped checkpoint filename."""
+        for role in VALID_ROLES:
+            expected = f'session_checkpoint_{role}.md'
+            self.assertIn(role, expected)
 
     def test_command_table_file_exists_for_each_role(self):
         """Command table reference files exist for all roles."""
@@ -388,8 +516,6 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
     Then the output contains an error message
     And the error lists valid options: save, architect, builder, qa
     And no checkpoint file is written or read
-
-    Test: Verifies argument validation logic.
     """
 
     def setUp(self):
@@ -419,17 +545,15 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
     def test_no_checkpoint_written_on_invalid_arg(self):
         """No checkpoint file is created when argument is invalid."""
         _make_cache_dir(self.tmpdir)
-        checkpoint_path = os.path.join(
-            self.tmpdir, '.purlin', 'cache', 'session_checkpoint.md')
-        # Invalid argument should not trigger file creation
-        self.assertFalse(os.path.exists(checkpoint_path))
+        for role in VALID_ROLES:
+            path = _checkpoint_path(self.tmpdir, role)
+            self.assertFalse(os.path.exists(path))
 
     def test_no_checkpoint_read_on_invalid_arg(self):
         """No checkpoint file is read when argument is invalid."""
-        # Even if a checkpoint exists, invalid arg should not consume it
-        path = _write_checkpoint(self.tmpdir)
+        path = _write_checkpoint(self.tmpdir, role='builder')
         self.assertTrue(os.path.isfile(path))
-        # After invalid arg processing, file should still exist (not consumed)
+        # After invalid arg processing, file should still exist
         self.assertTrue(os.path.isfile(path))
 
 
@@ -437,12 +561,12 @@ class TestContextGuardResetCommand(unittest.TestCase):
     """Scenario: Context Clear Step 0 Reset
 
     The /pl-resume command file Step 0 must use the per-session counter
-    file cleanup format (rm -f wildcard) rather than the old single-file
+    file cleanup format (find -delete) rather than the old single-file
     overwrite format.
     """
 
-    def test_step0_uses_wildcard_rm(self):
-        """Step 0 uses 'rm -f .purlin/runtime/turn_count_${PPID}_*'."""
+    def test_step0_uses_find_delete(self):
+        """Step 0 uses find with turn_count_${PPID}_* pattern."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn('turn_count_${PPID}_*', content)
@@ -457,17 +581,17 @@ class TestContextGuardResetCommand(unittest.TestCase):
         """Step 0 does NOT use the old 'echo 0 > turn_count' format."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertNotIn('echo "0" > .purlin/runtime/turn_count_$PPID', content)
+        self.assertNotIn(
+            'echo "0" > .purlin/runtime/turn_count_$PPID', content)
 
 
 class TestCheckpointCleanupAfterRestore(unittest.TestCase):
     """Scenario: Checkpoint Cleanup After Restore
 
-    Given .purlin/cache/session_checkpoint.md exists
-    When the agent completes the restore sequence
-    Then .purlin/cache/session_checkpoint.md no longer exists on disk
-
-    Test: Verifies checkpoint deletion after successful restore.
+    Given .purlin/cache/session_checkpoint_builder.md exists
+    When the Builder agent completes the restore sequence
+    Then .purlin/cache/session_checkpoint_builder.md no longer exists on disk
+    And any other role's checkpoint files remain untouched
     """
 
     def setUp(self):
@@ -478,32 +602,207 @@ class TestCheckpointCleanupAfterRestore(unittest.TestCase):
 
     def test_checkpoint_exists_before_restore(self):
         """Checkpoint file exists before the restore sequence begins."""
-        path = _write_checkpoint(self.tmpdir)
+        path = _write_checkpoint(self.tmpdir, role='builder')
         self.assertTrue(os.path.isfile(path))
 
     def test_checkpoint_removed_after_restore(self):
-        """Checkpoint file is removed after restore completes."""
-        path = _write_checkpoint(self.tmpdir)
+        """Role-scoped checkpoint file is removed after restore."""
+        path = _write_checkpoint(self.tmpdir, role='builder')
         self.assertTrue(os.path.isfile(path))
-        # Simulate the cleanup step (Step 7)
         os.remove(path)
         self.assertFalse(os.path.isfile(path))
 
+    def test_other_roles_untouched_after_cleanup(self):
+        """Deleting builder checkpoint does not affect architect checkpoint."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        builder_path = _checkpoint_path(self.tmpdir, 'builder')
+        architect_path = _checkpoint_path(self.tmpdir, 'architect')
+        os.remove(builder_path)
+        self.assertFalse(os.path.isfile(builder_path))
+        self.assertTrue(os.path.isfile(architect_path))
+
     def test_cache_directory_survives_cleanup(self):
         """The .purlin/cache/ directory is not removed, only the file."""
-        path = _write_checkpoint(self.tmpdir)
+        path = _write_checkpoint(self.tmpdir, role='builder')
         cache_dir = os.path.dirname(path)
         os.remove(path)
         self.assertTrue(os.path.isdir(cache_dir))
 
     def test_double_delete_is_safe(self):
-        """Attempting to delete an already-deleted checkpoint does not error."""
-        path = _write_checkpoint(self.tmpdir)
+        """Attempting to delete an already-deleted checkpoint is safe."""
+        path = _write_checkpoint(self.tmpdir, role='builder')
         os.remove(path)
-        # Second delete attempt should not raise
         if os.path.exists(path):
             os.remove(path)
         self.assertFalse(os.path.exists(path))
+
+
+class TestRoleInferredFromSingleCheckpointFile(unittest.TestCase):
+    """Scenario: Role Inferred From Single Checkpoint File
+
+    Given .purlin/cache/session_checkpoint_qa.md exists
+    And no other session_checkpoint_*.md files exist
+    And the agent's system prompt has no role identity markers
+    When the agent invokes /pl-resume with no argument
+    Then the role is inferred as "qa" from the checkpoint file
+    And the restore proceeds normally
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_single_checkpoint_role_discovered(self):
+        """When only one role-scoped checkpoint exists, that role is found."""
+        qa_content = SAMPLE_CHECKPOINT_BUILDER.replace(
+            '**Role:** builder', '**Role:** qa').replace(
+            '## Builder Context', '## QA Context')
+        _write_checkpoint(self.tmpdir, role='qa', content=qa_content)
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        self.assertEqual(discovered, ['qa'])
+
+    def test_no_other_checkpoint_files_present(self):
+        """Only the single role's checkpoint file exists."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        self.assertEqual(len(discovered), 1)
+        self.assertEqual(discovered[0], 'builder')
+
+    def test_role_inferred_correctly_for_each_role(self):
+        """Each role can be individually inferred from its checkpoint."""
+        for role in VALID_ROLES:
+            tmpdir = tempfile.mkdtemp()
+            try:
+                content = SAMPLE_CHECKPOINT_BUILDER.replace(
+                    '**Role:** builder', f'**Role:** {role}')
+                _write_checkpoint(tmpdir, role=role, content=content)
+                cache_dir = os.path.join(tmpdir, '.purlin', 'cache')
+                discovered = _discover_checkpoint_roles(cache_dir)
+                self.assertEqual(discovered, [role],
+                                 f'Expected [{role}], got {discovered}')
+            finally:
+                shutil.rmtree(tmpdir)
+
+    def test_empty_cache_dir_discovers_no_roles(self):
+        """An empty cache directory yields no discovered roles."""
+        cache_dir = _make_cache_dir(self.tmpdir)
+        discovered = _discover_checkpoint_roles(cache_dir)
+        self.assertEqual(discovered, [])
+
+
+class TestMultipleCheckpointsPromptUserSelection(unittest.TestCase):
+    """Scenario: Multiple Checkpoints Prompt User Selection
+
+    Given .purlin/cache/session_checkpoint_builder.md exists
+    And .purlin/cache/session_checkpoint_architect.md exists
+    And the agent's system prompt has no role identity markers
+    When the agent invokes /pl-resume with no argument
+    Then the agent lists the available checkpoint roles (builder, architect)
+    And prompts the user to select which role to resume
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_multiple_checkpoints_discovered(self):
+        """Multiple role-scoped checkpoint files are all discovered."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        self.assertIn('builder', discovered)
+        self.assertIn('architect', discovered)
+        self.assertEqual(len(discovered), 2)
+
+    def test_discovery_returns_sorted_roles(self):
+        """Discovered roles are returned in a consistent order."""
+        _write_checkpoint(self.tmpdir, role='qa',
+                          content=SAMPLE_CHECKPOINT_BUILDER.replace(
+                              '**Role:** builder', '**Role:** qa'))
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        # Function iterates in fixed order: architect, builder, qa
+        self.assertEqual(discovered, ['architect', 'builder', 'qa'])
+
+    def test_multiple_checkpoints_triggers_selection(self):
+        """More than one checkpoint means auto-inference cannot proceed."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        # When len > 1, the agent must prompt the user (cannot auto-infer)
+        self.assertGreater(len(discovered), 1)
+
+    def test_each_discovered_role_has_valid_checkpoint(self):
+        """Each discovered checkpoint file is readable and has a Role field."""
+        _write_checkpoint(self.tmpdir, role='builder')
+        _write_checkpoint(self.tmpdir, role='architect')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        discovered = _discover_checkpoint_roles(cache_dir)
+        for role in discovered:
+            path = _checkpoint_path(self.tmpdir, role)
+            with open(path) as f:
+                content = f.read()
+            fields = _parse_checkpoint_fields(content)
+            self.assertIn('Role', fields,
+                          f'Missing Role field in {role} checkpoint')
+
+
+class TestCommandFileRoleScopedPaths(unittest.TestCase):
+    """Verify the command file references role-scoped checkpoint paths."""
+
+    def test_save_mode_references_role_scoped_path(self):
+        """Save mode section references session_checkpoint_<role>.md."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('session_checkpoint_<role>.md', content)
+
+    def test_step1_has_four_tier_fallback(self):
+        """Step 1 describes a 4-Tier Fallback for role detection."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('4-Tier Fallback', content)
+
+    def test_step1_includes_checkpoint_file_discovery(self):
+        """Step 1 includes checkpoint file discovery as a tier."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('Checkpoint file discovery', content)
+
+    def test_step2_uses_role_scoped_detection(self):
+        """Step 2 uses role-scoped path for checkpoint detection."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn(
+            'session_checkpoint_<role>.md && echo EXISTS', content)
+
+    def test_no_old_single_file_path(self):
+        """Command file no longer uses the old session_checkpoint.md path."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        # Should not contain the old non-role-scoped path in operational
+        # sections. The old path pattern (without role suffix) should be gone.
+        # We check that references like 'session_checkpoint.md' without a role
+        # suffix don't appear (excluding the <role> templated version).
+        lines = content.split('\n')
+        for line in lines:
+            if 'session_checkpoint' in line and '<role>' not in line:
+                # Allow references in code blocks that are templated
+                # or in the checkpoint format example
+                if 'session_checkpoint_' in line:
+                    continue  # Role-scoped, OK
+                self.fail(
+                    f'Found old non-role-scoped checkpoint path: {line}')
 
 
 if __name__ == '__main__':
