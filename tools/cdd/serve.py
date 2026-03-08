@@ -1858,11 +1858,9 @@ def _collapsed_branch_collab_label(active_branch, shortened_url):
     """Compute collapsed badge text for BRANCH COLLABORATION section.
 
     Returns the heading text string for the collapsed state.
-    - No active branch: plain "BRANCH COLLABORATION"
-    - Active branch + URL: "BRANCH COLLABORATION (<shortened-url>)"
-    - Active branch + no URL: plain "BRANCH COLLABORATION"
+    Shows the remote URL whenever available, regardless of active branch.
     """
-    if active_branch and shortened_url:
+    if shortened_url:
         url_esc = shortened_url.replace('&', '&amp;')
         return f"BRANCH COLLABORATION ({url_esc})"
     return "BRANCH COLLABORATION"
@@ -1979,10 +1977,14 @@ def generate_html(cache=None):
         bc_active_branch, bc_sync, bc_branches, bc_contributors,
         _branch_collab_last_fetch, bc_has_remote)
 
-    # Shortened remote URL for collapsed badge (spec Section 2.3)
+    # Shortened remote URL for badge (shown in both collapsed and expanded)
     bc_short_url = _get_shortened_remote_url() if bc_has_remote else ''
     bc_badge_text = _collapsed_branch_collab_label(bc_active_branch, bc_short_url)
-    bc_heading_expanded = 'BRANCH COLLABORATION'
+    if bc_short_url:
+        url_esc = bc_short_url.replace('&', '&amp;')
+        bc_heading_expanded = f'BRANCH COLLABORATION ({url_esc})'
+    else:
+        bc_heading_expanded = 'BRANCH COLLABORATION'
 
     # Cross-section annotation in LOCAL BRANCH body (spec 2.6)
     workspace_remote_sync = ''

@@ -1058,18 +1058,18 @@ class TestCollapsedBadgeShowsUrlWhenBranchActive(unittest.TestCase):
     def test_collapsed_badge_shows_url_when_active(self, *mocks):
         html = serve.generate_html()
         self.assertIn('data-collapsed-text="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
-        # Expanded heading is always plain
-        self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
-        self.assertNotIn('data-expanded="BRANCH COLLABORATION (', html)
+        # Expanded heading also shows URL when remote is configured
+        self.assertIn('data-expanded="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
 
 
-class TestCollapsedBadgeShowsPlainTitleWhenNoBranchActive(unittest.TestCase):
-    """Scenario: Collapsed Badge Shows Plain Title When No Branch Active
+class TestCollapsedBadgeShowsUrlWhenNoBranchActive(unittest.TestCase):
+    """Scenario: Collapsed Badge Shows URL When No Branch Active
 
     Given the CDD server is running
     And no file exists at .purlin/runtime/active_branch
+    And the git remote is configured
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
+    Then both collapsed and expanded headings show the remote URL
     """
 
     @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
@@ -1078,11 +1078,11 @@ class TestCollapsedBadgeShowsPlainTitleWhenNoBranchActive(unittest.TestCase):
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_collapsed_badge_plain_when_no_active_branch(self, *mocks):
+    def test_collapsed_badge_shows_url_even_without_active_branch(self, *mocks):
         html = serve.generate_html()
-        self.assertIn('data-collapsed-text="BRANCH COLLABORATION"', html)
-        self.assertNotIn('data-collapsed-text="BRANCH COLLABORATION (', html)
-        self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
+        # URL shown in both collapsed and expanded when remote is configured
+        self.assertIn('data-collapsed-text="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
+        self.assertIn('data-expanded="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
 
 
 class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase):
@@ -1105,7 +1105,9 @@ class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase)
         html = serve.generate_html()
         self.assertIn('data-collapsed-text="BRANCH COLLABORATION"', html)
         self.assertNotIn('data-collapsed-text="BRANCH COLLABORATION (', html)
+        # Both collapsed and expanded are plain when no remote
         self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
+        self.assertNotIn('data-expanded="BRANCH COLLABORATION (', html)
 
 
 class TestJoinBranchShowsOperationModalDuringRequest(unittest.TestCase):
