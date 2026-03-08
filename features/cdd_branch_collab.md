@@ -98,11 +98,20 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 
 **`POST /branch-collab/join`** -- `{ "branch": "<name>" }`
 
+Join MUST reconcile local and remote state before completing the checkout. A join is not just a `git checkout` — it is a fetch + reconcile + checkout sequence.
+
 1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
-2. Verify `origin/<name>` exists in remote tracking refs. If not: `git fetch <remote> <name>`.
-3. Checkout the target branch: `git checkout <name>`. If the local branch does not exist, create it tracking the remote: `git checkout -b <name> origin/<name>`.
-4. Write branch name to `.purlin/runtime/active_branch`.
-5. Return `{ "status": "ok", "branch": "<name>" }`.
+2. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
+3. Check if a local branch `<name>` already exists.
+4. **If no local branch exists:** Create it tracking the remote: `git checkout -b <name> origin/<name>`. No reconciliation needed — skip to step 7.
+5. **If local branch exists:** Compute sync state between local `<name>` and `origin/<name>`:
+   - **SAME:** No reconciliation needed. Checkout: `git checkout <name>`.
+   - **AHEAD (local has unpushed commits):** Checkout: `git checkout <name>`. Include `"warning": "Local branch has N unpushed commits"` in the response so the user knows to push.
+   - **BEHIND (remote has new commits):** Checkout then merge: `git checkout <name> && git merge origin/<name>`. If merge fails (conflict), abort: return `{ "error": "Merge conflict — resolve manually before joining" }`, leave the user on the conflicted branch so they can resolve.
+   - **DIVERGED (both have unique commits):** Checkout then merge: `git checkout <name> && git merge origin/<name>`. If merge fails (conflict), abort: return `{ "error": "Merge conflict — resolve manually before joining" }`, leave the user on the conflicted branch so they can resolve.
+6. Record the base branch (current branch before checkout) in `.purlin/runtime/branch_collab_base_branch` if not already set.
+7. Write branch name to `.purlin/runtime/active_branch`.
+8. Return `{ "status": "ok", "branch": "<name>" }` (plus optional `"warning"` field for AHEAD case).
 
 **`POST /branch-collab/leave`** -- `{}`
 
@@ -202,8 +211,8 @@ Branch operations (join, leave, create, switch) involve git checkouts, fetches, 
 
 - **Title:** Operation-specific. "Joining Branch", "Leaving Branch", or "Creating Branch".
 - **Spinner:** A CSS-only animated spinner (small, inline with status message). Hidden when the operation completes (success or error).
-- **Status message:** Operation-specific progress text:
-  - Join/Switch: `"Switching to <branch>..."` (uses "Switching" for both join and switch since the git operation is identical).
+- **Status message:** Operation-specific progress text, updated as the operation progresses through steps:
+  - Join/Switch: Initial `"Fetching <branch>..."`, then `"Reconciling with remote..."` (only shown when local branch exists and is BEHIND or DIVERGED), then `"Switching to <branch>..."`. Uses "Switching" for both join and switch since the git operation is identical.
   - Leave: `"Returning to <base-branch>..."`
   - Create: `"Creating <branch>..."`
 - **Error block:** Hidden by default. On error, the spinner is replaced with an error icon (red text), the status message updates to the error text from the server response (`d.error`), and the block becomes visible. The error text uses `color: var(--purlin-status-error)`.
@@ -281,15 +290,68 @@ The following fixture tags provide real git branch topology for integration-leve
     And no branch is created
     And the current branch is unchanged
 
-#### Scenario: Join Branch Checks Out and Updates Runtime File
+#### Scenario: Join Branch Fetches Then Checks Out and Updates Runtime File
 
     Given feature/auth exists as a remote tracking branch
+    And no local branch feature/auth exists
     And no active branch is set
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then the local branch feature/auth is checked out
+    Then git fetch is called for feature/auth before checkout
+    And a local branch feature/auth is created tracking origin/feature/auth
     And .purlin/runtime/active_branch contains "feature/auth"
     And GET /status.json shows branch_collab.active_branch as "feature/auth"
+
+#### Scenario: Join Branch Merges When Local Is Behind Remote
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth has 2 commits not in local feature/auth
+    And local feature/auth has no commits not in origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth
+    And local feature/auth is checked out
+    And origin/feature/auth is merged into local feature/auth
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Branch Merges When Diverged
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth has 2 commits not in local feature/auth
+    And local feature/auth has 1 commit not in origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth
+    And local feature/auth is checked out
+    And origin/feature/auth is merged into local feature/auth
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Branch Warns When Local Is Ahead
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And local feature/auth has 3 commits not in origin/feature/auth
+    And origin/feature/auth has no commits not in local feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth
+    And local feature/auth is checked out
+    And the response contains a warning about unpushed commits
+    And .purlin/runtime/active_branch contains "feature/auth"
+
+#### Scenario: Join Branch Returns Error on Merge Conflict
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists with conflicting changes
+    And origin/feature/auth has commits that conflict with local feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth
+    And the merge attempt fails due to conflicts
+    And the response contains an error about merge conflict
+    And .purlin/runtime/active_branch is NOT written
 
 #### Scenario: Join Branch With Dirty Working Tree Returns Error
 
@@ -325,12 +387,15 @@ The following fixture tags provide real git branch topology for integration-leve
     And the current branch remains feature/auth
     And .purlin/runtime/active_branch still contains "feature/auth"
 
-#### Scenario: Switch Branch via Join Updates Active Branch
+#### Scenario: Switch Branch via Join Fetches Reconciles and Updates Active Branch
 
     Given an active branch "feature/auth" is set
     And hotfix/urgent exists as a remote tracking branch
+    And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "hotfix/urgent"}
-    Then .purlin/runtime/active_branch contains "hotfix/urgent"
+    Then git fetch is called for hotfix/urgent before checkout
+    And hotfix/urgent is checked out with reconciliation if needed
+    And .purlin/runtime/active_branch contains "hotfix/urgent"
     And GET /status.json shows branch_collab.active_branch as "hotfix/urgent"
 
 #### Scenario: Sync State EMPTY When Branch Tip Equals Main Tip
@@ -517,16 +582,24 @@ The following fixture tags provide real git branch topology for integration-leve
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
 
-#### Scenario: Join Branch Shows Operation Modal During Request
+#### Scenario: Join Branch Shows Operation Modal With Multi-Step Progress
 
     Given the CDD server is running
     And an active branch is not set
     And feature/auth exists as a remote tracking branch
     When the user clicks the Join button for feature/auth
     Then an operation modal appears with title "Joining Branch"
-    And the modal shows a spinner with text "Switching to feature/auth..."
+    And the modal initially shows a spinner with text "Fetching feature/auth..."
+    And the status message updates to "Switching to feature/auth..." during checkout
     And the Close button is disabled while the operation is in flight
     And clicking the overlay background does not close the modal
+
+#### Scenario: Join Branch Modal Shows Reconciliation Step
+
+    Given the CDD server is running
+    And a local branch feature/auth exists that is BEHIND origin/feature/auth
+    When the user clicks the Join button for feature/auth
+    Then the modal status message progresses through "Fetching feature/auth..." then "Reconciling with remote..." then "Switching to feature/auth..."
 
 #### Scenario: Join Branch Modal Auto-Closes on Success
 
@@ -543,6 +616,14 @@ The following fixture tags provide real git branch topology for integration-leve
     And the status message shows "Working tree has uncommitted changes" in error color
     And the Close button is enabled
     And clicking Close dismisses the modal
+
+#### Scenario: Join Branch Modal Shows Merge Conflict Error
+
+    Given the operation modal is showing for a join operation on a DIVERGED branch
+    When the server returns { "status": "error", "error": "Merge conflict — resolve manually before joining" }
+    Then the spinner is hidden
+    And the status message shows the merge conflict error in error color
+    And the Close button is enabled
 
 #### Scenario: Leave Branch Shows Operation Modal During Request
 
@@ -574,7 +655,8 @@ The following fixture tags provide real git branch topology for integration-leve
     And an active branch "feature/auth" is set
     When the user selects "hotfix/urgent" from the branch dropdown
     Then an operation modal appears with title "Joining Branch"
-    And the modal shows a spinner with text "Switching to hotfix/urgent..."
+    And the modal initially shows a spinner with text "Fetching hotfix/urgent..."
+    And the status message updates through reconciliation and checkout steps
 
 #### Scenario: Operation Modal Blocks Escape Key During Progress
 
@@ -642,6 +724,7 @@ None.
 - [ ] Collapsed badge shows plain "BRANCH COLLABORATION" only when no remote is configured
 - [ ] Operation modal: centered overlay with semi-transparent background, matching Kill Isolation modal styling
 - [ ] Operation modal: CSS spinner (small, inline) visible during in-flight state
+- [ ] Operation modal: join/switch status message updates through steps: "Fetching..." -> "Reconciling..." (if needed) -> "Switching..."
 - [ ] Operation modal: spinner hidden and replaced with error text (red) on failure
 - [ ] Operation modal: Close button disabled (greyed) during in-flight, enabled on completion/error
 - [ ] Operation modal: auto-closes on success with brief visible transition (~400ms)
