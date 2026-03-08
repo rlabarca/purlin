@@ -1140,7 +1140,11 @@ def get_branch_collab_branches():
 
 
 def compute_remote_sync_state(branch_name):
-    """Compute SAME/AHEAD/BEHIND/DIVERGED between local and remote branch.
+    """Compute EMPTY/SAME/AHEAD/BEHIND/DIVERGED between local and remote branch.
+
+    Five-state logic:
+    - EMPTY: branch has zero commits relative to main (branch tip = main tip).
+    - SAME/AHEAD/BEHIND/DIVERGED: local vs remote comparison.
 
     Compares local <branch_name> vs origin/<branch_name>.
     Returns dict with sync_state, commits_ahead, commits_behind.
@@ -1161,12 +1165,38 @@ def compute_remote_sync_state(branch_name):
         return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
 
     # Check if local branch exists
+    local_exists = True
     try:
         subprocess.run(
             ['git', 'rev-parse', '--verify', local_ref],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        local_exists = False
+
+    # EMPTY check: branch has zero commits relative to main (branch tip = main tip)
+    # Use local ref if available, otherwise remote ref
+    check_ref = local_ref if local_exists else remote_ref
+    try:
+        # Commits on branch not in main
+        branch_ahead = subprocess.run(
+            ['git', 'log', f'main..{check_ref}', '--oneline'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        branch_ahead_lines = [l for l in branch_ahead.stdout.strip().splitlines() if l]
+        # Commits on main not in branch
+        branch_behind = subprocess.run(
+            ['git', 'log', f'{check_ref}..main', '--oneline'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=5)
+        branch_behind_lines = [l for l in branch_behind.stdout.strip().splitlines() if l]
+        if len(branch_ahead_lines) == 0 and len(branch_behind_lines) == 0:
+            return {'sync_state': 'EMPTY', 'commits_ahead': 0,
+                    'commits_behind': 0}
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        pass  # main ref may not exist; skip EMPTY check
+
+    if not local_exists:
         return {'sync_state': 'NO_LOCAL', 'commits_ahead': 0,
                 'commits_behind': 0}
 
@@ -1603,6 +1633,10 @@ def _branch_collab_section_html(active_branch, sync_data, branches,
                       'Local main branch not found</span>')
         count_detail = ('<span style="color:var(--purlin-muted);font-size:11px">'
                         '(check out main to enable sync tracking)</span>')
+    elif sync_state == 'EMPTY':
+        # No commits relative to main — plain text, no badge background
+        sync_badge = ('<span style="color:var(--purlin-primary);font-weight:bold">'
+                      'EMPTY</span>')
     elif sync_state == 'AHEAD':
         # Local is ahead -> remote is behind
         sync_badge = '<span class="st-todo">BEHIND</span>'
@@ -1686,8 +1720,8 @@ def _branch_collab_section_html(active_branch, sync_data, branches,
         f'</div>'
     )
 
-    # Row 3: "What's Different?" button (visible when sync state is not SAME)
-    if sync_state and sync_state not in ('SAME', 'NO_MAIN', None):
+    # Row 3: "What's Different?" button (visible when sync state is not SAME/EMPTY)
+    if sync_state and sync_state not in ('SAME', 'EMPTY', 'NO_MAIN', None):
         digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
                                    'whats-different.md')
         digest_ts = ''

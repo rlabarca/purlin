@@ -346,6 +346,13 @@ class TestSyncStateNoLocal(unittest.TestCase):
                 if ref == 'v0.5-sprint':
                     raise subprocess.CalledProcessError(128, cmd)
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has commits relative to main (not EMPTY)
+                    result.stdout = 'abc commit1\n'
+                else:
+                    result.stdout = ''
             else:
                 result.stdout = ''
             return result
@@ -373,8 +380,15 @@ class TestSyncStateSame(unittest.TestCase):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has commits relative to main (not EMPTY)
+                    result.stdout = 'abc commit1\n'
+                else:
+                    result.stdout = ''  # No commits in either direction
             else:
-                result.stdout = ''  # No commits in either direction
+                result.stdout = ''
             return result
         mock_run.side_effect = run_side_effect
 
@@ -403,7 +417,10 @@ class TestSyncStateAhead(unittest.TestCase):
             elif isinstance(cmd, list) and 'log' in cmd:
                 # Find the range arg (contains '..')
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('origin/'):
+                if range_arg.startswith('main..'):
+                    # Branch has commits relative to main (not EMPTY)
+                    result.stdout = 'abc commit1\ndef commit2\nghi commit3\n'
+                elif range_arg.startswith('origin/'):
                     # ahead: origin/..collab/ -> local has 3 extra
                     result.stdout = 'abc commit1\ndef commit2\nghi commit3\n'
                 else:
@@ -1388,6 +1405,95 @@ class TestRefreshBranchesReflectsNewlyAddedRemoteBranches(unittest.TestCase):
         args = fetch_calls[0][0][0]
         self.assertEqual(args, ['git', 'fetch', '--prune', 'origin'])
 
+
+
+class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
+    """Scenario: Sync State EMPTY When Branch Has No Commits Relative to Base
+
+    Given an active branch "feature/empty" is set
+    And feature/empty has zero commits relative to main (branch tip equals main tip)
+    When an agent calls GET /status.json
+    Then branch_collab.sync_state is "EMPTY"
+    And branch_collab.commits_ahead is 0
+    And branch_collab.commits_behind is 0
+    """
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_empty_state(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                # All comparisons return empty — no commits in any direction
+                # This covers both main..<branch> and origin..<branch> checks
+                result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("feature/empty")
+        self.assertEqual(state['sync_state'], 'EMPTY')
+        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['commits_behind'], 0)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_not_empty_when_branch_has_commits(self, mock_config, mock_run):
+        """Branch with commits relative to main should NOT be EMPTY."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has 1 commit ahead of main
+                    result.stdout = 'abc commit1\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("feature/work")
+        self.assertNotEqual(state['sync_state'], 'EMPTY')
+
+
+class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
+    """Scenario: EMPTY Badge Rendered Without Badge Background
+
+    Given an active branch "feature/empty" is set
+    And feature/empty has zero commits relative to main
+    When the dashboard HTML is generated
+    Then the sync state position shows "EMPTY" in normal text color (--purlin-primary)
+    And the text does not use a badge class (no st-good, st-todo, st-disputed)
+    """
+
+    def test_empty_badge_no_badge_class(self):
+        sync_data = {'sync_state': 'EMPTY', 'commits_ahead': 0, 'commits_behind': 0}
+        html = serve._branch_collab_section_html(
+            active_branch='feature/empty',
+            sync_data=sync_data,
+            branches=[],
+            contributors=[],
+            last_fetch=None,
+            has_remote=True
+        )
+        self.assertIn('EMPTY', html)
+        self.assertIn('--purlin-primary', html)
+        # Verify no badge classes are used for the EMPTY state
+        # Find the EMPTY span and check it doesn't have badge classes
+        import re
+        empty_spans = re.findall(r'<span[^>]*>EMPTY</span>', html)
+        self.assertTrue(len(empty_spans) > 0, "EMPTY text should be in a span")
+        for span in empty_spans:
+            self.assertNotIn('st-good', span)
+            self.assertNotIn('st-todo', span)
+            self.assertNotIn('st-disputed', span)
 
 
 def run_tests():

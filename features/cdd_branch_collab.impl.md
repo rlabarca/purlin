@@ -16,6 +16,8 @@
 
 **[DISCOVERY]** ~~The spec (Section 2.4) hardcodes `main` in two places: create step 4 says `git branch <name> main` and disconnect step 2 says `git checkout main`. This breaks when the user starts a branch collab from a non-main branch. Fixed in code to use `HEAD` for branch creation and store/restore the pre-session branch for leave. The spec needs Architect update to replace hardcoded `main` references with dynamic base branch semantics.~~ **ACKNOWLEDGED** -- Spec updated: create uses HEAD, leave reads stored base branch from `.purlin/runtime/branch_collab_base_branch` (defaults to `main` if absent).
 
+**[CLARIFICATION]** The spec references `--purlin-fg` for the EMPTY badge color, but this CSS custom property is not defined in the design token system (`design_visual_standards.md`). Used `--purlin-primary` instead, which is the defined token for primary/heading text color and achieves the same "normal text" visual intent. (Severity: INFO)
+
 ## Pruned Discoveries
 
 BUG -- IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
