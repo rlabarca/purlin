@@ -3482,19 +3482,19 @@ function _bcShowJoinPhase2(name, assessment) {{
     var escName = name.replace(/'/g, "\\'");
     h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:4px;margin-top:8px">';
     h += '<code style="font-family:monospace;font-size:12px;flex:1">/pl-remote-pull origin/' + name + '</code>';
-    h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\'/pl-remote-pull origin/' + escName + '\')">Copy</button>';
+    h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\\'/pl-remote-pull origin/' + escName + '\\')">Copy</button>';
     h += '</div>';
   }}
   if (!dirty && sync !== 'DIVERGED') {{
     h += '<div style="margin-top:12px;text-align:right">';
     var escName = name.replace(/'/g, "\\'");
     if (sync === 'SAME') {{
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'checkout\')">Join</button>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Join</button>';
     }} else if (sync === 'BEHIND') {{
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'fast-forward\')">Fast-Forward &amp; Join</button>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward &amp; Join</button>';
     }} else if (sync === 'AHEAD') {{
       h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0 0 8px 0">After joining, run /pl-remote-push to share your commits.</p>';
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'push\')">Join</button>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'push\\')">Join</button>';
     }}
     h += '</div>';
   }}

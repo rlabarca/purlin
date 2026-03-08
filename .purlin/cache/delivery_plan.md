@@ -23,7 +23,7 @@ Single feature `cdd_branch_collab` with 22 new scenarios split into two phases: 
 **Completion Commit:** 8dd2b9a
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Operation Modals & Integration Tests [PENDING]
+## Phase 2 -- Operation Modals & Integration Tests [COMPLETE]
 **Features:** cdd_branch_collab.md
 **Scenarios:**
 - Join Branch Shows Two-Phase Operation Modal
@@ -38,7 +38,7 @@ Single feature `cdd_branch_collab` with 22 new scenarios split into two phases: 
 - Join Branch With Dirty Tree Shows Files and Blocks Action
 - Sync Badge Colors Match Design Spec
 **Fixture Tags:** main/cdd_branch_collab/behind-dirty, main/cdd_branch_collab/diverged-dirty
-**Completion Commit:** --
+**Completion Commit:** a40261c
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
