@@ -142,7 +142,8 @@ The Critic MUST generate imperative action items for each role based on the anal
 | **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
 | **Builder** | Feature in TODO lifecycle state with new scenarios (spec modified after last status commit) | "Implement spec changes for critic_tool: 4 new scenario(s) [Fixture Repo Not Found..., Convention Path...], 0 modified, 0 removed" |
 | **Builder** | New scenario matched only to pre-existing tests (weak traceability match) | "New scenario 'Fixture Repo Not Found Produces Builder Warning' has no dedicated test — existing keyword match is likely a false positive" |
-| **Builder** | Structural completeness FAIL (missing/failing tests, zero total, no backing test file, missing fields, internal inconsistency) | "Fix failing tests for submodule_bootstrap" |
+| **Builder** | Structural completeness FAIL (missing tests.json, zero total, no backing test file, missing fields, internal inconsistency) | "Fix structural completeness for submodule_bootstrap: [detail]" |
+| **Builder** | Structural completeness WARN (tests.json exists with status FAIL) | "Fix failing tests for cdd_lifecycle" |
 | **Builder** | Traceability gaps (unmatched scenarios) | "Write tests for: Zero-Queue Verification" |
 | **Builder** | OPEN BUGs in User Testing | "Fix bug in critic_tool: [bug title]" |
 | **Builder** | Cross-validation warnings in regression scope (invalid targeted scope names) | "Fix scope declaration for critic_tool: Targeted scope name 'Bad Name' does not match any #### Scenario: title" |
@@ -194,6 +195,8 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 **QA Actionability Principle:** QA=TODO only when QA has work to do RIGHT NOW. OPEN items routing to Architect (DISCOVERYs, INTENT_DRIFTs) and SPEC_UPDATED items waiting for Builder (feature in TODO lifecycle) are not QA-actionable. This ensures the CDD dashboard shows at most one role with actionable TODO per discovery lifecycle step, making it unambiguous which agent to run next.
 
 **Lifecycle State Dependency:** QA TODO conditions (a) and (b) both use `.purlin/cache/feature_status.json` to determine the feature's lifecycle state (TESTING). If unavailable, TESTING-based TODO detection is skipped for both conditions. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent.
+
+**Role Status / Action Item Consistency:** Every non-terminal role status (Builder: TODO, FAIL, INFEASIBLE, BLOCKED; QA: TODO, FAIL, DISPUTED; Architect: TODO) MUST have at least one corresponding action item in `action_items` for that role. A role status indicating outstanding work with zero action items is a Critic bug — the agent reads action items from the report, not role_status, so a missing action item means the work is invisible.
 
 ### 2.12 Regression Scope Computation
 The Critic MUST compute a regression set for each TESTING feature based on the Builder's declared change scope. The scope is extracted from the most recent status commit message for the feature.
@@ -576,6 +579,19 @@ The following fixture tags provide deterministic project states for integration-
     Given a feature has tests.json with status FAIL
     When the Critic tool computes role_status
     Then role_status.builder is FAIL
+
+#### Scenario: Builder Action Item Generated for Failing Tests
+    Given a feature has tests.json with status FAIL (structural_completeness WARN)
+    When the Critic tool generates action items
+    Then a Builder action item is created with priority HIGH and category structural_completeness
+    And the description says "Fix failing tests for <feature_name>"
+    And role_status.builder is FAIL with at least one corresponding action item
+
+#### Scenario: Role Status Action Item Consistency
+    Given a feature has role_status.builder set to FAIL
+    When the Critic tool completes action item generation
+    Then action_items.builder contains at least one item for the feature
+    And no non-terminal role status (TODO, FAIL, INFEASIBLE, BLOCKED, DISPUTED) exists without a corresponding action item
 
 #### Scenario: Role Status Builder INFEASIBLE
     Given a feature has an [INFEASIBLE] tag in Implementation Notes
