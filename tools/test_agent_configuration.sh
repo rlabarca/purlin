@@ -406,7 +406,7 @@ fi
 echo "==============================="
 
 # Write test results for both features
-RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}"
+RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL, \"test_file\": \"tools/test_agent_configuration.sh\"}"
 for FEAT in models_configuration agent_launchers_common; do
     OUTDIR="$TESTS_DIR/$FEAT"
     mkdir -p "$OUTDIR"

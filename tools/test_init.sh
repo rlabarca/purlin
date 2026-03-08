@@ -772,7 +772,7 @@ fi
 echo "==============================="
 
 # Write tests/<feature>/tests.json
-RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}"
+RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL, \"test_file\": \"tools/test_init.sh\"}"
 
 OUTDIR="$TESTS_DIR/project_init"
 mkdir -p "$OUTDIR"

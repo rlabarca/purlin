@@ -243,7 +243,7 @@ echo "==============================="
 
 OUTDIR="$TESTS_DIR/pl_context_guard"
 mkdir -p "$OUTDIR"
-echo "{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}" > "$OUTDIR/tests.json"
+echo "{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL, \"test_file\": \"tools/hooks/test_pl_context_guard.sh\"}" > "$OUTDIR/tests.json"
 
 echo ""
 if [ $FAIL -eq 0 ]; then

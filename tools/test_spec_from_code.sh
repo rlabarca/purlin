@@ -376,7 +376,7 @@ echo "==============================="
 # Write test results
 OUTDIR="$TESTS_DIR/spec_from_code"
 mkdir -p "$OUTDIR"
-RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL}"
+RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PASS, \"failed\": $FAIL, \"total\": $TOTAL, \"test_file\": \"tools/test_spec_from_code.sh\"}"
 echo "$RESULT_JSON" > "$OUTDIR/tests.json"
 
 echo ""
