@@ -22,6 +22,8 @@
 
 **[DISCOVERY]** ~~The branches table in setup mode (spec Section 2.2) only renders Branch | Action columns. The per-branch sync state data exists in the API (`branch_collab_branches[].sync_state`) but was invisible in the UI. Added a "State" column to the branches table that renders EMPTY/SAME/AHEAD/BEHIND/DIVERGED badges matching the active-branch badge styling (EMPTY=normal text, SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange). The spec's branches table column definition needs Architect update to include the State column. (Severity: HIGH)~~ **ACKNOWLEDGED** -- Spec updated: branches table columns are now Branch | State | Action, with State column using the same badge styling as the active-branch sync badge.
 
+**[DISCOVERY]** The spec (Sections 2.1-2.3) only shows the remote repo URL on the collapsed badge when a branch is actively joined. User requests the shortened remote URL be displayed in both collapsed and expanded views regardless of active branch state — the remote URL is always relevant since the Refresh Branches button scans that remote. Spec needs Architect update to show the remote URL unconditionally. (Severity: HIGH)
+
 ## Pruned Discoveries
 
 BUG -- IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
