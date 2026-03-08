@@ -240,11 +240,11 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 #### Scenario: Update Sync Adds New Keys Without Overwriting Existing
 
     Given config.local.json exists with {"cdd_port": 9999, "tools_root": "tools"}
-    And config.json has been updated with a new key {"cdd_port": 8086, "tools_root": "tools", "context_guard_threshold": 30}
+    And config.json has been updated with a new key {"cdd_port": 8086, "tools_root": "tools", "critic_llm_enabled": true}
     When the config sync step executes
     Then config.local.json contains cdd_port: 9999 which is preserved
-    And config.local.json contains context_guard_threshold: 30 which is added from shared
-    And the user is informed: "Added new config keys: context_guard_threshold"
+    And config.local.json contains critic_llm_enabled: true which is added from shared
+    And the user is informed: "Added new config keys: critic_llm_enabled"
 
 #### Scenario: Update Sync Adds Nested New Keys
 

@@ -17,7 +17,7 @@ Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh`
 *   **Files:** `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Submodule detection:** Each script MUST check for `$SCRIPT_DIR/purlin/instructions/` and fall back to `$SCRIPT_DIR/instructions/` when not in a submodule consumer context.
 *   **Project root export:** Each script MUST export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
-*   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by PostToolUse hooks (e.g., `context_guard.sh`) for per-agent configuration resolution.
+*   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by hooks (e.g., the PreCompact context guard) for per-agent configuration resolution.
 
 ### 2.2 Prompt Assembly
 1.  Create a temporary file via `mktemp`. Register cleanup with `trap "rm -f '$PROMPT_FILE'" EXIT`.
@@ -27,8 +27,8 @@ Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh`
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_CONTEXT_GUARD`, and `AGENT_CONTEXT_GUARD_THRESHOLD` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
-*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_CONTEXT_GUARD="true"`, `AGENT_CONTEXT_GUARD_THRESHOLD=""`.
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, and `AGENT_CONTEXT_GUARD` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
+*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_CONTEXT_GUARD="true"`.
 
 ### 2.4 Claude Dispatch
 ```
