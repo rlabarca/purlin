@@ -29,7 +29,9 @@ This skill is shared across all roles (Architect, Builder, QA). The launcher scr
 
 ### 2.2 Save Mode (`/pl-resume save`)
 
-The agent writes a structured checkpoint to `.purlin/cache/session_checkpoint.md`. The agent composes the file based on its own understanding of its current state (no automated extraction is needed).
+The agent writes a structured checkpoint to a **role-scoped** file: `.purlin/cache/session_checkpoint_<role>.md` (e.g., `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`). The agent composes the file based on its own understanding of its current state (no automated extraction is needed).
+
+Role-scoped files ensure that concurrent agents can save checkpoints independently without overwriting each other. Each role's checkpoint is isolated — a Builder save never affects an Architect's saved state, and vice versa.
 
 The checkpoint file is written to disk but NOT committed. It survives `/clear` and terminal restarts as a regular file. The `.purlin/cache/` directory is gitignored.
 
@@ -73,6 +75,8 @@ When the saving agent is the Architect, the checkpoint MUST additionally include
 - **Discovery Processing** (which discoveries have been reviewed, which are pending)
 
 #### 2.2.5 Checkpoint File Format
+
+The checkpoint file path is `.purlin/cache/session_checkpoint_<role>.md` where `<role>` is the agent's current role (`architect`, `builder`, or `qa`). For example, a Builder save produces `session_checkpoint_builder.md`.
 
 The checkpoint is human-readable Markdown. The structure uses headings and labeled fields:
 
@@ -131,17 +135,18 @@ Before any other restore step, remove stale context guard files from the previou
 
 **Note:** This step is optional cleanup. The per-session counter design (see `context_guard.md` Section 2.3) ensures that context clears are handled automatically — each new `session_id` produces a fresh counter file starting at 1. This cleanup removes stale files from previous sessions for tidiness and ensures a clean slate when resuming.
 
-#### 2.3.1 Step 1 -- Role Detection (3-Tier Fallback)
+#### 2.3.1 Step 1 -- Role Detection (4-Tier Fallback)
 
 The skill determines the agent's role using the following priority:
 
 1. **Explicit argument:** If the user invoked `/pl-resume <role>`, use that role.
 2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "You are the Architect", "You are the Builder", "You are the QA"). If found, use the detected role.
-3. **Ask user:** If neither method succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
+3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
+4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
 
 #### 2.3.2 Step 2 -- Checkpoint Detection
 
-- Use a non-erroring existence check (e.g., Bash `test -f .purlin/cache/session_checkpoint.md && echo EXISTS || echo MISSING`) to detect the checkpoint file. Do NOT use the Read tool for existence detection — it errors on missing files and cancels sibling parallel tool calls.
+- Use a non-erroring existence check (e.g., Bash `test -f .purlin/cache/session_checkpoint_<role>.md && echo EXISTS || echo MISSING`) to detect the role-scoped checkpoint file. The `<role>` value comes from Step 1. Do NOT use the Read tool for existence detection — it errors on missing files and cancels sibling parallel tool calls.
 - If **EXISTS:** Read the file with the Read tool. Present the saved state as a summary block. Use it to orient the session (the checkpoint's "Next" list becomes the starting work plan).
 - If **MISSING:** Proceed silently to Step 3. (The recovery summary in Step 6 already shows `Checkpoint: none`.)
 
@@ -216,20 +221,29 @@ Uncommitted:    [none | summary]
 
 ### Automated Scenarios
 
-#### Scenario: Save Writes Checkpoint File
+#### Scenario: Save Writes Role-Scoped Checkpoint File
 
     Given an agent is in an active session with role "builder"
     And the agent is working on features/cdd_status_monitor.md at protocol step 3
     When the agent invokes /pl-resume save
-    Then .purlin/cache/session_checkpoint.md is created
+    Then .purlin/cache/session_checkpoint_builder.md is created
     And the file contains "**Role:** builder"
     And the file contains a valid ISO 8601 timestamp
     And the file contains the current branch name
+    And no other session_checkpoint_*.md files are modified
+
+#### Scenario: Concurrent Saves Do Not Overwrite
+
+    Given a Builder agent saves a checkpoint to .purlin/cache/session_checkpoint_builder.md
+    And an Architect agent saves a checkpoint to .purlin/cache/session_checkpoint_architect.md
+    Then both checkpoint files exist independently
+    And the Builder checkpoint contains "**Role:** builder"
+    And the Architect checkpoint contains "**Role:** architect"
 
 #### Scenario: Restore With Checkpoint
 
-    Given .purlin/cache/session_checkpoint.md exists with role "builder" and timestamp "2026-02-28T15:30:00Z"
-    When the agent invokes /pl-resume
+    Given .purlin/cache/session_checkpoint_builder.md exists with role "builder" and timestamp "2026-02-28T15:30:00Z"
+    When the agent invokes /pl-resume builder
     Then the checkpoint file is read
     And the recovery summary displays "Checkpoint: found -- resuming from 2026-02-28T15:30:00Z"
     And the checkpoint's Next list is presented as the work plan
@@ -238,7 +252,7 @@ Uncommitted:    [none | summary]
 
 #### Scenario: Restore Without Checkpoint
 
-    Given .purlin/cache/session_checkpoint.md does not exist
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
     When the agent invokes /pl-resume builder
     Then the Critic report is regenerated via tools/cdd/status.sh
     And the recovery summary is displayed with "Checkpoint: none"
@@ -249,6 +263,7 @@ Uncommitted:    [none | summary]
     Given the agent's system prompt does not contain role identity markers
     When the agent invokes /pl-resume architect
     Then the role is set to "architect" without prompting the user
+    And checkpoint detection checks .purlin/cache/session_checkpoint_architect.md
     And the output contains "Commands: /pl-help for full list"
     And the Architect-specific state gathering runs
 
@@ -262,9 +277,28 @@ Uncommitted:    [none | summary]
 
 #### Scenario: Checkpoint Cleanup After Restore
 
-    Given .purlin/cache/session_checkpoint.md exists
-    When the agent completes the restore sequence
-    Then .purlin/cache/session_checkpoint.md no longer exists on disk
+    Given .purlin/cache/session_checkpoint_builder.md exists
+    When the Builder agent completes the restore sequence
+    Then .purlin/cache/session_checkpoint_builder.md no longer exists on disk
+    And any other role's checkpoint files remain untouched
+
+#### Scenario: Role Inferred From Single Checkpoint File
+
+    Given .purlin/cache/session_checkpoint_qa.md exists
+    And no other session_checkpoint_*.md files exist
+    And the agent's system prompt has no role identity markers
+    When the agent invokes /pl-resume with no argument
+    Then the role is inferred as "qa" from the checkpoint file
+    And the restore proceeds normally
+
+#### Scenario: Multiple Checkpoints Prompt User Selection
+
+    Given .purlin/cache/session_checkpoint_builder.md exists
+    And .purlin/cache/session_checkpoint_architect.md exists
+    And the agent's system prompt has no role identity markers
+    When the agent invokes /pl-resume with no argument
+    Then the agent lists the available checkpoint roles (builder, architect)
+    And prompts the user to select which role to resume
 
 #### Scenario: Builder Mid-Feature Resume (auto-test-only)
 
