@@ -3,7 +3,6 @@
     "critic_llm_model": "claude-sonnet-4-20250514",
     "critic_llm_enabled": false,
     "critic_gate_blocking": false,
-    "context_guard_threshold": 80,
     "models": [
         {
             "id": "claude-opus-4-6",
@@ -22,8 +21,8 @@
         }
     ],
     "agents": {
-        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 80 },
-        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 80 },
-        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false, "context_guard_threshold": 80 }
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false },
+        "builder":   { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false },
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false, "startup_sequence": true, "recommend_next_actions": true, "context_guard": false }
     }
 }

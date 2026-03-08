@@ -160,8 +160,9 @@ For the full convention (format, inheritance, design pipeline, verification meth
 
 ## 10. Phased Delivery Protocol
 
-Large-scope changes may be split into numbered delivery phases. The delivery plan artifact
-lives at `.purlin/cache/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it
-appears in any PENDING phase of the delivery plan. For the full protocol (format, cross-session
+Large-scope changes may be split into numbered delivery phases to organize work into testable
+blocks and enable parallel delivery. The delivery plan artifact lives at
+`.purlin/cache/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it appears in
+any PENDING phase of the delivery plan. For the full protocol (format, cross-session
 resumption, QA interaction, Architect awareness), see
 `instructions/references/phased_delivery.md`.

@@ -25,7 +25,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
-  /pl-context-guard          View or modify context guard settings
+  /pl-context-guard          Toggle context guard on/off per agent
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate QA_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
@@ -71,7 +71,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
-  /pl-context-guard          View or modify context guard settings
+  /pl-context-guard          Toggle context guard on/off per agent
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate QA_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
@@ -116,7 +116,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-help                   Re-display this command list
   /pl-find <topic>           Discover where a topic lives in specs
   /pl-agent-config           Modify agent config
-  /pl-context-guard          View or modify context guard settings
+  /pl-context-guard          Toggle context guard on/off per agent
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate QA_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update

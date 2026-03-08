@@ -185,7 +185,7 @@ After all scenarios (functional and visual) for a feature are verified:
 
 ## 5.4 Context Guard Awareness
 
-The `PostToolUse` hook displays context budget messages. When the exceeded message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for message format details.
+The `PreCompact` hook intercepts auto-compaction. When the evacuation message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for details.
 
 ## 6. Session Conclusion
 
