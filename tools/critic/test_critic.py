@@ -659,6 +659,64 @@ class TestStructuralCompleteness(unittest.TestCase):
             critic.PROJECT_ROOT = orig_root
 
 
+    def test_all_manual_feature_no_tests_json(self):
+        """Structural Completeness PASS For All-Manual Feature Without Tests JSON.
+
+        Given a feature has zero automated scenarios (only manual scenarios)
+        And no tests/<feature>/tests.json exists on disk
+        Then structural_completeness reports PASS
+        And the detail says "N/A - no automated scenarios"
+        """
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            # Only manual scenarios -- no automated
+            scenarios = [
+                {'title': 'Manual Test A', 'is_manual': True, 'body': ''},
+                {'title': 'Manual Test B', 'is_manual': True, 'body': ''},
+            ]
+            result = check_structural_completeness('nonexistent_feature',
+                                                   scenarios=scenarios)
+            self.assertEqual(result['status'], 'PASS')
+            self.assertEqual(result['detail'], 'N/A - no automated scenarios')
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_all_manual_feature_empty_scenarios(self):
+        """Features with zero scenarios total also exempt (no automated)."""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            result = check_structural_completeness('nonexistent_feature',
+                                                   scenarios=[])
+            self.assertEqual(result['status'], 'PASS')
+            self.assertEqual(result['detail'], 'N/A - no automated scenarios')
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_mixed_scenarios_still_requires_tests_json(self):
+        """Features with at least one automated scenario still need tests.json."""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            scenarios = [
+                {'title': 'Manual Test', 'is_manual': True, 'body': ''},
+                {'title': 'Auto Test', 'is_manual': False, 'body': ''},
+            ]
+            result = check_structural_completeness('nonexistent_feature',
+                                                   scenarios=scenarios)
+            self.assertEqual(result['status'], 'FAIL')
+            self.assertIn('Missing', result['detail'])
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+
 class TestBuilderDecisionAudit(unittest.TestCase):
     """Scenario: Implementation Gate Builder Decision Audit"""
 

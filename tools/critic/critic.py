@@ -918,7 +918,7 @@ def run_spec_gate(content, filename, features_dir):
 # Implementation Gate checks (Section 2.2)
 # ===================================================================
 
-def check_structural_completeness(feature_stem):
+def check_structural_completeness(feature_stem, scenarios=None):
     """Check that tests/<feature>/tests.json exists with valid schema and status.
 
     Validates per policy_critic.md Section 2.15:
@@ -926,7 +926,20 @@ def check_structural_completeness(feature_stem):
     2. Internal consistency (PASS with failures > 0)
     3. Minimum test count (total > 0 when PASS)
     4. Test file existence (backing test code must exist)
+
+    All-manual feature exemption (Section 2.15): Features with zero automated
+    scenarios are exempt from tests.json requirements entirely.
     """
+    # All-manual feature exemption: if every scenario is manual (or none exist),
+    # no tests.json is required.
+    if scenarios is not None:
+        automated = [s for s in scenarios if not s.get('is_manual', False)]
+        if len(automated) == 0:
+            return {
+                'status': 'PASS',
+                'detail': 'N/A - no automated scenarios',
+            }
+
     tests_json = os.path.join(TESTS_DIR, feature_stem, 'tests.json')
 
     if not os.path.isfile(tests_json):
@@ -1175,7 +1188,7 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
             '_matched': traceability_result.get('matched', []),
         },
         'policy_adherence': policy_result,
-        'structural_completeness': check_structural_completeness(feature_stem),
+        'structural_completeness': check_structural_completeness(feature_stem, scenarios),
         'builder_decisions': check_builder_decisions(impl_notes),
         'logic_drift': check_logic_drift(scenarios, traceability_result,
                                          feature_stem),
