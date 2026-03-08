@@ -1316,11 +1316,12 @@ def get_remote_contributors(branch_name, max_entries=10):
 
 
 
-def _is_working_tree_dirty():
-    """Check if the working tree has uncommitted changes outside .purlin/.
+def _get_dirty_files():
+    """Return list of dirty file paths outside .purlin/.
 
-    Returns True if dirty, False if clean.
+    Returns an empty list when the tree is clean.
     """
+    dirty = []
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain'],
@@ -1333,10 +1334,18 @@ def _is_working_tree_dirty():
             if ' -> ' in path:
                 path = path.split(' -> ', 1)[1]
             if not path.startswith('.purlin/'):
-                return True
-        return False
+                dirty.append(path)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
+        pass
+    return dirty
+
+
+def _is_working_tree_dirty():
+    """Check if the working tree has uncommitted changes outside .purlin/.
+
+    Returns True if dirty, False if clean.
+    """
+    return len(_get_dirty_files()) > 0
 
 
 def _auto_fetch_worker():
@@ -5405,6 +5414,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_branch_collab_create()
         elif self.path == '/branch-collab/join':
             self._handle_branch_collab_join()
+        elif self.path == '/branch-collab/join-confirm':
+            self._handle_branch_collab_join_confirm()
         elif self.path == '/branch-collab/leave':
             self._handle_branch_collab_leave()
         elif self.path == '/branch-collab/fetch':
@@ -5844,20 +5855,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(500, {'error': 'Operation timed out'})
 
     def _handle_branch_collab_join(self):
-        """POST /branch-collab/join — join an existing branch.
+        """POST /branch-collab/join — Phase 1: assess branch sync state.
 
-        Implements the fetch-reconcile-checkout sequence from spec Section 2.4:
-        1. Abort if dirty
-        2. Fetch target branch from remote
-        3. Check if local branch exists
-        4. If no local: create tracking branch, skip to runtime write
-        5. If local exists: compute sync state and reconcile
-           - SAME: just checkout
-           - BEHIND: checkout + ff-only merge
-           - AHEAD: checkout + action_required=push
-           - DIVERGED: checkout + action_required=pull
-        6. Record base branch if not already set
-        7. Write active branch
+        Two-phase join flow per spec Section 2.4:
+        Phase 1 (this endpoint): fetch + compute state, return assessment.
+        Phase 2 (/branch-collab/join-confirm): execute user-chosen action.
+
+        If no local branch exists and tree is clean, creates tracking branch
+        directly and returns {completed: true} (no Phase 2 needed).
         """
         try:
             length = int(self.headers.get('Content-Length', 0))
@@ -5871,19 +5876,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'Branch name is required'})
             return
 
-        # Step 1: Abort if working tree is dirty
-        if _is_working_tree_dirty():
-            self._send_json(400, {
-                'error': 'Working tree has uncommitted changes. '
-                         'Commit or stash before switching branches.'
-            })
-            return
-
         rc = get_branch_collab_config()
         remote = rc['remote']
         ref = f'{remote}/{branch}'
 
-        # Step 2: Fetch the target branch from remote
+        # Step 1: Fetch the target branch from remote
         try:
             subprocess.run(
                 ['git', 'fetch', remote, branch],
@@ -5907,7 +5904,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
-        # Step 3: Check if local branch exists
+        # Step 2: Check if local branch exists
         local_exists = True
         try:
             subprocess.run(
@@ -5917,23 +5914,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except subprocess.CalledProcessError:
             local_exists = False
 
-        # Record base branch (current branch before checkout) if not already set
-        base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
-                                 'branch_collab_base_branch')
-        if not os.path.exists(base_path) or not open(base_path).read().strip():
-            try:
-                cur = subprocess.run(
-                    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-                    capture_output=True, text=True, check=True,
-                    cwd=PROJECT_ROOT, timeout=5)
-                _write_branch_collab_base_branch(cur.stdout.strip())
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                pass
-
-        response = {'status': 'ok', 'branch': branch}
-
-        # Step 4: If no local branch exists, create tracking branch
+        # Step 3: No local branch — create tracking branch directly
         if not local_exists:
+            dirty_files = _get_dirty_files()
+            if dirty_files:
+                self._send_json(400, {
+                    'error': 'Working tree has uncommitted changes. '
+                             'Commit or stash before joining.',
+                    'dirty': True,
+                    'dirty_files': dirty_files
+                })
+                return
+
+            # Record base branch before checkout
+            base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                     'branch_collab_base_branch')
+            if not os.path.exists(base_path) or not open(base_path).read().strip():
+                try:
+                    cur = subprocess.run(
+                        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                        capture_output=True, text=True, check=True,
+                        cwd=PROJECT_ROOT, timeout=5)
+                    _write_branch_collab_base_branch(cur.stdout.strip())
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                    pass
+
             try:
                 subprocess.run(
                     ['git', 'checkout', '-b', branch, ref],
@@ -5947,10 +5952,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 })
                 return
             _write_active_branch(branch)
-            self._send_json(200, response)
+            self._send_json(200, {
+                'status': 'ok', 'branch': branch, 'completed': True
+            })
             return
 
-        # Step 5: Local branch exists — compute sync state and reconcile
+        # Step 4: Local branch exists — compute sync state, return assessment
         try:
             ahead_result = subprocess.run(
                 ['git', 'log', f'{ref}..{branch}', '--oneline'],
@@ -5961,7 +5968,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            # Can't compute sync state — fall back to simple checkout
             class _Empty:
                 stdout = ''
             ahead_result = _Empty()
@@ -5972,7 +5978,90 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         commits_ahead = len(ahead_lines)
         commits_behind = len(behind_lines)
 
-        # Checkout the local branch first (needed for all reconciliation paths)
+        if commits_ahead == 0 and commits_behind == 0:
+            sync_state = 'SAME'
+        elif commits_ahead == 0 and commits_behind > 0:
+            sync_state = 'BEHIND'
+        elif commits_ahead > 0 and commits_behind == 0:
+            sync_state = 'AHEAD'
+        else:
+            sync_state = 'DIVERGED'
+
+        dirty_files = _get_dirty_files()
+
+        self._send_json(200, {
+            'status': 'ok',
+            'sync_state': sync_state,
+            'commits_ahead': commits_ahead,
+            'commits_behind': commits_behind,
+            'dirty': len(dirty_files) > 0,
+            'dirty_files': dirty_files
+        })
+
+    def _handle_branch_collab_join_confirm(self):
+        """POST /branch-collab/join-confirm — Phase 2: execute join action.
+
+        Takes {branch, action} where action is one of:
+        - checkout: SAME state, just switch branch
+        - fast-forward: BEHIND state, checkout + ff-only merge
+        - push: AHEAD state, checkout + return push guidance
+        - guide-pull: DIVERGED state, no checkout, return pull command
+        """
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        branch = body.get('branch', '').strip()
+        action = body.get('action', '').strip()
+        if not branch:
+            self._send_json(400, {'error': 'Branch name is required'})
+            return
+        if action not in ('checkout', 'fast-forward', 'push', 'guide-pull'):
+            self._send_json(400, {
+                'error': f'Invalid action: {action}. '
+                         f'Must be checkout, fast-forward, push, or guide-pull'
+            })
+            return
+
+        rc = get_branch_collab_config()
+        remote = rc['remote']
+        ref = f'{remote}/{branch}'
+
+        # guide-pull: no checkout, no dirty check, just return command
+        if action == 'guide-pull':
+            self._send_json(200, {
+                'status': 'ok',
+                'action_required': 'pull',
+                'command': f'/pl-remote-pull origin/{branch}',
+                'warning': 'Branch is diverged — run /pl-remote-pull to reconcile'
+            })
+            return
+
+        # All other actions require clean tree
+        if _is_working_tree_dirty():
+            self._send_json(400, {
+                'error': 'Working tree has uncommitted changes. '
+                         'Commit or stash before switching branches.'
+            })
+            return
+
+        # Record base branch before checkout if not already set
+        base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                 'branch_collab_base_branch')
+        if not os.path.exists(base_path) or not open(base_path).read().strip():
+            try:
+                cur = subprocess.run(
+                    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=5)
+                _write_branch_collab_base_branch(cur.stdout.strip())
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+
+        # Checkout the branch
         try:
             subprocess.run(
                 ['git', 'checkout', branch],
@@ -5986,11 +6075,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
-        if commits_ahead == 0 and commits_behind == 0:
-            # SAME: no reconciliation needed
-            pass
-        elif commits_ahead == 0 and commits_behind > 0:
-            # BEHIND: fast-forward local to remote
+        response = {'status': 'ok', 'branch': branch}
+
+        if action == 'fast-forward':
             try:
                 subprocess.run(
                     ['git', 'merge', '--ff-only', ref],
@@ -5999,23 +6086,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 response['reconciled'] = 'fast-forward'
             except (subprocess.CalledProcessError,
                     subprocess.TimeoutExpired):
-                # ff-only failed — shouldn't happen for BEHIND state,
-                # but report as diverged if it does
                 response['action_required'] = 'pull'
                 response['warning'] = (
-                    f'Branch is diverged — run /pl-remote-pull to reconcile')
-        elif commits_ahead > 0 and commits_behind == 0:
-            # AHEAD: local has unpushed commits
+                    'Branch is diverged — run /pl-remote-pull to reconcile')
+        elif action == 'push':
             response['action_required'] = 'push'
             response['warning'] = (
-                f'Local branch has {commits_ahead} unpushed commit'
-                f'{"s" if commits_ahead != 1 else ""}'
-                f' — run /pl-remote-push to sync remote')
-        else:
-            # DIVERGED: both have unique commits
-            response['action_required'] = 'pull'
-            response['warning'] = (
-                f'Branch is diverged — run /pl-remote-pull to reconcile')
+                'Local branch has unpushed commits '
+                '— run /pl-remote-push to sync remote')
 
         _write_active_branch(branch)
         self._send_json(200, response)
