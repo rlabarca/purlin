@@ -5378,9 +5378,82 @@ class TestParseWebTestable(unittest.TestCase):
 
 
 class TestVerificationEffortWebTestable(unittest.TestCase):
-    """Scenario: Web-testable feature classifies manual scenarios as auto_web."""
+    """Scenario: Web-testable feature classifies visual items as auto_web and manual scenarios normally."""
 
-    def test_web_feature_manual_and_visual_as_auto_web(self):
+    WEB_FEATURE_NO_HARDWARE = """\
+# Feature: Test
+
+> Label: "Test"
+> Category: "CDD Dashboard"
+> Web Testable: http://localhost:9086
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto test one
+
+    Given something
+    When something happens
+    Then something is verified
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual one
+
+    Given the dashboard is open
+    When I click a button
+    Then something happens
+
+#### Scenario: Manual two
+
+    Given another state
+    When I hover
+    Then tooltip appears
+
+#### Scenario: Manual three
+
+    Given a third state
+    When I navigate to another page
+    Then content loads
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
+### Screen: Dashboard Main
+- **Reference:** N/A
+- **Processed:** N/A
+- **Description:** Main dashboard view.
+- [ ] Layout is correct
+- [ ] Colors match theme
+"""
+
+    def test_web_feature_visual_auto_web_manual_interactive(self):
+        regression_scope = {
+            'declared': 'full',
+            'scenarios': ['Manual one', 'Manual two', 'Manual three'],
+            'visual_items': 2,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'TODO'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            self.WEB_FEATURE_NO_HARDWARE, 'testing', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['auto_web'], 2)  # visual items only
+        self.assertEqual(ve['manual_interactive'], 3)
+        self.assertEqual(ve['manual_visual'], 0)
+        self.assertEqual(ve['total_auto'], 2)
+        self.assertEqual(ve['total_manual'], 3)
+        self.assertEqual(ve['summary'], '2 auto, 3 manual')
+
+
+class TestVerificationEffortWebTestableMixed(unittest.TestCase):
+    """Scenario: Web-testable feature with mixed manual types and visual items."""
+
+    def test_web_feature_mixed_manual_types(self):
         regression_scope = {
             'declared': 'full',
             'scenarios': ['Manual one', 'Manual two', 'Manual three'],
@@ -5392,12 +5465,12 @@ class TestVerificationEffortWebTestable(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 5)  # 3 manual + 2 visual
-        self.assertEqual(ve['manual_interactive'], 0)
-        self.assertEqual(ve['manual_visual'], 0)
-        self.assertEqual(ve['total_auto'], 5)
-        self.assertEqual(ve['total_manual'], 0)
-        self.assertEqual(ve['summary'], '5 auto, 0 manual')
+        self.assertEqual(ve['auto_web'], 2)  # visual items only
+        self.assertEqual(ve['manual_interactive'], 2)
+        self.assertEqual(ve['manual_hardware'], 1)
+        self.assertEqual(ve['total_auto'], 2)
+        self.assertEqual(ve['total_manual'], 3)
+        self.assertEqual(ve['summary'], '2 auto, 3 manual')
 
 
 class TestVerificationEffortNonWeb(unittest.TestCase):
@@ -5482,8 +5555,10 @@ class TestVerificationEffortTargetedScope(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 2)  # Only 2 targeted scenarios
-        self.assertEqual(ve['total_auto'], 2)
+        self.assertEqual(ve['auto_web'], 0)  # No visual items in scope
+        self.assertEqual(ve['manual_interactive'], 2)  # 2 targeted manual scenarios
+        self.assertEqual(ve['total_auto'], 0)
+        self.assertEqual(ve['total_manual'], 2)
 
 
 class TestVerificationEffortBuilderIncomplete(unittest.TestCase):

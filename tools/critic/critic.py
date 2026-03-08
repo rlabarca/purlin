@@ -2304,8 +2304,13 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         r'\b(hardware|serial|GPIO|USB|device|physical)\b', re.IGNORECASE)
 
     if is_web:
-        # Web-testable: manual scenarios + visual items -> auto_web
-        auto_web = manual_count + visual_items
+        # Web-testable: visual items -> auto_web; manual scenarios classified normally
+        auto_web = visual_items
+        for s in manual_scenarios:
+            if hardware_keywords.search(s.get('body', '')):
+                manual_hardware += 1
+            else:
+                manual_interactive += 1
     else:
         # Non-web: classify manual scenarios
         for s in manual_scenarios:
