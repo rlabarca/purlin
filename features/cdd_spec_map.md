@@ -78,16 +78,21 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 *   **Zoom Target:** The viewport MUST be adjusted so the category box fills as much of the viewable area as possible while remaining fully visible (with reasonable padding).
 *   **Interaction State:** A double-click zoom MUST update the interaction state to "modified" so that subsequent auto-refresh cycles preserve the zoom level rather than re-fitting to the full graph.
 
-### 2.6 Edge Click Pass-Through
+### 2.6 Double-Click Background Recenter
+*   **Trigger:** When the User double-clicks on the graph canvas background (not on a node, edge, or category bounding box), the graph MUST recenter and zoom-to-fit, identical to clicking the "Recenter Graph" button.
+*   **Behavior:** Same as the Recenter Graph button (Section 2.3): (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions.
+*   **No conflict with category zoom:** Double-click on a category bounding box triggers the category zoom (Section 2.5). Double-click on the background triggers the full recenter. The target element determines which behavior fires.
+
+### 2.7 Edge Click Pass-Through
 *   **Non-Interactive Edges:** Edges (the lines and arrows connecting nodes) MUST NOT be interactive click targets. Clicks on edges MUST pass through to the layer below (the canvas background or any element underneath).
 *   **Hover Behavior Preserved:** Edge highlighting during node hover (Section 2.3) is unaffected. Edges may still change appearance as part of hover highlighting, but they MUST NOT capture click or tap events.
 
-### 2.7 Cytoscape.js Theme Integration
+### 2.8 Cytoscape.js Theme Integration
 *   **JS Theme Color Map:** Cytoscape styles are JS objects, not CSS. The implementation MUST maintain a JavaScript theme color map that reads CSS custom properties (`--purlin-surface`, `--purlin-border`, `--purlin-primary`, `--purlin-dim`, `--purlin-status-good`) and applies them to all node and edge styles.
 *   **Style Update on Toggle:** On theme toggle, call `cy.style().update()` or regenerate the Cytoscape instance with updated colors. All node backgrounds, borders, and label colors MUST update to reflect the new theme.
 *   **SVG Node Labels:** The `createNodeLabelSVG()` function MUST accept theme colors as parameters (using `--purlin-primary` for the friendly name, `--purlin-dim` for the filename) and regenerate all node labels on theme switch. No hardcoded color values in SVG generation.
 
-### 2.8 Search Filtering
+### 2.9 Search Filtering
 *   **Match Logic:** When the user types in the dashboard search input (owned by `cdd_status_monitor.md` Section 2.2.1), the Spec Map MUST perform a case-insensitive substring match against both the node's friendly name (Label) and its filename.
 *   **Matching Nodes -- No Change:** Matching nodes MUST remain completely unchanged -- same background, border, text color, and opacity as their default state. No highlighting, no color change, no border change. They look exactly as they do with no search active.
 *   **Non-Matching Nodes -- Dim:** Non-matching nodes (and their edges) MUST be visibly dimmed (reduced opacity) so that matching nodes stand out by contrast.
@@ -95,7 +100,7 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 *   **Distinction from Status View:** The Status view hides non-matching rows entirely. The Spec Map MUST dim rather than hide, because removing nodes from a graph would destroy spatial context and layout stability.
 *   **Empty Search:** When the search input is empty or cleared, all nodes and edges MUST return to full color and opacity (their default state).
 
-### 2.9 Machine-Readable Output
+### 2.10 Machine-Readable Output
 *   **Canonical File:** The generator MUST produce a `dependency_graph.json` file at `.purlin/cache/dependency_graph.json`.
 *   **Schema:**
     ```json
@@ -117,7 +122,7 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 *   **Agent Contract:** This file is the ONLY interface agents should use to query the dependency graph. Agents MUST NOT scrape the web UI or parse Mermaid files. CLI access is via `tools/cdd/status.sh --graph`.
 *   **API Endpoint:** The dependency graph is served via the `/dependency_graph.json` endpoint defined in `cdd_status_monitor.md` Section 2.4.
 
-### 2.10 Web-Verify Fixture Tags
+### 2.11 Web-Verify Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -254,6 +259,16 @@ These scenarios are validated by the Builder's automated test suite.
     And the category box fills as much of the viewable area as possible while remaining fully visible
     And the interaction state is set to modified so auto-refresh preserves the zoom level
 
+#### Scenario: Double-Click Background Recenters Graph
+
+    Given the User is viewing the Spec Map view
+    And the User has zoomed or panned the graph away from the default fit
+    When the User double-clicks on the canvas background (not on a node or category box)
+    Then the graph recenters and zooms to fit all nodes in the viewable area
+    And all manually-moved node positions are reset to the packed layout positions
+    And the interaction state is reset to unmodified for both zoom/pan and node positions
+    And subsequent auto-refresh cycles re-fit and re-layout the graph
+
 #### Scenario: Search Dims Non-Matching Nodes
     Given the User is viewing the Spec Map view
     When the User types a search term in the dashboard search input
@@ -308,6 +323,7 @@ None.
 - [ ] Edges render with visible arrowheads pointing to the dependent (child) node
 - [ ] Cross-category prerequisite nodes always appear above their dependents (inter-category hierarchy preserved)
 - [ ] Double-clicking a category box zooms the view to maximize that category within the viewport
+- [ ] Double-clicking the canvas background recenters and zoom-to-fits (same as Recenter Graph button)
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 
 ## User Testing Discoveries
