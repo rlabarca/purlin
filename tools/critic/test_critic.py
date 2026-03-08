@@ -527,7 +527,11 @@ class TestStructuralCompleteness(unittest.TestCase):
             test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
             os.makedirs(test_dir)
             with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
-                json.dump({'status': 'PASS'}, f)
+                json.dump({'status': 'PASS', 'passed': 5, 'failed': 0,
+                           'total': 5}, f)
+            # Create a backing test file
+            with open(os.path.join(test_dir, 'test_my_feature.py'), 'w') as f:
+                f.write('# test file\n')
             result = check_structural_completeness('my_feature')
             self.assertEqual(result['status'], 'PASS')
         finally:
@@ -548,6 +552,111 @@ class TestStructuralCompleteness(unittest.TestCase):
         finally:
             shutil.rmtree(critic.TESTS_DIR)
             critic.TESTS_DIR = orig
+
+    def test_zero_total_fails(self):
+        """Scenario: Structural Completeness FAIL When Tests JSON Has Zero Total"""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
+            os.makedirs(test_dir)
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 0, 'failed': 0,
+                           'total': 0}, f)
+            result = check_structural_completeness('my_feature')
+            self.assertEqual(result['status'], 'FAIL')
+            self.assertIn('PASS with zero tests is invalid', result['detail'])
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_no_test_file_exists_fails(self):
+        """Scenario: Structural Completeness FAIL When No Test File Exists"""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
+            os.makedirs(test_dir)
+            # Valid schema but no backing test files
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 5, 'failed': 0,
+                           'total': 5}, f)
+            result = check_structural_completeness('my_feature')
+            self.assertEqual(result['status'], 'FAIL')
+            self.assertIn('No test files found backing tests.json',
+                          result['detail'])
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_internal_inconsistency_fails(self):
+        """Scenario: Structural Completeness FAIL On Internal Inconsistency"""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
+            os.makedirs(test_dir)
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 3, 'failed': 2,
+                           'total': 5}, f)
+            result = check_structural_completeness('my_feature')
+            self.assertEqual(result['status'], 'FAIL')
+            self.assertIn('Internal inconsistency: status PASS with failures > 0',
+                          result['detail'])
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_missing_required_fields_fails(self):
+        """Scenario: Structural Completeness FAIL On Missing Required Fields"""
+        import critic
+        orig = critic.TESTS_DIR
+        critic.TESTS_DIR = tempfile.mkdtemp()
+        try:
+            test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
+            os.makedirs(test_dir)
+            # Bare {"status": "PASS"} -- missing passed, failed, total
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS'}, f)
+            result = check_structural_completeness('my_feature')
+            self.assertEqual(result['status'], 'FAIL')
+            self.assertIn('Missing required fields', result['detail'])
+            self.assertIn('passed', result['detail'])
+            self.assertIn('failed', result['detail'])
+            self.assertIn('total', result['detail'])
+        finally:
+            shutil.rmtree(critic.TESTS_DIR)
+            critic.TESTS_DIR = orig
+
+    def test_test_file_field_resolves(self):
+        """Test file existence via test_file field in tests.json."""
+        import critic
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        tmp = tempfile.mkdtemp()
+        critic.TESTS_DIR = os.path.join(tmp, 'tests')
+        critic.PROJECT_ROOT = tmp
+        try:
+            test_dir = os.path.join(critic.TESTS_DIR, 'my_feature')
+            os.makedirs(test_dir)
+            # Create test file at a declared path
+            test_file_path = os.path.join(tmp, 'tools', 'my', 'test_it.py')
+            os.makedirs(os.path.dirname(test_file_path))
+            with open(test_file_path, 'w') as f:
+                f.write('# test\n')
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({'status': 'PASS', 'passed': 3, 'failed': 0,
+                           'total': 3,
+                           'test_file': 'tools/my/test_it.py'}, f)
+            result = check_structural_completeness('my_feature')
+            self.assertEqual(result['status'], 'PASS')
+        finally:
+            shutil.rmtree(tmp)
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
 
 
 class TestBuilderDecisionAudit(unittest.TestCase):
@@ -6342,13 +6451,14 @@ if __name__ == '__main__':
     result = runner.run(suite)
 
     status = 'PASS' if result.wasSuccessful() else 'FAIL'
+    failure_count = len(result.failures) + len(result.errors)
     with open(status_file, 'w') as f:
         json.dump({
             'status': status,
-            'tests': result.testsRun,
-            'failures': len(result.failures) + len(result.errors),
-            'tool': 'critic',
-            'runner': 'unittest',
+            'passed': result.testsRun - failure_count,
+            'failed': failure_count,
+            'total': result.testsRun,
+            'test_file': 'tools/critic/test_critic.py',
         }, f)
     print(f'\n{status_file}: {status}')
 

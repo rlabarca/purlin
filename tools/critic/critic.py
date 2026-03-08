@@ -919,7 +919,14 @@ def run_spec_gate(content, filename, features_dir):
 # ===================================================================
 
 def check_structural_completeness(feature_stem):
-    """Check that tests/<feature>/tests.json exists with status."""
+    """Check that tests/<feature>/tests.json exists with valid schema and status.
+
+    Validates per policy_critic.md Section 2.15:
+    1. Schema minimum fields (status, passed, failed, total)
+    2. Internal consistency (PASS with failures > 0)
+    3. Minimum test count (total > 0 when PASS)
+    4. Test file existence (backing test code must exist)
+    """
     tests_json = os.path.join(TESTS_DIR, feature_stem, 'tests.json')
 
     if not os.path.isfile(tests_json):
@@ -931,21 +938,87 @@ def check_structural_completeness(feature_stem):
     try:
         with open(tests_json, 'r') as f:
             data = json.load(f)
-        status = data.get('status', 'UNKNOWN')
-        if status == 'PASS':
-            return {
-                'status': 'PASS',
-                'detail': f'tests/{feature_stem}/tests.json: PASS.',
-            }
-        return {
-            'status': 'WARN',
-            'detail': f'tests/{feature_stem}/tests.json: {status}.',
-        }
     except (json.JSONDecodeError, IOError, OSError):
         return {
             'status': 'FAIL',
             'detail': f'tests/{feature_stem}/tests.json is malformed.',
         }
+
+    status = data.get('status', 'UNKNOWN')
+
+    # Non-PASS status (existing behavior -- no integrity checks needed)
+    if status != 'PASS':
+        return {
+            'status': 'WARN',
+            'detail': f'tests/{feature_stem}/tests.json: {status}.',
+        }
+
+    # --- Section 2.15 integrity checks (PASS claims only) ---
+
+    # Rule 4: Schema minimum fields
+    required_fields = ['status', 'passed', 'failed', 'total']
+    missing = [f for f in required_fields if f not in data]
+    if missing:
+        return {
+            'status': 'FAIL',
+            'detail': f'Missing required fields: {", ".join(missing)}',
+        }
+
+    # Rule 3: Internal consistency
+    failed_count = data.get('failed', 0)
+    if isinstance(failed_count, (int, float)) and failed_count > 0:
+        return {
+            'status': 'FAIL',
+            'detail': 'Internal inconsistency: status PASS with failures > 0',
+        }
+
+    # Rule 1: Minimum test count
+    total = data.get('total', 0)
+    if not isinstance(total, (int, float)) or total <= 0:
+        return {
+            'status': 'FAIL',
+            'detail': 'PASS with zero tests is invalid',
+        }
+
+    # Rule 2: Test file existence (Section 2.15)
+    has_test_files = False
+    test_dir = os.path.join(TESTS_DIR, feature_stem)
+    test_extensions = ('.py', '.sh', '.bats')
+    # Check tests/<feature>/ for executable test files
+    if os.path.isdir(test_dir):
+        for fname in os.listdir(test_dir):
+            if fname.endswith(test_extensions):
+                has_test_files = True
+                break
+    # Check test_file field in tests.json
+    if not has_test_files:
+        test_file = data.get('test_file')
+        if isinstance(test_file, str) and test_file:
+            resolved = (test_file if os.path.isabs(test_file)
+                        else os.path.join(PROJECT_ROOT, test_file))
+            if os.path.isfile(resolved):
+                has_test_files = True
+        # Also check test_files (plural)
+        if not has_test_files:
+            test_files_list = data.get('test_files', [])
+            if isinstance(test_files_list, list):
+                for tf in test_files_list:
+                    if isinstance(tf, str) and tf:
+                        resolved = (tf if os.path.isabs(tf)
+                                    else os.path.join(PROJECT_ROOT, tf))
+                        if os.path.isfile(resolved):
+                            has_test_files = True
+                            break
+    if not has_test_files:
+        return {
+            'status': 'FAIL',
+            'detail': 'No test files found backing tests.json',
+        }
+
+    return {
+        'status': 'PASS',
+        'detail': f'tests/{feature_stem}/tests.json: PASS.',
+    }
 
 
 def parse_builder_decisions(impl_notes):
