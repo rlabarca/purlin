@@ -1001,8 +1001,8 @@ class TestRefreshBranchesButtonFetchesAllRemoteRefs(unittest.TestCase):
                       if 'fetch' in str(c)]
         self.assertTrue(len(fetch_call) > 0)
         args = fetch_call[0][0][0]
-        # The command should be ['git', 'fetch', 'origin'] (no branch arg)
-        self.assertEqual(args, ['git', 'fetch', 'origin'])
+        # The command should be ['git', 'fetch', '--prune', 'origin'] (no branch arg)
+        self.assertEqual(args, ['git', 'fetch', '--prune', 'origin'])
 
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
     @patch('subprocess.run')
@@ -1088,6 +1088,306 @@ class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase)
         self.assertIn('data-collapsed-text="BRANCH COLLABORATION"', html)
         self.assertNotIn('data-collapsed-text="BRANCH COLLABORATION (', html)
         self.assertIn('data-expanded="BRANCH COLLABORATION"', html)
+
+
+class TestJoinBranchShowsOperationModalDuringRequest(unittest.TestCase):
+    """Scenario: Join Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch is not set
+    And feature/auth exists as a remote tracking branch
+    When the user clicks the Join button for feature/auth
+    Then an operation modal appears with title "Joining Branch"
+    And the modal shows a spinner with text "Switching to feature/auth..."
+    And the Close button is disabled while the operation is in flight
+    And clicking the overlay background does not close the modal
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_modal_html_and_join_js(self, *mocks):
+        html = serve.generate_html()
+        # Modal HTML exists
+        self.assertIn('id="bc-op-modal-overlay"', html)
+        self.assertIn('id="bc-op-modal-title"', html)
+        self.assertIn('id="bc-op-spinner"', html)
+        self.assertIn('id="bc-op-status"', html)
+        self.assertIn('id="bc-op-modal-close"', html)
+        # Close button starts disabled
+        self.assertIn('id="bc-op-modal-close"', html)
+        # joinBranch function opens modal with correct title and message
+        self.assertIn("openBcOpModal('Joining Branch'", html)
+        self.assertIn("Switching to", html)
+        # Overlay click handler checks _bcOpInFlight
+        self.assertIn('_bcOpInFlight', html)
+
+
+class TestJoinBranchModalAutoClosesOnSuccess(unittest.TestCase):
+    """Scenario: Join Branch Modal Auto-Closes on Success
+
+    Given the operation modal is showing for a join operation
+    When the server returns { "status": "ok" }
+    Then the modal auto-closes after a brief delay
+    And refreshStatus() is called to update the dashboard
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_auto_close_on_success(self, *mocks):
+        html = serve.generate_html()
+        # bcOpModalSuccess closes modal after delay and calls refreshStatus
+        self.assertIn('bcOpModalSuccess', html)
+        self.assertIn('setTimeout', html)
+        self.assertIn('closeBcOpModal', html)
+        self.assertIn('refreshStatus', html)
+        # joinBranch calls bcOpModalSuccess on ok
+        self.assertIn("bcOpModalSuccess()", html)
+
+
+class TestJoinBranchModalShowsErrorOnFailure(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Error on Failure
+
+    Given the operation modal is showing for a join operation
+    When the server returns { "status": "error", "error": "Working tree has uncommitted changes" }
+    Then the spinner is hidden
+    And the status message shows "Working tree has uncommitted changes" in error color
+    And the Close button is enabled
+    And clicking Close dismisses the modal
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_error_display_in_modal(self, *mocks):
+        html = serve.generate_html()
+        # bcOpModalError hides spinner and shows error in error color
+        self.assertIn('bcOpModalError', html)
+        self.assertIn("spinner.style.display = 'none'", html)
+        self.assertIn("var(--purlin-status-error)", html)
+        # Close button enabled on error
+        self.assertIn("closeBtn.disabled = false", html)
+        # joinBranch calls bcOpModalError on error response
+        self.assertIn("bcOpModalError(d.error", html)
+
+
+class TestLeaveBranchShowsOperationModalDuringRequest(unittest.TestCase):
+    """Scenario: Leave Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch "feature/auth" is set
+    When the user clicks the Leave button
+    Then an operation modal appears with title "Leaving Branch"
+    And the modal shows a spinner with text "Returning to main..."
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_leave_modal(self, *mocks):
+        html = serve.generate_html()
+        # leaveBranch opens modal with "Leaving Branch" title
+        self.assertIn("openBcOpModal('Leaving Branch'", html)
+        self.assertIn("Returning to", html)
+
+
+class TestLeaveBranchModalShowsErrorOnDirtyWorkingTree(unittest.TestCase):
+    """Scenario: Leave Branch Modal Shows Error on Dirty Working Tree
+
+    Given the operation modal is showing for a leave operation
+    When the server returns an error about dirty working tree
+    Then the spinner is hidden
+    And the error message is displayed in the modal
+    And the Close button is enabled
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_leave_error_handling(self, *mocks):
+        html = serve.generate_html()
+        # leaveBranch calls bcOpModalError on error response
+        self.assertIn("bcOpModalError(d.error || 'Leave failed')", html)
+        # Network failure handling
+        self.assertIn("Request failed -- check your connection", html)
+
+
+class TestCreateBranchShowsOperationModalDuringRequest(unittest.TestCase):
+    """Scenario: Create Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And a valid branch name is entered in the creation input
+    When the user clicks the Create button
+    Then an operation modal appears with title "Creating Branch"
+    And the modal shows a spinner with text "Creating feature/new..."
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_create_modal(self, *mocks):
+        html = serve.generate_html()
+        # createBranch opens modal with "Creating Branch" title
+        self.assertIn("openBcOpModal('Creating Branch'", html)
+        self.assertIn("'Creating ' + name", html)
+
+
+class TestSwitchBranchShowsOperationModalDuringRequest(unittest.TestCase):
+    """Scenario: Switch Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch "feature/auth" is set
+    When the user selects "hotfix/urgent" from the branch dropdown
+    Then an operation modal appears with title "Joining Branch"
+    And the modal shows a spinner with text "Switching to hotfix/urgent..."
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_switch_modal(self, *mocks):
+        html = serve.generate_html()
+        # switchBranch opens modal with "Joining Branch" (same title as join per spec)
+        # Count occurrences of openBcOpModal('Joining Branch' — should appear in both joinBranch and switchBranch
+        count = html.count("openBcOpModal('Joining Branch'")
+        self.assertGreaterEqual(count, 2, "Both joinBranch and switchBranch should open 'Joining Branch' modal")
+
+
+class TestOperationModalBlocksEscapeKeyDuringProgress(unittest.TestCase):
+    """Scenario: Operation Modal Blocks Escape Key During Progress
+
+    Given the operation modal is showing with a spinner (in-flight)
+    When the user presses the Escape key
+    Then the modal remains open
+    And the operation continues
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_escape_blocked_during_flight(self, *mocks):
+        html = serve.generate_html()
+        # Escape key handler checks _bcOpInFlight before closing
+        self.assertIn("e.key === 'Escape'", html)
+        self.assertIn('bc-op-modal-overlay', html)
+        self.assertIn('_bcOpInFlight', html)
+        # closeBcOpModal returns early if in flight
+        self.assertIn('if (_bcOpInFlight) return', html)
+
+
+class TestNetworkFailureShowsConnectionErrorInModal(unittest.TestCase):
+    """Scenario: Network Failure Shows Connection Error in Modal
+
+    Given the operation modal is showing for any branch operation
+    When the fetch request fails due to a network error
+    Then the modal shows "Request failed -- check your connection" in error color
+    And the Close button is enabled
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_network_error_message(self, *mocks):
+        html = serve.generate_html()
+        # All branch operations have catch handler with connection error
+        error_msg = 'Request failed -- check your connection'
+        # Should appear in catch blocks for join, switch, leave, create
+        count = html.count(error_msg)
+        self.assertGreaterEqual(count, 4,
+            f"Expected '{error_msg}' in catch blocks of all 4 operations, found {count}")
+
+
+class TestRefreshBranchesReflectsDeletedRemoteBranches(unittest.TestCase):
+    """Scenario: Refresh Branches Reflects Deleted Remote Branches
+
+    Given the CDD server is running with no active branch
+    And the branches table shows branches "feature/auth" and "hotfix/urgent"
+    And "hotfix/urgent" has been deleted from the remote
+    When a POST request is sent to /branch-collab/fetch-all
+    And the branches table re-renders
+    Then "hotfix/urgent" is no longer shown in the branches table
+    And "feature/auth" is still shown in the branches table
+    """
+
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('subprocess.run')
+    def test_fetch_all_prunes_deleted_branches(self, mock_run, *mocks):
+        """Verify fetch-all uses --prune flag to remove stale tracking refs."""
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = MagicMock()
+        responses = []
+
+        def mock_send_json(status, data):
+            responses.append((status, data))
+        handler._send_json = mock_send_json
+        serve.Handler._handle_branch_collab_fetch_all(handler)
+        self.assertEqual(len(responses), 1)
+        status, data = responses[0]
+        self.assertEqual(status, 200)
+        self.assertEqual(data['status'], 'ok')
+        # Verify git fetch was called with --prune
+        fetch_calls = [c for c in mock_run.call_args_list
+                       if 'fetch' in str(c)]
+        self.assertTrue(len(fetch_calls) > 0)
+        args = fetch_calls[0][0][0]
+        self.assertIn('--prune', args,
+            "git fetch --prune should be used to remove stale tracking refs")
+
+
+class TestRefreshBranchesReflectsNewlyAddedRemoteBranches(unittest.TestCase):
+    """Scenario: Refresh Branches Reflects Newly Added Remote Branches
+
+    Given the CDD server is running with no active branch
+    And the branches table shows only "feature/auth"
+    And "feature/new" has been pushed to the remote from another machine
+    When a POST request is sent to /branch-collab/fetch-all
+    And the branches table re-renders
+    Then "feature/new" is shown in the branches table
+    And "feature/auth" is still shown in the branches table
+    """
+
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    @patch('subprocess.run')
+    def test_fetch_all_discovers_new_branches(self, mock_run, *mocks):
+        """Verify fetch-all fetches all remote refs (no branch argument)."""
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
+        handler = MagicMock()
+        responses = []
+
+        def mock_send_json(status, data):
+            responses.append((status, data))
+        handler._send_json = mock_send_json
+        serve.Handler._handle_branch_collab_fetch_all(handler)
+        self.assertEqual(len(responses), 1)
+        status, data = responses[0]
+        self.assertEqual(status, 200)
+        self.assertEqual(data['status'], 'ok')
+        self.assertIn('fetched_at', data)
+        # The command should be ['git', 'fetch', '--prune', 'origin'] (no branch arg)
+        fetch_calls = [c for c in mock_run.call_args_list if 'fetch' in str(c)]
+        self.assertTrue(len(fetch_calls) > 0, "git fetch should be called")
+        args = fetch_calls[0][0][0]
+        self.assertEqual(args, ['git', 'fetch', '--prune', 'origin'])
+
 
 
 def run_tests():

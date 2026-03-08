@@ -2219,6 +2219,13 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
 .effort-breakdown{{cursor:help;position:relative}}
 .effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-fg);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
+/* Branch Collaboration Operation Modal Spinner */
+@keyframes bc-spin{{ from{{transform:rotate(0deg)}} to{{transform:rotate(360deg)}} }}
+.bc-op-spinner{{
+  display:inline-block;width:14px;height:14px;
+  border:2px solid var(--purlin-border);border-top-color:var(--purlin-accent);
+  border-radius:50%;animation:bc-spin 0.8s linear infinite;
+}}
 /* Feature Detail Modal */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
@@ -2435,6 +2442,23 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   </div>
 </div>
 
+<!-- Branch Collaboration Operation Modal -->
+<div class="modal-overlay" id="bc-op-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:6px;max-width:420px;width:90%;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 style="margin:0;font-size:14px" id="bc-op-modal-title">Operation</h3>
+      <button class="btn-critic" onclick="closeBcOpModal()" id="bc-op-modal-x" style="font-size:11px;padding:2px 8px" disabled>X</button>
+    </div>
+    <div id="bc-op-modal-body" style="min-height:40px;display:flex;align-items:center;gap:8px">
+      <span id="bc-op-spinner" class="bc-op-spinner"></span>
+      <span id="bc-op-status" style="font-size:12px;color:var(--purlin-primary)"></span>
+    </div>
+    <div id="bc-op-error" style="display:none;margin-top:8px;font-size:12px;color:var(--purlin-status-error)"></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn-critic" onclick="closeBcOpModal()" id="bc-op-modal-close" style="font-size:11px" disabled>Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- What's Different Modal -->
 <div class="modal-overlay" id="wd-modal-overlay">
@@ -3192,6 +3216,7 @@ function killModalCancel() {{
 // Branch Collaboration
 // ============================
 var bcRemotePending = false;
+var _bcOpInFlight = false;
 
 function validateBranchName(input) {{
   var btn = document.getElementById('btn-create-branch');
@@ -3204,34 +3229,104 @@ function validateBranchName(input) {{
   }}
 }}
 
+// --- Operation Modal helpers ---
+function openBcOpModal(title, statusMsg) {{
+  var overlay = document.getElementById('bc-op-modal-overlay');
+  if (!overlay) return;
+  var titleEl = document.getElementById('bc-op-modal-title');
+  var spinner = document.getElementById('bc-op-spinner');
+  var statusEl = document.getElementById('bc-op-status');
+  var errorEl = document.getElementById('bc-op-error');
+  var closeBtn = document.getElementById('bc-op-modal-close');
+  var xBtn = document.getElementById('bc-op-modal-x');
+  if (titleEl) titleEl.textContent = title;
+  if (spinner) spinner.style.display = 'inline-block';
+  if (statusEl) {{ statusEl.textContent = statusMsg; statusEl.style.color = 'var(--purlin-primary)'; }}
+  if (errorEl) {{ errorEl.style.display = 'none'; errorEl.textContent = ''; }}
+  if (closeBtn) closeBtn.disabled = true;
+  if (xBtn) xBtn.disabled = true;
+  _bcOpInFlight = true;
+  overlay.style.display = 'flex';
+}}
+
+function bcOpModalSuccess() {{
+  var spinner = document.getElementById('bc-op-spinner');
+  if (spinner) spinner.style.display = 'none';
+  _bcOpInFlight = false;
+  setTimeout(function() {{
+    closeBcOpModal();
+    refreshStatus();
+  }}, 400);
+}}
+
+function bcOpModalError(msg) {{
+  var spinner = document.getElementById('bc-op-spinner');
+  var statusEl = document.getElementById('bc-op-status');
+  var errorEl = document.getElementById('bc-op-error');
+  var closeBtn = document.getElementById('bc-op-modal-close');
+  var xBtn = document.getElementById('bc-op-modal-x');
+  if (spinner) spinner.style.display = 'none';
+  if (statusEl) {{ statusEl.textContent = msg; statusEl.style.color = 'var(--purlin-status-error)'; }}
+  if (closeBtn) closeBtn.disabled = false;
+  if (xBtn) xBtn.disabled = false;
+  _bcOpInFlight = false;
+}}
+
+function closeBcOpModal() {{
+  if (_bcOpInFlight) return;
+  var overlay = document.getElementById('bc-op-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  bcRemotePending = false;
+}}
+
+// Escape key handler for operation modal
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape') {{
+    var overlay = document.getElementById('bc-op-modal-overlay');
+    if (overlay && overlay.style.display === 'flex') {{
+      if (!_bcOpInFlight) closeBcOpModal();
+      e.stopPropagation();
+    }}
+  }}
+}});
+
+// Overlay click handler for operation modal
+(function() {{
+  var overlay = document.getElementById('bc-op-modal-overlay');
+  if (overlay) {{
+    overlay.addEventListener('click', function(e) {{
+      if (e.target === overlay && !_bcOpInFlight) closeBcOpModal();
+    }});
+  }}
+}})();
+
 function createBranch() {{
   var input = document.getElementById('new-branch-name');
-  var errEl = document.getElementById('branch-ctrl-err');
   var btn = document.getElementById('btn-create-branch');
   if (!input || !input.value) return;
   var name = input.value;
-  if (errEl) errEl.textContent = '';
   if (btn) btn.disabled = true;
   bcRemotePending = true;
+  openBcOpModal('Creating Branch', 'Creating ' + name + '...');
   fetch('/branch-collab/create', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      bcRemotePending = false;
-      if (d.status === 'ok') {{ input.value = ''; refreshStatus(); }}
-      else {{ if (errEl) errEl.textContent = d.error || 'Failed'; if (btn) btn.disabled = false; }}
+      if (d.status === 'ok') {{ input.value = ''; bcOpModalSuccess(); }}
+      else {{ bcOpModalError(d.error || 'Failed'); if (btn) btn.disabled = false; }}
     }})
-    .catch(function() {{ bcRemotePending = false; if (errEl) errEl.textContent = 'Request failed'; if (btn) btn.disabled = false; }});
+    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); if (btn) btn.disabled = false; }});
 }}
 
 function joinBranch(name) {{
   bcRemotePending = true;
+  openBcOpModal('Joining Branch', 'Switching to ' + name + '...');
   fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      bcRemotePending = false;
-      if (d.status === 'ok') {{ refreshStatus(); }}
+      if (d.status === 'ok') {{ bcOpModalSuccess(); }}
+      else {{ bcOpModalError(d.error || 'Join failed'); }}
     }})
-    .catch(function() {{ bcRemotePending = false; }});
+    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
 }}
 
 function refreshBranches() {{
@@ -3251,24 +3346,27 @@ function refreshBranches() {{
 
 function switchBranch(name) {{
   bcRemotePending = true;
+  openBcOpModal('Joining Branch', 'Switching to ' + name + '...');
   fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      bcRemotePending = false;
-      if (d.status === 'ok') {{ refreshStatus(); }}
+      if (d.status === 'ok') {{ bcOpModalSuccess(); }}
+      else {{ bcOpModalError(d.error || 'Switch failed'); }}
     }})
-    .catch(function() {{ bcRemotePending = false; }});
+    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
 }}
 
 function leaveBranch() {{
   bcRemotePending = true;
+  var baseBranch = 'main';
+  openBcOpModal('Leaving Branch', 'Returning to ' + baseBranch + '...');
   fetch('/branch-collab/leave', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      bcRemotePending = false;
-      if (d.status === 'ok') {{ refreshStatus(); }}
+      if (d.status === 'ok') {{ bcOpModalSuccess(); }}
+      else {{ bcOpModalError(d.error || 'Leave failed'); }}
     }})
-    .catch(function() {{ bcRemotePending = false; }});
+    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
 }}
 
 function fetchBranch() {{
@@ -5736,7 +5834,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         with _branch_collab_fetch_lock:
             try:
                 subprocess.run(
-                    ['git', 'fetch', remote],
+                    ['git', 'fetch', '--prune', remote],
                     capture_output=True, text=True, check=True,
                     cwd=PROJECT_ROOT, timeout=30)
                 fetched_at = datetime.now(
