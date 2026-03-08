@@ -665,3 +665,6 @@ None.
 - [ ] A "READY FOR DELETION" banner appears prominently at the top of the tombstone modal content area
 - [ ] Tombstone deletion modal shows no tabs (single content view only)
 
+## User Testing Discoveries
+
+**[DISCOVERY]** Server Start/Stop Lifecycle scenario referenced "PID file" / "cdd.pid" but the implementation uses a port file (`.purlin/runtime/cdd.port`) with stateless ps-based process detection. **Status: SPEC_UPDATED** — scenario wording corrected to "port file" / "cdd.port". No Builder action required.
