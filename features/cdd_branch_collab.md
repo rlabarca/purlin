@@ -133,7 +133,7 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 - Uses locally cached remote tracking refs -- never triggers a network fetch during the 5-second poll.
 - `git log origin/<branch>..<branch> --oneline` -> commits local branch is ahead.
 - `git log <branch>..origin/<branch> --oneline` -> commits remote is ahead.
-- EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. EMPTY is a new state: when the branch has zero commits relative to the base branch (main/master), it shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background. This indicates the branch was created but no work has been committed to it. Detection: `git log main..<branch> --oneline` returns zero lines AND `git log <branch>..main --oneline` returns zero lines (branch tip is identical to main tip). SAME/AHEAD/BEHIND/DIVERGED compare local vs remote as before.
+- EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. EMPTY is a new state: when the branch has zero commits relative to the base branch (main/master), it shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background. This indicates the branch was created but no work has been committed to it. Detection: `git log main..<branch> --oneline` returns zero lines (branch has no unique commits beyond main). The reverse direction (`<branch>..main`) is NOT checked -- main may have progressed after the branch was created, but the branch is still considered EMPTY if it has no unique work. SAME/AHEAD/BEHIND/DIVERGED compare local vs remote as before.
 - When remote tracking ref `origin/<branch>` does not exist yet (pre-first-fetch): show inline note "Run Check Remote to see sync state" instead of a badge.
 
 ### 2.6 Cross-Section Annotation in LOCAL BRANCH
@@ -327,7 +327,7 @@ The following fixture tags provide real git branch topology for integration-leve
 #### Scenario: Sync State EMPTY When Branch Has No Commits Relative to Base
 
     Given an active branch "feature/empty" is set
-    And feature/empty has zero commits relative to main (branch tip equals main tip)
+    And feature/empty has zero unique commits beyond main (git log main..feature/empty is empty)
     When an agent calls GET /status.json
     Then branch_collab.sync_state is "EMPTY"
     And branch_collab.commits_ahead is 0
@@ -336,7 +336,7 @@ The following fixture tags provide real git branch topology for integration-leve
 #### Scenario: EMPTY Badge Rendered Without Badge Background
 
     Given an active branch "feature/empty" is set
-    And feature/empty has zero commits relative to main
+    And feature/empty has zero unique commits beyond main
     When the dashboard HTML is generated
     Then the sync state position shows "EMPTY" in normal text color (--purlin-fg)
     And the text does not use a badge class (no st-good, st-todo, st-disputed)
