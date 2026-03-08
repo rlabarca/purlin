@@ -97,10 +97,10 @@ Execute this 8-step sequence:
 Remove stale context guard files from the previous session:
 
 ```
-rm -f .purlin/runtime/turn_count_${PPID}_* && rm -f .purlin/runtime/session_meta_$PPID
+find .purlin/runtime -maxdepth 1 -name "turn_count_${PPID}_*" -delete 2>/dev/null; rm -f .purlin/runtime/session_meta_$PPID
 ```
 
-`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. The wildcard `turn_count_${PPID}_*` removes all per-session counter files for this process. Other concurrent agents' counters are unaffected. Deleting `session_meta` forces the hook to re-initialize with the new post-`/clear` session_id on its next invocation.
+`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. The `find -delete` pattern removes all per-session counter files for this process without triggering zsh glob errors when no files match (zsh treats unmatched globs as errors by default, unlike bash). Other concurrent agents' counters are unaffected. Deleting `session_meta` forces the hook to re-initialize with the new post-`/clear` session_id on its next invocation.
 
 **Note:** This step is optional cleanup. The per-session counter design ensures that context clears are handled automatically — each new `session_id` produces a fresh counter file starting at 1. This cleanup removes stale files from previous sessions for tidiness.
 
