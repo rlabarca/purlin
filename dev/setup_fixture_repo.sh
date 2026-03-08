@@ -455,6 +455,36 @@ EOF
 commit_and_tag "main/cdd_branch_collab/same" \
     "Branch at same position as collaboration branch"
 
+# behind-dirty: branch behind remote, working tree has uncommitted changes
+# Includes a dirty_marker file that tests can modify to simulate dirty state
+cat > .purlin/cache/feature_status.json <<'EOF'
+{
+    "features": [],
+    "branch_collab_branches": [
+        {"name": "testbranch", "active": true, "sync_state": "BEHIND", "commits_ahead": 0, "commits_behind": 2}
+    ],
+    "generated_at": "2026-01-01T00:00:00Z"
+}
+EOF
+echo "clean" > dirty_marker.txt
+
+commit_and_tag "main/cdd_branch_collab/behind-dirty" \
+    "Branch behind remote with dirty tree marker"
+
+# diverged-dirty: branch diverged, working tree has uncommitted changes
+cat > .purlin/cache/feature_status.json <<'EOF'
+{
+    "features": [],
+    "branch_collab_branches": [
+        {"name": "testbranch", "active": true, "sync_state": "DIVERGED", "commits_ahead": 2, "commits_behind": 1}
+    ],
+    "generated_at": "2026-01-01T00:00:00Z"
+}
+EOF
+
+commit_and_tag "main/cdd_branch_collab/diverged-dirty" \
+    "Branch diverged with dirty tree marker"
+
 # =====================================================================
 echo ""
 echo "--- cdd_isolated_teams ---"

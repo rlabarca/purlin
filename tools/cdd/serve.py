@@ -3334,17 +3334,20 @@ function openBcOpModal(title, statusMsg) {{
   var overlay = document.getElementById('bc-op-modal-overlay');
   if (!overlay) return;
   var titleEl = document.getElementById('bc-op-modal-title');
-  var spinner = document.getElementById('bc-op-spinner');
-  var statusEl = document.getElementById('bc-op-status');
+  var body = document.getElementById('bc-op-modal-body');
   var errorEl = document.getElementById('bc-op-error');
   var closeBtn = document.getElementById('bc-op-modal-close');
   var xBtn = document.getElementById('bc-op-modal-x');
   if (titleEl) titleEl.textContent = title;
-  if (spinner) spinner.style.display = 'inline-block';
-  if (statusEl) {{ statusEl.textContent = statusMsg; statusEl.style.color = 'var(--purlin-primary)'; }}
+  // Reset body to initial spinner + status layout (Phase 2 may have replaced it)
+  if (body) {{
+    body.style.display = 'flex';
+    body.innerHTML = '<span id="bc-op-spinner" class="bc-op-spinner" style="display:inline-block"></span>'
+      + '<span id="bc-op-status" style="font-size:12px;color:var(--purlin-primary)">' + statusMsg + '</span>';
+  }}
   if (errorEl) {{ errorEl.style.display = 'none'; errorEl.textContent = ''; }}
-  if (closeBtn) closeBtn.disabled = true;
-  if (xBtn) xBtn.disabled = true;
+  if (closeBtn) {{ closeBtn.disabled = true; closeBtn.onclick = function() {{ closeBcOpModal(); }}; }}
+  if (xBtn) {{ xBtn.disabled = true; xBtn.onclick = function() {{ closeBcOpModal(); }}; }}
   _bcOpInFlight = true;
   overlay.style.display = 'flex';
 }}
@@ -3419,21 +3422,15 @@ function createBranch() {{
 
 function joinBranch(name) {{
   bcRemotePending = true;
-  openBcOpModal('Joining Branch', 'Fetching ' + name + '...');
+  openBcOpModal('Joining Branch', 'Fetching and checking sync state...');
   fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
       if (d.status === 'ok') {{
-        var statusEl = document.getElementById('bc-op-status');
-        if (d.reconciled) {{
-          if (statusEl) statusEl.textContent = 'Reconciling with remote...';
-          setTimeout(function() {{
-            if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
-            setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
-          }}, 300);
+        if (d.completed) {{
+          bcOpModalSuccess();
         }} else {{
-          if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
-          setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
+          _bcShowJoinPhase2(name, d);
         }}
       }}
       else {{ bcOpModalError(d.error || 'Join failed'); }}
@@ -3441,14 +3438,96 @@ function joinBranch(name) {{
     .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
 }}
 
+function _bcShowJoinPhase2(name, assessment) {{
+  var body = document.getElementById('bc-op-modal-body');
+  var spinner = document.getElementById('bc-op-spinner');
+  var statusEl = document.getElementById('bc-op-status');
+  var closeBtn = document.getElementById('bc-op-modal-close');
+  var xBtn = document.getElementById('bc-op-modal-x');
+  if (spinner) spinner.style.display = 'none';
+  if (statusEl) statusEl.style.display = 'none';
+  _bcOpInFlight = false;
+  if (closeBtn) closeBtn.disabled = false;
+  if (xBtn) xBtn.disabled = false;
+  var sync = assessment.sync_state;
+  var ahead = assessment.commits_ahead || 0;
+  var behind = assessment.commits_behind || 0;
+  var dirty = assessment.dirty;
+  var dirtyFiles = assessment.dirty_files || [];
+  var h = '';
+  if (sync === 'SAME' && !dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
+  }} else if (sync === 'SAME' && dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync, but you have uncommitted changes:</p>';
+  }} else if (sync === 'BEHIND' && !dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead.</p>';
+  }} else if (sync === 'BEHIND' && dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead, but you have uncommitted changes:</p>';
+  }} else if (sync === 'AHEAD' && !dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead.</p>';
+  }} else if (sync === 'AHEAD' && dirty) {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead, but you have uncommitted changes:</p>';
+  }} else if (sync === 'DIVERGED') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
+  }}
+  if (dirty && dirtyFiles.length > 0) {{
+    h += '<div style="font-family:monospace;font-size:11px;background:rgba(0,0,0,0.15);padding:8px;border-radius:4px;max-height:120px;overflow-y:auto;margin-bottom:8px">';
+    for (var i = 0; i < dirtyFiles.length; i++) {{ h += '<div>' + dirtyFiles[i].replace(/</g,'&lt;') + '</div>'; }}
+    h += '</div>';
+    if (sync !== 'DIVERGED') {{
+      h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0">Commit or stash before joining.</p>';
+    }}
+  }}
+  if (sync === 'DIVERGED') {{
+    var escName = name.replace(/'/g, "\\'");
+    h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:4px;margin-top:8px">';
+    h += '<code style="font-family:monospace;font-size:12px;flex:1">/pl-remote-pull origin/' + name + '</code>';
+    h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\'/pl-remote-pull origin/' + escName + '\')">Copy</button>';
+    h += '</div>';
+  }}
+  if (!dirty && sync !== 'DIVERGED') {{
+    h += '<div style="margin-top:12px;text-align:right">';
+    var escName = name.replace(/'/g, "\\'");
+    if (sync === 'SAME') {{
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'checkout\')">Join</button>';
+    }} else if (sync === 'BEHIND') {{
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'fast-forward\')">Fast-Forward &amp; Join</button>';
+    }} else if (sync === 'AHEAD') {{
+      h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0 0 8px 0">After joining, run /pl-remote-push to share your commits.</p>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\'' + escName + '\', \'push\')">Join</button>';
+    }}
+    h += '</div>';
+  }}
+  body.style.display = 'block';
+  body.innerHTML = h;
+}}
+
+function _bcJoinConfirm(name, action) {{
+  var btn = document.getElementById('bc-phase2-action');
+  if (btn) {{ btn.disabled = true; btn.textContent = 'Joining...'; }}
+  _bcOpInFlight = true;
+  var closeBtn = document.getElementById('bc-op-modal-close');
+  var xBtn = document.getElementById('bc-op-modal-x');
+  if (closeBtn) closeBtn.disabled = true;
+  if (xBtn) xBtn.disabled = true;
+  fetch('/branch-collab/join-confirm', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name, action:action}}) }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+      if (d.status === 'ok') {{
+        _bcOpHandleJoinSuccess(d);
+      }} else {{
+        bcOpModalError(d.error || 'Join failed');
+      }}
+    }})
+    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
+}}
+
 function _bcOpHandleJoinSuccess(d) {{
   if (d.action_required) {{
-    var spinner = document.getElementById('bc-op-spinner');
-    var statusEl = document.getElementById('bc-op-status');
+    var body = document.getElementById('bc-op-modal-body');
     var closeBtn = document.getElementById('bc-op-modal-close');
     var xBtn = document.getElementById('bc-op-modal-x');
-    if (spinner) spinner.style.display = 'none';
-    if (statusEl) {{ statusEl.textContent = d.warning || ('Action required: ' + d.action_required); statusEl.style.color = 'var(--purlin-status-todo)'; }}
+    if (body) {{ body.innerHTML = '<p style="margin:0;font-size:13px;color:var(--purlin-status-todo)">' + (d.warning || ('Action required: ' + d.action_required)) + '</p>'; body.style.display = 'block'; }}
     if (closeBtn) closeBtn.disabled = false;
     if (xBtn) xBtn.disabled = false;
     _bcOpInFlight = false;
@@ -3475,27 +3554,7 @@ function refreshBranches() {{
 }}
 
 function switchBranch(name) {{
-  bcRemotePending = true;
-  openBcOpModal('Joining Branch', 'Fetching ' + name + '...');
-  fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
-    .then(function(r) {{ return r.json(); }})
-    .then(function(d) {{
-      if (d.status === 'ok') {{
-        var statusEl = document.getElementById('bc-op-status');
-        if (d.reconciled) {{
-          if (statusEl) statusEl.textContent = 'Reconciling with remote...';
-          setTimeout(function() {{
-            if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
-            setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
-          }}, 300);
-        }} else {{
-          if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
-          setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
-        }}
-      }}
-      else {{ bcOpModalError(d.error || 'Switch failed'); }}
-    }})
-    .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
+  joinBranch(name);
 }}
 
 function leaveBranch() {{

@@ -997,9 +997,12 @@ class TestJoinBranchShowsOperationModalDuringRequest(unittest.TestCase):
         self.assertIn('id="bc-op-modal-close"', html)
         # Close button starts disabled
         self.assertIn('id="bc-op-modal-close"', html)
-        # joinBranch function opens modal with correct title and message
+        # joinBranch function opens modal with correct title and Phase 1 message
         self.assertIn("openBcOpModal('Joining Branch'", html)
-        self.assertIn("Switching to", html)
+        self.assertIn('Fetching and checking sync state...', html)
+        # Two-phase join: Phase 1 checks d.completed, Phase 2 shows interactive content
+        self.assertIn('d.completed', html)
+        self.assertIn('_bcShowJoinPhase2', html)
         # Overlay click handler checks _bcOpInFlight
         self.assertIn('_bcOpInFlight', html)
 
@@ -1141,10 +1144,11 @@ class TestSwitchBranchShowsOperationModalDuringRequest(unittest.TestCase):
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_switch_modal(self, *mocks):
         html = serve.generate_html()
-        # switchBranch opens modal with "Joining Branch" (same title as join per spec)
-        # Count occurrences of openBcOpModal('Joining Branch' — should appear in both joinBranch and switchBranch
-        count = html.count("openBcOpModal('Joining Branch'")
-        self.assertGreaterEqual(count, 2, "Both joinBranch and switchBranch should open 'Joining Branch' modal")
+        # switchBranch delegates to joinBranch, which opens modal with "Joining Branch"
+        self.assertIn("openBcOpModal('Joining Branch'", html)
+        # switchBranch calls joinBranch directly
+        self.assertIn('function switchBranch(name)', html)
+        self.assertIn('joinBranch(name)', html)
 
 
 class TestOperationModalBlocksEscapeKeyDuringProgress(unittest.TestCase):
@@ -2354,21 +2358,23 @@ class TestJoinBranchModalMultiStepProgress(unittest.TestCase):
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_join_modal_initial_message_is_fetching(self, *mocks):
         html = serve.generate_html()
-        # joinBranch should open modal with "Fetching <name>..." not "Switching to..."
-        self.assertIn("openBcOpModal('Joining Branch', 'Fetching '", html)
-        # The _bcOpHandleJoinSuccess helper should exist
-        self.assertIn('_bcOpHandleJoinSuccess', html)
+        # joinBranch should open modal with "Fetching and checking sync state..."
+        self.assertIn("openBcOpModal('Joining Branch', 'Fetching and checking sync state...'", html)
+        # Two-phase join: _bcShowJoinPhase2 and _bcJoinConfirm functions exist
+        self.assertIn('_bcShowJoinPhase2', html)
+        self.assertIn('_bcJoinConfirm', html)
 
     @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_join_success_handler_checks_reconciled(self, *mocks):
+    def test_join_success_handler_checks_completed(self, *mocks):
         html = serve.generate_html()
-        # JS should check for d.reconciled and show "Reconciling with remote..."
-        self.assertIn('Reconciling with remote...', html)
-        self.assertIn('d.reconciled', html)
+        # Phase 1: JS checks d.completed for direct-create case (auto-close)
+        self.assertIn('d.completed', html)
+        # Phase 2 interactive content function exists
+        self.assertIn('_bcShowJoinPhase2', html)
 
     @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.get_active_branch', return_value=None)
@@ -2381,10 +2387,10 @@ class TestJoinBranchModalMultiStepProgress(unittest.TestCase):
         self.assertIn('d.action_required', html)
 
 
-class TestJoinBranchModalReconciliationStepForBehind(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Reconciliation Step for Behind
+class TestJoinBranchModalPhase2ContentForBehind(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Fast-Forward Option for Behind
 
-    The JS shows "Reconciling with remote..." when server returns reconciled field.
+    Phase 2 content shows 'Remote is N commits ahead.' with Fast-Forward & Join button.
     """
 
     @patch('serve.get_isolation_worktrees', return_value=[])
@@ -2392,12 +2398,15 @@ class TestJoinBranchModalReconciliationStepForBehind(unittest.TestCase):
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_reconciliation_step_in_js(self, *mocks):
+    def test_phase2_behind_shows_fast_forward(self, *mocks):
         html = serve.generate_html()
-        # When d.reconciled is present, the modal should show reconciliation message
-        self.assertIn('Reconciling with remote...', html)
-        # After reconciliation, it should show switching message
-        self.assertIn("Switching to ' + name + '...", html)
+        # Phase 2 shows sync-state-specific content
+        self.assertIn('Remote is ', html)
+        self.assertIn('commits ahead', html)
+        self.assertIn('Fast-Forward &amp; Join', html)
+        # Phase 2 action button calls _bcJoinConfirm with fast-forward action
+        self.assertIn("_bcJoinConfirm(", html)
+        self.assertIn("'fast-forward'", html)
 
 
 class TestJoinBranchModalActionRequiredDiverged(unittest.TestCase):
@@ -2443,6 +2452,108 @@ class TestJoinBranchModalAutoCloseDelayedWhenActionRequired(unittest.TestCase):
         self.assertIn('bcOpModalSuccess()', html)
         # The action_required branch calls refreshStatus on manual close
         self.assertIn('refreshStatus()', html)
+
+
+class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Copyable Pull Command for Diverged
+
+    Phase 2 shows 'Branch has diverged' with copyable /pl-remote-pull command.
+    No Join action button present, only Close.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_phase2_diverged_shows_copyable_command(self, *mocks):
+        html = serve.generate_html()
+        # Phase 2 DIVERGED content
+        self.assertIn('Branch has diverged', html)
+        self.assertIn('/pl-remote-pull origin/', html)
+        # Copy button for command
+        self.assertIn('navigator.clipboard.writeText', html)
+        # Monospace font for command block
+        self.assertIn('font-family:monospace', html)
+        # No join action for DIVERGED (guide-pull doesn't have a Join button)
+        # DIVERGED check: the DIVERGED branch does not show bc-phase2-action button
+        self.assertIn("sync === 'DIVERGED'", html)
+
+
+class TestJoinBranchModalPhase2JoinAndPushForAhead(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Join Button and Push Guidance for Ahead
+
+    Phase 2 shows 'Local is N commits ahead.' with [Join] button and push guidance.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_phase2_ahead_shows_push_guidance(self, *mocks):
+        html = serve.generate_html()
+        # Phase 2 AHEAD content
+        self.assertIn('Local is ', html)
+        self.assertIn('commits ahead', html)
+        # Push guidance text
+        self.assertIn('/pl-remote-push', html)
+        # Join button sends push action
+        self.assertIn("'push'", html)
+
+
+class TestJoinBranchModalPhase2DirtyTreeBlocksAction(unittest.TestCase):
+    """Scenario: Join Branch With Dirty Tree Shows Files and Blocks Action
+
+    Phase 2 shows dirty file list in monospace, no action buttons.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_phase2_dirty_shows_file_list_no_buttons(self, *mocks):
+        html = serve.generate_html()
+        # Phase 2 dirty content: shows file list
+        self.assertIn('uncommitted changes', html)
+        self.assertIn('dirtyFiles', html)
+        # Dirty file list uses monospace
+        self.assertIn('font-family:monospace', html)
+        # Commit/stash guidance
+        self.assertIn('Commit or stash before joining', html)
+
+
+class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):
+    """Scenario: Sync Badge Colors Match Design Spec
+
+    Verifies the Phase 2 modal and branches table use correct colors per sync state.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[
+        {'name': 'feat/same', 'active': False, 'sync_state': 'SAME',
+         'commits_ahead': 0, 'commits_behind': 0},
+        {'name': 'feat/behind', 'active': False, 'sync_state': 'BEHIND',
+         'commits_ahead': 0, 'commits_behind': 2},
+        {'name': 'feat/diverged', 'active': False, 'sync_state': 'DIVERGED',
+         'commits_ahead': 1, 'commits_behind': 2},
+        {'name': 'feat/empty', 'active': False, 'sync_state': 'EMPTY',
+         'commits_ahead': 0, 'commits_behind': 0},
+    ])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_sync_badge_colors_in_html(self, *mocks):
+        html = serve.generate_html()
+        # SAME = green (st-good)
+        self.assertIn('st-good', html)
+        # BEHIND = yellow (st-todo)
+        self.assertIn('st-todo', html)
+        # DIVERGED = orange (st-disputed)
+        self.assertIn('st-disputed', html)
+        # EMPTY = normal text (--purlin-primary, no badge class)
+        self.assertIn('--purlin-primary', html)
 
 
 def run_tests():
