@@ -4,6 +4,9 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/config_layering.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+> Web Start: /pl-cdd
 
 [TODO]
 

@@ -236,6 +236,7 @@ Uncommitted:    [none | summary]
 
     Given a Builder agent saves a checkpoint to .purlin/cache/session_checkpoint_builder.md
     And an Architect agent saves a checkpoint to .purlin/cache/session_checkpoint_architect.md
+    When both checkpoint files are inspected
     Then both checkpoint files exist independently
     And the Builder checkpoint contains "**Role:** builder"
     And the Architect checkpoint contains "**Role:** architect"
@@ -327,3 +328,7 @@ Uncommitted:    [none | summary]
     And prints the Architect command table
     And gathers fresh project state
     And presents the recovery summary
+
+### Manual Scenarios (Human Verification Required)
+
+None.
