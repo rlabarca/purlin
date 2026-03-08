@@ -31,7 +31,7 @@ The BRANCH COLLABORATION section is always rendered in the dashboard, regardless
 
 The section is always visible because it IS the entry point for branch collaboration. Hiding it behind config creates a chicken-and-egg problem (user cannot discover the feature without editing config).
 
-The expanded heading text is always `"BRANCH COLLABORATION"` (plain, no parenthetical). The shortened remote URL appears only on the **collapsed badge** when a branch is actively joined (see Section 2.3). The shortened URL format: remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `branch_collab.remote` config, default `"origin"`; falls back to `remote_collab.remote` if `branch_collab` absent).
+The expanded heading text is always `"BRANCH COLLABORATION"` (plain, no parenthetical). The **collapsed badge** always includes the shortened remote URL when a remote is configured: `"BRANCH COLLABORATION (<shortened-url>)"`, regardless of whether a branch is actively joined. The remote URL is always relevant since the Refresh Branches button and all branch operations target that remote. The shortened URL format: remote URL with protocol stripped (`https://`, `git@`, `ssh://`), trailing `.git` removed, and `git@host:path` converted to `host/path`. Example: `https://github.com/rlabarca/purlin.git` becomes `github.com/rlabarca/purlin`. The shortened URL is computed server-side from `git remote get-url <remote>` (where `<remote>` comes from `branch_collab.remote` config, default `"origin"`; falls back to `remote_collab.remote` if `branch_collab` absent). When no remote is configured, the collapsed badge shows plain `"BRANCH COLLABORATION"`.
 
 Exception: if `git remote` returns empty (no remote configured at all), the section body shows "No git remote configured. Add a remote to enable branch collaboration."
 
@@ -39,7 +39,7 @@ Exception: if `git remote` returns empty (no remote configured at all), the sect
 
 When `.purlin/runtime/active_branch` is absent or empty:
 
-**Collapsed badge:** "BRANCH COLLABORATION" (no annotation, no branch count).
+**Collapsed badge:** `"BRANCH COLLABORATION (<shortened-url>)"` when a remote is configured (see Section 2.1 for URL format). Plain `"BRANCH COLLABORATION"` when no remote is configured.
 
 **Expanded content (in order):**
 
@@ -484,25 +484,17 @@ The following fixture tags provide real git branch topology for integration-leve
     Then the response contains { "status": "ok" } with a fetched_at timestamp
     And the branches table re-renders with the newly discovered branch
 
-#### Scenario: Collapsed Badge Shows URL When Branch Active
+#### Scenario: Collapsed Badge Always Shows URL When Remote Configured
 
     Given the CDD server is running
-    And an active branch is set in .purlin/runtime/active_branch
     And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION (github.com/rlabarca/purlin)"
-
-#### Scenario: Collapsed Badge Shows Plain Title When No Branch Active
-
-    Given the CDD server is running
-    And no file exists at .purlin/runtime/active_branch
-    When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
+    And this applies regardless of whether an active branch is set
 
 #### Scenario: Collapsed Badge Shows Plain Title When No Remote Configured
 
     Given the CDD server is running
-    And an active branch is set in .purlin/runtime/active_branch
     And no git remote is configured
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
@@ -628,9 +620,8 @@ None.
 - [ ] Leave click transitions section from active mode back to setup mode (creation row + branches table visible)
 - [ ] "Refresh Branches" button positioned to the right of the branches table heading in setup mode
 - [ ] "Refresh Branches" button shows "Refreshing..." text and is disabled while fetch-all is in flight
-- [ ] Collapsed badge shows "BRANCH COLLABORATION (github.com/rlabarca/purlin)" when a branch is active and remote is configured
-- [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when no branch is active
-- [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when branch is active but no remote is configured
+- [ ] Collapsed badge always shows "BRANCH COLLABORATION (github.com/rlabarca/purlin)" when remote is configured (regardless of active branch state)
+- [ ] Collapsed badge shows plain "BRANCH COLLABORATION" only when no remote is configured
 - [ ] Operation modal: centered overlay with semi-transparent background, matching Kill Isolation modal styling
 - [ ] Operation modal: CSS spinner (small, inline) visible during in-flight state
 - [ ] Operation modal: spinner hidden and replaced with error text (red) on failure
