@@ -1682,6 +1682,461 @@ class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
             self.assertNotIn('st-disputed', span)
 
 
+class TestJoinBranchFetchesThenChecksOut(unittest.TestCase):
+    """Scenario: Join Branch Fetches Then Checks Out and Updates Runtime File
+
+    Given feature/auth exists as a remote tracking branch
+    And no local branch feature/auth exists
+    And no active branch is set
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth before checkout
+    And a local branch feature/auth is created tracking origin/feature/auth
+    And .purlin/runtime/active_branch contains "feature/auth"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_fetch_called_before_checkout(self, mock_config, mock_run):
+        call_order = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''  # clean
+            elif 'fetch' in cmd_str:
+                call_order.append('fetch')
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                if 'feature/auth' in cmd_str and 'origin' not in cmd_str:
+                    # No local branch exists
+                    raise subprocess.CalledProcessError(1, cmd)
+                result.stdout = 'abc1234'
+            elif 'checkout' in cmd_str and '-b' in cmd_str:
+                call_order.append('checkout-b')
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        # Verify fetch happened before checkout
+        self.assertEqual(call_order, ['fetch', 'checkout-b'])
+
+        # Verify runtime file written
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'feature/auth')
+
+
+class TestJoinBranchFastForwardsWhenBehind(unittest.TestCase):
+    """Scenario: Join Branch Fast-Forwards When Local Is Behind Remote
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth has 2 commits not in local feature/auth
+    And local feature/auth has no commits not in origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch is called for feature/auth
+    And local feature/auth is checked out
+    And local feature/auth is fast-forwarded to origin/feature/auth
+    And the response contains "reconciled": "fast-forward"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_fast_forward_when_behind(self, mock_config, mock_run):
+        merge_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                result.stdout = 'abc1234'  # Both local and remote exist
+            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+                result.stdout = ''  # Local has 0 unique commits (ahead=0)
+            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+                result.stdout = 'abc1234 commit1\ndef5678 commit2'  # Remote has 2 (behind=2)
+            elif 'merge' in cmd_str and '--ff-only' in cmd_str:
+                merge_called.append(cmd)
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        self.assertEqual(args[1].get('reconciled'), 'fast-forward')
+        self.assertTrue(len(merge_called) > 0, "git merge --ff-only should be called")
+
+
+class TestJoinBranchRoutesDivergedToPull(unittest.TestCase):
+    """Scenario: Join Branch Routes Diverged to pl-remote-pull
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth has 2 commits not in local feature/auth
+    And local feature/auth has 1 commit not in origin/feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the response contains "action_required": "pull"
+    And the response contains a warning to run /pl-remote-pull
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_diverged_returns_action_required_pull(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+                result.stdout = 'abc1234 local commit'  # ahead=1
+            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+                result.stdout = 'def5678 remote1\nghi9012 remote2'  # behind=2
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['action_required'], 'pull')
+        self.assertIn('/pl-remote-pull', args[1]['warning'])
+
+
+class TestJoinBranchWarnsWhenAhead(unittest.TestCase):
+    """Scenario: Join Branch Warns When Local Is Ahead and Suggests Push
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And local feature/auth has 3 commits not in origin/feature/auth
+    And origin/feature/auth has no commits not in local feature/auth
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the response contains "action_required": "push"
+    And the response contains a warning to run /pl-remote-push
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_ahead_returns_action_required_push(self, mock_config, mock_run):
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+                result.stdout = 'a1 c1\na2 c2\na3 c3'  # ahead=3
+            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+                result.stdout = ''  # behind=0
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['action_required'], 'push')
+        self.assertIn('/pl-remote-push', args[1]['warning'])
+        self.assertIn('3', args[1]['warning'])  # Should mention commit count
+
+
+class TestSwitchBranchFetchesReconciles(unittest.TestCase):
+    """Scenario: Switch Branch via Join Fetches Reconciles and Updates Active Branch
+
+    Given an active branch "feature/auth" is set
+    And hotfix/urgent exists as a remote tracking branch
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "hotfix/urgent"}
+    Then git fetch is called for hotfix/urgent before checkout
+    And hotfix/urgent is checked out with reconciliation if needed
+    And .purlin/runtime/active_branch contains "hotfix/urgent"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        rt_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
+        os.makedirs(rt_dir, exist_ok=True)
+        with open(os.path.join(rt_dir, 'active_branch'), 'w') as f:
+            f.write('feature/auth')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_switch_fetches_and_reconciles(self, mock_config, mock_run):
+        call_order = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'fetch' in cmd_str and 'hotfix/urgent' in cmd_str:
+                call_order.append('fetch')
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                if 'hotfix/urgent' in cmd_str and 'origin' not in cmd_str:
+                    raise subprocess.CalledProcessError(1, cmd)  # no local
+                result.stdout = 'abc1234'
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'feature/auth'
+            elif 'checkout' in cmd_str and '-b' in cmd_str:
+                call_order.append('checkout')
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "hotfix/urgent"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        self.assertEqual(call_order, ['fetch', 'checkout'])
+
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'hotfix/urgent')
+
+
+class TestJoinBranchModalMultiStepProgress(unittest.TestCase):
+    """Scenario: Join Branch Shows Operation Modal With Multi-Step Progress
+
+    Verifies the modal opens with "Fetching..." initial message
+    and the JS handles reconciled/action_required responses.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[
+        {'name': 'feature/auth', 'active': False, 'sync_state': 'EMPTY',
+         'commits_ahead': 0, 'commits_behind': 0}
+    ])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_join_modal_initial_message_is_fetching(self, *mocks):
+        html = serve.generate_html()
+        # joinBranch should open modal with "Fetching <name>..." not "Switching to..."
+        self.assertIn("openBcOpModal('Joining Branch', 'Fetching '", html)
+        # The _bcOpHandleJoinSuccess helper should exist
+        self.assertIn('_bcOpHandleJoinSuccess', html)
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_join_success_handler_checks_reconciled(self, *mocks):
+        html = serve.generate_html()
+        # JS should check for d.reconciled and show "Reconciling with remote..."
+        self.assertIn('Reconciling with remote...', html)
+        self.assertIn('d.reconciled', html)
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_join_success_handler_checks_action_required(self, *mocks):
+        html = serve.generate_html()
+        # JS should check for d.action_required and not auto-close
+        self.assertIn('d.action_required', html)
+
+
+class TestJoinBranchModalReconciliationStepForBehind(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Reconciliation Step for Behind
+
+    The JS shows "Reconciling with remote..." when server returns reconciled field.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_reconciliation_step_in_js(self, *mocks):
+        html = serve.generate_html()
+        # When d.reconciled is present, the modal should show reconciliation message
+        self.assertIn('Reconciling with remote...', html)
+        # After reconciliation, it should show switching message
+        self.assertIn("Switching to ' + name + '...", html)
+
+
+class TestJoinBranchModalActionRequiredDiverged(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Action Required for Diverged
+
+    The modal does NOT auto-close when action_required is present.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_action_required_prevents_auto_close(self, *mocks):
+        html = serve.generate_html()
+        # The _bcOpHandleJoinSuccess function checks action_required
+        self.assertIn('d.action_required', html)
+        # Warning message is displayed from d.warning
+        self.assertIn('d.warning', html)
+        # Close button is enabled for manual dismissal
+        self.assertIn('closeBtn.disabled = false', html)
+
+
+class TestJoinBranchModalActionRequiredAhead(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Action Required for Ahead
+
+    Same modal behavior as diverged — holds open with warning.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_ahead_warning_mentions_push(self, mock_config, mock_run):
+        """Server returns warning with /pl-remote-push for AHEAD state."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+                result.stdout = 'a1 commit1\na2 commit2'
+            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[1]['action_required'], 'push')
+        self.assertIn('unpushed commit', args[1]['warning'])
+        self.assertIn('/pl-remote-push', args[1]['warning'])
+
+
+class TestJoinBranchModalAutoCloseDelayedWhenActionRequired(unittest.TestCase):
+    """Scenario: Join Branch Modal Auto-Close Delayed When Action Required
+
+    The JS _bcOpHandleJoinSuccess function does NOT call bcOpModalSuccess()
+    when action_required is present.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_auto_close_skipped_when_action_required(self, *mocks):
+        html = serve.generate_html()
+        # _bcOpHandleJoinSuccess branches on d.action_required:
+        # - If present: shows warning, enables close, does NOT call bcOpModalSuccess()
+        # - If absent: calls bcOpModalSuccess() for auto-close
+        self.assertIn('_bcOpHandleJoinSuccess', html)
+        # The else branch calls bcOpModalSuccess for clean success
+        self.assertIn('bcOpModalSuccess()', html)
+        # The action_required branch calls refreshStatus on manual close
+        self.assertIn('refreshStatus()', html)
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()

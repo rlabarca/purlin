@@ -3410,14 +3410,44 @@ function createBranch() {{
 
 function joinBranch(name) {{
   bcRemotePending = true;
-  openBcOpModal('Joining Branch', 'Switching to ' + name + '...');
+  openBcOpModal('Joining Branch', 'Fetching ' + name + '...');
   fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      if (d.status === 'ok') {{ bcOpModalSuccess(); }}
+      if (d.status === 'ok') {{
+        var statusEl = document.getElementById('bc-op-status');
+        if (d.reconciled) {{
+          if (statusEl) statusEl.textContent = 'Reconciling with remote...';
+          setTimeout(function() {{
+            if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
+            setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
+          }}, 300);
+        }} else {{
+          if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
+          setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
+        }}
+      }}
       else {{ bcOpModalError(d.error || 'Join failed'); }}
     }})
     .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
+}}
+
+function _bcOpHandleJoinSuccess(d) {{
+  if (d.action_required) {{
+    var spinner = document.getElementById('bc-op-spinner');
+    var statusEl = document.getElementById('bc-op-status');
+    var closeBtn = document.getElementById('bc-op-modal-close');
+    var xBtn = document.getElementById('bc-op-modal-x');
+    if (spinner) spinner.style.display = 'none';
+    if (statusEl) {{ statusEl.textContent = d.warning || ('Action required: ' + d.action_required); statusEl.style.color = 'var(--purlin-status-todo)'; }}
+    if (closeBtn) closeBtn.disabled = false;
+    if (xBtn) xBtn.disabled = false;
+    _bcOpInFlight = false;
+    closeBtn.onclick = function() {{ closeBcOpModal(); refreshStatus(); }};
+    xBtn.onclick = function() {{ closeBcOpModal(); refreshStatus(); }};
+  }} else {{
+    bcOpModalSuccess();
+  }}
 }}
 
 function refreshBranches() {{
@@ -3437,11 +3467,23 @@ function refreshBranches() {{
 
 function switchBranch(name) {{
   bcRemotePending = true;
-  openBcOpModal('Joining Branch', 'Switching to ' + name + '...');
+  openBcOpModal('Joining Branch', 'Fetching ' + name + '...');
   fetch('/branch-collab/join', {{method:'POST', headers:{{'Content-Type':'application/json'}}, body:JSON.stringify({{branch:name}}) }})
     .then(function(r) {{ return r.json(); }})
     .then(function(d) {{
-      if (d.status === 'ok') {{ bcOpModalSuccess(); }}
+      if (d.status === 'ok') {{
+        var statusEl = document.getElementById('bc-op-status');
+        if (d.reconciled) {{
+          if (statusEl) statusEl.textContent = 'Reconciling with remote...';
+          setTimeout(function() {{
+            if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
+            setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
+          }}, 300);
+        }} else {{
+          if (statusEl) statusEl.textContent = 'Switching to ' + name + '...';
+          setTimeout(function() {{ _bcOpHandleJoinSuccess(d); }}, 200);
+        }}
+      }}
       else {{ bcOpModalError(d.error || 'Switch failed'); }}
     }})
     .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
@@ -5802,7 +5844,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(500, {'error': 'Operation timed out'})
 
     def _handle_branch_collab_join(self):
-        """POST /branch-collab/join — join an existing branch."""
+        """POST /branch-collab/join — join an existing branch.
+
+        Implements the fetch-reconcile-checkout sequence from spec Section 2.4:
+        1. Abort if dirty
+        2. Fetch target branch from remote
+        3. Check if local branch exists
+        4. If no local: create tracking branch, skip to runtime write
+        5. If local exists: compute sync state and reconcile
+           - SAME: just checkout
+           - BEHIND: checkout + ff-only merge
+           - AHEAD: checkout + action_required=push
+           - DIVERGED: checkout + action_required=pull
+        6. Record base branch if not already set
+        7. Write active branch
+        """
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = json.loads(self.rfile.read(length).decode('utf-8'))
@@ -5815,7 +5871,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'Branch name is required'})
             return
 
-        # Abort if working tree is dirty
+        # Step 1: Abort if working tree is dirty
         if _is_working_tree_dirty():
             self._send_json(400, {
                 'error': 'Working tree has uncommitted changes. '
@@ -5827,32 +5883,57 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         remote = rc['remote']
         ref = f'{remote}/{branch}'
 
-        # Verify remote tracking ref exists, or fetch it
+        # Step 2: Fetch the target branch from remote
+        try:
+            subprocess.run(
+                ['git', 'fetch', remote, branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=30)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            self._send_json(400, {
+                'error': f'Branch "{branch}" not found on remote'
+            })
+            return
+
+        # Verify remote ref exists after fetch
         try:
             subprocess.run(
                 ['git', 'rev-parse', '--verify', ref],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
         except subprocess.CalledProcessError:
-            # Try fetching
-            try:
-                subprocess.run(
-                    ['git', 'fetch', remote, branch],
-                    capture_output=True, text=True, check=True,
-                    cwd=PROJECT_ROOT, timeout=30)
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                self._send_json(400, {
-                    'error': f'Branch "{branch}" not found on remote'
-                })
-                return
+            self._send_json(400, {
+                'error': f'Branch "{branch}" not found on remote'
+            })
+            return
 
-        # Checkout the branch; create tracking branch if needed
+        # Step 3: Check if local branch exists
+        local_exists = True
         try:
             subprocess.run(
-                ['git', 'checkout', branch],
+                ['git', 'rev-parse', '--verify', branch],
                 capture_output=True, text=True, check=True,
-                cwd=PROJECT_ROOT, timeout=10)
+                cwd=PROJECT_ROOT, timeout=5)
         except subprocess.CalledProcessError:
+            local_exists = False
+
+        # Record base branch (current branch before checkout) if not already set
+        base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                 'branch_collab_base_branch')
+        if not os.path.exists(base_path) or not open(base_path).read().strip():
+            try:
+                cur = subprocess.run(
+                    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=5)
+                _write_branch_collab_base_branch(cur.stdout.strip())
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+
+        response = {'status': 'ok', 'branch': branch}
+
+        # Step 4: If no local branch exists, create tracking branch
+        if not local_exists:
             try:
                 subprocess.run(
                     ['git', 'checkout', '-b', branch, ref],
@@ -5865,9 +5946,79 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                              f'{getattr(exc, "stderr", str(exc))}'
                 })
                 return
+            _write_active_branch(branch)
+            self._send_json(200, response)
+            return
+
+        # Step 5: Local branch exists — compute sync state and reconcile
+        try:
+            ahead_result = subprocess.run(
+                ['git', 'log', f'{ref}..{branch}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            behind_result = subprocess.run(
+                ['git', 'log', f'{branch}..{ref}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            # Can't compute sync state — fall back to simple checkout
+            class _Empty:
+                stdout = ''
+            ahead_result = _Empty()
+            behind_result = _Empty()
+
+        ahead_lines = [l for l in ahead_result.stdout.strip().splitlines() if l]
+        behind_lines = [l for l in behind_result.stdout.strip().splitlines() if l]
+        commits_ahead = len(ahead_lines)
+        commits_behind = len(behind_lines)
+
+        # Checkout the local branch first (needed for all reconciliation paths)
+        try:
+            subprocess.run(
+                ['git', 'checkout', branch],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=10)
+        except (subprocess.CalledProcessError,
+                subprocess.TimeoutExpired) as exc:
+            self._send_json(500, {
+                'error': f'Failed to checkout {branch}: '
+                         f'{getattr(exc, "stderr", str(exc))}'
+            })
+            return
+
+        if commits_ahead == 0 and commits_behind == 0:
+            # SAME: no reconciliation needed
+            pass
+        elif commits_ahead == 0 and commits_behind > 0:
+            # BEHIND: fast-forward local to remote
+            try:
+                subprocess.run(
+                    ['git', 'merge', '--ff-only', ref],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+                response['reconciled'] = 'fast-forward'
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired):
+                # ff-only failed — shouldn't happen for BEHIND state,
+                # but report as diverged if it does
+                response['action_required'] = 'pull'
+                response['warning'] = (
+                    f'Branch is diverged — run /pl-remote-pull to reconcile')
+        elif commits_ahead > 0 and commits_behind == 0:
+            # AHEAD: local has unpushed commits
+            response['action_required'] = 'push'
+            response['warning'] = (
+                f'Local branch has {commits_ahead} unpushed commit'
+                f'{"s" if commits_ahead != 1 else ""}'
+                f' — run /pl-remote-push to sync remote')
+        else:
+            # DIVERGED: both have unique commits
+            response['action_required'] = 'pull'
+            response['warning'] = (
+                f'Branch is diverged — run /pl-remote-pull to reconcile')
 
         _write_active_branch(branch)
-        self._send_json(200, {'status': 'ok', 'branch': branch})
+        self._send_json(200, response)
 
     def _handle_branch_collab_leave(self):
         """POST /branch-collab/leave — clear active branch, return to base branch."""
