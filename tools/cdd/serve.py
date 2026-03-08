@@ -1618,12 +1618,24 @@ def _branch_collab_section_html(active_branch, sync_data, branches,
                  'Refresh Branches</button></div>')
         if branches:
             html += ('<table class="ft" style="width:100%"><thead><tr>'
-                     '<th>Branch</th><th></th>'
+                     '<th>Branch</th><th>State</th><th></th>'
                      '</tr></thead><tbody>')
             for b in branches:
                 name_esc = b['name'].replace("'", "\\'")
+                bs = b.get('sync_state', '')
+                if bs == 'EMPTY':
+                    state_html = '<span style="color:var(--purlin-primary)">EMPTY</span>'
+                elif bs == 'SAME':
+                    state_html = '<span class="st-good">SAME</span>'
+                elif bs in ('AHEAD', 'BEHIND'):
+                    state_html = f'<span class="st-todo">{bs}</span>'
+                elif bs == 'DIVERGED':
+                    state_html = f'<span class="st-disputed">{bs}</span>'
+                else:
+                    state_html = ''
                 html += (
                     f'<tr><td>{b["name"]}</td>'
+                    f'<td style="font-size:11px">{state_html}</td>'
                     f'<td style="text-align:right">'
                     f'<button class="btn-critic" onclick="joinBranch(\'{name_esc}\')"'
                     f' style="font-size:10px;padding:2px 8px">Join</button>'
