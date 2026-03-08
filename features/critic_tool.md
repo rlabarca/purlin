@@ -564,6 +564,14 @@ The following fixture tags provide deterministic project states for integration-
     Then structural_completeness reports FAIL
     And the detail lists the missing required fields
 
+#### Scenario: Structural Completeness PASS For All-Manual Feature Without Tests JSON
+    Given a feature has zero automated scenarios (only manual scenarios or none)
+    And no tests/<feature>/tests.json exists on disk
+    When the Critic tool runs the Implementation Gate structural completeness check
+    Then structural_completeness reports PASS
+    And the detail says "N/A - no automated scenarios"
+    And role_status.builder can be DONE without tests.json
+
 #### Scenario: Role Status Builder FAIL
     Given a feature has tests.json with status FAIL
     When the Critic tool computes role_status

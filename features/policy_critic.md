@@ -152,7 +152,9 @@ The `structural_completeness` check in the Implementation Gate validates that `t
 
 4.  **Schema Minimum Fields:** `tests.json` MUST contain at minimum: `status` (string), `passed` (int), `failed` (int), `total` (int). A file missing any of these required fields is treated as FAIL with detail `"Missing required fields: <list>"`. The bare `{"status": "PASS"}` format is no longer valid.
 
-**Constraint:** These invariants apply equally to the `structural_completeness` check in `critic.json` and to the Builder's `DONE` status computation. A feature cannot be Builder `DONE` if its `tests.json` violates any of these rules.
+**All-Manual Feature Exemption:** Features with zero automated scenarios are exempt from structural completeness checks entirely. When the Critic detects that a feature has no automated scenarios (only manual scenarios or no scenarios at all), `structural_completeness` MUST report PASS with detail `"N/A - no automated scenarios"`. No `tests.json` file is required for these features. This exemption prevents false FAILs on legitimately all-manual features (e.g., features that are purely process-driven or hardware-verified).
+
+**Constraint:** These invariants apply equally to the `structural_completeness` check in `critic.json` and to the Builder's `DONE` status computation. A feature cannot be Builder `DONE` if its `tests.json` violates any of these rules. The all-manual exemption takes precedence — a feature with zero automated scenarios can be Builder `DONE` without `tests.json`.
 
 ## 3. Configuration
 
