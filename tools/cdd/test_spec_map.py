@@ -561,6 +561,34 @@ class TestClicksOnEdgesPassThrough(unittest.TestCase):
         self.assertIn('openModal', self.content)
 
 
+class TestDoubleClickCategoryZoomsToFit(unittest.TestCase):
+    """Scenario: Double-Click Category Zooms to Fit
+
+    Given the User is viewing the Spec Map view
+    When the User double-clicks on a category bounding box
+    Then the graph animates a zoom that maximizes the view of that category
+    And the interaction state is set to modified so auto-refresh preserves zoom
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_dbltap_handler_registered_on_category_nodes(self):
+        """dbltap event registered for category nodes."""
+        self.assertIn("'dbltap', 'node[?isCategory]'", self.content)
+
+    def test_dbltap_animates_fit(self):
+        """Double-click triggers animated fit to the category node."""
+        self.assertIn('instance.animate', self.content)
+        self.assertIn('fit:', self.content)
+
+    def test_dbltap_sets_modified_view(self):
+        """Double-click sets userModifiedView to preserve zoom on refresh."""
+        # The dbltap handler must set userModifiedView = true
+        self.assertIn('userModifiedView = true', self.content)
+
+
 class TestMermaidGeneration(unittest.TestCase):
     def test_generates_valid_mermaid(self):
         features = {

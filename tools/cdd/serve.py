@@ -4503,6 +4503,18 @@ function createCytoscape(elements, colors) {{
     resetInactivityTimer();
   }});
 
+  // Double-click category — zoom to fit that category (spec Section 2.5)
+  instance.on('dbltap', 'node[?isCategory]', function(evt) {{
+    var catNode = evt.target;
+    instance.animate({{
+      fit: {{ eles: catNode, padding: 40 }},
+      duration: 400,
+      easing: 'ease-in-out-cubic'
+    }});
+    userModifiedView = true;
+    resetInactivityTimer();
+  }});
+
   // Node drag — track position modification and persist
   instance.on('dragfree', 'node', function() {{
     userModifiedNodes = true;
