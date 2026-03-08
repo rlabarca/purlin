@@ -938,11 +938,3 @@ None
 
 ## User Testing Discoveries
 
-### [BUG] Scenario classification check ignores "None." declaration under Manual Scenarios
-- **Status:** RESOLVED
-- **Found by:** Architect
-- **Affected scenarios:** Scenario classification (Spec Gate §2.1)
-- **Description:** Features that have both `### Automated Scenarios` and `### Manual Scenarios (Human Verification Required)` subsections, where the Manual subsection contains an explicit `None.` declaration, are reported as WARN ("Only Automated subsection present") instead of PASS. The spec (§2.1 table, scenario classification row) defines PASS as "Both subsections present (with content or explicit 'None' declaration)." The Critic implementation does not recognize `None.` as a valid empty-section sentinel. Affected features: `pl_web_verify.md`, `qa_verification_effort.md`.
-- **Expected:** Scenario classification = PASS when `### Manual Scenarios` heading exists with `None.` underneath.
-- **Actual:** Scenario classification = WARN with "Only Automated subsection present."
-
