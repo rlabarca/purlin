@@ -123,7 +123,7 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 **`POST /branch-collab/fetch-all`** -- `{}`
 
 1. Read remote from config (`branch_collab.remote`, default `"origin"`; fallback to `remote_collab.remote`).
-2. Run `git fetch <remote>` (no branch argument -- fetches all refs for the configured remote).
+2. Run `git fetch --prune <remote>` (no branch argument -- fetches all refs for the configured remote). The `--prune` flag removes local tracking refs for branches that no longer exist on the remote, ensuring deleted branches disappear from the branches table after refresh.
 3. Return `{ "status": "ok", "fetched_at": "<ISO timestamp>" }`.
 4. Uses the same `_branch_collab_fetch_lock` to prevent concurrent fetches with the active-branch fetch.
 5. On failure: return `{ "error": "..." }`.
@@ -169,6 +169,50 @@ When an active branch exists, the `/status.json` response includes:
 `branch_collab`: present only when an active branch exists. Absent otherwise. Sync state computation is unchanged -- it compares local vs `origin/<branch>` regardless of naming convention.
 
 `branch_collab_branches`: always present (may be empty array). Lists all branches discovered from remote tracking refs (filtered to exclude `HEAD`, `main`/`master`). Each entry includes per-branch sync state computed from locally cached refs (same rules as Section 2.5, applied per branch).
+
+### 2.8 Operation Modals (Joining / Leaving / Creating)
+
+Branch operations (join, leave, create, switch) involve git checkouts, fetches, and pushes that can take several seconds. During this time the user sees no feedback. Operation modals provide a blocking progress indicator with inline error reporting.
+
+**Modal HTML:** A single shared modal element (`id="bc-op-modal-overlay"`) is reused for all branch operations. It follows the Kill Isolation modal pattern (inline styles, lightweight, no tabs).
+
+**Structure:**
+
+```
++---------------------------------------+
+|  <title>                          [X]  |
+|---------------------------------------|
+|                                       |
+|  <spinner>  <status message>          |
+|                                       |
+|  <error block — hidden by default>    |
+|                                       |
+|                         [Close]       |
++---------------------------------------+
+```
+
+- **Title:** Operation-specific. "Joining Branch", "Leaving Branch", or "Creating Branch".
+- **Spinner:** A CSS-only animated spinner (small, inline with status message). Hidden when the operation completes (success or error).
+- **Status message:** Operation-specific progress text:
+  - Join/Switch: `"Switching to <branch>..."` (uses "Switching" for both join and switch since the git operation is identical).
+  - Leave: `"Returning to <base-branch>..."`
+  - Create: `"Creating <branch>..."`
+- **Error block:** Hidden by default. On error, the spinner is replaced with an error icon (red text), the status message updates to the error text from the server response (`d.error`), and the block becomes visible. The error text uses `color: var(--purlin-status-error)`.
+- **Close button:** Always visible in the footer. During progress, clicking Close is a no-op (button disabled). On completion (success or error), the button is enabled.
+- **Auto-close on success:** When the operation succeeds, the modal closes automatically after a brief delay (400ms) and `refreshStatus()` is called. The user sees the spinner resolve to a success state momentarily before the modal dismisses.
+- **No close on overlay click during progress:** While the operation is in flight, clicking the overlay background does NOT close the modal. After completion (success or error), overlay click closes normally.
+- **Escape key:** Same behavior as overlay click -- blocked during progress, allowed after completion.
+
+**JavaScript integration:**
+
+The existing `joinBranch()`, `leaveBranch()`, `switchBranch()`, and `createBranch()` functions are updated to:
+
+1. Open the modal with the appropriate title and status message BEFORE sending the fetch request.
+2. On success: briefly show a success state, then auto-close and call `refreshStatus()`.
+3. On error: update the modal to show the error message, enable Close button.
+4. On network failure (fetch `.catch`): show "Request failed -- check your connection" as the error message.
+
+The `bcRemotePending` guard is preserved -- the modal is the visual manifestation of that guard state.
 
 ### 2.9 Integration Test Fixture Tags
 
@@ -445,6 +489,99 @@ The following fixture tags provide real git branch topology for integration-leve
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION"
 
+#### Scenario: Join Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch is not set
+    And feature/auth exists as a remote tracking branch
+    When the user clicks the Join button for feature/auth
+    Then an operation modal appears with title "Joining Branch"
+    And the modal shows a spinner with text "Switching to feature/auth..."
+    And the Close button is disabled while the operation is in flight
+    And clicking the overlay background does not close the modal
+
+#### Scenario: Join Branch Modal Auto-Closes on Success
+
+    Given the operation modal is showing for a join operation
+    When the server returns { "status": "ok" }
+    Then the modal auto-closes after a brief delay
+    And refreshStatus() is called to update the dashboard
+
+#### Scenario: Join Branch Modal Shows Error on Failure
+
+    Given the operation modal is showing for a join operation
+    When the server returns { "status": "error", "error": "Working tree has uncommitted changes" }
+    Then the spinner is hidden
+    And the status message shows "Working tree has uncommitted changes" in error color
+    And the Close button is enabled
+    And clicking Close dismisses the modal
+
+#### Scenario: Leave Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch "feature/auth" is set
+    When the user clicks the Leave button
+    Then an operation modal appears with title "Leaving Branch"
+    And the modal shows a spinner with text "Returning to main..."
+
+#### Scenario: Leave Branch Modal Shows Error on Dirty Working Tree
+
+    Given the operation modal is showing for a leave operation
+    When the server returns an error about dirty working tree
+    Then the spinner is hidden
+    And the error message is displayed in the modal
+    And the Close button is enabled
+
+#### Scenario: Create Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And a valid branch name is entered in the creation input
+    When the user clicks the Create button
+    Then an operation modal appears with title "Creating Branch"
+    And the modal shows a spinner with text "Creating feature/new..."
+
+#### Scenario: Switch Branch Shows Operation Modal During Request
+
+    Given the CDD server is running
+    And an active branch "feature/auth" is set
+    When the user selects "hotfix/urgent" from the branch dropdown
+    Then an operation modal appears with title "Joining Branch"
+    And the modal shows a spinner with text "Switching to hotfix/urgent..."
+
+#### Scenario: Operation Modal Blocks Escape Key During Progress
+
+    Given the operation modal is showing with a spinner (in-flight)
+    When the user presses the Escape key
+    Then the modal remains open
+    And the operation continues
+
+#### Scenario: Network Failure Shows Connection Error in Modal
+
+    Given the operation modal is showing for any branch operation
+    When the fetch request fails due to a network error
+    Then the modal shows "Request failed -- check your connection" in error color
+    And the Close button is enabled
+
+#### Scenario: Refresh Branches Reflects Deleted Remote Branches
+
+    Given the CDD server is running with no active branch
+    And the branches table shows branches "feature/auth" and "hotfix/urgent"
+    And "hotfix/urgent" has been deleted from the remote
+    When a POST request is sent to /branch-collab/fetch-all
+    And the branches table re-renders
+    Then "hotfix/urgent" is no longer shown in the branches table
+    And "feature/auth" is still shown in the branches table
+
+#### Scenario: Refresh Branches Reflects Newly Added Remote Branches
+
+    Given the CDD server is running with no active branch
+    And the branches table shows only "feature/auth"
+    And "feature/new" has been pushed to the remote from another machine
+    When a POST request is sent to /branch-collab/fetch-all
+    And the branches table re-renders
+    Then "feature/new" is shown in the branches table
+    And "feature/auth" is still shown in the branches table
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
@@ -476,6 +613,12 @@ None.
 - [ ] Collapsed badge shows "BRANCH COLLABORATION (github.com/rlabarca/purlin)" when a branch is active and remote is configured
 - [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when no branch is active
 - [ ] Collapsed badge shows plain "BRANCH COLLABORATION" when branch is active but no remote is configured
+- [ ] Operation modal: centered overlay with semi-transparent background, matching Kill Isolation modal styling
+- [ ] Operation modal: CSS spinner (small, inline) visible during in-flight state
+- [ ] Operation modal: spinner hidden and replaced with error text (red) on failure
+- [ ] Operation modal: Close button disabled (greyed) during in-flight, enabled on completion/error
+- [ ] Operation modal: auto-closes on success with brief visible transition (~400ms)
+- [ ] Refresh Branches: stale branches (deleted from remote) are removed from the table after fetch-all
 
 ## User Testing Discoveries
 
