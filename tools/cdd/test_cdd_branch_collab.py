@@ -669,12 +669,17 @@ class TestPerBranchSyncStateInBranchCollabBranches(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif 'log' in cmd_str:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('origin/'):
-                    # ahead: local has 0 extra
+                # With compare_to_head=True, ranges use HEAD:
+                # HEAD..origin/<branch> = what branch has that HEAD doesn't
+                # origin/<branch>..HEAD = what HEAD has that branch doesn't
+                if '..origin/' in range_arg:
+                    # HEAD..origin/branch: branch has 0 unique commits beyond HEAD
                     result.stdout = ''
-                else:
-                    # behind: remote has 2 extra
+                elif 'origin/' in range_arg and '..HEAD' in range_arg:
+                    # origin/branch..HEAD: HEAD has 2 commits beyond branch
                     result.stdout = 'xyz commit1\nuvw commit2\n'
+                else:
+                    result.stdout = ''
             else:
                 result.stdout = ''
             return result
@@ -1608,6 +1613,37 @@ class TestBranchesTableShowsBehindForStaleRemoteBranch(unittest.TestCase):
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("RC0.8.0")
+        self.assertEqual(state['sync_state'], 'BEHIND')
+        self.assertEqual(state['commits_behind'], 5)
+        self.assertEqual(state['commits_ahead'], 0)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_compare_to_head_ignores_local_branch(self, mock_config, mock_run):
+        """compare_to_head=True compares origin/<branch> vs HEAD even when local branch exists."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                # Both origin/RC0.8.0 and local RC0.8.0 exist
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if 'HEAD..' in range_arg:
+                    # origin/RC0.8.0 has no unique commits beyond HEAD
+                    result.stdout = ''
+                elif '..HEAD' in range_arg:
+                    # HEAD has 5 commits beyond origin/RC0.8.0
+                    result.stdout = '\n'.join([f'abc{i} c{i}' for i in range(5)]) + '\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        # Without compare_to_head: would compare local vs remote (SAME since both exist at same commit)
+        # With compare_to_head=True: compares origin/RC0.8.0 vs HEAD (BEHIND)
+        state = serve.compute_remote_sync_state("RC0.8.0", compare_to_head=True)
         self.assertEqual(state['sync_state'], 'BEHIND')
         self.assertEqual(state['commits_behind'], 5)
         self.assertEqual(state['commits_ahead'], 0)

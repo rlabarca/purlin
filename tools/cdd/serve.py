@@ -1124,7 +1124,7 @@ def get_branch_collab_branches():
             # Exclude main/master
             if name in ('main', 'master'):
                 continue
-            sync = compute_remote_sync_state(name)
+            sync = compute_remote_sync_state(name, compare_to_head=True)
             branches.append({
                 'name': name,
                 'active': name == active,
@@ -1139,14 +1139,21 @@ def get_branch_collab_branches():
 
 
 
-def compute_remote_sync_state(branch_name):
+def compute_remote_sync_state(branch_name, compare_to_head=False):
     """Compute EMPTY/SAME/AHEAD/BEHIND/DIVERGED between local and remote branch.
 
     Five-state logic:
-    - EMPTY: branch has zero commits relative to main (branch tip = main tip).
-    - SAME/AHEAD/BEHIND/DIVERGED: local vs remote comparison.
+    - EMPTY: branch has zero commits relative to base (branch tip = base tip).
+    - SAME/AHEAD/BEHIND/DIVERGED: comparison against base ref.
 
-    Compares local <branch_name> vs origin/<branch_name>.
+    When compare_to_head=False (default, active branch panel):
+      Compares local <branch_name> vs origin/<branch_name>.
+      EMPTY check compares against main.
+
+    When compare_to_head=True (branches table):
+      Always compares origin/<branch_name> vs HEAD, regardless of whether
+      a local branch exists. EMPTY check also uses HEAD as base.
+
     Returns dict with sync_state, commits_ahead, commits_behind.
     Uses locally cached refs (no network fetch during polling).
     """
@@ -1164,18 +1171,23 @@ def compute_remote_sync_state(branch_name):
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return {'sync_state': None, 'commits_ahead': 0, 'commits_behind': 0}
 
-    # Check if local branch exists
-    local_exists = True
-    try:
-        subprocess.run(
-            ['git', 'rev-parse', '--verify', local_ref],
-            capture_output=True, text=True, check=True,
-            cwd=PROJECT_ROOT, timeout=5)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        local_exists = False
+    # For branches table: always compare against HEAD (spec Section 2.5).
+    # For active branch: compare local vs remote, EMPTY check against main.
+    if compare_to_head:
+        local_exists = False  # Force HEAD-based comparison path
+    else:
+        # Check if local branch exists
+        local_exists = True
+        try:
+            subprocess.run(
+                ['git', 'rev-parse', '--verify', local_ref],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            local_exists = False
 
     # EMPTY check: branch tip equals base tip (both directions zero).
-    # Active branch: compare against main. Remote-only (branches table): compare against HEAD.
+    # Active branch: compare against main. Branches table: compare against HEAD.
     check_ref = local_ref if local_exists else remote_ref
     base_ref = 'main' if local_exists else 'HEAD'
     try:

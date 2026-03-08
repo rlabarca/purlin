@@ -24,6 +24,8 @@
 
 **[DISCOVERY]** ~~The spec (Sections 2.1-2.3) only shows the remote repo URL on the collapsed badge when a branch is actively joined. User requests the shortened remote URL be displayed in both collapsed and expanded views regardless of active branch state — the remote URL is always relevant since the Refresh Branches button scans that remote. Spec needs Architect update to show the remote URL unconditionally. (Severity: HIGH)~~ **ACKNOWLEDGED** -- Spec updated: collapsed badge now always shows the shortened remote URL when a remote is configured, regardless of active branch state. Three conditional scenarios consolidated into two (URL always shown vs no remote configured).
 
+**[DISCOVERY]** Branches table sync state was incorrect when a local branch existed for a remote-only entry (e.g., `RC0.8.0` left over from a previous checkout). `compute_remote_sync_state()` detected the local branch and compared local vs remote (both at the same commit = SAME), instead of comparing `origin/<branch>` vs HEAD per spec Section 2.5. Fixed by adding `compare_to_head` parameter: branches table callers pass `compare_to_head=True` to force HEAD-based comparison regardless of local branch existence. (Severity: HIGH)
+
 ## Pruned Discoveries
 
 BUG -- IN FLIGHT empty state rendered without section label or column headers in active session view; fixed by always rendering the IN FLIGHT section headers.
