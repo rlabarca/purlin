@@ -6452,14 +6452,21 @@ if __name__ == '__main__':
 
     status = 'PASS' if result.wasSuccessful() else 'FAIL'
     failure_count = len(result.failures) + len(result.errors)
+    report = {
+        'status': status,
+        'passed': result.testsRun - failure_count,
+        'failed': failure_count,
+        'total': result.testsRun,
+        'test_file': 'tools/critic/test_critic.py',
+    }
     with open(status_file, 'w') as f:
-        json.dump({
-            'status': status,
-            'passed': result.testsRun - failure_count,
-            'failed': failure_count,
-            'total': result.testsRun,
-            'test_file': 'tools/critic/test_critic.py',
-        }, f)
+        json.dump(report, f)
+    # Also write to qa_verification_effort (covered by TestVerificationEffort*
+    # classes in this same test suite)
+    qa_effort_dir = os.path.join(project_root, 'tests', 'qa_verification_effort')
+    os.makedirs(qa_effort_dir, exist_ok=True)
+    with open(os.path.join(qa_effort_dir, 'tests.json'), 'w') as f:
+        json.dump(report, f)
     print(f'\n{status_file}: {status}')
 
     sys.exit(0 if result.wasSuccessful() else 1)
