@@ -516,6 +516,42 @@ fi
 
 cleanup_sandbox
 
+# --- Scenario: Missing Launchers Created on Refresh Without Flag ---
+echo ""
+echo "[Scenario] Missing Launchers Created on Refresh Without Flag"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Record builder launcher checksum before deletion
+BUILDER_HASH_BEFORE="$(shasum "$PROJECT/pl-run-builder.sh" | cut -d' ' -f1)"
+
+# Delete one launcher to simulate upgrade/rename
+rm -f "$PROJECT/pl-run-architect.sh"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -x "$PROJECT/pl-run-architect.sh" ]; then
+    log_pass "Missing pl-run-architect.sh recreated on refresh"
+else
+    log_fail "Missing pl-run-architect.sh NOT recreated on refresh"
+fi
+
+BUILDER_HASH_AFTER="$(shasum "$PROJECT/pl-run-builder.sh" | cut -d' ' -f1)"
+if [ "$BUILDER_HASH_BEFORE" = "$BUILDER_HASH_AFTER" ]; then
+    log_pass "Existing pl-run-builder.sh NOT modified"
+else
+    log_fail "Existing pl-run-builder.sh was modified during launcher repair"
+fi
+
+# Verify the recreated launcher is functional (exports PURLIN_PROJECT_ROOT)
+if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/pl-run-architect.sh"; then
+    log_pass "Recreated launcher exports PURLIN_PROJECT_ROOT"
+else
+    log_fail "Recreated launcher missing PURLIN_PROJECT_ROOT export"
+fi
+
+cleanup_sandbox
+
 # --- Test 22: Shim self-update on refresh ---
 echo ""
 echo "[Test 22] Shim self-update on refresh"
@@ -599,6 +635,44 @@ if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/pl-run-architect.sh"; then
     log_pass "--regenerate-launchers overwrote pl-run-architect.sh"
 else
     log_fail "--regenerate-launchers did NOT overwrite pl-run-architect.sh"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: --regenerate-launchers Removes Stale Launchers ---
+echo ""
+echo "[Scenario] --regenerate-launchers Removes Stale Launchers"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Create stale launchers with old naming convention
+echo "#!/bin/bash" > "$PROJECT/run_architect.sh"
+echo "#!/bin/bash" > "$PROJECT/run_builder.sh"
+echo "#!/bin/bash" > "$PROJECT/run_qa.sh"
+
+"$INIT_SH" --regenerate-launchers > /dev/null 2>&1
+
+STALE_REMOVED=true
+for stale in run_architect.sh run_builder.sh run_qa.sh; do
+    if [ -f "$PROJECT/$stale" ]; then
+        log_fail "Stale launcher $stale NOT removed"
+        STALE_REMOVED=false
+    fi
+done
+if [ "$STALE_REMOVED" = true ]; then
+    log_pass "All stale launchers (run_*.sh) removed"
+fi
+
+# Verify new-style launchers still exist
+NEW_STYLE_OK=true
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+    if [ ! -x "$PROJECT/$launcher" ]; then
+        log_fail "New-style launcher $launcher missing after --regenerate-launchers"
+        NEW_STYLE_OK=false
+    fi
+done
+if [ "$NEW_STYLE_OK" = true ]; then
+    log_pass "All new-style launchers (pl-run-*.sh) present"
 fi
 
 cleanup_sandbox

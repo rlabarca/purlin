@@ -537,15 +537,36 @@ else
         SYMLINK_NOTE=" $REPAIRED CDD symlink(s) repaired."
     fi
 
-    # 4.5 Launcher Regeneration (only with --regenerate-launchers)
+    # 4.5 Launcher Repair (create missing launchers without --regenerate-launchers)
+    LAUNCHER_REPAIR_NOTE=""
+    LAUNCHERS_CREATED=0
+    for role_entry in "architect:ARCHITECT_BASE.md:ARCHITECT_OVERRIDES.md:Begin Architect session." \
+                      "builder:BUILDER_BASE.md:BUILDER_OVERRIDES.md:Begin Builder session." \
+                      "qa:QA_BASE.md:QA_OVERRIDES.md:Begin QA verification session."; do
+        IFS=':' read -r lr_role lr_instr lr_overrides lr_msg <<< "$role_entry"
+        lr_file="$PROJECT_ROOT/pl-run-${lr_role}.sh"
+        if [ ! -f "$lr_file" ]; then
+            generate_launcher "$lr_file" "$lr_role" "$lr_instr" "$lr_overrides" "$lr_msg"
+            LAUNCHERS_CREATED=$((LAUNCHERS_CREATED + 1))
+        fi
+    done
+    if [ "$LAUNCHERS_CREATED" -gt 0 ]; then
+        LAUNCHER_REPAIR_NOTE=" $LAUNCHERS_CREATED missing launcher(s) created."
+    fi
+
+    # 4.6 Launcher Regeneration (only with --regenerate-launchers)
     LAUNCHER_NOTE=""
     if [ "$REGEN_LAUNCHERS" = true ]; then
         generate_launcher "$PROJECT_ROOT/pl-run-architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
         generate_launcher "$PROJECT_ROOT/pl-run-builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
         generate_launcher "$PROJECT_ROOT/pl-run-qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
+        # Remove stale launchers from previous naming conventions
+        for stale in run_architect.sh run_builder.sh run_qa.sh; do
+            rm -f "$PROJECT_ROOT/$stale"
+        done
         LAUNCHER_NOTE=" Launchers regenerated."
     fi
 
-    # 4.6 Refresh Summary
-    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}${LAUNCHER_NOTE}"
+    # 4.7 Refresh Summary
+    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}${LAUNCHER_REPAIR_NOTE}${LAUNCHER_NOTE}"
 fi
