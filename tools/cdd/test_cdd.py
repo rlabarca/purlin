@@ -1562,6 +1562,119 @@ class TestRestartOnRerun(unittest.TestCase):
         self.assertIn('kill "$EXISTING_PID"', content)
 
 
+class TestServerStartStopLifecycle(unittest.TestCase):
+    """Scenario: Server Start/Stop Lifecycle (auto-web)
+
+    Given the CDD server is not running
+    When the User runs tools/cdd/start.sh
+    Then the server starts on the configured port on the first invocation
+    And a port file is written to .purlin/runtime/cdd.port
+    When the User runs tools/cdd/stop.sh
+    Then the server process is terminated
+    And the port file is removed
+    When the User runs tools/cdd/start.sh again
+    Then the server starts successfully on the first invocation
+    """
+
+    def setUp(self):
+        self.tools_dir = os.path.dirname(__file__)
+        self.start_sh = os.path.join(self.tools_dir, "start.sh")
+        self.stop_sh = os.path.join(self.tools_dir, "stop.sh")
+        # Create a temp project directory with minimal structure
+        self.tmpdir = tempfile.mkdtemp(prefix="cdd_lifecycle_test_")
+        os.makedirs(os.path.join(self.tmpdir, "features"))
+        os.makedirs(os.path.join(self.tmpdir, ".purlin", "runtime"))
+        # Write minimal config.json
+        with open(os.path.join(self.tmpdir, ".purlin", "config.json"), 'w') as f:
+            json.dump({"tools_root": "tools"}, f)
+        # Initialize a git repo (serve.py requires git)
+        subprocess.run(["git", "init"], cwd=self.tmpdir,
+                       capture_output=True)
+        subprocess.run(["git", "commit", "--allow-empty", "-m", "init"],
+                       cwd=self.tmpdir, capture_output=True)
+        # Find a free port
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            self.port = s.getsockname()[1]
+        self.env = os.environ.copy()
+        self.env["PURLIN_PROJECT_ROOT"] = self.tmpdir
+        self.port_file = os.path.join(
+            self.tmpdir, ".purlin", "runtime", "cdd.port")
+
+    def tearDown(self):
+        # Always stop the server and clean up
+        subprocess.run(
+            ["bash", self.stop_sh],
+            env=self.env, capture_output=True, timeout=10)
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _find_server_pid(self):
+        """Find CDD server process for this test project."""
+        result = subprocess.run(
+            ["bash", "-c",
+             f'ps aux | grep "[s]erve.py" | grep -F -- "--project-root" '
+             f'| grep -F "{self.tmpdir}" | awk \'{{print $2}}\' | head -1'],
+            capture_output=True, text=True)
+        pid = result.stdout.strip()
+        return int(pid) if pid else None
+
+    def test_full_lifecycle(self):
+        """Start -> verify running -> stop -> verify stopped -> start again."""
+        # Step 1: Start the server
+        result = subprocess.run(
+            ["bash", self.start_sh, "-p", str(self.port)],
+            env=self.env, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0,
+                         f"start.sh failed: {result.stderr}")
+        self.assertIn(f"http://localhost:{self.port}", result.stdout)
+
+        # Verify port file exists
+        self.assertTrue(os.path.exists(self.port_file),
+                        "Port file should exist after start")
+        with open(self.port_file) as f:
+            self.assertEqual(f.read().strip(), str(self.port))
+
+        # Verify server process is running
+        pid = self._find_server_pid()
+        self.assertIsNotNone(pid, "Server process should be running")
+
+        # Step 2: Stop the server
+        result = subprocess.run(
+            ["bash", self.stop_sh],
+            env=self.env, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0,
+                         f"stop.sh failed: {result.stderr}")
+
+        # Verify port file is removed
+        self.assertFalse(os.path.exists(self.port_file),
+                         "Port file should be removed after stop")
+
+        # Verify server process is stopped
+        import time
+        time.sleep(0.3)  # Brief wait for process cleanup
+        pid_after = self._find_server_pid()
+        self.assertIsNone(pid_after,
+                          "Server process should not be running after stop")
+
+        # Step 3: Start again — should succeed on first invocation
+        result = subprocess.run(
+            ["bash", self.start_sh, "-p", str(self.port)],
+            env=self.env, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0,
+                         f"Second start.sh failed: {result.stderr}")
+        self.assertIn(f"http://localhost:{self.port}", result.stdout)
+
+        # Verify port file exists again
+        self.assertTrue(os.path.exists(self.port_file),
+                        "Port file should exist after second start")
+
+        # Verify server is running again
+        pid_restarted = self._find_server_pid()
+        self.assertIsNotNone(pid_restarted,
+                             "Server should be running after second start")
+
+
 # ===================================================================
 # ===================================================================
 # QA Effort Display Tests (cdd_qa_effort_display.md)
