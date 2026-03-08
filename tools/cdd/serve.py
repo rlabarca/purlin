@@ -2236,12 +2236,12 @@ body{{
 #search-input:focus{{border-color:var(--purlin-accent)}}
 #search-input::placeholder,#new-isolation-name::placeholder{{color:var(--purlin-dim)}}
 .dim{{color:var(--purlin-dim);font-size:0.9em}}
-.content-area{{flex:1;overflow:hidden;display:flex;flex-direction:column}}
-.view-panel{{display:none;flex:1;overflow:hidden;flex-direction:column}}
+.content-area{{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}}
+.view-panel{{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}}
 .view-panel.active{{display:flex}}
 #status-view{{overflow-y:auto;padding:8px 12px}}
-#map-view{{flex:1;position:relative}}
-#cy{{width:100%;height:100%;background:var(--purlin-bg)}}
+#map-view{{flex:1;position:relative;overflow:hidden;min-height:0}}
+#cy{{position:absolute;inset:0;background:var(--purlin-bg)}}
 h2{{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--purlin-primary);margin-bottom:6px;border-bottom:1px solid var(--purlin-border);padding-bottom:4px;text-transform:uppercase;letter-spacing:0.1em}}
 .section-hdr{{
   display:flex;align-items:center;gap:6px;cursor:pointer;
@@ -2683,6 +2683,11 @@ window.addEventListener('hashchange', function() {{
   var hash = window.location.hash.replace('#', '');
   if (hash === 'map' && currentView !== 'map') switchView('map');
   else if (hash !== 'map' && currentView !== 'status') switchView('status');
+}});
+
+// Sync Cytoscape canvas size on browser zoom/resize
+window.addEventListener('resize', function() {{
+  if (cy && currentView === 'map') cy.resize();
 }});
 
 // ============================
@@ -4513,6 +4518,14 @@ function createCytoscape(elements, colors) {{
     }});
     userModifiedView = true;
     resetInactivityTimer();
+  }});
+
+  // Double-click background — recenter graph (spec Section 2.6)
+  instance.on('dbltap', function(evt) {{
+    if (evt.target === instance) {{
+      recenterGraph();
+      resetInactivityTimer();
+    }}
   }});
 
   // Node drag — track position modification and persist

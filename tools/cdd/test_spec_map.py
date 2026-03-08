@@ -589,6 +589,86 @@ class TestDoubleClickCategoryZoomsToFit(unittest.TestCase):
         self.assertIn('userModifiedView = true', self.content)
 
 
+class TestSpecMapCanvasDoesNotOverflowViewport(unittest.TestCase):
+    """Scenario: Spec Map Canvas Does Not Overflow Viewport
+
+    Given the User is viewing the Spec Map view
+    When the graph is rendered with any number of nodes
+    Then the Cytoscape canvas fills exactly the available viewport area below the header
+    And no page-level scrollbars appear on the body or html elements
+    And changing the browser zoom level causes the canvas to resize
+    And the Cytoscape canvas never extends beyond the visible screen area
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_map_view_overflow_hidden(self):
+        """#map-view uses overflow:hidden to prevent content escaping."""
+        self.assertIn('#map-view', self.content)
+        # Check that overflow:hidden is on the map-view rule
+        self.assertRegex(self.content, r'#map-view\{[^}]*overflow:\s*hidden')
+
+    def test_cy_uses_absolute_inset(self):
+        """#cy uses position:absolute;inset:0 instead of width/height percentages."""
+        self.assertRegex(self.content, r'#cy\{[^}]*position:\s*absolute')
+        self.assertRegex(self.content, r'#cy\{[^}]*inset:\s*0')
+
+    def test_content_area_min_height_zero(self):
+        """.content-area has min-height:0 for flex containment."""
+        self.assertRegex(self.content, r'\.content-area\{[^}]*min-height:\s*0')
+
+    def test_view_panel_min_height_zero(self):
+        """.view-panel has min-height:0 for flex containment."""
+        self.assertRegex(self.content, r'\.view-panel\{[^}]*min-height:\s*0')
+
+    def test_map_view_min_height_zero(self):
+        """#map-view has min-height:0 for flex containment."""
+        self.assertRegex(self.content, r'#map-view\{[^}]*min-height:\s*0')
+
+    def test_body_overflow_hidden(self):
+        """html,body have overflow:hidden to prevent page scrollbars."""
+        self.assertRegex(self.content, r'html,body\{[^}]*overflow:\s*hidden')
+
+    def test_window_resize_triggers_cy_resize(self):
+        """Window resize event calls cy.resize() to sync canvas size."""
+        self.assertIn('cy.resize()', self.content)
+        self.assertIn("'resize'", self.content)
+
+
+class TestDoubleClickBackgroundRecentersGraph(unittest.TestCase):
+    """Scenario: Double-Click Background Recenters Graph
+
+    Given the User is viewing the Spec Map view
+    And the User has zoomed or panned the graph away from the default fit
+    When the User double-clicks on the canvas background (not on a node or category box)
+    Then the graph recenters and zooms to fit all nodes in the viewable area
+    And all manually-moved node positions are reset to the packed layout positions
+    And the interaction state is reset to unmodified
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_dbltap_core_handler_registered(self):
+        """dbltap handler registered on core (background)."""
+        # The handler checks evt.target === instance for background clicks
+        self.assertIn('evt.target === instance', self.content)
+
+    def test_background_dbltap_calls_recenter(self):
+        """Background double-click calls recenterGraph()."""
+        self.assertIn('recenterGraph()', self.content)
+
+    def test_background_dbltap_distinct_from_category(self):
+        """Background dbltap is separate from category dbltap handler."""
+        # Both handlers must exist: one for categories, one for background
+        self.assertIn("'dbltap', 'node[?isCategory]'", self.content)
+        # The core handler uses evt.target === instance check
+        self.assertIn('evt.target === instance', self.content)
+
+
 class TestMermaidGeneration(unittest.TestCase):
     def test_generates_valid_mermaid(self):
         features = {
