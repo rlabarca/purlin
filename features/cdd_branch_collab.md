@@ -98,20 +98,20 @@ Five POST endpoints, following the existing `/isolate/*` pattern:
 
 **`POST /branch-collab/join`** -- `{ "branch": "<name>" }`
 
-Join MUST reconcile local and remote state before completing the checkout. A join is not just a `git checkout` — it is a fetch + reconcile + checkout sequence.
+Join MUST reconcile local and remote state before completing the checkout. A join is not just a `git checkout` — it is a fetch + reconcile + checkout sequence. The reconciliation strategy depends on the sync state between the local and remote versions of the target branch.
 
 1. Abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
 2. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
 3. Check if a local branch `<name>` already exists.
-4. **If no local branch exists:** Create it tracking the remote: `git checkout -b <name> origin/<name>`. No reconciliation needed — skip to step 7.
+4. **If no local branch exists:** Create it tracking the remote: `git checkout -b <name> origin/<name>`. No reconciliation needed — skip to step 8.
 5. **If local branch exists:** Compute sync state between local `<name>` and `origin/<name>`:
    - **SAME:** No reconciliation needed. Checkout: `git checkout <name>`.
-   - **AHEAD (local has unpushed commits):** Checkout: `git checkout <name>`. Include `"warning": "Local branch has N unpushed commits"` in the response so the user knows to push.
-   - **BEHIND (remote has new commits):** Checkout then merge: `git checkout <name> && git merge origin/<name>`. If merge fails (conflict), abort: return `{ "error": "Merge conflict — resolve manually before joining" }`, leave the user on the conflicted branch so they can resolve.
-   - **DIVERGED (both have unique commits):** Checkout then merge: `git checkout <name> && git merge origin/<name>`. If merge fails (conflict), abort: return `{ "error": "Merge conflict — resolve manually before joining" }`, leave the user on the conflicted branch so they can resolve.
+   - **BEHIND (remote is ahead of local):** Fast-forward local to remote. Checkout then fast-forward: `git checkout <name> && git merge --ff-only origin/<name>`. This is always safe because the local branch is a strict ancestor of the remote. Include `"reconciled": "fast-forward"` in the response.
+   - **AHEAD (local is ahead of remote):** Checkout: `git checkout <name>`. Include `"action_required": "push"` and `"warning": "Local branch has N unpushed commits — run /pl-remote-push to sync remote"` in the response. The modal should display this prominently so the user knows to push.
+   - **DIVERGED (both have unique commits):** Checkout: `git checkout <name>`. Do NOT attempt an inline merge — diverged state requires proper conflict resolution. Include `"action_required": "pull"` and `"warning": "Branch is diverged — run /pl-remote-pull to reconcile"` in the response. The modal should display this as a required next step.
 6. Record the base branch (current branch before checkout) in `.purlin/runtime/branch_collab_base_branch` if not already set.
 7. Write branch name to `.purlin/runtime/active_branch`.
-8. Return `{ "status": "ok", "branch": "<name>" }` (plus optional `"warning"` field for AHEAD case).
+8. Return `{ "status": "ok", "branch": "<name>" }` (plus optional `"action_required"` and `"warning"` fields per step 5).
 
 **`POST /branch-collab/leave`** -- `{}`
 
@@ -217,7 +217,8 @@ Branch operations (join, leave, create, switch) involve git checkouts, fetches, 
   - Create: `"Creating <branch>..."`
 - **Error block:** Hidden by default. On error, the spinner is replaced with an error icon (red text), the status message updates to the error text from the server response (`d.error`), and the block becomes visible. The error text uses `color: var(--purlin-status-error)`.
 - **Close button:** Always visible in the footer. During progress, clicking Close is a no-op (button disabled). On completion (success or error), the button is enabled.
-- **Auto-close on success:** When the operation succeeds, the modal closes automatically after a brief delay (400ms) and `refreshStatus()` is called. The user sees the spinner resolve to a success state momentarily before the modal dismisses.
+- **Auto-close on success:** When the operation succeeds with no `action_required` field, the modal closes automatically after a brief delay (400ms) and `refreshStatus()` is called. The user sees the spinner resolve to a success state momentarily before the modal dismisses.
+- **Hold on action_required:** When the response includes an `action_required` field (e.g., join on DIVERGED or AHEAD branch), the modal does NOT auto-close. Instead, it displays the warning message prominently (styled distinctly from errors — informational, not red). The Close button is enabled and the user must explicitly dismiss the modal. `refreshStatus()` is called on dismissal.
 - **No close on overlay click during progress:** While the operation is in flight, clicking the overlay background does NOT close the modal. After completion (success or error), overlay click closes normally.
 - **Escape key:** Same behavior as overlay click -- blocked during progress, allowed after completion.
 
@@ -302,7 +303,7 @@ The following fixture tags provide real git branch topology for integration-leve
     And .purlin/runtime/active_branch contains "feature/auth"
     And GET /status.json shows branch_collab.active_branch as "feature/auth"
 
-#### Scenario: Join Branch Merges When Local Is Behind Remote
+#### Scenario: Join Branch Fast-Forwards When Local Is Behind Remote
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -312,10 +313,11 @@ The following fixture tags provide real git branch topology for integration-leve
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
     Then git fetch is called for feature/auth
     And local feature/auth is checked out
-    And origin/feature/auth is merged into local feature/auth
+    And local feature/auth is fast-forwarded to origin/feature/auth
+    And the response contains "reconciled": "fast-forward"
     And .purlin/runtime/active_branch contains "feature/auth"
 
-#### Scenario: Join Branch Merges When Diverged
+#### Scenario: Join Branch Routes Diverged to pl-remote-pull
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -324,11 +326,12 @@ The following fixture tags provide real git branch topology for integration-leve
     And the working tree is clean
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
     Then git fetch is called for feature/auth
-    And local feature/auth is checked out
-    And origin/feature/auth is merged into local feature/auth
+    And local feature/auth is checked out (no inline merge attempted)
+    And the response contains "action_required": "pull"
+    And the response contains a warning to run /pl-remote-pull
     And .purlin/runtime/active_branch contains "feature/auth"
 
-#### Scenario: Join Branch Warns When Local Is Ahead
+#### Scenario: Join Branch Warns When Local Is Ahead and Suggests Push
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists
@@ -338,20 +341,9 @@ The following fixture tags provide real git branch topology for integration-leve
     When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
     Then git fetch is called for feature/auth
     And local feature/auth is checked out
-    And the response contains a warning about unpushed commits
+    And the response contains "action_required": "push"
+    And the response contains a warning to run /pl-remote-push
     And .purlin/runtime/active_branch contains "feature/auth"
-
-#### Scenario: Join Branch Returns Error on Merge Conflict
-
-    Given feature/auth exists as a remote tracking branch
-    And a local branch feature/auth exists with conflicting changes
-    And origin/feature/auth has commits that conflict with local feature/auth
-    And the working tree is clean
-    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth
-    And the merge attempt fails due to conflicts
-    And the response contains an error about merge conflict
-    And .purlin/runtime/active_branch is NOT written
 
 #### Scenario: Join Branch With Dirty Working Tree Returns Error
 
@@ -594,12 +586,29 @@ The following fixture tags provide real git branch topology for integration-leve
     And the Close button is disabled while the operation is in flight
     And clicking the overlay background does not close the modal
 
-#### Scenario: Join Branch Modal Shows Reconciliation Step
+#### Scenario: Join Branch Modal Shows Reconciliation Step for Behind
 
     Given the CDD server is running
     And a local branch feature/auth exists that is BEHIND origin/feature/auth
     When the user clicks the Join button for feature/auth
     Then the modal status message progresses through "Fetching feature/auth..." then "Reconciling with remote..." then "Switching to feature/auth..."
+
+#### Scenario: Join Branch Modal Shows Action Required for Diverged
+
+    Given the CDD server is running
+    And a local branch feature/auth exists that is DIVERGED from origin/feature/auth
+    When the user clicks the Join button for feature/auth
+    Then the modal completes successfully (branch is joined)
+    And the modal displays a prominent message: "Branch is diverged — run /pl-remote-pull to reconcile"
+    And the message persists until the user dismisses the modal
+
+#### Scenario: Join Branch Modal Shows Action Required for Ahead
+
+    Given the CDD server is running
+    And a local branch feature/auth exists that is AHEAD of origin/feature/auth
+    When the user clicks the Join button for feature/auth
+    Then the modal completes successfully (branch is joined)
+    And the modal displays a message: "Local branch has N unpushed commits — run /pl-remote-push to sync remote"
 
 #### Scenario: Join Branch Modal Auto-Closes on Success
 
@@ -617,13 +626,13 @@ The following fixture tags provide real git branch topology for integration-leve
     And the Close button is enabled
     And clicking Close dismisses the modal
 
-#### Scenario: Join Branch Modal Shows Merge Conflict Error
+#### Scenario: Join Branch Modal Auto-Close Delayed When Action Required
 
-    Given the operation modal is showing for a join operation on a DIVERGED branch
-    When the server returns { "status": "error", "error": "Merge conflict — resolve manually before joining" }
-    Then the spinner is hidden
-    And the status message shows the merge conflict error in error color
-    And the Close button is enabled
+    Given the operation modal is showing for a join on a DIVERGED branch
+    When the server returns { "status": "ok", "action_required": "pull" }
+    Then the modal does NOT auto-close (unlike a clean success)
+    And the user must click Close or acknowledge the action required message
+    And after dismissal refreshStatus() is called to update the dashboard
 
 #### Scenario: Leave Branch Shows Operation Modal During Request
 
