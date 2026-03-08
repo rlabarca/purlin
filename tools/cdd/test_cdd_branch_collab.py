@@ -328,18 +328,18 @@ class TestSwitchBranchUpdatesActiveBranch(unittest.TestCase):
 
 class TestSyncStateNoLocalWithCommits(unittest.TestCase):
     """When local branch does not exist but remote has unique commits,
-    sync state is computed against main using the remote ref.
+    sync state is computed against HEAD using the remote ref.
 
     Given the remote tracking ref origin/v0.5-sprint exists
     But local branch "v0.5-sprint" does not exist
-    And origin/v0.5-sprint has 1 commit not in main
+    And origin/v0.5-sprint has 1 commit not in HEAD
     When compute_remote_sync_state is called
     Then sync_state is "AHEAD" with commits_ahead 1
     """
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_no_local_computes_vs_main(self, mock_config, mock_run):
+    def test_no_local_computes_vs_head(self, mock_config, mock_run):
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
@@ -349,8 +349,8 @@ class TestSyncStateNoLocalWithCommits(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('main..'):
-                    # Branch has 1 unique commit relative to main
+                if range_arg.startswith('HEAD..'):
+                    # Branch has 1 unique commit relative to HEAD
                     result.stdout = 'abc commit1\n'
                 else:
                     result.stdout = ''
@@ -1410,11 +1410,11 @@ class TestRefreshBranchesReflectsNewlyAddedRemoteBranches(unittest.TestCase):
 
 
 
-class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
-    """Scenario: Sync State EMPTY When Branch Has No Commits Relative to Base
+class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
+    """Scenario: Sync State EMPTY When Branch Tip Equals Main Tip
 
     Given an active branch "feature/empty" is set
-    And feature/empty has zero commits relative to main (branch tip equals main tip)
+    And feature/empty tip equals main tip (both directions of git log return zero lines)
     When an agent calls GET /status.json
     Then branch_collab.sync_state is "EMPTY"
     And branch_collab.commits_ahead is 0
@@ -1423,14 +1423,14 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_empty_state(self, mock_config, mock_run):
+    def test_empty_when_both_directions_zero(self, mock_config, mock_run):
+        """EMPTY when main..<branch> and <branch>..main both return zero lines."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
-                # All comparisons return empty — no commits in any direction
-                # This covers both main..<branch> and origin..<branch> checks
+                # Both directions return empty — branch tip equals main tip
                 result.stdout = ''
             else:
                 result.stdout = ''
@@ -1444,15 +1444,11 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_empty_when_no_local_and_main_moved_ahead(self, mock_config, mock_run):
-        """Remote-only branch with no unique commits is EMPTY even if main moved ahead."""
+    def test_not_empty_when_main_moved_ahead(self, mock_config, mock_run):
+        """Branch is NOT EMPTY when main has moved ahead (branch tip != main tip)."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
-                ref = cmd[-1] if cmd else ''
-                if ref == 'RC0.8.0':
-                    # No local branch
-                    raise subprocess.CalledProcessError(128, cmd)
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
@@ -1460,8 +1456,8 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
                     # Branch has no unique commits vs main
                     result.stdout = ''
                 elif range_arg.endswith('..main'):
-                    # Main has moved ahead (10 commits)
-                    result.stdout = '\n'.join([f'abc{i} commit{i}' for i in range(10)]) + '\n'
+                    # Main has moved ahead (3 commits)
+                    result.stdout = 'abc1 c1\nabc2 c2\nabc3 c3\n'
                 else:
                     result.stdout = ''
             else:
@@ -1469,10 +1465,9 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
             return result
         mock_run.side_effect = run_side_effect
 
-        state = serve.compute_remote_sync_state("RC0.8.0")
-        self.assertEqual(state['sync_state'], 'EMPTY')
-        self.assertEqual(state['commits_ahead'], 0)
-        self.assertEqual(state['commits_behind'], 0)
+        state = serve.compute_remote_sync_state("feature/empty")
+        # Not EMPTY because main has moved ahead — branch tip != main tip
+        self.assertNotEqual(state['sync_state'], 'EMPTY')
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
@@ -1496,6 +1491,126 @@ class TestSyncStateEmptyWhenBranchHasNoCommitsRelativeToBase(unittest.TestCase):
 
         state = serve.compute_remote_sync_state("feature/work")
         self.assertNotEqual(state['sync_state'], 'EMPTY')
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_remote_only_empty_when_tip_equals_head(self, mock_config, mock_run):
+        """Remote-only branch is EMPTY when origin/<branch> tip equals HEAD."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                ref = cmd[-1] if cmd else ''
+                if ref == 'RC0.8.0':
+                    # No local branch
+                    raise subprocess.CalledProcessError(128, cmd)
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                # Both HEAD..origin/RC0.8.0 and origin/RC0.8.0..HEAD return empty
+                result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("RC0.8.0")
+        self.assertEqual(state['sync_state'], 'EMPTY')
+        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['commits_behind'], 0)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_remote_only_behind_when_head_moved_ahead(self, mock_config, mock_run):
+        """Remote-only branch is BEHIND (not EMPTY) when HEAD has moved past it."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                ref = cmd[-1] if cmd else ''
+                if ref == 'RC0.8.0':
+                    # No local branch
+                    raise subprocess.CalledProcessError(128, cmd)
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if 'HEAD..' in range_arg:
+                    # Branch has no unique commits beyond HEAD
+                    result.stdout = ''
+                elif '..HEAD' in range_arg:
+                    # HEAD has 10 commits the branch lacks
+                    result.stdout = '\n'.join([f'abc{i} commit{i}' for i in range(10)]) + '\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("RC0.8.0")
+        self.assertEqual(state['sync_state'], 'BEHIND')
+        self.assertEqual(state['commits_behind'], 10)
+
+
+class TestBranchesTableShowsBehindForStaleRemoteBranch(unittest.TestCase):
+    """Scenario: Branches Table Shows BEHIND For Stale Remote Branch
+
+    Given no active branch is set
+    And origin/RC0.8.0 exists as a remote tracking branch
+    And origin/RC0.8.0 is a strict ancestor of HEAD (HEAD has commits RC0.8.0 does not)
+    And origin/RC0.8.0 has no unique commits beyond HEAD
+    When the dashboard HTML is generated
+    Then the branches table shows "BEHIND" badge for RC0.8.0
+    And the badge uses yellow color (--purlin-status-todo)
+    """
+
+    def test_behind_badge_in_branches_table(self):
+        """Branches table renders BEHIND badge with yellow color for stale branch."""
+        branches = [
+            {'name': 'RC0.8.0', 'active': False, 'sync_state': 'BEHIND',
+             'commits_ahead': 0, 'commits_behind': 5}
+        ]
+        html = serve._branch_collab_section_html(
+            active_branch=None,
+            sync_data=None,
+            branches=branches,
+            contributors=[],
+            last_fetch=None,
+            has_remote=True
+        )
+        self.assertIn('RC0.8.0', html)
+        self.assertIn('BEHIND', html)
+        # Badge uses CSS class st-todo for yellow color
+        self.assertIn('st-todo', html)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_compute_behind_for_stale_remote_branch(self, mock_config, mock_run):
+        """compute_remote_sync_state returns BEHIND when remote branch is strict ancestor of HEAD."""
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='')
+            if isinstance(cmd, list) and 'rev-parse' in cmd:
+                ref = cmd[-1] if cmd else ''
+                if ref == 'RC0.8.0':
+                    # No local branch
+                    raise subprocess.CalledProcessError(128, cmd)
+                result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'log' in cmd:
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if 'HEAD..' in range_arg:
+                    # origin/RC0.8.0 has no unique commits beyond HEAD
+                    result.stdout = ''
+                elif '..HEAD' in range_arg:
+                    # HEAD has 5 commits beyond origin/RC0.8.0
+                    result.stdout = '\n'.join([f'abc{i} c{i}' for i in range(5)]) + '\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        state = serve.compute_remote_sync_state("RC0.8.0")
+        self.assertEqual(state['sync_state'], 'BEHIND')
+        self.assertEqual(state['commits_behind'], 5)
+        self.assertEqual(state['commits_ahead'], 0)
 
 
 class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
