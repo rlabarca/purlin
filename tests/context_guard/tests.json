@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 32, "failed": 0, "total": 32, "test_file": "tools/hooks/test_context_guard.sh"}
+{"status": "PASS", "passed": 11, "failed": 0, "total": 11, "test_file": "tools/hooks/test_context_guard.sh"}
