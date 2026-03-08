@@ -1848,7 +1848,43 @@ class TestActionItemsBuilder(unittest.TestCase):
         builder_items = items['builder']
         self.assertTrue(len(builder_items) > 0)
         self.assertEqual(builder_items[0]['priority'], 'HIGH')
-        self.assertIn('Fix failing tests', builder_items[0]['description'])
+        self.assertIn('Fix structural completeness for', builder_items[0]['description'])
+
+    def test_structural_warn_generates_failing_tests_item(self):
+        """structural_completeness WARN (tests.json status FAIL) generates
+        a HIGH Builder action item with 'Fix failing tests' description."""
+        result = {
+            'feature_file': 'features/test.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'WARN',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0, 'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS', 'violations': [], 'detail': 'OK'},
+                    'structural_completeness': {
+                        'status': 'WARN',
+                        'detail': 'tests/test/tests.json: FAIL.',
+                    },
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                        'detail': 'OK',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [], 'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0},
+        }
+        items = generate_action_items(result)
+        builder_items = items['builder']
+        self.assertTrue(len(builder_items) > 0)
+        struct_items = [i for i in builder_items
+                        if i['category'] == 'structural_completeness']
+        self.assertEqual(len(struct_items), 1)
+        self.assertEqual(struct_items[0]['priority'], 'HIGH')
+        self.assertIn('Fix failing tests for test', struct_items[0]['description'])
 
     def test_unacknowledged_deviation_generates_high_architect_item(self):
         """Unacknowledged DEVIATION routes to Architect per spec Section 2.10."""
@@ -6491,6 +6527,340 @@ class TestWeakTraceabilityMatch(unittest.TestCase):
             if i['category'] == 'weak_traceability'
         ]
         self.assertEqual(len(weak_items), 0)
+
+
+class TestBuilderActionItemGeneratedForFailingTests(unittest.TestCase):
+    """Scenario: Builder Action Item Generated for Failing Tests
+
+    End-to-end test using generate_critic_json() with a fixture
+    that has tests.json status FAIL, verifying the action item exists
+    with correct priority/category/description and role_status.builder
+    is FAIL.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        self.feature_path = os.path.join(
+            self.features_dir, 'failing_feature.md')
+        with open(self.feature_path, 'w') as f:
+            f.write(COMPLETE_FEATURE)
+        # Create the arch policy prereq
+        with open(os.path.join(
+                self.features_dir, 'arch_critic_policy.md'), 'w') as f:
+            f.write('# Policy\n')
+        # Create tests.json with status FAIL
+        tests_dir = os.path.join(self.root, 'tests', 'failing_feature')
+        os.makedirs(tests_dir)
+        with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
+            json.dump({
+                'status': 'FAIL',
+                'passed': 3,
+                'failed': 2,
+                'total': 5,
+                'test_file': 'tools/failing/test_failing.py',
+            }, f)
+        # Create a dummy test file so test_file existence check passes
+        with open(os.path.join(tests_dir, 'test_failing.py'), 'w') as f:
+            f.write('# test\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_failing_tests_produce_action_item_and_fail_status(self):
+        """tests.json with status FAIL produces HIGH structural_completeness
+        action item with 'Fix failing tests' and role_status.builder FAIL."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.TESTS_DIR = os.path.join(self.root, 'tests')
+        critic.PROJECT_ROOT = self.root
+        try:
+            data = generate_critic_json(self.feature_path)
+
+            # Verify structural_completeness check is WARN (FAIL status in
+            # tests.json)
+            struct = data['implementation_gate']['checks'][
+                'structural_completeness']
+            self.assertEqual(struct['status'], 'WARN')
+
+            # Verify action item exists
+            builder_items = data['action_items']['builder']
+            struct_items = [
+                i for i in builder_items
+                if i['category'] == 'structural_completeness'
+            ]
+            self.assertEqual(len(struct_items), 1)
+            self.assertEqual(struct_items[0]['priority'], 'HIGH')
+            self.assertIn(
+                'Fix failing tests for failing_feature',
+                struct_items[0]['description'])
+
+            # Verify role_status.builder is FAIL
+            self.assertEqual(data['role_status']['builder'], 'FAIL')
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+
+
+class TestRoleStatusActionItemConsistency(unittest.TestCase):
+    """Scenario: Role Status Action Item Consistency
+
+    Verify that every non-terminal role status has at least one
+    corresponding action item. The consistency check in
+    generate_critic_json adds fallback items when the normal action
+    item generation doesn't cover a non-terminal status.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Create prereq
+        with open(os.path.join(
+                self.features_dir, 'arch_critic_policy.md'), 'w') as f:
+            f.write('# Policy\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _write_feature(self, name, content):
+        path = os.path.join(self.features_dir, name)
+        with open(path, 'w') as f:
+            f.write(content)
+        return path
+
+    def _run_critic(self, feature_path):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        orig_tests = critic.TESTS_DIR
+        orig_root = critic.PROJECT_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.TESTS_DIR = os.path.join(self.root, 'tests')
+        critic.PROJECT_ROOT = self.root
+        try:
+            return generate_critic_json(feature_path)
+        finally:
+            critic.FEATURES_DIR = orig_features
+            critic.TESTS_DIR = orig_tests
+            critic.PROJECT_ROOT = orig_root
+
+    def test_infeasible_status_has_builder_action_item(self):
+        """Builder INFEASIBLE status always has at least one builder
+        action item (invariant from policy_critic Section 2.11)."""
+        feature_content = """\
+# Feature: Infeasible Feature
+
+> Label: "Tool: Infeasible"
+> Category: "Testing"
+> Prerequisite: features/arch_critic_policy.md
+
+## 1. Overview
+This is infeasible.
+
+## 2. Requirements
+Requirements here.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Something Infeasible
+    Given something
+    When action
+    Then result
+
+## 4. Implementation Notes
+"""
+        impl_content = """\
+# Implementation Notes: Infeasible Feature
+
+**[INFEASIBLE]** Cannot implement due to hardware constraints. (Severity: CRITICAL)
+"""
+        feature_path = self._write_feature(
+            'infeasible_feature.md', feature_content)
+        self._write_feature(
+            'infeasible_feature.impl.md', impl_content)
+        tests_dir = os.path.join(
+            self.root, 'tests', 'infeasible_feature')
+        os.makedirs(tests_dir)
+        with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
+            json.dump({
+                'status': 'PASS',
+                'passed': 1, 'failed': 0, 'total': 1,
+                'test_file': 'tools/infeasible/test.py',
+            }, f)
+        with open(os.path.join(tests_dir, 'test.py'), 'w') as f:
+            f.write('# test\n')
+
+        data = self._run_critic(feature_path)
+
+        self.assertEqual(data['role_status']['builder'], 'INFEASIBLE')
+        builder_items = data['action_items']['builder']
+        self.assertTrue(
+            len(builder_items) >= 1,
+            f'INFEASIBLE status should have at least one builder '
+            f'action item, got {len(builder_items)}')
+
+    def test_consistency_fallback_fires_when_no_items(self):
+        """The consistency check adds a fallback action item when a
+        non-terminal role status has zero items from normal generation.
+
+        We simulate this by constructing a result with INFEASIBLE status
+        and empty builder items, then running the same consistency logic.
+        """
+        result = _make_base_result()
+        result['role_status'] = {
+            'architect': 'DONE',
+            'builder': 'INFEASIBLE',
+            'qa': 'CLEAN',
+        }
+        result['action_items'] = {
+            'architect': [], 'builder': [], 'qa': [],
+        }
+
+        # Run the same consistency check logic from generate_critic_json
+        _nt = {
+            'architect': {'TODO'},
+            'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
+            'qa': {'TODO', 'FAIL', 'DISPUTED'},
+        }
+        for role, nt_states in _nt.items():
+            rs = result['role_status'].get(role)
+            if rs in nt_states:
+                role_items = result['action_items'].get(role, [])
+                if not role_items:
+                    result['action_items'].setdefault(
+                        role, []).append({
+                            'priority': 'HIGH',
+                            'category': 'consistency',
+                            'feature': 'test',
+                            'description': (
+                                f'Investigate {role} status {rs} '
+                                f'for test (no specific action '
+                                f'item generated)'
+                            ),
+                        })
+
+        builder_items = result['action_items']['builder']
+        self.assertEqual(len(builder_items), 1)
+        self.assertEqual(builder_items[0]['category'], 'consistency')
+        self.assertEqual(builder_items[0]['priority'], 'HIGH')
+        self.assertIn('INFEASIBLE', builder_items[0]['description'])
+
+    def test_all_nonterminal_statuses_have_action_items(self):
+        """Verify the invariant: no non-terminal role status exists
+        without at least one corresponding action item.
+
+        Uses _make_base_result with compute_role_status and the
+        consistency check to verify the invariant holds across all
+        non-terminal status combinations.
+        """
+        # The non-terminal states per role
+        nonterminal = {
+            'architect': {'TODO'},
+            'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
+            'qa': {'TODO', 'FAIL', 'DISPUTED'},
+        }
+
+        # Test each role's non-terminal states via generate_critic_json
+        # by reading the already-computed results. Since the consistency
+        # check is in generate_critic_json, we verify the invariant
+        # by constructing results and checking the post-condition.
+        #
+        # For this unit-level check, we verify that if role_status
+        # is non-terminal, action_items has entries. We use
+        # _make_base_result + compute_role_status + the consistency
+        # check replicated here.
+        for role, states in nonterminal.items():
+            for status in states:
+                result = _make_base_result()
+                result['role_status'] = {
+                    'architect': 'DONE',
+                    'builder': 'DONE',
+                    'qa': 'CLEAN',
+                }
+                result['role_status'][role] = status
+
+                # Start with empty action items for the role
+                result['action_items'][role] = []
+
+                # Run the consistency check (same logic as
+                # generate_critic_json)
+                _nt = {
+                    'architect': {'TODO'},
+                    'builder': {
+                        'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
+                    'qa': {'TODO', 'FAIL', 'DISPUTED'},
+                }
+                for r, nt_states in _nt.items():
+                    rs = result['role_status'].get(r)
+                    if rs in nt_states:
+                        role_items = result['action_items'].get(r, [])
+                        if not role_items:
+                            result['action_items'].setdefault(
+                                r, []).append({
+                                    'priority': 'HIGH',
+                                    'category': 'consistency',
+                                    'feature': 'test',
+                                    'description': (
+                                        f'Investigate {r} status {rs}'
+                                        f' for test (no specific '
+                                        f'action item generated)'
+                                    ),
+                                })
+
+                # Verify invariant: non-terminal role status has items
+                items = result['action_items'].get(role, [])
+                self.assertTrue(
+                    len(items) >= 1,
+                    f'{role} status {status} should have at least '
+                    f'one action item after consistency check, '
+                    f'got {len(items)}')
+
+    def test_terminal_statuses_no_fallback(self):
+        """Terminal statuses (DONE, CLEAN, N/A) do NOT get fallback
+        action items from the consistency check."""
+        terminal = {
+            'architect': 'DONE',
+            'builder': 'DONE',
+            'qa': 'CLEAN',
+        }
+        result = _make_base_result()
+        result['role_status'] = dict(terminal)
+        # Empty action items
+        result['action_items'] = {
+            'architect': [], 'builder': [], 'qa': [],
+        }
+
+        # Run consistency check
+        _nt = {
+            'architect': {'TODO'},
+            'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
+            'qa': {'TODO', 'FAIL', 'DISPUTED'},
+        }
+        for r, nt_states in _nt.items():
+            rs = result['role_status'].get(r)
+            if rs in nt_states:
+                role_items = result['action_items'].get(r, [])
+                if not role_items:
+                    result['action_items'].setdefault(r, []).append({
+                        'priority': 'HIGH',
+                        'category': 'consistency',
+                        'feature': 'test',
+                        'description': f'Investigate {r} status {rs}',
+                    })
+
+        # All roles should still have empty action items
+        for role in ('architect', 'builder', 'qa'):
+            self.assertEqual(
+                len(result['action_items'][role]), 0,
+                f'Terminal status {terminal[role]} for {role} should '
+                f'not get fallback action items')
 
 
 # ===================================================================

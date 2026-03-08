@@ -1480,9 +1480,20 @@ def generate_action_items(feature_result, cdd_status=None):
                         ),
                     })
 
-    # Structural completeness FAIL -> HIGH
+    # Structural completeness FAIL -> HIGH (missing/malformed tests.json)
+    # Structural completeness WARN -> HIGH (tests.json exists with status FAIL)
     struct = impl_gate['checks'].get('structural_completeness', {})
     if struct.get('status') == 'FAIL':
+        builder_items.append({
+            'priority': 'HIGH',
+            'category': 'structural_completeness',
+            'feature': feature_name,
+            'description': (
+                f'Fix structural completeness for {feature_name}: '
+                f'{struct.get("detail", "FAIL")}'
+            ),
+        })
+    elif struct.get('status') == 'WARN':
         builder_items.append({
             'priority': 'HIGH',
             'category': 'structural_completeness',
@@ -2598,6 +2609,29 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Compute role status (depends on action_items being populated)
     result['role_status'] = compute_role_status(result, cdd_status)
+
+    # Role Status / Action Item Consistency check (policy_critic Section 2.11)
+    # Every non-terminal role status must have at least one action item.
+    _nonterminal = {
+        'architect': {'TODO'},
+        'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
+        'qa': {'TODO', 'FAIL', 'DISPUTED'},
+    }
+    for role, nonterminal_states in _nonterminal.items():
+        rs = result['role_status'].get(role)
+        if rs in nonterminal_states:
+            role_items = result['action_items'].get(role, [])
+            if not role_items:
+                # Generate a fallback action item so the status is visible
+                result['action_items'].setdefault(role, []).append({
+                    'priority': 'HIGH',
+                    'category': 'consistency',
+                    'feature': feature_name,
+                    'description': (
+                        f'Investigate {role} status {rs} for '
+                        f'{feature_name} (no specific action item generated)'
+                    ),
+                })
 
     # Compute verification effort (depends on role_status being populated)
     result['verification_effort'] = compute_verification_effort(
