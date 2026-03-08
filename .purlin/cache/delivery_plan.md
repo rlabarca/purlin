@@ -6,7 +6,7 @@
 ## Summary
 Single feature `cdd_branch_collab` with 22 new scenarios split into two phases: server API endpoints first (testable independently), then UI modals and fixture-tag integration tests.
 
-## Phase 1 -- Server API (Join Assessment + Join Confirm) [IN_PROGRESS]
+## Phase 1 -- Server API (Join Assessment + Join Confirm) [COMPLETE]
 **Features:** cdd_branch_collab.md
 **Scenarios:**
 - Join Branch Assessment Creates Tracking Branch When No Local Exists
@@ -20,7 +20,7 @@ Single feature `cdd_branch_collab` with 22 new scenarios split into two phases: 
 - Join Confirm Checkout Switches Branch for SAME State
 - Join Confirm Push Checks Out and Returns Push Guidance
 - Join Confirm Guide-Pull Returns Command Without Checkout
-**Completion Commit:** --
+**Completion Commit:** 8dd2b9a
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Operation Modals & Integration Tests [PENDING]

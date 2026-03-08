@@ -4,7 +4,7 @@
 > commands when a delivery plan exists or phased delivery is being considered.
 
 ## 10.1 Purpose
-When the Architect introduces large-scale changes (multiple new feature files, major revisions across existing features), the Builder may need to split work across multiple sessions to manage context window limits and ensure quality. The Phased Delivery Protocol provides a persistent coordination artifact that lets the Builder propose splitting work into numbered phases, each producing a testable state. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete.
+When the Architect introduces large-scale changes (multiple new feature files, major revisions across existing features), the Builder may need to split work across multiple sessions to ensure quality and enable incremental verification. The Phased Delivery Protocol provides a persistent coordination artifact that lets the Builder organize work into **testable blocks** -- groups of scenarios that logically belong together for verification -- and enable **parallel delivery** where independent blocks can be worked on by different agents simultaneously. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete.
 
 ## 10.2 The Delivery Plan Artifact
 *   **Path:** `.purlin/cache/delivery_plan.md`
@@ -25,7 +25,7 @@ When a delivery plan exists at session start, the Builder resumes from the next 
 The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
 
 ## 10.5 Phasing is Optional
-Phased delivery is never automatic. The Builder proposes phasing based on scope assessment heuristics, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
+Phased delivery is never automatic. The Builder proposes phasing based on scope assessment, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
 
 ## 10.6 Architect Awareness
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
@@ -33,11 +33,12 @@ If the Architect modifies feature specs while a delivery plan is active, the Bui
 ## 10.7 CDD Dashboard Integration
 When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays the current phase progress as an inline annotation: `ACTIVE (<count>) [PHASE (<current>/<total>)]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with `current` and `total` values. When all phases are COMPLETE or no delivery plan exists, the phase annotation and API field are omitted.
 
-## 10.8 Per-Phase Sizing Constraints
+## 10.8 Phase Sizing Guidance
 
-These are normative caps, not heuristics. The Builder and `/pl-delivery-plan` MUST enforce them when creating or amending delivery plans.
+Phase sizing is driven by **testability** and **parallelism**, not by hard caps. The Builder uses judgment to create phases that:
 
-*   **Max 2 features per phase** regardless of complexity. This prevents context exhaustion within a single session. If scope requires more, split into additional phases.
-*   **Max 1 HIGH-complexity feature per phase** if the phase contains any other feature. A phase may contain 1 HIGH + 1 LOW/MEDIUM, or 2 LOW/MEDIUM features, but never 2 HIGH features.
-*   **Dedicated phase for large features:** A single HIGH-complexity feature with 5+ unimplemented scenarios gets its own dedicated phase (no other features in that phase).
-*   **Rationale:** Each feature carries per-feature overhead: spec read, anchor review, companion file read, implementation, test execution, status commit, and checkpoint save. At ~3-5K tokens per agent turn and ~30 usable turns per session, 2 features is the practical ceiling before context pressure degrades output quality.
+*   **Group related scenarios** -- features or scenario subsets that logically belong together for verification. A phase should produce a testable state where QA can meaningfully verify the delivered work.
+*   **Enable parallel delivery** -- when independent feature groups have no dependencies on each other, they can be placed in separate phases for concurrent agent work.
+*   **Keep large features focused** -- a single feature with many unimplemented scenarios (5+) benefits from a dedicated phase to keep the Builder focused and the QA verification cycle tight.
+
+There are no hard per-phase feature caps. The Builder balances phase size against session productivity and verification granularity.

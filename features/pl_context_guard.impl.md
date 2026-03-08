@@ -1,7 +1,3 @@
 # Implementation Notes: Skill -- Context Guard
 
-### Config Target
-The `/pl-context-guard` skill reads and writes `context_guard` and `context_guard_threshold` fields in `.purlin/config.local.json` (the gitignored local config). It uses the same config resolver as the CDD Dashboard API.
-
-### Validation
-Threshold values must be integers in the range 5-200, matching the `POST /config/agents` validation in `cdd_agent_configuration.md`.
+**[DECISION]** Simplified from threshold-setting skill (status/set/on/off with 5-200 range validation) to toggle-only skill (status/on/off). The `set <threshold>` subcommand and all threshold validation logic are removed. The context guard is now binary (on/off) with no configurable threshold -- auto-compaction interception replaces turn counting. The `context_guard_threshold` config key is no longer read or written by this skill.
