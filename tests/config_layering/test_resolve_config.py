@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for config resolver (config_layering feature).
 
-Covers all 24 automated scenarios from features/config_layering.md.
+Covers all 21 automated scenarios from features/config_layering.md.
 """
 
 import json
@@ -235,8 +235,8 @@ class TestDashboardGetServesLocal(ResolverTestBase):
         self.assertEqual(result["cdd_port"], 9999)
 
 
-class TestBootstrapAddsLocalConfigToGitignore(unittest.TestCase):
-    """Scenario: Bootstrap Adds Local Config to Gitignore"""
+class TestInitAddsLocalConfigToGitignore(unittest.TestCase):
+    """Scenario: Init Adds Local Config to Gitignore"""
 
     def test_gitignore_has_local_config(self):
         gitignore_path = os.path.join(PROJECT_ROOT, '.gitignore')
@@ -245,10 +245,10 @@ class TestBootstrapAddsLocalConfigToGitignore(unittest.TestCase):
         self.assertIn('.purlin/config.local.json', content)
 
 
-class TestBootstrapDoesNotCreateLocalConfig(ResolverTestBase):
-    """Scenario: Bootstrap Does Not Create Local Config
+class TestInitDoesNotCreateLocalConfig(ResolverTestBase):
+    """Scenario: Init Does Not Create Local Config
 
-    Bootstrap only creates config.json (shared template).
+    Init only creates config.json (shared template).
     The resolver creates config.local.json on first access.
     """
 
