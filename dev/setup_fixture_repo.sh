@@ -350,8 +350,7 @@ cat > .purlin/config.json <<'EOF'
             "bypass_permissions": true,
             "startup_sequence": true,
             "recommend_next_actions": true,
-            "context_guard": true,
-            "context_guard_threshold": 80
+            "context_guard": true
         },
         "builder": {
             "model": "claude-sonnet-4-6",
@@ -359,8 +358,7 @@ cat > .purlin/config.json <<'EOF'
             "bypass_permissions": false,
             "startup_sequence": true,
             "recommend_next_actions": false,
-            "context_guard": true,
-            "context_guard_threshold": 60
+            "context_guard": true
         },
         "qa": {
             "model": "claude-haiku-4-5-20251001",
@@ -967,17 +965,15 @@ create_base_project
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
-    "context_guard_threshold": 80,
     "agents": {
-        "builder": { "model": "claude-opus-4-6", "context_guard_threshold": 80 }
+        "builder": { "model": "claude-opus-4-6" }
     }
 }
 EOF
 cat > .purlin/config.local.json <<'EOF'
 {
-    "context_guard_threshold": 50,
     "agents": {
-        "builder": { "model": "claude-sonnet-4-6", "context_guard_threshold": 40 }
+        "builder": { "model": "claude-sonnet-4-6" }
     }
 }
 EOF
@@ -1180,11 +1176,10 @@ create_base_project
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
-    "context_guard_threshold": 80,
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "context_guard": true, "context_guard_threshold": 90 },
-        "builder": { "model": "claude-opus-4-6", "context_guard": true, "context_guard_threshold": 60 },
-        "qa": { "model": "claude-sonnet-4-6", "context_guard": false, "context_guard_threshold": 80 }
+        "architect": { "model": "claude-opus-4-6", "context_guard": true },
+        "builder": { "model": "claude-opus-4-6", "context_guard": true },
+        "qa": { "model": "claude-sonnet-4-6", "context_guard": false }
     }
 }
 EOF

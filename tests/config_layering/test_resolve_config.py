@@ -376,15 +376,15 @@ class TestUpdateSyncAddsNewKeys(ResolverTestBase):
         self.write_shared({
             "cdd_port": 8086,
             "tools_root": "tools",
-            "context_guard_threshold": 30
+            "critic_llm_enabled": True
         })
 
         added = sync_config(self.tmpdir)
 
         local = self.read_local()
         self.assertEqual(local["cdd_port"], 9999)  # Preserved
-        self.assertEqual(local["context_guard_threshold"], 30)  # Added
-        self.assertIn("context_guard_threshold", added)
+        self.assertEqual(local["critic_llm_enabled"], True)  # Added
+        self.assertIn("critic_llm_enabled", added)
         self.assertNotIn("cdd_port", added)
 
 
