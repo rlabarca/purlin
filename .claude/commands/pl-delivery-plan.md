@@ -23,7 +23,7 @@ If no delivery plan exists:
 *   2+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
 *   3+ features of any complexity mix -> recommend phasing.
 *   Single feature with 5+ unimplemented scenarios -> consider intra-feature phasing.
-*   Builder judgment as a final factor (context exhaustion risk for the session).
+*   **Context budget awareness:** When assessing phase sizing, estimate the context budget for each phase. A phase that would require reading many large feature specs, implementing across many files, and running extensive tests is more likely to exhaust context. Prefer smaller phases when the cumulative scope (spec reading + implementation + testing) is large. This is a soft signal, not a hard cap -- testability and dependency order take priority. See `instructions/references/phased_delivery.md` Section 10.9.
 
 **Per-Phase Sizing Caps:**
 *   Max **2 features per phase** regardless of complexity.

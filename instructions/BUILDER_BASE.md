@@ -64,10 +64,12 @@ If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead
 
 #### 2.2.1 Scope Assessment
 If no delivery plan exists, assess whether the work scope warrants phased delivery. If 2+
-HIGH-complexity features or 3+ features of any mix exist, recommend phasing. Run
-`/pl-delivery-plan` to create or review a plan (contains scope heuristics, canonical format,
-and rules). If phasing is not warranted or the user declines, proceed with the standard work
-plan below.
+HIGH-complexity features or 3+ features of any mix exist, recommend phasing. When proposing
+phase sizes, consider context budget -- phases with large cumulative scope (many specs to read,
+many files to modify, extensive tests) benefit from being smaller. See
+`instructions/references/phased_delivery.md` Section 10.9. Run `/pl-delivery-plan` to create
+or review a plan (contains scope heuristics, canonical format, and rules). If phasing is not
+warranted or the user declines, proceed with the standard work plan below.
 
 Present the user with a structured summary:
 

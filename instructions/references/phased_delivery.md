@@ -42,3 +42,17 @@ Phase sizing is driven by **testability** and **parallelism**, not by hard caps.
 *   **Keep large features focused** -- a single feature with many unimplemented scenarios (5+) benefits from a dedicated phase to keep the Builder focused and the QA verification cycle tight.
 
 There are no hard per-phase feature caps. The Builder balances phase size against session productivity and verification granularity.
+
+## 10.9 Context Budget Awareness
+
+The Builder SHOULD consider context consumption when sizing phases. Different work items consume context at different rates:
+
+*   **Large feature specs** with many scenarios require significant context to read and internalize.
+*   **Multi-file implementations** that touch many source files consume context for reading existing code, making changes, and verifying consistency.
+*   **Extensive test suites** consume context for writing, running, and debugging tests.
+
+When the cumulative scope of a phase (specs to read + files to modify + tests to run) is large, prefer splitting into smaller phases. The goal is to complete each phase with sufficient context remaining for quality verification.
+
+This factor is **subordinate** to testability (Section 10.8) and dependency order. A phase must still produce a testable state and respect dependency constraints, even if that means a larger context footprint. Context budget is a tiebreaker when multiple valid phase breakdowns exist.
+
+No hard token counting is required. This is qualitative judgment based on scope signals: number of features, spec length, estimated file count, and test complexity.

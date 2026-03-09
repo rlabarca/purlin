@@ -16,6 +16,8 @@
 - `tools/cdd/serve.py` -- remove context_guard checkbox rendering, JavaScript event handlers for context guard toggle, and any validation logic specific to `context_guard`.
 - `tools/cdd/test_cdd_model_configuration.py` -- remove test references to `context_guard` (assertions, fixtures, expected values).
 - `tools/config/resolve_config.py` -- remove any `context_guard`-specific logic if present (check before modifying).
+- `.purlin/config.local.json` -- if it exists, remove `context_guard` keys from all agent entries (the Architect already removed them from `.purlin/config.json` and `purlin-config-sample/config.json`, but local config copies may still have them).
+- `purlin-config-sample/settings.json` -- if it contains a PreCompact hook registration for `context_guard.sh`, remove it.
 
 ## Dependencies to Check
 
