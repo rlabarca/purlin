@@ -1,9 +1,7 @@
 {
   "status": "PASS",
-  "passed": 76,
+  "passed": 73,
   "failed": 0,
-  "total": 76,
-  "timestamp": "2026-03-09T02:10:00.000000+00:00",
-  "runner": "pytest",
+  "total": 73,
   "test_file": "tools/cdd/test_cdd_branch_collab.py"
 }

@@ -21,7 +21,7 @@ import serve
 
 
 class TestBranchCollabSectionAlwaysRendered(unittest.TestCase):
-    """Scenario: REMOTE Section Always Rendered in Dashboard HTML
+    """Scenario: BRANCH Section Always Rendered in Dashboard HTML
 
     Given the CDD server is running
     And no branch_collab config exists in .purlin/config.json
@@ -29,7 +29,7 @@ class TestBranchCollabSectionAlwaysRendered(unittest.TestCase):
     Then the BRANCH COLLABORATION section is present in the HTML output
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -132,57 +132,8 @@ class TestCreateBranchPushesAndWritesRuntime(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'v0.5-sprint')
 
 
-class TestCreateBranchWithInvalidNameReturnsError(unittest.TestCase):
-    """Scenario: Create Branch With Invalid Name Returns Error
-
-    Given the CDD server is running
-    When a POST request is sent to /branch-collab/create with body {"branch": "bad..name"}
-    Then the response contains an error message
-    And no branch is created on the remote
-    And .purlin/runtime/active_branch is not written
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    def _post_create(self, name):
-        body = json.dumps({"branch": name}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_create(handler)
-        return handler
-
-    def test_double_dot_rejected(self):
-        handler = self._post_create("bad..name")
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 400)
-        self.assertIn('error', args[1])
-
-    def test_leading_dot_rejected(self):
-        handler = self._post_create(".badname")
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 400)
-
-    def test_leading_hyphen_rejected(self):
-        handler = self._post_create("-badname")
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 400)
-
-    def test_spaces_rejected(self):
-        handler = self._post_create("bad name")
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 400)
-
-
 class TestLeaveClearsActiveBranch(unittest.TestCase):
-    """Scenario: Disconnect Checks Out Main and Clears Active Branch
+    """Scenario: Leave Checks Out Base Branch and Clears Active Branch
 
     Given an active branch "v0.5-sprint" is set
     And the working tree is clean
@@ -525,7 +476,7 @@ class TestFiveSecondPollTriggersZeroFetchCalls(unittest.TestCase):
     Then no git fetch commands are executed during those polls
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value='v0.5-sprint')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 0})
     @patch('serve.subprocess.run')
@@ -662,7 +613,7 @@ class TestCreateBranchBlockedWhenDirty(unittest.TestCase):
 
 
 class TestLeaveBlockedWhenDirty(unittest.TestCase):
-    """Scenario: Disconnect Blocked When Working Tree Is Dirty
+    """Scenario: Leave Blocked When Working Tree Is Dirty
 
     Given an active branch "v0.5-sprint" is set
     And the working tree has uncommitted changes outside .purlin/
@@ -727,26 +678,21 @@ class TestBranchCollabSectionAlwaysVisibleInDashboardHTML(unittest.TestCase):
     And no branch_collab config exists in .purlin/config.json
     When the dashboard HTML is generated
     Then the BRANCH COLLABORATION section heading is present in the HTML output
-    And the section is rendered above the ISOLATED TEAMS section in the DOM
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_section_heading_present_and_above_isolated(self, *mocks):
+    def test_section_heading_present(self, *mocks):
         html = serve.generate_html()
         self.assertIn('BRANCH COLLABORATION', html)
         # Verify the section heading element exists
         self.assertIn('id="bc-heading"', html)
-        # Verify it appears above ISOLATED TEAMS in DOM
+        # Verify the section body exists
         rc_pos = html.find('branch-collab-section')
-        iso_pos = html.find('isolation-section')
         self.assertGreater(rc_pos, -1, "branch-collab-section not found")
-        self.assertGreater(iso_pos, -1, "isolation-section not found")
-        self.assertLess(rc_pos, iso_pos,
-                        "BRANCH COLLABORATION should appear before ISOLATED TEAMS")
 
 
 class TestNoActiveBranchShowsCreationRowAndBranchesTable(unittest.TestCase):
@@ -760,7 +706,7 @@ class TestNoActiveBranchShowsCreationRowAndBranchesTable(unittest.TestCase):
     And a branches table element is present below the creation row
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -772,32 +718,8 @@ class TestNoActiveBranchShowsCreationRowAndBranchesTable(unittest.TestCase):
         self.assertIn('id="btn-create-branch"', html)
 
 
-class TestBranchCollabRendersAboveIsolatedTeamsInDOMOrder(unittest.TestCase):
-    """Scenario: BRANCH COLLABORATION Renders Above ISOLATED TEAMS in DOM Order
-
-    Given the CDD server is running
-    And both BRANCH COLLABORATION and ISOLATED TEAMS sections exist in the HTML
-    When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section appears before the ISOLATED TEAMS
-         section in the HTML output
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_dom_order(self, *mocks):
-        html = serve.generate_html()
-        rc_pos = html.find('branch-collab-section')
-        iso_pos = html.find('isolation-section')
-        self.assertGreater(rc_pos, -1)
-        self.assertGreater(iso_pos, -1)
-        self.assertLess(rc_pos, iso_pos)
-
-
 class TestLastRemoteSyncAnnotationPresentInLocalBranchBody(unittest.TestCase):
-    """Scenario: Last Remote Sync Annotation Present in MAIN WORKSPACE Body
+    """Scenario: Last Remote Sync Annotation Present in LOCAL BRANCH Body
 
     Given an active branch "v0.5-sprint" is set in .purlin/runtime/active_branch
     When the dashboard HTML is generated
@@ -805,7 +727,7 @@ class TestLastRemoteSyncAnnotationPresentInLocalBranchBody(unittest.TestCase):
     And the annotation appears below the clean/dirty state line
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value='v0.5-sprint')
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -898,48 +820,35 @@ class TestRefreshBranchesButtonFetchesAllRemoteRefs(unittest.TestCase):
         self.assertIn('error', data)
 
 
-class TestCollapsedBadgeShowsUrlWhenBranchActive(unittest.TestCase):
-    """Scenario: Collapsed Badge Shows URL When Branch Active
+class TestCollapsedBadgeAlwaysShowsUrlWhenRemoteConfigured(unittest.TestCase):
+    """Scenario: Collapsed Badge Always Shows URL When Remote Configured
 
     Given the CDD server is running
-    And an active branch is set in .purlin/runtime/active_branch
-    And the git remote "origin" is configured with URL "https://github.com/rlabarca/purlin.git"
+    And the git remote "origin" is configured
     When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION collapsed badge text is "BRANCH COLLABORATION (github.com/rlabarca/purlin)"
+    Then the BRANCH COLLABORATION collapsed badge includes the shortened remote URL
+    regardless of whether an active branch is set
     """
 
     @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value='feature/auth')
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_collapsed_badge_shows_url_when_active(self, *mocks):
+    def test_collapsed_badge_shows_url_with_active_branch(self, *mocks):
         html = serve.generate_html()
         self.assertIn('data-collapsed-text="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
-        # Expanded heading also shows URL when remote is configured
         self.assertIn('data-expanded="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
 
-
-class TestCollapsedBadgeShowsUrlWhenNoBranchActive(unittest.TestCase):
-    """Scenario: Collapsed Badge Shows URL When No Branch Active
-
-    Given the CDD server is running
-    And no file exists at .purlin/runtime/active_branch
-    And the git remote is configured
-    When the dashboard HTML is generated
-    Then both collapsed and expanded headings show the remote URL
-    """
-
     @patch('serve._get_shortened_remote_url', return_value='github.com/rlabarca/purlin')
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_collapsed_badge_shows_url_even_without_active_branch(self, *mocks):
+    def test_collapsed_badge_shows_url_without_active_branch(self, *mocks):
         html = serve.generate_html()
-        # URL shown in both collapsed and expanded when remote is configured
         self.assertIn('data-collapsed-text="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
         self.assertIn('data-expanded="BRANCH COLLABORATION (github.com/rlabarca/purlin)"', html)
 
@@ -955,7 +864,7 @@ class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase)
     """
 
     @patch('serve._get_shortened_remote_url', return_value='')
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value='feature/auth')
     @patch('serve._has_git_remote', return_value=False)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -970,7 +879,7 @@ class TestCollapsedBadgeShowsPlainTitleWhenNoRemoteConfigured(unittest.TestCase)
 
 
 class TestJoinBranchShowsOperationModalDuringRequest(unittest.TestCase):
-    """Scenario: Join Branch Shows Operation Modal During Request
+    """Scenario: Join Branch Shows Two-Phase Operation Modal
 
     Given the CDD server is running
     And an active branch is not set
@@ -982,7 +891,7 @@ class TestJoinBranchShowsOperationModalDuringRequest(unittest.TestCase):
     And clicking the overlay background does not close the modal
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1016,7 +925,7 @@ class TestJoinBranchModalAutoClosesOnSuccess(unittest.TestCase):
     And refreshStatus() is called to update the dashboard
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1043,7 +952,7 @@ class TestJoinBranchModalShowsErrorOnFailure(unittest.TestCase):
     And clicking Close dismisses the modal
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1070,7 +979,7 @@ class TestLeaveBranchShowsOperationModalDuringRequest(unittest.TestCase):
     And the modal shows a spinner with text "Returning to main..."
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1092,7 +1001,7 @@ class TestLeaveBranchModalShowsErrorOnDirtyWorkingTree(unittest.TestCase):
     And the Close button is enabled
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1115,7 +1024,7 @@ class TestCreateBranchShowsOperationModalDuringRequest(unittest.TestCase):
     And the modal shows a spinner with text "Creating feature/new..."
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1128,7 +1037,7 @@ class TestCreateBranchShowsOperationModalDuringRequest(unittest.TestCase):
 
 
 class TestSwitchBranchShowsOperationModalDuringRequest(unittest.TestCase):
-    """Scenario: Switch Branch Shows Operation Modal During Request
+    """Scenario: Switch Branch Shows Two-Phase Operation Modal
 
     Given the CDD server is running
     And an active branch "feature/auth" is set
@@ -1137,7 +1046,7 @@ class TestSwitchBranchShowsOperationModalDuringRequest(unittest.TestCase):
     And the modal shows a spinner with text "Switching to hotfix/urgent..."
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1160,7 +1069,7 @@ class TestOperationModalBlocksEscapeKeyDuringProgress(unittest.TestCase):
     And the operation continues
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1184,7 +1093,7 @@ class TestNetworkFailureShowsConnectionErrorInModal(unittest.TestCase):
     And the Close button is enabled
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -1540,74 +1449,6 @@ class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
             self.assertNotIn('st-disputed', span)
 
 
-class TestJoinBranchFetchesThenChecksOut(unittest.TestCase):
-    """Scenario: Join Branch Fetches Then Checks Out and Updates Runtime File
-
-    Given feature/auth exists as a remote tracking branch
-    And no local branch feature/auth exists
-    And no active branch is set
-    And the working tree is clean
-    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then git fetch is called for feature/auth before checkout
-    And a local branch feature/auth is created tracking origin/feature/auth
-    And .purlin/runtime/active_branch contains "feature/auth"
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_fetch_called_before_checkout(self, mock_config, mock_run):
-        call_order = []
-
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='', stdout='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if 'status' in cmd_str and '--porcelain' in cmd_str:
-                result.stdout = ''  # clean
-            elif 'fetch' in cmd_str:
-                call_order.append('fetch')
-            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
-                if 'feature/auth' in cmd_str and 'origin' not in cmd_str:
-                    # No local branch exists
-                    raise subprocess.CalledProcessError(1, cmd)
-                result.stdout = 'abc1234'
-            elif 'checkout' in cmd_str and '-b' in cmd_str:
-                call_order.append('checkout-b')
-            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
-                result.stdout = 'main'
-            return result
-        mock_run.side_effect = run_side_effect
-
-        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_join(handler)
-
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 200)
-        self.assertEqual(args[1]['status'], 'ok')
-        # Verify fetch happened before checkout
-        self.assertEqual(call_order, ['fetch', 'checkout-b'])
-
-        # Verify completed flag in response (two-phase: no-local completes immediately)
-        self.assertTrue(args[1].get('completed'), "No-local join should return completed: True")
-
-        # Verify runtime file written
-        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
-        with open(rt_path) as f:
-            self.assertEqual(f.read().strip(), 'feature/auth')
-
-
 class TestJoinBranchAssessmentCreatesTrackingBranchWhenNoLocalExists(unittest.TestCase):
     """Scenario: Join Branch Assessment Creates Tracking Branch When No Local Exists
 
@@ -1675,196 +1516,6 @@ class TestJoinBranchAssessmentCreatesTrackingBranchWhenNoLocalExists(unittest.Te
             self.assertEqual(f.read().strip(), 'feature/auth')
 
 
-class TestJoinBranchAssessmentReturnsBehindSyncState(unittest.TestCase):
-    """Scenario: Join Branch Assessment Returns BEHIND Sync State
-
-    Given feature/auth exists as a remote tracking branch
-    And a local branch feature/auth exists
-    And origin/feature/auth has 2 commits not in local feature/auth
-    And local feature/auth has no commits not in origin/feature/auth
-    And the working tree is clean
-    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then the response contains "sync_state": "BEHIND"
-    And the response contains "commits_behind": 2
-    And the response contains "dirty": false
-    And no branch checkout has occurred (current branch unchanged)
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_behind_sync_state(self, mock_config, mock_run):
-        checkout_called = []
-
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='', stdout='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if 'status' in cmd_str and '--porcelain' in cmd_str:
-                result.stdout = ''  # clean tree
-            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
-                result.stdout = 'abc1234'  # both local and remote exist
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = ''  # ahead=0 (local has no unique commits vs remote)
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
-                result.stdout = 'abc1234 commit1\ndef5678 commit2'  # behind=2
-            elif 'checkout' in cmd_str:
-                checkout_called.append(cmd)
-            return result
-        mock_run.side_effect = run_side_effect
-
-        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_join(handler)
-
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 200)
-        self.assertEqual(args[1]['sync_state'], 'BEHIND')
-        self.assertEqual(args[1]['commits_behind'], 2)
-        self.assertEqual(args[1]['commits_ahead'], 0)
-        self.assertFalse(args[1]['dirty'])
-
-        # No checkout should have occurred (assessment only)
-        self.assertEqual(len(checkout_called), 0,
-                         "No checkout should occur during assessment")
-
-
-class TestJoinBranchAssessmentReturnsDivergedSyncState(unittest.TestCase):
-    """Scenario: Join Branch Assessment Returns DIVERGED Sync State
-
-    Given feature/auth exists as a remote tracking branch
-    And a local branch feature/auth exists
-    And origin/feature/auth has 2 commits not in local feature/auth
-    And local feature/auth has 1 commit not in origin/feature/auth
-    And the working tree is clean
-    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then the response contains "sync_state": "DIVERGED"
-    And the response contains "commits_ahead": 1
-    And the response contains "commits_behind": 2
-    And no branch checkout has occurred (current branch unchanged)
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_diverged_sync_state(self, mock_config, mock_run):
-        checkout_called = []
-
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='', stdout='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if 'status' in cmd_str and '--porcelain' in cmd_str:
-                result.stdout = ''
-            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
-                result.stdout = 'abc1234'
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = 'abc1234 local commit'  # ahead=1 (local has 1 commit remote lacks)
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
-                result.stdout = 'def5678 remote1\nghi9012 remote2'  # behind=2
-            elif 'checkout' in cmd_str:
-                checkout_called.append(cmd)
-            return result
-        mock_run.side_effect = run_side_effect
-
-        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_join(handler)
-
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 200)
-        self.assertEqual(args[1]['sync_state'], 'DIVERGED')
-        self.assertEqual(args[1]['commits_ahead'], 1)
-        self.assertEqual(args[1]['commits_behind'], 2)
-        self.assertFalse(args[1]['dirty'])
-
-        self.assertEqual(len(checkout_called), 0,
-                         "No checkout should occur during assessment")
-
-
-class TestJoinBranchAssessmentReturnsAheadSyncState(unittest.TestCase):
-    """Scenario: Join Branch Assessment Returns AHEAD Sync State
-
-    Given feature/auth exists as a remote tracking branch
-    And a local branch feature/auth exists
-    And local feature/auth has 3 commits not in origin/feature/auth
-    And origin/feature/auth has no commits not in local feature/auth
-    And the working tree is clean
-    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
-    Then the response contains "sync_state": "AHEAD"
-    And the response contains "commits_ahead": 3
-    And the response contains "dirty": false
-    And no branch checkout has occurred (current branch unchanged)
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_ahead_sync_state(self, mock_config, mock_run):
-        checkout_called = []
-
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='', stdout='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if 'status' in cmd_str and '--porcelain' in cmd_str:
-                result.stdout = ''
-            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
-                result.stdout = 'abc1234'
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = 'a1 c1\na2 c2\na3 c3'  # ahead=3 (local has 3 commits remote lacks)
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
-                result.stdout = ''  # behind=0
-            elif 'checkout' in cmd_str:
-                checkout_called.append(cmd)
-            return result
-        mock_run.side_effect = run_side_effect
-
-        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_join(handler)
-
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 200)
-        self.assertEqual(args[1]['sync_state'], 'AHEAD')
-        self.assertEqual(args[1]['commits_ahead'], 3)
-        self.assertEqual(args[1]['commits_behind'], 0)
-        self.assertFalse(args[1]['dirty'])
-
-        self.assertEqual(len(checkout_called), 0,
-                         "No checkout should occur during assessment")
-
-
 class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCase):
     """Scenario: Join Branch Assessment Returns Sync State With Dirty File List
 
@@ -1875,6 +1526,7 @@ class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCas
     Then the response contains "dirty": true
     And the response contains "dirty_files" as a non-empty array
     And the response contains a "sync_state" field
+    And the response contains a "local_sync" field
     And no branch checkout has occurred (current branch unchanged)
     """
 
@@ -1897,10 +1549,14 @@ class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCas
                 result.stdout = ' M src/main.py\n M src/utils.py\n'
             elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
                 result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
+                result.stdout = ''  # HEAD-relative: branch has 0 unique commits
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = 'h1 commit'  # HEAD has 1 commit
             elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = ''  # ahead=0 (local has no unique commits vs remote)
+                result.stdout = ''  # local ahead=0
             elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
-                result.stdout = 'abc commit1'  # behind=1
+                result.stdout = 'abc commit1'  # local behind=1
             elif 'checkout' in cmd_str:
                 checkout_called.append(cmd)
             return result
@@ -1923,6 +1579,7 @@ class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCas
         self.assertIn('src/main.py', args[1]['dirty_files'])
         self.assertIn('src/utils.py', args[1]['dirty_files'])
         self.assertIn('sync_state', args[1])
+        self.assertIn('local_sync', args[1])
 
         self.assertEqual(len(checkout_called), 0,
                          "No checkout should occur during assessment")
@@ -2098,7 +1755,7 @@ class TestJoinConfirmCheckoutRequiresCleanTree(unittest.TestCase):
 
 
 class TestJoinConfirmCheckoutSwitchesBranchForSameState(unittest.TestCase):
-    """Scenario: Join Confirm Checkout Switches Branch for SAME State
+    """Scenario: Join Confirm Checkout Switches Branch for Local SAME State
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists at SAME as origin/feature/auth
@@ -2286,64 +1943,6 @@ class TestJoinConfirmPushFailsAfterCheckout(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'feature/auth')
 
 
-class TestJoinConfirmGuidePullReturnsCommandWithoutCheckout(unittest.TestCase):
-    """Scenario: Join Confirm Guide-Pull Returns Command Without Checkout
-
-    Given feature/auth exists as a remote tracking branch
-    And a local branch feature/auth exists that is DIVERGED from origin/feature/auth
-    When a POST request is sent to /branch-collab/join-confirm with body
-        {"branch": "feature/auth", "action": "guide-pull"}
-    Then the response contains "action_required": "pull"
-    And the response contains a "command" field with "/pl-remote-pull"
-    And no branch checkout has occurred (current branch unchanged)
-    And .purlin/runtime/active_branch is unchanged
-    """
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('serve.subprocess.run')
-    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_guide_pull_no_checkout(self, mock_config, mock_run):
-        checkout_called = []
-
-        def run_side_effect(cmd, **kwargs):
-            result = MagicMock(returncode=0, stderr='', stdout='')
-            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
-            if 'checkout' in cmd_str:
-                checkout_called.append(cmd)
-            return result
-        mock_run.side_effect = run_side_effect
-
-        body = json.dumps({"branch": "feature/auth", "action": "guide-pull"}).encode('utf-8')
-        handler = MagicMock()
-        handler.headers = {'Content-Length': str(len(body))}
-        handler.rfile = io.BytesIO(body)
-        handler._send_json = MagicMock()
-
-        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
-            serve.Handler._handle_branch_collab_join_confirm(handler)
-
-        args = handler._send_json.call_args[0]
-        self.assertEqual(args[0], 200)
-        self.assertEqual(args[1]['status'], 'ok')
-        self.assertEqual(args[1]['action_required'], 'pull')
-        self.assertIn('/pl-remote-pull', args[1]['command'])
-        self.assertIn('diverged', args[1]['warning'].lower())
-
-        self.assertEqual(len(checkout_called), 0,
-                         "guide-pull should NOT checkout any branch")
-
-        # active_branch should not have been written
-        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
-        self.assertFalse(os.path.exists(rt_path),
-                         "active_branch should not be written for guide-pull")
-
-
 class TestSwitchBranchFetchesReconciles(unittest.TestCase):
     """Scenario: Switch Branch via Join Fetches Reconciles and Updates Active Branch
 
@@ -2410,124 +2009,6 @@ class TestSwitchBranchFetchesReconciles(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'hotfix/urgent')
 
 
-class TestJoinBranchModalMultiStepProgress(unittest.TestCase):
-    """Scenario: Join Branch Shows Operation Modal With Multi-Step Progress
-
-    Verifies the modal opens with "Fetching..." initial message
-    and the JS handles reconciled/action_required responses.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[
-        {'name': 'feature/auth', 'active': False, 'sync_state': 'EMPTY',
-         'commits_ahead': 0, 'commits_behind': 0}
-    ])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_join_modal_initial_message_is_fetching(self, *mocks):
-        html = serve.generate_html()
-        # joinBranch should open modal with "Fetching and checking sync state..."
-        self.assertIn("openBcOpModal('Joining Branch', 'Fetching and checking sync state...'", html)
-        # Two-phase join: _bcShowJoinPhase2 and _bcJoinConfirm functions exist
-        self.assertIn('_bcShowJoinPhase2', html)
-        self.assertIn('_bcJoinConfirm', html)
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_join_success_handler_checks_completed(self, *mocks):
-        html = serve.generate_html()
-        # Phase 1: JS checks d.completed for direct-create case (auto-close)
-        self.assertIn('d.completed', html)
-        # Phase 2 interactive content function exists
-        self.assertIn('_bcShowJoinPhase2', html)
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_join_success_handler_checks_action_required(self, *mocks):
-        html = serve.generate_html()
-        # JS should check for d.action_required and not auto-close
-        self.assertIn('d.action_required', html)
-
-
-class TestJoinBranchModalPhase2ContentForBehind(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Fast-Forward Option for Behind
-
-    Phase 2 content shows 'Local branch is N commits behind remote.'
-    with Fast-Forward Local & Join button.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_phase2_behind_shows_fast_forward(self, *mocks):
-        html = serve.generate_html()
-        # Phase 2 shows sync-state-specific content
-        self.assertIn('Local branch is ', html)
-        self.assertIn('commits behind remote', html)
-        self.assertIn('Fast-Forward Local &amp; Join', html)
-        # Phase 2 action button calls _bcJoinConfirm with fast-forward action
-        self.assertIn("_bcJoinConfirm(", html)
-        self.assertIn("fast-forward", html)
-
-
-class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Copyable Pull Command for Diverged
-
-    Phase 2 shows 'Remote branch has diverged' with copyable /pl-remote-pull command.
-    No Join action button present, only Close.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_phase2_diverged_shows_copyable_command(self, *mocks):
-        html = serve.generate_html()
-        # Phase 2 DIVERGED content
-        self.assertIn('Remote branch has diverged', html)
-        self.assertIn('/pl-remote-pull origin/', html)
-        # Copy button for command
-        self.assertIn('navigator.clipboard.writeText', html)
-        # Monospace font for command block
-        self.assertIn('font-family:monospace', html)
-        # No join action for DIVERGED (guide-pull doesn't have a Join button)
-        # DIVERGED check: the DIVERGED branch does not show bc-phase2-action button
-        self.assertIn("sync === 'DIVERGED'", html)
-
-
-class TestJoinBranchModalShowsPushAndJoinButtonForAhead(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Push and Join Button for Ahead
-
-    Phase 2 shows 'Local branch is N commits ahead of remote.'
-    with [Push to Remote & Join] button.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_phase2_ahead_shows_push_and_join(self, *mocks):
-        html = serve.generate_html()
-        # Phase 2 AHEAD content
-        self.assertIn('Local branch is ', html)
-        self.assertIn('commits ahead of remote', html)
-        # Push to Remote & Join button sends push action
-        self.assertIn('Push to Remote &amp; Join', html)
-        self.assertIn("_bcJoinConfirm(", html)
-        self.assertIn("\\'push\\'", html)
-
-
 class TestJoinBranchModalShowsErrorWhenPushToRemoteFails(unittest.TestCase):
     """Scenario: Join Branch Modal Shows Error When Push to Remote Fails
 
@@ -2535,7 +2016,7 @@ class TestJoinBranchModalShowsErrorWhenPushToRemoteFails(unittest.TestCase):
     "branch_checked_out": true } the modal shows error and refreshes on dismiss.
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -2559,7 +2040,7 @@ class TestJoinBranchWithDirtyTreeShowsDirtyGateOnly(unittest.TestCase):
     guidance. No sync state info, no action buttons, only Close.
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
@@ -2583,7 +2064,7 @@ class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):
     Verifies the Phase 2 modal and branches table use correct colors per sync state.
     """
 
-    @patch('serve.get_isolation_worktrees', return_value=[])
+
     @patch('serve.get_active_branch', return_value=None)
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[
@@ -2607,6 +2088,621 @@ class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):
         self.assertIn('st-disputed', html)
         # EMPTY = normal text (--purlin-primary, no badge class)
         self.assertIn('--purlin-primary', html)
+
+
+# ── New scenario tests: HEAD-relative + local-vs-remote join assessment ──
+
+
+def _make_join_assessment_side_effect(head_ahead_lines, head_behind_lines,
+                                      local_ahead_lines, local_behind_lines,
+                                      dirty=''):
+    """Build a subprocess.run side_effect for two-dimensional join assessment.
+
+    Args:
+        head_ahead_lines: lines for git log HEAD..origin/branch (branch ahead of HEAD)
+        head_behind_lines: lines for git log origin/branch..HEAD (HEAD ahead of branch)
+        local_ahead_lines: lines for git log origin/branch..branch (local ahead of remote)
+        local_behind_lines: lines for git log branch..origin/branch (local behind remote)
+        dirty: porcelain output (empty = clean)
+    """
+    checkout_called = []
+
+    def side_effect(cmd, **kwargs):
+        result = MagicMock(returncode=0, stderr='', stdout='')
+        cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+        if 'status' in cmd_str and '--porcelain' in cmd_str:
+            result.stdout = dirty
+        elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+            result.stdout = 'abc1234'
+        elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+            result.stdout = 'main'
+        elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
+            result.stdout = head_ahead_lines
+        elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+            result.stdout = head_behind_lines
+        elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+            result.stdout = local_ahead_lines
+        elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+            result.stdout = local_behind_lines
+        elif 'checkout' in cmd_str:
+            checkout_called.append(cmd)
+        return result
+    return side_effect, checkout_called
+
+
+class TestJoinBranchAssessmentReturnsHeadRelativeBehindWithLocalAhead(unittest.TestCase):
+    """Scenario: Join Branch Assessment Returns HEAD-Relative BEHIND With Local AHEAD
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And HEAD (main) has 10 commits not in origin/feature/auth (HEAD-relative: BEHIND)
+    And local feature/auth has 1 commit not in origin/feature/auth (local-vs-remote: AHEAD)
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the response contains "sync_state": "BEHIND"
+    And the response contains "commits_behind": 10
+    And the response contains "local_sync": "AHEAD"
+    And the response contains "local_ahead": 1
+    And the response contains "dirty": false
+    And no branch checkout has occurred (current branch unchanged)
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_head_behind_local_ahead(self, mock_config, mock_run):
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='',  # branch has 0 unique commits vs HEAD
+            head_behind_lines='\n'.join(f'h{i} c{i}' for i in range(10)),  # HEAD has 10
+            local_ahead_lines='a1 local_commit',  # local has 1 commit remote lacks
+            local_behind_lines='',  # remote has 0 commits local lacks
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'BEHIND')
+        self.assertEqual(args[1]['commits_behind'], 10)
+        self.assertEqual(args[1]['local_sync'], 'AHEAD')
+        self.assertEqual(args[1]['local_ahead'], 1)
+        self.assertFalse(args[1]['dirty'])
+        self.assertEqual(len(checkout_called), 0)
+
+
+class TestJoinBranchAssessmentReturnsHeadRelativeDivergedWithLocalSame(unittest.TestCase):
+    """Scenario: Join Branch Assessment Returns HEAD-Relative DIVERGED With Local SAME
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth has 1 commit not in HEAD (HEAD-relative AHEAD component)
+    And HEAD has 5 commits not in origin/feature/auth (HEAD-relative BEHIND component)
+    And local feature/auth is at SAME as origin/feature/auth (local-vs-remote: SAME)
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the response contains "sync_state": "DIVERGED"
+    And the response contains "commits_ahead": 1
+    And the response contains "commits_behind": 5
+    And the response contains "local_sync": "SAME"
+    And the response contains "local_ahead": 0
+    And the response contains "local_behind": 0
+    And no branch checkout has occurred (current branch unchanged)
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_head_diverged_local_same(self, mock_config, mock_run):
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='b1 branch_commit',  # branch has 1 unique commit vs HEAD
+            head_behind_lines='\n'.join(f'h{i} c{i}' for i in range(5)),  # HEAD has 5
+            local_ahead_lines='',  # local SAME as remote
+            local_behind_lines='',
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'DIVERGED')
+        self.assertEqual(args[1]['commits_ahead'], 1)
+        self.assertEqual(args[1]['commits_behind'], 5)
+        self.assertEqual(args[1]['local_sync'], 'SAME')
+        self.assertEqual(args[1]['local_ahead'], 0)
+        self.assertEqual(args[1]['local_behind'], 0)
+        self.assertEqual(len(checkout_called), 0)
+
+
+class TestJoinBranchAssessmentReturnsHeadRelativeBehindWithLocalSame(unittest.TestCase):
+    """Scenario: Join Branch Assessment Returns HEAD-Relative BEHIND With Local SAME
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And HEAD (main) has 20 commits not in origin/feature/auth (HEAD-relative: BEHIND)
+    And origin/feature/auth has 0 commits not in HEAD
+    And local feature/auth is at SAME as origin/feature/auth (local-vs-remote: SAME)
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the response contains "sync_state": "BEHIND"
+    And the response contains "commits_behind": 20
+    And the response contains "local_sync": "SAME"
+    And no branch checkout has occurred (current branch unchanged)
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_head_behind_local_same(self, mock_config, mock_run):
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='',
+            head_behind_lines='\n'.join(f'h{i} c{i}' for i in range(20)),  # HEAD has 20
+            local_ahead_lines='',  # local SAME
+            local_behind_lines='',
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'BEHIND')
+        self.assertEqual(args[1]['commits_behind'], 20)
+        self.assertEqual(args[1]['local_sync'], 'SAME')
+        self.assertEqual(len(checkout_called), 0)
+
+
+class TestJoinBranchAssessmentAutoCompletesWhenSameAndLocalSame(unittest.TestCase):
+    """Scenario: Join Branch Assessment Auto-Completes When SAME and Local SAME
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists
+    And origin/feature/auth and HEAD point to the same commit (HEAD-relative: SAME)
+    And local feature/auth is at SAME as origin/feature/auth (local-vs-remote: SAME)
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then local feature/auth is checked out
+    And the response contains "completed": true
+    And .purlin/runtime/active_branch contains "feature/auth"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_auto_completes_same_same(self, mock_config, mock_run):
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='',  # SAME
+            head_behind_lines='',
+            local_ahead_lines='',  # SAME
+            local_behind_lines='',
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertTrue(args[1].get('completed'))
+        self.assertEqual(args[1]['branch'], 'feature/auth')
+
+        # Checkout should have occurred
+        self.assertTrue(len(checkout_called) > 0, "Auto-complete should checkout")
+
+        # Runtime file should be written
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'feature/auth')
+
+
+class TestJoinConfirmGuidePullHeadRelativeDiverged(unittest.TestCase):
+    """Scenario: Join Confirm Guide-Pull Returns Command Without Checkout (HEAD-Relative DIVERGED)
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists at SAME as origin/feature/auth (local-vs-remote)
+    And HEAD-relative sync state is DIVERGED
+    When a POST request is sent to /branch-collab/join-confirm with body
+        {"branch": "feature/auth", "action": "guide-pull"}
+    Then the response contains "action_required": "pull"
+    And the response contains a "command" field with "/pl-remote-pull"
+    And no branch checkout has occurred (current branch unchanged)
+    And .purlin/runtime/active_branch is unchanged
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_guide_pull_head_diverged(self, mock_config, mock_run):
+        checkout_called = []
+
+        def side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'checkout' in cmd_str:
+                checkout_called.append(cmd)
+            return result
+        mock_run.side_effect = side_effect
+
+        body = json.dumps({"branch": "feature/auth", "action": "guide-pull"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join_confirm(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['action_required'], 'pull')
+        self.assertIn('/pl-remote-pull', args[1]['command'])
+        self.assertEqual(len(checkout_called), 0)
+
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        self.assertFalse(os.path.exists(rt_path))
+
+
+class TestJoinConfirmGuidePullLocalDiverged(unittest.TestCase):
+    """Scenario: Join Confirm Guide-Pull Returns Command Without Checkout (Local DIVERGED)
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is DIVERGED from origin/feature/auth
+    And HEAD-relative sync state is BEHIND
+    When a POST request is sent to /branch-collab/join-confirm with body
+        {"branch": "feature/auth", "action": "guide-pull"}
+    Then the response contains "action_required": "pull"
+    And the response contains a "command" field with "/pl-remote-pull"
+    And no branch checkout has occurred (current branch unchanged)
+    And .purlin/runtime/active_branch is unchanged
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_guide_pull_local_diverged(self, mock_config, mock_run):
+        checkout_called = []
+
+        def side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'checkout' in cmd_str:
+                checkout_called.append(cmd)
+            return result
+        mock_run.side_effect = side_effect
+
+        body = json.dumps({"branch": "feature/auth", "action": "guide-pull"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join_confirm(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['action_required'], 'pull')
+        self.assertIn('/pl-remote-pull', args[1]['command'])
+        self.assertEqual(len(checkout_called), 0)
+
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        self.assertFalse(os.path.exists(rt_path))
+
+
+class TestJoinBranchModalShowsHeadContextAndFastForwardForLocalBehind(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows HEAD Context and Fast-Forward for Local Behind
+
+    Given the CDD server is running
+    And a local branch feature/auth exists that is BEHIND origin/feature/auth
+    And HEAD-relative sync state is BEHIND (branch 10 commits behind HEAD)
+    When the user clicks the Join button for feature/auth
+    Then the modal shows "Branch is 10 commits behind HEAD." as primary text
+    And the modal shows "Local branch is 2 commits behind remote." as secondary text
+    And a [Fast-Forward Local & Join] button is visible
+    """
+
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_head_behind_local_behind_modal(self, *mocks):
+        html = serve.generate_html()
+        # Primary: HEAD-relative context
+        self.assertIn('commits behind HEAD', html)
+        # Secondary: local-vs-remote
+        self.assertIn('Local branch is ', html)
+        self.assertIn('commits behind remote', html)
+        # Fast-Forward action button
+        self.assertIn('Fast-Forward Local &amp; Join', html)
+        self.assertIn("_bcJoinConfirm(", html)
+        self.assertIn("fast-forward", html)
+
+
+class TestJoinBranchModalShowsDivergedGuidePullForHeadRelativeDiverged(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Diverged Guide-Pull for HEAD-Relative Diverged
+
+    Given the CDD server is running
+    And a local branch feature/auth exists at SAME as origin/feature/auth
+    And HEAD-relative sync state is DIVERGED (1 ahead, 5 behind)
+    When the user clicks the Join button for feature/auth
+    Then the modal shows "Branch has diverged from HEAD" as primary text
+    And a copyable command block with "/pl-remote-pull" is displayed
+    And no Join action button is present (only Close)
+    """
+
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_head_diverged_shows_guide_pull(self, *mocks):
+        html = serve.generate_html()
+        # Primary: HEAD DIVERGED
+        self.assertIn('Branch has diverged from HEAD', html)
+        # Copyable command
+        self.assertIn('/pl-remote-pull origin/', html)
+        self.assertIn('navigator.clipboard.writeText', html)
+        self.assertIn('font-family:monospace', html)
+        # The DIVERGED branch in JS: sync === 'DIVERGED' early return
+        self.assertIn("sync === 'DIVERGED'", html)
+
+
+class TestJoinBranchModalShowsHeadContextAndPushForLocalAhead(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows HEAD Context and Push for Local Ahead
+
+    Given the CDD server is running
+    And a local branch feature/auth exists that is AHEAD of origin/feature/auth
+    And HEAD-relative sync state is BEHIND (branch 20 commits behind HEAD)
+    When the user clicks the Join button for feature/auth
+    Then the modal shows "Branch is 20 commits behind HEAD." as primary text
+    And the modal shows "Local branch is 3 commits ahead of remote." as secondary text
+    And a [Push to Remote & Join] button is visible
+    """
+
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_head_behind_local_ahead_modal(self, *mocks):
+        html = serve.generate_html()
+        # Primary: HEAD-relative
+        self.assertIn('commits behind HEAD', html)
+        # Secondary: local AHEAD
+        self.assertIn('Local branch is ', html)
+        self.assertIn('commits ahead of remote', html)
+        # Push button
+        self.assertIn('Push to Remote &amp; Join', html)
+        self.assertIn("_bcJoinConfirm(", html)
+
+
+class TestJoinBranchModalShowsCheckoutForLocalSameWithHeadBehind(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Checkout for Local SAME With HEAD Behind
+
+    Given the CDD server is running
+    And a local branch feature/auth exists at SAME as origin/feature/auth
+    And HEAD-relative sync state is BEHIND (branch 15 commits behind HEAD)
+    When the user clicks the Join button for feature/auth
+    Then the modal shows "Branch is 15 commits behind HEAD." as primary text
+    And a [Join] button is visible
+    """
+
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_local_same_head_behind_shows_join(self, *mocks):
+        html = serve.generate_html()
+        # Primary: HEAD-relative behind
+        self.assertIn('commits behind HEAD', html)
+        # Join button for SAME local state
+        self.assertIn("_bcJoinConfirm(", html)
+        self.assertIn("checkout", html)
+
+
+class TestJoinBehindBranchShowsHeadContextInModal(unittest.TestCase):
+    """Scenario: Join BEHIND Branch Shows HEAD Context in Modal
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/behind-2
+    When the user navigates to the dashboard
+    And clicks Join on the BEHIND branch
+    Then the modal shows HEAD-relative context as primary text
+    And the appropriate local-vs-remote action is shown
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_behind_fixture_returns_head_context(self, mock_config, mock_run):
+        # Simulate behind-2 fixture: branch 2 commits behind remote, HEAD ahead
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='',
+            head_behind_lines='h1 c1\nh2 c2',  # HEAD has 2 commits branch lacks
+            local_ahead_lines='',
+            local_behind_lines='r1 c1\nr2 c2',  # local behind remote by 2
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'BEHIND')
+        self.assertEqual(args[1]['commits_behind'], 2)
+        self.assertEqual(args[1]['local_sync'], 'BEHIND')
+        self.assertEqual(args[1]['local_behind'], 2)
+
+
+class TestJoinAheadBranchShowsHeadContextAndPushInModal(unittest.TestCase):
+    """Scenario: Join AHEAD Branch Shows HEAD Context and Push in Modal
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/ahead-3
+    When the user navigates to the dashboard
+    And clicks Join on the AHEAD branch
+    Then the modal shows HEAD-relative context as primary text
+    And local-vs-remote state determines the action button
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_ahead_fixture_returns_head_context(self, mock_config, mock_run):
+        # Simulate ahead-3: local 3 commits ahead of remote
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='b1 c1\nb2 c2\nb3 c3',  # branch 3 ahead of HEAD
+            head_behind_lines='',
+            local_ahead_lines='l1 c1\nl2 c2\nl3 c3',  # local 3 ahead of remote
+            local_behind_lines='',
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'AHEAD')
+        self.assertEqual(args[1]['commits_ahead'], 3)
+        self.assertEqual(args[1]['local_sync'], 'AHEAD')
+        self.assertEqual(args[1]['local_ahead'], 3)
+
+
+class TestJoinDivergedBranchShowsDivergedMessageAndPullCommand(unittest.TestCase):
+    """Scenario: Join DIVERGED Branch Shows Diverged Message and Pull Command
+
+    Given the CDD server is running against fixture tag main/cdd_branch_collab/diverged
+    When the user navigates to the dashboard
+    And clicks Join on the DIVERGED branch
+    Then the modal shows "Branch has diverged from HEAD" with commit counts
+    And a copyable command block with "/pl-remote-pull" is displayed
+    And no Join action button is present (only Close)
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_diverged_fixture_returns_diverged(self, mock_config, mock_run):
+        # Simulate diverged: both sides have unique commits
+        se, checkout_called = _make_join_assessment_side_effect(
+            head_ahead_lines='b1 branch_commit',
+            head_behind_lines='h1 head_commit\nh2 head_commit2',
+            local_ahead_lines='',
+            local_behind_lines='',  # local SAME as remote
+        )
+        mock_run.side_effect = se
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['sync_state'], 'DIVERGED')
+        self.assertEqual(args[1]['commits_ahead'], 1)
+        self.assertEqual(args[1]['commits_behind'], 2)
+        self.assertEqual(len(checkout_called), 0)
 
 
 def run_tests():

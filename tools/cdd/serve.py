@@ -2854,6 +2854,9 @@ function _bcShowJoinPhase2(name, assessment) {{
   var sync = assessment.sync_state;
   var ahead = assessment.commits_ahead || 0;
   var behind = assessment.commits_behind || 0;
+  var localSync = assessment.local_sync || 'SAME';
+  var localAhead = assessment.local_ahead || 0;
+  var localBehind = assessment.local_behind || 0;
   var dirty = assessment.dirty;
   var dirtyFiles = assessment.dirty_files || [];
   var h = '';
@@ -2868,30 +2871,45 @@ function _bcShowJoinPhase2(name, assessment) {{
     body.innerHTML = h;
     return;
   }}
-  if (sync === 'SAME') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
-  }} else if (sync === 'BEHIND') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Local branch is ' + behind + ' commits behind remote.</p>';
-  }} else if (sync === 'AHEAD') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Local branch is ' + ahead + ' commits ahead of remote.</p>';
-  }} else if (sync === 'DIVERGED') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
-  }}
+  // Primary text: HEAD-relative context (omit when SAME/EMPTY)
   if (sync === 'DIVERGED') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch has diverged from HEAD (' + ahead + ' ahead, ' + behind + ' behind).</p>';
+    h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Run the following command in an agent to reconcile:</p>';
     var escName = name.replace(/'/g, "\\'");
     h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:4px;margin-top:8px">';
     h += '<code style="font-family:monospace;font-size:12px;flex:1">/pl-remote-pull origin/' + name + '</code>';
     h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\\'/pl-remote-pull origin/' + escName + '\\')">Copy</button>';
     h += '</div>';
+    body.style.display = 'block';
+    body.innerHTML = h;
+    return;
   }}
-  if (sync !== 'DIVERGED') {{
+  if (sync === 'BEHIND') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is ' + behind + ' commits behind HEAD.</p>';
+  }} else if (sync === 'AHEAD') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is ' + ahead + ' commits ahead of HEAD.</p>';
+  }}
+  // Secondary text + action: local-vs-remote reconciliation
+  if (localSync === 'DIVERGED') {{
+    h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local and remote copies have diverged.</p>';
+    var escName = name.replace(/'/g, "\\'");
+    h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:4px;margin-top:8px">';
+    h += '<code style="font-family:monospace;font-size:12px;flex:1">/pl-remote-pull origin/' + name + '</code>';
+    h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\\'/pl-remote-pull origin/' + escName + '\\')">Copy</button>';
+    h += '</div>';
+  }} else {{
+    if (localSync === 'BEHIND') {{
+      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch is ' + localBehind + ' commits behind remote.</p>';
+    }} else if (localSync === 'AHEAD') {{
+      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch is ' + localAhead + ' commits ahead of remote.</p>';
+    }}
     h += '<div style="margin-top:12px;text-align:right">';
     var escName = name.replace(/'/g, "\\'");
-    if (sync === 'SAME') {{
+    if (localSync === 'SAME') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Join</button>';
-    }} else if (sync === 'BEHIND') {{
+    }} else if (localSync === 'BEHIND') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward Local &amp; Join</button>';
-    }} else if (sync === 'AHEAD') {{
+    }} else if (localSync === 'AHEAD') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'push\\')">Push to Remote &amp; Join</button>';
     }}
     h += '</div>';
@@ -5071,45 +5089,115 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
-        # Step 4: Local branch exists — compute sync state of local vs remote
-        # Compare local branch vs origin/<branch> (not HEAD, which may be
-        # a different branch like main).
+        # Step 4: Local branch exists — compute both sync perspectives
+        # HEAD-relative: compare HEAD vs origin/<branch> (how stale is branch?)
+        # Local-vs-remote: compare local/<branch> vs origin/<branch> (reconciliation)
+
+        # HEAD-relative sync state
         try:
-            ahead_result = subprocess.run(
-                ['git', 'log', f'{ref}..{branch}', '--oneline'],
+            head_ahead_r = subprocess.run(
+                ['git', 'log', f'HEAD..{ref}', '--oneline'],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
-            behind_result = subprocess.run(
-                ['git', 'log', f'{branch}..{ref}', '--oneline'],
+            head_behind_r = subprocess.run(
+                ['git', 'log', f'{ref}..HEAD', '--oneline'],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             class _Empty:
                 stdout = ''
-            ahead_result = _Empty()
-            behind_result = _Empty()
+            head_ahead_r = _Empty()
+            head_behind_r = _Empty()
 
-        ahead_lines = [l for l in ahead_result.stdout.strip().splitlines() if l]
-        behind_lines = [l for l in behind_result.stdout.strip().splitlines() if l]
-        commits_ahead = len(ahead_lines)
-        commits_behind = len(behind_lines)
+        head_ahead_lines = [l for l in head_ahead_r.stdout.strip().splitlines() if l]
+        head_behind_lines = [l for l in head_behind_r.stdout.strip().splitlines() if l]
+        head_ahead = len(head_ahead_lines)
+        head_behind = len(head_behind_lines)
 
-        if commits_ahead == 0 and commits_behind == 0:
-            sync_state = 'SAME'
-        elif commits_ahead == 0 and commits_behind > 0:
-            sync_state = 'BEHIND'
-        elif commits_ahead > 0 and commits_behind == 0:
-            sync_state = 'AHEAD'
+        if head_ahead == 0 and head_behind == 0:
+            head_sync = 'SAME'
+        elif head_ahead == 0 and head_behind > 0:
+            head_sync = 'BEHIND'
+        elif head_ahead > 0 and head_behind == 0:
+            head_sync = 'AHEAD'
         else:
-            sync_state = 'DIVERGED'
+            head_sync = 'DIVERGED'
+
+        # Local-vs-remote sync state
+        try:
+            local_ahead_r = subprocess.run(
+                ['git', 'log', f'{ref}..{branch}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            local_behind_r = subprocess.run(
+                ['git', 'log', f'{branch}..{ref}', '--oneline'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            class _Empty2:
+                stdout = ''
+            local_ahead_r = _Empty2()
+            local_behind_r = _Empty2()
+
+        local_ahead_lines = [l for l in local_ahead_r.stdout.strip().splitlines() if l]
+        local_behind_lines = [l for l in local_behind_r.stdout.strip().splitlines() if l]
+        local_ahead = len(local_ahead_lines)
+        local_behind = len(local_behind_lines)
+
+        if local_ahead == 0 and local_behind == 0:
+            local_sync = 'SAME'
+        elif local_ahead == 0 and local_behind > 0:
+            local_sync = 'BEHIND'
+        elif local_ahead > 0 and local_behind == 0:
+            local_sync = 'AHEAD'
+        else:
+            local_sync = 'DIVERGED'
 
         dirty_files = _get_dirty_files()
 
+        # Auto-complete: HEAD-relative SAME/EMPTY AND local SAME AND clean
+        if head_sync in ('SAME', 'EMPTY') and local_sync == 'SAME' \
+                and not dirty_files:
+            # Record base branch before checkout
+            base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                     'branch_collab_base_branch')
+            if not os.path.exists(base_path) or \
+                    not open(base_path).read().strip():
+                try:
+                    cur = subprocess.run(
+                        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                        capture_output=True, text=True, check=True,
+                        cwd=PROJECT_ROOT, timeout=5)
+                    _write_branch_collab_base_branch(cur.stdout.strip())
+                except (subprocess.CalledProcessError,
+                        subprocess.TimeoutExpired):
+                    pass
+            try:
+                subprocess.run(
+                    ['git', 'checkout', branch],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                self._send_json(500, {
+                    'error': f'Failed to checkout {branch}: '
+                             f'{getattr(exc, "stderr", str(exc))}'
+                })
+                return
+            _write_active_branch(branch)
+            self._send_json(200, {
+                'status': 'ok', 'branch': branch, 'completed': True
+            })
+            return
+
         self._send_json(200, {
             'status': 'ok',
-            'sync_state': sync_state,
-            'commits_ahead': commits_ahead,
-            'commits_behind': commits_behind,
+            'sync_state': head_sync,
+            'commits_ahead': head_ahead,
+            'commits_behind': head_behind,
+            'local_sync': local_sync,
+            'local_ahead': local_ahead,
+            'local_behind': local_behind,
             'dirty': len(dirty_files) > 0,
             'dirty_files': dirty_files
         })
