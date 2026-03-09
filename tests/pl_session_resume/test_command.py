@@ -75,7 +75,7 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 **Delivery Plan:** Phase 2 of 3 -- IN_PROGRESS
 **Work Queue:**
 1. [HIGH] cdd_spec_map.md
-2. [NORMAL] cdd_isolated_teams.md
+2. [NORMAL] cdd_qa_effort_display.md
 **Pending Decisions:** None
 """
 

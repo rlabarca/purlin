@@ -157,7 +157,7 @@ Print this structured summary:
 ```
 Context Restored
 Role:           <Architect | Builder | QA>
-Branch:         <main | isolated/<name>>
+Branch:         <main | collab/<name>>
 Checkpoint:     <found -- resuming from <timestamp> | none>
 
 <If checkpoint found:>
