@@ -18,12 +18,6 @@ venv/
 # Generated digests (per-machine, not committed)
 features/digests/
 
-# Worktrees (multi-person collaboration)
-.worktrees/
-run_*_architect.sh
-run_*_builder.sh
-run_*_qa.sh
-
 # Purlin Tool Logs & Artifacts
 *.log
 *.pid
