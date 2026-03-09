@@ -170,18 +170,6 @@ The dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED), a con
 
 ---
 
-## Isolated Teams
-
-Run multiple agent sessions in parallel using git worktrees. Each isolation is a worktree on its own branch -- agents work independently without stepping on each other.
-
-```bash
-tools/collab/create_isolation.sh <name>   # creates .worktrees/<name>/ on branch isolated/<name>
-```
-
-When done, the agent merges back to the collaboration branch with `/pl-isolated-push`. Active isolations and their sync state appear in the CDD Dashboard.
-
----
-
 ## Setup & Configuration
 
 ### 1. Install Claude Code
@@ -190,9 +178,8 @@ When done, the agent merges back to the collaboration branch with `/pl-isolated-
 
 ### 2. Add Purlin and Initialize
 
-Your project must be an initialized git repository. Add Purlin as a submodule and run the init script:
-
 ```bash
+git init                  # skip if already a git repo
 git submodule add https://github.com/rlabarca/purlin purlin
 git submodule update --init
 ./purlin/pl-init.sh
