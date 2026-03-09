@@ -2,11 +2,13 @@
 
 ![Purlin Logo](assets/purlin-logo.svg)
 
-## Current Release: v0.7.5 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
+## Current Release: v0.8.0 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
 
 **Collaborative Design-Driven Agentic Development Framework**
 
 [![Watch the video](https://img.youtube.com/vi/ob7_RzriVdI/maxresdefault.jpg)](https://youtu.be/ob7_RzriVdI)
+
+**Have questions?** Chat with the [Purlin NotebookLM](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf) -- an AI-powered knowledge base that can answer questions about how Purlin works, or listen to the [AI Audio Overview](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=f9a9f747-3d99-4aee-8d23-42b7debe326c) for a narrated walkthrough.
 
 ## Overview
 
@@ -21,13 +23,13 @@ The framework is built on four goals:
 
 ## Screenshots
 
-*(From v0.7.0)*
+*(From v0.8.0)*
 
 **CDD Dashboard**
-![CDD Dashboard](assets/PurlinCDDV0.7.0.png)
+![CDD Dashboard](assets/PurlinCDDV0.8.0.png)
 
 **CDD Spec Map**
-![CDD Spec Map](assets/PurlinSpecMapV0.7.0.png)
+![CDD Spec Map](assets/PurlinSpecMapV0.8.0.png)
 
 ## Core Concepts
 
@@ -80,7 +82,7 @@ The Architect owns specs and policies. The Builder owns code, tests, and impleme
 | Delivery plan | `.purlin/cache/delivery_plan.md` | R | CRWD | R |
 | Discovery sections | `## User Testing Discoveries` in feature files | RW | CRW | CRW |
 | Your project code | All files outside Purlin-managed paths | R | CRWD | R |
-| Purlin submodule | `purlin/**` | — | — | — |
+| Purlin submodule | `purlin/**` | -- | -- | -- |
 
 **Notes:**
 - **Purlin-managed paths:** `features/`, `.purlin/`, `tests/`, `purlin/` (submodule), and root-level prose docs. Everything else is "your project code."
@@ -96,116 +98,64 @@ The Architect owns specs and policies. The Builder owns code, tests, and impleme
 |---|---|
 | `/pl-status` | Check CDD status and role-specific action items |
 | `/pl-resume [save\|role]` | Save or restore session state across context clears |
+| `/pl-help` | Re-display the command list for the current role |
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
-| `/pl-override-edit` | Edit an override file with built-in conflict scanning (role-scoped: Builder/QA own file only; Architect any). Use `--scan-only` for read-only conflict scan. |
-| `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
-| `/pl-isolated-push` | Merge isolation branch to collaboration branch -- runs pre-merge handoff checklist (isolated sessions only) |
-| `/pl-isolated-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |
-| `/pl-remote-push` | Push local collaboration branch to remote |
-| `/pl-remote-pull` | Pull remote collaboration branch into local |
-| `/pl-whats-different` | Compare current branch to main -- summary of all changes (main checkout only) |
-| `/pl-update-purlin` | Intelligent submodule update with semantic analysis and conflict resolution |
+| `/pl-cdd` | Start, stop, or check the CDD Dashboard |
+| `/pl-agent-config` | Modify per-agent settings (model, effort, permissions) |
+| `/pl-context-guard` | Toggle context guard on/off per agent |
+| `/pl-override-edit` | Edit an override file with conflict scanning |
+| `/pl-update-purlin` | Update the Purlin submodule with semantic analysis |
+| `/pl-isolated-push` | Merge isolation branch to collaboration branch (isolated sessions) |
+| `/pl-isolated-pull` | Pull collaboration branch into isolation (isolated sessions) |
+| `/pl-remote-push` | Push collaboration branch to remote |
+| `/pl-remote-pull` | Pull remote into collaboration branch |
+| `/pl-whats-different` | Compare current branch to main (main checkout only) |
 
 ---
 
 ### The Architect
 
-The Architect owns the specification system. All feature requirements, architectural constraints, and governance rules flow through this role. Code is never written here -- only the specs that make code possible.
+Owns the specification system. Designs feature requirements, architectural constraints, and governance rules. Never writes code.
 
 | Command | Description |
 |---|---|
-| `/pl-spec <topic>` | Add or refine a feature spec (routes to edit or create after discovery) |
-| `/pl-anchor <topic>` | Create or update an architectural, design, or policy anchor node |
-| `/pl-tombstone <name>` | Retire a feature -- checks dependents, generates tombstone for Builder |
-| `/pl-release-check` | Execute the CDD-controlled release checklist step by step |
-| `/pl-release-run [<step>]` | Run a single release step by name without the full checklist |
-| `/pl-release-step [create\|modify\|delete]` | Create, modify, or delete a local release step |
+| `/pl-spec <topic>` | Add or refine a feature spec |
+| `/pl-anchor <topic>` | Create or update an anchor node |
+| `/pl-tombstone <name>` | Retire a feature with a tombstone for the Builder |
+| `/pl-release-check` | Run the release checklist step by step |
+| `/pl-release-run [<step>]` | Run a single release step by name |
+| `/pl-release-step` | Create, modify, or delete a local release step |
 | `/pl-design-ingest` | Ingest a design artifact into a feature's visual spec |
 | `/pl-design-audit` | Audit design artifact integrity and staleness |
-| `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
+| `/pl-spec-code-audit` | Find spec gaps and code-side deviations |
 | `/pl-spec-from-code` | Reverse-engineer feature specs from existing code |
-| `/pl-edit-base` | Modify a base instruction file (Purlin repo only -- not distributed to consumer projects) |
-
-**Workflow examples:**
-
-*Adding a new capability:*
-```
-/pl-find "webhook delivery retries"
-→ Agent: "Nothing exists. A new spec makes sense."
-/pl-spec "webhook delivery retries"
-→ Agent scaffolds feature with Gherkin template, prerequisite stubs
-```
-
-*Retiring a deprecated feature:*
-```
-/pl-tombstone legacy_notifications
-→ Agent: "3 features reference this. Here's the impact. Confirm?"
-→ Tombstone created, feature file deleted, commit staged
-```
 
 ---
 
 ### The Builder
 
-The Builder translates specifications into working code and tests. It owns the implementation -- never the requirements. When a spec is impossible to implement as written, the Builder escalates rather than improvising.
+Translates specifications into working code and tests. Owns the implementation -- never the requirements. Escalates when a spec is impossible to implement as written.
 
 | Command | Description |
 |---|---|
-| `/pl-build [name]` | Implement pending work from the Critic backlog, or a named feature |
-| `/pl-delivery-plan` | Create or review a phased delivery plan for large backlogs |
-| `/pl-infeasible <name>` | Escalate a feature as unimplementable -- pauses work, notifies Architect |
-| `/pl-propose <topic>` | Surface a spec change suggestion to the Architect as a structured proposal |
-| `/pl-spec-code-audit` | Bidirectional spec-code audit -- finds spec gaps and code-side deviations |
-
-**Workflow examples:**
-
-*Standard build cycle:*
-```
-/pl-build
-→ Agent reads Critic report, checks tombstones, begins highest-priority feature
-```
-
-*Large backlog needing phasing:*
-```
-/pl-delivery-plan
-→ Agent: "6 TODO features. Dependency ordering suggests 3 phases:
-   Phase 1 (foundation): policy_critic, python_environment
-   Phase 2 (core tools): critic_tool, cdd_status_monitor
-   Phase 3 (release): release_checklist_core, release_checklist_ui
-   Rationale: Phase 1 unblocks all Phase 2 prerequisites.
-   Adjust or confirm?"
-```
+| `/pl-build [name]` | Implement pending work from the Critic backlog |
+| `/pl-delivery-plan` | Create or review a phased delivery plan |
+| `/pl-infeasible <name>` | Escalate a feature as unimplementable |
+| `/pl-propose <topic>` | Suggest a spec change to the Architect |
+| `/pl-spec-code-audit` | Find spec gaps and code-side deviations |
 
 ---
 
 ### The QA Agent
 
-The QA Agent verifies features against their specifications through interactive scenario execution. It owns exactly one thing in the spec system: the `## User Testing Discoveries` section of each feature file. It never modifies code, tests, or Gherkin requirements.
+Verifies features against their specifications through interactive scenario execution. Owns the `## User Testing Discoveries` section of each feature file. Never modifies code or Gherkin requirements.
 
 | Command | Description |
 |---|---|
 | `/pl-verify <name>` | Run interactive scenario verification for a feature |
 | `/pl-discovery <name>` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) |
-| `/pl-complete <name>` | Mark a feature complete -- gates on all tests pass, all scenarios verified, zero open discoveries, no pending delivery phases |
-| `/pl-qa-report` | Summary of open discoveries, features in TESTING, completion blockers |
-
-**Workflow examples:**
-
-*Verifying a feature:*
-```
-/pl-verify critic_tool
-→ Agent loads scenarios, walks through each step interactively
-→ All pass: "Ready to close. Run /pl-complete critic_tool when confirmed."
-```
-
-*Recording unexpected behavior:*
-```
-/pl-discovery cdd_status_monitor
-→ Agent: "Describe what you observed."
-→ "The graph view shows stale data after a spec change."
-→ Agent: "No duplicate open. Classifying as BUG. Confirm?"
-→ Discovery recorded, Builder notified via Critic on next run
-```
+| `/pl-complete <name>` | Mark a feature complete after all checks pass |
+| `/pl-qa-report` | Summary of open discoveries and completion blockers |
 
 ---
 
@@ -232,73 +182,27 @@ The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific
 
 ---
 
-## Phased Delivery
-
-When there's a large backlog, the Builder can split work into numbered phases. Each phase produces a testable state, and the cycle repeats -- Builder implements, QA verifies -- until the backlog is clear.
-
-The Builder creates the plan with `/pl-delivery-plan`. It lives at `.purlin/cache/delivery_plan.md` and is committed to git so all agents share the same view across sessions.
-
-```
-/pl-delivery-plan
-→ "6 TODO features. Dependency analysis suggests 3 phases:
-   Phase 1 (foundation): policy_critic, python_environment
-   Phase 2 (core tools): critic_tool, cdd_status_monitor
-   Phase 3 (release): release_checklist_core, release_checklist_ui
-   Adjust or confirm?"
-```
-
-Phasing is opt-in -- the user decides whether to accept, modify, or skip it. QA won't mark a feature complete if it appears in a pending phase. Interrupted sessions resume where they left off.
-
----
-
 ## Remote Collaboration
 
-Work across machines using session-based collab branches on a hosted remote.
+Work across machines using session-based collab branches on a hosted remote. Create a collab session (`collab/<name>` branch) from the CDD Dashboard, check out the branch locally, then use `/pl-remote-push` and `/pl-remote-pull` to sync. Isolation branches merge to the collaboration branch.
 
-### How It Works
-
-Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Check out the `collab/<session>` branch locally, then push and pull are symmetric same-branch operations: `/pl-remote-push` pushes the local collab branch to the remote, `/pl-remote-pull` pulls the remote into the local collab branch. Isolation branches merge to the collaboration branch (which is the collab branch during an active session, or `main` when no session is active).
-
-### Rules
-
-*   **Collab branch only.** Collab commands only run from a checked-out `collab/<session>` branch.
-*   **Session-first.** You must create or join a session in the dashboard before push/pull works.
-*   **Fetch-before-push.** Always fetches first; blocks if behind (must pull first).
-*   **Merge, not rebase.** Pulls use merge to preserve shared history.
+**Rules:** Collab commands only run from a checked-out `collab/<session>` branch. Always fetches first; blocks if behind (must pull first). Pulls use merge to preserve shared history.
 
 ---
 
 ## Isolated Teams
 
-Purlin supports multiple concurrent agent sessions through named git worktrees -- **isolated teams**. Each isolation is an independent workspace on a dedicated branch where any agent (Architect, Builder, or QA) can work without interfering with other running sessions.
-
-### How It Works
-
-A single command creates one isolated team:
+Multiple concurrent agent sessions through named git worktrees. Each isolation is an independent workspace on a dedicated branch where any agent can work without interfering with other sessions.
 
 ```bash
 tools/collab/create_isolation.sh <name>
 ```
 
-This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-isolated-push` to run the pre-merge handoff checklist and merge the branch back to the collaboration branch.
-
-```
-Architect (isolated/design)          Builder (isolated/feat1)
-  → designs new specs                  → implements existing backlog
-  → /pl-isolated-push                   → /pl-isolated-push
-       ↓ merge to collab branch              ↓ merge to collab branch
-                    → QA verifies combined result
-```
-
-### Rules
-
-*   **Merge-before-proceed.** Each isolation must merge to the collaboration branch before another session that depends on its changes can start.
-*   **No role assignment.** The isolation name is the identifier (`feat1`, `ui`, `hotfix`) -- any agent type may use any name.
-*   **Dashboard visibility.** Active isolations appear in the CDD Dashboard with branch name, sync state (AHEAD/BEHIND/SAME/DIVERGED), and file change summary. Create and kill isolations from the dashboard.
+This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. When work is complete, the agent runs `/pl-isolated-push` to merge back to the collaboration branch. Active isolations appear in the CDD Dashboard with sync state and file change summary.
 
 ---
 
-## Setup & Configuration For Your Project
+## Setup & Configuration
 
 ### 1. Install Claude Code
 
@@ -306,13 +210,7 @@ Architect (isolated/design)          Builder (isolated/feat1)
 
 ### 2. Add Purlin and Initialize
 
-Your project must be an initialized git repository. If it isn't already:
-
-```bash
-git init
-```
-
-Add Purlin as a submodule and run the init script:
+Your project must be an initialized git repository. Add Purlin as a submodule and run the init script:
 
 ```bash
 git submodule add https://github.com/rlabarca/purlin purlin
@@ -320,31 +218,21 @@ git submodule update --init
 ./purlin/pl-init.sh
 ```
 
-This creates in your project root:
-*   `.purlin/` -- override templates and config (MUST be committed to your project)
-*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` -- layered launcher scripts
-*   `pl-init.sh` -- a shim for collaborators to initialize or refresh Purlin (commit this)
-*   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard convenience symlinks
-*   `features/` directory
-*   `.claude/commands/` -- agent slash commands
-
-Commit everything:
+This creates `features/`, `.purlin/` (overrides and config), agent launchers (`pl-run-*.sh`), dashboard scripts (`pl-cdd-*.sh`), and slash commands (`.claude/commands/`). The `.purlin/` directory **must be committed** -- it contains project-specific overrides.
 
 ```bash
 git add -A && git commit -m "init purlin"
 ```
 
-Your Architect agent will guide you through customizing the overrides for your project on first launch.
-
 ### 3. Collaborator Setup (Fresh Clone)
 
-When a team member clones your repository (even without `--recurse-submodules`), a single command handles everything:
+When a team member clones your repository, a single command handles everything:
 
 ```bash
 ./pl-init.sh
 ```
 
-This automatically initializes the Purlin submodule if needed, then runs the init script in refresh mode -- creating or repairing launchers, commands, and symlinks without touching project-specific config or overrides.
+This initializes the submodule if needed, then creates or repairs launchers, commands, and symlinks without touching project-specific config.
 
 ### 4. Launch Agents
 
@@ -361,60 +249,39 @@ This automatically initializes the Purlin submodule if needed, then runs the ini
 ./pl-cdd-start.sh -p 9090         # override port at runtime
 ```
 
-Open **http://localhost:8086** (or your chosen port) in your browser. The `-p` flag overrides the `cdd_port` value in `.purlin/config.json` without modifying it -- useful when running multiple projects on the same machine or when collaborators use different ports. The dashboard has two modes:
+Open **http://localhost:8086** (or your chosen port). Two views:
 
-*   **Status view:** Real-time feature status by role (Architect, Builder, QA), the release checklist, and workspace / isolated team state. The **Agent Config** panel lets you configure model, effort, permissions, and startup behavior for each agent directly from the browser -- changes are written to `.purlin/config.json` and committed automatically.
-*   **Spec Map view:** An interactive dependency graph of all feature files, showing prerequisite chains and category groupings. Toggle between Status and Spec Map using the view mode controls in the dashboard header.
+*   **Status view:** Feature status by role, release checklist, workspace state, and agent configuration.
+*   **Spec Map view:** Interactive dependency graph of all feature files with prerequisite chains.
 
-### 6. Startup Controls (Optional)
+---
 
-Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard):
+## Upgrading
 
-| Flag | Default | Behavior |
-|---|---|---|
-| `startup_sequence` | `true` | Full orientation on launch (Critic, graph, action items). `false` skips to the command table. |
-| `recommend_next_actions` | `true` | Presents a prioritized work plan after orientation. Requires `startup_sequence: true`. |
-
-Both `false` = expert mode: command table only, agent waits for instruction.
-
-### Python Environment (Optional)
-
-Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) require third-party packages. All scripts auto-detect `.venv/` at the project root:
+### From v0.7.5 or earlier
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r purlin/requirements-optional.txt
+git submodule update --remote purlin   # fetch latest
+./purlin/pl-init.sh                    # refresh launchers and commands
+rm -f run_architect.sh run_builder.sh run_qa.sh   # remove old launcher names
+git add -A && git commit -m "chore: upgrade purlin to v0.8.0"
 ```
 
-Works on macOS, Linux, and Windows via WSL or Git Bash.
+The init script creates the new `pl-run-*.sh` launchers but does not auto-delete old `run_*.sh` names.
 
-### Updating the Submodule
+### From v0.8.0+
 
-Use the `/pl-update-purlin` agent skill to intelligently update Purlin:
+Use `/pl-update-purlin` from any agent session. It fetches upstream, analyzes changes semantically, preserves your `.purlin/` customizations, and offers merge strategies for conflicts.
 
-```bash
-./pl-run-architect.sh   # or pl-run-builder.sh / pl-run-qa.sh
-# In the Claude Code session:
-/pl-update-purlin
-```
+---
 
-The agent skill:
-- Fetches upstream and reports commits behind
-- Analyzes changes semantically (not just textually)
-- Preserves your customizations in `.purlin/` folder
-- Tracks and updates top-level scripts (`pl-run-*.sh`, etc.)
-- Offers smart merge strategies for conflicts
-- Generates migration plans for breaking changes
+## Configuration (Optional)
 
-After the update completes:
-```bash
-git add purlin .purlin
-git commit -m "chore: update purlin submodule"
-```
+**Startup controls:** Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard). Set `startup_sequence: false` to skip orientation on launch. Set `recommend_next_actions: false` to skip the prioritized work plan. Both `false` = expert mode.
 
-### Gitignore Guidance
+**Python environment:** Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) need: `python3 -m venv .venv && .venv/bin/pip install -r purlin/requirements-optional.txt`
 
-**`.purlin/` MUST be committed** to your project. It contains project-specific overrides, config, and the upstream sync marker. The init script will warn if it detects `.purlin` in your `.gitignore`.
+---
 
 ## Directory Structure
 
@@ -426,5 +293,3 @@ Created by `init.sh` in your project root:
 *   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` -- Agent launcher scripts.
 *   `pl-init.sh` -- Collaborator setup shim. Commit this.
 *   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard start/stop scripts.
-
-
