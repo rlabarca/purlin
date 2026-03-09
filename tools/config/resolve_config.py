@@ -210,16 +210,11 @@ def _cli_role(project_root, role):
     bp = 'true' if agent.get('bypass_permissions', False) else 'false'
     ss = 'true' if agent.get('startup_sequence', True) else 'false'
     rn = 'true' if agent.get('recommend_next_actions', True) else 'false'
-    cg = 'true' if agent.get('context_guard', True) else 'false'
-    cgt = agent.get('context_guard_threshold', config.get('context_guard_threshold', ''))
-
     print(f'AGENT_MODEL="{model}"')
     print(f'AGENT_EFFORT="{effort}"')
     print(f'AGENT_BYPASS="{bp}"')
     print(f'AGENT_STARTUP="{ss}"')
     print(f'AGENT_RECOMMEND="{rn}"')
-    print(f'AGENT_CONTEXT_GUARD="{cg}"')
-    print(f'AGENT_CONTEXT_GUARD_THRESHOLD="{cgt}"')
 
 
 def main():
