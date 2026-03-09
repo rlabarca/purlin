@@ -56,7 +56,7 @@ This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not
   - Presence/absence of work plan sections
   - Specific phrases (e.g., "startup_sequence disabled -- awaiting instruction.")
   - Checkpoint field echoing (feature name, protocol step number)
-  - Correct command table variant (main vs isolated vs collab)
+  - Correct command table variant (main vs collab)
 - Assertions use `grep -q` or `grep -c` against the JSON response text field.
 - Each assertion prints PASS or FAIL with the assertion description.
 
@@ -91,7 +91,7 @@ The following manual scenarios are automated by this harness:
 
 **From `pl_help.md`:**
 8. Architect Re-displays Command Table
-9. Builder Re-displays Command Table on Isolated Branch
+9. Builder Re-displays Command Table on Collaboration Branch
 10. QA Re-displays Command Table on Collaboration Branch
 
 ### 2.9 Scenarios That Remain Manual
@@ -115,7 +115,7 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 | `main/pl_session_resume/qa-mid-verification` | Checkpoint file showing QA at scenario 6 of 8 for a feature |
 | `main/pl_session_resume/full-reboot-no-launcher` | Project state with checkpoint but no system prompt (simulating non-launcher start) |
 | `main/pl_help/architect-main-branch` | Project on main branch, default config |
-| `main/pl_help/builder-isolated-branch` | Project on isolated/feat1 branch |
+| `main/pl_help/builder-collab-branch` | Project with .purlin/runtime/active_branch containing "collab/feat1" |
 | `main/pl_help/qa-collab-branch` | Project with .purlin/runtime/active_branch containing "collab/v2" |
 
 ---
@@ -155,10 +155,10 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 
 #### Scenario: Help test shows correct variant for branch
 
-    Given the fixture tag "main/pl_help/builder-isolated-branch" is checked out
-    And the project is on branch isolated/feat1
+    Given the fixture tag "main/pl_help/builder-collab-branch" is checked out
+    And the project has .purlin/runtime/active_branch containing "collab/feat1"
     When claude --print is invoked with "/pl-help"
-    Then the output contains the Isolated Session Variant table
+    Then the output contains the Branch Collaboration Variant table
     And the output contains "feat1"
 
 #### Scenario: Fixture cleanup runs after each test

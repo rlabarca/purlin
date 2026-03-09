@@ -204,7 +204,7 @@ When an active branch exists, the `/status.json` response includes:
 
 Branch operations (join, leave, create, switch) involve git checkouts, fetches, and pushes that can take several seconds. During this time the user sees no feedback. Operation modals provide a blocking progress indicator with inline error reporting.
 
-**Modal HTML:** A single shared modal element (`id="bc-op-modal-overlay"`) is reused for all branch operations. It follows the Kill Isolation modal pattern (inline styles, lightweight, no tabs).
+**Modal HTML:** A single shared modal element (`id="bc-op-modal-overlay"`) is reused for all branch operations. It uses a lightweight modal pattern (inline styles, no tabs).
 
 **Structure:**
 
@@ -950,7 +950,7 @@ None.
 - [ ] "Refresh Branches" button shows "Refreshing..." text and is disabled while fetch-all is in flight
 - [ ] Collapsed badge always shows "BRANCH COLLABORATION (github.com/rlabarca/purlin)" when remote is configured (regardless of active branch state)
 - [ ] Collapsed badge shows plain "BRANCH COLLABORATION" only when no remote is configured
-- [ ] Operation modal: centered overlay with semi-transparent background, matching Kill Isolation modal styling
+- [ ] Operation modal: centered overlay with semi-transparent background, matching lightweight modal styling
 - [ ] Operation modal: CSS spinner (small, inline) visible during in-flight state
 - [ ] Operation modal: join/switch Phase 1 shows "Fetching and checking sync state..." then transitions to Phase 2 interactive content
 - [ ] Operation modal: join dirty gate shows "Uncommitted changes:" heading + file list in monospace + instruction text, no sync state info

@@ -107,11 +107,11 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 ## Delivery Plan
 Phase 2 of 3 -- IN_PROGRESS
 Completed this phase: cdd_status_monitor.md
-Remaining: cdd_spec_map.md, cdd_isolated_teams.md
+Remaining: cdd_spec_map.md, cdd_qa_effort_display.md
 
 ## Work Queue
 1. [HIGH] cdd_spec_map.md -- Phase 2
-2. [NORMAL] cdd_isolated_teams.md -- Phase 2
+2. [NORMAL] cdd_qa_effort_display.md -- Phase 2
 
 ## Uncommitted Changes
 None
@@ -187,7 +187,7 @@ Print a structured recovery summary:
 ```
 Context Restored
 Role:           [Architect | Builder | QA]
-Branch:         [main | isolated/<name>]
+Branch:         [main | collab/<name>]
 Checkpoint:     [found -- resuming from <timestamp> | none]
 
 [If checkpoint found:]

@@ -103,7 +103,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 
 ### 2.12 Fixture-Backed Testing
 
-When a feature has `> Web Testable:` metadata and the project has a fixture repo (resolved via the three-tier lookup: per-feature `> Test Fixtures:` metadata → config `fixture_repo_url` → convention path `.purlin/runtime/fixture-repo`), `/pl-web-verify` can execute scenarios against fixture-provided project states rather than the live project. This solves the "complex setup" problem -- scenarios requiring specific branch states, worktree layouts, or config values get their preconditions from immutable fixture tags.
+When a feature has `> Web Testable:` metadata and the project has a fixture repo (resolved via the three-tier lookup: per-feature `> Test Fixtures:` metadata → config `fixture_repo_url` → convention path `.purlin/runtime/fixture-repo`), `/pl-web-verify` can execute scenarios against fixture-provided project states rather than the live project. This solves the "complex setup" problem -- scenarios requiring specific branch states, collaboration setups, or config values get their preconditions from immutable fixture tags.
 
 **Workflow:**
 
@@ -127,8 +127,8 @@ The following instruction files MUST be updated by the Builder to reference the 
 - `instructions/references/visual_verification_protocol.md` -- Add Section 5.4.7: Playwright MCP automated alternative referencing `/pl-web-verify`. Update on-demand loader notice to include `/pl-web-verify`.
 - `instructions/QA_BASE.md` -- Add `/pl-web-verify` to the authorized commands list (Section 3.0). Add brief reference in Section 5.4 noting the automated alternative for web-testable features.
 - `instructions/BUILDER_BASE.md` -- Add `/pl-web-verify` to the authorized commands list (Section 2.0). Add brief reference in Section 5.3 (Verify Locally) noting web verification as a pre-TESTING validation option.
-- `instructions/references/qa_commands.md` -- Add `/pl-web-verify [name]` entry to all three command table variants (Main, Collab, Isolated), placed after `/pl-verify`.
-- `instructions/references/builder_commands.md` -- Add `/pl-web-verify [name]` entry to all three command table variants (Main, Collab, Isolated), placed after `/pl-propose`.
+- `instructions/references/qa_commands.md` -- Add `/pl-web-verify [name]` entry to both command table variants (Main, Collab), placed after `/pl-verify`.
+- `instructions/references/builder_commands.md` -- Add `/pl-web-verify [name]` entry to both command table variants (Main, Collab), placed after `/pl-propose`.
 
 ### 2.14 Web-Verify Fixture Tags
 

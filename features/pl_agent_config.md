@@ -61,9 +61,9 @@ Because `config.local.json` is gitignored, no git commit is made after writing. 
 
 ### Automated Scenarios
 
-#### Scenario: Config Change Applied to Local Config in Non-Isolated Session
+#### Scenario: Config Change Applied to Local Config
 
-    Given the current branch is main (not an isolated worktree)
+    Given the current branch is main
     And .purlin/config.local.json has startup_sequence true for builder
     When /pl-agent-config builder startup_sequence false is invoked
     Then .purlin/config.local.json has startup_sequence false for builder

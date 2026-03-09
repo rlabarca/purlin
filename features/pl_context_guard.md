@@ -58,11 +58,10 @@ Context Guard: architect
 
 Follows the same protocol as `/pl-agent-config`:
 
-1. **Target:** Always `config.local.json` in the MAIN project root. Never the worktree copy.
+1. **Target:** Always `config.local.json` in the project root.
 2. **Copy-on-first-access:** If `config.local.json` does not exist, copy `config.json` to it before writing.
 3. **Atomic write:** Write to temp file, then rename.
 4. **No git commit:** `config.local.json` is gitignored.
-5. **Worktree warning:** When invoked from an `isolated/*` branch, display the same worktree context warning as `/pl-agent-config` and require confirmation before proceeding.
 
 ### 2.5 Confirmation Output
 
