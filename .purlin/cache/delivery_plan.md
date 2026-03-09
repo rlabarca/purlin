@@ -6,9 +6,9 @@
 ## Summary
 9 features with spec changes (2 HIGH-complexity) consolidated into 3 phases. Phase 1 establishes foundation prerequisites (context guard rewrite, config layering fix, policy review). Phase 2 delivers dependent skills and agent config. Phase 3 tackles the two largest features.
 
-## Phase 1 -- Foundations [IN_PROGRESS]
+## Phase 1 -- Foundations [COMPLETE]
 **Features:** policy_collaboration.md, context_guard.md, config_layering.md
-**Completion Commit:** --
+**Completion Commit:** b076e1f
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Skills & Agent Config [PENDING]
