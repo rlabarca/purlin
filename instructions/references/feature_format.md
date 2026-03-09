@@ -47,7 +47,7 @@ to the best-fitting category.
 | Coordination & Lifecycle | `Policy: <Name>` or `<Descriptive Name>` | `Policy: Critic Coordination Engine`, `Handoff Checklist System` |
 | Common Design Standards | `Design: <Name>` | `Design: Visual Standards` |
 | Install, Update & Scripts | `Tool: <Name>` | `Tool: Agent Launchers`, `Tool: Config Layering` |
-| Process | `Process: <Name>` | `Process: Context Guard` |
+| Process | `Process: <Name>` | `Process: Spec-Code Audit Role Clarity` |
 | Release Process | `Release Step: <Name>` or `Tool: <Name>` | `Release Step: Push to Remote Repository` |
 | Test Infrastructure | `Dev: <Name>` or `Tool: <Name>` | `Dev: Agent Behavior Tests`, `Tool: Test Fixture Repo` |
 
