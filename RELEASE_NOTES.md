@@ -1,13 +1,41 @@
 # Release Notes
 
-### v0.8.0 — 2026-03-08
+### v0.8.0 — 2026-03-09
 
-**Documentation Overhaul**
-- README rewritten for clarity (430 lines trimmed to ~300)
-- Upgrade instructions for both legacy and current users
-- NotebookLM knowledge base and audio overview linked for self-service Q&A
-- CDD Dashboard screenshots updated to v0.8.0
-- Stale command names and path references fixed across all docs
+**Branch Collaboration (replaces Remote Collaboration)**
+- Collaboration now uses plain git branches on your existing remote -- no special `collab/` prefix or session abstraction. Create a branch, push it, and another machine joins by checking it out.
+- The CDD Dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED, EMPTY), a contributors table, and last-sync timestamps -- all from locally cached git refs.
+- Two-phase join flow with pre-join sync assessment: the dashboard tells you what will happen before you commit to a checkout.
+- `/pl-remote-push` and `/pl-remote-pull` work with any branch. Pushes fetch first and block if behind. Pulls merge to preserve shared history.
+
+**Removed: Isolated Teams**
+- The worktree-based isolated teams system (`/pl-isolated-push`, `/pl-isolated-pull`, CDD Isolated Teams panel, Handoff Checklist, and the Isolated Agent Collaboration policy) has been fully retired. Branch collaboration covers the same use cases with less complexity.
+
+**Web Verify (`/pl-web-verify`)**
+- New Playwright-based automated verification for features with web UIs. Any feature with a `> Web Testable: <url>` metadata tag can have its manual scenarios and visual specification checklist items verified automatically in a real browser.
+- Supports `> Web Port File:` for dynamic ports and `> Web Start:` for auto-starting servers.
+- Screenshots saved to `.purlin/runtime/web-verify/` for post-run review.
+
+**Test Fixtures (`/pl-fixture`)**
+- New test fixture system for scenarios that need controlled project state (specific git history, config values, branch topologies). Each fixture is an immutable git tag in a dedicated fixture repo -- no complex setup code needed.
+- `tools/fixtures/setup_fixture_repo.sh` ships with 74 pre-built fixture tags covering CDD lifecycle, branch collaboration, agent configuration, and more.
+- Convention-over-configuration: the fixture repo lives at `tests/fixtures/fixture-repo/` and is auto-created on first test run.
+- `/pl-fixture` skill available to all roles for managing fixtures.
+
+**Automated Test Expansion**
+- 56+ scenarios previously requiring manual QA execution have been reclassified to automated testing, enabled by Web Verify and the fixture system. This covers features across CDD dashboard panels, release checklist steps, agent configuration, and collaboration workflows.
+- Per-feature `tests.json` files now include `test_file` paths for structural completeness validation.
+
+**Instruction and Skill Optimization**
+- Agent instructions heavily optimized to reduce context window usage. Protocol details (user testing, CDD internals, phased delivery, visual spec convention, feature format) extracted to reference files that are loaded on demand rather than included in every session.
+- Skill files trimmed to trigger-and-delegate patterns instead of inlining full protocol text.
+- Context guard system retired entirely (replaced by Claude Code's built-in auto-compaction).
+
+**New Install and Update Process**
+- `pl-init.sh` replaces the old `init.sh` as the single entry point for both first-time setup and collaborator onboarding. It creates launchers, commands, symlinks, and the `.purlin/` directory.
+- Agent launchers renamed from `run_*.sh` to `pl-run-*.sh` for consistency. Running `pl-init.sh` on an existing project repairs missing launchers without overwriting config.
+- `--regenerate-launchers` flag removes stale launcher names during upgrades.
+- `/pl-update-purlin` provides intelligent submodule updates with semantic change analysis and conflict resolution for `.purlin/` customizations.
 
 ### v0.7.5 — 2026-02-26
 
