@@ -86,6 +86,7 @@ Each role can read everything but only writes to its own domain. The Purlin subm
 | `/pl-remote-push` | Push collaboration branch to remote |
 | `/pl-remote-pull` | Pull remote into collaboration branch |
 | `/pl-whats-different` | Compare current branch to main (main checkout only) |
+| `/pl-fixture` | Manage test fixture repos for reproducible scenario state |
 
 ---
 
@@ -119,6 +120,7 @@ Translates specifications into working code and tests. Owns the implementation -
 | `/pl-infeasible <name>` | Escalate a feature as unimplementable |
 | `/pl-propose <topic>` | Suggest a spec change to the Architect |
 | `/pl-spec-code-audit` | Find spec gaps and code-side deviations |
+| `/pl-web-verify` | Run manual scenarios and visual checks via Playwright |
 
 ---
 
@@ -132,6 +134,7 @@ Verifies features against their specifications through interactive scenario exec
 | `/pl-discovery <name>` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) |
 | `/pl-complete <name>` | Mark a feature complete after all checks pass |
 | `/pl-qa-report` | Summary of open discoveries and completion blockers |
+| `/pl-web-verify` | Run manual scenarios and visual checks via Playwright |
 
 ---
 
@@ -155,6 +158,10 @@ The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific
 | **Architect** | Fix spec gaps, revise infeasible specs, acknowledge builder decisions, triage untracked files |
 | **Builder** | Implement TODO features, fix failing tests, close traceability gaps, resolve open bugs |
 | **QA** | Verify TESTING features, re-verify SPEC_UPDATED discoveries, run visual verification passes |
+
+### Test Fixtures
+
+Scenarios that need controlled project state (specific git history, config values, branch topologies) can use a test fixture repo. Each fixture is an immutable git tag representing the preconditions for one scenario -- no complex setup code needed. Use `/pl-fixture` to manage them.
 
 ---
 
