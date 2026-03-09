@@ -1846,10 +1846,10 @@ body{{
 .btn-critic:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .btn-critic:disabled{{cursor:not-allowed;opacity:.5}}
 .btn-critic-err{{color:var(--purlin-status-error);font-size:10px;margin-right:4px}}
-.agent-hdr{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px 80px;align-items:end;gap:6px;padding:2px 0 4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-hdr{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px;align-items:end;gap:6px;padding:2px 0 4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-hdr-cell{{font-size:10px;font-weight:600;color:var(--purlin-muted);text-transform:uppercase;letter-spacing:0.5px;line-height:1.2}}
 .agent-hdr-cell.center{{text-align:center}}
-.agent-row{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px 80px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
+.agent-row{{display:grid;grid-template-columns:64px 140px 80px 60px 60px 60px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--purlin-border)}}
 .agent-row:last-child{{border-bottom:none}}
 .agent-lbl{{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--purlin-primary);text-transform:uppercase}}
 .agent-sel{{background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;font-family:inherit;padding:2px 4px;outline:none;cursor:pointer;width:100%}}
@@ -4257,7 +4257,6 @@ function renderAgentsRows(cfg) {{
     '<span class="agent-hdr-cell center">YOLO</span>' +
     '<span class="agent-hdr-cell center">Startup<br>Sequence</span>' +
     '<span class="agent-hdr-cell center">Suggest<br>Next</span>' +
-    '<span class="agent-hdr-cell center">Context<br>Guard</span>' +
   '</div>';
   roles.forEach(function(role) {{
     html += buildAgentRowHtml(role, agents[role] || {{}});
@@ -4306,11 +4305,6 @@ function renderAgentsRows(cfg) {{
       pendingWrites.set(role + '.recommend_next_actions', recommendChk.checked);
       scheduleAgentSave();
     }});
-    var cgChk = document.getElementById('agent-cg-' + role);
-    if (cgChk) cgChk.addEventListener('change', function() {{
-      pendingWrites.set(role + '.context_guard', cgChk.checked);
-      scheduleAgentSave();
-    }});
     syncCapabilityControls(role);
   }});
 }}
@@ -4347,11 +4341,6 @@ function diffUpdateAgentRows(cfg) {{
         if (recLbl) recLbl.classList.remove('disabled');
       }}
     }}
-    var cgChk = document.getElementById('agent-cg-' + role);
-    var cgVal = acfg.context_guard !== false;
-    if (cgChk && !pendingWrites.has(role + '.context_guard') && cgChk.checked !== cgVal) {{
-      cgChk.checked = cgVal;
-    }}
     syncCapabilityControls(role);
   }});
 }}
@@ -4363,7 +4352,6 @@ function buildAgentRowHtml(role, agentCfg) {{
   var startupSeq = agentCfg.startup_sequence !== false;
   var suggestNext = agentCfg.recommend_next_actions !== false;
   var suggestDisabled = !startupSeq;
-  var cgEnabled = agentCfg.context_guard !== false;
   var modelsList = (agentsConfig && agentsConfig.models) || [];
   var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
@@ -4384,9 +4372,6 @@ function buildAgentRowHtml(role, agentCfg) {{
     '</label>' +
     '<label class="agent-chk-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
       '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '>' +
-    '</label>' +
-    '<label class="agent-chk-lbl">' +
-      '<input type="checkbox" id="agent-cg-' + role + '" style="accent-color:var(--purlin-accent)"' + (cgEnabled ? ' checked' : '') + '>' +
     '</label>' +
   '</div>';
 }}
@@ -4455,15 +4440,13 @@ function saveAgentConfig() {{
     var bypassChk = document.getElementById('agent-bypass-' + role);
     var startupChk = document.getElementById('agent-startup-' + role);
     var recommendChk = document.getElementById('agent-recommend-' + role);
-    var cgChk = document.getElementById('agent-cg-' + role);
     if (!modSel) return;
     agentsPayload[role] = {{
       model: modSel.value,
       effort: effSel ? effSel.value : 'high',
       bypass_permissions: bypassChk ? bypassChk.checked : false,
       startup_sequence: startupChk ? startupChk.checked : true,
-      recommend_next_actions: recommendChk ? recommendChk.checked : true,
-      context_guard: cgChk ? cgChk.checked : true
+      recommend_next_actions: recommendChk ? recommendChk.checked : true
     }};
   }});
   // Snapshot pending keys included in this request (per-request lock association)
@@ -4827,8 +4810,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             model = cfg.get('model', '')
             if model and model not in all_model_ids:
                 errors.append(f'{role}: unknown model "{model}"')
-            # Validate startup controls and context guard
-            for bool_field in ('startup_sequence', 'recommend_next_actions', 'context_guard'):
+            # Validate startup controls
+            for bool_field in ('startup_sequence', 'recommend_next_actions'):
                 if bool_field in cfg and not isinstance(cfg[bool_field], bool):
                     errors.append(f'{role}: {bool_field} must be a boolean')
             ss = cfg.get('startup_sequence', True)

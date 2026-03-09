@@ -1,15 +1,1 @@
-{
-  "hooks": {
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/tools/hooks/context_guard.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
+{}
