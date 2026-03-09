@@ -12,12 +12,12 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 
 **Delivery phase detection:** `_read_delivery_phase(worktree_path)` reads `<worktree_path>/.purlin/cache/delivery_plan.md`, parses for a line matching `status: IN_PROGRESS` in a phase block, and extracts current/total. Returns `None` if the file is absent or no IN_PROGRESS phase exists. Parse failures are silently ignored (missing or malformed plans do not block status polling).
 
-**Collaboration branch abstraction:** `_get_collaboration_branch()` returns the branch the project root is currently on (`git rev-parse --abbrev-ref HEAD`). This is the active branch during branch collaboration, `main` otherwise. All worktree comparison functions (`_worktree_state`, `_compute_local_branch_diff`) accept a `collab_branch` parameter; `get_isolation_worktrees()` resolves it once and passes it through.
+**Collaboration branch abstraction:** `_get_collaboration_branch()` returns the branch the project root is currently on (`git rev-parse --abbrev-ref HEAD`). This is the active branch during branch collaboration, `main` otherwise. All worktree comparison functions (`_worktree_state`, `_compute_sync_state`) accept a `collab_branch` parameter; `get_isolation_worktrees()` resolves it once and passes it through.
 
 **Retained from prior implementation (tribal knowledge):**
 - `commits_ahead`: uses `git rev-list --count <collab_branch>..HEAD` in `_worktree_state()`.
 - `last_commit`: uses `git log -1 --format='%h %s (%cr)'` in `_worktree_state()`.
-- `local_branch_diff`: computed by `_compute_local_branch_diff(branch, collab_branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..<collab_branch> --oneline` (behind check). Query 2: `git log <collab_branch>..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
+- `sync_state`: computed by `_compute_sync_state(branch, collab_branch)` running two `git log` range queries from PROJECT_ROOT. Query 1: `git log <branch>..<collab_branch> --oneline` (behind check). Query 2: `git log <collab_branch>..<branch> --oneline` (ahead check). Returns "DIVERGED" if both non-empty, "BEHIND" if only query 1 non-empty, "AHEAD" if only query 2 non-empty, "SAME" if both empty.
 - `committed`: computed via `git diff <collab_branch>...<branch> --name-only` (three-dot) run from PROJECT_ROOT. Three-dot diffs against common ancestor — always empty for SAME/BEHIND, reflects only branch-side changes for AHEAD/DIVERGED. May be all-zero for AHEAD/DIVERGED if commits are `--allow-empty`.
 - `uncommitted`: computed via `git -C <path> status --porcelain` run from the worktree directory. Captures staged, unstaged, and untracked changes. Independent of `local_branch_diff` state — a worktree at SAME can have uncommitted changes. For renames (`XY old -> new`), the new path is used for categorization. `.purlin/` files excluded.
 - `_handle_config_agents()` propagates updated config to all active worktree `.purlin/config.local.json` files after the project root write. Failures collected as `warnings`.
@@ -46,6 +46,12 @@ The `/isolate/create` and `/isolate/kill` endpoints are intentional exceptions t
 **Bug fixes preserved from prior implementation (do not regress):**
 - Modal button styling uses `btn-critic` class (not `btn` — no CSS definition).
 - Dirty detection in `kill_isolation.sh` excludes `.purlin/` files (grep -v filter).
-- Four-state `local_branch_diff` + theme colors: SAME -> `st-good` (green), AHEAD -> `st-todo` (yellow), BEHIND -> `st-todo` (yellow), DIVERGED -> `st-disputed` (orange/`--purlin-status-warning`).
+- Four-state `sync_state` + theme colors: SAME -> `st-good` (green), AHEAD -> `st-todo` (yellow), BEHIND -> `st-todo` (yellow), DIVERGED -> `st-disputed` (orange/`--purlin-status-warning`).
 - `committed` uses three-dot diff (`git diff main...<branch>`) not two-dot — three-dot shows only branch-side changes from common ancestor; two-dot shows all differences between tips (including main-side changes, which was a bug for BEHIND state).
 - Auto-refresh timer paused during create/kill requests to prevent error messages being wiped.
+
+**Staleness banner:** `_staleness_banner_html(worktrees)` counts worktrees with `sync_state == "DIVERGED"` and renders a warning banner above the Sessions table when count > 0. Banner includes worktree count text and a dismiss button. Inserted in `generate_html()` between the creation row and sessions table.
+
+**Isolation digest (What's Different?):** Per-worktree cached digest, modeled after the collaboration-level What's Different feature. `_is_isolation_digest_stale(worktree_path, isolation_name)` compares the digest file's recorded tip SHA against the current worktree HEAD — stale if they differ. The dashboard renders a "What's Different?" button per isolation row (hidden when `sync_state == "SAME"`). Clicking opens a modal (`iso-wd-modal-overlay`) that shows the cached digest content or a "no digest" message. Users can regenerate via the modal. Endpoints: `POST /isolate/<name>/whats-different/generate` triggers `tools/collab/whats_different.sh` for the worktree, `GET /isolate/<name>/whats-different/read` returns cached digest content. `_parse_isolation_name_from_path(path)` extracts the isolation name from URL paths matching `/isolate/<name>/...`.
+
+**Rename: `main_diff` → `sync_state`, `_compute_main_diff` → `_compute_sync_state`:** Applied throughout serve.py, test file, and this companion file. The HTML column header was also renamed from "Main Diff" to "Sync State". The old names were confusing because sync is relative to the collaboration branch (not always `main`).

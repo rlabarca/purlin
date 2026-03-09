@@ -877,7 +877,7 @@ def _worktree_state(wt_abs_path, collab_branch="main"):
     }
 
 
-def _compute_main_diff(branch, collab_branch="main"):
+def _compute_sync_state(branch, collab_branch="main"):
     """Determine sync state between a worktree branch and the collaboration branch.
 
     Runs two git log range queries from PROJECT_ROOT (not per-worktree).
@@ -938,14 +938,14 @@ def get_isolation_worktrees():
         except ValueError:
             rel_path = abs_path
 
-        # Main diff: run from project root (Section 2.4 of cdd_isolated_teams)
-        main_diff = _compute_main_diff(branch, collab_branch)
+        # Sync state: run from project root (Section 2.4 of cdd_isolated_teams)
+        sync_state = _compute_sync_state(branch, collab_branch)
 
         entry = {
             'name': name,
             'path': rel_path,
             'branch': branch,
-            'main_diff': main_diff,
+            'sync_state': sync_state,
             'commits_ahead': state.get('commits_ahead', 0),
             'last_commit': state['last_commit'],
             'committed': state['committed'],
@@ -957,9 +957,70 @@ def get_isolation_worktrees():
         if delivery_phase:
             entry['delivery_phase'] = delivery_phase
 
+        # What's Different? cached digest metadata (Section 2.14)
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   f'isolation-{name}-whats-different.md')
+        if os.path.isfile(digest_path):
+            try:
+                with open(digest_path, 'r') as f:
+                    first_line = f.readline().strip()
+                mtime = os.path.getmtime(digest_path)
+                generated_at = datetime.fromtimestamp(
+                    mtime, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                # Staleness: compare stored branch tips to current tips
+                stale = _is_isolation_digest_stale(first_line, branch,
+                                                   collab_branch)
+                entry['whats_different'] = {
+                    'cached': True,
+                    'generated_at': generated_at,
+                    'stale': stale,
+                }
+            except (IOError, OSError):
+                pass
+
         result.append(entry)
 
     return result
+
+
+def _is_isolation_digest_stale(header_line, branch, collab_branch):
+    """Check if an isolation digest is stale by comparing stored branch tips.
+
+    The digest header format is:
+    <!-- tips: <isolation_tip> <collab_tip> -->
+    Returns True if either tip has moved since generation.
+    """
+    if not header_line.startswith('<!-- tips:'):
+        return True  # Missing header = treat as stale
+    try:
+        parts = header_line.replace('<!-- tips:', '').replace('-->', '').split()
+        if len(parts) < 2:
+            return True
+        stored_iso_tip, stored_collab_tip = parts[0], parts[1]
+    except (ValueError, IndexError):
+        return True
+
+    # Get current tips
+    try:
+        iso_result = subprocess.run(
+            f'git rev-parse {branch}',
+            shell=True, capture_output=True, text=True,
+            check=True, cwd=PROJECT_ROOT)
+        current_iso_tip = iso_result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return True
+
+    try:
+        collab_result = subprocess.run(
+            f'git rev-parse {collab_branch}',
+            shell=True, capture_output=True, text=True,
+            check=True, cwd=PROJECT_ROOT)
+        current_collab_tip = collab_result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return True
+
+    return (current_iso_tip != stored_iso_tip or
+            current_collab_tip != stored_collab_tip)
 
 
 # ===================================================================
@@ -1498,12 +1559,31 @@ def _format_category_counts(counts):
     return ' '.join(parts)
 
 
+def _staleness_banner_html(worktrees, collab_branch):
+    """Generate staleness banner HTML (Section 2.13).
+
+    Shows when >= 1 worktree has sync_state BEHIND or DIVERGED.
+    Returns empty string when all are SAME or AHEAD.
+    """
+    if not worktrees:
+        return ''
+    out_of_sync = sum(1 for wt in worktrees
+                      if wt.get('sync_state', 'SAME') in ('BEHIND', 'DIVERGED'))
+    if out_of_sync == 0:
+        return ''
+    return (
+        f'<div style="color:var(--purlin-status-todo);font-size:11px;'
+        f'margin-bottom:8px;padding:4px 0">'
+        f'{out_of_sync} isolation(s) out of sync with {collab_branch}</div>'
+    )
+
+
 def _isolation_section_html(worktrees):
     """Generate HTML for the Isolated Teams Sessions table (no heading)."""
     if not worktrees:
         return ""
 
-    # Sessions table: Name, Branch, Main Diff, Committed Modified, Uncommitted Modified, Kill
+    # Sessions table: Name, Branch, Sync State, Committed Modified, Uncommitted Modified, Actions
     rows = ""
     for wt in worktrees:
         name = wt.get('name', '')
@@ -1518,13 +1598,13 @@ def _isolation_section_html(worktrees):
                 f'(Phase {delivery_phase["current"]}/{delivery_phase["total"]})</span>'
             )
 
-        # Main Diff badge (Section 2.6 Visual Design)
-        main_diff = wt.get('main_diff', 'SAME')
-        if main_diff == 'DIVERGED':
+        # Sync State badge (Section 2.6 Visual Design)
+        sync_state = wt.get('sync_state', 'SAME')
+        if sync_state == 'DIVERGED':
             diff_html = '<span class="st-disputed">DIVERGED</span>'
-        elif main_diff == 'BEHIND':
+        elif sync_state == 'BEHIND':
             diff_html = '<span class="st-todo">BEHIND</span>'
-        elif main_diff == 'AHEAD':
+        elif sync_state == 'AHEAD':
             diff_html = '<span class="st-todo">AHEAD</span>'
         else:
             diff_html = '<span class="st-good">SAME</span>'
@@ -1535,23 +1615,41 @@ def _isolation_section_html(worktrees):
         # Uncommitted Modified column
         uncommitted_text = _format_category_counts(wt.get('uncommitted', {}))
 
-        # Kill button per row
+        # Actions: Kill button + What's Different? button (Section 2.14)
         kill_btn = (
             f'<button class="btn-critic" onclick="killIsolationPrompt(\'{name}\')"'
             f' style="font-size:10px;padding:2px 8px">Kill</button>'
         )
+        actions_html = kill_btn
+        if sync_state != 'SAME':
+            wd_btn = (
+                f'<button class="btn-critic" onclick="isoWhatsDifferent(\'{name}\')"'
+                f' style="font-size:10px;padding:2px 8px;margin-left:4px">'
+                f"What's Different?</button>"
+            )
+            # Cached digest timestamp annotation
+            wd_info = wt.get('whats_different')
+            wd_ts = ''
+            if wd_info and wd_info.get('cached'):
+                ts_text = wd_info.get('generated_at', '')
+                stale_note = ' (may be outdated)' if wd_info.get('stale') else ''
+                wd_ts = (
+                    f'<div style="font-size:9px;color:var(--purlin-dim)">'
+                    f'Last generated: {ts_text}{stale_note}</div>'
+                )
+            actions_html += wd_btn + wd_ts
 
         rows += (
             f'<tr><td>{name_html}</td><td><code>{branch}</code></td>'
             f'<td>{diff_html}</td>'
             f'<td class="dim">{committed_text}</td>'
             f'<td class="dim">{uncommitted_text}</td>'
-            f'<td style="text-align:right">{kill_btn}</td></tr>'
+            f'<td style="text-align:right">{actions_html}</td></tr>'
         )
 
     return (
         '<table class="ft" style="width:100%"><thead><tr>'
-        '<th>Name</th><th>Branch</th><th>Main Diff</th>'
+        '<th>Name</th><th>Branch</th><th>Sync State</th>'
         '<th>Committed<br>Modified</th><th>Uncommitted<br>Modified</th><th></th>'
         '</tr></thead><tbody>' + rows + '</tbody></table>'
     )
@@ -1572,7 +1670,7 @@ def _collapsed_isolation_label(worktrees):
     severity_names = {3: "DIVERGED", 2: "BEHIND", 1: "AHEAD", 0: "SAME"}
     max_sev = 0
     for wt in worktrees:
-        md = wt.get("main_diff", "SAME")
+        md = wt.get("sync_state", "SAME")
         max_sev = max(max_sev, severity_order.get(md, 0))
     if max_sev >= 3:
         css = "st-disputed"  # orange
@@ -1987,6 +2085,9 @@ def generate_html(cache=None):
 
     # Creation row (always first item in Isolated Teams sub-section)
     creation_row_html = _creation_row_html()
+
+    # Staleness banner (Section 2.13) — between creation row and sessions table
+    staleness_banner = _staleness_banner_html(isolation_worktrees, current_branch)
 
     # Branch Collaboration section data
     bc_active_branch = get_active_branch()
@@ -2471,6 +2572,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       </div>
       <div class="section-body collapsed" id="isolation-section">
         {creation_row_html}
+        {staleness_banner}
         {isolation_html}
       </div>
     </div>
@@ -2533,6 +2635,20 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div style="margin-top:12px;text-align:right">
       <button class="btn-critic" onclick="killModalCancel()" style="font-size:11px;margin-right:6px">Cancel</button>
       <button class="btn-critic" id="kill-modal-confirm" onclick="killModalConfirm()" style="font-size:11px">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Isolation What's Different Modal (Section 2.14) -->
+<div class="modal-overlay" id="iso-wd-modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="iso-wd-modal-title" style="font-size:13px;color:var(--purlin-primary);margin:0">What's Different?</h2>
+      <button class="modal-close" onclick="closeIsoWdModal()" title="Close">X</button>
+    </div>
+    <div id="iso-wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px;display:flex;align-items:center;gap:8px"></div>
+    <div class="modal-body" id="iso-wd-modal-scroll">
+      <div id="iso-wd-modal-body" style="color:var(--purlin-primary);font-size:12px;line-height:1.5;white-space:pre-wrap"></div>
     </div>
   </div>
 </div>
@@ -3302,6 +3418,87 @@ function killModalCancel() {{
   var overlay = document.getElementById('kill-modal-overlay');
   if (overlay) overlay.style.display = 'none';
 }}
+
+// ============================
+// Isolation What's Different (Section 2.14)
+// ============================
+var isoWdPending = false;
+
+function isoWhatsDifferent(name) {{
+  if (isoWdPending) return;
+  var overlay = document.getElementById('iso-wd-modal-overlay');
+  var titleEl = document.getElementById('iso-wd-modal-title');
+  var dateEl = document.getElementById('iso-wd-modal-date');
+  var bodyEl = document.getElementById('iso-wd-modal-body');
+  if (titleEl) titleEl.textContent = "What's Different? — " + name;
+  if (dateEl) dateEl.innerHTML = '';
+  if (bodyEl) bodyEl.textContent = 'Loading...';
+  if (overlay) overlay.classList.add('visible');
+
+  // Try to read cached first
+  fetch('/isolate/' + encodeURIComponent(name) + '/whats-different/read')
+    .then(function(r) {{
+      if (r.ok) return r.json();
+      throw new Error('no-cache');
+    }})
+    .then(function(data) {{
+      _showIsoWdContent(name, data);
+    }})
+    .catch(function() {{
+      // No cache — generate
+      if (bodyEl) bodyEl.textContent = 'Generating...';
+      isoWdPending = true;
+      fetch('/isolate/' + encodeURIComponent(name) + '/whats-different/generate', {{ method: 'POST' }})
+        .then(function(r) {{ return r.json(); }})
+        .then(function(data) {{
+          isoWdPending = false;
+          if (data.error) {{ if (bodyEl) bodyEl.textContent = 'Error: ' + data.error; return; }}
+          _showIsoWdContent(name, data);
+        }})
+        .catch(function() {{ isoWdPending = false; if (bodyEl) bodyEl.textContent = 'Generation failed'; }});
+    }});
+}}
+
+function _showIsoWdContent(name, data) {{
+  var dateEl = document.getElementById('iso-wd-modal-date');
+  var bodyEl = document.getElementById('iso-wd-modal-body');
+  if (data.generated_at && dateEl) {{
+    var localTime = new Date(data.generated_at).toLocaleString();
+    var staleNote = data.stale ? ' (may be outdated)' : '';
+    dateEl.innerHTML = '<span style="font-weight:700">Generated:</span> ' + localTime + staleNote
+      + ' <button class="btn-critic" onclick="isoWdRegenerate(\'' + name + '\')"'
+      + ' style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>';
+  }}
+  if (bodyEl) bodyEl.textContent = data.digest || 'No content';
+}}
+
+function isoWdRegenerate(name) {{
+  if (isoWdPending) return;
+  var bodyEl = document.getElementById('iso-wd-modal-body');
+  if (bodyEl) bodyEl.textContent = 'Regenerating...';
+  isoWdPending = true;
+  fetch('/isolate/' + encodeURIComponent(name) + '/whats-different/generate', {{ method: 'POST' }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(data) {{
+      isoWdPending = false;
+      if (data.error) {{ if (bodyEl) bodyEl.textContent = 'Error: ' + data.error; return; }}
+      _showIsoWdContent(name, data);
+    }})
+    .catch(function() {{ isoWdPending = false; if (bodyEl) bodyEl.textContent = 'Regeneration failed'; }});
+}}
+
+function closeIsoWdModal() {{
+  document.getElementById('iso-wd-modal-overlay').classList.remove('visible');
+}}
+
+document.getElementById('iso-wd-modal-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) closeIsoWdModal();
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape' && document.getElementById('iso-wd-modal-overlay').classList.contains('visible')) {{
+    closeIsoWdModal();
+  }}
+}});
 
 // ============================
 // Branch Collaboration
@@ -5235,6 +5432,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_release_checklist()
         elif self.path == '/whats-different/read':
             self._handle_whats_different_read()
+        elif '/whats-different/read' in self.path and self.path.startswith('/isolate/'):
+            self._handle_isolation_wd_read()
         elif self.path == '/whats-different/deep-analysis/read':
             self._handle_deep_analysis_read()
         else:
@@ -5345,6 +5544,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_isolate_create()
         elif self.path == '/isolate/kill':
             self._handle_isolate_kill()
+        elif self.path.endswith('/whats-different/generate'):
+            self._handle_isolation_wd_generate()
+        elif self.path.endswith('/whats-different/read'):
+            # Route handled in do_GET, but POST fallback
+            self._send_json(405, {'error': 'Use GET for read'})
         elif self.path == '/config/agents':
             self._handle_config_agents()
         elif self.path == '/release-checklist/config':
@@ -5479,6 +5683,211 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except subprocess.TimeoutExpired:
             self._send_json(500, {
                 'error': 'kill_isolation.sh timed out'})
+
+    def _parse_isolation_name_from_path(self):
+        """Extract isolation name from URL path like /isolate/<name>/whats-different/..."""
+        # Path format: /isolate/<name>/whats-different/<action>
+        parts = self.path.split('/')
+        # ['', 'isolate', '<name>', 'whats-different', '<action>']
+        if len(parts) >= 3:
+            return parts[2]
+        return None
+
+    def _handle_isolation_wd_generate(self):
+        """POST /isolate/<name>/whats-different/generate — generate isolation digest."""
+        name = self._parse_isolation_name_from_path()
+        if not name:
+            self._send_json(400, {'error': 'Missing isolation name'})
+            return
+
+        # Find the isolation in current worktrees
+        worktrees = get_isolation_worktrees()
+        target = None
+        for wt in worktrees:
+            if wt.get('name') == name:
+                target = wt
+                break
+
+        if target is None:
+            self._send_json(404, {'error': f'No isolation named {name}'})
+            return
+
+        sync_state = target.get('sync_state', 'SAME')
+        if sync_state == 'SAME':
+            self._send_json(400, {
+                'error': 'Nothing to compare — sync state is SAME'
+            })
+            return
+
+        branch = target.get('branch', '')
+        collab_branch = _get_collaboration_branch()
+
+        # Generate the digest inline
+        digest_lines = []
+
+        # Store branch tips in header for staleness detection
+        try:
+            iso_tip = subprocess.run(
+                f'git rev-parse {branch}', shell=True,
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT).stdout.strip()
+        except subprocess.CalledProcessError:
+            iso_tip = 'unknown'
+        try:
+            collab_tip = subprocess.run(
+                f'git rev-parse {collab_branch}', shell=True,
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT).stdout.strip()
+        except subprocess.CalledProcessError:
+            collab_tip = 'unknown'
+
+        digest_lines.append(f'<!-- tips: {iso_tip} {collab_tip} -->')
+        digest_lines.append(f'# What\'s Different? — {name}')
+        digest_lines.append(f'')
+        digest_lines.append(
+            f'Comparing `{branch}` against `{collab_branch}`')
+        digest_lines.append('')
+
+        # Your Isolation Changes (AHEAD or DIVERGED)
+        if sync_state in ('AHEAD', 'DIVERGED'):
+            digest_lines.append('## Your Isolation Changes')
+            digest_lines.append('')
+            try:
+                result = subprocess.run(
+                    f'git log {collab_branch}..{branch} --oneline',
+                    shell=True, capture_output=True, text=True,
+                    check=True, cwd=PROJECT_ROOT)
+                commits = result.stdout.strip()
+                if commits:
+                    digest_lines.append('### Commits')
+                    digest_lines.append('```')
+                    digest_lines.append(commits)
+                    digest_lines.append('```')
+                    digest_lines.append('')
+            except subprocess.CalledProcessError:
+                digest_lines.append('*Could not retrieve commits*')
+                digest_lines.append('')
+
+            # Files changed
+            try:
+                result = subprocess.run(
+                    f'git diff {collab_branch}...{branch} --stat',
+                    shell=True, capture_output=True, text=True,
+                    check=True, cwd=PROJECT_ROOT)
+                stats = result.stdout.strip()
+                if stats:
+                    digest_lines.append('### Files Changed')
+                    digest_lines.append('```')
+                    digest_lines.append(stats)
+                    digest_lines.append('```')
+                    digest_lines.append('')
+            except subprocess.CalledProcessError:
+                pass
+
+        # Collaboration Changes (BEHIND or DIVERGED)
+        if sync_state in ('BEHIND', 'DIVERGED'):
+            digest_lines.append('## Collaboration Changes')
+            digest_lines.append('')
+            try:
+                result = subprocess.run(
+                    f'git log {branch}..{collab_branch} --oneline',
+                    shell=True, capture_output=True, text=True,
+                    check=True, cwd=PROJECT_ROOT)
+                commits = result.stdout.strip()
+                if commits:
+                    digest_lines.append('### Commits')
+                    digest_lines.append('```')
+                    digest_lines.append(commits)
+                    digest_lines.append('```')
+                    digest_lines.append('')
+            except subprocess.CalledProcessError:
+                digest_lines.append('*Could not retrieve commits*')
+                digest_lines.append('')
+
+            # Files changed
+            try:
+                result = subprocess.run(
+                    f'git diff {branch}...{collab_branch} --stat',
+                    shell=True, capture_output=True, text=True,
+                    check=True, cwd=PROJECT_ROOT)
+                stats = result.stdout.strip()
+                if stats:
+                    digest_lines.append('### Files Changed')
+                    digest_lines.append('```')
+                    digest_lines.append(stats)
+                    digest_lines.append('```')
+                    digest_lines.append('')
+            except subprocess.CalledProcessError:
+                pass
+
+        digest_content = '\n'.join(digest_lines)
+
+        # Write to file
+        digest_dir = os.path.join(PROJECT_ROOT, 'features', 'digests')
+        os.makedirs(digest_dir, exist_ok=True)
+        digest_path = os.path.join(
+            digest_dir, f'isolation-{name}-whats-different.md')
+        try:
+            with open(digest_path, 'w') as f:
+                f.write(digest_content)
+        except (IOError, OSError) as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        generated_at = datetime.now(timezone.utc).strftime(
+            '%Y-%m-%dT%H:%M:%SZ')
+
+        self._send_json(200, {
+            'status': 'ok',
+            'digest': digest_content,
+            'generated_at': generated_at,
+        })
+
+    def _handle_isolation_wd_read(self):
+        """GET /isolate/<name>/whats-different/read — return cached isolation digest."""
+        name = self._parse_isolation_name_from_path()
+        if not name:
+            self._send_json(400, {'error': 'Missing isolation name'})
+            return
+
+        digest_path = os.path.join(PROJECT_ROOT, 'features', 'digests',
+                                   f'isolation-{name}-whats-different.md')
+        if not os.path.isfile(digest_path):
+            self._send_json(404, {'error': 'No cached digest available'})
+            return
+
+        try:
+            with open(digest_path, 'r') as f:
+                digest_content = f.read()
+            mtime = os.path.getmtime(digest_path)
+            generated_at = datetime.fromtimestamp(
+                mtime, tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except (IOError, OSError) as exc:
+            self._send_json(500, {'error': str(exc)})
+            return
+
+        # Check staleness from header
+        first_line = digest_content.split('\n', 1)[0]
+        # Get the isolation's branch and collab branch
+        worktrees = get_isolation_worktrees()
+        target = None
+        for wt in worktrees:
+            if wt.get('name') == name:
+                target = wt
+                break
+
+        stale = True  # Default to stale if we can't determine
+        if target:
+            collab_branch = _get_collaboration_branch()
+            stale = _is_isolation_digest_stale(
+                first_line, target['branch'], collab_branch)
+
+        self._send_json(200, {
+            'status': 'ok',
+            'digest': digest_content,
+            'generated_at': generated_at,
+            'stale': stale,
+        })
 
     def _handle_config_agents(self):
         """POST /config/agents — update agent configuration in config.local.json, validated against flat models array."""

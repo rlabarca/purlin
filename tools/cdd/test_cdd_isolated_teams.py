@@ -21,9 +21,11 @@ from serve import (
     _detect_worktrees,
     _format_category_counts,
     _get_collaboration_branch,
+    _is_isolation_digest_stale,
     _name_from_path,
+    _staleness_banner_html,
     _worktree_state,
-    _compute_main_diff,
+    _compute_sync_state,
     _isolation_section_html,
     _collapsed_isolation_label,
     get_isolation_worktrees,
@@ -128,7 +130,7 @@ class TestIsolationsActive(unittest.TestCase):
         'name': 'feat1',
         'path': '.worktrees/feat1',
         'branch': 'isolated/feat1',
-        'main_diff': 'SAME',
+        'sync_state': 'SAME',
         'commits_ahead': 0,
         'last_commit': 'abc1234 feat: add scenarios (45 min ago)',
         'committed': {'specs': 0, 'tests': 0, 'other': 0},
@@ -157,7 +159,7 @@ class TestIsolationNameParsedFromPath(unittest.TestCase):
     Then the worktree entry has name "ui"
     """
 
-    @patch('serve._compute_main_diff', return_value='SAME')
+    @patch('serve._compute_sync_state', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_name_parsed_from_worktree_path(self, mock_detect, mock_state,
@@ -186,7 +188,7 @@ class TestNonIsolatedBranchNoRoleAssignment(unittest.TestCase):
     Then the worktree entry has name "hotfix" and no role field.
     """
 
-    @patch('serve._compute_main_diff', return_value='SAME')
+    @patch('serve._compute_sync_state', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_hotfix_has_name_no_role(self, mock_detect, mock_state, mock_diff):
@@ -215,7 +217,7 @@ class TestCommittedModifiedCategorization(unittest.TestCase):
     Then the committed field has specs=2, tests=0, other=1.
     """
 
-    @patch('serve._compute_main_diff', return_value='AHEAD')
+    @patch('serve._compute_sync_state', return_value='AHEAD')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_committed_categorized(self, mock_detect, mock_state, mock_diff):
@@ -322,7 +324,7 @@ class TestWorktreeStateFileCategories(unittest.TestCase):
 
     @patch('subprocess.run')
     def test_uncommitted_nonempty_when_same(self, mock_run):
-        """Scenario: Uncommitted Modified Non-Empty When Main Diff Is SAME."""
+        """Scenario: Uncommitted Modified Non-Empty When Sync State Is SAME."""
         mock_run.side_effect = self._mock_subprocess([
             'isolated/ui',        # branch
             '',                   # git diff --name-only (SAME = no committed changes)
@@ -368,7 +370,7 @@ class TestCommitsAheadReported(unittest.TestCase):
     Then the worktree entry has commits_ahead equal to 3.
     """
 
-    @patch('serve._compute_main_diff', return_value='SAME')
+    @patch('serve._compute_sync_state', return_value='SAME')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_commits_ahead(self, mock_detect, mock_state, mock_diff):
@@ -389,31 +391,31 @@ class TestCommitsAheadReported(unittest.TestCase):
         self.assertEqual(result[0]['commits_ahead'], 3)
 
 
-class TestMainDiffBehind(unittest.TestCase):
-    """Scenario: Main Diff BEHIND When Worktree Branch Is Missing Collaboration Branch Commits.
+class TestSyncStateBehind(unittest.TestCase):
+    """Scenario: Sync State BEHIND When Worktree Branch Is Missing Collaboration Branch Commits.
 
     Given the collaboration branch has commits that are not in isolated/feat1
     And isolated/feat1 has no commits not in the collaboration branch
-    Then the worktree entry has main_diff "BEHIND".
+    Then the worktree entry has sync_state "BEHIND".
     """
 
     @patch('subprocess.run')
     def test_behind_when_main_has_extra_commits(self, mock_run):
-        """_compute_main_diff returns BEHIND when only main has moved."""
+        """_compute_sync_state returns BEHIND when only main has moved."""
         # Query 1 (branch..main): non-empty — behind
         # Query 2 (main..branch): empty — not ahead
         mock_run.side_effect = [
             MagicMock(stdout='abc1234 some commit on main\n', returncode=0),
             MagicMock(stdout='', returncode=0),
         ]
-        result = _compute_main_diff('isolated/feat1')
+        result = _compute_sync_state('isolated/feat1')
         self.assertEqual(result, 'BEHIND')
 
-    @patch('serve._compute_main_diff', return_value='BEHIND')
+    @patch('serve._compute_sync_state', return_value='BEHIND')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_behind_in_worktree_entry(self, mock_detect, mock_state, mock_diff):
-        """Worktree entry surfaces main_diff BEHIND."""
+        """Worktree entry surfaces sync_state BEHIND."""
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'feat1')
         mock_detect.return_value = [
             {'abs_path': wt_path,
@@ -427,56 +429,56 @@ class TestMainDiffBehind(unittest.TestCase):
         }
         result = get_isolation_worktrees()
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['main_diff'], 'BEHIND')
+        self.assertEqual(result[0]['sync_state'], 'BEHIND')
 
 
-class TestMainDiffSame(unittest.TestCase):
-    """Scenario: Main Diff SAME When Branch And Collaboration Branch Are Identical.
+class TestSyncStateSame(unittest.TestCase):
+    """Scenario: Sync State SAME When Branch And Collaboration Branch Are Identical.
 
     Given isolated/ui and the collaboration branch point to the same commit
-    Then the worktree entry has main_diff "SAME".
+    Then the worktree entry has sync_state "SAME".
     """
 
     @patch('subprocess.run')
     def test_same_when_no_missing_commits(self, mock_run):
-        """_compute_main_diff returns SAME when git log output is empty."""
+        """_compute_sync_state returns SAME when git log output is empty."""
         mock_run.return_value = MagicMock(stdout='', returncode=0)
-        result = _compute_main_diff('isolated/ui')
+        result = _compute_sync_state('isolated/ui')
         self.assertEqual(result, 'SAME')
 
     @patch('subprocess.run')
     def test_same_on_git_error(self, mock_run):
-        """_compute_main_diff defaults to SAME on git errors."""
+        """_compute_sync_state defaults to SAME on git errors."""
         mock_run.side_effect = subprocess.CalledProcessError(1, 'git')
-        result = _compute_main_diff('nonexistent/branch')
+        result = _compute_sync_state('nonexistent/branch')
         self.assertEqual(result, 'SAME')
 
 
-class TestMainDiffAhead(unittest.TestCase):
-    """Scenario: Main Diff AHEAD When Worktree Branch Has Commits Not In Collaboration Branch.
+class TestSyncStateAhead(unittest.TestCase):
+    """Scenario: Sync State AHEAD When Worktree Branch Has Commits Not In Collaboration Branch.
 
     Given isolated/feat1 has commits that are not in the collaboration branch
     And the collaboration branch has no commits that are missing from isolated/feat1
-    Then the worktree entry has main_diff "AHEAD".
+    Then the worktree entry has sync_state "AHEAD".
     """
 
     @patch('subprocess.run')
     def test_ahead_when_branch_has_extra_commits(self, mock_run):
-        """_compute_main_diff returns AHEAD when branch is ahead of main."""
+        """_compute_sync_state returns AHEAD when branch is ahead of main."""
         # First call (branch..main): empty — not behind
         # Second call (main..branch): non-empty — ahead
         mock_run.side_effect = [
             MagicMock(stdout='', returncode=0),
             MagicMock(stdout='def5678 feat: new work\n', returncode=0),
         ]
-        result = _compute_main_diff('isolated/feat1')
+        result = _compute_sync_state('isolated/feat1')
         self.assertEqual(result, 'AHEAD')
 
-    @patch('serve._compute_main_diff', return_value='AHEAD')
+    @patch('serve._compute_sync_state', return_value='AHEAD')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_ahead_in_worktree_entry(self, mock_detect, mock_state, mock_diff):
-        """Worktree entry surfaces main_diff AHEAD."""
+        """Worktree entry surfaces sync_state AHEAD."""
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'feat1')
         mock_detect.return_value = [
             {'abs_path': wt_path,
@@ -490,26 +492,26 @@ class TestMainDiffAhead(unittest.TestCase):
         }
         result = get_isolation_worktrees()
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['main_diff'], 'AHEAD')
+        self.assertEqual(result[0]['sync_state'], 'AHEAD')
 
 
-class TestMainDiffDiverged(unittest.TestCase):
-    """Scenario: Main Diff DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor.
+class TestSyncStateDiverged(unittest.TestCase):
+    """Scenario: Sync State DIVERGED When Both Collaboration Branch And Branch Have Commits Beyond Common Ancestor.
 
     Given isolated/feat1 has commits not in the collaboration branch AND the collaboration branch has commits not in isolated/feat1
-    Then the worktree entry has main_diff "DIVERGED".
+    Then the worktree entry has sync_state "DIVERGED".
     """
 
     @patch('subprocess.run')
     def test_diverged_when_both_have_commits(self, mock_run):
-        """_compute_main_diff returns DIVERGED when both sides have moved."""
+        """_compute_sync_state returns DIVERGED when both sides have moved."""
         # Query 1 (branch..main): non-empty — behind
         # Query 2 (main..branch): non-empty — ahead
         mock_run.side_effect = [
             MagicMock(stdout='abc1234 commit on main\n', returncode=0),
             MagicMock(stdout='def5678 commit on branch\n', returncode=0),
         ]
-        result = _compute_main_diff('isolated/feat1')
+        result = _compute_sync_state('isolated/feat1')
         self.assertEqual(result, 'DIVERGED')
         self.assertEqual(mock_run.call_count, 2)
 
@@ -687,14 +689,14 @@ class TestAgentConfigPropagation(unittest.TestCase):
                 {'name': 'feat1',
                  'path': os.path.join('.worktrees', 'feat1'),
                  'branch': 'isolated/feat1',
-                 'main_diff': 'SAME', 'commits_ahead': 0,
+                 'sync_state': 'SAME', 'commits_ahead': 0,
                  'last_commit': 'abc',
                  'committed': {'specs': 0, 'tests': 0, 'other': 0},
                  'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
                 {'name': 'ui',
                  'path': os.path.join('.worktrees', 'ui'),
                  'branch': 'isolated/ui',
-                 'main_diff': 'SAME', 'commits_ahead': 0,
+                 'sync_state': 'SAME', 'commits_ahead': 0,
                  'last_commit': 'def',
                  'committed': {'specs': 0, 'tests': 0, 'other': 0},
                  'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
@@ -767,13 +769,13 @@ class TestWorktreeStatePurlinExclusion(unittest.TestCase):
 class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
     """Scenario: Sessions Table Displays Named Isolations in HTML.
 
-    Sessions table has Name, Branch, Main Diff, Committed Modified,
+    Sessions table has Name, Branch, Sync State, Committed Modified,
     Uncommitted Modified columns — no Role column (Section 2.3).
     """
 
     def test_name_rendered_in_table(self):
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -785,10 +787,10 @@ class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
 
     def test_multiple_isolations(self):
         worktrees = [
-            {'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
+            {'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'AHEAD',
              'committed': {'specs': 2, 'tests': 0, 'other': 0},
              'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
-            {'name': 'ui', 'branch': 'isolated/ui', 'main_diff': 'SAME',
+            {'name': 'ui', 'branch': 'isolated/ui', 'sync_state': 'SAME',
              'committed': {'specs': 0, 'tests': 0, 'other': 0},
              'uncommitted': {'specs': 0, 'tests': 0, 'other': 0}},
         ]
@@ -799,7 +801,7 @@ class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
     def test_two_line_column_headers(self):
         """Column headers use two-line rendering for Committed/Uncommitted Modified."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -810,13 +812,13 @@ class TestIsolationSectionHtmlNameColumn(unittest.TestCase):
         self.assertNotIn('<th>Modified</th>', html)
 
 
-class TestMainDiffBadgeRendering(unittest.TestCase):
-    """Main Diff cell renders correct badge styling per Visual Spec Section 4."""
+class TestSyncStateBadgeRendering(unittest.TestCase):
+    """Sync State cell renders correct badge styling per Visual Spec Section 4."""
 
     def test_same_badge_green(self):
         """SAME renders with st-good (green) badge class."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -827,7 +829,7 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
     def test_ahead_badge_yellow(self):
         """AHEAD renders with st-todo (yellow) badge class."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'AHEAD',
             'committed': {'specs': 2, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -838,7 +840,7 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
     def test_behind_badge_yellow(self):
         """BEHIND renders with st-todo (yellow) badge class."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'BEHIND',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'BEHIND',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -849,7 +851,7 @@ class TestMainDiffBadgeRendering(unittest.TestCase):
     def test_diverged_badge_orange(self):
         """DIVERGED renders with st-disputed (orange/warning) badge class."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'DIVERGED',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'DIVERGED',
             'committed': {'specs': 1, 'tests': 0, 'other': 2},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -868,7 +870,7 @@ class TestDeliveryPhaseBadgeInHtml(unittest.TestCase):
     def test_phase_badge_rendered_in_name_cell(self):
         """Name cell shows delivery phase badge when present."""
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'AHEAD',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'AHEAD',
             'committed': {'specs': 2, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
             'delivery_phase': {'current': 2, 'total': 3},
@@ -880,7 +882,7 @@ class TestDeliveryPhaseBadgeInHtml(unittest.TestCase):
     def test_no_phase_badge_when_absent(self):
         """Name cell has no phase badge when delivery_phase is absent."""
         worktrees = [{
-            'name': 'ui', 'branch': 'isolated/ui', 'main_diff': 'SAME',
+            'name': 'ui', 'branch': 'isolated/ui', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -918,35 +920,35 @@ class TestCollapsedIsolationLabel(unittest.TestCase):
         self.assertEqual(sev, "")
 
     def test_one_worktree_same(self):
-        wts = [{'main_diff': 'SAME'}]
+        wts = [{'sync_state': 'SAME'}]
         css, text, sev = _collapsed_isolation_label(wts)
         self.assertEqual(css, "st-good")
         self.assertEqual(text, "1 Isolated Team")
         self.assertEqual(sev, "SAME")
 
     def test_two_worktrees_all_same(self):
-        wts = [{'main_diff': 'SAME'}, {'main_diff': 'SAME'}]
+        wts = [{'sync_state': 'SAME'}, {'sync_state': 'SAME'}]
         css, text, sev = _collapsed_isolation_label(wts)
         self.assertEqual(css, "st-good")
         self.assertEqual(text, "2 Isolated Teams")
         self.assertEqual(sev, "SAME")
 
     def test_diverged_highest_severity(self):
-        wts = [{'main_diff': 'SAME'}, {'main_diff': 'DIVERGED'}]
+        wts = [{'sync_state': 'SAME'}, {'sync_state': 'DIVERGED'}]
         css, text, sev = _collapsed_isolation_label(wts)
         self.assertEqual(css, "st-disputed")
         self.assertEqual(text, "2 Isolated Teams")
         self.assertEqual(sev, "DIVERGED")
 
     def test_behind_higher_than_ahead(self):
-        wts = [{'main_diff': 'AHEAD'}, {'main_diff': 'BEHIND'}]
+        wts = [{'sync_state': 'AHEAD'}, {'sync_state': 'BEHIND'}]
         css, text, sev = _collapsed_isolation_label(wts)
         self.assertEqual(css, "st-todo")
         self.assertEqual(text, "2 Isolated Teams")
         self.assertEqual(sev, "BEHIND")
 
     def test_ahead_only(self):
-        wts = [{'main_diff': 'AHEAD'}]
+        wts = [{'sync_state': 'AHEAD'}]
         css, text, sev = _collapsed_isolation_label(wts)
         self.assertEqual(css, "st-todo")
         self.assertEqual(text, "1 Isolated Team")
@@ -958,7 +960,7 @@ class TestIsolationSectionNoSessionsHeader(unittest.TestCase):
 
     def test_no_h4_sessions_header(self):
         worktrees = [{
-            'name': 'feat1', 'branch': 'isolated/feat1', 'main_diff': 'SAME',
+            'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -993,13 +995,13 @@ class TestCollaborationBranchAbstraction(unittest.TestCase):
         self.assertEqual(result, 'main')
 
     @patch('subprocess.run')
-    def test_compute_main_diff_uses_collab_branch(self, mock_run):
-        """_compute_main_diff uses the collab_branch parameter, not hardcoded main."""
+    def test_compute_sync_state_uses_collab_branch(self, mock_run):
+        """_compute_sync_state uses the collab_branch parameter, not hardcoded main."""
         mock_run.side_effect = [
             MagicMock(stdout='', returncode=0),
             MagicMock(stdout='abc commit\n', returncode=0),
         ]
-        result = _compute_main_diff('isolated/feat1', 'collab/v0.5-sprint')
+        result = _compute_sync_state('isolated/feat1', 'collab/v0.5-sprint')
         self.assertEqual(result, 'AHEAD')
         # Verify collab branch used in git commands
         calls = mock_run.call_args_list
@@ -1032,12 +1034,12 @@ class TestCollaborationBranchAbstraction(unittest.TestCase):
         self.assertEqual(state['committed']['specs'], 1)
 
     @patch('serve._get_collaboration_branch', return_value='collab/v0.5-sprint')
-    @patch('serve._compute_main_diff', return_value='AHEAD')
+    @patch('serve._compute_sync_state', return_value='AHEAD')
     @patch('serve._worktree_state')
     @patch('serve._detect_worktrees')
     def test_get_isolation_worktrees_passes_collab_branch(
             self, mock_detect, mock_state, mock_diff, mock_collab):
-        """get_isolation_worktrees passes the collab branch to _worktree_state and _compute_main_diff."""
+        """get_isolation_worktrees passes the collab branch to _worktree_state and _compute_sync_state."""
         wt_path = os.path.join(PROJECT_ROOT, '.worktrees', 'feat1')
         mock_detect.return_value = [
             {'abs_path': wt_path, 'branch_ref': 'refs/heads/isolated/feat1'},
@@ -1126,7 +1128,7 @@ class TestNewIsolationInputCreatesNamedWorktree(unittest.TestCase):
     def test_created_worktree_appears_in_sessions_table(self):
         """After creation, a worktree with the name appears in generated HTML."""
         worktrees = [{
-            'name': 'feat2', 'branch': 'isolated/feat2', 'main_diff': 'SAME',
+            'name': 'feat2', 'branch': 'isolated/feat2', 'sync_state': 'SAME',
             'committed': {'specs': 0, 'tests': 0, 'other': 0},
             'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
         }]
@@ -1191,6 +1193,503 @@ class TestLocalBranchHeadingBranchLabel(unittest.TestCase):
         self.assertNotIn('Local Branch (collab/test)', html1)
         self.assertIn('Local Branch (collab/test)', html2)
         self.assertNotIn('Local Branch (main)', html2)
+
+
+class TestStalenessBanner(unittest.TestCase):
+    """Scenarios: Staleness Banner Shown/Hidden/Counts DIVERGED (Section 2.13)."""
+
+    def test_banner_shown_when_behind(self):
+        """Scenario: Staleness Banner Shown When Isolations Behind."""
+        worktrees = [
+            {'name': 'a', 'sync_state': 'BEHIND'},
+            {'name': 'b', 'sync_state': 'SAME'},
+        ]
+        html = _staleness_banner_html(worktrees, 'main')
+        self.assertIn('1 isolation(s) out of sync with main', html)
+        self.assertIn('--purlin-status-todo', html)
+
+    def test_banner_hidden_all_in_sync(self):
+        """Scenario: Staleness Banner Hidden When All In Sync."""
+        worktrees = [
+            {'name': 'a', 'sync_state': 'SAME'},
+            {'name': 'b', 'sync_state': 'SAME'},
+        ]
+        html = _staleness_banner_html(worktrees, 'main')
+        self.assertEqual(html, '')
+
+    def test_banner_counts_diverged(self):
+        """Scenario: Staleness Banner Counts DIVERGED Worktrees."""
+        worktrees = [
+            {'name': 'a', 'sync_state': 'BEHIND'},
+            {'name': 'b', 'sync_state': 'DIVERGED'},
+            {'name': 'c', 'sync_state': 'AHEAD'},
+        ]
+        html = _staleness_banner_html(worktrees, 'main')
+        self.assertIn('2 isolation(s) out of sync with main', html)
+
+    def test_banner_hidden_ahead_only(self):
+        """AHEAD is not out-of-sync for banner purposes."""
+        worktrees = [
+            {'name': 'a', 'sync_state': 'AHEAD'},
+        ]
+        html = _staleness_banner_html(worktrees, 'main')
+        self.assertEqual(html, '')
+
+    def test_banner_empty_worktrees(self):
+        """No banner when no worktrees."""
+        html = _staleness_banner_html([], 'main')
+        self.assertEqual(html, '')
+
+
+class TestWhatsDifferentButtonVisibility(unittest.TestCase):
+    """Scenarios: What's Different Button Hidden/Visible per sync state (Section 2.14)."""
+
+    def _make_worktree(self, name, sync_state):
+        return {
+            'name': name,
+            'branch': f'isolated/{name}',
+            'sync_state': sync_state,
+            'commits_ahead': 1 if sync_state != 'SAME' else 0,
+            'last_commit': 'abc1234 test (1 min ago)',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+        }
+
+    def test_hidden_when_same(self):
+        """Scenario: What's Different Button Hidden When Sync State Is SAME."""
+        wt = self._make_worktree('ui', 'SAME')
+        html = _isolation_section_html([wt])
+        self.assertNotIn("What's Different?", html)
+
+    def test_visible_when_ahead(self):
+        """Scenario: What's Different Button Visible When Sync State Is AHEAD."""
+        wt = self._make_worktree('feat1', 'AHEAD')
+        html = _isolation_section_html([wt])
+        self.assertIn("What's Different?", html)
+        self.assertIn('isoWhatsDifferent', html)
+
+    def test_visible_when_behind(self):
+        """Scenario: What's Different Button Visible When Sync State Is BEHIND."""
+        wt = self._make_worktree('feat1', 'BEHIND')
+        html = _isolation_section_html([wt])
+        self.assertIn("What's Different?", html)
+
+    def test_visible_when_diverged(self):
+        """Scenario: What's Different Button Visible When Sync State Is DIVERGED."""
+        wt = self._make_worktree('feat1', 'DIVERGED')
+        html = _isolation_section_html([wt])
+        self.assertIn("What's Different?", html)
+
+
+class TestWhatsDifferentCachedTimestamp(unittest.TestCase):
+    """What's Different button shows cached timestamp and staleness."""
+
+    def test_cached_digest_shows_timestamp(self):
+        """Cached digest timestamp appears below button."""
+        wt = {
+            'name': 'feat1', 'branch': 'isolated/feat1',
+            'sync_state': 'AHEAD', 'commits_ahead': 1,
+            'last_commit': 'abc test (1m ago)',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+            'whats_different': {
+                'cached': True,
+                'generated_at': '2026-03-09T01:00:00Z',
+                'stale': False,
+            },
+        }
+        html = _isolation_section_html([wt])
+        self.assertIn('Last generated:', html)
+        self.assertIn('2026-03-09T01:00:00Z', html)
+        self.assertNotIn('may be outdated', html)
+
+    def test_stale_digest_shows_outdated(self):
+        """Stale digest shows (may be outdated) annotation."""
+        wt = {
+            'name': 'feat1', 'branch': 'isolated/feat1',
+            'sync_state': 'AHEAD', 'commits_ahead': 1,
+            'last_commit': 'abc test (1m ago)',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+            'whats_different': {
+                'cached': True,
+                'generated_at': '2026-03-09T01:00:00Z',
+                'stale': True,
+            },
+        }
+        html = _isolation_section_html([wt])
+        self.assertIn('(may be outdated)', html)
+
+
+class TestIsolationDigestGenerate(unittest.TestCase):
+    """Scenarios: Generate Isolation Digest success/404/400 (Section 2.14)."""
+
+    def _make_handler(self, path):
+        handler = MagicMock(spec=Handler)
+        handler.path = path
+        handler.headers = {'Content-Length': '0'}
+        handler.rfile = io.BytesIO(b'')
+        handler._send_json = MagicMock()
+        handler._parse_isolation_name_from_path = (
+            Handler._parse_isolation_name_from_path.__get__(handler, Handler))
+        handler._handle_isolation_wd_generate = (
+            Handler._handle_isolation_wd_generate.__get__(handler, Handler))
+        return handler
+
+    @patch('serve.get_isolation_worktrees')
+    def test_404_for_nonexistent(self, mock_wt):
+        """Scenario: Generate Isolation Digest 404 For Nonexistent Isolation."""
+        mock_wt.return_value = []
+        handler = self._make_handler('/isolate/bogus/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 404)
+
+    @patch('serve.get_isolation_worktrees')
+    def test_400_when_same(self, mock_wt):
+        """Scenario: Generate Isolation Digest 400 When SAME."""
+        mock_wt.return_value = [
+            {'name': 'ui', 'branch': 'isolated/ui', 'sync_state': 'SAME',
+             'commits_ahead': 0, 'last_commit': '', 'committed': {}, 'uncommitted': {}}
+        ]
+        handler = self._make_handler('/isolate/ui/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 400)
+
+    @patch('serve.os.makedirs')
+    @patch('builtins.open', create=True)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_isolation_worktrees')
+    def test_success_ahead(self, mock_wt, mock_run, mock_open, mock_makedirs):
+        """Scenario: Generate Isolation Digest Success."""
+        mock_wt.return_value = [
+            {'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'AHEAD',
+             'commits_ahead': 2, 'last_commit': '', 'committed': {}, 'uncommitted': {}}
+        ]
+        mock_result = MagicMock()
+        mock_result.stdout = 'abc1234 commit msg\ndef5678 another commit'
+        mock_result.returncode = 0
+        mock_run.return_value = mock_result
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.write = MagicMock()
+
+        handler = self._make_handler('/isolate/feat1/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 200)
+        self.assertIn('digest', args[0][1])
+        self.assertIn('generated_at', args[0][1])
+
+
+class TestIsolationDigestRead(unittest.TestCase):
+    """Scenarios: Read Cached Isolation Digest / 404 When No Cache."""
+
+    def _make_handler(self, path):
+        handler = MagicMock(spec=Handler)
+        handler.path = path
+        handler._send_json = MagicMock()
+        handler._parse_isolation_name_from_path = (
+            Handler._parse_isolation_name_from_path.__get__(handler, Handler))
+        handler._handle_isolation_wd_read = (
+            Handler._handle_isolation_wd_read.__get__(handler, Handler))
+        return handler
+
+    @patch('serve.os.path.isfile', return_value=False)
+    def test_404_when_no_cache(self, mock_isfile):
+        """Scenario: Read Isolation Digest 404 When No Cache."""
+        handler = self._make_handler('/isolate/feat1/whats-different/read')
+        handler._handle_isolation_wd_read()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 404)
+
+    @patch('serve.get_isolation_worktrees')
+    @patch('serve._is_isolation_digest_stale', return_value=False)
+    @patch('serve.os.path.getmtime', return_value=1709942400.0)
+    @patch('serve.os.path.isfile', return_value=True)
+    @patch('builtins.open', create=True)
+    def test_read_cached_digest(self, mock_open, mock_isfile, mock_mtime,
+                                 mock_stale, mock_wt):
+        """Scenario: Read Cached Isolation Digest."""
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.read = MagicMock(
+            return_value='<!-- tips: abc123 def456 -->\n# Digest content')
+        mock_wt.return_value = [
+            {'name': 'feat1', 'branch': 'isolated/feat1'}
+        ]
+
+        handler = self._make_handler('/isolate/feat1/whats-different/read')
+        handler._handle_isolation_wd_read()
+        handler._send_json.assert_called_once()
+        args = handler._send_json.call_args
+        self.assertEqual(args[0][0], 200)
+        self.assertIn('digest', args[0][1])
+        self.assertIn('generated_at', args[0][1])
+        self.assertIn('stale', args[0][1])
+
+
+class TestIsolationDigestContent(unittest.TestCase):
+    """Scenarios: AHEAD/BEHIND/DIVERGED digest section content."""
+
+    def _make_handler(self, path):
+        handler = MagicMock(spec=Handler)
+        handler.path = path
+        handler.headers = {'Content-Length': '0'}
+        handler.rfile = io.BytesIO(b'')
+        handler._send_json = MagicMock()
+        handler._parse_isolation_name_from_path = (
+            Handler._parse_isolation_name_from_path.__get__(handler, Handler))
+        handler._handle_isolation_wd_generate = (
+            Handler._handle_isolation_wd_generate.__get__(handler, Handler))
+        return handler
+
+    @patch('serve.os.makedirs')
+    @patch('builtins.open', create=True)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_isolation_worktrees')
+    def test_ahead_shows_isolation_changes_only(self, mock_wt, mock_run,
+                                                 mock_open, mock_makedirs):
+        """Scenario: AHEAD Digest Shows Isolation Changes Only."""
+        mock_wt.return_value = [
+            {'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'AHEAD',
+             'commits_ahead': 1, 'last_commit': '', 'committed': {}, 'uncommitted': {}}
+        ]
+        mock_result = MagicMock()
+        mock_result.stdout = 'abc1234 commit'
+        mock_run.return_value = mock_result
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.write = MagicMock()
+
+        handler = self._make_handler('/isolate/feat1/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        args = handler._send_json.call_args
+        digest = args[0][1]['digest']
+        self.assertIn('Your Isolation Changes', digest)
+        self.assertNotIn('Collaboration Changes', digest)
+
+    @patch('serve.os.makedirs')
+    @patch('builtins.open', create=True)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_isolation_worktrees')
+    def test_behind_shows_collaboration_changes_only(self, mock_wt, mock_run,
+                                                      mock_open, mock_makedirs):
+        """Scenario: BEHIND Digest Shows Collaboration Changes Only."""
+        mock_wt.return_value = [
+            {'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'BEHIND',
+             'commits_ahead': 0, 'last_commit': '', 'committed': {}, 'uncommitted': {}}
+        ]
+        mock_result = MagicMock()
+        mock_result.stdout = 'abc1234 commit'
+        mock_run.return_value = mock_result
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.write = MagicMock()
+
+        handler = self._make_handler('/isolate/feat1/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        args = handler._send_json.call_args
+        digest = args[0][1]['digest']
+        self.assertNotIn('Your Isolation Changes', digest)
+        self.assertIn('Collaboration Changes', digest)
+
+    @patch('serve.os.makedirs')
+    @patch('builtins.open', create=True)
+    @patch('serve.subprocess.run')
+    @patch('serve.get_isolation_worktrees')
+    def test_diverged_shows_both(self, mock_wt, mock_run, mock_open,
+                                  mock_makedirs):
+        """Scenario: DIVERGED Digest Shows Both Directions."""
+        mock_wt.return_value = [
+            {'name': 'feat1', 'branch': 'isolated/feat1', 'sync_state': 'DIVERGED',
+             'commits_ahead': 1, 'last_commit': '', 'committed': {}, 'uncommitted': {}}
+        ]
+        mock_result = MagicMock()
+        mock_result.stdout = 'abc1234 commit'
+        mock_run.return_value = mock_result
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.write = MagicMock()
+
+        handler = self._make_handler('/isolate/feat1/whats-different/generate')
+        handler._handle_isolation_wd_generate()
+        args = handler._send_json.call_args
+        digest = args[0][1]['digest']
+        self.assertIn('Your Isolation Changes', digest)
+        self.assertIn('Collaboration Changes', digest)
+
+
+class TestIsolationDigestStaleness(unittest.TestCase):
+    """Scenario: Staleness Detected When Branch Moves After Digest Generation."""
+
+    def test_stale_when_iso_tip_moved(self):
+        """Staleness detected when isolation branch has moved."""
+        header = '<!-- tips: abc123 def456 -->'
+        with patch('serve.subprocess.run') as mock_run:
+            mock_result_iso = MagicMock()
+            mock_result_iso.stdout = 'xyz789\n'  # Different from stored abc123
+            mock_result_collab = MagicMock()
+            mock_result_collab.stdout = 'def456\n'  # Same
+            mock_run.side_effect = [mock_result_iso, mock_result_collab]
+            self.assertTrue(
+                _is_isolation_digest_stale(header, 'isolated/feat1', 'main'))
+
+    def test_not_stale_when_tips_match(self):
+        """Not stale when tips haven't moved."""
+        header = '<!-- tips: abc123 def456 -->'
+        with patch('serve.subprocess.run') as mock_run:
+            mock_result_iso = MagicMock()
+            mock_result_iso.stdout = 'abc123\n'
+            mock_result_collab = MagicMock()
+            mock_result_collab.stdout = 'def456\n'
+            mock_run.side_effect = [mock_result_iso, mock_result_collab]
+            self.assertFalse(
+                _is_isolation_digest_stale(header, 'isolated/feat1', 'main'))
+
+    def test_stale_when_collab_tip_moved(self):
+        """Staleness detected when collaboration branch has moved."""
+        header = '<!-- tips: abc123 def456 -->'
+        with patch('serve.subprocess.run') as mock_run:
+            mock_result_iso = MagicMock()
+            mock_result_iso.stdout = 'abc123\n'
+            mock_result_collab = MagicMock()
+            mock_result_collab.stdout = 'ghi789\n'  # Different
+            mock_run.side_effect = [mock_result_iso, mock_result_collab]
+            self.assertTrue(
+                _is_isolation_digest_stale(header, 'isolated/feat1', 'main'))
+
+
+class TestIsolationWhatsDifferentStatusJson(unittest.TestCase):
+    """Scenario: Isolation Whats Different Field in Status JSON."""
+
+    @patch('serve.os.path.isfile', return_value=True)
+    @patch('serve.os.path.getmtime', return_value=1709942400.0)
+    @patch('builtins.open', create=True)
+    @patch('serve._is_isolation_digest_stale', return_value=False)
+    @patch('serve._compute_sync_state', return_value='AHEAD')
+    @patch('serve._worktree_state')
+    @patch('serve._detect_worktrees')
+    @patch('serve._get_collaboration_branch', return_value='main')
+    def test_whats_different_field_present(self, mock_cb, mock_detect,
+                                           mock_state, mock_sync,
+                                           mock_stale, mock_open,
+                                           mock_mtime, mock_isfile):
+        """whats_different object present when cached digest exists."""
+        mock_detect.return_value = [
+            {'abs_path': os.path.join(PROJECT_ROOT, '.worktrees', 'feat1'),
+             'head': 'abc123', 'branch_ref': 'refs/heads/isolated/feat1'}
+        ]
+        mock_state.return_value = {
+            'branch': 'isolated/feat1',
+            'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+            'last_commit': 'abc test',
+            'commits_ahead': 1,
+        }
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        mock_open.return_value.readline = MagicMock(
+            return_value='<!-- tips: abc123 def456 -->')
+
+        result = get_isolation_worktrees()
+        self.assertEqual(len(result), 1)
+        self.assertIn('whats_different', result[0])
+        wd = result[0]['whats_different']
+        self.assertTrue(wd['cached'])
+        self.assertIn('generated_at', wd)
+        self.assertFalse(wd['stale'])
+
+
+class TestSyncStateBehindNewScenario(unittest.TestCase):
+    """Scenario: Sync State BEHIND When Worktree Branch Is Missing Collaboration Branch Commits."""
+
+    @patch('subprocess.run')
+    def test_behind_when_collab_has_commits(self, mock_run):
+        """sync_state is BEHIND when only collab branch has moved."""
+        def side_effect(cmd, **kwargs):
+            result = MagicMock()
+            if '..' in cmd and cmd.index('..') < cmd.index('--oneline'):
+                # First query: commits on collab not in branch
+                if 'isolated/feat1..main' in cmd:
+                    result.stdout = 'abc123 commit1\n'
+                else:
+                    result.stdout = ''
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = side_effect
+        state = _compute_sync_state('isolated/feat1', 'main')
+        self.assertEqual(state, 'BEHIND')
+
+
+class TestSyncStateAheadNewScenario(unittest.TestCase):
+    """Scenario: Sync State AHEAD When Worktree Branch Has Commits Not In Collaboration Branch."""
+
+    @patch('subprocess.run')
+    def test_ahead_when_branch_has_commits(self, mock_run):
+        """sync_state is AHEAD when only branch has moved."""
+        def side_effect(cmd, **kwargs):
+            result = MagicMock()
+            if 'main..isolated/feat1' in cmd:
+                result.stdout = 'abc123 commit1\n'
+            else:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = side_effect
+        state = _compute_sync_state('isolated/feat1', 'main')
+        self.assertEqual(state, 'AHEAD')
+
+
+class TestSyncStateSameNewScenario(unittest.TestCase):
+    """Scenario: Sync State SAME When Branch And Collaboration Branch Are Identical."""
+
+    @patch('subprocess.run')
+    def test_same_when_both_identical(self, mock_run):
+        """sync_state is SAME when both branches at same position."""
+        mock_result = MagicMock()
+        mock_result.stdout = ''
+        mock_run.return_value = mock_result
+        state = _compute_sync_state('isolated/ui', 'main')
+        self.assertEqual(state, 'SAME')
+
+
+class TestSyncStateDivergedNewScenario(unittest.TestCase):
+    """Scenario: Sync State DIVERGED When Both Branches Have Commits Beyond Common Ancestor."""
+
+    @patch('subprocess.run')
+    def test_diverged_when_both_moved(self, mock_run):
+        """sync_state is DIVERGED when both sides have extra commits."""
+        call_count = [0]
+        def side_effect(cmd, **kwargs):
+            call_count[0] += 1
+            result = MagicMock()
+            result.stdout = 'abc123 commit\n'  # Both queries return commits
+            return result
+        mock_run.side_effect = side_effect
+        state = _compute_sync_state('isolated/feat1', 'main')
+        self.assertEqual(state, 'DIVERGED')
+
+
+class TestSyncStateHtmlColumn(unittest.TestCase):
+    """Scenario: Sessions Table has Sync State column (renamed from Main Diff)."""
+
+    def test_sync_state_column_header(self):
+        """Table header shows 'Sync State' not 'Main Diff'."""
+        wt = {
+            'name': 'feat1', 'branch': 'isolated/feat1',
+            'sync_state': 'AHEAD', 'commits_ahead': 1,
+            'last_commit': 'abc test', 'committed': {'specs': 0, 'tests': 0, 'other': 0},
+            'uncommitted': {'specs': 0, 'tests': 0, 'other': 0},
+        }
+        html = _isolation_section_html([wt])
+        self.assertIn('<th>Sync State</th>', html)
+        self.assertNotIn('Main Diff', html)
 
 
 # ===================================================================
