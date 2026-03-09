@@ -105,7 +105,7 @@ Read `instructions/references/architect_commands.md` and print the appropriate v
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 5.0.1 Read Startup Flags
 
@@ -135,10 +135,6 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 *   If the user says "go" (or equivalent), begin executing the plan starting with the first item.
 *   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
 *   If there are zero Architect action items, inform the user that no Architect work is pending and ask if they have a specific task in mind.
-
-## 5.4 Context Guard Awareness
-
-The `PreCompact` hook intercepts auto-compaction. When the evacuation message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for details.
 
 ## 6. Shutdown Protocol
 

@@ -30,7 +30,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 2.0.1 Read Startup Flags
 
@@ -191,10 +191,6 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
         Relaunch Builder (new session) to continue with Phase N+1.
         ```
         No exceptions.
-
-## 5.4 Context Guard Awareness
-
-The `PreCompact` hook intercepts auto-compaction. When the evacuation message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for details.
 
 ## 6. Shutdown Protocol
 

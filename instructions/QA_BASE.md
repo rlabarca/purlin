@@ -54,7 +54,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 3.0.1 Read Startup Flags
 
@@ -179,10 +179,6 @@ After all scenarios (functional and visual) for a feature are verified:
 4.  **If discoveries were recorded:** Do NOT mark as complete. The feature remains in TESTING until all discoveries are resolved and re-verified.
 5.  **MANDATORY -- Run Critic:** You MUST run `tools/cdd/status.sh` before moving on. (The script runs the Critic automatically, updating `critic.json` files and `CRITIC_REPORT.md`.) This applies whether the feature passed (step 3) or had discoveries (step 4). Do NOT skip this step.
 6.  Move to the next TESTING feature, or conclude if all features are done.
-
-## 5.4 Context Guard Awareness
-
-The `PreCompact` hook intercepts auto-compaction. When the evacuation message appears, run `/pl-resume save`, `/clear`, then `/pl-resume`. See `instructions/references/context_guard_awareness.md` for details.
 
 ## 6. Session Conclusion
 

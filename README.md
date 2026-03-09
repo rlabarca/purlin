@@ -102,11 +102,8 @@ The Architect owns specs and policies. The Builder owns code, tests, and impleme
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
 | `/pl-cdd` | Start, stop, or check the CDD Dashboard |
 | `/pl-agent-config` | Modify per-agent settings (model, effort, permissions) |
-| `/pl-context-guard` | Toggle context guard on/off per agent |
 | `/pl-override-edit` | Edit an override file with conflict scanning |
 | `/pl-update-purlin` | Update the Purlin submodule with semantic analysis |
-| `/pl-isolated-push` | Merge isolation branch to collaboration branch (isolated sessions) |
-| `/pl-isolated-pull` | Pull collaboration branch into isolation (isolated sessions) |
 | `/pl-remote-push` | Push collaboration branch to remote |
 | `/pl-remote-pull` | Pull remote into collaboration branch |
 | `/pl-whats-different` | Compare current branch to main (main checkout only) |
