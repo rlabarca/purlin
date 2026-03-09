@@ -35,24 +35,21 @@
             "effort": "high",
             "bypass_permissions": true,
             "startup_sequence": false,
-            "recommend_next_actions": false,
-            "context_guard": true
+            "recommend_next_actions": false
         },
         "builder": {
             "model": "claude-opus-4-6",
             "effort": "high",
             "bypass_permissions": true,
             "startup_sequence": true,
-            "recommend_next_actions": true,
-            "context_guard": true
+            "recommend_next_actions": true
         },
         "qa": {
             "model": "claude-sonnet-4-6",
             "effort": "medium",
             "bypass_permissions": true,
             "startup_sequence": true,
-            "recommend_next_actions": true,
-            "context_guard": true
+            "recommend_next_actions": true
         }
     }
 }

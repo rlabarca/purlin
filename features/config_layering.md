@@ -57,7 +57,6 @@ All existing config consumers MUST be updated to use the resolver instead of dir
 **Shell consumers** (call `resolve_config.py` CLI):
 - `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh` (launcher scripts)
 - `tools/cdd/start.sh`
-- `tools/cdd/context_guard.sh`
 - Any other shell script that reads `.purlin/config.json` via inline `python3 -c`.
 
 The migration replaces boilerplate `json.load()` / inline `python3 -c "import json; ..."` calls with the resolver. No behavioral change other than the file source.

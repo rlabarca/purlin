@@ -17,7 +17,7 @@ Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh`
 *   **Files:** `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh` at the project root. All MUST be marked executable (`chmod +x`).
 *   **Submodule detection:** Each script MUST check for `$SCRIPT_DIR/purlin/instructions/` and fall back to `$SCRIPT_DIR/instructions/` when not in a submodule consumer context.
 *   **Project root export:** Each script MUST export `PURLIN_PROJECT_ROOT="$SCRIPT_DIR"` before invoking the LLM CLI.
-*   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by hooks (e.g., the PreCompact context guard) for per-agent configuration resolution.
+*   **Agent role export:** Each script MUST `export AGENT_ROLE="<role>"` (where `<role>` is `architect`, `builder`, or `qa`) before invoking `claude`. This env var is consumed by hooks and tools for per-agent configuration resolution.
 
 ### 2.2 Prompt Assembly
 1.  Create a temporary file via `mktemp`. Register cleanup with `trap "rm -f '$PROMPT_FILE'" EXIT`.

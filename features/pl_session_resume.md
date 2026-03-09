@@ -126,7 +126,7 @@ Restore mode follows an 8-step sequence. Each step is mandatory unless noted oth
 
 #### 2.3.0 Step 0 -- (No-op)
 
-No cleanup needed. The context guard uses a PreCompact hook with no runtime files (no counters, no session metadata). This step is retained as a placeholder for the step numbering sequence.
+No cleanup needed. This step is retained as a placeholder for the step numbering sequence.
 
 #### 2.3.1 Step 1 -- Role Detection (4-Tier Fallback)
 
