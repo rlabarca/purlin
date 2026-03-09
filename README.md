@@ -99,10 +99,10 @@ The Architect owns specs and policies. The Builder owns code, tests, and impleme
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
 | `/pl-override-edit` | Edit an override file with built-in conflict scanning (role-scoped: Builder/QA own file only; Architect any). Use `--scan-only` for read-only conflict scan. |
 | `/pl-agent-config [<role>] <key> <value>` | Modify agent config in `.purlin/config.json` safely (routes to main project config from isolated worktrees) |
-| `/pl-local-push` | Merge isolation branch to collaboration branch -- runs pre-merge handoff checklist (isolated sessions only) |
-| `/pl-local-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |
-| `/pl-collab-push` | Push local collab branch to remote (collab session only) |
-| `/pl-collab-pull` | Pull remote collab branch into local (collab session only) |
+| `/pl-isolated-push` | Merge isolation branch to collaboration branch -- runs pre-merge handoff checklist (isolated sessions only) |
+| `/pl-isolated-pull` | Pull collaboration branch into the current isolation branch (isolated sessions only) |
+| `/pl-remote-push` | Push local collaboration branch to remote |
+| `/pl-remote-pull` | Pull remote collaboration branch into local |
 | `/pl-whats-different` | Compare current branch to main -- summary of all changes (main checkout only) |
 | `/pl-update-purlin` | Intelligent submodule update with semantic analysis and conflict resolution |
 
@@ -257,7 +257,7 @@ Work across machines using session-based collab branches on a hosted remote.
 
 ### How It Works
 
-Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Check out the `collab/<session>` branch locally, then push and pull are symmetric same-branch operations: `/pl-collab-push` pushes the local collab branch to the remote, `/pl-collab-pull` pulls the remote into the local collab branch. Isolation branches merge to the collaboration branch (which is the collab branch during an active session, or `main` when no session is active).
+Create a collab session (branch `collab/<name>` on the remote) from the CDD Dashboard. Check out the `collab/<session>` branch locally, then push and pull are symmetric same-branch operations: `/pl-remote-push` pushes the local collab branch to the remote, `/pl-remote-pull` pulls the remote into the local collab branch. Isolation branches merge to the collaboration branch (which is the collab branch during an active session, or `main` when no session is active).
 
 ### Rules
 
@@ -280,12 +280,12 @@ A single command creates one isolated team:
 tools/collab/create_isolation.sh <name>
 ```
 
-This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-local-push` to run the pre-merge handoff checklist and merge the branch back to the collaboration branch.
+This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. Each isolation has its own branch, its own `.purlin/` state snapshot, and its own view of `features/`. When work is complete, the agent runs `/pl-isolated-push` to run the pre-merge handoff checklist and merge the branch back to the collaboration branch.
 
 ```
 Architect (isolated/design)          Builder (isolated/feat1)
   → designs new specs                  → implements existing backlog
-  → /pl-local-push                     → /pl-local-push
+  → /pl-isolated-push                   → /pl-isolated-push
        ↓ merge to collab branch              ↓ merge to collab branch
                     → QA verifies combined result
 ```
@@ -402,7 +402,7 @@ The agent skill:
 - Fetches upstream and reports commits behind
 - Analyzes changes semantically (not just textually)
 - Preserves your customizations in `.purlin/` folder
-- Tracks and updates top-level scripts (`run_*.sh`, etc.)
+- Tracks and updates top-level scripts (`pl-run-*.sh`, etc.)
 - Offers smart merge strategies for conflicts
 - Generates migration plans for breaking changes
 

@@ -16,7 +16,7 @@
 **Remote Collaboration**
 - Remote multi-machine collaboration via collab sessions (`collab/<name>` branches)
 - Dashboard section with session management, sync badges (AHEAD/BEHIND/SAME/DIVERGED), and per-session controls
-- `/pl-collab-push` and `/pl-collab-pull` commands for collab branch sync with remote
+- `/pl-remote-push` and `/pl-remote-pull` commands for collab branch sync with remote
 - Session delete with confirmation modal
 
 **Spec Map Enhancements**
@@ -36,7 +36,7 @@
 
 **Process**
 - `/pl-spec-from-code` command for reverse-engineering feature specs from existing codebases (experimental)
-- Renamed `/pl-remote-push`/`pull` to `/pl-collab-push`/`pull`
+- Renamed collaboration commands to `/pl-remote-push`/`pull`
 - Normalized label naming across CDD Dashboard and Agent Skills categories
 
 ### v0.6.0 — 2026-02-24
@@ -44,7 +44,7 @@
 **Isolated Teams**
 - Named git worktrees for concurrent agent sessions (`tools/collab/create_isolation.sh`, `tools/collab/kill_isolation.sh`)
 - Dashboard section with per-isolation state tracking (AHEAD/BEHIND/SAME/DIVERGED), file change summary, and create/kill controls
-- `/pl-local-push` and `/pl-local-pull` commands for merge-before-proceed workflow
+- `/pl-isolated-push` and `/pl-isolated-pull` commands for merge-before-proceed workflow
 - Agent config propagation to active worktrees
 
 **Agent Configuration**
