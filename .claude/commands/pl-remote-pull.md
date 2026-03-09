@@ -118,7 +118,7 @@ After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-gen
 
 1. Run the generation script:
 ```
-bash <tools_root>/collab/generate_whats_different.sh
+bash <tools_root>/collab/generate_whats_different.sh <branch>
 ```
 where `<tools_root>` is from `.purlin/config.json` (default `tools`).
 
