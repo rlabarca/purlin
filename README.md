@@ -10,7 +10,7 @@
 
 **Have questions?** Chat with the [Purlin NotebookLM](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf) -- an AI-powered knowledge base that can answer questions about how Purlin works.
 
-**How to work with the agents:** [English](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=f9a9f747-3d99-4aee-8d23-42b7debe326c) | [Portugues Brasileiro](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=4fdf9802-ad53-4cff-9c2e-6351bcb3212f)
+**How to work with the agents:** [English](https://youtu.be/sLk6YqoVW4c) | [Portugues Brasileiro](https://youtu.be/hxARP-1TMk0)
 
 ## Overview
 
