@@ -2,11 +2,11 @@
   "hooks": {
     "PreCompact": [
       {
-        "matcher": "",
+        "matcher": "auto",
         "hooks": [
           {
             "type": "command",
-            "command": "bash tools/hooks/context_guard.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/context_guard.sh\""
           }
         ]
       }
