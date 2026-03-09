@@ -555,6 +555,34 @@ EOF
 commit_and_tag "main/cdd_isolated_teams/two-worktrees-mixed" \
     "Two worktrees with different sync states and uncommitted changes"
 
+# ahead-with-digest: worktree AHEAD with pre-generated isolation digest
+cat > .purlin/cache/feature_status.json <<'EOF'
+{
+    "features": [],
+    "isolated_sessions": [
+        {"name": "feat1", "branch": "isolated/feat1", "sync_state": "AHEAD", "commits_ahead": 3, "commits_behind": 0, "dirty": false}
+    ],
+    "generated_at": "2026-01-01T00:00:00Z"
+}
+EOF
+
+mkdir -p features/digests
+cat > features/digests/isolation-feat1-whats-different.md <<'EOF'
+<!-- tips: abc1234 def5678 -->
+# What's Different: isolated/feat1 vs main
+
+## Summary
+3 commits ahead of collaboration branch.
+
+### Changed Files
+- `tools/cdd/serve.py` — Added isolation digest caching
+- `tools/cdd/test_cdd_isolated_teams.py` — Added staleness tests
+- `features/cdd_isolated_teams.md` — Updated digest requirements
+EOF
+
+commit_and_tag "main/cdd_isolated_teams/ahead-with-digest" \
+    "Worktree AHEAD with pre-generated isolation digest for cached read and staleness detection"
+
 # =====================================================================
 echo ""
 echo "--- cdd_lifecycle ---"
