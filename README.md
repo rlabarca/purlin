@@ -252,7 +252,7 @@ Use `/pl-update-purlin` from any agent session. It fetches upstream, analyzes ch
 
 ## Directory Structure
 
-Created by `init.sh` in your project root:
+Created by `pl-init.sh` in your project root:
 
 *   `purlin/` -- The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` -- Your project-specific overrides and config.
