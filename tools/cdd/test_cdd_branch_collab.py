@@ -1709,9 +1709,9 @@ class TestJoinBranchAssessmentReturnsBehindSyncState(unittest.TestCase):
                 result.stdout = ''  # clean tree
             elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
                 result.stdout = 'abc1234'  # both local and remote exist
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = ''  # ahead=0
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = ''  # ahead=0 (HEAD has no unique commits vs remote)
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
                 result.stdout = 'abc1234 commit1\ndef5678 commit2'  # behind=2
             elif 'checkout' in cmd_str:
                 checkout_called.append(cmd)
@@ -1773,9 +1773,9 @@ class TestJoinBranchAssessmentReturnsDivergedSyncState(unittest.TestCase):
                 result.stdout = ''
             elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
                 result.stdout = 'abc1234'
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = 'abc1234 local commit'  # ahead=1
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = 'abc1234 local commit'  # ahead=1 (HEAD has 1 commit remote lacks)
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
                 result.stdout = 'def5678 remote1\nghi9012 remote2'  # behind=2
             elif 'checkout' in cmd_str:
                 checkout_called.append(cmd)
@@ -1836,9 +1836,9 @@ class TestJoinBranchAssessmentReturnsAheadSyncState(unittest.TestCase):
                 result.stdout = ''
             elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
                 result.stdout = 'abc1234'
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = 'a1 c1\na2 c2\na3 c3'  # ahead=3
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = 'a1 c1\na2 c2\na3 c3'  # ahead=3 (HEAD has 3 commits remote lacks)
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
                 result.stdout = ''  # behind=0
             elif 'checkout' in cmd_str:
                 checkout_called.append(cmd)
@@ -1897,9 +1897,9 @@ class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCas
                 result.stdout = ' M src/main.py\n M src/utils.py\n'
             elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
                 result.stdout = 'abc1234'
-            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
-                result.stdout = ''  # ahead=0
-            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = ''  # ahead=0 (HEAD has no unique commits vs remote)
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
                 result.stdout = 'abc commit1'  # behind=1
             elif 'checkout' in cmd_str:
                 checkout_called.append(cmd)
@@ -2406,7 +2406,7 @@ class TestJoinBranchModalPhase2ContentForBehind(unittest.TestCase):
         self.assertIn('Fast-Forward &amp; Join', html)
         # Phase 2 action button calls _bcJoinConfirm with fast-forward action
         self.assertIn("_bcJoinConfirm(", html)
-        self.assertIn("'fast-forward'", html)
+        self.assertIn("fast-forward", html)
 
 
 class TestJoinBranchModalActionRequiredDiverged(unittest.TestCase):
@@ -2457,7 +2457,7 @@ class TestJoinBranchModalAutoCloseDelayedWhenActionRequired(unittest.TestCase):
 class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
     """Scenario: Join Branch Modal Shows Copyable Pull Command for Diverged
 
-    Phase 2 shows 'Branch has diverged' with copyable /pl-remote-pull command.
+    Phase 2 shows 'Remote branch has diverged' with copyable /pl-remote-pull command.
     No Join action button present, only Close.
     """
 
@@ -2469,7 +2469,7 @@ class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
     def test_phase2_diverged_shows_copyable_command(self, *mocks):
         html = serve.generate_html()
         # Phase 2 DIVERGED content
-        self.assertIn('Branch has diverged', html)
+        self.assertIn('Remote branch has diverged', html)
         self.assertIn('/pl-remote-pull origin/', html)
         # Copy button for command
         self.assertIn('navigator.clipboard.writeText', html)
@@ -2499,7 +2499,7 @@ class TestJoinBranchModalPhase2JoinAndPushForAhead(unittest.TestCase):
         # Push guidance text
         self.assertIn('/pl-remote-push', html)
         # Join button sends push action
-        self.assertIn("'push'", html)
+        self.assertIn("push", html)
 
 
 class TestJoinBranchModalPhase2DirtyTreeBlocksAction(unittest.TestCase):

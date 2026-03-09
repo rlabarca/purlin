@@ -3647,19 +3647,20 @@ function _bcShowJoinPhase2(name, assessment) {{
   if (sync === 'SAME' && !dirty) {{
     h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
   }} else if (sync === 'SAME' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync, but you have uncommitted changes:</p>';
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
   }} else if (sync === 'BEHIND' && !dirty) {{
     h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead.</p>';
   }} else if (sync === 'BEHIND' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead, but you have uncommitted changes:</p>';
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead.</p>';
   }} else if (sync === 'AHEAD' && !dirty) {{
     h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead.</p>';
   }} else if (sync === 'AHEAD' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead, but you have uncommitted changes:</p>';
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead.</p>';
   }} else if (sync === 'DIVERGED') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
   }}
   if (dirty && dirtyFiles.length > 0) {{
+    h += '<p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:var(--purlin-muted)">Uncommitted changes:</p>';
     h += '<div style="font-family:monospace;font-size:11px;background:rgba(0,0,0,0.15);padding:8px;border-radius:4px;max-height:120px;overflow-y:auto;margin-bottom:8px">';
     for (var i = 0; i < dirtyFiles.length; i++) {{ h += '<div>' + dirtyFiles[i].replace(/</g,'&lt;') + '</div>'; }}
     h += '</div>';
