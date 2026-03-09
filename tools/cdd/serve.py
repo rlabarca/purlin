@@ -2903,10 +2903,13 @@ function _bcShowJoinPhase2(name, assessment) {{
     }} else if (localSync === 'AHEAD') {{
       h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch is ' + localAhead + ' commits ahead of remote.</p>';
     }}
-    h += '<div style="margin-top:12px;text-align:right">';
     var escName = name.replace(/'/g, "\\'");
     if (localSync === 'SAME') {{
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Join</button>';
+      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch matches remote. Will switch to this branch.</p>';
+    }}
+    h += '<div style="margin-top:12px;text-align:right">';
+    if (localSync === 'SAME') {{
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Check Out &amp; Join</button>';
     }} else if (localSync === 'BEHIND') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward Local &amp; Join</button>';
     }} else if (localSync === 'AHEAD') {{
