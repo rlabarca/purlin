@@ -17,7 +17,7 @@ Large-scale isolation removal triggered 6 tombstones and cascaded spec resets ac
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Branch Collaboration + Dependents [PENDING]
-**Features:** cdd_branch_collab.md, pl_context_guard.md, pl_remote_pull.md, pl_remote_push.md, cdd_agent_configuration.md, agent_behavior_tests.md
+**Features:** cdd_branch_collab.md, pl_remote_pull.md, pl_remote_push.md, cdd_agent_configuration.md, agent_behavior_tests.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
@@ -27,4 +27,4 @@ Large-scale isolation removal triggered 6 tombstones and cascaded spec resets ac
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
-_None._
+- **2026-03-08:** Removed `pl_context_guard.md` from Phase 3 (feature retired; tombstone created for Builder cleanup of existing code artifacts).
