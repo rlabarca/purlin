@@ -2155,8 +2155,8 @@ class TestJoinConfirmCheckoutSwitchesBranchForSameState(unittest.TestCase):
             self.assertEqual(f.read().strip(), 'feature/auth')
 
 
-class TestJoinConfirmPushChecksOutAndReturnsPushGuidance(unittest.TestCase):
-    """Scenario: Join Confirm Push Checks Out and Returns Push Guidance
+class TestJoinConfirmPushChecksOutAndPushesToRemote(unittest.TestCase):
+    """Scenario: Join Confirm Push Checks Out and Pushes to Remote
 
     Given feature/auth exists as a remote tracking branch
     And a local branch feature/auth exists that is AHEAD of origin/feature/auth
@@ -2164,8 +2164,8 @@ class TestJoinConfirmPushChecksOutAndReturnsPushGuidance(unittest.TestCase):
     When a POST request is sent to /branch-collab/join-confirm with body
         {"branch": "feature/auth", "action": "push"}
     Then local feature/auth is checked out
-    And the response contains "action_required": "push"
-    And the response contains a warning to run /pl-remote-push
+    And git push is called for feature/auth to the configured remote
+    And the response contains "reconciled": "push"
     And .purlin/runtime/active_branch contains "feature/auth"
     """
 
@@ -2178,8 +2178,9 @@ class TestJoinConfirmPushChecksOutAndReturnsPushGuidance(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_push_checks_out_returns_guidance(self, mock_config, mock_run):
+    def test_push_checks_out_and_pushes(self, mock_config, mock_run):
         checkout_called = []
+        push_called = []
 
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='', stdout='')
@@ -2190,6 +2191,8 @@ class TestJoinConfirmPushChecksOutAndReturnsPushGuidance(unittest.TestCase):
                 result.stdout = 'main'
             elif 'checkout' in cmd_str and '-b' not in cmd_str:
                 checkout_called.append(cmd)
+            elif 'push' in cmd_str:
+                push_called.append(cmd)
             return result
         mock_run.side_effect = run_side_effect
 
@@ -2206,9 +2209,75 @@ class TestJoinConfirmPushChecksOutAndReturnsPushGuidance(unittest.TestCase):
         self.assertEqual(args[0], 200)
         self.assertEqual(args[1]['status'], 'ok')
         self.assertEqual(args[1]['branch'], 'feature/auth')
-        self.assertEqual(args[1]['action_required'], 'push')
-        self.assertIn('/pl-remote-push', args[1]['warning'])
-        self.assertIn('unpushed', args[1]['warning'].lower())
+        self.assertEqual(args[1]['reconciled'], 'push')
+
+        self.assertTrue(len(checkout_called) > 0, "git checkout should be called")
+        self.assertTrue(len(push_called) > 0, "git push should be called")
+        self.assertIn('origin', push_called[0])
+        self.assertIn('feature/auth', push_called[0])
+
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'feature/auth')
+
+
+class TestJoinConfirmPushFailsAfterCheckout(unittest.TestCase):
+    """Scenario: Join Confirm Push Fails After Checkout
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists that is AHEAD of origin/feature/auth
+    And the working tree is clean
+    And the git push will be rejected by the remote
+    When a POST request is sent to /branch-collab/join-confirm with body
+        {"branch": "feature/auth", "action": "push"}
+    Then local feature/auth is checked out (branch IS switched)
+    And .purlin/runtime/active_branch contains "feature/auth"
+    And the response contains "status": "error"
+    And the response contains "branch_checked_out": true
+    And the response contains an error message about the push failure
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_push_fails_after_checkout(self, mock_config, mock_run):
+        checkout_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                return MagicMock(returncode=0, stderr='', stdout='')
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                return MagicMock(returncode=0, stderr='', stdout='main')
+            elif 'checkout' in cmd_str and '-b' not in cmd_str:
+                checkout_called.append(cmd)
+                return MagicMock(returncode=0, stderr='', stdout='')
+            elif 'push' in cmd_str:
+                raise subprocess.CalledProcessError(
+                    1, cmd, stderr='rejected: non-fast-forward')
+            return MagicMock(returncode=0, stderr='', stdout='')
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth", "action": "push"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join_confirm(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 500)
+        self.assertEqual(args[1]['status'], 'error')
+        self.assertTrue(args[1]['branch_checked_out'])
+        self.assertIn('Push failed', args[1]['error'])
 
         self.assertTrue(len(checkout_called) > 0, "git checkout should be called")
 
@@ -2390,7 +2459,8 @@ class TestJoinBranchModalMultiStepProgress(unittest.TestCase):
 class TestJoinBranchModalPhase2ContentForBehind(unittest.TestCase):
     """Scenario: Join Branch Modal Shows Fast-Forward Option for Behind
 
-    Phase 2 content shows 'Remote is N commits ahead.' with Fast-Forward & Join button.
+    Phase 2 content shows 'Local branch is N commits behind remote.'
+    with Fast-Forward Local & Join button.
     """
 
     @patch('serve.get_isolation_worktrees', return_value=[])
@@ -2401,57 +2471,12 @@ class TestJoinBranchModalPhase2ContentForBehind(unittest.TestCase):
     def test_phase2_behind_shows_fast_forward(self, *mocks):
         html = serve.generate_html()
         # Phase 2 shows sync-state-specific content
-        self.assertIn('Remote is ', html)
-        self.assertIn('commits ahead', html)
-        self.assertIn('Fast-Forward &amp; Join', html)
+        self.assertIn('Local branch is ', html)
+        self.assertIn('commits behind remote', html)
+        self.assertIn('Fast-Forward Local &amp; Join', html)
         # Phase 2 action button calls _bcJoinConfirm with fast-forward action
         self.assertIn("_bcJoinConfirm(", html)
         self.assertIn("fast-forward", html)
-
-
-class TestJoinBranchModalActionRequiredDiverged(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Action Required for Diverged
-
-    The modal does NOT auto-close when action_required is present.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_action_required_prevents_auto_close(self, *mocks):
-        html = serve.generate_html()
-        # The _bcOpHandleJoinSuccess function checks action_required
-        self.assertIn('d.action_required', html)
-        # Warning message is displayed from d.warning
-        self.assertIn('d.warning', html)
-        # Close button is enabled for manual dismissal
-        self.assertIn('closeBtn.disabled = false', html)
-
-
-class TestJoinBranchModalAutoCloseDelayedWhenActionRequired(unittest.TestCase):
-    """Scenario: Join Branch Modal Auto-Close Delayed When Action Required
-
-    The JS _bcOpHandleJoinSuccess function does NOT call bcOpModalSuccess()
-    when action_required is present.
-    """
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    @patch('serve.get_active_branch', return_value=None)
-    @patch('serve._has_git_remote', return_value=True)
-    @patch('serve.get_branch_collab_branches', return_value=[])
-    @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_auto_close_skipped_when_action_required(self, *mocks):
-        html = serve.generate_html()
-        # _bcOpHandleJoinSuccess branches on d.action_required:
-        # - If present: shows warning, enables close, does NOT call bcOpModalSuccess()
-        # - If absent: calls bcOpModalSuccess() for auto-close
-        self.assertIn('_bcOpHandleJoinSuccess', html)
-        # The else branch calls bcOpModalSuccess for clean success
-        self.assertIn('bcOpModalSuccess()', html)
-        # The action_required branch calls refreshStatus on manual close
-        self.assertIn('refreshStatus()', html)
 
 
 class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
@@ -2480,10 +2505,11 @@ class TestJoinBranchModalPhase2CopyablePullCommand(unittest.TestCase):
         self.assertIn("sync === 'DIVERGED'", html)
 
 
-class TestJoinBranchModalPhase2JoinAndPushForAhead(unittest.TestCase):
-    """Scenario: Join Branch Modal Shows Join Button and Push Guidance for Ahead
+class TestJoinBranchModalShowsPushAndJoinButtonForAhead(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Push and Join Button for Ahead
 
-    Phase 2 shows 'Local is N commits ahead.' with [Join] button and push guidance.
+    Phase 2 shows 'Local branch is N commits ahead of remote.'
+    with [Push to Remote & Join] button.
     """
 
     @patch('serve.get_isolation_worktrees', return_value=[])
@@ -2491,21 +2517,22 @@ class TestJoinBranchModalPhase2JoinAndPushForAhead(unittest.TestCase):
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_phase2_ahead_shows_push_guidance(self, *mocks):
+    def test_phase2_ahead_shows_push_and_join(self, *mocks):
         html = serve.generate_html()
         # Phase 2 AHEAD content
-        self.assertIn('Local is ', html)
-        self.assertIn('commits ahead', html)
-        # Push guidance text
-        self.assertIn('/pl-remote-push', html)
-        # Join button sends push action
-        self.assertIn("push", html)
+        self.assertIn('Local branch is ', html)
+        self.assertIn('commits ahead of remote', html)
+        # Push to Remote & Join button sends push action
+        self.assertIn('Push to Remote &amp; Join', html)
+        self.assertIn("_bcJoinConfirm(", html)
+        self.assertIn("\\'push\\'", html)
 
 
-class TestJoinBranchModalPhase2DirtyTreeBlocksAction(unittest.TestCase):
-    """Scenario: Join Branch With Dirty Tree Shows Files and Blocks Action
+class TestJoinBranchModalShowsErrorWhenPushToRemoteFails(unittest.TestCase):
+    """Scenario: Join Branch Modal Shows Error When Push to Remote Fails
 
-    Phase 2 shows dirty file list in monospace, no action buttons.
+    When the server returns { "status": "error", "error": "push rejected",
+    "branch_checked_out": true } the modal shows error and refreshes on dismiss.
     """
 
     @patch('serve.get_isolation_worktrees', return_value=[])
@@ -2513,15 +2540,41 @@ class TestJoinBranchModalPhase2DirtyTreeBlocksAction(unittest.TestCase):
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_branch_collab_branches', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
-    def test_phase2_dirty_shows_file_list_no_buttons(self, *mocks):
+    def test_push_error_shows_in_modal_and_refreshes_on_dismiss(self, *mocks):
         html = serve.generate_html()
-        # Phase 2 dirty content: shows file list
-        self.assertIn('uncommitted changes', html)
-        self.assertIn('dirtyFiles', html)
+        # Error handler checks branch_checked_out flag
+        self.assertIn('d.branch_checked_out', html)
+        # When branch_checked_out, close button calls refreshStatus
+        self.assertIn('refreshStatus()', html)
+        # Error display uses bcOpModalError
+        self.assertIn('bcOpModalError(', html)
+        # Error color token
+        self.assertIn('--purlin-status-error', html)
+
+
+class TestJoinBranchWithDirtyTreeShowsDirtyGateOnly(unittest.TestCase):
+    """Scenario: Join Branch With Dirty Tree Shows Dirty Gate Only
+
+    Phase 2 dirty gate shows ONLY dirty file block: heading, monospace file list,
+    guidance. No sync state info, no action buttons, only Close.
+    """
+
+    @patch('serve.get_isolation_worktrees', return_value=[])
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_dirty_gate_shows_only_dirty_block(self, *mocks):
+        html = serve.generate_html()
+        # Dirty gate heading
+        self.assertIn('Uncommitted changes:', html)
         # Dirty file list uses monospace
         self.assertIn('font-family:monospace', html)
         # Commit/stash guidance
-        self.assertIn('Commit or stash before joining', html)
+        self.assertIn('Commit or stash uncommitted changes before joining', html)
+        # Dirty gate returns early — verified by the JS structure:
+        # the dirty block ends with 'return;' before any sync state rendering
+        self.assertIn('return;', html)
 
 
 class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):

@@ -1,5 +1,9 @@
 # Implementation Notes: CDD Branch Collaboration
 
+**[CLARIFICATION]** Push action in `_handle_branch_collab_join_confirm()` now executes `git push` server-side instead of returning guidance. On push failure after successful checkout, the response includes `branch_checked_out: true` so the JS modal knows to call `refreshStatus()` on dismiss (the branch was switched even though push failed). The `_write_active_branch()` call is placed before the error return to ensure the dashboard reflects the checkout. (Severity: INFO)
+
+**[CLARIFICATION]** The dirty gate in `_bcShowJoinPhase2()` JS function is now checked first and returns early. When dirty, no sync state information is displayed — only the "Uncommitted changes:" heading, monospace file list, and "Commit or stash..." guidance. This prevents confusion where a user might see an action button alongside a dirty warning. (Severity: INFO)
+
 **[CLARIFICATION]** The test for "BRANCH Section Always Rendered in Dashboard HTML" uses `serve.generate_html()` -- the function name in serve.py is `generate_html`, not `generate_dashboard_html`. The original test had a name mismatch that was corrected. (Severity: INFO)
 
 **[CLARIFICATION]** The `import re` statement in `_handle_branch_collab_create` is placed inside the method body rather than at module top level. This follows the existing pattern in serve.py where `re` is imported locally in handlers that use it. (Severity: INFO)

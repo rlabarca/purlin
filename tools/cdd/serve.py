@@ -3645,29 +3645,25 @@ function _bcShowJoinPhase2(name, assessment) {{
   var dirty = assessment.dirty;
   var dirtyFiles = assessment.dirty_files || [];
   var h = '';
-  if (sync === 'SAME' && !dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
-  }} else if (sync === 'SAME' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
-  }} else if (sync === 'BEHIND' && !dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead.</p>';
-  }} else if (sync === 'BEHIND' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote is ' + behind + ' commits ahead.</p>';
-  }} else if (sync === 'AHEAD' && !dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead.</p>';
-  }} else if (sync === 'AHEAD' && dirty) {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Local is ' + ahead + ' commits ahead.</p>';
-  }} else if (sync === 'DIVERGED') {{
-    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
-  }}
+  // Dirty gate: show ONLY dirty file block, no sync state, no action buttons
   if (dirty && dirtyFiles.length > 0) {{
     h += '<p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:var(--purlin-muted)">Uncommitted changes:</p>';
     h += '<div style="font-family:monospace;font-size:11px;background:rgba(0,0,0,0.15);padding:8px;border-radius:4px;max-height:120px;overflow-y:auto;margin-bottom:8px">';
     for (var i = 0; i < dirtyFiles.length; i++) {{ h += '<div>' + dirtyFiles[i].replace(/</g,'&lt;') + '</div>'; }}
     h += '</div>';
-    if (sync !== 'DIVERGED') {{
-      h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0">Commit or stash before joining.</p>';
-    }}
+    h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0">Commit or stash uncommitted changes before joining.</p>';
+    body.style.display = 'block';
+    body.innerHTML = h;
+    return;
+  }}
+  if (sync === 'SAME') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is in sync.</p>';
+  }} else if (sync === 'BEHIND') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Local branch is ' + behind + ' commits behind remote.</p>';
+  }} else if (sync === 'AHEAD') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Local branch is ' + ahead + ' commits ahead of remote.</p>';
+  }} else if (sync === 'DIVERGED') {{
+    h += '<p style="margin:0 0 8px 0;font-size:13px">Remote branch has diverged (' + ahead + ' local, ' + behind + ' remote).</p>';
   }}
   if (sync === 'DIVERGED') {{
     var escName = name.replace(/'/g, "\\'");
@@ -3676,16 +3672,15 @@ function _bcShowJoinPhase2(name, assessment) {{
     h += '<button class="btn-critic" style="font-size:11px;padding:2px 8px" onclick="navigator.clipboard.writeText(\\'/pl-remote-pull origin/' + escName + '\\')">Copy</button>';
     h += '</div>';
   }}
-  if (!dirty && sync !== 'DIVERGED') {{
+  if (sync !== 'DIVERGED') {{
     h += '<div style="margin-top:12px;text-align:right">';
     var escName = name.replace(/'/g, "\\'");
     if (sync === 'SAME') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Join</button>';
     }} else if (sync === 'BEHIND') {{
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward &amp; Join</button>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward Local &amp; Join</button>';
     }} else if (sync === 'AHEAD') {{
-      h += '<p style="font-size:12px;color:var(--purlin-muted);margin:0 0 8px 0">After joining, run /pl-remote-push to share your commits.</p>';
-      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'push\\')">Join</button>';
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'push\\')">Push to Remote &amp; Join</button>';
     }}
     h += '</div>';
   }}
@@ -3708,6 +3703,12 @@ function _bcJoinConfirm(name, action) {{
         _bcOpHandleJoinSuccess(d);
       }} else {{
         bcOpModalError(d.error || 'Join failed');
+        if (d.branch_checked_out) {{
+          var closeBtn = document.getElementById('bc-op-modal-close');
+          var xBtn = document.getElementById('bc-op-modal-x');
+          if (closeBtn) closeBtn.onclick = function() {{ closeBcOpModal(); refreshStatus(); }};
+          if (xBtn) xBtn.onclick = function() {{ closeBcOpModal(); refreshStatus(); }};
+        }}
       }}
     }})
     .catch(function() {{ bcOpModalError('Request failed -- check your connection'); }});
@@ -6277,7 +6278,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         Takes {branch, action} where action is one of:
         - checkout: SAME state, just switch branch
         - fast-forward: BEHIND state, checkout + ff-only merge
-        - push: AHEAD state, checkout + return push guidance
+        - push: AHEAD state, checkout + push to remote
         - guide-pull: DIVERGED state, no checkout, return pull command
         """
         try:
@@ -6363,10 +6364,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 response['warning'] = (
                     'Branch is diverged — run /pl-remote-pull to reconcile')
         elif action == 'push':
-            response['action_required'] = 'push'
-            response['warning'] = (
-                'Local branch has unpushed commits '
-                '— run /pl-remote-push to sync remote')
+            try:
+                subprocess.run(
+                    ['git', 'push', remote, branch],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+                response['reconciled'] = 'push'
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                _write_active_branch(branch)
+                err_msg = getattr(exc, 'stderr', '').strip() or str(exc)
+                self._send_json(500, {
+                    'status': 'error',
+                    'error': f'Push failed: {err_msg}',
+                    'branch_checked_out': True
+                })
+                return
 
         _write_active_branch(branch)
         self._send_json(200, response)
