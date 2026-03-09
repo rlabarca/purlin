@@ -6229,16 +6229,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
-        # Step 4: Local branch exists — compute sync state vs HEAD
-        # Compare origin/<branch> vs HEAD (current branch) so the modal
-        # matches the branches table state the user just saw.
+        # Step 4: Local branch exists — compute sync state of local vs remote
+        # Compare local branch vs origin/<branch> (not HEAD, which may be
+        # a different branch like main).
         try:
             ahead_result = subprocess.run(
-                ['git', 'log', f'{ref}..HEAD', '--oneline'],
+                ['git', 'log', f'{ref}..{branch}', '--oneline'],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
             behind_result = subprocess.run(
-                ['git', 'log', f'HEAD..{ref}', '--oneline'],
+                ['git', 'log', f'{branch}..{ref}', '--oneline'],
                 capture_output=True, text=True, check=True,
                 cwd=PROJECT_ROOT, timeout=5)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
