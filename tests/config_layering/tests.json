@@ -3,6 +3,5 @@
   "passed": 21,
   "failed": 0,
   "total": 21,
-  "test_file": "tests/config_layering/test_resolve_config.py",
   "details": []
 }
