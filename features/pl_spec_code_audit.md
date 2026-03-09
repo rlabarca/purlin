@@ -99,7 +99,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - Skip code comparison entirely.
 - Each subagent MUST return structured output in the format: `=== FEATURE: <name> ===` ... `=== END FEATURE ===` with gaps listed as `[SEVERITY] [DIMENSION] [OWNER]` entries including Evidence, Anchor source, and Suggested fix fields.
 - After each wave completes, accumulated results MUST be saved to `.purlin/cache/audit_state.json`.
-- If context guard fires (auto-compaction blocked), the command MUST save state and instruct the user to resume with `/pl-spec-code-audit --deep`.
+- If auto-compaction occurs, the command MUST save state and instruct the user to resume with `/pl-spec-code-audit --deep`.
 - If a subagent returns incomplete results, a rescue batch MUST be created for the next wave.
 - If a subagent fails entirely, the batch MUST be re-queued.
 

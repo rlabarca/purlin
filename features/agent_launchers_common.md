@@ -27,8 +27,8 @@ Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh`
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, and `AGENT_CONTEXT_GUARD` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
-*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_CONTEXT_GUARD="true"`.
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, and `AGENT_BYPASS` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
+*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`.
 
 ### 2.4 Claude Dispatch
 ```
