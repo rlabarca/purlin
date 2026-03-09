@@ -3,10 +3,11 @@
 > Label: "Tool: Agent Launchers"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/models_configuration.md (config drives model selection)
+> Prerequisite: features/config_layering.md (launcher reads resolved config, not raw config.json)
 
 
 ## 1. Overview
-Shell scripts that launch Purlin agents (Architect, Builder, QA) using the Claude CLI. The scripts read agent configuration from `config.json`, assemble the layered instruction prompt, and dispatch to Claude.
+Shell scripts that launch Purlin agents (Architect, Builder, QA) using the Claude CLI. The scripts read agent configuration from the resolved config (local override with shared fallback), assemble the layered instruction prompt, and dispatch to Claude.
 
 Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh` and live at the project root.
 
@@ -27,8 +28,9 @@ Scripts are named `pl-run-architect.sh`, `pl-run-builder.sh`, and `pl-run-qa.sh`
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, and `AGENT_BYPASS` from `config.json` using the Python one-liner pattern (see `models_configuration.md` Section 2.2).
-*   Default values when config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`.
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_STARTUP`, and `AGENT_RECOMMEND` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
+*   The generated launcher MUST call `resolve_config.py <role>` (via `$CORE_DIR/tools/config/resolve_config.py`) and `eval` the shell variable assignments it returns. It MUST NOT use an inline `python3 -c "import json; ..."` pattern that reads `config.json` directly.
+*   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_STARTUP="true"`, `AGENT_RECOMMEND="true"`.
 
 ### 2.4 Claude Dispatch
 ```
@@ -57,9 +59,10 @@ Session messages are passed as the trailing positional argument to the Claude CL
 ### Automated Scenarios
 
 #### Scenario: Claude Launcher Dispatches with Model and Effort
-    Given config.json contains agents.architect with model "claude-sonnet-4-6", effort "high", bypass_permissions false
+    Given the resolved config contains agents.architect with model "claude-sonnet-4-6", effort "high", bypass_permissions false
     When pl-run-architect.sh is executed
-    Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
+    Then it calls resolve_config.py architect to read agent settings
+    And it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
     And it passes --allowedTools with the Architect role restrictions
     And it passes --append-system-prompt-file pointing to the assembled prompt
 
