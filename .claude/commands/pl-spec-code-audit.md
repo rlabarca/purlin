@@ -160,7 +160,7 @@ NO_GAPS (if clean)
 ### Wave Execution
 
 - After each wave completes, save accumulated results to `.purlin/cache/audit_state.json`.
-- If context guard threshold is approaching, save state and instruct user to resume with `/pl-spec-code-audit --deep`.
+- If auto-compaction occurs, save state and instruct user to resume with `/pl-spec-code-audit --deep`.
 - If a subagent returns incomplete results (missing features), create a rescue batch for the next wave.
 - If a subagent fails entirely, re-queue the batch.
 
