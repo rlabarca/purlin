@@ -36,6 +36,10 @@ tools/*/test_status.json
 tools/test_status.json
 tools/critic/.cache/
 
+# Web-verify screenshots
+*.png
+*.jpeg
+
 # Temp
 tmp/
 dist/

@@ -252,18 +252,19 @@ Phase 2 (interactive): the modal body replaces the spinner with sync-state-speci
 | Sync State | Dirty? | Modal Content |
 |---|---|---|
 | SAME | No | "Branch is in sync." + [Join] button |
-| SAME | Yes | "Branch is in sync, but you have uncommitted changes:" + file list + "Commit or stash before joining." |
+| SAME | Yes | "Branch is in sync." + dirty file block + "Commit or stash before joining." |
 | BEHIND | No | "Remote is N commits ahead." + [Fast-Forward & Join] button |
-| BEHIND | Yes | "Remote is N commits ahead, but you have uncommitted changes:" + file list |
+| BEHIND | Yes | "Remote is N commits ahead." + dirty file block |
 | AHEAD | No | "Local is N commits ahead." + [Join] button + push guidance |
-| AHEAD | Yes | "Local is N commits ahead, but you have uncommitted changes:" + file list |
-| DIVERGED | any | "Branch has diverged (N local, M remote)." + copyable command block: `/pl-remote-pull origin/<branch>` + [Close] button only (no join action) |
+| AHEAD | Yes | "Local is N commits ahead." + dirty file block |
+| DIVERGED | No | "Remote branch has diverged (N local, M remote)." + copyable command block: `/pl-remote-pull origin/<branch>` + [Close] button only (no join action) |
+| DIVERGED | Yes | "Remote branch has diverged (N local, M remote)." + dirty file block + copyable command block: `/pl-remote-pull origin/<branch>` + [Close] button only (no join action) |
+
+**Dirty file block format:** When dirty files are present, they are displayed as a labeled block with a heading `"Uncommitted changes:"` followed by the file list in monospace font. The heading is always present above the file list -- the file list must never appear as an unlabeled code block. Action buttons are absent when dirty (dirty tree blocks checkout/fast-forward/push actions). Only the [Close] button is available. Exception: DIVERGED always shows [Close] only regardless of dirty state, since no checkout is attempted.
 
 Phase 2 action buttons ([Join], [Fast-Forward & Join]) call `POST /branch-collab/join-confirm` with the appropriate action. While the confirm request is in flight, the button is replaced with a spinner. On success, auto-close (unless `action_required` present). On error, show error in modal.
 
 The DIVERGED copyable command block uses monospace font with subtle background, matching existing dashboard code styling. Includes a copy-to-clipboard button.
-
-When dirty files are shown, the file list uses monospace font. Action buttons are absent (dirty tree blocks checkout/fast-forward/push actions). Only the [Close] button is available.
 
 ### 2.9 Integration Test Fixture Tags
 

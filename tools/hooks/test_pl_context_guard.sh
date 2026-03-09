@@ -48,13 +48,10 @@ with open(config_path) as f:
     cfg = json.load(f)
 agents = cfg.setdefault('agents', {})
 agent = agents.setdefault(role, {})
-# Parse value: True/False -> bool, digits -> int, else string
 if value_str == 'True':
     agent[key] = True
 elif value_str == 'False':
     agent[key] = False
-elif value_str.isdigit():
-    agent[key] = int(value_str)
 else:
     agent[key] = value_str
 tmp = config_path + '.tmp'
@@ -75,86 +72,46 @@ echo ""
 echo "[Scenario] Status with no arguments shows all roles"
 setup_sandbox
 cat > "$SANDBOX/.purlin/config.local.json" <<'JSON'
-{"context_guard_threshold": 45, "agents": {"architect": {"context_guard": true, "context_guard_threshold": 45}, "builder": {"context_guard": true, "context_guard_threshold": 30}, "qa": {"context_guard": false, "context_guard_threshold": 45}}}
+{"agents": {"architect": {"context_guard": true}, "builder": {"context_guard": true}, "qa": {"context_guard": false}}}
 JSON
 ARCH_CG=$(json_get "$SANDBOX/.purlin/config.local.json" agents architect context_guard)
-BUILD_T=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard_threshold)
+BUILD_CG=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard)
 QA_CG=$(json_get "$SANDBOX/.purlin/config.local.json" agents qa context_guard)
-if [[ "$ARCH_CG" == "true" && "$BUILD_T" == "30" && "$QA_CG" == "false" ]]; then
-    log_pass "All three roles readable with correct values"
+if [[ "$ARCH_CG" == "true" && "$BUILD_CG" == "true" && "$QA_CG" == "false" ]]; then
+    log_pass "All three roles readable with correct ON/OFF values"
 else
-    log_fail "Config read failed: arch_cg=$ARCH_CG build_t=$BUILD_T qa_cg=$QA_CG"
+    log_fail "Config read failed: arch=$ARCH_CG builder=$BUILD_CG qa=$QA_CG"
 fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario: Status for single role shows per-agent annotation
+# Scenario: Status for single role shows enabled state
 ###############################################################################
 echo ""
-echo "[Scenario] Status for single role shows per-agent annotation"
+echo "[Scenario] Status for single role shows enabled state"
 setup_sandbox
 cat > "$SANDBOX/.purlin/config.local.json" <<'JSON'
-{"context_guard_threshold": 45, "agents": {"builder": {"context_guard_threshold": 30}}}
+{"agents": {"builder": {"context_guard": true}}}
 JSON
-GLOBAL=$(json_get "$SANDBOX/.purlin/config.local.json" context_guard_threshold)
-PERAGENT=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard_threshold)
-if [[ "$PERAGENT" == "30" && "$GLOBAL" == "45" ]]; then
-    log_pass "Per-agent threshold 30 distinct from global 45"
+CG_VAL=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard)
+if [[ "$CG_VAL" == "true" ]]; then
+    log_pass "Single role status shows enabled: true"
 else
-    log_fail "Expected per-agent=30 global=45, got per-agent=$PERAGENT global=$GLOBAL"
+    log_fail "Expected true, got $CG_VAL"
 fi
-cleanup_sandbox
-
-###############################################################################
-# Scenario: Status shows global default annotation when no per-agent threshold
-###############################################################################
-echo ""
-echo "[Scenario] Status shows global default annotation when no per-agent threshold"
-setup_sandbox
+# Test default (no key set) — should default to true
 cat > "$SANDBOX/.purlin/config.local.json" <<'JSON'
-{"context_guard_threshold": 45, "agents": {"architect": {"model": "claude-opus-4-6"}}}
+{"agents": {"architect": {"model": "claude-opus-4-6"}}}
 JSON
-HAS_CGT=$(python3 -c "
+HAS_CG=$(python3 -c "
 import json, sys
 d = json.load(open(sys.argv[1]))
-print('context_guard_threshold' in d.get('agents',{}).get('architect',{}))
+print(d.get('agents',{}).get('architect',{}).get('context_guard', True))
 " "$SANDBOX/.purlin/config.local.json" 2>/dev/null)
-if [[ "$HAS_CGT" == "False" ]]; then
-    log_pass "No per-agent threshold — falls back to global default"
+if [[ "$HAS_CG" == "True" ]]; then
+    log_pass "Default enabled state is true when key absent"
 else
-    log_fail "Expected no per-agent threshold, got $HAS_CGT"
-fi
-cleanup_sandbox
-
-###############################################################################
-# Scenario: Set threshold persists to config.local.json
-###############################################################################
-echo ""
-echo "[Scenario] Set threshold persists to config.local.json"
-setup_sandbox
-cat > "$SANDBOX/.purlin/config.local.json" <<'JSON'
-{"context_guard_threshold": 45, "agents": {"builder": {"model": "claude-opus-4-6"}}}
-JSON
-apply_config_change "$SANDBOX/.purlin/config.local.json" "builder" "context_guard_threshold" "30"
-RESULT=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard_threshold)
-if [[ "$RESULT" == "30" ]]; then
-    log_pass "Threshold persisted: agents.builder.context_guard_threshold = 30"
-else
-    log_fail "Expected 30, got $RESULT"
-fi
-cleanup_sandbox
-
-###############################################################################
-# Scenario: Set threshold rejects out-of-range value
-###############################################################################
-echo ""
-echo "[Scenario] Set threshold rejects out-of-range value"
-setup_sandbox
-VALID=$(python3 -c "v=300; print('valid' if 5<=v<=200 else 'invalid')")
-if [[ "$VALID" == "invalid" ]]; then
-    log_pass "Value 300 correctly identified as out of range"
-else
-    log_fail "Expected invalid for 300"
+    log_fail "Expected default True, got $HAS_CG"
 fi
 cleanup_sandbox
 
@@ -213,18 +170,18 @@ echo ""
 echo "[Scenario] Copy-on-first-access when config.local.json missing"
 setup_sandbox
 cat > "$SANDBOX/.purlin/config.json" <<'JSON'
-{"context_guard_threshold": 45, "agents": {"builder": {"model": "claude-opus-4-6"}}}
+{"agents": {"builder": {"context_guard": true}}}
 JSON
 # Simulate copy-on-first-access
 if [[ ! -f "$SANDBOX/.purlin/config.local.json" ]]; then
     cp "$SANDBOX/.purlin/config.json" "$SANDBOX/.purlin/config.local.json"
 fi
-apply_config_change "$SANDBOX/.purlin/config.local.json" "builder" "context_guard_threshold" "25"
-RESULT=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard_threshold)
-if [[ "$RESULT" == "25" ]]; then
-    log_pass "Copy-on-first-access created local config and wrote threshold 25"
+apply_config_change "$SANDBOX/.purlin/config.local.json" "builder" "context_guard" "False"
+RESULT=$(json_get "$SANDBOX/.purlin/config.local.json" agents builder context_guard)
+if [[ "$RESULT" == "false" ]]; then
+    log_pass "Copy-on-first-access created local config and set context_guard false"
 else
-    log_fail "Expected 25 after copy-on-first-access, got $RESULT"
+    log_fail "Expected false after copy-on-first-access, got $RESULT"
 fi
 cleanup_sandbox
 
