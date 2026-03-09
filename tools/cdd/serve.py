@@ -5012,6 +5012,58 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         remote = rc['remote']
         ref = f'{remote}/{branch}'
 
+        # Pre-join sync: best-effort sync current branch with remote
+        push_result = 'skipped'
+        push_guidance = None
+        try:
+            current = subprocess.run(
+                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5).stdout.strip()
+            if current and current != 'HEAD':
+                has_tracking = subprocess.run(
+                    ['git', 'rev-parse', '--verify',
+                     f'{remote}/{current}'],
+                    capture_output=True, text=True,
+                    cwd=PROJECT_ROOT, timeout=5
+                ).returncode == 0
+                if has_tracking:
+                    ahead = subprocess.run(
+                        ['git', 'log',
+                         f'{remote}/{current}..{current}',
+                         '--oneline'],
+                        capture_output=True, text=True,
+                        cwd=PROJECT_ROOT, timeout=5
+                    ).stdout.strip()
+                    behind = subprocess.run(
+                        ['git', 'log',
+                         f'{current}..{remote}/{current}',
+                         '--oneline'],
+                        capture_output=True, text=True,
+                        cwd=PROJECT_ROOT, timeout=5
+                    ).stdout.strip()
+                    if ahead and not behind:
+                        res = subprocess.run(
+                            ['git', 'push', remote, current],
+                            capture_output=True, text=True,
+                            cwd=PROJECT_ROOT, timeout=30)
+                        push_result = ('pushed' if res.returncode == 0
+                                       else 'failed')
+                    elif behind and not ahead:
+                        res = subprocess.run(
+                            ['git', 'pull', '--ff-only', remote,
+                             current],
+                            capture_output=True, text=True,
+                            cwd=PROJECT_ROOT, timeout=30)
+                        push_result = ('pulled' if res.returncode == 0
+                                       else 'failed')
+                    elif ahead and behind:
+                        push_result = 'diverged'
+                        push_guidance = (f'/pl-remote-pull '
+                                         f'{remote}/{current}')
+        except Exception:
+            push_result = 'failed'
+
         # Step 1: Fetch the target branch from remote
         try:
             subprocess.run(
@@ -5085,7 +5137,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             _write_active_branch(branch)
             self._send_json(200, {
-                'status': 'ok', 'branch': branch, 'completed': True
+                'status': 'ok', 'branch': branch, 'completed': True,
+                'push_result': push_result
             })
             return
 
@@ -5186,11 +5239,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             _write_active_branch(branch)
             self._send_json(200, {
-                'status': 'ok', 'branch': branch, 'completed': True
+                'status': 'ok', 'branch': branch, 'completed': True,
+                'push_result': push_result
             })
             return
 
-        self._send_json(200, {
+        response = {
             'status': 'ok',
             'sync_state': head_sync,
             'commits_ahead': head_ahead,
@@ -5199,8 +5253,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             'local_ahead': local_ahead,
             'local_behind': local_behind,
             'dirty': len(dirty_files) > 0,
-            'dirty_files': dirty_files
-        })
+            'dirty_files': dirty_files,
+            'push_result': push_result
+        }
+        if push_guidance:
+            response['push_guidance'] = push_guidance
+        self._send_json(200, response)
 
     def _handle_branch_collab_join_confirm(self):
         """POST /branch-collab/join-confirm — Phase 2: execute join action.

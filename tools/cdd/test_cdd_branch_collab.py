@@ -2095,7 +2095,9 @@ class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):
 
 def _make_join_assessment_side_effect(head_ahead_lines, head_behind_lines,
                                       local_ahead_lines, local_behind_lines,
-                                      dirty=''):
+                                      dirty='',
+                                      sync_ahead='', sync_behind='',
+                                      push_returncode=0, pull_returncode=0):
     """Build a subprocess.run side_effect for two-dimensional join assessment.
 
     Args:
@@ -2104,6 +2106,10 @@ def _make_join_assessment_side_effect(head_ahead_lines, head_behind_lines,
         local_ahead_lines: lines for git log origin/branch..branch (local ahead of remote)
         local_behind_lines: lines for git log branch..origin/branch (local behind remote)
         dirty: porcelain output (empty = clean)
+        sync_ahead: lines for git log origin/main..main (current branch ahead of remote)
+        sync_behind: lines for git log main..origin/main (current branch behind remote)
+        push_returncode: returncode for pre-join git push (0 = success)
+        pull_returncode: returncode for pre-join git pull --ff-only (0 = success)
     """
     checkout_called = []
 
@@ -2116,6 +2122,16 @@ def _make_join_assessment_side_effect(head_ahead_lines, head_behind_lines,
             result.stdout = 'abc1234'
         elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
             result.stdout = 'main'
+        # Pre-join sync: current branch (main) vs remote
+        elif 'log' in cmd_str and 'origin/main..main' in cmd_str:
+            result.stdout = sync_ahead
+        elif 'log' in cmd_str and 'main..origin/main' in cmd_str:
+            result.stdout = sync_behind
+        elif 'push' in cmd_str and 'origin' in cmd_str and 'main' in cmd_str:
+            result.returncode = push_returncode
+        elif 'pull' in cmd_str and '--ff-only' in cmd_str:
+            result.returncode = pull_returncode
+        # Join assessment: target branch vs HEAD and local
         elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
             result.stdout = head_ahead_lines
         elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
@@ -2703,6 +2719,433 @@ class TestJoinDivergedBranchShowsDivergedMessageAndPullCommand(unittest.TestCase
         self.assertEqual(args[1]['commits_ahead'], 1)
         self.assertEqual(args[1]['commits_behind'], 2)
         self.assertEqual(len(checkout_called), 0)
+
+
+class TestJoinBranchPushesCurrentBranchBeforeFetch(unittest.TestCase):
+    """Scenario: Join Branch Pushes Current Branch Before Fetch
+
+    Given the CDD server is running on branch "main"
+    And main has 2 commits not in origin/main (local ahead)
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git push origin main is called before git fetch origin feature/auth
+    And the response contains "push_result": "pushed"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_push_before_fetch(self, mock_config, mock_run):
+        call_order = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                if 'feature/auth' in cmd_str and 'origin' not in cmd_str:
+                    raise subprocess.CalledProcessError(1, cmd)  # no local
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/main..main' in cmd_str:
+                result.stdout = 'a1 commit1\na2 commit2\n'  # 2 ahead
+            elif 'log' in cmd_str and 'main..origin/main' in cmd_str:
+                result.stdout = ''  # 0 behind
+            elif 'push' in cmd_str and 'origin' in cmd_str and 'main' in cmd_str:
+                call_order.append('push')
+            elif 'fetch' in cmd_str and 'feature/auth' in cmd_str:
+                call_order.append('fetch')
+            elif 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'checkout' in cmd_str:
+                pass  # allow checkout
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        # Push must occur before fetch
+        self.assertEqual(call_order, ['push', 'fetch'],
+                         "git push should be called before git fetch")
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['push_result'], 'pushed')
+
+
+class TestJoinBranchContinuesWhenPreJoinPushFails(unittest.TestCase):
+    """Scenario: Join Branch Continues When Pre-Join Push Fails
+
+    Given the CDD server is running on branch "main"
+    And main has 1 commit not in origin/main (local ahead)
+    And git push will fail (remote rejected)
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git fetch origin feature/auth is still called
+    And the response contains "push_result": "failed"
+    And the join assessment proceeds normally
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_push_failure_non_blocking(self, mock_config, mock_run):
+        fetch_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                if 'feature/auth' in cmd_str and 'origin' not in cmd_str:
+                    raise subprocess.CalledProcessError(1, cmd)  # no local
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/main..main' in cmd_str:
+                result.stdout = 'a1 commit1\n'  # 1 ahead
+            elif 'log' in cmd_str and 'main..origin/main' in cmd_str:
+                result.stdout = ''  # 0 behind
+            elif 'push' in cmd_str and 'origin' in cmd_str and 'main' in cmd_str:
+                result.returncode = 1  # push fails
+            elif 'fetch' in cmd_str and 'feature/auth' in cmd_str:
+                fetch_called.append(cmd)
+            elif 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'checkout' in cmd_str:
+                pass
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        # Fetch should still be called despite push failure
+        self.assertTrue(len(fetch_called) > 0,
+                        "git fetch should still be called when push fails")
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['push_result'], 'failed')
+
+
+class TestJoinBranchPreJoinPullsWhenBehind(unittest.TestCase):
+    """Scenario: Join Branch Pulls Current Branch When Behind Remote
+
+    Given the CDD server is running on branch "main"
+    And origin/main has 3 commits not in local main (local behind)
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git pull --ff-only origin main is called
+    And the response contains "push_result": "pulled"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_pull_when_behind(self, mock_config, mock_run):
+        pull_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                if 'feature/auth' in cmd_str and 'origin' not in cmd_str:
+                    raise subprocess.CalledProcessError(1, cmd)
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/main..main' in cmd_str:
+                result.stdout = ''  # 0 ahead
+            elif 'log' in cmd_str and 'main..origin/main' in cmd_str:
+                result.stdout = 'r1 c1\nr2 c2\nr3 c3\n'  # 3 behind
+            elif 'pull' in cmd_str and '--ff-only' in cmd_str:
+                pull_called.append(cmd)
+            elif 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            elif 'checkout' in cmd_str:
+                pass
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        self.assertTrue(len(pull_called) > 0,
+                        "git pull --ff-only should be called when behind")
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['push_result'], 'pulled')
+
+
+class TestJoinBranchPreJoinDivergedReturnsGuidance(unittest.TestCase):
+    """Scenario: Join Branch Returns Guidance When Current Branch Diverged
+
+    Given the CDD server is running on branch "main"
+    And main has 1 commit not in origin/main AND origin/main has 2 commits not in main
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then no push or pull is attempted
+    And the response contains "push_result": "diverged"
+    And the response contains "push_guidance" with "/pl-remote-pull"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_diverged_returns_guidance(self, mock_config, mock_run):
+        push_called = []
+        pull_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'rev-parse' in cmd_str and '--verify' in cmd_str:
+                result.stdout = 'abc1234'
+            elif 'log' in cmd_str and 'origin/main..main' in cmd_str:
+                result.stdout = 'a1 c1\n'  # 1 ahead
+            elif 'log' in cmd_str and 'main..origin/main' in cmd_str:
+                result.stdout = 'r1 c1\nr2 c2\n'  # 2 behind
+            elif 'push' in cmd_str:
+                push_called.append(cmd)
+            elif 'pull' in cmd_str:
+                pull_called.append(cmd)
+            # Join assessment log queries
+            elif 'log' in cmd_str and 'HEAD..origin/feature/auth' in cmd_str:
+                result.stdout = ''
+            elif 'log' in cmd_str and 'origin/feature/auth..HEAD' in cmd_str:
+                result.stdout = 'h1 c1\n'
+            elif 'log' in cmd_str and 'origin/feature/auth..feature/auth' in cmd_str:
+                result.stdout = ''
+            elif 'log' in cmd_str and 'feature/auth..origin/feature/auth' in cmd_str:
+                result.stdout = ''
+            elif 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        # No push or pull should be attempted when diverged
+        self.assertEqual(len(push_called), 0, "No push when diverged")
+        self.assertEqual(len(pull_called), 0, "No pull when diverged")
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['push_result'], 'diverged')
+        self.assertIn('/pl-remote-pull', args[1]['push_guidance'])
+        self.assertIn('origin/main', args[1]['push_guidance'])
+
+
+class TestBranchesTablePopulatedInHTML(unittest.TestCase):
+    """Scenario: Branches Table Populated in HTML
+
+    Given two remote tracking branches exist: "feature/auth" and "hotfix/urgent"
+    When the dashboard HTML is generated
+    Then both branch names appear in the branches table
+    And each branch has a Join button
+    """
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[
+        {'name': 'feature/auth', 'sync_state': 'SAME',
+         'commits_ahead': 0, 'commits_behind': 0},
+        {'name': 'hotfix/urgent', 'sync_state': 'BEHIND',
+         'commits_ahead': 0, 'commits_behind': 3}
+    ])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_branches_table_populated(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('feature/auth', html)
+        self.assertIn('hotfix/urgent', html)
+        # Each branch should have a Join button
+        self.assertIn("joinBranch('feature/auth')", html)
+        self.assertIn("joinBranch('hotfix/urgent')", html)
+
+
+class TestActiveBranchHTMLShowsBranchDropdownAndSyncBadge(unittest.TestCase):
+    """Scenario: Active Branch HTML Shows Branch Dropdown and Sync Badge
+
+    Given an active branch "feature/auth" is set
+    And two branches exist in the branches list
+    When the dashboard HTML is generated
+    Then a <select> dropdown is present
+    And a Leave button is present
+    And a sync badge is present
+    And a Check Remote button is present
+    """
+
+    @patch('serve.get_active_branch', return_value='feature/auth')
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[
+        {'name': 'feature/auth', 'sync_state': 'SAME',
+         'commits_ahead': 0, 'commits_behind': 0},
+        {'name': 'hotfix/urgent', 'sync_state': 'BEHIND',
+         'commits_ahead': 0, 'commits_behind': 2}
+    ])
+    @patch('serve.compute_remote_sync_state', return_value={
+        'sync_state': 'SAME', 'commits_ahead': 0, 'commits_behind': 0})
+    @patch('serve.get_remote_contributors', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_active_branch_html_elements(self, *mocks):
+        html = serve.generate_html()
+        # Dropdown present
+        self.assertIn('id="bc-switch-select"', html)
+        self.assertIn('<option', html)
+        # Leave button present
+        self.assertIn('leaveBranch()', html)
+        # Sync badge present (SAME)
+        self.assertIn('st-good', html)
+        # Check Remote button present
+        self.assertIn('id="btn-check-remote"', html)
+
+
+class TestNoActiveBranchHTMLDiffersFromActiveBranchHTML(unittest.TestCase):
+    """Scenario: No Active Branch HTML Differs From Active Branch HTML
+
+    Given no active branch is set
+    When the dashboard HTML is generated
+    Then the creation row is present with Create button
+    And no <select> dropdown is present in the branch-collab section
+    And no Leave button is present
+    """
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_no_active_branch_shows_creation_mode(self, *mocks):
+        html = serve.generate_html()
+        # Creation row present
+        self.assertIn('id="btn-create-branch"', html)
+        self.assertIn('id="new-branch-name"', html)
+        # No dropdown in branch-collab section
+        self.assertNotIn('id="bc-switch-select"', html)
+        # No Leave button element (onclick only appears in active mode HTML)
+        self.assertNotIn('onclick="leaveBranch()"', html)
+        # No Check Remote button
+        self.assertNotIn('id="btn-check-remote"', html)
+
+
+class TestSyncBadgeColorsMatchDesignSpec(unittest.TestCase):
+    """Scenario: Sync Badge Colors Match Design Spec
+
+    Given branches in various sync states
+    When the branch collab section HTML is rendered
+    Then SAME uses st-good class (green)
+    And AHEAD uses st-todo class (yellow)
+    And BEHIND uses st-todo class (yellow)
+    And DIVERGED uses st-disputed class (orange)
+    And EMPTY uses no badge class (plain text with --purlin-primary)
+    """
+
+    def test_same_badge_green(self):
+        branches = [{'name': 'b1', 'active': False, 'sync_state': 'SAME',
+                      'commits_ahead': 0, 'commits_behind': 0}]
+        html = serve._branch_collab_section_html(
+            active_branch=None, sync_data=None, branches=branches,
+            contributors=[], last_fetch=None, has_remote=True)
+        import re
+        same_spans = re.findall(r'<span[^>]*>SAME</span>', html)
+        self.assertTrue(len(same_spans) > 0, "SAME span should exist")
+        self.assertIn('st-good', same_spans[0])
+
+    def test_ahead_badge_yellow(self):
+        branches = [{'name': 'b2', 'active': False, 'sync_state': 'AHEAD',
+                      'commits_ahead': 2, 'commits_behind': 0}]
+        html = serve._branch_collab_section_html(
+            active_branch=None, sync_data=None, branches=branches,
+            contributors=[], last_fetch=None, has_remote=True)
+        import re
+        ahead_spans = re.findall(r'<span[^>]*>AHEAD</span>', html)
+        self.assertTrue(len(ahead_spans) > 0, "AHEAD span should exist")
+        self.assertIn('st-todo', ahead_spans[0])
+
+    def test_behind_badge_yellow(self):
+        branches = [{'name': 'b3', 'active': False, 'sync_state': 'BEHIND',
+                      'commits_ahead': 0, 'commits_behind': 3}]
+        html = serve._branch_collab_section_html(
+            active_branch=None, sync_data=None, branches=branches,
+            contributors=[], last_fetch=None, has_remote=True)
+        import re
+        behind_spans = re.findall(r'<span[^>]*>BEHIND</span>', html)
+        self.assertTrue(len(behind_spans) > 0, "BEHIND span should exist")
+        self.assertIn('st-todo', behind_spans[0])
+
+    def test_diverged_badge_orange(self):
+        branches = [{'name': 'b4', 'active': False, 'sync_state': 'DIVERGED',
+                      'commits_ahead': 1, 'commits_behind': 2}]
+        html = serve._branch_collab_section_html(
+            active_branch=None, sync_data=None, branches=branches,
+            contributors=[], last_fetch=None, has_remote=True)
+        import re
+        div_spans = re.findall(r'<span[^>]*>DIVERGED</span>', html)
+        self.assertTrue(len(div_spans) > 0, "DIVERGED span should exist")
+        self.assertIn('st-disputed', div_spans[0])
+
+    def test_empty_badge_no_class(self):
+        branches = [{'name': 'b5', 'active': False, 'sync_state': 'EMPTY',
+                      'commits_ahead': 0, 'commits_behind': 0}]
+        html = serve._branch_collab_section_html(
+            active_branch=None, sync_data=None, branches=branches,
+            contributors=[], last_fetch=None, has_remote=True)
+        import re
+        empty_spans = re.findall(r'<span[^>]*>EMPTY</span>', html)
+        self.assertTrue(len(empty_spans) > 0, "EMPTY span should exist")
+        for span in empty_spans:
+            self.assertNotIn('st-good', span)
+            self.assertNotIn('st-todo', span)
+            self.assertNotIn('st-disputed', span)
+        self.assertIn('--purlin-primary', html)
 
 
 def run_tests():

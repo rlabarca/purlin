@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "passed": 73,
+  "passed": 85,
   "failed": 0,
-  "total": 73,
+  "total": 85,
   "test_file": "tools/cdd/test_cdd_branch_collab.py"
 }
