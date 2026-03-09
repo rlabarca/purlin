@@ -72,7 +72,7 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 
 Process ALL features in-agent (no subagents). For each feature:
 
-1. Read the feature file -- check spec completeness across all 9 gap dimensions (see Gap Dimensions Table below).
+1. Read the feature file -- check spec completeness across all 10 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth.
 3. Read `tests/<name>/critic.json` -- check gate status, traceability.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
@@ -130,7 +130,7 @@ For each assigned feature:
    - **Invariant coverage**: For each invariant statement, determine if any scenario or code path addresses it. Flag invariants with zero coverage in both scenarios and code.
    - **Constraint compliance**: For each named constraint, check if the code's behavior aligns. Flag contradictions.
 8. **Undocumented behavior scan**: Error handlers, config branches, edge cases in code with no scenario coverage.
-9. **Spec completeness**: All 9 gap dimensions (see Gap Dimensions Table).
+9. **Spec completeness**: All 10 gap dimensions (see Gap Dimensions Table).
 
 ### Spec-Only Subagent Protocol
 

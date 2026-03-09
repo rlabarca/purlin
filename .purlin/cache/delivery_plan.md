@@ -11,9 +11,9 @@
 **Completion Commit:** b076e1f
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Skills & Agent Config [PENDING]
+## Phase 2 -- Skills & Agent Config [COMPLETE]
 **Features:** pl_context_guard.md, agent_launchers_common.md, cdd_agent_configuration.md, pl_session_resume.md
-**Completion Commit:** --
+**Completion Commit:** e3714e4
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Major Features [PENDING]
