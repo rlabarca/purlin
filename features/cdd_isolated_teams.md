@@ -209,7 +209,7 @@ The dashboard exposes UI controls to create and remove isolations, complementing
 - Each row in the Sessions table has a "Kill" button.
 - On click: dashboard sends `POST /isolate/kill` with body `{ "name": "<name>", "dry_run": true }`. The server runs `kill_isolation.sh <name> --dry-run` and returns the safety status.
 - The dashboard shows a modal based on the dry-run result:
-  - **Dirty worktree:** Modal lists the dirty files. Instructs the user to commit or stash first. Confirm button is disabled. No force path is offered.
+  - **Dirty worktree:** Modal shows `"Uncommitted changes:"` heading followed by the dirty file list in monospace font. Instructs the user to commit or stash first. Confirm button is disabled. No force path is offered.
   - **Unsynced commits (no dirty):** Modal shows a warning with the unmerged branch name and commit count. User must check "I understand, the branch still exists" before the Confirm button is enabled.
   - **Clean state:** Simple confirmation dialog with Confirm and Cancel buttons.
 - On confirm: dashboard sends `POST /isolate/kill` with body `{ "name": "<name>", "force": true }`. Server runs `kill_isolation.sh <name> --force`.
@@ -538,7 +538,8 @@ The following fixture tags provide deterministic project states for web-verify t
 
     Given a worktree at .worktrees/feat1 has uncommitted changes
     When the User clicks the Kill button on the feat1 row
-    Then a modal appears listing the uncommitted files
+    Then a modal appears with "Uncommitted changes:" heading
+    And the dirty file list is displayed in monospace font below the heading
     And the modal instructs the user to commit or stash before killing
     And the Confirm button is disabled
 
@@ -716,7 +717,7 @@ None.
 - [ ] Clicking Create while valid sends the request and shows a success or error response
 - [ ] On success, the name input is cleared
 - [ ] Each Sessions row has a "Kill" button; clicking it triggers the dry-run safety check modal
-- [ ] Kill dirty-state modal lists dirty files; Confirm button is disabled
+- [ ] Kill dirty-state modal shows "Uncommitted changes:" heading + dirty file list in monospace font; Confirm button is disabled
 - [ ] Kill unsynced-state modal includes "I understand, the branch still exists" checkbox; Confirm disabled until checked
 - [ ] Kill clean-state modal shows a simple Confirm/Cancel dialog
 - [ ] Agent Config section heading reads "Agent Config (applies across all local isolations)" when isolated teams mode is active
