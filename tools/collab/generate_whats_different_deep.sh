@@ -62,9 +62,9 @@ if [ "$SYNC_STATE" = "SAME" ]; then
 # Impact Summary
 
 **Generated:** ${DATE}
-**Branch:** collab/${BRANCH}
+**Branch:** ${BRANCH}
 
-Local collab branch is in sync with remote. No impact to summarize.
+Branch is in sync with remote. No impact to summarize.
 EOF
     cat "$ANALYSIS_FILE"
     exit 0
@@ -81,9 +81,9 @@ AGENT_PROMPT="You are a senior technical analyst for the Purlin framework. Given
 4. **What the collaborator should pay attention to** — priority items, potential conflicts, things that need testing.
 
 **Sync state directional glossary:**
-- **AHEAD** — Your local collab branch has commits the remote collab branch does not. Action: **push** to share your work.
-- **BEHIND** — The remote collab branch has commits your local collab branch does not. Action: **pull** to receive their work.
-- **DIVERGED** — Both sides have unique commits. Action: **pull first** (merge remote into local collab branch), then **push**.
+- **AHEAD** — Your local HEAD has commits that \`origin/<branch>\` does not. Action: **push** to share your work.
+- **BEHIND** — \`origin/<branch>\` has commits that your local HEAD does not. Action: **pull** to receive their work.
+- **DIVERGED** — Both sides have unique commits relative to each other. Action: **pull first** (merge remote into local), then **push**.
 - **SAME** — No action needed (deep analysis is not generated for SAME).
 
 Format as markdown with these sections:
@@ -132,7 +132,7 @@ lines = []
 lines.append('# Impact Summary')
 lines.append('')
 lines.append('**Generated:** ${DATE}')
-lines.append('**Branch:** collab/${BRANCH}')
+lines.append('**Branch:** ${BRANCH}')
 lines.append('**Sync State:** ${SYNC_STATE}')
 lines.append('')
 

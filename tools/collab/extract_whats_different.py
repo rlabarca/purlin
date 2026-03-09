@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Extraction tool for the What's Different? feature.
 
-Produces structured JSON from git range queries comparing local collab
-branch vs remote collab branch. Input: branch name. Output: JSON to stdout.
+Produces structured JSON from git range queries comparing HEAD vs
+origin/<branch>. Input: branch name. Output: JSON to stdout.
 
 Categorizes changed files into specs, code, tests, companion files,
 purlin config, and submodule changes. Parses status commits for
@@ -53,16 +53,16 @@ def _run_git(args, cwd=None):
 
 
 def compute_sync_state(branch_name):
-    """Determine SAME/AHEAD/BEHIND/DIVERGED between local and remote collab branch."""
-    remote_ref = f'{REMOTE}/collab/{branch_name}'
-    local_ref = f'collab/{branch_name}'
+    """Determine SAME/AHEAD/BEHIND/DIVERGED between HEAD and remote branch."""
+    remote_ref = f'{REMOTE}/{branch_name}'
+    local_ref = 'HEAD'
 
-    # Commits local collab has that remote does not
+    # Commits HEAD has that remote does not
     ahead_lines = _run_git(
         ['log', f'{remote_ref}..{local_ref}', '--oneline']).strip().splitlines()
     ahead_lines = [l for l in ahead_lines if l.strip()]
 
-    # Commits remote has that local collab does not
+    # Commits remote has that HEAD does not
     behind_lines = _run_git(
         ['log', f'{local_ref}..{remote_ref}', '--oneline']).strip().splitlines()
     behind_lines = [l for l in behind_lines if l.strip()]
@@ -371,8 +371,8 @@ def extract_direction(range_spec):
     """Extract structured data for one direction (local or collab).
 
     Args:
-        range_spec: git range like 'origin/collab/branch..collab/branch' or
-                    'collab/branch..origin/collab/branch'
+        range_spec: git range like 'origin/branch..HEAD' or
+                    'HEAD..origin/branch'
 
     Returns dict with: commits, changed_files, categories, transitions,
     discovery_count, decisions.
@@ -399,8 +399,8 @@ def extract(branch_name):
 
     Returns the full structured JSON for both directions.
     """
-    remote_ref = f'{REMOTE}/collab/{branch_name}'
-    local_ref = f'collab/{branch_name}'
+    remote_ref = f'{REMOTE}/{branch_name}'
+    local_ref = 'HEAD'
     sync = compute_sync_state(branch_name)
     state = sync['sync_state']
 
@@ -416,12 +416,12 @@ def extract(branch_name):
     if state == 'SAME':
         return result
 
-    # Local changes (what local collab has that remote doesn't)
+    # Local changes (what HEAD has that remote doesn't)
     if state in ('AHEAD', 'DIVERGED'):
         local = extract_direction(f'{remote_ref}..{local_ref}')
         result['local_changes'] = local
 
-    # Collab changes (what remote has that local collab doesn't)
+    # Collab changes (what remote has that HEAD doesn't)
     if state in ('BEHIND', 'DIVERGED'):
         collab = extract_direction(f'{local_ref}..{remote_ref}')
         result['collab_changes'] = collab

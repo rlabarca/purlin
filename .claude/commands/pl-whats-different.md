@@ -1,6 +1,6 @@
 **Purlin command: shared (all roles) -- from main checkout only**
 
-Generate a plain-English summary of what's different between local main and the remote collab branch.
+Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`).
 
 ## Steps
 
@@ -31,24 +31,24 @@ Extract the branch name from the file contents (single line, trimmed).
 
 Read `remote_collab.remote` from `.purlin/config.json`. Default to `"origin"` if the key is absent or the file does not exist.
 
-Construct the target branch: `collab/<session>`.
+Construct the target branch: `<session>`.
 
 ### 3. Fetch and Sync State
 
 ```
-git fetch <remote> collab/<session>
+git fetch <remote> <session>
 ```
 
 Run two range queries:
 
 ```
-git log origin/collab/<session>..main --oneline
-git log main..origin/collab/<session> --oneline
+git log origin/<session>..HEAD --oneline
+git log HEAD..origin/<session> --oneline
 ```
 
 Determine state: SAME, AHEAD, BEHIND, or DIVERGED.
 
-If SAME: print "Local main is in sync with collab/<session>. Nothing to summarize." Exit.
+If SAME: print "HEAD is in sync with <session>. Nothing to summarize." Exit.
 
 ### 4. Run Generation Script
 

@@ -62,9 +62,9 @@ if [ "$SYNC_STATE" = "SAME" ]; then
 # What's Different?
 
 **Generated:** ${DATE}
-**Branch:** collab/${BRANCH}
+**Branch:** ${BRANCH}
 
-Local collab branch is in sync with remote. Nothing to summarize.
+Branch is in sync with remote. Nothing to summarize.
 EOF
     cat "$DIGEST_FILE"
     exit 0
@@ -79,7 +79,7 @@ AGENT_PROMPT="You are a technical writer for the Purlin framework. Given the str
 # What's Different?
 
 **Generated:** ${DATE}
-**Branch:** collab/${BRANCH}
+**Branch:** ${BRANCH}
 **Sync State:** ${SYNC_STATE}
 
 Then include these sections as appropriate based on the sync state:
@@ -146,7 +146,7 @@ lines = []
 lines.append('# What\\'s Different?')
 lines.append('')
 lines.append('**Generated:** ${DATE}')
-lines.append('**Branch:** collab/${BRANCH}')
+lines.append('**Branch:** ${BRANCH}')
 lines.append('**Sync State:** ${SYNC_STATE}')
 lines.append('')
 
