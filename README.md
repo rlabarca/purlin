@@ -8,7 +8,9 @@
 
 [![Watch the video](https://img.youtube.com/vi/ob7_RzriVdI/maxresdefault.jpg)](https://youtu.be/ob7_RzriVdI)
 
-**Have questions?** Chat with the [Purlin NotebookLM](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf) -- an AI-powered knowledge base that can answer questions about how Purlin works, or listen to the [AI Audio Overview](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=f9a9f747-3d99-4aee-8d23-42b7debe326c) for a narrated walkthrough.
+**Have questions?** Chat with the [Purlin NotebookLM](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf) -- an AI-powered knowledge base that can answer questions about how Purlin works.
+
+**How to work with the agents:** [English](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=f9a9f747-3d99-4aee-8d23-42b7debe326c) | [Portugues Brasileiro](https://notebooklm.google.com/notebook/bd65eb37-09a1-43fc-862e-21f6fce160bf?artifactId=4fdf9802-ad53-4cff-9c2e-6351bcb3212f)
 
 ## Overview
 
