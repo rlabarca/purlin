@@ -94,19 +94,9 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 Execute this 8-step sequence:
 
-### Step 0 -- Reset Context Guard
+### Step 0 -- (No-op)
 
-Remove stale context guard files from the previous session:
-
-```
-find .purlin/runtime -maxdepth 1 -name "turn_count_${PPID}_*" -delete 2>/dev/null; rm -f .purlin/runtime/session_meta_$PPID
-```
-
-`$PPID` in a Bash tool call equals the Claude Code process PID, which is the same value the hook uses as `AGENT_ID`. The `find -delete` pattern removes all per-session counter files for this process without triggering zsh glob errors when no files match (zsh treats unmatched globs as errors by default, unlike bash). Other concurrent agents' counters are unaffected. Deleting `session_meta` forces the hook to re-initialize with the new post-`/clear` session_id on its next invocation.
-
-**Note:** This step is optional cleanup. The per-session counter design ensures that context clears are handled automatically — each new `session_id` produces a fresh counter file starting at 1. This cleanup removes stale files from previous sessions for tidiness.
-
-**CRITICAL: This is the ONE AND ONLY context guard reset.** Do NOT reset the counter again at any later step, at the end of the resume process, or before presenting work to the user. The counter must increment normally from this point forward for the remainder of the session.
+No cleanup needed. The context guard uses a PreCompact hook with no runtime files (no counters, no session metadata). This step is retained as a placeholder for the step numbering sequence.
 
 ### Step 1 -- Role Detection (4-Tier Fallback)
 

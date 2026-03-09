@@ -557,32 +557,30 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
 
-class TestContextGuardResetCommand(unittest.TestCase):
-    """Scenario: Context Clear Step 0 Reset
+class TestStep0NoOp(unittest.TestCase):
+    """Scenario: Step 0 is a no-op placeholder.
 
-    The /pl-resume command file Step 0 must use the per-session counter
-    file cleanup format (find -delete) rather than the old single-file
-    overwrite format.
+    The context guard uses a PreCompact hook with no runtime files.
+    Step 0 must not reference turn_count or session_meta files.
     """
 
-    def test_step0_uses_find_delete(self):
-        """Step 0 uses find with turn_count_${PPID}_* pattern."""
+    def test_step0_no_turn_count_references(self):
+        """Step 0 does not reference turn_count files."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('turn_count_${PPID}_*', content)
+        self.assertNotIn('turn_count_${PPID}', content)
 
-    def test_step0_removes_session_meta(self):
-        """Step 0 removes session_meta_$PPID."""
+    def test_step0_no_session_meta_references(self):
+        """Step 0 does not reference session_meta files."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('session_meta_$PPID', content)
+        self.assertNotIn('session_meta_$PPID', content)
 
-    def test_step0_does_not_use_echo_overwrite(self):
-        """Step 0 does NOT use the old 'echo 0 > turn_count' format."""
+    def test_step0_is_noop(self):
+        """Step 0 heading indicates no-op."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertNotIn(
-            'echo "0" > .purlin/runtime/turn_count_$PPID', content)
+        self.assertIn('Step 0 -- (No-op)', content)
 
 
 class TestCheckpointCleanupAfterRestore(unittest.TestCase):
