@@ -911,21 +911,19 @@ def compute_remote_sync_state(branch_name, compare_to_head=False):
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             local_exists = False
 
-    # EMPTY check: branch has zero unique commits relative to main.
-    # A branch is EMPTY when it has no work of its own, regardless of
-    # whether main has moved forward since the branch was created.
+    # EMPTY check: branch has literally zero commits (orphan/empty branch).
+    # If the branch has commits but matches main, that's SAME (not EMPTY).
     check_ref = local_ref if local_exists else remote_ref
     try:
-        branch_unique = subprocess.run(
-            ['git', 'log', f'main..{check_ref}', '--oneline'],
+        total_commits = subprocess.run(
+            ['git', 'rev-list', '--count', check_ref],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
-        branch_unique_lines = [l for l in branch_unique.stdout.strip().splitlines() if l]
-        if len(branch_unique_lines) == 0:
+        if int(total_commits.stdout.strip()) == 0:
             return {'sync_state': 'EMPTY', 'commits_ahead': 0,
                     'commits_behind': 0}
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        pass  # main ref may not exist; skip EMPTY check
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError):
+        pass  # ref may not exist; skip EMPTY check
 
     if not local_exists:
         # Branch has unique commits but no local checkout.
