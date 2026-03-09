@@ -71,48 +71,9 @@ Where the value is the boolean from `agents.<role>.context_guard` (default `true
 
 #### 3c. Toggle (on/off)
 
-Proceed to Step 4 (Detect Session Context) then Step 5 (Apply the Change) to write `agents.<role>.context_guard` as `true` (on) or `false` (off).
+Proceed to Step 4 (Apply the Change) to write `agents.<role>.context_guard` as `true` (on) or `false` (off).
 
-### 4. Detect Session Context
-
-Run: `git rev-parse --abbrev-ref HEAD`
-
-If the result starts with `isolated/`:
-- You are in an **isolated worktree** session.
-- Extract `<name>` = everything after `isolated/`.
-- Proceed to Step 4a (Worktree Warning).
-
-If the branch does NOT start with `isolated/`:
-- Skip to Step 5 (Apply the Change) using the current project root.
-
-#### 4a. Worktree Warning (isolated sessions only)
-
-Locate the MAIN project root by parsing `git worktree list --porcelain`:
-- Find the worktree entry whose `branch` field is `refs/heads/main`.
-- If not found, use the first worktree entry (the project root is always listed first).
-- Extract the `worktree` path from that entry as `PROJECT_ROOT`.
-
-Display this warning and prompt the user to confirm:
-
-```
-⚠  Worktree context: isolated/<name>
-
-Config changes are ALWAYS applied to the MAIN project local config:
-  <PROJECT_ROOT>/.purlin/config.local.json
-
-The current worktree's config is ephemeral — it will be discarded
-when this team is killed. Your change will take effect the next time
-an isolated team is created from main.
-
-Continue? [y/N]
-```
-
-If the user responds anything other than `y` or `yes` (case-insensitive), abort:
-```
-Aborted. No changes made.
-```
-
-### 5. Apply the Change
+### 4. Apply the Change
 
 1. Set `LOCAL_CONFIG_PATH = <PROJECT_ROOT>/.purlin/config.local.json`.
 2. If the local config file does not exist, create it by copying `<PROJECT_ROOT>/.purlin/config.json` to `LOCAL_CONFIG_PATH` (copy-on-first-access).
@@ -122,7 +83,7 @@ Aborted. No changes made.
 6. Serialize the updated config to JSON (4-space indentation).
 7. Write to a temp file (`<LOCAL_CONFIG_PATH>.tmp`), then rename to `<LOCAL_CONFIG_PATH>`.
 
-### 6. Confirm
+### 5. Confirm
 
 Print:
 ```
@@ -136,7 +97,6 @@ No git commit is made — `config.local.json` is gitignored.
 
 ## Notes
 
-- **Never modify the worktree's config directly.** The worktree config is ephemeral. All persistent changes go to MAIN's local config.
 - Changes are immediately visible to the CDD Dashboard via its 5-second auto-refresh cycle (the Dashboard reads from the config resolver, which reads `config.local.json`).
 - The context guard hook (`tools/hooks/context_guard.sh`) reads config on every invocation, so enabled changes take effect on the very next tool call within the same session.
 - This skill is the sanctioned path for agents to change context guard settings. It complements `/pl-agent-config` (which handles model, effort, permissions, startup settings).
