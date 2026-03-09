@@ -23,7 +23,8 @@
 - `/pl-fixture` skill available to all roles for managing fixtures.
 
 **Automated Test Expansion**
-- 56+ scenarios previously requiring manual QA execution have been reclassified to automated testing, enabled by Web Verify and the fixture system. This covers features across CDD dashboard panels, release checklist steps, agent configuration, and collaboration workflows.
+- Fixtures and Web Verify work together to simulate real interface testing across different configuration states. A fixture tag sets up the project state (branch topology, config values, feature lifecycle), then Web Verify launches the dashboard against that state and validates the UI in a real browser. This combination makes it possible to automatically test scenarios that previously required a human to manually set up a project, open a browser, and click through the dashboard.
+- 56+ scenarios were rewritten with this pattern in mind, moving from manual QA execution to automated testing. This covers CDD dashboard panels, release checklist steps, agent configuration, and collaboration workflows.
 - Per-feature `tests.json` files now include `test_file` paths for structural completeness validation.
 
 **Instruction and Skill Optimization**
