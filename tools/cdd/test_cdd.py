@@ -1108,7 +1108,6 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
 
     @patch('serve.get_git_status', return_value='')
     @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
-    @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_active_heading_includes_phase_annotation(self, *mocks):
         """ACTIVE heading shows [PHASE (2/3)] when delivery plan has active phase."""
@@ -1149,7 +1148,6 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
 
     @patch('serve.get_git_status', return_value='')
     @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
-    @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_active_heading_no_phase_when_no_plan(self, *mocks):
         """ACTIVE heading has no [PHASE] annotation when no delivery plan exists."""
