@@ -20,8 +20,7 @@ If no marker is found, ask the user which role they are.
 Run: `git rev-parse --abbrev-ref HEAD`
 
 Determine the variant to print:
-- If the branch starts with `isolated/`, use the **Isolated Session Variant**.
-- Else if `.purlin/runtime/active_branch` exists and is non-empty, use the **Branch Collaboration Variant**.
+- If `.purlin/runtime/active_branch` exists and is non-empty, use the **Branch Collaboration Variant**.
 - Otherwise, use the **Main Branch Variant**.
 
 ### 3. Print Command Table

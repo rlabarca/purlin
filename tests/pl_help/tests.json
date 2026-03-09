@@ -1,16 +1,12 @@
 {
   "status": "PASS",
-  "passed": 3,
+  "passed": 2,
   "failed": 0,
-  "total": 3,
+  "total": 2,
   "test_file": "dev/test_behavior_harness.py",
   "details": [
     {
       "test": "test_collab_variant_has_branch_header (__main__.TestHelpVariantDetection.test_collab_variant_has_branch_header)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_isolated_variant_has_correct_commands (__main__.TestHelpVariantDetection.test_isolated_variant_has_correct_commands)",
       "status": "PASS"
     },
     {

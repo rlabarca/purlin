@@ -419,29 +419,29 @@ scenario_architect_main_help() {
     cleanup_fixture "$fixture_dir"
 }
 
-scenario_builder_isolated_help() {
+scenario_builder_collab_help() {
     echo ""
-    echo "--- Scenario 9: Builder Re-displays Command Table on Isolated Branch ---"
+    echo "--- Scenario 9: Builder Re-displays Command Table on Collab Branch ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/pl_help/builder-isolated-branch")
+    fixture_dir=$(checkout_fixture "main/pl_help/builder-collab-branch")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
 
-    # The fixture should be on an isolated branch
+    # The fixture should have an active_branch file for collab variant
     output=$(run_claude_test "$prompt_file" "/pl-help" "$fixture_dir")
 
-    if assert_contains "$output" "Isolated\|isolated"; then
-        record_result "PASS" "Builder Isolated Help: isolated variant detected"
+    if assert_contains "$output" "Branch:\|branch"; then
+        record_result "PASS" "Builder Collab Help: branch variant detected"
     else
-        record_result "FAIL" "Builder Isolated Help: isolated variant detected" \
-            "Expected 'Isolated' in output for isolated branch variant"
+        record_result "FAIL" "Builder Collab Help: branch variant detected" \
+            "Expected 'Branch:' in output for collab branch variant"
     fi
 
-    if assert_contains "$output" "pl-isolated-push\|pl-isolated-pull"; then
-        record_result "PASS" "Builder Isolated Help: isolation commands present"
+    if assert_contains "$output" "pl-remote-push\|pl-remote-pull"; then
+        record_result "PASS" "Builder Collab Help: remote commands present"
     else
-        record_result "FAIL" "Builder Isolated Help: isolation commands present" \
-            "Expected isolation-specific commands in output"
+        record_result "FAIL" "Builder Collab Help: remote commands present" \
+            "Expected remote push/pull commands in output"
     fi
 
     rm -f "$prompt_file"
@@ -526,7 +526,7 @@ main() {
     scenario_qa_mid_verification_resume
     scenario_full_reboot_resume
     scenario_architect_main_help
-    scenario_builder_isolated_help
+    scenario_builder_collab_help
     scenario_qa_collab_help
 
     print_summary

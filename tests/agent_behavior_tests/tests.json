@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 20,
+  "passed": 19,
   "failed": 0,
-  "total": 20,
+  "total": 19,
   "test_file": "dev/test_behavior_harness.py",
   "details": [
     {
@@ -18,7 +18,7 @@
       "status": "PASS"
     },
     {
-      "test": "test_assertion_detects_isolated_variant (__main__.TestCommandTableAssertion.test_assertion_detects_isolated_variant)",
+      "test": "test_assertion_detects_collab_variant (__main__.TestCommandTableAssertion.test_assertion_detects_collab_variant)",
       "status": "PASS"
     },
     {
@@ -55,10 +55,6 @@
     },
     {
       "test": "test_collab_variant_has_branch_header (__main__.TestHelpVariantDetection.test_collab_variant_has_branch_header)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_isolated_variant_has_correct_commands (__main__.TestHelpVariantDetection.test_isolated_variant_has_correct_commands)",
       "status": "PASS"
     },
     {

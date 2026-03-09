@@ -408,18 +408,13 @@ set_config true true
 commit_and_tag "main/pl_help/architect-main-branch"
 
 # ===================================================================
-# Fixture 9: main/pl_help/builder-isolated-branch
-# Project should appear on isolated/feat1 branch
+# Fixture 9: main/pl_help/builder-collab-branch
+# Project with active_branch file for builder collab variant
 # ===================================================================
-echo "Creating: main/pl_help/builder-isolated-branch"
+echo "Creating: main/pl_help/builder-collab-branch"
 
-# The fixture repo's clone will be detached HEAD. To simulate an isolated branch,
-# we set a marker file that the test runner can use, or rely on the fact that
-# the test constructs the system prompt which includes branch-detection instructions.
-# The instruction files tell the agent to detect the branch via git.
-# For fixture purposes, we'll create the branch in the fixture repo.
-
-commit_and_tag "main/pl_help/builder-isolated-branch"
+echo "collab/v2" > .purlin/runtime/active_branch
+commit_and_tag "main/pl_help/builder-collab-branch"
 
 # ===================================================================
 # Fixture 10: main/pl_help/qa-collab-branch

@@ -1226,9 +1226,10 @@ fi
 commit_and_tag "main/pl_help/architect-main-branch" \
     "Project on main branch, default config"
 
-# builder-isolated-branch
-commit_and_tag "main/pl_help/builder-isolated-branch" \
-    "Project on isolated/feat1 branch"
+# builder-collab-branch
+echo "collab/v2" > .purlin/runtime/active_branch
+commit_and_tag "main/pl_help/builder-collab-branch" \
+    "Project with .purlin/runtime/active_branch containing collab/v2 for builder"
 
 # qa-collab-branch
 echo "collab/v2" > .purlin/runtime/active_branch

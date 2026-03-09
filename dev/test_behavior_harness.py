@@ -284,17 +284,17 @@ class TestCommandTableAssertion(unittest.TestCase):
             "Should detect Builder header",
         )
 
-    def test_assertion_detects_isolated_variant(self):
-        """Assertion detects isolated session variant markers."""
-        output = "Purlin Builder — Ready  [Isolated: feat1]\n━━━━━━━━━━━━━━━━━━\n"
+    def test_assertion_detects_collab_variant(self):
+        """Assertion detects collaboration branch variant markers."""
+        output = "Purlin Builder — Ready  [Branch: collab/v2]\n━━━━━━━━━━━━━━━━━━\n"
         import re
         self.assertTrue(
-            bool(re.search(r"Isolated", output, re.IGNORECASE)),
-            "Should detect Isolated variant",
+            bool(re.search(r"Branch:", output, re.IGNORECASE)),
+            "Should detect Branch variant",
         )
         self.assertTrue(
-            bool(re.search(r"feat1", output)),
-            "Should detect isolation name",
+            bool(re.search(r"collab/v2", output)),
+            "Should detect branch name",
         )
 
 
@@ -391,42 +391,14 @@ class TestResumeCheckpointEcho(unittest.TestCase):
 class TestHelpVariantDetection(unittest.TestCase):
     """Scenario: Help test shows correct variant for branch
 
-    Given the fixture tag "main/pl_help/builder-isolated-branch" is checked out
-    And the project is on branch isolated/feat1
+    Given the fixture tag "main/pl_help/builder-collab-branch" is checked out
+    And .purlin/runtime/active_branch contains "collab/v2"
     When claude --print is invoked with "/pl-help"
-    Then the output contains the Isolated Session Variant table
-    And the output contains "feat1"
+    Then the output contains the Branch Collaboration Variant table
+    And the output contains "collab/v2"
 
     Note: Tests variant detection logic against reference command tables.
     """
-
-    def test_isolated_variant_has_correct_commands(self):
-        """Isolated variant includes pl-isolated-push/pull, not pl-remote-push/pull."""
-        # Read the actual builder_commands.md to get the isolated variant
-        commands_file = os.path.join(
-            PROJECT_ROOT, "instructions", "references", "builder_commands.md"
-        )
-        if not os.path.isfile(commands_file):
-            self.skipTest("builder_commands.md not found")
-
-        with open(commands_file) as f:
-            content = f.read()
-
-        # Find the Isolated Session Variant section
-        import re
-        isolated_section = re.search(
-            r"## Isolated Session Variant\n(.*?)(?=\n## |\Z)",
-            content,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(isolated_section, "Isolated variant section should exist")
-        isolated_text = isolated_section.group(1)
-
-        self.assertIn("pl-isolated-push", isolated_text)
-        self.assertIn("pl-isolated-pull", isolated_text)
-        # Should NOT contain remote push/pull (those are in main/collab variants)
-        self.assertNotIn("pl-remote-push", isolated_text)
-        self.assertNotIn("pl-remote-pull", isolated_text)
 
     def test_collab_variant_has_branch_header(self):
         """Branch Collaboration variant includes [Branch: <branch>] header."""
