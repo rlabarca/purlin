@@ -35,7 +35,7 @@ import extract_whats_different as ext
 class TestExitsWhenBranchIsNotMain(unittest.TestCase):
     """Scenario: Exits When Branch Is Not Main
 
-    Given the current branch is "isolated/feat1"
+    Given the current branch is "feature/auth"
     When the agent runs /pl-whats-different
     Then the command aborts with an error containing "only valid from the main checkout"
     And no generation script is executed
@@ -47,7 +47,7 @@ class TestExitsWhenBranchIsNotMain(unittest.TestCase):
     def test_branch_detection_identifies_non_main(self):
         """Non-main branch name is correctly detected."""
         # Simulate what the command does in Step 0
-        branch = 'isolated/feat1'
+        branch = 'feature/auth'
         is_main = (branch == 'main')
         self.assertFalse(is_main)
 
@@ -59,7 +59,7 @@ class TestExitsWhenBranchIsNotMain(unittest.TestCase):
 
     def test_error_message_content(self):
         """Error message matches spec: 'only valid from the main checkout'."""
-        branch = 'isolated/feat1'
+        branch = 'feature/auth'
         error_msg = (
             f'This command is only valid from the main checkout. '
             f'Current branch: {branch}. '
