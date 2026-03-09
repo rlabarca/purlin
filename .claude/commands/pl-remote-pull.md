@@ -112,8 +112,6 @@ To abandon: `git merge --abort` (restores <branch> to its pre-merge state).
 ```
 Exit with failure.
 
-**No cascade.** After `/pl-remote-pull` updates the collaboration branch, any active isolations that are BEHIND will show BEHIND in the ISOLATED TEAMS section and sync themselves via `/pl-isolated-pull` when ready. Each isolation controls its own branch.
-
 ### 7. Post-Merge Digest Generation
 
 After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-generate the "What's Different?" digest. This step is informational and does not block or fail the pull.
@@ -133,5 +131,4 @@ where `<tools_root>` is from `.purlin/config.json` (default `tools`).
 ## Notes
 
 - Uses `git merge` (not rebase) on the collaboration branch — it is a shared branch; rebase would rewrite history that other contributors depend on.
-- Does NOT cascade to isolated team worktrees. Each isolation syncs itself via `/pl-isolated-pull`.
 - Run from the collaboration branch only.
