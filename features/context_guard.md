@@ -49,7 +49,7 @@ The PreCompact hook is side-effects-only -- it cannot block or prevent compactio
 
 When triggered (auto-compaction with guard enabled), the hook performs these steps in order:
 
-1. **Write a checkpoint file** to `.purlin/cache/session_checkpoint_<role>.md` containing:
+1. **Write a checkpoint file** to `.purlin/cache/session_checkpoint_<role>_<unique_id>.md` (where `<unique_id>` is the parent process ID to support concurrent agents of the same role) containing:
     - `**Role:** <role>`
     - `**Timestamp:** <ISO 8601>`
     - `**Branch:** <current git branch>`

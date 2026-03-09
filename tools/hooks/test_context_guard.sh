@@ -68,6 +68,13 @@ run_guard() {
     STDERR_OUTPUT=$(cat "$stderr_file" 2>/dev/null || echo "")
 }
 
+# Find checkpoint file by role glob pattern (handles unique PID suffix).
+# Sets CHECKPOINT to the first matching file, or empty string if none.
+find_checkpoint() {
+    local role="$1"
+    CHECKPOINT=$(ls "$SANDBOX/.purlin/cache/session_checkpoint_${role}_"*.md 2>/dev/null | head -1 || echo "")
+}
+
 echo "==============================="
 echo "Context Guard Tests (PreCompact)"
 echo "==============================="
@@ -88,11 +95,11 @@ else
     log_fail "Expected exit code 0, got $EXIT_CODE"
 fi
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_builder.md"
-if [[ -f "$CHECKPOINT" ]]; then
-    log_pass "Checkpoint file exists at session_checkpoint_builder.md"
+find_checkpoint "builder"
+if [[ -n "$CHECKPOINT" && -f "$CHECKPOINT" ]]; then
+    log_pass "Checkpoint file exists for builder"
 else
-    log_fail "Checkpoint file does not exist"
+    log_fail "Checkpoint file does not exist for builder"
 fi
 
 if grep -q '^\*\*Role:\*\* builder' "$CHECKPOINT" 2>/dev/null; then
@@ -163,7 +170,6 @@ echo "[Scenario] Guard enabled by default when no config exists"
 setup_sandbox
 
 # No config file — guard should default to enabled, role to "unknown"
-# Unset AGENT_ROLE explicitly
 run_guard "auto" ""
 
 if [[ "$EXIT_CODE" -eq 0 ]]; then
@@ -172,8 +178,8 @@ else
     log_fail "Expected exit code 0, got $EXIT_CODE"
 fi
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_unknown.md"
-if [[ -f "$CHECKPOINT" ]]; then
+find_checkpoint "unknown"
+if [[ -n "$CHECKPOINT" && -f "$CHECKPOINT" ]]; then
     log_pass "Checkpoint file written with role unknown"
 else
     log_fail "Expected checkpoint file with role unknown"
@@ -217,7 +223,7 @@ echo '{"agents": {"builder": {"context_guard": true}}}' > "$SANDBOX/.purlin/conf
 EXPECTED_BRANCH=$(git -C "$SANDBOX" rev-parse --abbrev-ref HEAD 2>/dev/null)
 run_guard "auto" "builder"
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_builder.md"
+find_checkpoint "builder"
 if grep -q "^\*\*Branch:\*\* $EXPECTED_BRANCH" "$CHECKPOINT" 2>/dev/null; then
     log_pass "Checkpoint contains **Branch:** $EXPECTED_BRANCH"
 else
@@ -238,7 +244,7 @@ echo '{"agents": {"builder": {"context_guard": true}}}' > "$SANDBOX/.purlin/conf
 echo "modified" > "$SANDBOX/init.txt"
 run_guard "auto" "builder"
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_builder.md"
+find_checkpoint "builder"
 if grep -q '^\*\*Uncommitted Changes:\*\*$' "$CHECKPOINT" 2>/dev/null; then
     log_pass "Checkpoint contains **Uncommitted Changes:** header"
 else
@@ -264,7 +270,7 @@ echo '{"agents": {"builder": {"context_guard": true}}}' > "$SANDBOX/.purlin/conf
 # Tree is already clean after setup
 run_guard "auto" "builder"
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_builder.md"
+find_checkpoint "builder"
 if grep -q '^\*\*Uncommitted Changes:\*\* None$' "$CHECKPOINT" 2>/dev/null; then
     log_pass "Checkpoint contains **Uncommitted Changes:** None"
 else
@@ -338,8 +344,8 @@ else
     log_fail "Expected exit code 0, got $EXIT_CODE"
 fi
 
-CHECKPOINT="$SANDBOX/.purlin/cache/session_checkpoint_builder.md"
-if [[ -f "$CHECKPOINT" ]]; then
+find_checkpoint "builder"
+if [[ -n "$CHECKPOINT" && -f "$CHECKPOINT" ]]; then
     log_pass "Checkpoint file still written after commit failure"
 else
     log_fail "Checkpoint file not written after commit failure"

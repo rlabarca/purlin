@@ -82,8 +82,9 @@ else
     }
 fi
 
-# Step 2: Write checkpoint file
-CHECKPOINT_FILE="$CACHE_DIR/session_checkpoint_${ROLE}.md"
+# Step 2: Write checkpoint file (unique per agent instance to support concurrent agents)
+UNIQUE_ID="${PPID:-$$}"
+CHECKPOINT_FILE="$CACHE_DIR/session_checkpoint_${ROLE}_${UNIQUE_ID}.md"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%SZ")
 BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 GIT_STATUS=$(git -C "$PROJECT_ROOT" status --short 2>/dev/null || echo "")
