@@ -58,39 +58,18 @@ Purlin's built-in rules live inside the submodule. Your project-specific tweaks 
 
 ### File Access Permissions
 
-The Architect owns specs and policies. The Builder owns code, tests, and implementation notes. QA owns verification scripts and testing discoveries. Each role can read everything but only write to their own files. The Purlin submodule is read-only for all roles.
+Each role can read everything but only writes to its own domain. The Purlin submodule is read-only for all roles.
 
-<details>
-<summary>Full permissions matrix</summary>
-
-**Permission key:** C = Create, R = Read, W = Write/Modify, D = Delete
-
-| File Category | Path Pattern | Architect | Builder | QA |
-|---|---|---|---|---|
-| Feature specs | `features/*.md` (excl. `*.impl.md`, `tombstones/`) | CRWD | R | R |
-| Anchor nodes | `features/arch_*.md`, `design_*.md`, `policy_*.md` | CRWD | RW | R |
-| Companion files | `features/*.impl.md` | CR | CRWD | RW |
-| Tombstone files | `features/tombstones/*.md` | CRD | RD | R |
-| Override: HOW_WE_WORK, ARCHITECT | `.purlin/HOW_WE_WORK_OVERRIDES.md`, `ARCHITECT_OVERRIDES.md` | RW | R | R |
-| Override: BUILDER | `.purlin/BUILDER_OVERRIDES.md` | RW | RW | R |
-| Override: QA | `.purlin/QA_OVERRIDES.md` | RW | R | RW |
-| README / prose docs | `README.md`, `docs/**/*.md` | RW | R | R |
-| Process config | `.gitignore`, `.purlin/release/*.json`, `.purlin/config.json` | RW | R | R |
-| Test results | `tests/<feature>/tests.json` | R | CRW | R |
-| QA verification scripts | `tests/qa/**` | R | R | CRWD |
-| Tool-generated files | `critic.json`, `CRITIC_REPORT.md`, `dependency_graph.json` | R | R | R |
-| Delivery plan | `.purlin/cache/delivery_plan.md` | R | CRWD | R |
-| Discovery sections | `## User Testing Discoveries` in feature files | RW | CRW | CRW |
-| Your project code | All files outside Purlin-managed paths | R | CRWD | R |
-| Purlin submodule | `purlin/**` | -- | -- | -- |
-
-**Notes:**
-- **Purlin-managed paths:** `features/`, `.purlin/`, `tests/`, `purlin/` (submodule), and root-level prose docs. Everything else is "your project code."
-- **Instruction files** (`instructions/*.md`) live inside the submodule and are read-only for consumer projects.
-- Builder anchor node writes are limited to `[DISCOVERY]` tags in companion files; QA companion file writes are limited to pruning one-liners.
-- Tool-generated files (`critic.json`, `CRITIC_REPORT.md`, etc.) are produced by CLI tools -- no agent writes directly.
-
-</details>
+| Domain | Architect | Builder | QA |
+|---|---|---|---|
+| Feature specs (`features/*.md`) | **Owner** | Read | Read |
+| Anchor nodes (`arch_*`, `design_*`, `policy_*`) | **Owner** | Read | Read |
+| Companion files (`*.impl.md`) | Create | **Owner** | Read |
+| Override files (`.purlin/*.md`) | **Owner** | Own file | Own file |
+| Project code and config | Read | **Owner** | Read |
+| Tests and traceability | Read | **Owner** | Read |
+| QA scripts and discoveries | Read | Read | **Owner** |
+| Purlin submodule (`purlin/`) | -- | -- | -- |
 
 ### Shared Commands
 
