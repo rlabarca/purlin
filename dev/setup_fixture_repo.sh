@@ -1168,6 +1168,21 @@ create_tests_json_pass "pl_context_guard"
 commit_and_tag "main/pl_context_guard/mixed-thresholds" \
     "Project with different context guard thresholds and enabled states per role"
 
+# mixed-states: different context_guard enabled booleans per role (no thresholds)
+cat > .purlin/config.json <<'EOF'
+{
+    "tools_root": "tools",
+    "agents": {
+        "architect": { "model": "claude-opus-4-6", "context_guard": true },
+        "builder": { "model": "claude-opus-4-6", "context_guard": true },
+        "qa": { "model": "claude-sonnet-4-6", "context_guard": false }
+    }
+}
+EOF
+
+commit_and_tag "main/pl_context_guard/mixed-states" \
+    "Project with different context guard enabled states per role"
+
 # =====================================================================
 echo ""
 echo "--- pl_help ---"
