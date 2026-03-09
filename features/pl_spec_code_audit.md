@@ -59,13 +59,17 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 - Triage mode MUST process all features in-agent without launching subagents.
 - For each feature, the command MUST:
-  - Read the feature file and check spec completeness across all 10 gap dimensions (see Section 2.12).
+  - Read the feature file and check spec completeness across all 11 gap dimensions (see Section 2.12).
   - Read companion file if it exists and check builder decisions and notes depth.
   - Read `tests/<name>/critic.json` for gate status and traceability.
   - Perform an anchor constraint surface check: for each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
   - Perform a light code scan (if implementation exists): read up to 3 primary source files (discovered via test imports or companion file Tool Location) and grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
 - Triage mode MUST skip scenario-by-scenario deep comparison.
-- After processing all features, results MUST be saved to `.purlin/cache/audit_state.json`.
+- After processing all features individually, the command MUST perform a cross-feature requirement hygiene pass (dimension 11):
+  - **Duplicate detection:** Compare scenario titles and Given/When/Then signatures across all features. Flag pairs where two scenarios in different features target the same endpoint, function, or UI element with the same preconditions and assertions.
+  - **Conflict detection:** Compare requirements sections and scenario assertions across features that share a prerequisite anchor or target the same component. Flag contradictory assertions (e.g., different expected status codes, incompatible state transitions, contradictory anchor invariants).
+  - **Unused detection:** Cross-reference the dependency graph to find features with no implementation (no `tests/<name>/` directory, no source files discovered), no test coverage, and not listed as a prerequisite by any other feature. Flag these as orphaned specs.
+- After the cross-feature pass, results MUST be saved to `.purlin/cache/audit_state.json`.
 
 ### 2.8 Deep Mode
 
@@ -90,7 +94,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
   - Perform scenario-by-scenario comparison: find the corresponding test function, trace to the code path, verify assertions match actual code logic, and flag contradictions, missing logic, extra behavior, or hardcoded values.
   - Perform transitive anchor constraint validation: grep all source files for each FORBIDDEN pattern from ancestor anchors, check invariant coverage, and check constraint compliance.
   - Scan for undocumented behavior (error handlers, config branches, edge cases with no scenario coverage).
-  - Check spec completeness across all 10 gap dimensions.
+  - Check spec completeness across all 11 gap dimensions.
 - **Spec-only subagents** MUST:
   - Read the feature file and companion.
   - Check spec completeness, policy anchoring, builder decisions, and notes depth.
@@ -106,6 +110,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 ### 2.10 Phase 2 -- Synthesis
 
 - The command MUST parse all gap findings from in-agent triage scan or subagent structured output.
+- In deep mode, the command MUST perform the cross-feature requirement hygiene pass (dimension 11) at this stage, since subagents operate on individual feature batches and cannot detect cross-feature issues. The same duplicate, conflict, and unused checks described in Section 2.7 apply.
 - The command MUST deduplicate gaps where the same implementation file is flagged by overlapping feature batches or transitive anchors.
 - Each gap MUST be classified by severity (CRITICAL, HIGH, MEDIUM, LOW), owner (ARCHITECT or BUILDER), and action (FIX if owner matches acting role, ESCALATE otherwise). See Section 2.13 for severity criteria.
 - The command MUST build an audit table sorted CRITICAL to LOW, then alphabetically by feature name. Rows are numbered sequentially.
@@ -123,7 +128,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 
 ### 2.12 Gap Dimensions
 
-The command MUST assess each feature against these 10 dimensions:
+The command MUST assess each feature against these 11 dimensions (dimensions 1-10 are per-feature; dimension 11 is cross-feature):
 
 | # | Dimension | Description |
 |---|---|---|
@@ -137,15 +142,16 @@ The command MUST assess each feature against these 10 dimensions:
 | 8 | Notes depth | Complex feature (5+ scenarios or visual spec) with stub-only or absent companion file |
 | 9 | Code divergence | Scenario assertions not reflected in code; significant code paths with no scenario coverage; hardcoded values the spec says should be configurable |
 | 10 | Anchor invariant drift | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
+| 11 | Requirement hygiene | Cross-feature analysis: **Duplicate** -- two or more features define scenarios or requirements that specify the same behavior for the same component (identical or near-identical Given/When/Then targeting the same endpoint, function, or UI element). **Conflicting** -- two features specify contradictory behavior for the same component (e.g., feature A says endpoint returns 200, feature B says it returns 404; or two anchors define incompatible invariants for the same domain). **Unused** -- a feature or scenario that has no implementation code, no test, and is not a prerequisite of any other feature (orphaned spec with no path to implementation). |
 
 ### 2.13 Severity Classification
 
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor |
-| MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code |
-| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions for the same component) |
+| MEDIUM | Missing prerequisite link; traceability gap; dependency currency failure; spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (same behavior specified in multiple places) |
+| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation or dependents |
 
 ### 2.14 Phase 3 -- Remediation (Post-Approval)
 
@@ -400,6 +406,37 @@ The command MUST assess each feature against these 10 dimensions:
     When the Builder processes the ESCALATE item
     Then a [DISCOVERY] or [SPEC_PROPOSAL] entry is added to the companion file
     And the entry includes Source, Severity, Details, and Suggested spec change fields
+
+#### Scenario: Duplicate requirements detected across features
+
+    Given feature A defines a scenario "Create Branch Pushes and Checks Out"
+    And feature B defines a scenario "Branch Creation Pushes and Checks Out"
+    And both scenarios target the same endpoint POST /branch-collab/create with identical assertions
+    When the cross-feature requirement hygiene pass runs
+    Then a gap is recorded with dimension "Requirement hygiene"
+    And the gap description identifies the duplicate pair (feature A and feature B)
+    And the gap severity is MEDIUM
+
+#### Scenario: Conflicting requirements detected across features
+
+    Given feature A specifies that POST /api/config returns 200 with the current config
+    And feature B specifies that POST /api/config returns 404 when config is absent
+    And both features target the same endpoint under the same preconditions
+    When the cross-feature requirement hygiene pass runs
+    Then a gap is recorded with dimension "Requirement hygiene"
+    And the gap description identifies the conflicting assertions
+    And the gap severity is HIGH
+
+#### Scenario: Unused feature spec detected
+
+    Given feature orphan_spec.md exists with 3 automated scenarios
+    And no tests/<name>/ directory exists for orphan_spec
+    And no other feature lists orphan_spec.md as a prerequisite
+    And no implementation source files are discovered for orphan_spec
+    When the cross-feature requirement hygiene pass runs
+    Then a gap is recorded with dimension "Requirement hygiene"
+    And the gap description identifies orphan_spec.md as an unused spec
+    And the gap severity is LOW
 
 ### Manual Scenarios (Human Verification Required)
 
