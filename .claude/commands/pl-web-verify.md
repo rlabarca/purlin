@@ -124,6 +124,14 @@ When a feature has both `> Web Testable:` and `> Test Fixtures: <repo-url>` meta
 
 **Non-fixture scenarios:** Scenarios without fixture tag references in the same feature continue using the normal port resolution flow (Step 3.5) against the live project.
 
+### Step 3.7 — Screenshot Directory Setup
+
+All screenshots taken during web-verify MUST be saved to `.purlin/runtime/web-verify/`, NOT the project root. This directory is gitignored and transient.
+
+1. Create the directory: `mkdir -p .purlin/runtime/web-verify`
+2. When calling `browser_take_screenshot`, ALWAYS use the `filename` parameter with a path under this directory (e.g., `.purlin/runtime/web-verify/feature-scenario-step.png`).
+3. After all features have been verified (Step 8 complete), delete the directory: `rm -rf .purlin/runtime/web-verify`
+
 ### Step 4 — Browser Setup
 
 For each eligible feature:
