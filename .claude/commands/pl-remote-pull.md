@@ -1,10 +1,21 @@
-Pull: pull remote collaboration branch into local collaboration branch.
+Pull: pull remote collaboration branch into current branch.
 
-**Owner: All roles — from collaboration branch only**
+```
+/pl-remote-pull [<branch>]
+```
+
+- **No argument:** Reads branch from `.purlin/runtime/active_branch`. Must be checked out on the collaboration branch (existing behavior).
+- **With argument** (e.g., `/pl-remote-pull RC0.8.0`): Uses the argument as the branch name directly. Runs from any branch (typically `main`). Skips Steps 0–1.
+
+**Ref substitution rule:** In explicit-branch mode, every `<branch>` ref in git range comparisons (Steps 5–6) is replaced with `HEAD`, since you are not checked out on the collaboration branch.
+
+**Owner: All roles**
 
 ## Steps
 
-### 0. Branch Guard
+### 0. Branch Guard (no-argument mode only)
+
+**Skip this step** when a branch argument was provided — use the argument as `<branch>` and proceed directly to Step 2.
 
 Read `.purlin/runtime/active_branch`. If the file is absent or empty, abort:
 
@@ -14,7 +25,9 @@ No active collaboration branch. Use the CDD dashboard to create or join a branch
 
 Extract the branch name from the file contents (single line, trimmed).
 
-### 1. Collaboration Branch Guard
+### 1. Collaboration Branch Guard (no-argument mode only)
+
+**Skip this step** when a branch argument was provided — proceed directly to Step 2.
 
 Run: `git rev-parse --abbrev-ref HEAD`
 
@@ -51,7 +64,7 @@ If the fetch fails (remote branch does not exist), abort: "Remote branch <branch
 
 ### 5. Sync State
 
-Run two range queries:
+Run two range queries. In explicit-branch mode, replace `<branch>` with `HEAD` per the ref substitution rule.
 
 ```
 git log <remote>/<branch>..<branch> --oneline
@@ -67,6 +80,8 @@ Determine state:
 - ahead>0, behind>0 -> DIVERGED
 
 ### 6. Merge or No-op
+
+In explicit-branch mode, apply the same `<branch>` → `HEAD` ref substitution in all git range commands below. User-facing messages should use the branch name (not "HEAD").
 
 **SAME:** Print "Local <branch> is already in sync with remote." Exit.
 
@@ -131,4 +146,5 @@ where `<tools_root>` is from `.purlin/config.json` (default `tools`).
 ## Notes
 
 - Uses `git merge` (not rebase) on the collaboration branch — it is a shared branch; rebase would rewrite history that other contributors depend on.
-- Run from the collaboration branch only.
+- **No-argument mode:** Must be run from the collaboration branch.
+- **Explicit-branch mode:** Can be run from any branch (typically `main`). Does NOT write `.purlin/runtime/active_branch` or auto-checkout the collaboration branch. The merge target is whatever branch is currently checked out.
