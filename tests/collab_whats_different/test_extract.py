@@ -212,10 +212,6 @@ class TestFileCategorization(unittest.TestCase):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
         self.assertEqual(ext.categorize_file('pl-run-builder.sh'), 'purlin_config')
 
-    def test_launcher_isolation(self):
-        """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
-        self.assertEqual(ext.categorize_file('pl-run-feat1-architect.sh'), 'purlin_config')
-
     def test_purlin_command_file(self):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
         self.assertEqual(ext.categorize_file('.claude/commands/pl-status.md'), 'purlin_config')
@@ -223,7 +219,7 @@ class TestFileCategorization(unittest.TestCase):
     def test_launcher_not_code(self):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config
         — none of these files appear in the code category."""
-        for path in ['pl-run-builder.sh', 'pl-run-feat1-architect.sh',
+        for path in ['pl-run-builder.sh',
                      '.claude/commands/pl-status.md']:
             self.assertNotEqual(ext.categorize_file(path), 'code',
                                 f'{path} should not be categorized as code')

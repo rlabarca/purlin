@@ -92,9 +92,9 @@ def compute_sync_state(branch_name):
 _STATUS_RE = re.compile(
     r'\[(Complete|Ready for Verification|TODO)\s+features/(\S+\.md)\]')
 
-# Purlin infrastructure launcher scripts (bootstrap + isolation)
+# Purlin infrastructure launcher scripts (bootstrap only)
 _PURLIN_LAUNCHER_RE = re.compile(
-    r'^pl-run-(?:[a-zA-Z0-9_-]{1,12}-)?(?:architect|builder|qa)\.sh$')
+    r'^pl-run-(?:architect|builder|qa)\.sh$')
 
 # Patterns for scope tags in commit messages
 _SCOPE_RE = re.compile(r'\[Scope:\s*(\S+)\]')

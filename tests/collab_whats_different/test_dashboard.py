@@ -944,7 +944,6 @@ class TestModalCloseButtonPresent(unittest.TestCase):
         'commits_ahead': 1, 'commits_behind': 0}])
     @patch('serve._has_git_remote', return_value=True)
     @patch('serve.get_active_branch', return_value='v0.5-sprint')
-    @patch('serve.get_isolation_worktrees', return_value=[])
     @patch('serve.generate_api_status_json', return_value={
         'features': [], 'critic_last_run': ''})
     @patch('serve.get_last_commit', return_value='abc1234 test commit')
