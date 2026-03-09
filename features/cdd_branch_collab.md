@@ -165,8 +165,8 @@ For `guide-pull`: return `{ "status": "ok", "action_required": "pull", "command"
 - EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. For branches in the branches table (setup mode, no local checkout), sync state is computed by comparing `origin/<branch>` against the current HEAD:
   - `git log HEAD..origin/<branch> --oneline` -> commits the branch has that HEAD does not.
   - `git log origin/<branch>..HEAD --oneline` -> commits HEAD has that the branch does not.
-  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit. The branch was just created and has no work. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
-  - **SAME:** Both directions return zero lines (identical to EMPTY detection -- in practice, EMPTY and SAME are equivalent for remote-only branches; use EMPTY as the label since it better communicates the branch state to the user).
+  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has no unique commits relative to main (`git log main..origin/<branch> --oneline` returns zero lines). This is a genuinely new branch with no work. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
+  - **SAME:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit, BUT the branch has commits relative to main (`git log main..origin/<branch> --oneline` returns one or more lines). This is an established branch (e.g., a release candidate) whose work has been merged into main. Shows green badge (`--purlin-status-good`).
   - **AHEAD:** Branch has unique commits HEAD does not, but HEAD has none the branch lacks. Shows yellow badge.
   - **BEHIND:** HEAD has commits the branch lacks, but the branch has none HEAD lacks. This is a stale branch. Shows yellow badge.
   - **DIVERGED:** Both have unique commits. Shows orange badge.
