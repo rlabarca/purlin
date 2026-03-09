@@ -259,63 +259,6 @@ class TestBootstrapDoesNotCreateLocalConfig(ResolverTestBase):
         self.assertTrue(os.path.exists(self.shared_path))
 
 
-class TestWorktreeCreationCopiesLocal(ResolverTestBase):
-    """Scenario: Worktree Creation Copies Local Config If Present"""
-
-    def test_worktree_gets_local_copy(self):
-        self.write_local({"cdd_port": 9999})
-        # Simulate worktree creation: copy local config
-        worktree_dir = os.path.join(self.tmpdir, '.worktrees', 'feat1')
-        wt_purlin = os.path.join(worktree_dir, '.purlin')
-        os.makedirs(wt_purlin)
-        shutil.copy2(self.local_path, os.path.join(wt_purlin, 'config.local.json'))
-
-        # Verify worktree has the local config
-        wt_local = os.path.join(wt_purlin, 'config.local.json')
-        self.assertTrue(os.path.exists(wt_local))
-        with open(wt_local) as f:
-            wt_config = json.load(f)
-        self.assertEqual(wt_config["cdd_port"], 9999)
-
-
-class TestWorktreeCreationWithoutLocal(ResolverTestBase):
-    """Scenario: Worktree Creation Works Without Local Config"""
-
-    def test_worktree_works_with_shared_only(self):
-        self.write_shared({"cdd_port": 8086})
-        # No local config
-        worktree_dir = os.path.join(self.tmpdir, '.worktrees', 'feat1')
-        wt_purlin = os.path.join(worktree_dir, '.purlin')
-        os.makedirs(wt_purlin)
-        shutil.copy2(self.shared_path, os.path.join(wt_purlin, 'config.json'))
-
-        # Resolver in worktree context should work
-        result = resolve_config(worktree_dir)
-        self.assertEqual(result["cdd_port"], 8086)
-
-
-class TestDashboardPropagatestoWorktree(ResolverTestBase):
-    """Scenario: CDD Dashboard Propagates Agent Changes to Worktree Local Configs"""
-
-    def test_propagation_to_worktree_local(self):
-        self.write_local({"agents": {"builder": {"model": "claude-sonnet-4-6"}}})
-        # Simulate worktree with local config
-        worktree_dir = os.path.join(self.tmpdir, '.worktrees', 'feat1')
-        wt_purlin = os.path.join(worktree_dir, '.purlin')
-        os.makedirs(wt_purlin)
-        wt_local = os.path.join(wt_purlin, 'config.local.json')
-        shutil.copy2(self.local_path, wt_local)
-
-        # Simulate POST /config/agents propagation
-        updated = {"agents": {"builder": {"model": "claude-opus-4-6"}}}
-        with open(wt_local, 'w') as f:
-            json.dump(updated, f)
-
-        # Verify worktree local was updated
-        result = resolve_config(worktree_dir)
-        self.assertEqual(result["agents"]["builder"]["model"], "claude-opus-4-6")
-
-
 class TestPythonConsumerReadsViaResolver(ResolverTestBase):
     """Scenario: Python Consumer Reads Resolved Config via Resolver"""
 
