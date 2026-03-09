@@ -98,15 +98,16 @@ Five POST endpoints:
 
 Join uses a two-phase flow: **assessment** (fetch + compute state) then **confirmation** (act on user choice). This endpoint performs Phase 1 only — it returns state information without switching branches.
 
-1. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
-2. Check if a local branch `<name>` already exists.
-3. **If no local branch exists:** Check if working tree is dirty. If dirty, return error with `"dirty": true` and `"dirty_files": [...]`. If clean, create tracking branch: `git checkout -b <name> origin/<name>`, record base branch, write active_branch, and return `{ "status": "ok", "branch": "<name>", "completed": true }`. No Phase 2 needed.
-4. **If local branch exists:** Compute two sync states:
+1. **Best-effort push of current branch:** `git push <remote> <current-branch>`. This ensures the remote has the user's latest work before switching away. If the push fails (e.g., remote rejects, no network, current branch has no upstream), log the failure server-side and continue — the push is advisory, not blocking.
+2. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
+3. Check if a local branch `<name>` already exists.
+4. **If no local branch exists:** Check if working tree is dirty. If dirty, return error with `"dirty": true` and `"dirty_files": [...]`. If clean, create tracking branch: `git checkout -b <name> origin/<name>`, record base branch, write active_branch, and return `{ "status": "ok", "branch": "<name>", "completed": true }`. No Phase 2 needed.
+5. **If local branch exists:** Compute two sync states:
    - **HEAD-relative** (primary): compare `origin/<name>` vs `HEAD` using the same computation as the branches table (Section 2.5). This tells the user how the branch relates to their current position.
    - **Local-vs-remote** (reconciliation): compare local `<name>` vs `origin/<name>`. This determines what action is needed to sync the local copy before joining.
    Check if working tree is dirty (uncommitted changes outside `.purlin/`).
-   **Auto-complete:** If HEAD-relative is SAME or EMPTY AND local-vs-remote is SAME AND working tree is clean, auto-complete with checkout (same behavior as step 3: record base branch, checkout, write active_branch, return `{ "completed": true }`). No Phase 2 modal needed.
-5. Return assessment: `{ "status": "ok", "sync_state": "<STATE>", "commits_ahead": N, "commits_behind": M, "local_sync": "<STATE>", "local_ahead": N, "local_behind": M, "dirty": bool, "dirty_files": [...] }`. `sync_state`/`commits_ahead`/`commits_behind` are HEAD-relative (same perspective as the branches table). `local_sync`/`local_ahead`/`local_behind` are local-vs-remote. The UI determines the Phase 2 action from the combined state (see Section 2.8).
+   **Auto-complete:** If HEAD-relative is SAME or EMPTY AND local-vs-remote is SAME AND working tree is clean, auto-complete with checkout (same behavior as step 4: record base branch, checkout, write active_branch, return `{ "completed": true }`). No Phase 2 modal needed.
+6. Return assessment: `{ "status": "ok", "sync_state": "<STATE>", "commits_ahead": N, "commits_behind": M, "local_sync": "<STATE>", "local_ahead": N, "local_behind": M, "dirty": bool, "dirty_files": [...], "push_result": "<ok|failed|skipped>" }`. `sync_state`/`commits_ahead`/`commits_behind` are HEAD-relative (same perspective as the branches table). `local_sync`/`local_ahead`/`local_behind` are local-vs-remote. `push_result` reports the outcome of the step-1 best-effort push. The UI determines the Phase 2 action from the combined state (see Section 2.8).
 
 **`POST /branch-collab/join-confirm`** -- `{ "branch": "<name>", "action": "<action>" }` (Phase 2: Confirm)
 
@@ -344,6 +345,28 @@ The following fixture tags provide real git branch topology for integration-leve
     Then the response contains an error message about dirty working tree
     And no branch is created
     And the current branch is unchanged
+
+#### Scenario: Join Branch Pushes Current Branch Before Fetch
+
+    Given the current branch is main
+    And main is 3 commits ahead of origin/main
+    And feature/auth exists as a remote tracking branch
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then git push is called for main before git fetch
+    And the response contains "push_result": "ok"
+
+#### Scenario: Join Branch Continues When Pre-Join Push Fails
+
+    Given the current branch is main
+    And the remote rejects the push
+    And feature/auth exists as a remote tracking branch
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join with body {"branch": "feature/auth"}
+    Then the push failure is logged server-side
+    And git fetch is called for feature/auth
+    And the response contains "push_result": "failed"
+    And the join assessment proceeds normally
 
 #### Scenario: Join Branch Assessment Creates Tracking Branch When No Local Exists
 

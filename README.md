@@ -160,21 +160,25 @@ The Critic outputs a `CRITIC_REPORT.md` at the project root with a role-specific
 
 ## Remote Collaboration
 
-Work across machines using session-based collab branches on a hosted remote. Create a collab session (`collab/<name>` branch) from the CDD Dashboard, check out the branch locally, then use `/pl-remote-push` and `/pl-remote-pull` to sync. Isolation branches merge to the collaboration branch.
+Collaboration uses plain git branches on your existing remote -- no extra services required. The CDD Dashboard provides a UI for creating and joining branches, but underneath it's just `git push`, `git pull`, and `git fetch`.
 
-**Rules:** Collab commands only run from a checked-out `collab/<session>` branch. Always fetches first; blocks if behind (must pull first). Pulls use merge to preserve shared history.
+1. **Create a branch** from the CDD Dashboard (or the command line -- it's a normal git branch).
+2. **Join the branch** on another machine. The dashboard fetches, shows sync state, and checks out the branch.
+3. **Sync** with `/pl-remote-push` and `/pl-remote-pull` while you work. Pulls use merge to preserve shared history. Pushes always fetch first and block if behind.
+
+The dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED), a contributors table, and last-sync timestamps. All of this reads from locally cached git refs -- no polling the remote during normal use.
 
 ---
 
 ## Isolated Teams
 
-Multiple concurrent agent sessions through named git worktrees. Each isolation is an independent workspace on a dedicated branch where any agent can work without interfering with other sessions.
+Run multiple agent sessions in parallel using git worktrees. Each isolation is a worktree on its own branch -- agents work independently without stepping on each other.
 
 ```bash
-tools/collab/create_isolation.sh <name>
+tools/collab/create_isolation.sh <name>   # creates .worktrees/<name>/ on branch isolated/<name>
 ```
 
-This creates a git worktree at `.worktrees/<name>/` on branch `isolated/<name>`. When work is complete, the agent runs `/pl-isolated-push` to merge back to the collaboration branch. Active isolations appear in the CDD Dashboard with sync state and file change summary.
+When done, the agent merges back to the collaboration branch with `/pl-isolated-push`. Active isolations and their sync state appear in the CDD Dashboard.
 
 ---
 
