@@ -37,9 +37,6 @@ GLOBAL_STEPS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "release", "global_st
 LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "local_steps.json")
 LOCAL_CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "release", "config.json")
 
-HANDOFF_GLOBAL_STEPS_PATH = os.path.join(PROJECT_ROOT, TOOLS_ROOT, "handoff", "global_steps.json")
-HANDOFF_LOCAL_STEPS_PATH = os.path.join(PROJECT_ROOT, ".purlin", "handoff", "local_steps.json")
-
 RESERVED_PREFIX = "purlin."
 
 
@@ -94,15 +91,10 @@ def load_config(path=None):
     return data.get("steps", None)
 
 
-def resolve_checklist(global_path=None, local_path=None, config_path=None,
-                      checklist_type="release"):
+def resolve_checklist(global_path=None, local_path=None, config_path=None):
     """Resolve the full ordered checklist.
 
     Implements the algorithm from release_checklist_core.md Section 2.5.
-
-    Args:
-        checklist_type: "release" or "handoff" — determines default file paths.
-            For handoff, config_path must be passed explicitly (per-role configs).
 
     Returns:
         (resolved_steps, warnings, errors)
@@ -110,15 +102,9 @@ def resolve_checklist(global_path=None, local_path=None, config_path=None,
         - warnings: list of warning strings (orphaned config entries)
         - errors: list of error strings (reserved prefix violations)
     """
-    # Route default paths based on checklist_type
-    if checklist_type == "handoff":
-        eff_global = global_path or HANDOFF_GLOBAL_STEPS_PATH
-        eff_local = local_path or HANDOFF_LOCAL_STEPS_PATH
-        eff_config = config_path  # Per-role; caller must specify or None
-    else:
-        eff_global = global_path or GLOBAL_STEPS_PATH
-        eff_local = local_path or LOCAL_STEPS_PATH
-        eff_config = config_path or LOCAL_CONFIG_PATH
+    eff_global = global_path or GLOBAL_STEPS_PATH
+    eff_local = local_path or LOCAL_STEPS_PATH
+    eff_config = config_path or LOCAL_CONFIG_PATH
 
     # Step 1-2: Load definitions
     global_steps = load_global_steps(eff_global)
