@@ -560,7 +560,7 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
 class TestStep0NoOp(unittest.TestCase):
     """Scenario: Step 0 is a no-op placeholder.
 
-    The context guard uses a PreCompact hook with no runtime files.
+    Step 0 is a no-op placeholder retained for step numbering sequence.
     Step 0 must not reference turn_count or session_meta files.
     """
 
