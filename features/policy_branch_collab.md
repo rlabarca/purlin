@@ -2,7 +2,6 @@
 
 > Label: "Policy: Branch Collaboration"
 > Category: "Coordination & Lifecycle"
-> Prerequisite: features/policy_collaboration.md
 > Prerequisite: features/policy_release.md
 
 ## Purpose
@@ -43,17 +42,16 @@ The **collaboration branch** is a contextual reference that replaces all hardcod
 
 Detection: read `.purlin/runtime/active_branch`. If present and non-empty, that value is the collaboration branch. Otherwise, `main`.
 
-All collaboration commands (`/pl-remote-push`, `/pl-remote-pull`, `/pl-isolated-push`, `/pl-isolated-pull`) use the collaboration branch as their integration target. During an active branch, the local machine checks out that branch, making push and pull symmetric same-branch operations.
+All collaboration commands (`/pl-remote-push`, `/pl-remote-pull`) use the collaboration branch as their integration target. During an active branch, the local machine checks out that branch, making push and pull symmetric same-branch operations.
 
 ### 2.5 Collaboration Branch Restriction (Critical)
 
-- `/pl-remote-push` and `/pl-remote-pull` MUST be run from the active collaboration branch. They are FORBIDDEN inside isolated worktrees.
+- `/pl-remote-push` and `/pl-remote-pull` MUST be run from the active collaboration branch.
 - Enforcement: Step 0 branch check in each command file verifies the current branch matches the collaboration branch.
-- Physical placement: both files exist in the project root `.claude/commands/`. They are NOT present in isolated worktree `.claude/commands/` directories (`create_isolation.sh` places only `pl-isolated-push.md` and `pl-isolated-pull.md` in worktree `.claude/commands/`).
 
 ### 2.6 Integration Sequence
 
-Always: isolation branch -> local collaboration branch (via `/pl-isolated-push`) -> remote (via `/pl-remote-push`). During an active branch, the collaboration branch is the value from `.purlin/runtime/active_branch`. Isolation branches (`isolated/*`) remain local and are never pushed directly to remote.
+Local collaboration branch -> remote (via `/pl-remote-push`). During an active branch, the collaboration branch is the value from `.purlin/runtime/active_branch`.
 
 ### 2.7 Fetch-Before-Push
 
@@ -61,7 +59,7 @@ Always `git fetch` before pushing. If the local collaboration branch is BEHIND o
 
 ### 2.8 Merge-Not-Rebase for Collaboration Branch
 
-`/pl-remote-pull` uses `git merge` (not rebase) on the local collaboration branch. The collaboration branch is a shared integration branch -- rebasing rewrites commits other contributors depend on. This differs from `/pl-isolated-pull` (isolation branches are personal -> rebase; the collaboration branch is shared -> merge).
+`/pl-remote-pull` uses `git merge` (not rebase) on the local collaboration branch. The collaboration branch is a shared integration branch -- rebasing rewrites commits other contributors depend on.
 
 ### 2.9 Contributor Identity
 
@@ -96,7 +94,6 @@ Fields: `remote` (default `"origin"`), `auto_fetch_interval` (seconds; 0 = disab
 
 - `git push origin main` -- direct push to remote main during active collaboration
 - `git push --force origin <branch>` -- force push to collaboration branch
-- Running `/pl-remote-push` or `/pl-remote-pull` from inside an isolated worktree
 - Running `/pl-remote-push` or `/pl-remote-pull` from a branch that does not match the active branch
 - `git checkout main` while a branch is active -- use Leave to return to main
 - Manual editing of `.purlin/config.json` to set up branch collaboration (use the dashboard)

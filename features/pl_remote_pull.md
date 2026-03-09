@@ -8,9 +8,9 @@
 
 ## 1. Overview
 
-The `/pl-remote-pull` skill pulls the remote collaboration branch into the local collaboration branch via merge. During an active branch, the local machine is on the collaboration branch and merges from the same-named remote branch -- a symmetric same-branch pull. It is available only from the collaboration branch checkout (not from isolated worktrees). The target branch is read from `.purlin/runtime/active_branch`.
+The `/pl-remote-pull` skill pulls the remote collaboration branch into the local collaboration branch via merge. During an active branch, the local machine is on the collaboration branch and merges from the same-named remote branch -- a symmetric same-branch pull. It is available only from the collaboration branch checkout. The target branch is read from `.purlin/runtime/active_branch`.
 
-Merge (not rebase) is used because the collaboration branch is a shared integration branch -- rebasing rewrites commits other contributors' copies or the remote already have. This differs from `/pl-isolated-pull` which uses rebase on personal isolation branches.
+Merge (not rebase) is used because the collaboration branch is a shared integration branch -- rebasing rewrites commits other contributors' copies or the remote already have.
 
 ---
 
@@ -55,10 +55,6 @@ Steps (after preconditions pass):
 4. **AHEAD**: "Local <branch> is AHEAD by N commits. Nothing to pull -- run `/pl-remote-push` when ready." Exit 0.
 5. **BEHIND**: `git merge --ff-only origin/<branch>`. Report "Fast-forwarded local <branch> by M commits from `<remote>/<branch>`." On ff-failure (race condition): "Fast-forward failed -- re-run `/pl-remote-pull`." Exit 1.
 6. **DIVERGED**: Print pre-merge context (`git log <branch>..origin/<branch> --stat --oneline`). Run `git merge origin/<branch>`. On conflict: print per-file conflict context (commits from each side that touched each conflicting file); provide resolution instructions (`git add` + `git merge --continue` or `git merge --abort`); exit 1.
-
-### 2.6 No Cascade to Isolated Teams
-
-After `/pl-remote-pull` updates the collaboration branch, any active isolations that are BEHIND will show `BEHIND` in the ISOLATED TEAMS section and sync themselves via `/pl-isolated-pull` when ready. Each isolation controls its own branch.
 
 ---
 
@@ -135,15 +131,6 @@ After `/pl-remote-pull` updates the collaboration branch, any active isolations 
     When /pl-remote-pull is invoked
     Then the command prints "Local feature/auth is already in sync with remote"
     And no git merge is executed
-
-#### Scenario: pl-remote-pull Does Not Cascade To Isolated Team Worktrees
-
-    Given the current branch is feature/auth with an active branch "feature/auth"
-    And an isolated worktree exists at .worktrees/feat1
-    And origin/feature/auth has 2 commits not in local feature/auth
-    When /pl-remote-pull is invoked and fast-forwards feature/auth
-    Then the isolated worktree at .worktrees/feat1 is not modified
-    And .worktrees/feat1 shows BEHIND in subsequent status checks
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -21,8 +21,7 @@ Agents print their command vocabulary table at startup, but there is no way to r
 ### 2.2 Branch Detection
 
 - The skill MUST detect the current branch via `git rev-parse --abbrev-ref HEAD`.
-- If the branch starts with `isolated/`, print the Isolated Session Variant.
-- Else if `.purlin/runtime/active_branch` exists and is non-empty, print the Branch Collaboration Variant.
+- If `.purlin/runtime/active_branch` exists and is non-empty, print the Branch Collaboration Variant.
 - Otherwise, print the Main Branch Variant.
 
 ### 2.3 Output
@@ -45,13 +44,6 @@ Agents print their command vocabulary table at startup, but there is no way to r
     Given an Architect session on the main branch
     When the user runs /pl-help
     Then the Main Branch Variant from architect_commands.md is printed verbatim
-
-#### Scenario: Builder re-displays command table on isolated branch (auto-test-only)
-
-    Given a Builder session on branch isolated/feat1
-    When the user runs /pl-help
-    Then the Isolated Session Variant from builder_commands.md is printed
-    And the header shows [Isolated: feat1]
 
 #### Scenario: QA re-displays command table on collaboration branch (auto-test-only)
 

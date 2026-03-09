@@ -3,7 +3,6 @@
 > Label: "Tool: Config Layering"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/project_init.md
-> Prerequisite: features/policy_collaboration.md
 
 [TODO]
 
@@ -68,17 +67,11 @@ The migration replaces boilerplate `json.load()` / inline `python3 -c "import js
 All config writers MUST target `config.local.json`:
 
 - **`/pl-agent-config` skill:** Writes to `config.local.json` instead of `config.json`. The git commit step (Section 2.7 of `pl_agent_config.md`) is removed because the local config is gitignored.
-- **CDD Dashboard `POST /config/agents`:** Writes to `config.local.json`. Reads from `config.local.json` (via resolver). Worktree propagation targets `config.local.json` in each worktree.
+- **CDD Dashboard `POST /config/agents`:** Writes to `config.local.json`. Reads from `config.local.json` (via resolver).
 - **CDD Dashboard `GET /config.json`:** Serves the resolved config (local if present, shared fallback) via the resolver.
 - **`init.sh`:** Creates `config.json` (shared template) during full-init mode. Adds `.purlin/config.local.json` to the consumer project's `.gitignore` during initialization.
 
-### 2.4 Worktree Propagation
-
-- **`create_isolation.sh`:** When creating a new worktree, if `config.local.json` exists in the main project, copy it to the worktree's `.purlin/` directory alongside the shared config.
-- **Worktree creation without local config:** If no `config.local.json` exists in the main project, the worktree starts with only `config.json`. The resolver will create a local copy on first access within the worktree.
-- **CDD Dashboard agent propagation:** When `POST /config/agents` updates agent settings, the dashboard propagates changes to `config.local.json` in each active worktree (same mechanism as current `config.json` propagation).
-
-### 2.5 Update-Time Config Sync
+### 2.4 Update-Time Config Sync
 
 When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sync_config()` function performs a one-directional sync:
 
@@ -197,24 +190,6 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     When init completes
     Then .purlin/config.json exists as the shared template
     And .purlin/config.local.json does NOT exist
-
-#### Scenario: Worktree Creation Copies Local Config If Present
-
-    Given config.local.json exists in the main project
-    When a new isolation worktree is created
-    Then the worktree contains a copy of config.local.json
-
-#### Scenario: Worktree Creation Works Without Local Config
-
-    Given config.local.json does not exist in the main project
-    When a new isolation worktree is created
-    Then the worktree has only config.json and no error occurs
-
-#### Scenario: CDD Dashboard Propagates Agent Changes to Worktree Local Configs
-
-    Given an active isolation worktree exists
-    When POST /config/agents updates agent settings
-    Then the worktree's config.local.json is also updated
 
 #### Scenario: Python Consumer Reads Resolved Config via Resolver
 

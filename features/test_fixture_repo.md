@@ -10,7 +10,7 @@
 
 A test infrastructure pattern where project states for automated testing live as immutable tags in a dedicated git fixture repository. Each tag represents the preconditions for one test scenario. This is consumer-facing -- any project using Purlin can create their own fixture repo to provide controlled, reproducible state for automated test execution.
 
-The fixture repo eliminates the "complex setup" problem: scenarios that require specific git states, config values, worktree layouts, or branch topologies get their preconditions checked in as tagged snapshots rather than constructed at test time.
+The fixture repo eliminates the "complex setup" problem: scenarios that require specific git states, config values, or branch topologies get their preconditions checked in as tagged snapshots rather than constructed at test time.
 
 ---
 
@@ -38,7 +38,6 @@ Fixture states are git tags (not branches). Tags are immutable -- once created, 
 **Examples:**
 - `main/cdd_branch_collab/sync-state-ahead`
 - `main/cdd_branch_collab/sync-state-diverged`
-- `main/cdd_isolated_teams/worktree-with-uncommitted`
 - `main/release_verify_deps/cycle-in-prerequisites`
 - `main/cdd_startup_controls/expert-mode`
 
@@ -84,7 +83,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 
 ### 2.6 Architect Workflow
 
-1. While designing a feature, the Architect identifies scenarios that need specific project state (git state, config values, worktree layouts, etc.).
+1. While designing a feature, the Architect identifies scenarios that need specific project state (git state, config values, branch topologies, etc.).
 2. The Architect prompts the user: "These scenarios need controlled state. Want to use a fixture repo for automated testing?"
 3. If yes: the user creates an empty git repo for test fixtures. The Architect records the URL as `> Test Fixtures: <repo-url>` in the feature spec.
 4. If no: scenarios stay manual (`@manual-interactive` / `@manual-visual`).

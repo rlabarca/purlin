@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The `/pl-remote-push` skill pushes the local collaboration branch to the remote. During an active branch, the local machine is on the collaboration branch and pushes directly to the same-named remote branch -- a symmetric same-branch push. It is available only from the collaboration branch checkout (not from isolated worktrees). The target branch is read from `.purlin/runtime/active_branch`.
+The `/pl-remote-push` skill pushes the local collaboration branch to the remote. During an active branch, the local machine is on the collaboration branch and pushes directly to the same-named remote branch -- a symmetric same-branch push. It is available only from the collaboration branch checkout. The target branch is read from `.purlin/runtime/active_branch`.
 
 ---
 

@@ -3,7 +3,6 @@
 > Label: "CDD Branch Collaboration"
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_branch_collab.md
-> Prerequisite: features/cdd_isolated_teams.md
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/test_fixture_repo.md
@@ -15,7 +14,7 @@
 
 ## 1. Overview
 
-The CDD dashboard provides a BRANCH COLLABORATION section that enables multi-machine collaboration via branches on the hosted remote. The section is always visible in the dashboard (same pattern as ISOLATED TEAMS) and serves as the entry point for creating, joining, and leaving collaboration branches. It renders above ISOLATED TEAMS and LOCAL BRANCH in the section order.
+The CDD dashboard provides a BRANCH COLLABORATION section that enables multi-machine collaboration via branches on the hosted remote. The section is always visible in the dashboard and serves as the entry point for creating, joining, and leaving collaboration branches. It renders above LOCAL BRANCH in the section order.
 
 ---
 
@@ -26,8 +25,7 @@ The CDD dashboard provides a BRANCH COLLABORATION section that enables multi-mac
 The BRANCH COLLABORATION section is always rendered in the dashboard, regardless of configuration or active branch state. It appears in this order:
 
 1. **BRANCH COLLABORATION** (always rendered)
-2. **ISOLATED TEAMS** (existing)
-3. **LOCAL BRANCH** (existing, renamed from MAIN WORKSPACE)
+2. **LOCAL BRANCH** (existing, renamed from MAIN WORKSPACE)
 
 The section is always visible because it IS the entry point for branch collaboration. Hiding it behind config creates a chicken-and-egg problem (user cannot discover the feature without editing config).
 
@@ -43,11 +41,11 @@ When `.purlin/runtime/active_branch` is absent or empty:
 
 **Expanded content (in order):**
 
-1. **Creation row** (always first, same pattern as ISOLATED TEAMS creation row):
+1. **Creation row** (always first):
    - Label: "Create Branch"
    - Text input: any valid git branch name, 20-char visible field width, unlimited entry length
    - Create button: disabled until valid name. On click -> `POST /branch-collab/create`.
-   - Input uses same color scheme as ISOLATED TEAMS name input (same CSS tokens).
+   - Input uses standard dashboard input CSS tokens.
 
 2. **Branches table** (below creation row):
    - Populated from `git branch -r` filtered to exclude `HEAD`, `main`/`master`.
@@ -82,7 +80,7 @@ When `.purlin/runtime/active_branch` contains a branch name:
 
 ### 2.4 Server Endpoints
 
-Five POST endpoints, following the existing `/isolate/*` pattern:
+Five POST endpoints:
 
 **`POST /branch-collab/create`** -- `{ "branch": "<name>" }`
 
@@ -172,7 +170,7 @@ For `guide-pull`: return `{ "status": "ok", "action_required": "pull", "command"
 
 When an active branch exists, the LOCAL BRANCH section body shows a "Last remote sync: N min ago" line (or "Never synced") below the clean/dirty state line. Absent when no active branch.
 
-NOT appended to the section heading text (per `cdd_isolated_teams.md` Section 2.3 "no annotations on heading").
+NOT appended to the section heading text.
 
 ### 2.7 /status.json Extension
 
@@ -636,14 +634,6 @@ The following fixture tags provide real git branch topology for integration-leve
     Then branch_collab_branches contains an entry for "feature/auth"
     And that entry has sync_state "BEHIND" and commits_behind 2
 
-#### Scenario: BRANCH COLLABORATION Section Always Visible in Dashboard HTML
-
-    Given the CDD server is running
-    And no branch_collab config exists in .purlin/config.json
-    When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section heading is present in the HTML output
-    And the section is rendered above the ISOLATED TEAMS section in the DOM
-
 #### Scenario: No-Active-Branch Shows Creation Row and Branches Table
 
     Given no file exists at .purlin/runtime/active_branch
@@ -651,13 +641,6 @@ The following fixture tags provide real git branch topology for integration-leve
     Then the BRANCH COLLABORATION section contains a creation row with "Create Branch" label
     And the creation row contains a text input and a Create button
     And a branches table element is present below the creation row
-
-#### Scenario: BRANCH COLLABORATION Renders Above ISOLATED TEAMS in DOM Order
-
-    Given the CDD server is running
-    And both BRANCH COLLABORATION and ISOLATED TEAMS sections exist in the HTML
-    When the dashboard HTML is generated
-    Then the BRANCH COLLABORATION section appears before the ISOLATED TEAMS section in the HTML output
 
 #### Scenario: Last Remote Sync Annotation Present in LOCAL BRANCH Body
 
@@ -948,7 +931,7 @@ None.
 ### Screen: CDD Dashboard -- Branch Collaboration Section
 
 - **Reference:** N/A
-- [ ] BRANCH COLLABORATION section position: above ISOLATED TEAMS, above LOCAL BRANCH
+- [ ] BRANCH COLLABORATION section position: above LOCAL BRANCH
 - [ ] Section always visible (collapsible, same indent as peers)
 - [ ] No-active-branch: creation row "Create Branch [input] [Create]" + branches table
 - [ ] Active-branch row 1: branch-name dropdown + Leave button (right-aligned), all on one line

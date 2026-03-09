@@ -51,7 +51,7 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 
 #### Scenario: Exits When Branch Is Not Main
 
-    Given the current branch is "isolated/feat1"
+    Given the current branch is "feature/auth"
     When the agent runs /pl-whats-different
     Then the command aborts with an error containing "only valid from the main checkout"
     And no generation script is executed
