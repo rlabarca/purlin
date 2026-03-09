@@ -209,7 +209,10 @@ class TestSyncStateNoLocalWithCommits(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('HEAD..'):
+                if range_arg.startswith('main..'):
+                    # Branch has unique commits vs main (not EMPTY)
+                    result.stdout = 'abc commit1\n'
+                elif range_arg.startswith('HEAD..'):
                     # Branch has 1 unique commit relative to HEAD
                     result.stdout = 'abc commit1\n'
                 else:
@@ -529,10 +532,13 @@ class TestPerBranchSyncStateInBranchCollabBranches(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif 'log' in cmd_str:
                 range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has unique commits vs main (not EMPTY)
+                    result.stdout = 'abc unique1\n'
                 # With compare_to_head=True, ranges use HEAD:
                 # HEAD..origin/<branch> = what branch has that HEAD doesn't
                 # origin/<branch>..HEAD = what HEAD has that branch doesn't
-                if '..origin/' in range_arg:
+                elif '..origin/' in range_arg:
                     # HEAD..origin/branch: branch has 0 unique commits beyond HEAD
                     result.stdout = ''
                 elif 'origin/' in range_arg and '..HEAD' in range_arg:
@@ -1216,8 +1222,9 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_not_empty_when_main_moved_ahead(self, mock_config, mock_run):
-        """Branch is NOT EMPTY when main has moved ahead (branch tip != main tip)."""
+    def test_still_empty_when_main_moved_ahead(self, mock_config, mock_run):
+        """Branch is EMPTY even when main has moved ahead, because branch has
+        zero unique commits. EMPTY means 'no work on branch', not 'tips match'."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
@@ -1227,9 +1234,6 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
                 if range_arg.startswith('main..'):
                     # Branch has no unique commits vs main
                     result.stdout = ''
-                elif range_arg.endswith('..main'):
-                    # Main has moved ahead (3 commits)
-                    result.stdout = 'abc1 c1\nabc2 c2\nabc3 c3\n'
                 else:
                     result.stdout = ''
             else:
@@ -1238,8 +1242,8 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("feature/empty")
-        # Not EMPTY because main has moved ahead — branch tip != main tip
-        self.assertNotEqual(state['sync_state'], 'EMPTY')
+        # EMPTY because branch has zero unique commits relative to main
+        self.assertEqual(state['sync_state'], 'EMPTY')
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
@@ -1266,8 +1270,8 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_remote_only_empty_when_tip_equals_head(self, mock_config, mock_run):
-        """Remote-only branch is EMPTY when origin/<branch> tip equals HEAD."""
+    def test_remote_only_empty_when_no_unique_commits(self, mock_config, mock_run):
+        """Remote-only branch is EMPTY when it has zero unique commits vs main."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
@@ -1277,8 +1281,12 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
                     raise subprocess.CalledProcessError(128, cmd)
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
-                # Both HEAD..origin/RC0.8.0 and origin/RC0.8.0..HEAD return empty
-                result.stdout = ''
+                range_arg = next((a for a in cmd if '..' in a), '')
+                if range_arg.startswith('main..'):
+                    # Branch has no unique commits vs main
+                    result.stdout = ''
+                else:
+                    result.stdout = ''
             else:
                 result.stdout = ''
             return result
@@ -1291,8 +1299,8 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_remote_only_behind_when_head_moved_ahead(self, mock_config, mock_run):
-        """Remote-only branch is BEHIND (not EMPTY) when HEAD has moved past it."""
+    def test_remote_only_behind_when_branch_has_unique_commits(self, mock_config, mock_run):
+        """Remote-only branch with unique commits is BEHIND when HEAD is ahead."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
@@ -1303,7 +1311,10 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if 'HEAD..' in range_arg:
+                if range_arg.startswith('main..'):
+                    # Branch has 2 unique commits vs main — NOT empty
+                    result.stdout = 'abc1 commit1\nabc2 commit2\n'
+                elif 'HEAD..' in range_arg:
                     # Branch has no unique commits beyond HEAD
                     result.stdout = ''
                 elif '..HEAD' in range_arg:
@@ -1366,7 +1377,10 @@ class TestBranchesTableShowsBehindForStaleRemoteBranch(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if 'HEAD..' in range_arg:
+                if range_arg.startswith('main..'):
+                    # Branch has unique commits vs main (not EMPTY)
+                    result.stdout = 'abc unique1\n'
+                elif 'HEAD..' in range_arg:
                     # origin/RC0.8.0 has no unique commits beyond HEAD
                     result.stdout = ''
                 elif '..HEAD' in range_arg:
@@ -1395,7 +1409,10 @@ class TestBranchesTableShowsBehindForStaleRemoteBranch(unittest.TestCase):
                 result.stdout = 'abc1234'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
-                if 'HEAD..' in range_arg:
+                if range_arg.startswith('main..'):
+                    # Branch has unique commits vs main (not EMPTY)
+                    result.stdout = 'abc unique1\n'
+                elif 'HEAD..' in range_arg:
                     # origin/RC0.8.0 has no unique commits beyond HEAD
                     result.stdout = ''
                 elif '..HEAD' in range_arg:

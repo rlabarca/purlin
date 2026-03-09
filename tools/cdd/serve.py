@@ -911,28 +911,21 @@ def compute_remote_sync_state(branch_name, compare_to_head=False):
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             local_exists = False
 
-    # EMPTY check: branch tip equals base tip (both directions zero).
-    # Active branch: compare against main. Branches table: compare against HEAD.
+    # EMPTY check: branch has zero unique commits relative to main.
+    # A branch is EMPTY when it has no work of its own, regardless of
+    # whether main has moved forward since the branch was created.
     check_ref = local_ref if local_exists else remote_ref
-    base_ref = 'main' if local_exists else 'HEAD'
     try:
-        # Commits on branch not in base
-        branch_ahead = subprocess.run(
-            ['git', 'log', f'{base_ref}..{check_ref}', '--oneline'],
+        branch_unique = subprocess.run(
+            ['git', 'log', f'main..{check_ref}', '--oneline'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
-        branch_ahead_lines = [l for l in branch_ahead.stdout.strip().splitlines() if l]
-        # Commits on base not in branch
-        base_ahead = subprocess.run(
-            ['git', 'log', f'{check_ref}..{base_ref}', '--oneline'],
-            capture_output=True, text=True, check=True,
-            cwd=PROJECT_ROOT, timeout=5)
-        base_ahead_lines = [l for l in base_ahead.stdout.strip().splitlines() if l]
-        if len(branch_ahead_lines) == 0 and len(base_ahead_lines) == 0:
+        branch_unique_lines = [l for l in branch_unique.stdout.strip().splitlines() if l]
+        if len(branch_unique_lines) == 0:
             return {'sync_state': 'EMPTY', 'commits_ahead': 0,
                     'commits_behind': 0}
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        pass  # base ref may not exist; skip EMPTY check
+        pass  # main ref may not exist; skip EMPTY check
 
     if not local_exists:
         # Branch has unique commits but no local checkout.
