@@ -29,9 +29,8 @@ Run: `git rev-parse --abbrev-ref HEAD`
 Read `instructions/references/builder_commands.md` and print the appropriate variant based on the current branch:
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
-- Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 2.0.1 Read Startup Flags
 
@@ -51,8 +50,7 @@ After printing the command table, read `.purlin/config.json` and extract `startu
     *   Read the tombstone to understand what code to delete and what dependencies to check.
     *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
     *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
-7.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`.
-8.  **Anchor Preload (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) once. Identify every FORBIDDEN pattern and INVARIANT from each anchor and keep them active in working context for the entire session. This replaces per-feature anchor reads — anchors are loaded once at session start, not re-read for each feature.
+7.  **Anchor Preload (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) once. Identify every FORBIDDEN pattern and INVARIANT from each anchor and keep them active in working context for the entire session. This replaces per-feature anchor reads — anchors are loaded once at session start, not re-read for each feature.
 
 ### 2.2 Propose a Work Plan
 
@@ -210,10 +208,6 @@ Before concluding your session, after all work is committed to git:
     Relaunch Builder (new session) to continue with Phase N+1.
     ```
     If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
-4.  **Collaboration Handoff (Isolated Sessions):** If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-    *   Run `/pl-isolated-push` to verify handoff readiness and merge the branch to the collaboration branch.
-    *   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-isolated-push` to merge `isolated/<name>` before concluding the session."
-    *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Agentic Team Orchestration
 When faced with complex tasks, delegate sub-tasks to specialized sub-agents (including internal personas like "The Critic" for review). Break monolithic tasks into smaller, verifiable units.

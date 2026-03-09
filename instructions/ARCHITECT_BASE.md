@@ -68,7 +68,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 *   **Visual Spec (Optional):** A `## Visual Specification` section for features with UI components. This section contains per-screen checklists with design asset references (Figma URLs, PDFs, images). It is Architect-owned and exempt from Gherkin traceability. See HOW_WE_WORK_BASE Section 9 for the full convention.
 *   **Visual-First Classification:** When writing features with UI, maximize use of the Visual Specification for static appearance checks. Reserve Manual Scenarios exclusively for interaction and temporal behavior. See HOW_WE_WORK_BASE Section 9.6.
 *   **Web-Testable Tagging:** When a feature renders in a web UI (dashboard, server-served HTML), you MUST add `> Web Testable: <url>` metadata alongside other blockquote metadata (Label, Category, Prerequisite). Also add `> Web Port File: <path>` when the server uses dynamic ports (path relative to project root), and `> Web Start: <command>` when the server can be auto-started. This enables `/pl-web-verify` to automate manual scenarios and visual spec checks via Playwright MCP, eliminating human browser testing. Review existing features for missing web-testable metadata during the startup gap analysis (Section 5.1 step 4).
-*   **Fixture-Aware Feature Design:** When designing scenarios that need controlled project state (specific git state, config values, worktree layouts), use the test fixture system. Run `/pl-fixture` for the full convention, slug rules, and user communication protocol. See `features/test_fixture_repo.md` for the specification.
+*   **Fixture-Aware Feature Design:** When designing scenarios that need controlled project state (specific git state, config values, branch topologies), use the test fixture system. Run `/pl-fixture` for the full convention, slug rules, and user communication protocol. See `features/test_fixture_repo.md` for the specification.
 *   **Protocol:** Companion files capture "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
 *   **Responsibility:** You MUST read and preserve existing companion files during feature refinement to prevent knowledge regressions.
 
@@ -104,9 +104,8 @@ Run: `git rev-parse --abbrev-ref HEAD`
 Read `instructions/references/architect_commands.md` and print the appropriate variant based on the current branch:
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
-- Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 5.0.1 Read Startup Flags
 
@@ -122,7 +121,6 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 3.  Read `.purlin/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
 4.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
 5.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
-6.  **Worktree Detection:** Run `git rev-parse --abbrev-ref HEAD` and check whether the result matches `^isolated/`. If so, print a startup banner note: `[Isolated Session] Worktree session — branch: <current-branch>`. (When `PURLIN_PROJECT_ROOT` is set, `test -f "$PURLIN_PROJECT_ROOT/.git"` is a valid secondary confirmation — in a git worktree, the `.git` entry is a file pointer rather than a directory.)
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:
@@ -147,10 +145,6 @@ The `PreCompact` hook intercepts auto-compaction. When the evacuation message ap
 Before concluding your session, after all work is committed to git:
 1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
-3.  **Collaboration Handoff (Isolated Sessions):** If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-    *   Run `/pl-isolated-push` to verify handoff readiness and merge the branch to the collaboration branch.
-    *   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-isolated-push` to merge `isolated/<name>` before concluding the session."
-    *   Do NOT merge the branch yourself unless the user explicitly requests it. The merge is a human-confirmed action.
 
 ## 7. Strategic Protocols
 
@@ -186,11 +180,7 @@ The Architect's authorized commands are listed in the Startup Print Sequence (Se
 
 Prompt suggestions MUST only suggest Architect-authorized commands. Do not suggest Builder or QA commands.
 
-## 10. Collaboration Protocol
-
-When on an `isolated/*` branch, read `instructions/references/collaboration_protocol.md` for isolation naming, session completion, dashboard mode, branch-scope limitations, and ACTIVE_EDITS.md conventions.
-
-## 11. Feature File Format
+## 10. Feature File Format
 
 **MANDATE:** When creating a new feature file or anchor node, ALWAYS copy from the template
 at `{tools_root}/feature_templates/` (`_feature.md` or `_anchor.md`). Do NOT create from

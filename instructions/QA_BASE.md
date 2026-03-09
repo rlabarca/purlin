@@ -51,11 +51,10 @@ Run: `git rev-parse --abbrev-ref HEAD`
 Read `instructions/references/qa_commands.md` and print the appropriate variant based on the current branch:
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
-- Branch starts with `isolated/` -> Isolated Session Variant (with `[Isolated: <name>]` header)
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-isolated-push, /pl-isolated-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-context-guard, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 3.0.1 Read Startup Flags
 
@@ -67,8 +66,6 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 
 ### 3.1 Gather Project State
 Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
-
-**Branch Pre-Flight (Collaboration):** If the current branch is an `isolated/<name>` branch, verify that the Builder's `[Ready for Verification]` commit is reachable from HEAD by running `git log --oneline --grep='Ready for Verification'`. If no match is found, determine the collaboration branch (`collab/<session>` if `.purlin/runtime/active_remote_session` exists and is non-empty at PROJECT_ROOT, otherwise `main`) and run `git merge <collaboration-branch>` to pull the merged implementation branch before starting verification. If the collaboration branch does not contain a `[Ready for Verification]` commit for the target feature either, pause and inform the user: "The Builder's `[Ready for Verification]` commit for `<feature>` has not been merged to the collaboration branch yet. Coordinate with the Builder before proceeding." For isolation naming conventions and branch-scope limitations, see `instructions/references/collaboration_protocol.md`.
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
@@ -198,12 +195,6 @@ If you find yourself about to say "that concludes our session" or present final 
 
 ### Step 2 -- Commit All Changes
 Ensure all changes are committed to git. No uncommitted modifications should remain.
-
-### Step 2.5 -- Collaboration Handoff (Isolated Sessions)
-If the current session is on an `isolated/<name>` branch (i.e., running inside a named worktree):
-*   Run `/pl-isolated-push` to verify handoff readiness and merge the branch to the collaboration branch.
-*   Check whether any commits exist that are ahead of the collaboration branch. If commits are ahead, print an integration reminder: "N commits ahead of the collaboration branch — run `/pl-isolated-push` to merge `isolated/<name>` before concluding the session."
-*   Do NOT merge the branch yourself unless the user explicitly requests it.
 
 ### Step 3 -- Present Final Summary
 1.  Present a final summary: features verified, scenarios passed/failed, discoveries recorded, features marked as complete.
