@@ -1,1 +1,8 @@
-{"status": "PASS", "passed": 98, "failed": 0, "total": 98, "test_file": "tools/cdd/test_cdd_isolated_teams.py"}
+{
+  "status": "PASS",
+  "passed": 98,
+  "failed": 0,
+  "total": 98,
+  "timestamp": "2026-03-09T01:15:27.899265+00:00",
+  "runner": "pytest"
+}

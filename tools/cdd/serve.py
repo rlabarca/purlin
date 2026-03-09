@@ -2407,6 +2407,7 @@ tr.rc-drag-over td{{border-top:2px solid var(--purlin-accent)}}
 .wip{{color:var(--purlin-status-todo);margin-bottom:2px}}
 pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-wrap;word-wrap:break-word;max-height:100px;overflow-y:auto;margin-top:2px}}
 .st-done{{color:var(--purlin-status-good);font-weight:bold}}
+.st-good{{color:var(--purlin-status-good);font-weight:bold}}
 .st-todo{{color:var(--purlin-status-todo);font-weight:bold}}
 .st-fail{{color:var(--purlin-status-error);font-weight:bold}}
 .st-blocked{{color:var(--purlin-dim);font-weight:bold}}
@@ -3466,7 +3467,7 @@ function _showIsoWdContent(name, data) {{
     var localTime = new Date(data.generated_at).toLocaleString();
     var staleNote = data.stale ? ' (may be outdated)' : '';
     dateEl.innerHTML = '<span style="font-weight:700">Generated:</span> ' + localTime + staleNote
-      + ' <button class="btn-critic" onclick="isoWdRegenerate(\'' + name + '\')"'
+      + ' <button class="btn-critic" onclick="isoWdRegenerate(\\'' + name + '\\')"'
       + ' style="font-size:10px;padding:2px 8px;margin-left:auto">Regenerate</button>';
   }}
   if (bodyEl) bodyEl.textContent = data.digest || 'No content';
