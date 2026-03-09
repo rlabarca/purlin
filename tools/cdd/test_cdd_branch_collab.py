@@ -3148,6 +3148,103 @@ class TestSyncBadgeColorsMatchDesignSpec(unittest.TestCase):
         self.assertIn('--purlin-primary', html)
 
 
+class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
+    """Scenario: Join Confirm Update-To-Head Pushes HEAD to Remote and Checks Out
+
+    Given feature/auth exists as a remote tracking branch
+    And a local branch feature/auth exists at SAME as origin/feature/auth
+    And HEAD is 5 commits ahead of feature/auth (BEHIND state)
+    And the working tree is clean
+    When a POST request is sent to /branch-collab/join-confirm with body
+        {"branch": "feature/auth", "action": "update-to-head"}
+    Then git push origin HEAD:feature/auth is called
+    And git fetch origin feature/auth is called
+    And feature/auth is checked out
+    And git merge --ff-only is called
+    And the response contains "reconciled": "update-to-head"
+    And .purlin/runtime/active_branch contains "feature/auth"
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_update_to_head_pushes_and_checks_out(self, mock_config, mock_run):
+        push_calls = []
+        fetch_calls = []
+        checkout_calls = []
+        merge_calls = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'status' in cmd_str and '--porcelain' in cmd_str:
+                result.stdout = ''  # clean
+            elif 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'push' in cmd_str and 'HEAD:feature/auth' in cmd_str:
+                push_calls.append(cmd)
+            elif 'fetch' in cmd_str and 'feature/auth' in cmd_str:
+                fetch_calls.append(cmd)
+            elif 'checkout' in cmd_str and '-b' not in cmd_str:
+                checkout_calls.append(cmd)
+            elif 'merge' in cmd_str and '--ff-only' in cmd_str:
+                merge_calls.append(cmd)
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "feature/auth", "action": "update-to-head"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join_confirm(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 200)
+        self.assertEqual(args[1]['status'], 'ok')
+        self.assertEqual(args[1]['branch'], 'feature/auth')
+        self.assertEqual(args[1]['reconciled'], 'update-to-head')
+
+        self.assertTrue(len(push_calls) > 0, "git push HEAD:feature/auth should be called")
+        self.assertTrue(len(fetch_calls) > 0, "git fetch should be called after push")
+        self.assertTrue(len(checkout_calls) > 0, "git checkout should be called")
+        self.assertTrue(len(merge_calls) > 0, "git merge --ff-only should be called")
+
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        with open(rt_path) as f:
+            self.assertEqual(f.read().strip(), 'feature/auth')
+
+
+class TestJoinModalShowsUpdateRemoteForBehindBranch(unittest.TestCase):
+    """Scenario: Join Modal Shows Update Remote Action for BEHIND Branch
+
+    Given the CDD server is running
+    And a branch is BEHIND HEAD with local SAME as remote
+    When the dashboard HTML is generated
+    Then the modal JS contains 'update-to-head' action for BEHIND+SAME case
+    And the button text reads "Update Remote & Join"
+    And the description says "Will push current HEAD to remote"
+    """
+
+    @patch('serve.get_active_branch', return_value=None)
+    @patch('serve._has_git_remote', return_value=True)
+    @patch('serve.get_branch_collab_branches', return_value=[])
+    @patch('serve.get_release_checklist', return_value=([], [], []))
+    def test_update_remote_modal_for_behind(self, *mocks):
+        html = serve.generate_html()
+        self.assertIn('update-to-head', html)
+        self.assertIn('Update Remote &amp; Join', html)
+        self.assertIn('Will push current HEAD to remote', html)
+
+
 def run_tests():
     """Run all tests and write results."""
     loader = unittest.TestLoader()

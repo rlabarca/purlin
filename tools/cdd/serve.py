@@ -2904,11 +2904,15 @@ function _bcShowJoinPhase2(name, assessment) {{
       h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch is ' + localAhead + ' commits ahead of remote.</p>';
     }}
     var escName = name.replace(/'/g, "\\'");
-    if (localSync === 'SAME') {{
-      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch matches remote. Will switch to this branch.</p>';
+    if (localSync === 'SAME' && sync === 'BEHIND') {{
+      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Will push current HEAD to remote ' + name + ', then switch to it.</p>';
+    }} else if (localSync === 'SAME') {{
+      h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch matches remote. Will check out this branch.</p>';
     }}
     h += '<div style="margin-top:12px;text-align:right">';
-    if (localSync === 'SAME') {{
+    if (localSync === 'SAME' && sync === 'BEHIND') {{
+      h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'update-to-head\\')">Update Remote &amp; Join</button>';
+    }} else if (localSync === 'SAME') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Check Out &amp; Join</button>';
     }} else if (localSync === 'BEHIND') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'fast-forward\\')">Fast-Forward Local &amp; Join</button>';
@@ -5271,6 +5275,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         - fast-forward: BEHIND state, checkout + ff-only merge
         - push: AHEAD state, checkout + push to remote
         - guide-pull: DIVERGED state, no checkout, return pull command
+        - update-to-head: BEHIND HEAD, push HEAD to remote, fetch, checkout
         """
         try:
             length = int(self.headers.get('Content-Length', 0))
@@ -5284,10 +5289,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if not branch:
             self._send_json(400, {'error': 'Branch name is required'})
             return
-        if action not in ('checkout', 'fast-forward', 'push', 'guide-pull'):
+        if action not in ('checkout', 'fast-forward', 'push',
+                         'guide-pull', 'update-to-head'):
             self._send_json(400, {
-                'error': f'Invalid action: {action}. '
-                         f'Must be checkout, fast-forward, push, or guide-pull'
+                'error': f'Invalid action: {action}. Must be checkout, '
+                         f'fast-forward, push, guide-pull, or update-to-head'
             })
             return
 
@@ -5302,6 +5308,75 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 'action_required': 'pull',
                 'command': f'/pl-remote-pull origin/{branch}',
                 'warning': 'Branch is diverged — run /pl-remote-pull to reconcile'
+            })
+            return
+
+        # update-to-head: push current HEAD to remote branch, fetch, checkout
+        if action == 'update-to-head':
+            if _is_working_tree_dirty():
+                self._send_json(400, {
+                    'error': 'Working tree has uncommitted changes. '
+                             'Commit or stash before switching branches.'
+                })
+                return
+            # Step 1: Push current HEAD to remote branch
+            try:
+                subprocess.run(
+                    ['git', 'push', remote, f'HEAD:{branch}'],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                err_msg = getattr(exc, 'stderr', '').strip() or str(exc)
+                self._send_json(500, {
+                    'status': 'error',
+                    'error': f'Push failed: {err_msg}'
+                })
+                return
+            # Step 2: Fetch updated remote ref
+            try:
+                subprocess.run(
+                    ['git', 'fetch', remote, branch],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=30)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired):
+                pass  # Best-effort; checkout still works
+            # Step 3: Record base branch before checkout
+            base_path = os.path.join(PROJECT_ROOT, '.purlin', 'runtime',
+                                     'branch_collab_base_branch')
+            if not os.path.exists(base_path) or \
+                    not open(base_path).read().strip():
+                try:
+                    cur = subprocess.run(
+                        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                        capture_output=True, text=True, check=True,
+                        cwd=PROJECT_ROOT, timeout=5)
+                    _write_branch_collab_base_branch(cur.stdout.strip())
+                except (subprocess.CalledProcessError,
+                        subprocess.TimeoutExpired):
+                    pass
+            # Step 4: Checkout and fast-forward to updated remote
+            try:
+                subprocess.run(
+                    ['git', 'checkout', branch],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+                subprocess.run(
+                    ['git', 'merge', '--ff-only', ref],
+                    capture_output=True, text=True, check=True,
+                    cwd=PROJECT_ROOT, timeout=10)
+            except (subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired) as exc:
+                self._send_json(500, {
+                    'error': f'Failed to checkout {branch}: '
+                             f'{getattr(exc, "stderr", str(exc))}'
+                })
+                return
+            _write_active_branch(branch)
+            self._send_json(200, {
+                'status': 'ok', 'branch': branch,
+                'reconciled': 'update-to-head'
             })
             return
 
