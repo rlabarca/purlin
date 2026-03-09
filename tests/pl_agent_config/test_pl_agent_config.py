@@ -3,8 +3,7 @@
 
 The skill is an agent instruction file (.claude/commands/pl-agent-config.md).
 These tests verify the structural contract and integration with the config
-resolver. Agent-behavioral scenarios (worktree warning display, user denial)
-are verified through the instruction file's content.
+resolver.
 """
 
 import json
@@ -63,14 +62,6 @@ class TestSkillFileContract(unittest.TestCase):
                      'recommend_next_actions', 'bypass_permissions']:
             self.assertIn(key, self.content)
 
-    def test_worktree_warning_references_local_config(self):
-        """The worktree warning must reference config.local.json, not config.json."""
-        # Find the warning block
-        warning_start = self.content.find('Worktree context:')
-        self.assertNotEqual(warning_start, -1, "Worktree warning not found")
-        warning_block = self.content[warning_start:warning_start + 500]
-        self.assertIn('config.local.json', warning_block)
-
     def test_copy_on_first_access(self):
         """The skill must handle missing config.local.json by copying from config.json."""
         self.assertIn('copy', self.content.lower())
@@ -106,8 +97,8 @@ class ConfigWriteTestBase(unittest.TestCase):
             return json.load(f)
 
 
-class TestConfigChangeAppliedToLocalInNonIsolated(ConfigWriteTestBase):
-    """Scenario: Config Change Applied to Local Config in Non-Isolated Session
+class TestConfigChangeAppliedToLocalConfig(ConfigWriteTestBase):
+    """Scenario: Config Change Applied to Local Config
 
     Simulates the write that /pl-agent-config performs: update config.local.json,
     leave config.json unchanged, no git commit.
@@ -137,45 +128,6 @@ class TestConfigChangeAppliedToLocalInNonIsolated(ConfigWriteTestBase):
         with open(self.shared_path) as f:
             s = json.load(f)
         self.assertTrue(s["agents"]["builder"]["startup_sequence"])
-
-
-class TestWorktreeChangeAppliedToMainLocal(ConfigWriteTestBase):
-    """Scenario: Worktree Change Applied to MAIN Local Config
-
-    Verifies that when the skill writes to MAIN's config.local.json,
-    the worktree's config.local.json remains unchanged.
-    """
-
-    def test_main_updated_worktree_unchanged(self):
-        main_data = {
-            "agents": {"builder": {"startup_sequence": True}},
-            "models": [{"id": "claude-sonnet-4-6"}]
-        }
-        self.write_local(main_data)
-
-        # Create worktree with its own local config
-        wt_dir = os.path.join(self.tmpdir, '.worktrees', 'feat1')
-        wt_purlin = os.path.join(wt_dir, '.purlin')
-        os.makedirs(wt_purlin)
-        wt_local = os.path.join(wt_purlin, 'config.local.json')
-        shutil.copy2(self.local_path, wt_local)
-
-        # Simulate /pl-agent-config writing to MAIN local config
-        local = self.read_local()
-        local["agents"]["builder"]["startup_sequence"] = False
-        tmp_path = self.local_path + '.tmp'
-        with open(tmp_path, 'w') as f:
-            json.dump(local, f, indent=4)
-        os.replace(tmp_path, self.local_path)
-
-        # MAIN local config updated
-        result = resolve_config(self.tmpdir)
-        self.assertFalse(result["agents"]["builder"]["startup_sequence"])
-
-        # Worktree local config unchanged
-        with open(wt_local) as f:
-            wt_config = json.load(f)
-        self.assertTrue(wt_config["agents"]["builder"]["startup_sequence"])
 
 
 class TestInvalidKeyRejected(unittest.TestCase):

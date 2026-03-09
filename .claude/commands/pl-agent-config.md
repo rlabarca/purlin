@@ -1,4 +1,4 @@
-Modify agent configuration in `.purlin/config.local.json`. Always applies changes to the MAIN project's local config, even from inside an isolated worktree. No git commit is made because the local config is gitignored.
+Modify agent configuration in `.purlin/config.local.json`. No git commit is made because the local config is gitignored.
 
 **Owner: All roles** (each role sets its own config by default)
 
@@ -58,47 +58,7 @@ For boolean keys: accept `true`/`false` (case-insensitive). Reject any other val
 
 For `effort`: accept `low`/`medium`/`high`. Reject any other value.
 
-### 3. Detect Session Context
-
-Run: `git rev-parse --abbrev-ref HEAD`
-
-If the result starts with `isolated/`:
-- You are in an **isolated worktree** session.
-- Extract `<name>` = everything after `isolated/`.
-- Proceed to Step 4 (Worktree Warning).
-
-If the branch does NOT start with `isolated/`:
-- You are in a **non-isolated session**.
-- Skip to Step 5 (Resolve Target Config Path) using the current project root.
-
-### 4. Worktree Warning (isolated sessions only)
-
-Locate the MAIN project root by parsing `git worktree list --porcelain`:
-- Find the worktree entry whose `branch` field is `refs/heads/main`.
-- If not found, use the first worktree entry (the project root is always listed first).
-- Extract the `worktree` path from that entry as `PROJECT_ROOT`.
-
-Display this warning and prompt the user to confirm:
-
-```
-⚠  Worktree context: isolated/<name>
-
-Config changes are ALWAYS applied to the MAIN project local config:
-  <PROJECT_ROOT>/.purlin/config.local.json
-
-The current worktree's config is ephemeral — it will be discarded
-when this team is killed. Your change will take effect the next time
-an isolated team is created from main.
-
-Continue? [y/N]
-```
-
-If the user responds anything other than `y` or `yes` (case-insensitive), abort:
-```
-Aborted. No changes made.
-```
-
-### 5. Resolve Target Config Path
+### 3. Resolve Target Config Path
 
 Set `LOCAL_CONFIG_PATH = <PROJECT_ROOT>/.purlin/config.local.json`.
 
@@ -109,7 +69,7 @@ If neither file exists, abort:
 Error: No config file found at <PROJECT_ROOT>/.purlin/
 ```
 
-### 6. Apply the Change
+### 4. Apply the Change
 
 1. Read the current config JSON from `LOCAL_CONFIG_PATH`.
 2. Navigate to `agents.<role>.<key>`.
@@ -117,7 +77,7 @@ Error: No config file found at <PROJECT_ROOT>/.purlin/
 4. Serialize the updated config to JSON (preserving formatting: 4-space indentation).
 5. Write to a temp file alongside the target (`<LOCAL_CONFIG_PATH>.tmp`), then rename to `<LOCAL_CONFIG_PATH>`.
 
-### 7. Confirm
+### 5. Confirm
 
 Print a summary:
 
@@ -132,7 +92,5 @@ No git commit is made — `config.local.json` is gitignored.
 
 ## Notes
 
-- **Never modify the worktree's config directly.** The worktree config is ephemeral and will be discarded at kill time. All persistent changes go to MAIN's local config.
-- **Worktree config is intentionally out of sync** after MAIN config is updated. The new value takes effect the next time a new isolation is created from MAIN (which copies the live MAIN config to the worktree).
 - This skill is the only sanctioned path for agents to change config. No git commit is needed because `config.local.json` is gitignored.
 - **Config resolution:** The skill reads from the resolved local config (same resolution logic as `tools/config/resolve_config.py`). The `models` array for model validation is read from this resolved config.
