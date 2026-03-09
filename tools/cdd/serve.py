@@ -3372,13 +3372,14 @@ function showKillModal(name, dryRunData) {{
   if (confirmBtn) {{ confirmBtn.disabled = false; }}
 
   if (dryRunData.dirty) {{
-    // Dirty: list files, disable confirm
-    var html = '<p style="color:var(--purlin-status-error);font-weight:600">Cannot kill: uncommitted changes.</p>';
-    html += '<p style="margin-top:6px">Commit or stash changes before killing this isolation:</p><ul>';
+    // Dirty: show heading + monospace file list, disable confirm
+    var html = '<p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:var(--purlin-muted)">Uncommitted changes:</p>';
+    html += '<div style="font-family:monospace;font-size:11px;background:rgba(0,0,0,0.15);padding:8px;border-radius:4px;max-height:120px;overflow-y:auto;margin-bottom:8px">';
     (dryRunData.dirty_files || []).forEach(function(f) {{
-      html += '<li>' + f + '</li>';
+      html += '<div>' + f.replace(/</g,'&lt;') + '</div>';
     }});
-    html += '</ul>';
+    html += '</div>';
+    html += '<p style="font-size:12px;color:var(--purlin-muted);margin:0">Commit or stash uncommitted changes before killing this isolation.</p>';
     if (body) body.innerHTML = html;
     if (confirmBtn) confirmBtn.disabled = true;
   }} else if (dryRunData.unsynced) {{
