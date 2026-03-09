@@ -110,7 +110,7 @@ class TestModelsSectionHtmlStructure(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn('<h3>Agent Config ', html)
+        self.assertIn('<h3>Agent Config', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -468,444 +468,246 @@ class TestSectionVisualSeparation(unittest.TestCase):
         self.assertIn('border-bottom', h3_rule.group())
 
 
-class TestContextGuardCountersEndpoint(unittest.TestCase):
-    """Scenario: GET /context-guard/counters returns per-role arrays"""
+class TestContextGuardCheckboxRendersCorrectState(unittest.TestCase):
+    """Scenario: Context Guard Checkbox Renders with Correct State
 
-    def _make_handler(self):
-        """Create a Handler instance with mocked socket internals."""
-        handler = serve.Handler.__new__(serve.Handler)
-        handler.wfile = io.BytesIO()
-        handler._headers_buffer = []
-        handler.request_version = 'HTTP/1.1'
-        handler.requestline = 'GET /context-guard/counters HTTP/1.1'
-        return handler
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    def test_returns_per_role_arrays(self, mock_wt):
-        """Live agents grouped by role with counts sorted ascending."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-
-            # Create turn_count and session_meta for current PID (guaranteed alive)
-            pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('5')
-            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
-                f.write(f'uuid-123\narchitect\n2026-01-01\n')
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            raw = handler.wfile.read().decode('utf-8')
-            # Extract JSON body (after headers)
-            body = raw.split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            self.assertEqual(data['architect'], [5])
-            self.assertEqual(data['builder'], [])
-            self.assertEqual(data['qa'], [])
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    def test_dead_process_excluded(self, mock_wt):
-        """Dead process counters excluded from response."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-
-            # Use PID 99999999 — almost certainly not running
-            with open(os.path.join(runtime, 'turn_count_99999999_abc123'), 'w') as f:
-                f.write('42')
-            with open(os.path.join(runtime, 'session_meta_99999999'), 'w') as f:
-                f.write('uuid\nbuilder\n2026-01-01\n')
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            self.assertEqual(data['builder'], [])
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    def test_missing_session_meta_excluded(self, mock_wt):
-        """Counter without session_meta is excluded."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-
-            pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('10')
-            # No session_meta file
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            # No role should contain 10
-            for counts in data.values():
-                self.assertNotIn(10, counts)
-
-    @patch('serve.get_isolation_worktrees')
-    def test_worktree_counters_included(self, mock_wt):
-        """Worktree agent counters included in response."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Main runtime
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-            pid = os.getpid()
-            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('20')
-            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
-                f.write(f'uuid\nbuilder\n2026-01-01\n')
-
-            # Worktree runtime (same PID for simplicity — already alive)
-            wt_runtime = os.path.join(tmpdir, '.worktrees', 'team-a',
-                                      '.purlin', 'runtime')
-            os.makedirs(wt_runtime)
-            with open(os.path.join(wt_runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('7')
-            with open(os.path.join(wt_runtime, f'session_meta_{pid}'), 'w') as f:
-                f.write(f'uuid2\nbuilder\n2026-01-01\n')
-
-            mock_wt.return_value = [{'name': 'team-a'}]
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            self.assertEqual(data['builder'], [7, 20])  # sorted ascending
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    def test_multiple_roles_sorted(self, mock_wt):
-        """Multiple agents across roles, counts sorted ascending."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-
-            pid = os.getpid()
-            # Use current PID for one, parent PID for another (both alive)
-            ppid = os.getppid()
-            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('30')
-            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
-                f.write(f'uuid\nbuilder\n2026-01-01\n')
-            with open(os.path.join(runtime, f'turn_count_{ppid}_def456'), 'w') as f:
-                f.write('5')
-            with open(os.path.join(runtime, f'session_meta_{ppid}'), 'w') as f:
-                f.write(f'uuid2\nbuilder\n2026-01-01\n')
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            self.assertEqual(data['builder'], [5, 30])
-
-    @patch('serve.get_isolation_worktrees', return_value=[])
-    def test_multiple_session_files_reports_highest(self, mock_wt):
-        """Multiple session files for same PID reports highest count."""
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime = os.path.join(tmpdir, '.purlin', 'runtime')
-            os.makedirs(runtime)
-
-            pid = os.getpid()
-            # Two session files for the same PID — different hashes
-            with open(os.path.join(runtime, f'turn_count_{pid}_abc123'), 'w') as f:
-                f.write('30')
-            with open(os.path.join(runtime, f'turn_count_{pid}_def456'), 'w') as f:
-                f.write('5')
-            with open(os.path.join(runtime, f'session_meta_{pid}'), 'w') as f:
-                f.write(f'uuid\narchitect\n2026-01-01\n')
-
-            with patch.object(serve, 'PROJECT_ROOT', tmpdir):
-                handler = self._make_handler()
-                handler._handle_context_guard_counters()
-
-            handler.wfile.seek(0)
-            body = handler.wfile.read().decode('utf-8').split('\r\n\r\n', 1)[1]
-            data = json.loads(body)
-            self.assertEqual(data['architect'], [30])
-
-
-class TestContextGuardCounterFrontend(unittest.TestCase):
-    """Frontend JS for live counter display."""
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_counter_span_in_agent_row(self, mock_run, mock_status):
-        """Counter span exists in agent row HTML (JS template)."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        # buildAgentRowHtml generates spans dynamically: 'agent-cg-counter-' + role
-        self.assertIn("agent-cg-counter-' + role + '", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_refresh_function_exists(self, mock_run, mock_status):
-        """refreshContextGuardCounters function is defined."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("function refreshContextGuardCounters()", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_refresh_interval_set(self, mock_run, mock_status):
-        """5-second refresh interval is configured."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("setInterval(refreshContextGuardCounters, 5000)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_counter_fetches_endpoint(self, mock_run, mock_status):
-        """Refresh function fetches /context-guard/counters."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("fetch('/context-guard/counters')", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_counter_styling(self, mock_run, mock_status):
-        """Counter span has correct monospace styling."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("font-family:monospace", html)
-        self.assertIn("font-size:10px", html)
-
-
-class TestCounterColorThresholds(unittest.TestCase):
-    """Scenario: Counter Values Colored by Threshold Proximity"""
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_get_counter_color_function_exists(self, mock_run, mock_status):
-        """getCounterColor helper function is defined in JS."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("function getCounterColor(count, role)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_render_colored_counts_function_exists(self, mock_run, mock_status):
-        """renderColoredCounts helper function is defined in JS."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("function renderColoredCounts(counts, role)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_warning_threshold_at_80_percent(self, mock_run, mock_status):
-        """Color logic uses 0.80 threshold for warning."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("threshold * 0.80", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_critical_threshold_at_92_percent(self, mock_run, mock_status):
-        """Color logic uses 0.92 threshold for critical."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("threshold * 0.92", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_warning_uses_status_warning_token(self, mock_run, mock_status):
-        """Warning zone uses --purlin-status-warning color."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("--purlin-status-warning", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_critical_uses_status_error_token(self, mock_run, mock_status):
-        """Critical zone uses --purlin-status-error color."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("--purlin-status-error", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_disabled_guard_uses_muted(self, mock_run, mock_status):
-        """Disabled context guard always returns --purlin-muted."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("context_guard === false", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_counter_uses_innerhtml_for_colored_spans(self, mock_run, mock_status):
-        """Counter span updated via innerHTML (not textContent) for colored spans."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("span.innerHTML = renderColoredCounts(counts, role)", html)
-
-
-class TestCollapsedContextGuardSummary(unittest.TestCase):
-    """Scenario: Collapsed Summary Shows Active Agent Counts"""
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_span_exists(self, mock_run, mock_status):
-        """agents-cg-summary span exists in HTML."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn('id="agents-cg-summary"', html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_between_heading_and_badge(self, mock_run, mock_status):
-        """Summary span appears before the badge span."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        summary_pos = html.find('agents-cg-summary')
-        badge_pos = html.find('agents-section-badge')
-        self.assertGreater(summary_pos, 0)
-        self.assertGreater(badge_pos, summary_pos)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_update_function_exists(self, mock_run, mock_status):
-        """updateCollapsedCgSummary function is defined."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("function updateCollapsedCgSummary(data)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_called_from_refresh(self, mock_run, mock_status):
-        """refreshContextGuardCounters calls updateCollapsedCgSummary."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("updateCollapsedCgSummary(data)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_hidden_when_expanded(self, mock_run, mock_status):
-        """toggleSection hides agents-cg-summary when section is expanded."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("agents-cg-summary", html)
-        # Check that toggleSection handles cgSummary display
-        self.assertIn("cgSummary) cgSummary.style.display = 'none'", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_uses_role_primary_color(self, mock_run, mock_status):
-        """Role names in summary use --purlin-primary color."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("var(--purlin-primary)", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_summary_omits_empty_roles(self, mock_run, mock_status):
-        """Summary logic checks counts.length === 0 to skip roles."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("counts.length === 0) return", html)
-
-    @patch('serve.get_feature_status')
-    @patch('serve.run_command')
-    def test_apply_section_states_handles_summary(self, mock_run, mock_status):
-        """applySectionStates also handles agents-cg-summary visibility."""
-        mock_status.return_value = ([], [], [])
-        mock_run.return_value = ""
-        html = serve.generate_html()
-        self.assertIn("cgSum) cgSum.style.display = 'none'", html)
-
-
-class TestCounterValuesHiddenWhenGuardDisabled(unittest.TestCase):
-    """Scenario: Counter Values Hidden When Guard Disabled
-
-    Given the qa agent has context_guard false
-    And a running qa agent has a turn_count file
-    When the counter value is rendered
-    Then the counter span for qa is empty (no count displayed)
-    And the collapsed summary excludes qa from the context guard display
+    Given the architect agent has context_guard true in config
+    When the dashboard HTML is generated
+    Then the architect row's Context Guard checkbox is checked
     """
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_refresh_skips_disabled_guard_agents(self, mock_run, mock_status):
-        """refreshContextGuardCounters sets empty innerHTML when guard disabled."""
+    def test_checkbox_checked_when_guard_enabled(self, mock_run, mock_status):
+        """Context guard checkbox is checked when context_guard is true."""
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # The refresh function must check context_guard before rendering
-        self.assertIn("acfg.context_guard === false", html)
-        # When guard disabled, span.innerHTML is set to empty string
-        self.assertIn("span.innerHTML = ''", html)
+        # buildAgentRowHtml emits checked attribute when context_guard !== false
+        self.assertIn("id=\"agent-cg-' + role + '\"", html)
+        self.assertIn("agent-cg-", html)
+        # The JS builds checkbox with checked when cgEnabled is true
+        self.assertIn("(cgEnabled ? ' checked' : '')", html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_collapsed_summary_excludes_disabled_guard(self, mock_run, mock_status):
-        """updateCollapsedCgSummary skips roles with context_guard false."""
+    def test_context_guard_defaults_to_true(self, mock_run, mock_status):
+        """context_guard defaults to true (checked) when not explicitly set."""
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # Extract the updateCollapsedCgSummary function body
-        summary_fn_start = html.find("function updateCollapsedCgSummary")
-        self.assertGreater(summary_fn_start, 0)
-        # The function must check context_guard before including a role
-        summary_section = html[summary_fn_start:summary_fn_start + 600]
-        self.assertIn("context_guard === false", summary_section)
+        # cgEnabled is derived as: agentCfg.context_guard !== false
+        self.assertIn("var cgEnabled = agentCfg.context_guard !== false", html)
+
+
+class TestContextGuardCheckboxUncheckedWhenDisabled(unittest.TestCase):
+    """Scenario: Context Guard Checkbox Unchecked When Guard Disabled
+
+    Given the builder agent has context_guard false in config
+    When the dashboard HTML is generated
+    Then the builder row's Context Guard checkbox is unchecked
+    """
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_guard_check_precedes_count_render(self, mock_run, mock_status):
-        """Guard disabled check occurs before renderColoredCounts in refresh."""
+    def test_checkbox_unchecked_when_guard_false(self, mock_run, mock_status):
+        """When context_guard is false, checkbox renders without checked attr."""
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # In refreshContextGuardCounters, the guard check must come before
-        # the renderColoredCounts call
-        refresh_start = html.find("function refreshContextGuardCounters")
-        refresh_section = html[refresh_start:refresh_start + 800]
-        guard_check_pos = refresh_section.find("acfg.context_guard === false")
-        render_pos = refresh_section.find("renderColoredCounts(counts, role)")
-        self.assertGreater(guard_check_pos, 0)
-        self.assertGreater(render_pos, 0)
-        self.assertLess(guard_check_pos, render_pos,
-                        "Guard disabled check must precede renderColoredCounts")
+        # The buildAgentRowHtml uses cgEnabled = context_guard !== false
+        # When false, cgEnabled is false, and no 'checked' attribute is added
+        self.assertIn("var cgEnabled = agentCfg.context_guard !== false", html)
+        # The checkbox element uses cgEnabled to conditionally add checked
+        self.assertIn("(cgEnabled ? ' checked' : '')", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_diff_update_respects_guard_state(self, mock_run, mock_status):
+        """diffUpdateAgentRows correctly syncs checkbox to config value."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # diffUpdateAgentRows reads context_guard and sets checkbox
+        self.assertIn("var cgVal = acfg.context_guard !== false", html)
+        self.assertIn("cgChk.checked !== cgVal", html)
+        self.assertIn("cgChk.checked = cgVal", html)
+
+
+class TestPostAcceptsValidContextGuardBoolean(unittest.TestCase):
+    """Scenario: POST Accepts Valid Context Guard Boolean
+
+    Given a valid resolved config exists
+    When a POST request is sent to /config/agents with architect context_guard true
+    Then config.local.json contains agents.architect.context_guard as true
+    """
+
+    def _make_handler(self, body_dict):
+        from serve import Handler
+        handler = Handler.__new__(Handler)
+        body = json.dumps(body_dict).encode('utf-8')
+        handler.path = '/config/agents'
+        handler.requestline = 'POST /config/agents HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        return handler
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_cg_bool_cfg.json')
+    def test_context_guard_true_persists(self):
+        """POST with context_guard: true persists the boolean value."""
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6', 'label': 'Opus 4.6',
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_cg_bool_cfg.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = self._make_handler({
+            'architect': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True, 'context_guard': True
+            },
+            'builder': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True, 'context_guard': False
+            },
+            'qa': {
+                'model': 'claude-opus-4-6', 'effort': 'medium',
+                'bypass_permissions': False, 'context_guard': True
+            }
+        })
+        handler.do_POST()
+        handler.send_response.assert_called_with(200)
+
+        with open('/tmp/test_cg_bool_cfg.json', 'r') as f:
+            saved = json.load(f)
+        self.assertTrue(saved['agents']['architect']['context_guard'])
+        self.assertFalse(saved['agents']['builder']['context_guard'])
+        self.assertTrue(saved['agents']['qa']['context_guard'])
+
+        os.remove('/tmp/test_cg_bool_cfg.json')
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_cg_invalid_cfg.json')
+    def test_context_guard_non_boolean_rejected(self):
+        """POST with non-boolean context_guard returns 400."""
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6', 'label': 'Opus 4.6',
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_cg_invalid_cfg.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = self._make_handler({
+            'architect': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True, 'context_guard': 'yes'
+            },
+            'builder': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True
+            },
+            'qa': {
+                'model': 'claude-opus-4-6', 'effort': 'medium',
+                'bypass_permissions': False
+            }
+        })
+        handler.do_POST()
+        handler.send_response.assert_called_with(400)
+
+        os.remove('/tmp/test_cg_invalid_cfg.json')
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_cg_optional_cfg.json')
+    def test_context_guard_optional_preserves_existing(self):
+        """POST without context_guard preserves existing value via merge."""
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6', 'label': 'Opus 4.6',
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {
+                'architect': {'model': 'claude-opus-4-6', 'context_guard': False},
+                'builder': {'model': 'claude-opus-4-6'},
+                'qa': {'model': 'claude-opus-4-6'}
+            }
+        }
+        with open('/tmp/test_cg_optional_cfg.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = self._make_handler({
+            'architect': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True
+                # No context_guard — should preserve existing False
+            },
+            'builder': {
+                'model': 'claude-opus-4-6', 'effort': 'high',
+                'bypass_permissions': True
+            },
+            'qa': {
+                'model': 'claude-opus-4-6', 'effort': 'medium',
+                'bypass_permissions': False
+            }
+        })
+        handler.do_POST()
+        handler.send_response.assert_called_with(200)
+
+        os.remove('/tmp/test_cg_optional_cfg.json')
+
+
+class TestContextGuardCheckboxTogglePersistsState(unittest.TestCase):
+    """Scenario: Context Guard Checkbox Toggle Persists State
+
+    Given the Agents section is expanded
+    And the architect Context Guard checkbox is checked
+    When the user unchecks the architect Context Guard checkbox
+    Then the new state is sent via POST /config/agents
+    And on page reload the checkbox remains unchecked
+    """
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_checkbox_change_triggers_pending_write(self, mock_run, mock_status):
+        """Toggling checkbox stores pending write and schedules save."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # Event handler sets pending write for context_guard
+        self.assertIn("pendingWrites.set(role + '.context_guard', cgChk.checked)", html)
+        # Event handler calls scheduleAgentSave
+        # Find the cgChk change handler block
+        cg_handler_start = html.find("pendingWrites.set(role + '.context_guard'")
+        cg_handler_section = html[cg_handler_start:cg_handler_start + 200]
+        self.assertIn("scheduleAgentSave()", cg_handler_section)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_save_includes_context_guard_field(self, mock_run, mock_status):
+        """saveAgentConfig includes context_guard in the POST payload."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("context_guard: cgChk ? cgChk.checked : true", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_pending_write_blocks_refresh_overwrite(self, mock_run, mock_status):
+        """diffUpdateAgentRows skips context_guard if pending write exists."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("pendingWrites.has(role + '.context_guard')", html)
 
 
 # =============================================================================

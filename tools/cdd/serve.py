@@ -2477,7 +2477,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div class="ctx" style="margin-top:10px">
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
-        <h3>{agents_heading} <span id="agents-cg-summary" style="font-family:monospace;font-size:10px;margin-left:8px;font-weight:400;letter-spacing:normal;text-transform:none"></span></h3>
+        <h3>{agents_heading}</h3>
         <span class="section-badge" id="agents-section-badge">{agents_badge}</span>
       </div>
       <div class="section-body collapsed" id="agents-section">
@@ -2738,9 +2738,6 @@ function refreshStatus() {{
   if (isoInput && document.activeElement === isoInput) return;
   var brInput = document.getElementById('new-branch-name');
   if (brInput && document.activeElement === brInput) return;
-  // Skip refresh while user is editing a context guard threshold input
-  var activeEl = document.activeElement;
-  if (activeEl && activeEl.id && activeEl.id.startsWith('agent-cgt-')) return;
   // Save isolation name input value before DOM refresh
   var _isoHadFocus = false;
   if (isoInput) _pendingIsolationName = isoInput.value;
@@ -2818,17 +2815,14 @@ function applySectionStates() {{
     var chevron = document.getElementById(id + '-chevron');
     var badge = document.getElementById(id + '-badge');
     if (!body) return;
-    var cgSum = (id === 'agents-section') ? document.getElementById('agents-cg-summary') : null;
     if (saved === 'collapsed') {{
       body.classList.add('collapsed');
       if (chevron) chevron.classList.remove('expanded');
       if (badge) badge.style.display = '';
-      if (cgSum) cgSum.style.display = '';
     }} else {{
       body.classList.remove('collapsed');
       if (chevron) chevron.classList.add('expanded');
       if (badge) badge.style.display = 'none';
-      if (cgSum) cgSum.style.display = 'none';
     }}
   }});
   // Apply isolation sub-heading label swap
@@ -2842,17 +2836,14 @@ function toggleSection(sectionId) {{
   var badge = document.getElementById(sectionId + '-badge');
   if (!body) return;
   var isCollapsed = body.classList.contains('collapsed');
-  var cgSummary = (sectionId === 'agents-section') ? document.getElementById('agents-cg-summary') : null;
   if (isCollapsed) {{
     body.classList.remove('collapsed');
     if (chevron) chevron.classList.add('expanded');
     if (badge) badge.style.display = 'none';
-    if (cgSummary) cgSummary.style.display = 'none';
   }} else {{
     body.classList.add('collapsed');
     if (chevron) chevron.classList.remove('expanded');
     if (badge) badge.style.display = '';
-    if (cgSummary) cgSummary.style.display = '';
   }}
   // Isolation sub-heading: swap heading text on collapse/expand
   if (sectionId === 'isolation-section') {{
@@ -4788,7 +4779,6 @@ function stopMapRefresh() {{
 var agentsConfig = null;
 var agentsSaveTimer = null;
 var pendingWrites = new Map();
-var cgtDirty = {{}};
 
 function applyPendingWrites() {{
   if (pendingWrites.size === 0) return;
@@ -4904,45 +4894,10 @@ function renderAgentsRows(cfg) {{
       scheduleAgentSave();
     }});
     var cgChk = document.getElementById('agent-cg-' + role);
-    var cgtInput = document.getElementById('agent-cgt-' + role);
     if (cgChk) cgChk.addEventListener('change', function() {{
       pendingWrites.set(role + '.context_guard', cgChk.checked);
-      if (cgtInput) {{
-        cgtInput.disabled = !cgChk.checked;
-        cgtInput.style.opacity = cgChk.checked ? '1' : '0.4';
-      }}
       scheduleAgentSave();
     }});
-    if (cgtInput) {{
-      cgtInput.dataset.savedValue = cgtInput.value;
-      cgtDirty[role] = false;
-      cgtInput.addEventListener('input', function() {{
-        var setBtn = document.getElementById('agent-cgt-set-' + role);
-        var revBtn = document.getElementById('agent-cgt-revert-' + role);
-        var changed = cgtInput.value !== cgtInput.dataset.savedValue;
-        cgtDirty[role] = changed;
-        if (setBtn) setBtn.style.display = changed ? 'inline-block' : 'none';
-        if (revBtn) revBtn.style.display = changed ? 'inline-block' : 'none';
-      }});
-      var setBtn = document.getElementById('agent-cgt-set-' + role);
-      var revBtn = document.getElementById('agent-cgt-revert-' + role);
-      if (setBtn) setBtn.addEventListener('click', function() {{
-        var v = parseInt(cgtInput.value, 10);
-        if (v >= 5 && v <= 200) {{
-          cgtInput.dataset.savedValue = String(v);
-          cgtDirty[role] = false;
-          setBtn.style.display = 'none';
-          if (revBtn) revBtn.style.display = 'none';
-          scheduleAgentSave();
-        }}
-      }});
-      if (revBtn) revBtn.addEventListener('click', function() {{
-        cgtInput.value = cgtInput.dataset.savedValue;
-        cgtDirty[role] = false;
-        if (setBtn) setBtn.style.display = 'none';
-        revBtn.style.display = 'none';
-      }});
-    }}
     syncCapabilityControls(role);
   }});
 }}
@@ -4980,14 +4935,10 @@ function diffUpdateAgentRows(cfg) {{
       }}
     }}
     var cgChk = document.getElementById('agent-cg-' + role);
-    var cgtInput = document.getElementById('agent-cgt-' + role);
     var cgVal = acfg.context_guard !== false;
     if (cgChk && !pendingWrites.has(role + '.context_guard') && cgChk.checked !== cgVal) {{
       cgChk.checked = cgVal;
-      if (cgtInput) {{ cgtInput.disabled = !cgVal; cgtInput.style.opacity = cgVal ? '1' : '0.4'; }}
     }}
-    var cgtVal = acfg.context_guard_threshold || (cfg.context_guard_threshold) || 45;
-    if (cgtInput && !cgtDirty[role] && parseInt(cgtInput.value,10) !== cgtVal) {{ cgtInput.value = cgtVal; cgtInput.dataset.savedValue = String(cgtVal); }}
     syncCapabilityControls(role);
   }});
 }}
@@ -5000,7 +4951,6 @@ function buildAgentRowHtml(role, agentCfg) {{
   var suggestNext = agentCfg.recommend_next_actions !== false;
   var suggestDisabled = !startupSeq;
   var cgEnabled = agentCfg.context_guard !== false;
-  var cgThreshold = agentCfg.context_guard_threshold || (agentsConfig && agentsConfig.context_guard_threshold) || 45;
   var modelsList = (agentsConfig && agentsConfig.models) || [];
   var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
@@ -5022,13 +4972,9 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<label class="agent-chk-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
       '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '>' +
     '</label>' +
-    '<div style="display:flex;gap:4px;align-items:center">' +
+    '<label class="agent-chk-lbl">' +
       '<input type="checkbox" id="agent-cg-' + role + '" style="accent-color:var(--purlin-accent)"' + (cgEnabled ? ' checked' : '') + '>' +
-      '<input type="number" id="agent-cgt-' + role + '" min="5" max="200" value="' + cgThreshold + '" style="width:40px;background:var(--purlin-bg);border:1px solid var(--purlin-border);border-radius:3px;color:var(--purlin-muted);font-size:11px;padding:2px;outline:none' + (!cgEnabled ? ';opacity:0.4' : '') + '"' + (!cgEnabled ? ' disabled' : '') + '>' +
-      '<button id="agent-cgt-set-' + role + '" style="display:none;font-size:9px;padding:1px 5px;background:var(--purlin-accent);color:var(--purlin-bg);border:none;border-radius:3px;cursor:pointer;font-family:var(--font-body)">Set</button>' +
-      '<button id="agent-cgt-revert-' + role + '" style="display:none;font-size:9px;padding:1px 5px;background:var(--purlin-tag-fill);color:var(--purlin-muted);border:1px solid var(--purlin-border);border-radius:3px;cursor:pointer;font-family:var(--font-body)">Revert</button>' +
-      '<span id="agent-cg-counter-' + role + '" style="font-family:monospace;font-size:10px;color:var(--purlin-muted);margin-left:6px"></span>' +
-    '</div>' +
+    '</label>' +
   '</div>';
 }}
 
@@ -5097,7 +5043,6 @@ function saveAgentConfig() {{
     var startupChk = document.getElementById('agent-startup-' + role);
     var recommendChk = document.getElementById('agent-recommend-' + role);
     var cgChk = document.getElementById('agent-cg-' + role);
-    var cgtInput = document.getElementById('agent-cgt-' + role);
     if (!modSel) return;
     agentsPayload[role] = {{
       model: modSel.value,
@@ -5105,8 +5050,7 @@ function saveAgentConfig() {{
       bypass_permissions: bypassChk ? bypassChk.checked : false,
       startup_sequence: startupChk ? startupChk.checked : true,
       recommend_next_actions: recommendChk ? recommendChk.checked : true,
-      context_guard: cgChk ? cgChk.checked : true,
-      context_guard_threshold: cgtInput ? parseInt(cgtDirty[role] ? cgtInput.dataset.savedValue : cgtInput.value, 10) || 45 : 45
+      context_guard: cgChk ? cgChk.checked : true
     }};
   }});
   // Snapshot pending keys included in this request (per-request lock association)
@@ -5131,74 +5075,12 @@ function saveAgentConfig() {{
 }}
 
 // ============================
-// Context Guard Live Counters
-// ============================
-function getCounterColor(count, role) {{
-  if (!agentsConfig) return 'var(--purlin-muted)';
-  var acfg = (agentsConfig.agents || {{}})[role] || {{}};
-  if (acfg.context_guard === false) return 'var(--purlin-muted)';
-  var threshold = acfg.context_guard_threshold || agentsConfig.context_guard_threshold || 45;
-  if (count >= threshold * 0.92) return 'var(--purlin-status-error)';
-  if (count >= threshold * 0.80) return 'var(--purlin-status-warning)';
-  return 'var(--purlin-muted)';
-}}
-
-function renderColoredCounts(counts, role) {{
-  if (counts.length === 0) return '';
-  return counts.map(function(c) {{
-    return '<span style="color:' + getCounterColor(c, role) + '">' + c + '</span>';
-  }}).join('|');
-}}
-
-function refreshContextGuardCounters() {{
-  fetch('/context-guard/counters')
-    .then(function(r) {{ return r.json(); }})
-    .then(function(data) {{
-      ['architect', 'builder', 'qa'].forEach(function(role) {{
-        var span = document.getElementById('agent-cg-counter-' + role);
-        if (!span) return;
-        var acfg = agentsConfig && agentsConfig.agents ? (agentsConfig.agents[role] || {{}}) : {{}};
-        if (acfg.context_guard === false) {{
-          span.innerHTML = '';
-          return;
-        }}
-        var counts = data[role] || [];
-        span.innerHTML = renderColoredCounts(counts, role);
-      }});
-      updateCollapsedCgSummary(data);
-    }})
-    .catch(function() {{}});
-}}
-
-function updateCollapsedCgSummary(data) {{
-  var el = document.getElementById('agents-cg-summary');
-  if (!el) return;
-  var roles = ['architect', 'builder', 'qa'];
-  var parts = [];
-  roles.forEach(function(role) {{
-    var counts = data[role] || [];
-    if (counts.length === 0) return;
-    var acfg = agentsConfig && agentsConfig.agents ? (agentsConfig.agents[role] || {{}}) : {{}};
-    if (acfg.context_guard === false) return;
-    var colored = renderColoredCounts(counts, role);
-    parts.push('<span style="color:var(--purlin-primary)">' + role.charAt(0).toUpperCase() + role.slice(1) + '</span>: ' + colored);
-  }});
-  if (parts.length === 0) {{
-    el.innerHTML = '';
-  }} else {{
-    el.innerHTML = '(' + parts.join(', ') + ')';
-  }}
-}}
-
-// ============================
 // Initialize
 // ============================
 applySectionStates();
 initAgentsSection();
 updateCriticLabel();
 initFromHash();
-refreshContextGuardCounters();
-setInterval(refreshContextGuardCounters, 5000);
 </script>
 </body>
 </html>"""
@@ -5355,8 +5237,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_whats_different_read()
         elif self.path == '/whats-different/deep-analysis/read':
             self._handle_deep_analysis_read()
-        elif self.path == '/context-guard/counters':
-            self._handle_context_guard_counters()
         else:
             # Dashboard request: also regenerate cached artifacts
             cache = build_status_commit_cache()
@@ -5485,8 +5365,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._handle_whats_different_generate()
         elif self.path == '/whats-different/deep-analysis/generate':
             self._handle_deep_analysis_generate()
-        elif self.path == '/context-guard/counters':
-            self._handle_context_guard_counters()
         else:
             self.send_response(404)
             self.end_headers()
@@ -5498,80 +5376,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
-
-    def _handle_context_guard_counters(self):
-        """GET /context-guard/counters — live turn counts grouped by role."""
-        # Collect runtime directories: main project + worktrees
-        runtime_dirs = [os.path.join(PROJECT_ROOT, '.purlin', 'runtime')]
-        for wt in get_isolation_worktrees():
-            wt_runtime = os.path.join(
-                PROJECT_ROOT, '.worktrees', wt.get('name', ''),
-                '.purlin', 'runtime')
-            if os.path.isdir(wt_runtime):
-                runtime_dirs.append(wt_runtime)
-
-        # Scan for turn_count_<PID>_<HASH> files, match with session_meta_<PID>.
-        # Multiple session files per PID: report highest count per PID.
-        role_counts = {'architect': [], 'builder': [], 'qa': []}
-        for runtime_dir in runtime_dirs:
-            if not os.path.isdir(runtime_dir):
-                continue
-            # First pass: collect highest count per PID in this directory
-            pid_max = {}  # pid_str -> highest count
-            for fname in os.listdir(runtime_dir):
-                if not fname.startswith('turn_count_'):
-                    continue
-                suffix = fname[len('turn_count_'):]
-                # Extract PID: segment before the first underscore
-                parts = suffix.split('_', 1)
-                if len(parts) < 2:
-                    continue  # old format (no hash) — skip
-                pid_str = parts[0]
-                try:
-                    int(pid_str)  # validate numeric PID
-                except ValueError:
-                    continue
-
-                # Read turn count
-                tc_path = os.path.join(runtime_dir, fname)
-                try:
-                    with open(tc_path, 'r') as f:
-                        count = int(f.read().strip())
-                except (IOError, OSError, ValueError):
-                    continue
-                if pid_str not in pid_max or count > pid_max[pid_str]:
-                    pid_max[pid_str] = count
-
-            # Second pass: resolve role and liveness for each PID
-            for pid_str, count in pid_max.items():
-                pid = int(pid_str)
-                # Liveness check
-                try:
-                    os.kill(pid, 0)
-                except OSError:
-                    continue  # dead process
-
-                # Read role from session_meta_<PID>
-                meta_path = os.path.join(runtime_dir, f'session_meta_{pid_str}')
-                if not os.path.isfile(meta_path):
-                    continue
-                try:
-                    with open(meta_path, 'r') as f:
-                        lines = f.read().splitlines()
-                    if len(lines) < 2:
-                        continue
-                    role = lines[1].strip().lower()
-                except (IOError, OSError):
-                    continue
-                if role not in role_counts:
-                    continue
-                role_counts[role].append(count)
-
-        # Sort each role's counts ascending
-        for role in role_counts:
-            role_counts[role].sort()
-
-        self._send_json(200, role_counts)
 
     def _handle_isolate_create(self):
         """POST /isolate/create — run create_isolation.sh <name>."""
@@ -5721,10 +5525,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             for bool_field in ('startup_sequence', 'recommend_next_actions', 'context_guard'):
                 if bool_field in cfg and not isinstance(cfg[bool_field], bool):
                     errors.append(f'{role}: {bool_field} must be a boolean')
-            if 'context_guard_threshold' in cfg:
-                cgt = cfg['context_guard_threshold']
-                if not isinstance(cgt, int) or cgt < 5 or cgt > 200:
-                    errors.append(f'{role}: context_guard_threshold must be an integer between 5 and 200')
             ss = cfg.get('startup_sequence', True)
             rna = cfg.get('recommend_next_actions', True)
             if ss is False and rna is True:
