@@ -2881,7 +2881,7 @@ function _bcShowJoinPhase2(name, assessment) {{
     h += '<p style="margin:0 0 8px 0;font-size:13px">Branch is ' + ahead + ' commits ahead of HEAD.</p>';
   }}
   // Secondary text + action: local-vs-remote reconciliation
-  if (localSync === 'DIVERGED') {{
+  if (localSync === 'DIVERGED' && sync !== 'BEHIND') {{
     h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local and remote copies have diverged.</p>';
     var escName = name.replace(/'/g, "\\'");
     h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:4px;margin-top:8px">';
@@ -2895,13 +2895,13 @@ function _bcShowJoinPhase2(name, assessment) {{
       h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch is ' + localAhead + ' commits ahead of remote.</p>';
     }}
     var escName = name.replace(/'/g, "\\'");
-    if (localSync === 'SAME' && sync === 'BEHIND') {{
+    if ((localSync === 'SAME' || localSync === 'DIVERGED') && sync === 'BEHIND') {{
       h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Will push current HEAD to remote ' + name + ', then switch to it.</p>';
     }} else if (localSync === 'SAME') {{
       h += '<p style="margin:0 0 8px 0;font-size:12px;color:var(--purlin-muted)">Local branch matches remote. Will check out this branch.</p>';
     }}
     h += '<div style="margin-top:12px;text-align:right">';
-    if (localSync === 'SAME' && sync === 'BEHIND') {{
+    if ((localSync === 'SAME' || localSync === 'DIVERGED') && sync === 'BEHIND') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'update-to-head\\')">Update Remote &amp; Join</button>';
     }} else if (localSync === 'SAME') {{
       h += '<button class="btn-critic" id="bc-phase2-action" onclick="_bcJoinConfirm(\\'' + escName + '\\', \\'checkout\\')">Check Out &amp; Join</button>';
@@ -5347,14 +5347,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 except (subprocess.CalledProcessError,
                         subprocess.TimeoutExpired):
                     pass
-            # Step 4: Checkout and fast-forward to updated remote
+            # Step 4: Checkout branch reset to updated remote ref.
+            # Uses -B to handle stale local branches that can't fast-forward.
             try:
                 subprocess.run(
-                    ['git', 'checkout', branch],
-                    capture_output=True, text=True, check=True,
-                    cwd=PROJECT_ROOT, timeout=10)
-                subprocess.run(
-                    ['git', 'merge', '--ff-only', ref],
+                    ['git', 'checkout', '-B', branch, ref],
                     capture_output=True, text=True, check=True,
                     cwd=PROJECT_ROOT, timeout=10)
             except (subprocess.CalledProcessError,
