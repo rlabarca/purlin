@@ -934,23 +934,23 @@ class TestInstructionFilesUpdated(unittest.TestCase):
         else:
             self.fail('/pl-web-verify not in BUILDER_BASE authorized commands')
 
-    def test_qa_commands_all_three_variants(self):
-        """qa_commands.md has /pl-web-verify in all 3 table variants."""
+    def test_qa_commands_both_variants(self):
+        """qa_commands.md has /pl-web-verify in both table variants."""
         with open(INSTRUCTION_FILES['qa_commands']) as f:
             content = f.read()
         occurrences = content.count('/pl-web-verify')
         self.assertGreaterEqual(
-            occurrences, 3,
-            f'Expected >= 3 occurrences in qa_commands.md, found {occurrences}')
+            occurrences, 2,
+            f'Expected >= 2 occurrences in qa_commands.md, found {occurrences}')
 
-    def test_builder_commands_all_three_variants(self):
-        """builder_commands.md has /pl-web-verify in all 3 table variants."""
+    def test_builder_commands_both_variants(self):
+        """builder_commands.md has /pl-web-verify in both table variants."""
         with open(INSTRUCTION_FILES['builder_commands']) as f:
             content = f.read()
         occurrences = content.count('/pl-web-verify')
         self.assertGreaterEqual(
-            occurrences, 3,
-            f'Expected >= 3 in builder_commands.md, found {occurrences}')
+            occurrences, 2,
+            f'Expected >= 2 in builder_commands.md, found {occurrences}')
 
     def test_feature_format_documents_web_testable(self):
         """feature_format.md documents > Web Testable: metadata."""
