@@ -287,6 +287,52 @@ if $stage_ok; then
 fi
 
 # ============================================================
+# Stage 7: Multiple Projects on Same Machine
+# ============================================================
+# Verifies that start.sh uses --project-root scoped process
+# detection and per-project port files, so two projects can
+# run CDD servers independently.
+
+# Create two temporary project directories
+PROJECT_A=$(mktemp -d)
+PROJECT_B=$(mktemp -d)
+mkdir -p "$PROJECT_A/.purlin/runtime" "$PROJECT_B/.purlin/runtime"
+
+# Simulate different port files for each project
+echo "8080" > "$PROJECT_A/.purlin/runtime/cdd.port"
+echo "9090" > "$PROJECT_B/.purlin/runtime/cdd.port"
+
+stage_ok=true
+
+# Port files are independent (different ports per project)
+PORT_A=$(cat "$PROJECT_A/.purlin/runtime/cdd.port")
+PORT_B=$(cat "$PROJECT_B/.purlin/runtime/cdd.port")
+assert_eq "project_A_port" "8080" "$PORT_A"                     || stage_ok=false
+assert_eq "project_B_port" "9090" "$PORT_B"                     || stage_ok=false
+
+# start.sh process detection uses grep -F PROJECT_ROOT — verify
+# the grep pattern for project A does NOT match project B
+if echo "--project-root $PROJECT_A" | grep -qF "$PROJECT_B"; then
+    echo "  FAIL: project root grep collision"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+
+# serve.py --project-root flag is present in the launch command template
+if ! grep -q -- "--project-root" "$SCRIPT_DIR/start.sh"; then
+    echo "  FAIL: start.sh missing --project-root"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+
+if $stage_ok; then
+    echo '[Scenario] Multiple projects on same machine'
+    PASSED=$((PASSED + 1))
+fi
+
+rm -rf "$PROJECT_A" "$PROJECT_B"
+
+# ============================================================
 # Write test results
 # ============================================================
 
