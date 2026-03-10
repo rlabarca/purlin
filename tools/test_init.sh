@@ -516,39 +516,30 @@ fi
 
 cleanup_sandbox
 
-# --- Scenario: Missing Launchers Created on Refresh Without Flag ---
+# --- Scenario: Launchers Always Regenerated on Refresh ---
 echo ""
-echo "[Scenario] Missing Launchers Created on Refresh Without Flag"
+echo "[Scenario] Launchers Always Regenerated on Refresh"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-# Record builder launcher checksum before deletion
-BUILDER_HASH_BEFORE="$(shasum "$PROJECT/pl-run-builder.sh" | cut -d' ' -f1)"
-
-# Delete one launcher to simulate upgrade/rename
-rm -f "$PROJECT/pl-run-architect.sh"
+# Modify pl-run-architect.sh with outdated content
+echo "# MODIFIED BY TEST - outdated content" > "$PROJECT/pl-run-architect.sh"
 
 "$INIT_SH" > /dev/null 2>&1
 
-if [ -x "$PROJECT/pl-run-architect.sh" ]; then
-    log_pass "Missing pl-run-architect.sh recreated on refresh"
+if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/pl-run-architect.sh"; then
+    log_pass "pl-run-architect.sh regenerated with current template on refresh"
 else
-    log_fail "Missing pl-run-architect.sh NOT recreated on refresh"
+    log_fail "pl-run-architect.sh NOT regenerated on refresh"
 fi
 
-BUILDER_HASH_AFTER="$(shasum "$PROJECT/pl-run-builder.sh" | cut -d' ' -f1)"
-if [ "$BUILDER_HASH_BEFORE" = "$BUILDER_HASH_AFTER" ]; then
-    log_pass "Existing pl-run-builder.sh NOT modified"
-else
-    log_fail "Existing pl-run-builder.sh was modified during launcher repair"
-fi
-
-# Verify the recreated launcher is functional (exports PURLIN_PROJECT_ROOT)
-if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/pl-run-architect.sh"; then
-    log_pass "Recreated launcher exports PURLIN_PROJECT_ROOT"
-else
-    log_fail "Recreated launcher missing PURLIN_PROJECT_ROOT export"
-fi
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+    if [ -x "$PROJECT/$launcher" ]; then
+        log_pass "$launcher is executable after refresh"
+    else
+        log_fail "$launcher is NOT executable after refresh"
+    fi
+done
 
 cleanup_sandbox
 
@@ -620,28 +611,9 @@ fi
 
 cleanup_sandbox
 
-# --- Scenario: --regenerate-launchers Flag ---
+# --- Scenario: Refresh Removes Stale Launchers ---
 echo ""
-echo "[Scenario] --regenerate-launchers Flag"
-setup_sandbox
-"$INIT_SH" > /dev/null 2>&1
-
-# Modify pl-run-architect.sh
-echo "# MODIFIED BY TEST" > "$PROJECT/pl-run-architect.sh"
-
-"$INIT_SH" --regenerate-launchers > /dev/null 2>&1
-
-if grep -q "PURLIN_PROJECT_ROOT" "$PROJECT/pl-run-architect.sh"; then
-    log_pass "--regenerate-launchers overwrote pl-run-architect.sh"
-else
-    log_fail "--regenerate-launchers did NOT overwrite pl-run-architect.sh"
-fi
-
-cleanup_sandbox
-
-# --- Scenario: --regenerate-launchers Removes Stale Launchers ---
-echo ""
-echo "[Scenario] --regenerate-launchers Removes Stale Launchers"
+echo "[Scenario] Refresh Removes Stale Launchers"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
@@ -650,7 +622,7 @@ echo "#!/bin/bash" > "$PROJECT/run_architect.sh"
 echo "#!/bin/bash" > "$PROJECT/run_builder.sh"
 echo "#!/bin/bash" > "$PROJECT/run_qa.sh"
 
-"$INIT_SH" --regenerate-launchers > /dev/null 2>&1
+"$INIT_SH" > /dev/null 2>&1
 
 STALE_REMOVED=true
 for stale in run_architect.sh run_builder.sh run_qa.sh; do
@@ -667,31 +639,12 @@ fi
 NEW_STYLE_OK=true
 for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
     if [ ! -x "$PROJECT/$launcher" ]; then
-        log_fail "New-style launcher $launcher missing after --regenerate-launchers"
+        log_fail "New-style launcher $launcher missing after refresh"
         NEW_STYLE_OK=false
     fi
 done
 if [ "$NEW_STYLE_OK" = true ]; then
-    log_pass "All new-style launchers (pl-run-*.sh) present"
-fi
-
-cleanup_sandbox
-
-# --- Test 26: Refresh without --regenerate-launchers preserves launchers ---
-echo ""
-echo "[Test 26] Refresh without --regenerate-launchers preserves launchers"
-setup_sandbox
-"$INIT_SH" > /dev/null 2>&1
-
-# Modify pl-run-architect.sh
-echo "# MODIFIED BY TEST" > "$PROJECT/pl-run-architect.sh"
-
-"$INIT_SH" > /dev/null 2>&1
-
-if grep -q "MODIFIED BY TEST" "$PROJECT/pl-run-architect.sh"; then
-    log_pass "Launcher preserved without --regenerate-launchers"
-else
-    log_fail "Launcher overwritten without --regenerate-launchers flag"
+    log_pass "All new-style launchers (pl-run-*.sh) present after refresh"
 fi
 
 cleanup_sandbox
@@ -829,6 +782,104 @@ else
 fi
 
 rm -rf "$MOCK_DIR"
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Fresh Clone Collaborator Flow Test ==="
+###############################################################################
+
+# --- Scenario: Fresh Clone Collaborator Flow ---
+echo ""
+echo "[Scenario] Fresh Clone Collaborator Flow"
+setup_sandbox
+
+# Step 1: Full init in the original sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Commit everything (including pl-init.sh) to simulate a shared repo
+git -C "$PROJECT" add -A > /dev/null 2>&1
+git -C "$PROJECT" commit -q -m "init purlin" 2>/dev/null
+
+# Step 2: Re-clone without --recurse-submodules
+CLONE_DIR="$SANDBOX/collaborator-clone"
+git clone -q "$PROJECT" "$CLONE_DIR" 2>/dev/null
+
+# The submodule directory exists but is empty (not initialized)
+if [ -d "$CLONE_DIR/purlin" ] && [ ! -f "$CLONE_DIR/purlin/tools/init.sh" ]; then
+    log_pass "Re-clone has empty submodule directory (simulates collaborator)"
+else
+    # Submodule may auto-init in local clone; populate manually for test
+    rm -rf "$CLONE_DIR/purlin"
+    mkdir -p "$CLONE_DIR/purlin"
+    log_pass "Prepared empty submodule directory for collaborator test"
+fi
+
+# Step 3: Run pl-init.sh (the committed shim)
+# The shim needs git submodule update --init to work, which requires the submodule
+# to be properly registered. For local clones, we simulate by copying the submodule
+# content when the shim calls git submodule update --init.
+MOCK_DIR2="$(mktemp -d)"
+MOCK_CAPTURE2="$MOCK_DIR2/captured_git_args"
+
+cat > "$MOCK_DIR2/git" << MOCK_EOF
+#!/bin/bash
+echo "\$@" >> "$MOCK_CAPTURE2"
+if echo "\$@" | grep -q "submodule update --init"; then
+    # Simulate submodule init by copying content
+    cp -R "$PROJECT/purlin/." "$CLONE_DIR/purlin/"
+fi
+# Pass through other git commands
+if ! echo "\$@" | grep -q "submodule"; then
+    /usr/bin/git "\$@"
+fi
+MOCK_EOF
+chmod +x "$MOCK_DIR2/git"
+
+PATH="$MOCK_DIR2:$PATH" bash "$CLONE_DIR/pl-init.sh" > /dev/null 2>&1
+COLLAB_EXIT=$?
+
+if [ $COLLAB_EXIT -eq 0 ]; then
+    log_pass "Collaborator pl-init.sh exits successfully"
+else
+    log_fail "Collaborator pl-init.sh failed (exit $COLLAB_EXIT)"
+fi
+
+if [ -d "$CLONE_DIR/.purlin" ] && [ -f "$CLONE_DIR/.purlin/config.json" ]; then
+    log_pass "Collaborator has .purlin/ with config.json"
+else
+    log_fail "Collaborator missing .purlin/ or config.json"
+fi
+
+COLLAB_LAUNCHERS_OK=true
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+    if [ ! -x "$CLONE_DIR/$launcher" ]; then
+        log_fail "Collaborator missing launcher $launcher"
+        COLLAB_LAUNCHERS_OK=false
+    fi
+done
+if [ "$COLLAB_LAUNCHERS_OK" = true ]; then
+    log_pass "Collaborator has all launcher scripts"
+fi
+
+if [ -d "$CLONE_DIR/.claude/commands" ]; then
+    COLLAB_CMD_COUNT=$(ls "$CLONE_DIR/.claude/commands"/pl-*.md 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$COLLAB_CMD_COUNT" -gt 0 ]; then
+        log_pass "Collaborator has $COLLAB_CMD_COUNT command files"
+    else
+        log_fail "Collaborator has no command files"
+    fi
+else
+    log_fail "Collaborator missing .claude/commands/"
+fi
+
+if [ -L "$CLONE_DIR/pl-cdd-start.sh" ] && [ -L "$CLONE_DIR/pl-cdd-stop.sh" ]; then
+    log_pass "Collaborator has CDD convenience symlinks"
+else
+    log_fail "Collaborator missing CDD convenience symlinks"
+fi
+
+rm -rf "$MOCK_DIR2"
 cleanup_sandbox
 
 ###############################################################################
