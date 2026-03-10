@@ -72,14 +72,19 @@ Check for existing `.purlin/cache/audit_state.json`. If found, report resume sta
 
 Process ALL features in-agent (no subagents). For each feature:
 
-1. Read the feature file -- check spec completeness across all 10 gap dimensions (see Gap Dimensions Table below).
+1. Read the feature file -- check spec completeness across all 11 gap dimensions (see Gap Dimensions Table below).
 2. Read companion file (`features/<name>.impl.md`) if it exists -- check builder decisions, notes depth.
 3. Read `tests/<name>/critic.json` -- check gate status, traceability.
 4. **Anchor constraint surface check**: For each ancestor anchor in the transitive map, verify the feature's scenarios reference or account for the anchor's invariants. Flag invariants with zero scenario coverage.
 5. **Light code scan** (if implementation exists): Read up to 3 primary source files (discovered via test imports or companion file Tool Location). Grep for FORBIDDEN patterns from all transitive ancestors. Flag violations.
 6. Skip scenario-by-scenario deep comparison.
 
-After processing all features, save results to `.purlin/cache/audit_state.json` and proceed directly to Phase 2 (Synthesis).
+After processing all features individually, perform a **cross-feature requirement hygiene pass** (dimension 11):
+- **Duplicate detection:** Compare scenario titles and Given/When/Then signatures across all features. Flag pairs where two scenarios in different features target the same endpoint, function, or UI element with the same preconditions and assertions.
+- **Conflict detection:** Compare requirements sections and scenario assertions across features that share a prerequisite anchor or target the same component. Flag contradictory assertions (e.g., different expected status codes, incompatible state transitions, contradictory anchor invariants).
+- **Unused detection:** Cross-reference the dependency graph to find features with no implementation (no `tests/<name>/` directory, no source files discovered), no test coverage, and not listed as a prerequisite by any other feature. Flag these as orphaned specs.
+
+After the cross-feature pass, save results to `.purlin/cache/audit_state.json` and proceed directly to Phase 2 (Synthesis).
 
 ### If mode is `deep`:
 
@@ -172,16 +177,17 @@ NO_GAPS (if clean)
 
 1. Parse all gap findings (from in-agent triage scan or subagent structured output blocks).
 2. Deduplicate gaps (same implementation file flagged by overlapping feature batches or transitive anchors).
-3. Classify each gap:
+3. **Cross-feature requirement hygiene pass** (deep mode only -- triage mode already performed this in Phase 0): Compare all per-feature gap findings and scenario data to detect duplicate requirements, conflicting requirements, and unused/orphaned specs (see dimension 11 in the Gap Dimensions Table). Add any cross-feature gaps to the findings list.
+4. Classify each gap:
 
 **Severity:**
 
 | Severity | Criteria |
 |---|---|
 | CRITICAL | INFEASIBLE escalation active; spec-blocking circular dependency; open BUG with no resolution path |
-| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor |
-| MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code |
-| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior |
+| HIGH | Spec Gate FAIL; open BUG or SPEC_DISPUTE entry; unacknowledged `[DEVIATION]` or `[DISCOVERY]`; code behavior directly contradicts a scenario assertion; FORBIDDEN pattern violation from any transitive ancestor; conflicting requirements across features (contradictory assertions on same endpoint/component) |
+| MEDIUM | Missing prerequisite link; traceability gap (coverage < 1.0); dependency currency failure (prerequisite updated, dependent not re-validated); spec-reality misalignment; significant undocumented code path; invariant with zero coverage in scenarios and code; duplicate requirements across features (identical scenarios targeting same endpoint/function) |
+| LOW | Stub-only companion file on a complex feature; vague scenario wording; missing companion file for a large feature; cosmetic spec inconsistencies; minor undocumented behavior; unused/orphaned feature spec with no implementation, no tests, and no dependents |
 
 **Owner:** Assign based on what needs to change, not who is running the command:
 - `ARCHITECT` -- the spec needs to be updated (to match reality, clarify ambiguity, add missing anchors, revise scenarios)
@@ -244,6 +250,7 @@ After writing the audit table and remediation plan, call `ExitPlanMode`. Wait fo
 | **Notes depth** | Complex feature (5+ scenarios or visual spec) with stub-only or absent companion file |
 | **Code divergence** | Scenario assertions not reflected in code; significant code paths with no scenario coverage; hardcoded values the spec says should be configurable |
 | **Anchor invariant drift** | Code violates invariants or constraints from transitive ancestor anchors (not just direct prerequisites). Includes FORBIDDEN pattern violations. |
+| **Requirement hygiene** | Duplicate scenarios across features targeting the same endpoint/function with identical assertions; conflicting assertions across features sharing a prerequisite anchor or targeting the same component; orphaned specs with no implementation, no test coverage, and not listed as a prerequisite by any other feature |
 
 ---
 

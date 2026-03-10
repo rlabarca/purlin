@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the /pl-spec-code-audit agent command.
 
-Covers all 33 automated scenarios from features/pl_spec_code_audit.md.
+Covers all 36 automated scenarios from features/pl_spec_code_audit.md.
 The command is an agent skill defined in .claude/commands/pl-spec-code-audit.md.
 Tests verify the command file content, structure, and referenced infrastructure.
 """
@@ -202,7 +202,7 @@ class TestTriageModeChecksSpecCompleteness(unittest.TestCase):
             'Spec completeness', 'Policy anchoring', 'Traceability',
             'Builder decisions', 'User testing', 'Dependency currency',
             'Spec-reality alignment', 'Notes depth', 'Code divergence',
-            'Anchor invariant drift',
+            'Anchor invariant drift', 'Requirement hygiene',
         ]
         for dim in dimensions:
             self.assertIn(dim, content,
@@ -546,6 +546,81 @@ class TestBuilderEscalatesSpecSideGapViaCompanionFile(unittest.TestCase):
     def test_builder_escalation_targets_companion(self):
         content = _read_command()
         self.assertIn('**Suggested spec change:**', content)
+
+
+class TestDuplicateRequirementsDetectedAcrossFeatures(unittest.TestCase):
+    """Scenario: Duplicate requirements detected across features"""
+
+    def test_cross_feature_duplicate_detection_described(self):
+        content = _read_command()
+        self.assertIn('Duplicate detection', content)
+
+    def test_duplicate_compares_scenario_signatures(self):
+        content = _read_command()
+        self.assertIn('scenario titles', content.lower())
+        self.assertIn('Given/When/Then signatures', content)
+
+    def test_duplicate_flags_same_endpoint(self):
+        content = _read_command()
+        self.assertIn('same endpoint', content.lower())
+
+    def test_duplicate_severity_is_medium(self):
+        content = _read_command()
+        # Severity table MEDIUM row should reference duplicate requirements
+        self.assertIn(
+            'duplicate requirements across features', content.lower())
+
+    def test_dimension_is_requirement_hygiene(self):
+        content = _read_command()
+        self.assertIn('Requirement hygiene', content)
+
+
+class TestConflictingRequirementsDetectedAcrossFeatures(unittest.TestCase):
+    """Scenario: Conflicting requirements detected across features"""
+
+    def test_cross_feature_conflict_detection_described(self):
+        content = _read_command()
+        self.assertIn('Conflict detection', content)
+
+    def test_conflict_checks_shared_prerequisite_anchor(self):
+        content = _read_command()
+        self.assertIn('share a prerequisite anchor', content.lower())
+
+    def test_conflict_flags_contradictory_assertions(self):
+        content = _read_command()
+        self.assertIn('contradictory assertions', content.lower())
+
+    def test_conflict_severity_is_high(self):
+        content = _read_command()
+        # Severity table HIGH row should reference conflicting requirements
+        self.assertIn(
+            'conflicting requirements across features', content.lower())
+
+
+class TestUnusedFeatureSpecDetected(unittest.TestCase):
+    """Scenario: Unused feature spec detected"""
+
+    def test_cross_feature_unused_detection_described(self):
+        content = _read_command()
+        self.assertIn('Unused detection', content)
+
+    def test_unused_checks_no_implementation(self):
+        content = _read_command()
+        self.assertIn('no implementation', content.lower())
+
+    def test_unused_checks_no_prerequisite_dependents(self):
+        content = _read_command()
+        self.assertIn(
+            'not listed as a prerequisite by any other feature', content)
+
+    def test_unused_severity_is_low(self):
+        content = _read_command()
+        # Severity table LOW row should reference orphaned specs
+        self.assertIn('unused/orphaned feature spec', content.lower())
+
+    def test_unused_flagged_as_orphaned(self):
+        content = _read_command()
+        self.assertIn('orphaned specs', content.lower())
 
 
 if __name__ == '__main__':
