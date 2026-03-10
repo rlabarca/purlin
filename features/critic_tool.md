@@ -637,6 +637,16 @@ The following fixture tags provide deterministic project states for integration-
     Then role_status.qa is TODO
     And the stale TESTING-phase commit from before the reset does NOT satisfy the verification invariant
 
+#### Scenario: Role Status QA TODO When COMPLETE Commit Lacks Verification Evidence
+    Given a feature has manual scenarios
+    And the feature is in COMPLETE lifecycle state
+    And a valid TESTING-phase commit exists in git history after the most recent lifecycle reset
+    And the most recent post-reset [Complete] commit does NOT contain the [Verified] tag
+    When the Critic tool computes role_status
+    Then role_status.qa is TODO
+    And the action item category is bypassed_qa_verification
+    And the action item description mentions the missing [Verified] tag
+
 #### Scenario: Role Status QA FAIL
     Given a feature has OPEN BUGs in discovery sidecar
     When the Critic tool computes role_status

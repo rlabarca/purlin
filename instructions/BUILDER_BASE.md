@@ -161,7 +161,7 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
 
 *   **A. Determine Status Tag:**
     *   If the feature has manual scenarios requiring human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**). The QA Agent will mark `[Complete]` after clean verification.
-    *   If all verification is automated (no manual scenarios) and passing: `[Complete features/FILENAME.md]` (transitions to **COMPLETE**)
+    *   If all verification is automated (no manual scenarios) and passing: `[Complete features/FILENAME.md]` (transitions to **COMPLETE**). **Note:** The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- the `[Verified]` tag is reserved for QA completions via `/pl-complete` and is used by the Critic to verify that QA actually ran the verification workflow.
 *   **B. Declare Change Scope:** Append a `[Scope: ...]` trailer to the status commit message to declare the impact scope of your change. This tells the Critic how to scope QA verification.
 
     | Scope | When to Use |
