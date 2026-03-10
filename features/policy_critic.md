@@ -186,6 +186,25 @@ The block is only meaningful for TESTING features (qa: TODO). Non-TESTING featur
 
 See `features/qa_verification_effort.md` for the full classification rules, output schema, and scenarios.
 
+### 2.16 QA Verification Integrity
+
+When a feature has manual scenarios, QA status MUST NOT reach CLEAN without evidence that QA verification occurred. The system relies on the TESTING lifecycle phase as the verification signal -- a feature must pass through TESTING before reaching COMPLETE for QA to be considered verified.
+
+**The Invariant:** If a feature has one or more manual scenarios AND `lifecycle_state == 'complete'` AND no TESTING-phase commit (`[Ready for \w+ features/<name>.md]`) exists in the feature's git history prior to the COMPLETE commit, the Critic MUST set `qa_status = 'TODO'`. The feature bypassed QA verification.
+
+**Detection:** When computing `qa_status` and `lifecycle_state == 'complete'`, the Critic MUST:
+1.  Parse the feature's scenarios and count manual scenarios.
+2.  If manual scenarios > 0, search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` that precedes the COMPLETE commit.
+3.  If no such commit exists, set `qa_status = 'TODO'`.
+
+**Action Item Generation:** When this invariant triggers, the Critic MUST generate a HIGH-priority QA action item: `"Feature <name> has N manual scenario(s) that bypassed QA verification -- verify before accepting CLEAN status"`. Category: `bypassed_qa_verification`.
+
+**Verification Effort Consistency:** The `verification_effort` computation (Section 2.14) MUST also recognize this case. When a COMPLETE feature has `qa_status = 'TODO'` due to bypassed verification, `verification_effort` MUST compute the full classification (interactive/visual/hardware counts) rather than returning zeroed values. The lifecycle gating in `verification_effort` MUST treat "COMPLETE with bypassed QA" equivalently to TESTING for classification purposes.
+
+**Precedence:** This check slots into the existing QA precedence chain as: `FAIL > DISPUTED > TODO (SPEC_UPDATED) > TODO (TESTING with manual) > TODO (bypassed verification) > CLEAN > N/A`. The existing FAIL and DISPUTED conditions take priority -- a feature with OPEN BUGs or SPEC_DISPUTEs is already surfaced as FAIL/DISPUTED regardless of verification history.
+
+**Rationale:** The workflow (HOW_WE_WORK_BASE Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by the Builder. When a Builder commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
+
 ## 4. Output Contract
 The Critic tool MUST produce:
 
