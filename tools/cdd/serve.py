@@ -521,17 +521,19 @@ def generate_internal_feature_status(cache=None):
 def write_internal_feature_status(cache=None):
     """Writes internal feature_status.json to disk."""
     data = generate_internal_feature_status(cache)
-    with open(FEATURE_STATUS_PATH, 'w') as f:
-        json.dump(data, f, indent=2, sort_keys=True)
-        f.write('\n')
+    with _status_write_lock:
+        with open(FEATURE_STATUS_PATH, 'w') as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+            f.write('\n')
 
 
 def write_api_status_json(cache=None):
     """Writes public status.json to disk so agents can read it without HTTP."""
     data = generate_api_status_json(cache)
-    with open(API_STATUS_PATH, 'w') as f:
-        json.dump(data, f, indent=2, sort_keys=True)
-        f.write('\n')
+    with _status_write_lock:
+        with open(API_STATUS_PATH, 'w') as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+            f.write('\n')
 
 
 # ===================================================================
@@ -695,6 +697,7 @@ def _get_collaboration_branch():
 # In-memory last_fetch timestamp; resets to None on server restart (spec 2.4.6)
 _branch_collab_last_fetch = None
 _branch_collab_fetch_lock = threading.Lock()
+_status_write_lock = threading.Lock()
 
 
 def get_branch_collab_config():
@@ -822,6 +825,115 @@ def _get_shortened_remote_url():
     return url
 
 
+def _batch_branch_sync(remote, branch_names):
+    """Compute sync state for multiple branches in minimal subprocess calls.
+
+    Returns dict: {name: {sync_state, commits_ahead, commits_behind}}.
+
+    Primary path (git 2.36+): single `git for-each-ref --format=%(ahead-behind:HEAD)`
+    call for all branches at once.
+
+    Fallback (older git): one `git rev-list --left-right --count` per branch.
+    """
+    if not branch_names:
+        return {}
+
+    result = {}
+
+    # Try batch mode with %(ahead-behind:HEAD) — requires git 2.36+
+    try:
+        proc = subprocess.run(
+            ['git', 'for-each-ref',
+             f'--format=%(refname:short) %(ahead-behind:HEAD)',
+             f'refs/remotes/{remote}/'],
+            capture_output=True, text=True, check=True,
+            cwd=PROJECT_ROOT, timeout=10)
+
+        # Build lookup from for-each-ref output
+        batch_lookup = {}
+        for line in proc.stdout.strip().splitlines():
+            if not line.strip():
+                continue
+            parts = line.strip().rsplit(' ', 2)
+            if len(parts) != 3:
+                continue
+            ref_short = parts[0]
+            # Validate that ahead/behind are integers (detects unsupported git)
+            ahead = int(parts[1])
+            behind = int(parts[2])
+            # Strip remote prefix to get branch name
+            prefix = f'{remote}/'
+            if ref_short.startswith(prefix):
+                name = ref_short[len(prefix):]
+                batch_lookup[name] = (ahead, behind)
+
+        # Map requested branches from the lookup
+        for name in branch_names:
+            if name in batch_lookup:
+                ahead, behind = batch_lookup[name]
+                if ahead == 0 and behind == 0:
+                    state = 'SAME'
+                elif ahead > 0 and behind == 0:
+                    state = 'AHEAD'
+                elif ahead == 0 and behind > 0:
+                    state = 'BEHIND'
+                else:
+                    state = 'DIVERGED'
+                result[name] = {
+                    'sync_state': state,
+                    'commits_ahead': ahead,
+                    'commits_behind': behind,
+                }
+            else:
+                result[name] = {
+                    'sync_state': 'SAME',
+                    'commits_ahead': 0,
+                    'commits_behind': 0,
+                }
+        return result
+
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+            ValueError):
+        # %(ahead-behind) not supported or parse failure — fall back to
+        # per-branch rev-list (still 1 subprocess per branch vs 3-4 before)
+        pass
+
+    # Fallback: one rev-list per branch
+    for name in branch_names:
+        remote_ref = f'{remote}/{name}'
+        try:
+            proc = subprocess.run(
+                ['git', 'rev-list', '--left-right', '--count',
+                 f'HEAD...{remote_ref}'],
+                capture_output=True, text=True, check=True,
+                cwd=PROJECT_ROOT, timeout=5)
+            parts = proc.stdout.strip().split()
+            if len(parts) == 2:
+                behind = int(parts[0])  # left (HEAD) = commits_behind
+                ahead = int(parts[1])   # right (remote) = commits_ahead
+            else:
+                ahead, behind = 0, 0
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+                ValueError):
+            ahead, behind = 0, 0
+
+        if ahead == 0 and behind == 0:
+            state = 'SAME'
+        elif ahead > 0 and behind == 0:
+            state = 'AHEAD'
+        elif ahead == 0 and behind > 0:
+            state = 'BEHIND'
+        else:
+            state = 'DIVERGED'
+        result[name] = {
+            'sync_state': state,
+            'commits_ahead': ahead,
+            'commits_behind': behind,
+        }
+
+    return result
+
+
 def get_branch_collab_branches():
     """List all remote branches eligible for branch collaboration.
 
@@ -837,7 +949,7 @@ def get_branch_collab_branches():
             ['git', 'branch', '-r'],
             capture_output=True, text=True, check=True,
             cwd=PROJECT_ROOT, timeout=5)
-        branches = []
+        branch_names = []
         prefix = f'{remote}/'
         for line in result.stdout.strip().splitlines():
             ref = line.strip()
@@ -850,7 +962,16 @@ def get_branch_collab_branches():
             # Exclude main/master
             if name in ('main', 'master'):
                 continue
-            sync = compute_remote_sync_state(name, compare_to_head=True)
+            branch_names.append(name)
+
+        # Batch sync: 1 subprocess instead of 3-4 per branch
+        sync_map = _batch_branch_sync(remote, branch_names)
+
+        branches = []
+        for name in branch_names:
+            sync = sync_map.get(name, {
+                'sync_state': 'SAME', 'commits_ahead': 0,
+                'commits_behind': 0})
             branches.append({
                 'name': name,
                 'active': name == active,
@@ -4966,8 +5087,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Write runtime files
             _write_active_branch(branch)
             _write_branch_collab_base_branch(current_branch)
-            _branch_collab_last_fetch = datetime.now(
-                timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            with _branch_collab_fetch_lock:
+                _branch_collab_last_fetch = datetime.now(
+                    timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
             self._send_json(200, {
                 'status': 'ok',
@@ -5754,8 +5876,11 @@ if __name__ == "__main__":
         start_file_watcher()
         start_auto_fetch()
 
-        socketserver.TCPServer.allow_reuse_address = True
-        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        with ThreadedTCPServer(("", PORT), Handler) as httpd:
             # Write port file before serve_forever (cdd_lifecycle §2.3)
             runtime_dir = os.path.join(PROJECT_ROOT, ".purlin", "runtime")
             os.makedirs(runtime_dir, exist_ok=True)
