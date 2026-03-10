@@ -123,7 +123,7 @@ Executes the user-chosen action from the assessment modal.
 | `"checkout"` | local-vs-remote SAME, HEAD-relative SAME or AHEAD (not BEHIND, not DIVERGED) | `git checkout <name>`. | Yes |
 | `"fast-forward"` | local-vs-remote BEHIND (and HEAD-relative not DIVERGED) | `git checkout <name> && git merge --ff-only origin/<name>`. | Yes |
 | `"push"` | local-vs-remote AHEAD (and HEAD-relative not DIVERGED) | `git checkout <name> && git push <remote> <name>`. On push failure: branch IS checked out (active_branch written) but response returns error. | Yes |
-| `"update-to-head"` | local-vs-remote SAME, HEAD-relative BEHIND | `git push origin HEAD:<name>` (replaces remote branch with current HEAD), then `git fetch origin <name>` (refreshes local tracking ref), then `git checkout <name> && git merge --ff-only origin/<name>` (switches to the now-updated branch). Response includes `"reconciled": "update-to-head"`. | Yes |
+| `"update-to-head"` | local-vs-remote SAME, HEAD-relative BEHIND | `git push origin HEAD:<name>` (replaces remote branch with current HEAD), then `git fetch origin <name>` (refreshes local tracking ref), then `git checkout -B <name> origin/<name>` (resets the local branch to match the updated remote ref and switches to it; handles stale local branches that can't fast-forward). Response includes `"reconciled": "update-to-head"`. | Yes |
 | `"guide-pull"` | HEAD-relative DIVERGED (any local state), OR local-vs-remote DIVERGED | No checkout. Return copyable `/pl-remote-pull origin/<branch>` command. | No |
 
 For `checkout`, `fast-forward`, `push`, and `update-to-head`: abort with error if working tree is dirty. Record base branch in `.purlin/runtime/branch_collab_base_branch` if not already set. Write branch name to `.purlin/runtime/active_branch`. Return `{ "status": "ok", "branch": "<name>" }` (plus `"reconciled": "fast-forward"` for fast-forward, `"reconciled": "push"` for push, or `"reconciled": "update-to-head"` for update-to-head). On push failure: branch IS checked out and active_branch written, but response returns `{ "status": "error", "error": "...", "branch_checked_out": true }`.
@@ -165,12 +165,12 @@ For `guide-pull`: return `{ "status": "ok", "action_required": "pull", "command"
 - EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. For branches in the branches table (setup mode, no local checkout), sync state is computed by comparing `origin/<branch>` against the current HEAD:
   - `git log HEAD..origin/<branch> --oneline` -> commits the branch has that HEAD does not.
   - `git log origin/<branch>..HEAD --oneline` -> commits HEAD has that the branch does not.
-  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has no unique commits relative to main (`git log main..origin/<branch> --oneline` returns zero lines). This is a genuinely new branch with no work. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
-  - **SAME:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit, BUT the branch has commits relative to main (`git log main..origin/<branch> --oneline` returns one or more lines). This is an established branch (e.g., a release candidate) whose work has been merged into main. Shows green badge (`--purlin-status-good`).
+  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has literally zero total commits (`git rev-list --count origin/<branch>` returns 0). This means the branch is an orphan or degenerate ref with no history at all. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
+  - **SAME:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has at least one total commit (`git rev-list --count origin/<branch>` returns > 0). This covers both new branches created from main (zero unique commits vs main, but sharing main's commit history) and established branches whose work has been merged. Shows green badge (`--purlin-status-good`).
   - **AHEAD:** Branch has unique commits HEAD does not, but HEAD has none the branch lacks. Shows yellow badge.
   - **BEHIND:** HEAD has commits the branch lacks, but the branch has none HEAD lacks. This is a stale branch. Shows yellow badge.
   - **DIVERGED:** Both have unique commits. Shows orange badge.
-- For the active branch panel (operational mode), sync state compares local vs remote of the same branch (existing logic): `git log origin/<branch>..<branch>` and `git log <branch>..origin/<branch>`. SAME/AHEAD/BEHIND/DIVERGED four-state. EMPTY applies when the branch has zero unique commits relative to main (`git log main..<branch>` returns zero lines AND `git log <branch>..main` returns zero lines -- both directions must be zero, meaning branch tip equals main tip).
+- For the active branch panel (operational mode), sync state compares local vs remote of the same branch (existing logic): `git log origin/<branch>..<branch>` and `git log <branch>..origin/<branch>`. SAME/AHEAD/BEHIND/DIVERGED four-state. EMPTY applies when the branch has literally zero total commits (`git rev-list --count <branch>` returns 0). A branch created from main that happens to match HEAD shows SAME, not EMPTY -- even if it has zero unique commits vs main -- because it shares main's commit history.
 - When remote tracking ref `origin/<branch>` does not exist yet (pre-first-fetch): show inline note "Run Check Remote to see sync state" instead of a badge.
 
 ### 2.6 Cross-Section Annotation in LOCAL BRANCH
@@ -203,9 +203,9 @@ When an active branch exists, the `/status.json` response includes:
 }
 ```
 
-`branch_collab`: present only when an active branch exists. Absent otherwise. `sync_state` may be `"EMPTY"`, `"SAME"`, `"AHEAD"`, `"BEHIND"`, or `"DIVERGED"`. EMPTY indicates the branch has zero commits relative to the base branch.
+`branch_collab`: present only when an active branch exists. Absent otherwise. `sync_state` may be `"EMPTY"`, `"SAME"`, `"AHEAD"`, `"BEHIND"`, or `"DIVERGED"`. EMPTY indicates the branch has literally zero total commits (`git rev-list --count` returns 0).
 
-`branch_collab_branches`: always present (may be empty array). Lists all branches discovered from remote tracking refs (filtered to exclude `HEAD`, `main`/`master`). Each entry includes per-branch sync state computed from locally cached refs (same rules as Section 2.5, applied per branch). The `sync_state` field may include `"EMPTY"` for branches with no commits relative to main.
+`branch_collab_branches`: always present (may be empty array). Lists all branches discovered from remote tracking refs (filtered to exclude `HEAD`, `main`/`master`). Each entry includes per-branch sync state computed from locally cached refs (same rules as Section 2.5, applied per branch). The `sync_state` field may include `"EMPTY"` for branches with literally zero total commits.
 
 ### 2.8 Operation Modals (Joining / Leaving / Creating)
 
@@ -550,8 +550,7 @@ The following fixture tags provide real git branch topology for integration-leve
     When a POST request is sent to /branch-collab/join-confirm with body {"branch": "feature/auth", "action": "update-to-head"}
     Then git push origin HEAD:feature/auth is executed (remote branch updated to HEAD)
     And git fetch origin feature/auth is executed (local tracking ref refreshed)
-    And local feature/auth is checked out
-    And local feature/auth is fast-forwarded to origin/feature/auth
+    And git checkout -B feature/auth origin/feature/auth is executed (local branch reset to updated remote)
     And the response contains "reconciled": "update-to-head"
     And .purlin/runtime/active_branch contains "feature/auth"
 
@@ -585,10 +584,10 @@ The following fixture tags provide real git branch topology for integration-leve
     And .purlin/runtime/active_branch contains "hotfix/urgent"
     And GET /status.json shows branch_collab.active_branch as "hotfix/urgent"
 
-#### Scenario: Sync State EMPTY When Branch Tip Equals Main Tip
+#### Scenario: Sync State EMPTY When Branch Has Zero Total Commits
 
     Given an active branch "feature/empty" is set
-    And feature/empty tip equals main tip (both directions of git log return zero lines)
+    And feature/empty has literally zero total commits (git rev-list --count returns 0)
     When an agent calls GET /status.json
     Then branch_collab.sync_state is "EMPTY"
     And branch_collab.commits_ahead is 0
@@ -597,7 +596,7 @@ The following fixture tags provide real git branch topology for integration-leve
 #### Scenario: EMPTY Badge Rendered Without Badge Background
 
     Given an active branch "feature/empty" is set
-    And feature/empty tip equals main tip
+    And feature/empty has literally zero total commits
     When the dashboard HTML is generated
     Then the sync state position shows "EMPTY" in normal text color (--purlin-fg)
     And the text does not use a badge class (no st-good, st-todo, st-disputed)
