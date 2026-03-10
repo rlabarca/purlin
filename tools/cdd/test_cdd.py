@@ -586,8 +586,64 @@ class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):
             shutil.rmtree(test_dir)
 
 
+class TestLifecyclePreservedWhenDiscoverySidecarChanges(unittest.TestCase):
+    """Scenario: Lifecycle Preserved When Discovery Sidecar Changes
+
+    When a feature's discovery sidecar file (features/<name>.discoveries.md)
+    is modified after the status commit, the feature remains in its lifecycle
+    state because sidecar files are excluded from feature scanning and their
+    mtime does not affect the parent feature's lifecycle.
+    """
+
+    def test_sidecar_modification_does_not_reset_lifecycle(self):
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            # Create the feature spec (mtime BEFORE status commit)
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write("# Feature: Test\n\n## 1. Overview\nOverview.\n")
+            os.utime(fpath, (1000000000, 1000000000))
+
+            # Create the sidecar file (mtime AFTER status commit)
+            sidecar = os.path.join(features_abs, "test.discoveries.md")
+            with open(sidecar, "w") as f:
+                f.write("# Discoveries\n\n### [BUG] Found something\n- **Status:** OPEN\n")
+            os.utime(sidecar, (3000000000, 3000000000))
+
+            # Pre-built cache
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                # Feature should be COMPLETE — sidecar mtime doesn't affect it
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
+                # Sidecar should NOT appear as a separate feature
+                all_files = [f[0] if isinstance(f, tuple) else f
+                             for f in complete + testing + todo]
+                self.assertNotIn("test.discoveries.md", all_files)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+
 class TestLifecycleResetOnSpecChange(unittest.TestCase):
-    """Scenario: Lifecycle Reset When Spec Content Changes
+    """Scenario: Lifecycle Reset When Feature Spec Changes
 
     When a feature file is modified after the status commit, and the
     modification includes changes above the User Testing Discoveries
