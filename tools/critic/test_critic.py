@@ -8,6 +8,7 @@ Outputs test results to tests/critic_tool/tests.json.
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -4012,6 +4013,231 @@ Reqs.
             role_status, result)
         self.assertEqual(effort['summary'], 'no QA items')
         self.assertEqual(effort['manual_interactive'], 0)
+
+
+class TestHasTestingPhaseCommitTemporal(unittest.TestCase):
+    """Scenario: Role Status QA TODO When Stale TESTING-Phase Commit
+    Predates Spec Reset
+
+    Tests the temporal constraint in _has_testing_phase_commit: a
+    TESTING-phase commit that predates the most recent spec modification
+    must NOT satisfy the QA verification invariant.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Initialize a git repo
+        subprocess.run(
+            ['git', 'init'], cwd=self.root,
+            capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.email', 'test@test.com'], cwd=self.root,
+            capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.name', 'Test'], cwd=self.root,
+            capture_output=True, check=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _write_feature(self, content='# Feature: Temporal\nContent.\n'):
+        fpath = os.path.join(self.features_dir, 'temporal.md')
+        with open(fpath, 'w') as f:
+            f.write(content)
+        return fpath
+
+    def _git_add_commit(self, msg, files=None):
+        if files:
+            subprocess.run(
+                ['git', 'add'] + files, cwd=self.root,
+                capture_output=True, check=True)
+        else:
+            subprocess.run(
+                ['git', 'add', '-A'], cwd=self.root,
+                capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'commit', '-m', msg, '--allow-empty-message'],
+            cwd=self.root, capture_output=True, check=True)
+
+    def _git_commit_empty(self, msg):
+        subprocess.run(
+            ['git', 'commit', '--allow-empty', '-m', msg],
+            cwd=self.root, capture_output=True, check=True)
+
+    def test_valid_testing_commit_after_spec_mod(self):
+        """TESTING commit after last spec modification -> True."""
+        import time
+        # T1: Create and commit feature file
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        time.sleep(1)  # Ensure distinct timestamp
+        # T2: TESTING commit (after spec was last modified at T1)
+        self._git_commit_empty(
+            'status: [Ready for Verification features/temporal.md]')
+        result = _has_testing_phase_commit(
+            'features/temporal.md', project_root=self.root)
+        self.assertTrue(result)
+
+    def test_stale_testing_commit_before_spec_reset(self):
+        """TESTING commit before spec reset -> False (stale)."""
+        # T1: Create and commit feature file
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        # T2: TESTING commit
+        self._git_commit_empty(
+            'status: [Ready for Verification features/temporal.md]')
+        # T3: Complete commit
+        self._git_commit_empty(
+            'status: [Complete features/temporal.md]')
+        # T4: Spec modification (resets lifecycle)
+        import time
+        time.sleep(1)  # Ensure distinct timestamp
+        self._write_feature('# Version 2 -- spec updated\n')
+        self._git_add_commit('spec update')
+        # T5: Builder re-completes without new TESTING commit
+        self._git_commit_empty(
+            'status: [Complete features/temporal.md]')
+        # The T2 TESTING commit is stale (before T4 reset)
+        result = _has_testing_phase_commit(
+            'features/temporal.md', project_root=self.root)
+        self.assertFalse(result)
+
+    def test_fresh_testing_commit_after_spec_reset(self):
+        """New TESTING commit after spec reset -> True."""
+        import time
+        # T1: Create and commit feature file
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        # T2: First TESTING commit
+        self._git_commit_empty(
+            'status: [Ready for Verification features/temporal.md]')
+        # T3: Complete
+        self._git_commit_empty(
+            'status: [Complete features/temporal.md]')
+        # T4: Spec modification (resets lifecycle)
+        time.sleep(1)
+        self._write_feature('# Version 2 -- spec updated\n')
+        self._git_add_commit('spec update')
+        # T5: NEW TESTING commit after reset
+        time.sleep(1)  # Ensure T5 timestamp > T4 timestamp
+        self._git_commit_empty(
+            'status: [Ready for Verification features/temporal.md]')
+        result = _has_testing_phase_commit(
+            'features/temporal.md', project_root=self.root)
+        self.assertTrue(result)
+
+    def test_no_testing_commit_at_all(self):
+        """No TESTING commit in history -> False."""
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        self._git_commit_empty(
+            'status: [Complete features/temporal.md]')
+        result = _has_testing_phase_commit(
+            'features/temporal.md', project_root=self.root)
+        self.assertFalse(result)
+
+
+class TestStaleTestingPhaseRoleStatus(unittest.TestCase):
+    """Scenario: Role Status QA TODO When Stale TESTING-Phase Commit
+    Predates Spec Reset (compute_role_status integration)
+
+    When _has_testing_phase_commit returns False for a COMPLETE feature
+    with manual scenarios, compute_role_status must set qa=TODO.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Stale
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check A
+    Given A
+    When B
+    Then C
+
+#### Scenario: Another Manual
+    Given D
+    When E
+    Then F
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'stale.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=False)
+    def test_stale_testing_commit_makes_qa_todo(self, _mock):
+        """Stale TESTING-phase commit (returns False) -> qa TODO."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/stale.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/stale.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+            self.assertTrue(status['_bypassed_verification'])
+            self.assertEqual(status['_bypassed_manual_count'], 2)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=False)
+    def test_stale_testing_effort_shows_full_classification(self, _mock):
+        """Bypassed verification -> effort shows full classification."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            content = open(os.path.join(
+                self.features_dir, 'stale.md')).read()
+            role_status = {
+                'architect': 'DONE',
+                'builder': 'DONE',
+                'qa': 'TODO',
+                '_bypassed_verification': True,
+                '_bypassed_manual_count': 2,
+            }
+            regression_scope = {'declared': 'full'}
+            result = _make_base_result()
+            effort = compute_verification_effort(
+                content, 'complete', regression_scope,
+                role_status, result)
+            self.assertEqual(effort['manual_interactive'], 2)
+            self.assertEqual(effort['total_manual'], 2)
+            self.assertNotEqual(effort['summary'], 'no QA items')
+        finally:
+            critic.FEATURES_DIR = orig_features
 
 
 # ===================================================================

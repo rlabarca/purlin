@@ -1952,30 +1952,57 @@ def _get_file_at_commit(feature_file, commit_hash, project_root=None):
 
 
 def _has_testing_phase_commit(feature_file, project_root=None):
-    """Check if a TESTING-phase commit exists for a feature in git history.
+    """Check if a valid (post-reset) TESTING-phase commit exists for a feature.
 
-    Searches git log for commits whose message contains a ``[Ready for``
-    tag referencing this feature file. This indicates the feature passed
-    through the TESTING lifecycle phase before reaching COMPLETE.
+    Per policy_critic.md Section 2.16, a TESTING-phase commit must post-date
+    the most recent lifecycle reset to satisfy the QA verification invariant.
+    The reset point is the timestamp of the latest commit that modified the
+    feature spec file.  A stale TESTING-phase commit from before the reset
+    does NOT satisfy the invariant.
 
-    Returns True if such a commit exists, False otherwise.
+    Returns True if a post-reset TESTING-phase commit exists, False otherwise.
     """
     root = project_root or PROJECT_ROOT
     basename = os.path.basename(feature_file)
-    search_pattern = f'[Ready for'
+    feature_ref = f'features/{basename}'
+
+    # Step 1: Determine reset point -- timestamp of the latest commit that
+    # modified the feature spec file.  If no such commit exists, use epoch
+    # zero (all TESTING-phase commits qualify).
+    try:
+        mod_result = subprocess.run(
+            ['git', 'log', '-1', '--format=%ct', '--', feature_ref],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if mod_result.returncode != 0 or not mod_result.stdout.strip():
+            reset_timestamp = 0
+        else:
+            reset_timestamp = int(mod_result.stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, ValueError):
+        reset_timestamp = 0
+
+    # Step 2: Find TESTING-phase commits for this feature with timestamps.
+    search_pattern = '[Ready for'
     try:
         result = subprocess.run(
             ['git', 'log', '--all', '--fixed-strings',
              '--grep', search_pattern,
-             '--format=%s'],
+             '--format=%ct %s'],
             cwd=root, capture_output=True, text=True, timeout=10,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return False
-        # Check each matching commit message for this specific feature
-        feature_ref = f'features/{basename}'
+        # Step 3: Check each matching commit -- must reference this feature
+        # AND have a timestamp strictly after the reset point.
         for line in result.stdout.strip().split('\n'):
-            if feature_ref in line:
+            if feature_ref not in line:
+                continue
+            parts = line.split(' ', 1)
+            try:
+                commit_ts = int(parts[0])
+            except (ValueError, IndexError):
+                continue
+            if commit_ts > reset_timestamp:
                 return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
