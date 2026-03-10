@@ -993,17 +993,18 @@ def check_structural_completeness(feature_stem, scenarios=None):
             'detail': 'PASS with zero tests is invalid',
         }
 
-    # Rule 2: Test file existence (Section 2.15)
+    # Rule 2: Test file existence (Section 2.15) — three-tier lookup
     has_test_files = False
     test_dir = os.path.join(TESTS_DIR, feature_stem)
-    test_extensions = ('.py', '.sh', '.bats')
-    # Check tests/<feature>/ for executable test files
+    # Tier (a): any file in tests/<feature>/ starting with "test" (excluding .pyc)
+    # tests.json is the results file being validated, not a test file
     if os.path.isdir(test_dir):
         for fname in os.listdir(test_dir):
-            if fname.endswith(test_extensions):
+            if (fname.startswith('test') and not fname.endswith('.pyc')
+                    and fname != 'tests.json'):
                 has_test_files = True
                 break
-    # Check test_file field in tests.json
+    # Tier (b): test_file field in tests.json
     if not has_test_files:
         test_file = data.get('test_file')
         if isinstance(test_file, str) and test_file:
@@ -1011,7 +1012,7 @@ def check_structural_completeness(feature_stem, scenarios=None):
                         else os.path.join(PROJECT_ROOT, test_file))
             if os.path.isfile(resolved):
                 has_test_files = True
-        # Also check test_files (plural)
+        # Tier (c): test_files (plural) field in tests.json
         if not has_test_files:
             test_files_list = data.get('test_files', [])
             if isinstance(test_files_list, list):
