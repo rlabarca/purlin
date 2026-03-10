@@ -4888,17 +4888,19 @@ Some requirements.
 class TestFeatureScanExcludesCompanionFiles(unittest.TestCase):
     """Scenario: Feature Scanning Excludes Companion Files
 
-    When scanning for feature files, *.impl.md files must not be
-    included in the results.
+    When scanning for feature files, *.impl.md and *.discoveries.md files
+    must not be included in the results.
     """
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        # Create a feature file and a companion file
+        # Create a feature file, companion file, and discovery sidecar
         with open(os.path.join(self.tmpdir, 'my_feature.md'), 'w') as f:
             f.write('# Feature: My Feature\n')
         with open(os.path.join(self.tmpdir, 'my_feature.impl.md'), 'w') as f:
             f.write('# Implementation Notes\n')
+        with open(os.path.join(self.tmpdir, 'my_feature.discoveries.md'), 'w') as f:
+            f.write('# User Testing Discoveries\n')
         with open(os.path.join(self.tmpdir, 'another.md'), 'w') as f:
             f.write('# Feature: Another\n')
 
@@ -4910,9 +4912,19 @@ class TestFeatureScanExcludesCompanionFiles(unittest.TestCase):
         feature_files = sorted([
             f for f in os.listdir(self.tmpdir)
             if f.endswith('.md') and not f.endswith('.impl.md')
+            and not f.endswith('.discoveries.md')
         ])
         self.assertEqual(feature_files, ['another.md', 'my_feature.md'])
         self.assertNotIn('my_feature.impl.md', feature_files)
+
+    def test_discovery_sidecar_excluded_from_scan(self):
+        """The *.discoveries.md filter correctly excludes discovery sidecars."""
+        feature_files = sorted([
+            f for f in os.listdir(self.tmpdir)
+            if f.endswith('.md') and not f.endswith('.impl.md')
+            and not f.endswith('.discoveries.md')
+        ])
+        self.assertNotIn('my_feature.discoveries.md', feature_files)
 
 
 # ===================================================================

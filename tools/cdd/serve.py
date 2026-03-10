@@ -287,7 +287,7 @@ def get_feature_status(features_rel, features_abs, cache=None):
         cache = build_status_commit_cache()
 
     complete, testing, todo = [], [], []
-    feature_files = [f for f in os.listdir(features_abs) if f.endswith('.md') and not f.endswith('.impl.md')]
+    feature_files = [f for f in os.listdir(features_abs) if f.endswith('.md') and not f.endswith('.impl.md') and not f.endswith('.discoveries.md')]
 
     for fname in feature_files:
         f_path = os.path.normpath(os.path.join(features_rel, fname))
@@ -560,7 +560,8 @@ def generate_api_status_json(cache=None):
 
     feature_files = sorted(
         f for f in os.listdir(FEATURES_ABS)
-        if f.endswith('.md') and not f.endswith('.impl.md'))
+        if f.endswith('.md') and not f.endswith('.impl.md')
+        and not f.endswith('.discoveries.md'))
 
     features = []
     for fname in feature_files:

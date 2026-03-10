@@ -2856,6 +2856,7 @@ def main():
         feature_files = sorted([
             f for f in os.listdir(FEATURES_DIR)
             if f.endswith('.md') and not f.endswith('.impl.md')
+            and not f.endswith('.discoveries.md')
         ])
 
         if not feature_files:

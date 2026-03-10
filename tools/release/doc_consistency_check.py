@@ -69,7 +69,7 @@ def check_feature_coverage(readme_path, features_dir):
         return findings
 
     for fname in sorted(os.listdir(features_dir)):
-        if not fname.endswith('.md') or fname.endswith('.impl.md'):
+        if not fname.endswith('.md') or fname.endswith('.impl.md') or fname.endswith('.discoveries.md'):
             continue
         # Skip anchor nodes (they're internal)
         if fname.startswith(('arch_', 'design_', 'policy_')):

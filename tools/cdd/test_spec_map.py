@@ -106,6 +106,22 @@ class TestCompanionFileExclusion(unittest.TestCase):
         filenames = [f["filename"] for f in features.values()]
         self.assertNotIn("critic_tool.impl.md", filenames)
 
+    def test_discoveries_md_excluded(self):
+        """Discovery sidecar .discoveries.md files must not appear as graph nodes."""
+        self._write_feature("cdd_status_monitor.md", (
+            '# CDD Status Monitor\n'
+            '> Label: "CDD Monitor"\n'
+            '> Category: "CDD Dashboard"\n'
+        ))
+        self._write_feature("cdd_status_monitor.discoveries.md", (
+            '# User Testing Discoveries: CDD Monitor\n'
+        ))
+        features = parse_features(self.test_dir)
+        self.assertEqual(len(features), 1)
+        self.assertIn("cdd_status_monitor", features)
+        filenames = [f["filename"] for f in features.values()]
+        self.assertNotIn("cdd_status_monitor.discoveries.md", filenames)
+
     def test_multiple_features_with_impl(self):
         """Multiple features with impl companions - only primaries included."""
         self._write_feature("feat_a.md", (

@@ -56,8 +56,8 @@ def parse_features(features_dir):
     for filename in os.listdir(features_dir):
         if not filename.endswith(".md"):
             continue
-        # Skip companion/implementation notes files
-        if filename.endswith(".impl.md"):
+        # Skip companion/implementation notes files and discovery sidecars
+        if filename.endswith(".impl.md") or filename.endswith(".discoveries.md"):
             continue
 
         filepath = os.path.join(features_dir, filename)
