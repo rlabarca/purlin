@@ -3,22 +3,22 @@
 
 Covers automated scenarios from features/pl_update_purlin.md:
 - Auto-Fetch and Update When Behind
-- Already Up to Date with Remote
+- Already Up to Date
 - No Changes Since Last Sync
 - Unmodified Command Files Auto-Updated
-- Modified Command File Requires Review
+- Modified Command File with No Upstream Change
+- Modified Command File with Upstream Conflict
+- Init Refresh Handles CDD Symlinks
 - Top-Level Script Updated Automatically
 - Top-Level Script with Local Changes
-- Structural Change Migration Plan
 - New Config Keys Added Upstream
-- Init Refresh Runs After Successful Update
 - Stale Artifacts Detected and Cleaned
 - Dry Run Shows Changes Without Applying
 - pl-edit-base.md Excluded from Sync
 - Unmodified Deleted-Upstream Command Auto-Removed
 - Modified Deleted-Upstream Command Requires Confirmation
-- Legacy-Named Launcher Scripts Replaced
 - Standalone Mode Guard Prevents Update in Purlin Repo
+- Fast Path Completes Without Conflict Analysis
 
 The agent command is a Claude skill defined in .claude/commands/pl-update-purlin.md.
 These tests verify the command file structure, referenced infrastructure,
@@ -26,7 +26,6 @@ and behavioral invariants that the command depends on.
 """
 import json
 import os
-import re
 import sys
 import unittest
 
@@ -47,7 +46,7 @@ def _get_command_content():
     return _command_content
 
 
-# Known stale artifacts from the spec (Section 2.12)
+# Known stale artifacts from the spec (Section 2.9)
 KNOWN_STALE_ARTIFACTS = {
     'run_architect.sh': 'pl-run-architect.sh',
     'run_builder.sh': 'pl-run-builder.sh',
@@ -62,16 +61,6 @@ TRACKED_SCRIPTS = [
     'pl-run-builder.sh',
     'pl-run-architect.sh',
     'pl-run-qa.sh',
-]
-
-# Legacy script names that the skill must detect
-LEGACY_SCRIPT_NAMES = [
-    'run_builder.sh',
-    'run_architect.sh',
-    'run_qa.sh',
-    'purlin_init.sh',
-    'purlin_cdd_start.sh',
-    'purlin_cdd_stop.sh',
 ]
 
 # Merge strategies offered by the skill
@@ -107,9 +96,8 @@ class TestAutoFetchAndUpdateWhenBehind(unittest.TestCase):
     Given the submodule's local HEAD is behind the remote tracking branch
     When /pl-update-purlin is invoked
     Then the skill fetches from the submodule's remote
-    And displays how many commits behind
-
-    Test: Verifies command file references fetch and remote comparison.
+    And displays current version, target version, and commit count
+    And prompts for confirmation
     """
 
     def test_command_references_git_fetch(self):
@@ -125,29 +113,38 @@ class TestAutoFetchAndUpdateWhenBehind(unittest.TestCase):
     def test_command_references_commits_behind(self):
         """Command references detecting how many commits behind."""
         content = _get_command_content()
-        # The command should mention being behind
         self.assertIn('behind', content.lower())
 
+    def test_command_references_version_display(self):
+        """Command references git describe for version detection."""
+        content = _get_command_content()
+        self.assertIn('describe', content.lower())
 
-class TestAlreadyUpToDateWithRemote(unittest.TestCase):
-    """Scenario: Already Up to Date with Remote
+
+class TestAlreadyUpToDate(unittest.TestCase):
+    """Scenario: Already Up to Date
 
     Given the submodule's local HEAD matches the remote tracking branch
+    And .purlin/.upstream_sha matches current HEAD
     When /pl-update-purlin is invoked
-    Then skip to SHA comparison
-
-    Test: Verifies command handles the already-current case.
+    Then "Already up to date." is printed
+    And the skill exits successfully
     """
 
     def test_command_handles_already_current(self):
-        """Command instructs skipping to SHA comparison when already current."""
+        """Command handles the already-current-with-remote case."""
         content = _get_command_content()
         self.assertIn('already current', content.lower())
 
     def test_command_references_sha_comparison(self):
-        """Command references SHA comparison check."""
+        """Command references .upstream_sha comparison check."""
         content = _get_command_content()
         self.assertIn('.upstream_sha', content)
+
+    def test_command_prints_already_up_to_date(self):
+        """Command includes the 'Already up to date' exit message."""
+        content = _get_command_content()
+        self.assertIn('Already up to date', content)
 
 
 class TestNoChangesSinceLastSync(unittest.TestCase):
@@ -155,9 +152,8 @@ class TestNoChangesSinceLastSync(unittest.TestCase):
 
     Given .purlin/.upstream_sha matches the current submodule HEAD
     When /pl-update-purlin is invoked
-    Then "Already up to date" is printed and the skill exits
-
-    Test: Verifies early exit when SHAs match.
+    Then "Already up to date." is printed
+    And the skill exits successfully
     """
 
     def test_command_references_already_up_to_date_message(self):
@@ -174,17 +170,16 @@ class TestNoChangesSinceLastSync(unittest.TestCase):
 class TestUnmodifiedCommandFilesAutoUpdated(unittest.TestCase):
     """Scenario: Unmodified Command Files Auto-Updated
 
-    Given a command file changed upstream and local matches old version
-    When /pl-update-purlin is invoked
-    Then the file is auto-copied
-
-    Test: Verifies auto-copy logic for unmodified files.
+    Given pl-status.md changed upstream
+    And the consumer's .claude/commands/pl-status.md matches the old upstream version
+    When /pl-update-purlin is invoked and update completes
+    Then init.sh auto-copies pl-status.md from submodule
     """
 
     def test_command_references_auto_copy(self):
         """Command instructs auto-copying unmodified files."""
         content = _get_command_content()
-        self.assertIn('auto-copy', content.lower())
+        self.assertIn('auto-copied', content.lower())
 
     def test_command_references_command_file_changes(self):
         """Command has a section for command file change handling."""
@@ -192,14 +187,35 @@ class TestUnmodifiedCommandFilesAutoUpdated(unittest.TestCase):
         self.assertIn('.claude/commands/', content)
 
 
-class TestModifiedCommandFileRequiresReview(unittest.TestCase):
-    """Scenario: Modified Command File Requires Review
+class TestModifiedCommandFileWithNoUpstreamChange(unittest.TestCase):
+    """Scenario: Modified Command File with No Upstream Change
 
-    Given a command file changed both upstream and locally
-    When /pl-update-purlin is invoked
-    Then the skill shows a three-way diff and offers merge strategies
+    Given the consumer modified .claude/commands/pl-status.md locally
+    And upstream did NOT change pl-status.md between old and new SHA
+    When /pl-update-purlin is invoked and update completes
+    Then pl-status.md is preserved with local modifications
+    And no merge prompt is shown
+    """
 
-    Test: Verifies three-way diff and merge strategy references.
+    def test_command_handles_no_upstream_change(self):
+        """Command states no action needed when upstream didn't change a locally modified file."""
+        content = _get_command_content()
+        self.assertIn('upstream did NOT change', content)
+
+    def test_command_references_old_sha_comparison(self):
+        """Command references comparing against old upstream version."""
+        content = _get_command_content()
+        self.assertIn('old upstream', content.lower())
+
+
+class TestModifiedCommandFileWithUpstreamConflict(unittest.TestCase):
+    """Scenario: Modified Command File with Upstream Conflict
+
+    Given pl-status.md changed upstream
+    And the consumer's .claude/commands/pl-status.md has local modifications
+    When /pl-update-purlin is invoked and update completes
+    Then the skill shows a three-way diff
+    And offers merge strategies
     """
 
     def test_command_references_three_way_diff(self):
@@ -208,7 +224,7 @@ class TestModifiedCommandFileRequiresReview(unittest.TestCase):
         self.assertIn('three-way diff', content.lower())
 
     def test_command_offers_merge_strategies(self):
-        """Command offers the four merge strategies from the spec."""
+        """Command offers the three merge strategies from the spec."""
         content = _get_command_content()
         for strategy in MERGE_STRATEGIES:
             self.assertIn(strategy, content,
@@ -221,14 +237,47 @@ class TestModifiedCommandFileRequiresReview(unittest.TestCase):
         self.assertIn('new upstream', content.lower())
 
 
+class TestInitRefreshHandlesCDDSymlinks(unittest.TestCase):
+    """Scenario: Init Refresh Handles CDD Symlinks
+
+    Given the submodule has been advanced to a newer commit
+    When init.sh --quiet runs as part of the update
+    Then pl-cdd-start.sh and pl-cdd-stop.sh are verified as correct symlinks
+    And the skill does NOT directly read, compare, or modify these files
+    """
+
+    def test_command_excludes_cdd_symlinks(self):
+        """Command explicitly warns not to touch CDD symlinks."""
+        content = _get_command_content()
+        # The command has a bold IMPORTANT note about CDD symlinks
+        self.assertIn('SYMLINKS', content)
+        self.assertIn('NEVER read, compare, copy, or modify', content)
+
+    def test_command_references_init_refresh(self):
+        """Command instructs running init.sh --quiet which handles symlinks."""
+        content = _get_command_content()
+        self.assertIn('init.sh --quiet', content)
+
+    def test_init_script_exists(self):
+        """The tools/init.sh script exists for post-update refresh."""
+        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
+        self.assertTrue(os.path.isfile(init_path),
+                        f'init.sh not found: {init_path}')
+
+    def test_command_references_cdd_symlink_names(self):
+        """Command references the specific CDD symlink filenames."""
+        content = _get_command_content()
+        self.assertIn('pl-cdd-start.sh', content)
+        self.assertIn('pl-cdd-stop.sh', content)
+
+
 class TestTopLevelScriptUpdatedAutomatically(unittest.TestCase):
     """Scenario: Top-Level Script Updated Automatically
 
-    Given a top-level script changed upstream and local matches old version
+    Given pl-run-builder.sh changed upstream
+    And the consumer's pl-run-builder.sh matches the old version
     When /pl-update-purlin is invoked
-    Then the script is auto-updated
-
-    Test: Verifies script tracking and auto-update references.
+    Then init.sh regenerates pl-run-builder.sh
     """
 
     def test_command_tracks_launcher_scripts(self):
@@ -242,86 +291,17 @@ class TestTopLevelScriptUpdatedAutomatically(unittest.TestCase):
 class TestTopLevelScriptWithLocalChanges(unittest.TestCase):
     """Scenario: Top-Level Script with Local Changes
 
-    Given a script changed upstream and locally
+    Given pl-run-builder.sh changed upstream
+    And the consumer has modified pl-run-builder.sh locally
     When /pl-update-purlin is invoked
-    Then diff is shown and merge strategies are offered
-
-    Test: Verifies diff and merge strategy for modified scripts.
+    Then the skill shows the diff and offers merge strategies
     """
 
     def test_command_handles_modified_scripts(self):
         """Command handles the case where user modified a tracked script."""
         content = _get_command_content()
-        # Should reference showing diff for user-modified scripts
         self.assertIn('diff', content.lower())
-        self.assertIn('merge strateg', content.lower())
-
-
-class TestStructuralChangeMigrationPlan(unittest.TestCase):
-    """Scenario: Structural Change Migration Plan
-
-    Given upstream renamed section headers in instruction files
-    And override files reference the old section names
-    When /pl-update-purlin is invoked
-    Then the skill detects the structural change
-    And generates a migration plan
-    And warns about stale override references
-
-    Test: Verifies structural change detection, migration plan generation,
-    and override file scanning logic in the command file.
-    """
-
-    def test_command_references_structural_change_detection(self):
-        """Command instructs detecting structural changes in instructions."""
-        content = _get_command_content()
-        self.assertIn('structural change', content.lower())
-
-    def test_command_references_section_header_comparison(self):
-        """Command references comparing section headers between versions."""
-        content = _get_command_content()
-        # The command should mention detecting header changes
-        self.assertIn('section header', content.lower())
-
-    def test_command_references_override_file_scanning(self):
-        """Command instructs scanning override files for stale references."""
-        content = _get_command_content()
-        self.assertIn('OVERRIDES.md', content)
-
-    def test_command_references_migration_plan_generation(self):
-        """Command references generating a migration plan file."""
-        content = _get_command_content()
-        self.assertIn('migration_plan_', content)
-        self.assertIn('.purlin/migration_plan_', content)
-
-    def test_command_references_warning_for_changed_sections(self):
-        """Command includes warning format for changed section references."""
-        content = _get_command_content()
-        # Should warn about override files referencing changed sections
-        self.assertIn('references changed section', content.lower())
-
-    def test_command_references_specific_line_updates(self):
-        """Command instructs suggesting specific line updates."""
-        content = _get_command_content()
-        # Should suggest showing old -> new header names
-        self.assertIn('line', content.lower())
-
-    def test_migration_plan_section_covers_breaking_changes(self):
-        """Migration plan section includes breaking changes documentation."""
-        content = _get_command_content()
-        self.assertIn('breaking change', content.lower())
-
-    def test_override_files_exist_on_disk(self):
-        """Override files that the skill scans actually exist in the project."""
-        override_files = [
-            '.purlin/ARCHITECT_OVERRIDES.md',
-            '.purlin/BUILDER_OVERRIDES.md',
-            '.purlin/QA_OVERRIDES.md',
-            '.purlin/HOW_WE_WORK_OVERRIDES.md',
-        ]
-        for rel_path in override_files:
-            full_path = os.path.join(PROJECT_ROOT, rel_path)
-            self.assertTrue(os.path.isfile(full_path),
-                            f'Override file not found: {full_path}')
+        self.assertIn('same three-way approach', content.lower())
 
 
 class TestNewConfigKeysAddedUpstream(unittest.TestCase):
@@ -330,8 +310,6 @@ class TestNewConfigKeysAddedUpstream(unittest.TestCase):
     Given upstream added new config keys
     When /pl-update-purlin completes
     Then the config sync step adds new keys to config.local.json
-
-    Test: Verifies config sync references and infrastructure.
     """
 
     def test_command_references_config_sync(self):
@@ -352,41 +330,12 @@ class TestNewConfigKeysAddedUpstream(unittest.TestCase):
                         f'resolve_config.py not found: {module_path}')
 
 
-class TestInitRefreshRunsAfterSuccessfulUpdate(unittest.TestCase):
-    """Scenario: Init Refresh Runs After Successful Update
-
-    Given the submodule has been advanced to a newer commit
-    When /pl-update-purlin completes the update
-    Then tools/init.sh --quiet is executed
-
-    Test: Verifies init refresh references and infrastructure.
-    """
-
-    def test_command_references_init_refresh(self):
-        """Command instructs running init.sh --quiet after update."""
-        content = _get_command_content()
-        self.assertIn('init.sh --quiet', content)
-
-    def test_init_script_exists(self):
-        """The tools/init.sh script exists for post-update refresh."""
-        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
-        self.assertTrue(os.path.isfile(init_path),
-                        f'init.sh not found: {init_path}')
-
-    def test_command_reports_init_refresh_in_summary(self):
-        """Command includes init refresh status in summary report."""
-        content = _get_command_content()
-        self.assertIn('Init refresh completed', content)
-
-
 class TestStaleArtifactsDetectedAndCleaned(unittest.TestCase):
     """Scenario: Stale Artifacts Detected and Cleaned
 
     Given the consumer project has legacy-named scripts
     When /pl-update-purlin completes the update
     Then stale artifacts are detected and user is prompted for removal
-
-    Test: Verifies stale artifact detection logic.
     """
 
     def test_command_lists_known_stale_artifacts(self):
@@ -410,11 +359,9 @@ class TestStaleArtifactsDetectedAndCleaned(unittest.TestCase):
 class TestDryRunShowsChangesWithoutApplying(unittest.TestCase):
     """Scenario: Dry Run Shows Changes Without Applying
 
-    Given multiple changes exist upstream
+    Given the submodule is behind the remote
     When /pl-update-purlin --dry-run is invoked
     Then changes are analyzed but no files are modified
-
-    Test: Verifies dry-run flag handling.
     """
 
     def test_command_supports_dry_run_flag(self):
@@ -425,7 +372,6 @@ class TestDryRunShowsChangesWithoutApplying(unittest.TestCase):
     def test_command_dry_run_prevents_modification(self):
         """Command specifies that dry-run does not modify files."""
         content = _get_command_content()
-        # Dry run should list stale artifacts but not delete
         self.assertIn('list stale artifacts but do not delete', content.lower())
 
 
@@ -435,27 +381,22 @@ class TestPlEditBaseMdExcludedFromSync(unittest.TestCase):
     Given pl-edit-base.md changed upstream
     When /pl-update-purlin is invoked
     Then pl-edit-base.md is silently excluded
-
-    Test: Verifies exclusion of pl-edit-base.md.
     """
 
     def test_command_excludes_pl_edit_base(self):
         """Command explicitly excludes pl-edit-base.md from sync."""
         content = _get_command_content()
         self.assertIn('pl-edit-base.md', content)
-        # Should be silently excluded or NEVER synced
         self.assertIn('NEVER synced', content)
 
 
 class TestUnmodifiedDeletedUpstreamCommandAutoRemoved(unittest.TestCase):
     """Scenario: Unmodified Deleted-Upstream Command Auto-Removed
 
-    Given a command file exists locally matching old upstream
+    Given pl-old-command.md exists in .claude/commands/ and matches old upstream
     And the new upstream no longer includes it
     When /pl-update-purlin is invoked
     Then the file is auto-deleted
-
-    Test: Verifies handling of deleted-upstream unmodified commands.
     """
 
     def test_command_handles_deleted_upstream_unmodified(self):
@@ -472,54 +413,21 @@ class TestUnmodifiedDeletedUpstreamCommandAutoRemoved(unittest.TestCase):
 class TestModifiedDeletedUpstreamCommandRequiresConfirmation(unittest.TestCase):
     """Scenario: Modified Deleted-Upstream Command Requires Confirmation
 
-    Given a command file has local modifications
+    Given pl-old-command.md exists with local modifications
     And the new upstream no longer includes it
     When /pl-update-purlin is invoked
     Then the user is prompted to confirm deletion
-
-    Test: Verifies handling of deleted-upstream modified commands.
     """
 
     def test_command_handles_deleted_upstream_modified(self):
         """Command prompts user for modified files deleted upstream."""
         content = _get_command_content()
-        # Should show local modifications and prompt
         self.assertIn('modified locally', content.lower())
 
     def test_command_preserves_on_user_decline(self):
         """Command preserves file if user declines deletion."""
         content = _get_command_content()
         self.assertIn('preserve', content.lower())
-
-
-class TestLegacyNamedLauncherScriptsReplaced(unittest.TestCase):
-    """Scenario: Legacy-Named Launcher Scripts Replaced
-
-    Given the consumer project has old-named scripts (run_builder.sh)
-    And current-named equivalents do not exist
-    When /pl-update-purlin is invoked
-    Then current-named replacements are generated
-
-    Test: Verifies legacy naming detection and replacement logic.
-    """
-
-    def test_command_detects_legacy_naming(self):
-        """Command references both legacy and current naming conventions."""
-        content = _get_command_content()
-        # Should mention legacy naming
-        self.assertIn('legacy', content.lower())
-
-    def test_command_references_both_naming_conventions(self):
-        """Command lists both old and new naming patterns."""
-        content = _get_command_content()
-        # Current naming
-        self.assertIn('pl-run-', content)
-        self.assertIn('pl-init.sh', content)
-        self.assertIn('pl-cdd-', content)
-        # Legacy naming
-        self.assertIn('run_', content)
-        self.assertIn('purlin_init.sh', content)
-        self.assertIn('purlin_cdd_', content)
 
 
 class TestStandaloneModeGuardPreventsUpdateInPurlinRepo(unittest.TestCase):
@@ -530,8 +438,6 @@ class TestStandaloneModeGuardPreventsUpdateInPurlinRepo(unittest.TestCase):
     And purlin-config-sample/ exists at the project root
     When /pl-update-purlin is invoked
     Then the skill prints an error and exits without changes
-
-    Test: Verifies standalone mode guard detection and error message.
     """
 
     def test_command_has_standalone_mode_guard(self):
@@ -563,44 +469,24 @@ class TestStandaloneModeGuardPreventsUpdateInPurlinRepo(unittest.TestCase):
                         f'purlin-config-sample/ not found: {sample_dir}')
 
 
-class TestReleaseAnalysisInfrastructure(unittest.TestCase):
-    """Cross-scenario infrastructure tests for release analysis (Section 2.2.1).
+class TestFastPathCompletesWithoutConflictAnalysis(unittest.TestCase):
+    """Scenario: Fast Path Completes Without Conflict Analysis
 
-    Verifies that the command file references the git commands and display
-    format needed for GitHub release analysis.
+    Given the submodule is behind by 5 commits
+    And no command files or launcher scripts have been locally modified
+    When /pl-update-purlin is invoked and the user confirms
+    Then the conflict resolution step is skipped entirely
     """
 
-    def test_command_references_git_describe_for_version(self):
-        """Command references git describe for version detection."""
+    def test_command_skips_conflict_analysis_when_clean(self):
+        """Command instructs skipping conflict resolution when no flags."""
         content = _get_command_content()
-        self.assertIn('describe', content.lower())
+        self.assertIn('skip this step entirely if no conflicts', content.lower())
 
-    def test_command_references_release_display_format(self):
-        """Command includes the release summary display format."""
+    def test_command_references_init_refresh_in_summary(self):
+        """Fast path still runs init refresh and shows summary."""
         content = _get_command_content()
-        self.assertIn('Purlin Updates Available', content)
-
-
-class TestAtomicUpdateProtocol(unittest.TestCase):
-    """Cross-scenario tests for atomic update execution (Section 2.7).
-
-    Verifies that the command file enforces atomicity and rollback.
-    """
-
-    def test_command_references_atomic_update(self):
-        """Command references atomic update execution."""
-        content = _get_command_content()
-        self.assertIn('Atomic Update', content)
-
-    def test_command_references_backup(self):
-        """Command references creating a backup before changes."""
-        content = _get_command_content()
-        self.assertIn('git stash', content)
-
-    def test_command_references_rollback(self):
-        """Command references rollback on failure."""
-        content = _get_command_content()
-        self.assertIn('rollback', content.lower())
+        self.assertIn('Init refresh completed', content)
 
 
 if __name__ == '__main__':

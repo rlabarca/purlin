@@ -13,14 +13,14 @@ Update the Purlin submodule to the latest version with automatic artifact refres
 
 1. **Fetch and Version Check:**
    - Run `git -C <submodule_dir> fetch --tags`
-   - Compare local submodule HEAD against `origin/main`
+   - Compare local submodule HEAD against remote tracking branch (`origin/main`)
    - If already current AND `.purlin/.upstream_sha` matches HEAD: print "Already up to date." and exit
    - If behind: show current version -> target version (from `git describe --tags --abbrev=0`) and commit count
    - Prompt: "Update to <version>? (y/n)" (skip if `--auto-approve`)
 
 2. **Pre-Update Conflict Scan:**
    - Read old SHA from `.purlin/.upstream_sha`
-   - For each `.claude/commands/pl-*.md` in consumer project (excluding `pl-edit-base.md`):
+   - For each `.claude/commands/pl-*.md` in consumer project (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
    - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`):
@@ -42,18 +42,20 @@ Update the Purlin submodule to the latest version with automatic artifact refres
      - Offer: "Accept upstream", "Keep current", or "Smart merge"
    - For each flagged command file where upstream did NOT change: no action needed
    - For each flagged launcher script: same three-way approach
-   - **Deleted-upstream commands:**
+   - **Deleted-upstream commands** (file no longer in upstream):
      - Unmodified locally: auto-delete, report "Removed: <filename>"
-     - Modified locally: prompt user before deleting
+     - Modified locally: prompt user before deleting, preserve if declined
    - **Skip this step entirely if no conflicts were flagged** — do not scan or analyze files unnecessarily
 
 6. **Config Sync:**
    - Run `sync_config()` from `tools/config/resolve_config.py`
+   - If `config.local.json` doesn't exist, creates it from `config.json`; otherwise adds missing keys with shared defaults
    - Reports new keys added or "Local config is up to date"
 
 7. **Stale Artifact Cleanup:**
    - Check for legacy-named scripts at project root (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`, `purlin_init.sh`, `purlin_cdd_start.sh`, `purlin_cdd_stop.sh`)
-   - If found, prompt to remove; skip if none found
+   - If found, prompt: "Remove these files? You can remove them manually later if you prefer."
+   - In `--dry-run` mode, list stale artifacts but do not delete
 
 8. **Summary:**
    ```
