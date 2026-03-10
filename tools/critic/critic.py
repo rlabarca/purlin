@@ -1798,7 +1798,7 @@ def generate_action_items(feature_result, cdd_status=None):
                 })
 
     # Bypassed QA verification -> HIGH QA (Section 2.16)
-    # COMPLETE feature with manual scenarios but no TESTING-phase commit.
+    # COMPLETE feature with manual scenarios but missing verification evidence.
     if lifecycle_state == 'complete':
         _feature_path = os.path.join(
             FEATURES_DIR, os.path.basename(feature_file))
@@ -1807,18 +1807,31 @@ def generate_action_items(feature_result, cdd_status=None):
             _bv_scenarios = parse_scenarios(_bv_content)
             _bv_manual = sum(
                 1 for s in _bv_scenarios if s.get('is_manual', False))
-            if _bv_manual > 0 and not _has_testing_phase_commit(
-                    _feature_path):
-                qa_items.append({
-                    'priority': 'HIGH',
-                    'category': 'bypassed_qa_verification',
-                    'feature': feature_name,
-                    'description': (
-                        f'Feature {feature_name} has {_bv_manual} manual '
-                        f'scenario(s) that bypassed QA verification -- '
-                        f'verify before accepting CLEAN status'
-                    ),
-                })
+            if _bv_manual > 0:
+                if not _has_testing_phase_commit(_feature_path):
+                    qa_items.append({
+                        'priority': 'HIGH',
+                        'category': 'bypassed_qa_verification',
+                        'feature': feature_name,
+                        'description': (
+                            f'Feature {feature_name} has {_bv_manual} '
+                            f'manual scenario(s) that bypassed QA '
+                            f'verification -- no TESTING-phase commit '
+                            f'found'
+                        ),
+                    })
+                elif not _has_verified_complete_commit(_feature_path):
+                    qa_items.append({
+                        'priority': 'HIGH',
+                        'category': 'bypassed_qa_verification',
+                        'feature': feature_name,
+                        'description': (
+                            f'Feature {feature_name} has {_bv_manual} '
+                            f'manual scenario(s) but [Complete] lacks '
+                            f'[Verified] tag -- run /pl-complete to '
+                            f'verify'
+                        ),
+                    })
 
     # RESOLVED pruning signal -> LOW QA (Section 2.4)
     # Unpruned RESOLVED entries should be surfaced so QA cleans them up.
@@ -2003,6 +2016,64 @@ def _has_testing_phase_commit(feature_file, project_root=None):
             except (ValueError, IndexError):
                 continue
             if commit_ts > reset_timestamp:
+                return True
+        return False
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+def _has_verified_complete_commit(feature_file, project_root=None):
+    """Check if a valid (post-reset) [Complete] commit with [Verified] tag exists.
+
+    Per policy_critic.md Section 2.16, when a feature has manual scenarios and
+    a valid TESTING-phase commit exists, the most recent post-reset [Complete]
+    commit must contain the [Verified] tag. A [Complete] without [Verified]
+    indicates the Builder completed the feature without QA verification.
+
+    Returns True if a post-reset [Complete] commit with [Verified] exists,
+    False otherwise.
+    """
+    root = project_root or PROJECT_ROOT
+    basename = os.path.basename(feature_file)
+    feature_ref = f'features/{basename}'
+
+    # Step 1: Determine reset point -- timestamp of the latest commit that
+    # modified the feature spec file.
+    try:
+        mod_result = subprocess.run(
+            ['git', 'log', '-1', '--format=%ct', '--', feature_ref],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if mod_result.returncode != 0 or not mod_result.stdout.strip():
+            reset_timestamp = 0
+        else:
+            reset_timestamp = int(mod_result.stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, ValueError):
+        reset_timestamp = 0
+
+    # Step 2: Find [Complete] commits for this feature with timestamps.
+    search_pattern = '[Complete'
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--all', '--fixed-strings',
+             '--grep', search_pattern,
+             '--format=%ct %s'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return False
+        # Step 3: Check each matching commit -- must reference this feature
+        # AND have a timestamp strictly after the reset point
+        # AND contain the [Verified] tag.
+        for line in result.stdout.strip().split('\n'):
+            if feature_ref not in line:
+                continue
+            parts = line.split(' ', 1)
+            try:
+                commit_ts = int(parts[0])
+            except (ValueError, IndexError):
+                continue
+            if commit_ts > reset_timestamp and '[Verified]' in line:
                 return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
@@ -2572,6 +2643,8 @@ def compute_role_status(feature_result, cdd_status=None):
             feature_path = os.path.join(
                 FEATURES_DIR, os.path.basename(feature_file))
             if not _has_testing_phase_commit(feature_path):
+                bypassed_verification = True
+            elif not _has_verified_complete_commit(feature_path):
                 bypassed_verification = True
 
     # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A

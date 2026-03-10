@@ -67,6 +67,7 @@ from critic import (
     _get_scenario_diff,
     _test_added_after_commit,
     _has_testing_phase_commit,
+    _has_verified_complete_commit,
     parse_builder_decisions,
     parse_visual_spec,
     validate_visual_references,
@@ -3847,8 +3848,11 @@ Reqs.
     def tearDown(self):
         shutil.rmtree(self.root)
 
+    @unittest.mock.patch('critic._has_verified_complete_commit',
+                         return_value=True)
     @unittest.mock.patch('critic._has_testing_phase_commit', return_value=True)
-    def test_complete_with_testing_commit_makes_qa_clean(self, _mock):
+    def test_complete_with_testing_commit_makes_qa_clean(self, _mock,
+                                                         _mock_verified):
         import critic
         orig_features = critic.FEATURES_DIR
         critic.FEATURES_DIR = self.features_dir
@@ -4236,6 +4240,206 @@ Reqs.
             self.assertEqual(effort['manual_interactive'], 2)
             self.assertEqual(effort['total_manual'], 2)
             self.assertNotEqual(effort['summary'], 'no QA items')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestHasVerifiedCompleteCommit(unittest.TestCase):
+    """Scenario: Role Status QA TODO When COMPLETE Commit Lacks Verification
+    Evidence
+
+    Tests the _has_verified_complete_commit function: a [Complete] commit
+    must contain [Verified] and post-date the most recent spec modification.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        subprocess.run(
+            ['git', 'init'], cwd=self.root,
+            capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.email', 'test@test.com'], cwd=self.root,
+            capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.name', 'Test'], cwd=self.root,
+            capture_output=True, check=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def _write_feature(self, content='# Feature: Verified\nContent.\n'):
+        fpath = os.path.join(self.features_dir, 'verified.md')
+        with open(fpath, 'w') as f:
+            f.write(content)
+        return fpath
+
+    def _git_add_commit(self, msg, files=None):
+        if files:
+            subprocess.run(
+                ['git', 'add'] + files, cwd=self.root,
+                capture_output=True, check=True)
+        else:
+            subprocess.run(
+                ['git', 'add', '-A'], cwd=self.root,
+                capture_output=True, check=True)
+        subprocess.run(
+            ['git', 'commit', '-m', msg, '--allow-empty-message'],
+            cwd=self.root, capture_output=True, check=True)
+
+    def _git_commit_empty(self, msg):
+        subprocess.run(
+            ['git', 'commit', '--allow-empty', '-m', msg],
+            cwd=self.root, capture_output=True, check=True)
+
+    def test_verified_complete_commit_found(self):
+        """[Complete] with [Verified] after spec mod -> True."""
+        import time
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        time.sleep(1)
+        self._git_commit_empty(
+            'status(critic): [Complete features/verified.md] [Verified]')
+        result = _has_verified_complete_commit(
+            'features/verified.md', project_root=self.root)
+        self.assertTrue(result)
+
+    def test_complete_without_verified_tag(self):
+        """[Complete] without [Verified] -> False."""
+        import time
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        time.sleep(1)
+        self._git_commit_empty(
+            'status(critic): [Complete features/verified.md]')
+        result = _has_verified_complete_commit(
+            'features/verified.md', project_root=self.root)
+        self.assertFalse(result)
+
+    def test_stale_verified_complete_before_reset(self):
+        """[Verified] commit predates spec reset -> False (stale)."""
+        import time
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        time.sleep(1)
+        self._git_commit_empty(
+            'status(critic): [Complete features/verified.md] [Verified]')
+        # Spec modification resets lifecycle
+        time.sleep(1)
+        self._write_feature('# Version 2 -- spec updated\n')
+        self._git_add_commit('spec update')
+        # Builder re-completes without [Verified]
+        self._git_commit_empty(
+            'status(critic): [Complete features/verified.md]')
+        result = _has_verified_complete_commit(
+            'features/verified.md', project_root=self.root)
+        self.assertFalse(result)
+
+    def test_no_complete_commit_at_all(self):
+        """No [Complete] commit in history -> False."""
+        self._write_feature('# Version 1\n')
+        self._git_add_commit('initial')
+        result = _has_verified_complete_commit(
+            'features/verified.md', project_root=self.root)
+        self.assertFalse(result)
+
+
+class TestMissingVerifiedRoleStatus(unittest.TestCase):
+    """Scenario: Role Status QA TODO When COMPLETE Commit Lacks Verification
+    Evidence (compute_role_status integration)
+
+    When _has_testing_phase_commit returns True but _has_verified_complete_commit
+    returns False for a COMPLETE feature with manual scenarios, compute_role_status
+    must set qa=TODO.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Unverified
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'unverified.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @unittest.mock.patch('critic._has_verified_complete_commit',
+                         return_value=False)
+    @unittest.mock.patch('critic._has_testing_phase_commit',
+                         return_value=True)
+    def test_missing_verified_makes_qa_todo(self, _mock_testing,
+                                            _mock_verified):
+        """TESTING commit exists but no [Verified] -> qa TODO."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/unverified.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/unverified.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+            self.assertTrue(status['_bypassed_verification'])
+            self.assertEqual(status['_bypassed_manual_count'], 1)
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @unittest.mock.patch('critic._has_verified_complete_commit',
+                         return_value=True)
+    @unittest.mock.patch('critic._has_testing_phase_commit',
+                         return_value=True)
+    def test_verified_complete_makes_qa_clean(self, _mock_testing,
+                                              _mock_verified):
+        """TESTING commit exists AND [Verified] present -> qa CLEAN."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/unverified.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/unverified.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertNotEqual(status['qa'], 'TODO')
+            self.assertFalse(status['_bypassed_verification'])
         finally:
             critic.FEATURES_DIR = orig_features
 
