@@ -98,7 +98,7 @@ On both full init and refresh, the script MUST create these symlinks at the proj
 *   `pl-cdd-start.sh` -> `<submodule>/tools/cdd/start.sh`
 *   `pl-cdd-stop.sh` -> `<submodule>/tools/cdd/stop.sh`
 
-The symlinks MUST use relative paths (not absolute) so they remain valid after repository relocation. If a symlink already exists and points to the correct target, leave it unchanged. If it exists but points to the wrong target, replace it.
+The symlinks MUST use relative paths (not absolute) so they remain valid after repository relocation. If a symlink already exists and points to the correct target, leave it unchanged. If it exists but points to the wrong target, replace it. If a **regular file** (not a symlink) exists at the target path, replace it with the correct symlink — this handles the case where a file was inadvertently copied instead of symlinked (e.g., by an update agent or manual copy).
 
 ### 2.7 Full Init Output
 
@@ -186,14 +186,15 @@ The test script MUST include assertions for all of the following. Each test MUST
 19. **Upstream SHA updated on refresh:** Modify the submodule HEAD (e.g., create a commit). Run refresh. Assert `.purlin/.upstream_sha` contains the new SHA.
 20. **Config and overrides untouched on refresh:** Record checksums of `.purlin/config.json` and all `*_OVERRIDES.md` before refresh. Run refresh. Assert checksums match.
 21. **CDD symlinks repaired on refresh:** Delete one CDD symlink. Run refresh. Assert it is recreated.
-22. **Launchers always regenerated on refresh:** Modify `pl-run-architect.sh` content. Run refresh. Assert `pl-run-architect.sh` was overwritten with fresh template content and is executable.
-23. **Shim self-update on refresh:** Modify the submodule HEAD (new commit). Run refresh. Assert `purlin_init.sh` header contains the updated SHA.
+22. **CDD regular file replaced with symlink on refresh:** Replace `pl-cdd-start.sh` symlink with a regular file copy of `tools/cdd/start.sh`. Run refresh. Assert it is now a symlink pointing to the correct target.
+23. **Launchers always regenerated on refresh:** Modify `pl-run-architect.sh` content. Run refresh. Assert `pl-run-architect.sh` was overwritten with fresh template content and is executable.
+24. **Shim self-update on refresh:** Modify the submodule HEAD (new commit). Run refresh. Assert `purlin_init.sh` header contains the updated SHA.
 
 **CLI Flag Tests:**
 
-24. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
-25. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
-26. **Refresh removes stale launchers:** Create stale `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (old naming convention). Run `init.sh`. Assert stale launchers are removed. Assert only `pl-run-*.sh` launchers remain.
+25. **`--quiet` suppresses output:** Run `init.sh --quiet` in refresh mode. Assert stdout is empty.
+26. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
+27. **Refresh removes stale launchers:** Create stale `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (old naming convention). Run `init.sh`. Assert stale launchers are removed. Assert only `pl-run-*.sh` launchers remain.
 
 **Standalone Guard Tests:**
 
@@ -328,6 +329,14 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     When the user runs "purlin/tools/init.sh"
     Then pl-cdd-start.sh is created as a symlink to purlin/tools/cdd/start.sh
     And pl-cdd-stop.sh is created as a symlink to purlin/tools/cdd/stop.sh
+
+#### Scenario: CDD Regular File Replaced with Symlink on Refresh
+
+    Given .purlin/ already exists at the project root
+    And pl-cdd-start.sh exists at the project root as a regular file (not a symlink)
+    When the user runs "purlin/tools/init.sh"
+    Then pl-cdd-start.sh is replaced with a symlink to purlin/tools/cdd/start.sh
+    And the symlink uses a relative path
 
 #### Scenario: Launchers Always Regenerated on Refresh
 
