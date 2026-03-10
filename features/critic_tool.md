@@ -549,7 +549,7 @@ The following fixture tags provide deterministic project states for integration-
 
 #### Scenario: Structural Completeness FAIL When No Test File Exists
     Given a feature has tests/<feature>/tests.json with {"status": "PASS", "passed": 5, "failed": 0, "total": 5}
-    And no executable test file (.py, .sh, .bats) exists in tests/<feature>/ or at a path declared in tests.json
+    And no test file is discoverable (no file starting with "test" in tests/<feature>/, no valid path in test_file or test_files fields of tests.json)
     When the Critic tool runs the Implementation Gate structural completeness check
     Then structural_completeness reports FAIL
     And the detail says "No test files found backing tests.json"

@@ -146,7 +146,7 @@ The `structural_completeness` check in the Implementation Gate validates that `t
 
 1.  **Minimum Test Count Rule:** A `tests.json` file with `status: "PASS"` MUST have `total > 0`. A PASS with zero tests is semantically invalid — it means no code was exercised. The Critic MUST treat `total: 0` (or missing `total` field) combined with `status: "PASS"` as a FAIL with detail `"PASS with zero tests is invalid"`.
 
-2.  **Test File Existence Rule:** When `tests.json` reports `status: "PASS"`, at least one executable test file (`.py`, `.sh`, `.bats`) MUST exist either in `tests/<feature>/` or at a path declared in a `test_file` field within `tests.json`. A PASS with no discoverable test files is treated as FAIL with detail `"No test files found backing tests.json"`.
+2.  **Test File Existence Rule:** When `tests.json` reports `status: "PASS"`, at least one test file MUST be discoverable. Discovery uses a three-tier lookup (first match wins): (a) any file in `tests/<feature>/` whose name starts with `test` (excluding `.pyc`), (b) a path declared in a `test_file` (string) field within `tests.json`, (c) paths declared in a `test_files` (array of strings) field within `tests.json`. Declared paths are checked for existence on disk. A PASS with no discoverable test files is treated as FAIL with detail `"No test files found backing tests.json"`. Note: the discovery uses no hardcoded extension whitelist — consumer projects may use any test file format (`.py`, `.sh`, `.jsx`, `.ts`, `.go`, etc.).
 
 3.  **Internal Consistency Rule:** If `tests.json` contains `failures` or `failed` fields with numeric values > 0, `status` MUST NOT be `"PASS"`. The Critic MUST treat this contradiction as FAIL with detail `"Internal inconsistency: status PASS with failures > 0"`.
 
