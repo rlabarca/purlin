@@ -1797,6 +1797,29 @@ def generate_action_items(feature_result, cdd_status=None):
                     ),
                 })
 
+    # Bypassed QA verification -> HIGH QA (Section 2.16)
+    # COMPLETE feature with manual scenarios but no TESTING-phase commit.
+    if lifecycle_state == 'complete':
+        _feature_path = os.path.join(
+            FEATURES_DIR, os.path.basename(feature_file))
+        if os.path.isfile(_feature_path):
+            _bv_content = read_feature_file(_feature_path)
+            _bv_scenarios = parse_scenarios(_bv_content)
+            _bv_manual = sum(
+                1 for s in _bv_scenarios if s.get('is_manual', False))
+            if _bv_manual > 0 and not _has_testing_phase_commit(
+                    _feature_path):
+                qa_items.append({
+                    'priority': 'HIGH',
+                    'category': 'bypassed_qa_verification',
+                    'feature': feature_name,
+                    'description': (
+                        f'Feature {feature_name} has {_bv_manual} manual '
+                        f'scenario(s) that bypassed QA verification -- '
+                        f'verify before accepting CLEAN status'
+                    ),
+                })
+
     # RESOLVED pruning signal -> LOW QA (Section 2.4)
     # Unpruned RESOLVED entries should be surfaced so QA cleans them up.
     resolved_count = sum(
@@ -1926,6 +1949,37 @@ def _get_file_at_commit(feature_file, commit_hash, project_root=None):
         return result.stdout
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return None
+
+
+def _has_testing_phase_commit(feature_file, project_root=None):
+    """Check if a TESTING-phase commit exists for a feature in git history.
+
+    Searches git log for commits whose message contains a ``[Ready for``
+    tag referencing this feature file. This indicates the feature passed
+    through the TESTING lifecycle phase before reaching COMPLETE.
+
+    Returns True if such a commit exists, False otherwise.
+    """
+    root = project_root or PROJECT_ROOT
+    basename = os.path.basename(feature_file)
+    search_pattern = f'[Ready for'
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--all', '--fixed-strings',
+             '--grep', search_pattern,
+             '--format=%s'],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return False
+        # Check each matching commit message for this specific feature
+        feature_ref = f'features/{basename}'
+        for line in result.stdout.strip().split('\n'):
+            if feature_ref in line:
+                return True
+        return False
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
 
 
 def _get_scenario_diff(feature_file, current_content, project_root=None):
@@ -2267,7 +2321,12 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     if role_status.get('builder') in ('TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'):
         return {**zeroed, 'summary': 'awaiting builder'}
 
-    if lifecycle_state != 'testing':
+    # Section 2.16: COMPLETE with bypassed QA verification is treated
+    # equivalently to TESTING for classification purposes.
+    bypassed_qa = (lifecycle_state == 'complete'
+                   and role_status.get('qa') == 'TODO'
+                   and role_status.get('_bypassed_verification', False))
+    if lifecycle_state != 'testing' and not bypassed_qa:
         return zeroed
 
     # Only TESTING features reach here
@@ -2474,6 +2533,20 @@ def compute_role_status(feature_result, cdd_status=None):
             1 for s in scenarios if s.get('is_manual', False))
         testing_with_manual = manual_count > 0
 
+    # Pre-compute: COMPLETE feature that bypassed QA verification
+    # (Section 2.16 QA Verification Integrity)
+    bypassed_verification = False
+    bypassed_manual_count = 0
+    if lifecycle_state == 'complete':
+        scenarios = parse_scenarios(_content)
+        bypassed_manual_count = sum(
+            1 for s in scenarios if s.get('is_manual', False))
+        if bypassed_manual_count > 0:
+            feature_path = os.path.join(
+                FEATURES_DIR, os.path.basename(feature_file))
+            if not _has_testing_phase_commit(feature_path):
+                bypassed_verification = True
+
     # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
     # Per spec Section 2.11 "QA Actionability Principle": QA=TODO only when
     # QA has work to do RIGHT NOW. OPEN items routing to other roles are not
@@ -2488,6 +2561,10 @@ def compute_role_status(feature_result, cdd_status=None):
     elif testing_with_manual:
         # TODO condition (a): TESTING with manual scenarios
         qa_status = 'TODO'
+    elif bypassed_verification:
+        # TODO condition (c): COMPLETE with manual scenarios but no
+        # TESTING-phase commit (Section 2.16 bypassed verification)
+        qa_status = 'TODO'
     elif struct_status == 'PASS':
         # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
         qa_status = 'CLEAN'
@@ -2498,6 +2575,8 @@ def compute_role_status(feature_result, cdd_status=None):
         'architect': architect_status,
         'builder': builder_status,
         'qa': qa_status,
+        '_bypassed_verification': bypassed_verification,
+        '_bypassed_manual_count': bypassed_manual_count,
     }
 
 
@@ -2674,6 +2753,9 @@ def generate_critic_json(feature_path, cdd_status=None):
     # Clean up internal-only keys before returning
     result.pop('_visual_ref_items', None)
     result.pop('_fixture_data', None)
+    # Remove internal role_status keys used for cross-function communication
+    result['role_status'].pop('_bypassed_verification', None)
+    result['role_status'].pop('_bypassed_manual_count', None)
     # Remove internal traceability matched data from output
     impl_checks = result.get('implementation_gate', {}).get('checks', {})
     if 'traceability' in impl_checks:

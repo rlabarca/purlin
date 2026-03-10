@@ -65,6 +65,7 @@ from critic import (
     _get_file_at_commit,
     _get_scenario_diff,
     _test_added_after_commit,
+    _has_testing_phase_commit,
     parse_builder_decisions,
     parse_visual_spec,
     validate_visual_references,
@@ -3696,6 +3697,321 @@ Reqs.
             self.assertEqual(status['qa'], 'CLEAN')
         finally:
             critic.FEATURES_DIR = orig_features
+
+
+# ===================================================================
+# QA Verification Integrity Tests (Section 2.16)
+# ===================================================================
+
+class TestBypassedQAVerificationDetected(unittest.TestCase):
+    """Scenario: Bypassed QA Verification Detected
+
+    A COMPLETE feature with manual scenarios but no TESTING-phase commit
+    should have qa_status = TODO and generate a HIGH-priority QA action item.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Bypassed
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+#### Scenario: Another Manual
+    Given D
+    When E
+    Then F
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'bypassed.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=False)
+    def test_complete_with_manual_no_testing_commit_makes_qa_todo(self, _mock):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/bypassed.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/bypassed.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=False)
+    def test_bypassed_generates_qa_action_item(self, _mock):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/bypassed.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/bypassed.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            items = generate_action_items(result, cdd_status)
+            qa_items = items['qa']
+            bypassed_items = [
+                i for i in qa_items
+                if i['category'] == 'bypassed_qa_verification'
+            ]
+            self.assertEqual(len(bypassed_items), 1)
+            self.assertEqual(bypassed_items[0]['priority'], 'HIGH')
+            self.assertIn('2 manual scenario(s)', bypassed_items[0]['description'])
+            self.assertIn('bypassed QA verification',
+                          bypassed_items[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestBypassedVerificationNotFalsePositive(unittest.TestCase):
+    """Scenario: No false positive when TESTING commit exists
+
+    A COMPLETE feature with manual scenarios that has a TESTING-phase
+    commit should retain qa_status = CLEAN (not falsely trigger TODO).
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Verified
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'verified.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=True)
+    def test_complete_with_testing_commit_makes_qa_clean(self, _mock):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/verified.md'
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/verified.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'CLEAN')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestBypassedVerificationPrecedence(unittest.TestCase):
+    """Scenario: FAIL and DISPUTED take priority over bypassed verification
+
+    Per precedence: FAIL > DISPUTED > TODO (bypassed). A feature with OPEN
+    BUGs or SPEC_DISPUTEs should show those statuses, not TODO.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Priority
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+## User Testing Discoveries
+
+### [BUG] Something broken (Discovered: 2026-01-01)
+- **Status:** OPEN
+- **Scenario:** Manual Check
+A bug description.
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir, 'priority.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    @unittest.mock.patch('critic._has_testing_phase_commit', return_value=False)
+    def test_open_bug_takes_priority_over_bypassed(self, _mock):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/priority.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'complete': [{'file': 'features/priority.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'FAIL')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestBypassedVerificationEffort(unittest.TestCase):
+    """Scenario: Verification effort computed for bypassed features
+
+    When a COMPLETE feature has qa_status=TODO due to bypassed verification,
+    verification_effort must compute the full classification (not zeroed).
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        self.content = """\
+# Feature: BypassedEffort
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check
+    Given A
+    When B
+    Then C
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(self.features_dir,
+                               'bypassed_effort.md'), 'w') as f:
+            f.write(self.content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_bypassed_verification_computes_effort(self):
+        role_status = {
+            'architect': 'DONE',
+            'builder': 'DONE',
+            'qa': 'TODO',
+            '_bypassed_verification': True,
+            '_bypassed_manual_count': 1,
+        }
+        regression_scope = {'declared': 'full'}
+        result = _make_base_result()
+        effort = compute_verification_effort(
+            self.content, 'complete', regression_scope,
+            role_status, result)
+        self.assertEqual(effort['manual_interactive'], 1)
+        self.assertEqual(effort['total_manual'], 1)
+        self.assertNotEqual(effort['summary'], 'no QA items')
+
+    def test_normal_complete_returns_zeroed_effort(self):
+        role_status = {
+            'architect': 'DONE',
+            'builder': 'DONE',
+            'qa': 'CLEAN',
+        }
+        regression_scope = {'declared': 'full'}
+        result = _make_base_result()
+        effort = compute_verification_effort(
+            self.content, 'complete', regression_scope,
+            role_status, result)
+        self.assertEqual(effort['summary'], 'no QA items')
+        self.assertEqual(effort['manual_interactive'], 0)
 
 
 # ===================================================================
