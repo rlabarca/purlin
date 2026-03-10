@@ -118,7 +118,7 @@ def categorize_file(path):
     # Feature specs and related
     if path.startswith('features/'):
         basename = os.path.basename(path)
-        if basename.endswith('.impl.md'):
+        if basename.endswith('.impl.md') or basename.endswith('.discoveries.md'):
             return 'companion'
         if path.startswith('features/design/'):
             return 'visual_spec'

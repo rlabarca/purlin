@@ -190,6 +190,9 @@ class TestFileCategorization(unittest.TestCase):
     def test_companion_file(self):
         self.assertEqual(ext.categorize_file('features/login.impl.md'), 'companion')
 
+    def test_discovery_sidecar_classified_as_companion(self):
+        self.assertEqual(ext.categorize_file('features/login.discoveries.md'), 'companion')
+
     def test_visual_spec_design_dir(self):
         self.assertEqual(ext.categorize_file('features/design/login/mockup.png'), 'visual_spec')
 
@@ -364,9 +367,9 @@ class TestDecisionExtraction(unittest.TestCase):
         """Scenario: Extraction Tool Routes BUG Entries to Builder by Default"""
         mock_git.side_effect = self._make_side_effect(
             ahead_commits='abc1234|qa: found bug\n',
-            name_status='M\tfeatures/login.md\n',
+            name_status='M\tfeatures/login.discoveries.md\n',
             file_diffs={
-                'features/login.md': '+### [BUG] Login fails on empty password',
+                'features/login.discoveries.md': '+### [BUG] Login fails on empty password',
             })
 
         result = ext.extract('test-session')
@@ -397,9 +400,9 @@ class TestDecisionExtraction(unittest.TestCase):
         """BUG with Action Required: Architect routes to architect."""
         mock_git.side_effect = self._make_side_effect(
             ahead_commits='abc1234|qa: found bug\n',
-            name_status='M\tfeatures/login.md\n',
+            name_status='M\tfeatures/login.discoveries.md\n',
             file_diffs={
-                'features/login.md': (
+                'features/login.discoveries.md': (
                     '+### [BUG] Instruction ordering wrong\n'
                     '+- **Action Required: Architect**'),
             })
