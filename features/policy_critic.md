@@ -190,12 +190,15 @@ See `features/qa_verification_effort.md` for the full classification rules, outp
 
 When a feature has manual scenarios, QA status MUST NOT reach CLEAN without evidence that QA verification occurred. The system relies on the TESTING lifecycle phase as the verification signal -- a feature must pass through TESTING before reaching COMPLETE for QA to be considered verified.
 
-**The Invariant:** If a feature has one or more manual scenarios AND `lifecycle_state == 'complete'` AND no TESTING-phase commit (`[Ready for \w+ features/<name>.md]`) exists in the feature's git history prior to the COMPLETE commit, the Critic MUST set `qa_status = 'TODO'`. The feature bypassed QA verification.
+**The Invariant:** If a feature has one or more manual scenarios AND `lifecycle_state == 'complete'` AND no TESTING-phase commit (`[Ready for \w+ features/<name>.md]`) exists in the feature's git history **after the most recent lifecycle reset to TODO**, the Critic MUST set `qa_status = 'TODO'`. The feature bypassed QA verification.
+
+A lifecycle reset to TODO occurs when the feature spec is modified after the last `[Complete]` or `[Testing]` status commit. The most recent reset point is the timestamp of the commit that last modified the feature spec file and caused the lifecycle to return to TODO. A TESTING-phase commit that predates this reset is stale and MUST NOT satisfy the invariant.
 
 **Detection:** When computing `qa_status` and `lifecycle_state == 'complete'`, the Critic MUST:
 1.  Parse the feature's scenarios and count manual scenarios.
-2.  If manual scenarios > 0, search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` that precedes the COMPLETE commit.
-3.  If no such commit exists, set `qa_status = 'TODO'`.
+2.  If manual scenarios > 0, determine the most recent lifecycle reset point: the timestamp of the latest spec-modifying commit that post-dates the previous `[Complete]` or `[Testing]` status commit. If no status commit exists, the reset point is epoch zero (all TESTING-phase commits qualify).
+3.  Search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` whose timestamp is **after** the reset point determined in step 2.
+4.  If no such post-reset TESTING-phase commit exists, set `qa_status = 'TODO'`.
 
 **Action Item Generation:** When this invariant triggers, the Critic MUST generate a HIGH-priority QA action item: `"Feature <name> has N manual scenario(s) that bypassed QA verification -- verify before accepting CLEAN status"`. Category: `bypassed_qa_verification`.
 

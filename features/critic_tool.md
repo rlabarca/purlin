@@ -620,6 +620,23 @@ The following fixture tags provide deterministic project states for integration-
     Then role_status.qa is TODO
     And role_status.qa is NOT CLEAN
 
+#### Scenario: Role Status QA TODO for COMPLETE Feature That Bypassed TESTING Phase
+    Given a feature has manual scenarios
+    And the feature is in COMPLETE lifecycle state
+    And no TESTING-phase commit exists in git history after the most recent lifecycle reset
+    When the Critic tool computes role_status
+    Then role_status.qa is TODO
+    And verification_effort shows the full classification (not zeroed)
+
+#### Scenario: Role Status QA TODO When Stale TESTING-Phase Commit Predates Spec Reset
+    Given a feature has manual scenarios
+    And the feature was previously verified (TESTING-phase commit exists)
+    And the feature spec was subsequently modified (triggering lifecycle reset to TODO)
+    And the Builder re-implemented and committed COMPLETE (no new TESTING-phase commit)
+    When the Critic tool computes role_status
+    Then role_status.qa is TODO
+    And the stale TESTING-phase commit from before the reset does NOT satisfy the verification invariant
+
 #### Scenario: Role Status QA FAIL
     Given a feature has OPEN BUGs in discovery sidecar
     When the Critic tool computes role_status
