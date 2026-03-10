@@ -96,10 +96,10 @@ Each direction (Your Local / Collab) is split into two halves: what changed in t
 | `[INFEASIBLE]` | Companion files (`## Implementation Notes`) | Architect |
 | `[DEVIATION]` | Companion files (`## Implementation Notes`) | Architect |
 | `[DISCOVERY]` (impl) | Companion files (`## Implementation Notes`) | Architect |
-| `[BUG]` | Feature files (`## User Testing Discoveries`) | Builder (default) or Architect (if `Action Required: Architect`) |
-| `[INTENT_DRIFT]` | Feature files (`## User Testing Discoveries`) | Architect |
-| `[SPEC_DISPUTE]` | Feature files (`## User Testing Discoveries`) | Architect |
-| `[DISCOVERY]` (testing) | Feature files (`## User Testing Discoveries`) | Architect |
+| `[BUG]` | Discovery sidecar files (`<name>.discoveries.md`) | Builder (default) or Architect (if `Action Required: Architect`) |
+| `[INTENT_DRIFT]` | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
+| `[SPEC_DISPUTE]` | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
+| `[DISCOVERY]` (testing) | Discovery sidecar files (`<name>.discoveries.md`) | Architect |
 
 **Purlin infrastructure file classification:**
 
@@ -499,7 +499,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 #### Scenario: Extraction Tool Routes BUG Entries to Builder by Default
 
-    Given a commit range that modifies features/login.md containing a [BUG] entry in User Testing Discoveries
+    Given a commit range that modifies features/login.discoveries.md containing a [BUG] entry
     And the entry does not contain "Action Required: Architect"
     When the extraction tool runs with the branch name
     Then the decisions array contains the [BUG] entry with role "builder"

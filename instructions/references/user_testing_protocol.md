@@ -16,9 +16,9 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
 ## Queue Hygiene
 
-*   The section only contains OPEN and SPEC_UPDATED entries (active work).
+*   The sidecar file only contains OPEN and SPEC_UPDATED entries (active work).
 *   RESOLVED entries are pruned by the QA Agent.
-*   An empty `## User Testing Discoveries` section (or its absence) means the feature is clean.
+*   An empty or absent `<name>.discoveries.md` file means the feature is clean.
 
 ## Feedback Routing
 

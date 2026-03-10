@@ -7,7 +7,7 @@
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
 
 ## 9.2 Section Format
-The section is placed before `## User Testing Discoveries` (or at the end of the file if no discoveries section exists):
+The section is placed at the end of the feature file (discoveries are stored in a separate sidecar file, not in the feature file):
 
 ```markdown
 ## Visual Specification

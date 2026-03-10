@@ -92,7 +92,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 ### 2.10 Result Recording
 
 - Print a summary: N passed, M failed, K inconclusive out of T total (separately for manual scenarios and visual spec items).
-- For failures: record as `[BUG]` discoveries in the feature's `## User Testing Discoveries` section using the standard discovery format (QA_BASE Section 4.3), including observed behavior from screenshot/DOM analysis and expected behavior from the spec.
+- For failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (QA_BASE Section 4.3), including observed behavior from screenshot/DOM analysis and expected behavior from the spec.
 - For inconclusive items: list them with recommendation for manual verification via `/pl-verify`.
 - Commit discovery entries with message format: `qa(<scope>): [BUG] - web-verify findings`.
 
@@ -233,7 +233,7 @@ The following instruction files MUST be updated by the Builder to reference the 
     Given a web-testable feature has a manual scenario
     When `/pl-web-verify` executes the scenario
     And a Then verification point fails (observed state differs from expected)
-    Then a `[BUG]` discovery is recorded in the feature's `## User Testing Discoveries`
+    Then a `[BUG]` discovery is recorded in the feature's discovery sidecar file
     And the discovery includes observed behavior from the screenshot/DOM analysis
     And the discovery is committed to git
 

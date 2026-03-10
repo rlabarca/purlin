@@ -249,5 +249,3 @@ None.
 - [ ] CODE section body is rendered in a monospace code block with `--purlin-surface` background
 - [ ] Modal is scrollable when content exceeds viewport height
 - [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
-
-## User Testing Discoveries

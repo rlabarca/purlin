@@ -128,7 +128,7 @@ Translates specifications into working code and tests. Owns the implementation -
 
 ### The QA Agent
 
-Verifies features against their specifications through interactive scenario execution. Owns the `## User Testing Discoveries` section of each feature file. Never modifies code or Gherkin requirements.
+Verifies features against their specifications through interactive scenario execution. Owns discovery sidecar files (`features/<name>.discoveries.md`). Never modifies code or Gherkin requirements.
 
 | Command | Description |
 |---|---|

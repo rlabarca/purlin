@@ -344,4 +344,3 @@ None.
 - [ ] Double-clicking the canvas background recenters and zoom-to-fits (same as Recenter Graph button)
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 
-## User Testing Discoveries

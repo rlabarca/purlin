@@ -62,7 +62,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 *   **Implementation File Discovery:** Implementation files are located based on the feature's tool directory (derived from the feature file's label or explicit mapping).
 
 ### 2.6 User Testing Audit
-*   **Discovery Scanning:** Parse the `## User Testing Discoveries` section of each feature file.
+*   **Discovery Scanning:** Parse the discovery sidecar file (`features/<name>.discoveries.md`) for each feature. If no sidecar file exists, the feature is clean.
 *   **Status Tracking:** Count entries by type (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) and status (OPEN, SPEC_UPDATED, RESOLVED).
 *   **Clean Status:** A feature with no OPEN or SPEC_UPDATED entries has `user_testing.status: "CLEAN"`. Otherwise `"HAS_OPEN_ITEMS"`.
 
@@ -184,8 +184,8 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 **Builder Lifecycle State Dependency:** Builder status computation requires `.purlin/cache/feature_status.json` to determine the feature's lifecycle state. If the feature is in TODO lifecycle state, Builder is TODO regardless of traceability or test status -- the spec has changed and the implementation must be reviewed. If `feature_status.json` is unavailable, lifecycle-based TODO detection is skipped with a note in the report.
 
 **QA Status:**
-*   `FAIL`: Has OPEN BUGs in User Testing Discoveries. (Lifecycle-independent.)
-*   `DISPUTED`: Has OPEN SPEC_DISPUTEs in User Testing Discoveries (no BUGs). (Lifecycle-independent.)
+*   `FAIL`: Has OPEN BUGs in discovery sidecar. (Lifecycle-independent.)
+*   `DISPUTED`: Has OPEN SPEC_DISPUTEs in discovery sidecar (no BUGs). (Lifecycle-independent.)
 *   `TODO`: Any of: (a) Feature in TESTING lifecycle state with at least one manual scenario to verify; (b) Has SPEC_UPDATED items AND feature is in TESTING lifecycle state (Builder has committed, QA can now re-verify). No OPEN BUGs or SPEC_DISPUTEs.
 *   `CLEAN`: `tests/<feature>/tests.json` exists with `status: "PASS"`, AND no FAIL/DISPUTED/TODO conditions matched. Lifecycle-independent. OPEN discoveries routing to other roles (Architect-routed DISCOVERYs, INTENT_DRIFTs) do NOT block CLEAN -- QA has no actionable work for items awaiting Architect or Builder.
 *   `N/A`: No FAIL/DISPUTED/TODO/CLEAN conditions matched. Catch-all for features with no `tests.json` on disk, or `tests.json` with FAIL status and no QA-specific concerns.
@@ -401,14 +401,14 @@ The following fixture tags provide deterministic project states for integration-
     Then policy_adherence reports FAIL with the violation details
 
 #### Scenario: User Testing Discovery Audit
-    Given a feature file has a User Testing Discoveries section with 1 BUG (OPEN) and 1 DISCOVERY (SPEC_UPDATED)
+    Given a feature has a discovery sidecar file with 1 BUG (OPEN) and 1 DISCOVERY (SPEC_UPDATED)
     When the Critic tool runs the user testing audit
     Then user_testing.status is HAS_OPEN_ITEMS
     And user_testing.bugs is 1
     And user_testing.discoveries is 1
 
 #### Scenario: Clean User Testing
-    Given a feature file has an empty User Testing Discoveries section
+    Given a feature has no discovery sidecar file
     When the Critic tool runs the user testing audit
     Then user_testing.status is CLEAN
 
@@ -473,7 +473,7 @@ The following fixture tags provide deterministic project states for integration-
     And role_status.builder is TODO
 
 #### Scenario: SPEC_UPDATED Discovery Does Not Generate Builder Action Items
-    Given a feature has a SPEC_UPDATED discovery in User Testing Discoveries
+    Given a feature has a SPEC_UPDATED discovery in discovery sidecar
     And the discovery has "Action Required: Builder"
     When the Critic tool generates action items
     Then no Builder action item is created from the SPEC_UPDATED discovery
@@ -507,7 +507,7 @@ The following fixture tags provide deterministic project states for integration-
     And it contains an "Open User Testing Items" section
 
 #### Scenario: Architect Action Items from Spec Dispute
-    Given a feature has an OPEN SPEC_DISPUTE in User Testing Discoveries
+    Given a feature has an OPEN SPEC_DISPUTE in discovery sidecar
     When the Critic tool generates action items
     Then an Architect action item is created with priority HIGH
     And the description references the disputed scenario and the user's rationale
@@ -519,7 +519,7 @@ The following fixture tags provide deterministic project states for integration-
     And the description references the infeasibility rationale
 
 #### Scenario: Spec Dispute Counted in User Testing Audit
-    Given a feature file has a User Testing Discoveries section with 1 SPEC_DISPUTE (OPEN)
+    Given a feature has a discovery sidecar file with 1 SPEC_DISPUTE (OPEN)
     When the Critic tool runs the user testing audit
     Then user_testing.status is HAS_OPEN_ITEMS
     And user_testing.spec_disputes is 1
@@ -601,7 +601,7 @@ The following fixture tags provide deterministic project states for integration-
     And INFEASIBLE takes precedence over FAIL
 
 #### Scenario: Role Status Builder BLOCKED
-    Given a feature has an OPEN SPEC_DISPUTE in User Testing Discoveries
+    Given a feature has an OPEN SPEC_DISPUTE in discovery sidecar
     And no [INFEASIBLE] tag exists
     When the Critic tool computes role_status
     Then role_status.builder is BLOCKED
@@ -621,7 +621,7 @@ The following fixture tags provide deterministic project states for integration-
     And role_status.qa is NOT CLEAN
 
 #### Scenario: Role Status QA FAIL
-    Given a feature has OPEN BUGs in User Testing Discoveries
+    Given a feature has OPEN BUGs in discovery sidecar
     When the Critic tool computes role_status
     Then role_status.qa is FAIL
 
@@ -644,14 +644,14 @@ The following fixture tags provide deterministic project states for integration-
     And DISPUTED takes precedence over N/A
 
 #### Scenario: Role Status QA TODO for SPEC_UPDATED Items in TESTING
-    Given a feature has SPEC_UPDATED items in User Testing Discoveries
+    Given a feature has SPEC_UPDATED items in discovery sidecar
     And the feature has no OPEN BUGs or SPEC_DISPUTEs
     And the feature is in TESTING lifecycle state
     When the Critic tool computes role_status
     Then role_status.qa is TODO
 
 #### Scenario: Role Status QA CLEAN Despite OPEN Discoveries Routing to Architect
-    Given a feature has OPEN discoveries in User Testing Discoveries routing to Architect
+    Given a feature has OPEN discoveries in discovery sidecar routing to Architect
     And the feature has no OPEN BUGs or SPEC_DISPUTEs
     And tests/<feature>/tests.json exists with status PASS
     When the Critic tool computes role_status
@@ -659,7 +659,7 @@ The following fixture tags provide deterministic project states for integration-
     And role_status.architect is TODO
 
 #### Scenario: Role Status QA CLEAN for SPEC_UPDATED in TODO Lifecycle
-    Given a feature has SPEC_UPDATED items in User Testing Discoveries
+    Given a feature has SPEC_UPDATED items in discovery sidecar
     And the feature is in TODO lifecycle state (Builder has not yet committed)
     And tests/<feature>/tests.json exists with status PASS
     When the Critic tool computes role_status
@@ -935,6 +935,4 @@ None
 - [ ] Badge values match the role_status values from critic.json (TODO, DONE, FAIL, BLOCKED, INFEASIBLE, CLEAN, N/A, DISPUTED)
 - [ ] Features without critic.json show "??" placeholder in all role columns
 - [ ] Badge styling uses existing CDD dashboard status badge pattern and color tokens
-
-## User Testing Discoveries
 

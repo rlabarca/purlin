@@ -184,5 +184,3 @@ Purlin Builder — Ready
 
 None.
 
-
-## User Testing Discoveries

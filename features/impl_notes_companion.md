@@ -31,16 +31,16 @@ The companion file contains the extracted implementation notes content. The file
 ```
 
 ### 2.4 Exclusion Rules
-- Companion files (`*.impl.md`) are NOT feature files.
+- Companion files (`*.impl.md`) and discovery sidecar files (`*.discoveries.md`) are NOT feature files.
 - They MUST NOT appear in the dependency graph.
 - They MUST NOT be processed by the Spec Gate or Implementation Gate.
 - They MUST NOT appear in the CDD lifecycle tracking.
 - They MUST NOT be detected as feature files by the orphan cleanup tool.
 
 ### 2.5 Status Reset Exemption
-- Edits to `<name>.impl.md` do NOT reset the parent feature's lifecycle status to TODO.
+- Edits to `<name>.impl.md` or `<name>.discoveries.md` do NOT reset the parent feature's lifecycle status to TODO.
 - Only edits to the feature spec file (`<name>.md`) trigger status resets.
-- This ensures Builder decisions and tribal knowledge updates do not invalidate completed features.
+- This ensures Builder decisions, tribal knowledge updates, and QA discovery recording do not invalidate completed features.
 
 ### 2.6 Companion File Resolution in Critic
 - The Critic's Implementation Gate MUST resolve companion file content when evaluating builder decisions, traceability overrides, and section completeness.
@@ -49,8 +49,8 @@ The companion file contains the extracted implementation notes content. The file
 - A stub with a companion file reference is NOT considered "empty notes" for section completeness purposes.
 
 ### 2.7 Orphan Detection
-- If `<name>.md` is flagged as orphaned, `<name>.impl.md` MUST also be flagged.
-- If `<name>.impl.md` exists but `<name>.md` does not, it MUST be flagged as orphaned.
+- If `<name>.md` is flagged as orphaned, `<name>.impl.md` and `<name>.discoveries.md` MUST also be flagged.
+- If `<name>.impl.md` or `<name>.discoveries.md` exists but `<name>.md` does not, it MUST be flagged as orphaned.
 
 ### 2.8 CDD Dashboard Feature Modal
 - When a companion `.impl.md` file exists for a feature, the CDD Dashboard feature detail modal shows tabs: "Specification" and "Implementation Notes".

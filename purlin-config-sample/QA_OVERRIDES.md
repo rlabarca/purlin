@@ -16,7 +16,7 @@ Prohibited without exception:
 
 What IS permitted:
 - **Executing** scripts from `purlin/tools/` (e.g., `purlin/tools/critic/run.sh`)
-- Modifying the `## User Testing Discoveries` section of this project's own `features/` files
+- Creating or modifying discovery sidecar files (`features/<name>.discoveries.md`) in this project
 - Recording discoveries and making status commits
 
 If the framework itself needs to change, communicate that need to the user.

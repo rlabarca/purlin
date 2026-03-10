@@ -1009,7 +1009,5 @@ None.
 - [ ] Operation modal: auto-closes on success with brief visible transition (~400ms)
 - [ ] Refresh Branches: stale branches (deleted from remote) are removed from the table after fetch-all
 
-## User Testing Discoveries
-
 
 

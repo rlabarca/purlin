@@ -19,7 +19,7 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
 ### 2.1 Feature Scanning
 *   **Path Awareness:** The monitor must scan the project's `features/` directory for all feature files.
 *   **Status Detection:** Status is derived from a combination of file modification timestamps (for [TODO] detection) and source control history/tags.
-*   **Discovery-Aware Lifecycle Preservation:** When a feature file is modified after a status commit, the monitor MUST check whether the modification is limited to the `## User Testing Discoveries` section. Strip the `## User Testing Discoveries` section and everything below from both the on-disk content and the content at the status commit (`git show <hash>:<path>`), then compare after applying `.rstrip()` to both strings. The `.rstrip()` normalization is required because `git show` strips trailing newlines from its output while on-disk reads preserve them; a byte-exact comparison would produce spurious differences on any file with a trailing newline. If the normalized spec content above discoveries is identical, the lifecycle state is preserved (COMPLETE or TESTING). Otherwise the feature resets to `TODO`. This prevents QA housekeeping (pruning resolved discoveries) from triggering a false lifecycle reset to TODO.
+*   **Sidecar File Exemption:** Edits to companion files (`<name>.impl.md`) and discovery sidecar files (`<name>.discoveries.md`) do NOT trigger lifecycle resets. Only edits to the feature spec file (`<name>.md`) itself trigger a reset to TODO. Because discoveries are stored in sidecar files (not in the feature file), QA housekeeping never causes false lifecycle resets.
 
 ### 2.2 UI & Layout
 
@@ -330,18 +330,16 @@ These scenarios are validated by the Builder's automated test suite.
     And no todo, testing, or complete sub-arrays exist
     And no top-level test_status field exists
 
-#### Scenario: Lifecycle Preserved When Only Discoveries Section Changes
+#### Scenario: Lifecycle Preserved When Discovery Sidecar Changes
     Given a feature is in COMPLETE lifecycle state with a status commit
-    And the feature file is modified after the status commit
-    And the modification is limited to the User Testing Discoveries section
+    And the feature's discovery sidecar file (features/<name>.discoveries.md) is modified after the status commit
     When the monitor computes feature status
     Then the feature remains in COMPLETE lifecycle state
     And the feature is NOT reset to TODO
 
-#### Scenario: Lifecycle Reset When Spec Content Changes
+#### Scenario: Lifecycle Reset When Feature Spec Changes
     Given a feature is in COMPLETE lifecycle state with a status commit
-    And the feature file is modified after the status commit
-    And the modification includes changes above the User Testing Discoveries section
+    And the feature spec file (features/<name>.md) is modified after the status commit
     When the monitor computes feature status
     Then the feature is reset to TODO lifecycle state
 
@@ -424,7 +422,7 @@ These scenarios are validated by the Builder's automated test suite.
 
 #### Scenario: Lifecycle Integration -- Spec Edit Resets to TODO
     Given the temporary feature is in COMPLETE lifecycle state
-    When the feature file spec content is modified (above User Testing Discoveries)
+    When the feature spec file is modified
     And tools/cdd/status.sh is run
     Then the feature lifecycle is reset to TODO
     And role_status.builder is TODO
@@ -659,7 +657,3 @@ None.
 - [ ] Tombstone deletion modal title text is rendered in `--purlin-status-error`
 - [ ] A "READY FOR DELETION" banner appears prominently at the top of the tombstone modal content area
 - [ ] Tombstone deletion modal shows no tabs (single content view only)
-
-## User Testing Discoveries
-
-**[DISCOVERY]** Server Start/Stop Lifecycle scenario referenced "PID file" / "cdd.pid" but the implementation uses a port file (`.purlin/runtime/cdd.port`) with stateless ps-based process detection. **Status: SPEC_UPDATED** — scenario wording corrected to "port file" / "cdd.port". No Builder action required.

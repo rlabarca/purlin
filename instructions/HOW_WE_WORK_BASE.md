@@ -37,7 +37,7 @@ Specifications are not static blueprints written once and handed off. They are c
 
 ### The QA Agent
 *   **Focus:** "The Verification and The Feedback".
-*   **Ownership:** `## User Testing Discoveries` section in feature files (exclusive lifecycle management), QA verification scripts (`tests/qa/`), manual verification execution, and discovery lifecycle management.
+*   **Ownership:** Discovery sidecar files (`features/<name>.discoveries.md`) with exclusive lifecycle management, QA verification scripts (`tests/qa/`), manual verification execution, and discovery lifecycle management.
 *   **Key Duty:** Executing manual Gherkin scenarios, recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle.
 *   **Does NOT:** Write or modify application/tool code (Builder), or modify Gherkin scenarios or requirements (Architect).
 *   **Status Commits:** QA makes `[Complete]` status commits for features that have manual scenarios, after all manual scenarios pass with zero discoveries. Features with no manual scenarios are completed by the Builder.
@@ -99,8 +99,15 @@ Instructions use a two-layer model (base in `instructions/` + override in `.purl
 
 ## 7. User Testing Protocol
 
-### 7.1 Discovery Section Convention
-Feature files MAY contain a `## User Testing Discoveries` section as the last section before the end of the file. This section is a **live queue** of open verification findings. **Any agent** (Architect, Builder, or QA) MAY record a new OPEN discovery when they encounter a bug or unexpected behavior during their work. The QA Agent owns the **lifecycle management** of the section: verification, resolution confirmation, and pruning of RESOLVED entries.
+### 7.1 Discovery Sidecar Convention
+User Testing Discoveries are stored in **sidecar files** (`features/<name>.discoveries.md`) alongside the feature specification (`features/<name>.md`). This separates mutable QA findings from the Architect-owned spec, preventing discovery edits from triggering lifecycle resets.
+
+*   **File naming:** `features/<name>.discoveries.md` alongside `features/<name>.md`.
+*   **Not a feature file:** Discovery sidecar files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle. The same exclusion rules as companion files (`*.impl.md`) apply.
+*   **Status reset exemption:** Edits to `<name>.discoveries.md` do NOT reset the parent feature's lifecycle status to TODO.
+*   **Orphan detection:** If `<name>.md` is orphaned, `<name>.discoveries.md` MUST also be flagged.
+*   **Content:** A **live queue** of open verification findings. **Any agent** (Architect, Builder, or QA) MAY record a new OPEN discovery. The QA Agent owns **lifecycle management**: verification, resolution confirmation, and pruning of RESOLVED entries.
+*   **Queue hygiene:** An empty or absent file means the feature has no open discoveries.
 
 ### 7.2 Discovery Types
 *   **[BUG]** -- Behavior contradicts an existing scenario.
@@ -127,7 +134,7 @@ The Critic applies a **dual-gate model** to every feature:
 
 In addition to the dual-gate, the Critic runs these supplementary audits on every pass:
 
-*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries in `## User Testing Discoveries` sections. Each entry is routed to the responsible role's action items.
+*   **User Testing Audit:** Counts open BUG, DISCOVERY, INTENT_DRIFT, and SPEC_DISPUTE entries in discovery sidecar files (`features/*.discoveries.md`). Each entry is routed to the responsible role's action items.
 *   **Builder Decision Audit:** Scans companion files (`features/*.impl.md`) for unacknowledged `[DEVIATION]` and `[DISCOVERY]` tags. These are flagged as HIGH-priority Architect action items.
 *   **Visual Specification Detection:** Detects `## Visual Specification` sections and surfaces visual checklist items as QA action items for the visual verification pass.
 *   **Untracked File Audit:** Checks git status for untracked files in Architect-owned directories and flags them as MEDIUM-priority Architect triage items.
