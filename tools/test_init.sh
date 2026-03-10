@@ -516,6 +516,39 @@ fi
 
 cleanup_sandbox
 
+# --- Scenario: CDD Regular File Replaced with Symlink on Refresh ---
+echo ""
+echo "[Scenario] CDD Regular File Replaced with Symlink on Refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Replace symlink with a regular file copy of the target
+rm -f "$PROJECT/pl-cdd-start.sh"
+cp "$PROJECT/purlin/tools/cdd/start.sh" "$PROJECT/pl-cdd-start.sh"
+
+# Verify it's a regular file now
+if [ -f "$PROJECT/pl-cdd-start.sh" ] && [ ! -L "$PROJECT/pl-cdd-start.sh" ]; then
+    log_pass "Setup: pl-cdd-start.sh is a regular file (precondition)"
+else
+    log_fail "Setup: pl-cdd-start.sh should be a regular file"
+fi
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -L "$PROJECT/pl-cdd-start.sh" ]; then
+    local_target="$(readlink "$PROJECT/pl-cdd-start.sh")"
+    expected_target="purlin/tools/cdd/start.sh"
+    if [ "$local_target" = "$expected_target" ]; then
+        log_pass "Regular file replaced with correct symlink on refresh"
+    else
+        log_fail "Symlink target is '$local_target' instead of '$expected_target'"
+    fi
+else
+    log_fail "pl-cdd-start.sh is NOT a symlink after refresh"
+fi
+
+cleanup_sandbox
+
 # --- Scenario: Launchers Always Regenerated on Refresh ---
 echo ""
 echo "[Scenario] Launchers Always Regenerated on Refresh"

@@ -286,7 +286,11 @@ create_cdd_symlinks() {
         if [ "$current_target" != "$start_target" ]; then
             ln -sf "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
         fi
-    elif [ ! -e "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
+    elif [ -e "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
+        # Regular file exists where symlink should be — replace it
+        rm -f "$PROJECT_ROOT/pl-cdd-start.sh"
+        ln -s "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
+    else
         ln -s "$start_target" "$PROJECT_ROOT/pl-cdd-start.sh"
     fi
 
@@ -297,7 +301,11 @@ create_cdd_symlinks() {
         if [ "$current_target" != "$stop_target" ]; then
             ln -sf "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
         fi
-    elif [ ! -e "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
+    elif [ -e "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
+        # Regular file exists where symlink should be — replace it
+        rm -f "$PROJECT_ROOT/pl-cdd-stop.sh"
+        ln -s "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
+    else
         ln -s "$stop_target" "$PROJECT_ROOT/pl-cdd-stop.sh"
     fi
 }
@@ -510,10 +518,10 @@ else
     # 4.4 CDD Symlink Repair
     SYMLINK_NOTE=""
     REPAIRED=0
-    if [ ! -e "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
+    if [ ! -L "$PROJECT_ROOT/pl-cdd-start.sh" ]; then
         REPAIRED=$((REPAIRED + 1))
     fi
-    if [ ! -e "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
+    if [ ! -L "$PROJECT_ROOT/pl-cdd-stop.sh" ]; then
         REPAIRED=$((REPAIRED + 1))
     fi
     create_cdd_symlinks
