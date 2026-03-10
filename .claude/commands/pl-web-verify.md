@@ -182,7 +182,7 @@ For each in-scope visual spec screen:
    Visual Spec:      N passed, M failed / T total
    ```
 
-2. **For failures:** Record each as a `[BUG]` discovery in the feature's `## User Testing Discoveries` section using this format:
+2. **For failures:** Record each as a `[BUG]` discovery in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using this format:
    ```
    ### [BUG] <title> (Discovered: YYYY-MM-DD)
    - **Scenario:** <scenario name>

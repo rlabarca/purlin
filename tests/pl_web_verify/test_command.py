@@ -584,7 +584,7 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
     Given a web-testable feature has a manual scenario
     When `/pl-web-verify` executes the scenario
     And a Then verification point fails
-    Then a [BUG] discovery is recorded in User Testing Discoveries
+    Then a [BUG] discovery is recorded in the feature's discovery sidecar file
     And the discovery includes observed behavior from screenshot/DOM
     And the discovery is committed to git
 
@@ -639,6 +639,12 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
         self.assertIn('qa(', content)
         self.assertIn('[BUG]', content)
         self.assertIn('web-verify', content)
+
+    def test_skill_records_bugs_in_discovery_sidecar(self):
+        """Skill file directs BUG recording to discovery sidecar files."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('.discoveries.md', content)
 
 
 class TestInconclusiveStepHandling(unittest.TestCase):

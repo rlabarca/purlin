@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 100, "failed": 0, "total": 100}
+{"status": "PASS", "passed": 101, "failed": 0, "total": 101, "test_file": "tests/pl_web_verify/test_command.py"}
