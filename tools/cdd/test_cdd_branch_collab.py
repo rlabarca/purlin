@@ -1191,24 +1191,22 @@ class TestRefreshBranchesReflectsNewlyAddedRemoteBranches(unittest.TestCase):
 class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
     """Scenario: Sync State EMPTY When Branch Tip Equals Main Tip
 
-    Given an active branch "feature/empty" is set
-    And feature/empty tip equals main tip (both directions of git log return zero lines)
-    When an agent calls GET /status.json
-    Then branch_collab.sync_state is "EMPTY"
-    And branch_collab.commits_ahead is 0
-    And branch_collab.commits_behind is 0
+    EMPTY is reserved for branches with literally zero total commits (orphan
+    branches). A branch that was created from main and has the same history
+    shows SAME, not EMPTY — even if it has zero unique commits vs main.
     """
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_empty_when_both_directions_zero(self, mock_config, mock_run):
-        """EMPTY when main..<branch> and <branch>..main both return zero lines."""
+    def test_empty_only_when_literally_zero_commits(self, mock_config, mock_run):
+        """EMPTY only when git rev-list --count returns 0 (orphan branch)."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'rev-list' in cmd and '--count' in cmd:
+                result.stdout = '0'
             elif isinstance(cmd, list) and 'log' in cmd:
-                # Both directions return empty — branch tip equals main tip
                 result.stdout = ''
             else:
                 result.stdout = ''
@@ -1222,28 +1220,28 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_still_empty_when_main_moved_ahead(self, mock_config, mock_run):
-        """Branch is EMPTY even when main has moved ahead, because branch has
-        zero unique commits. EMPTY means 'no work on branch', not 'tips match'."""
+    def test_same_when_branch_matches_main_but_has_history(self, mock_config, mock_run):
+        """Branch identical to main (zero unique commits) shows SAME, not EMPTY,
+        because it has inherited commits from main."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'rev-list' in cmd and '--count' in cmd:
+                # Branch has commits (inherited from main)
+                result.stdout = '150'
             elif isinstance(cmd, list) and 'log' in cmd:
-                range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('main..'):
-                    # Branch has no unique commits vs main
-                    result.stdout = ''
-                else:
-                    result.stdout = ''
+                # Both directions return empty — branch tip equals main tip
+                result.stdout = ''
             else:
                 result.stdout = ''
             return result
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("feature/empty")
-        # EMPTY because branch has zero unique commits relative to main
-        self.assertEqual(state['sync_state'], 'EMPTY')
+        self.assertEqual(state['sync_state'], 'SAME')
+        self.assertEqual(state['commits_ahead'], 0)
+        self.assertEqual(state['commits_behind'], 0)
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
@@ -1253,10 +1251,11 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'rev-list' in cmd and '--count' in cmd:
+                result.stdout = '151'
             elif isinstance(cmd, list) and 'log' in cmd:
                 range_arg = next((a for a in cmd if '..' in a), '')
                 if range_arg.startswith('main..'):
-                    # Branch has 1 commit ahead of main
                     result.stdout = 'abc commit1\n'
                 else:
                     result.stdout = ''
@@ -1270,30 +1269,27 @@ class TestSyncStateEmptyWhenBranchTipEqualsMainTip(unittest.TestCase):
 
     @patch('serve.subprocess.run')
     @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
-    def test_remote_only_empty_when_no_unique_commits(self, mock_config, mock_run):
-        """Remote-only branch is EMPTY when it has zero unique commits vs main."""
+    def test_remote_only_same_when_matching_head(self, mock_config, mock_run):
+        """Remote-only branch matching HEAD shows SAME (not EMPTY) when it has
+        inherited history. EMPTY is only for truly empty branches."""
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='')
             if isinstance(cmd, list) and 'rev-parse' in cmd:
                 ref = cmd[-1] if cmd else ''
                 if ref == 'RC0.8.0':
-                    # No local branch
                     raise subprocess.CalledProcessError(128, cmd)
                 result.stdout = 'abc1234'
+            elif isinstance(cmd, list) and 'rev-list' in cmd and '--count' in cmd:
+                result.stdout = '200'
             elif isinstance(cmd, list) and 'log' in cmd:
-                range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('main..'):
-                    # Branch has no unique commits vs main
-                    result.stdout = ''
-                else:
-                    result.stdout = ''
+                result.stdout = ''
             else:
                 result.stdout = ''
             return result
         mock_run.side_effect = run_side_effect
 
         state = serve.compute_remote_sync_state("RC0.8.0")
-        self.assertEqual(state['sync_state'], 'EMPTY')
+        self.assertEqual(state['sync_state'], 'SAME')
         self.assertEqual(state['commits_ahead'], 0)
         self.assertEqual(state['commits_behind'], 0)
 
@@ -3176,8 +3172,7 @@ class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
         {"branch": "feature/auth", "action": "update-to-head"}
     Then git push origin HEAD:feature/auth is called
     And git fetch origin feature/auth is called
-    And feature/auth is checked out
-    And git merge --ff-only is called
+    And git checkout -B feature/auth origin/feature/auth is called
     And the response contains "reconciled": "update-to-head"
     And .purlin/runtime/active_branch contains "feature/auth"
     """
@@ -3195,7 +3190,6 @@ class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
         push_calls = []
         fetch_calls = []
         checkout_calls = []
-        merge_calls = []
 
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr='', stdout='')
@@ -3208,10 +3202,8 @@ class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
                 push_calls.append(cmd)
             elif 'fetch' in cmd_str and 'feature/auth' in cmd_str:
                 fetch_calls.append(cmd)
-            elif 'checkout' in cmd_str and '-b' not in cmd_str:
+            elif 'checkout' in cmd_str:
                 checkout_calls.append(cmd)
-            elif 'merge' in cmd_str and '--ff-only' in cmd_str:
-                merge_calls.append(cmd)
             return result
         mock_run.side_effect = run_side_effect
 
@@ -3232,8 +3224,10 @@ class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
 
         self.assertTrue(len(push_calls) > 0, "git push HEAD:feature/auth should be called")
         self.assertTrue(len(fetch_calls) > 0, "git fetch should be called after push")
-        self.assertTrue(len(checkout_calls) > 0, "git checkout should be called")
-        self.assertTrue(len(merge_calls) > 0, "git merge --ff-only should be called")
+        # Uses checkout -B to force-reset local branch to updated remote ref
+        self.assertTrue(len(checkout_calls) > 0, "git checkout -B should be called")
+        checkout_cmd = ' '.join(checkout_calls[0])
+        self.assertIn('-B', checkout_cmd)
 
         rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
         with open(rt_path) as f:
