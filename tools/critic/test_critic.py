@@ -1006,6 +1006,68 @@ class TestUserTestingAudit(unittest.TestCase):
         self.assertEqual(result['bugs'], 1)
 
 
+class TestUserTestingAuditSidecar(unittest.TestCase):
+    """Scenario: User Testing audit reads from discovery sidecar files."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_sidecar_file_read(self):
+        """Given a feature has a discovery sidecar file with 1 BUG (OPEN),
+        the audit reads from the sidecar."""
+        feature_path = os.path.join(self.tmpdir, 'my_feature.md')
+        sidecar_path = os.path.join(self.tmpdir, 'my_feature.discoveries.md')
+        with open(feature_path, 'w') as f:
+            f.write('# Feature\n')
+        with open(sidecar_path, 'w') as f:
+            f.write("""\
+# User Testing Discoveries: My Feature
+
+### [BUG] Something broken (Discovered: 2026-01-01)
+- **Status:** OPEN
+""")
+        result = run_user_testing_audit('# Feature\n', feature_path=feature_path)
+        self.assertEqual(result['status'], 'HAS_OPEN_ITEMS')
+        self.assertEqual(result['bugs'], 1)
+
+    def test_no_sidecar_is_clean(self):
+        """Given a feature has no discovery sidecar file, the audit returns CLEAN."""
+        feature_path = os.path.join(self.tmpdir, 'my_feature.md')
+        with open(feature_path, 'w') as f:
+            f.write('# Feature\n')
+        result = run_user_testing_audit('# Feature\n', feature_path=feature_path)
+        self.assertEqual(result['status'], 'CLEAN')
+
+    def test_sidecar_takes_precedence_over_inline(self):
+        """When both sidecar and inline section exist, sidecar wins."""
+        feature_path = os.path.join(self.tmpdir, 'my_feature.md')
+        sidecar_path = os.path.join(self.tmpdir, 'my_feature.discoveries.md')
+        # Inline section has a BUG
+        content = """\
+# Feature
+## User Testing Discoveries
+### [BUG] Inline bug (Discovered: 2026-01-01)
+- **Status:** OPEN
+"""
+        with open(feature_path, 'w') as f:
+            f.write(content)
+        # Sidecar has a DISCOVERY
+        with open(sidecar_path, 'w') as f:
+            f.write("""\
+# User Testing Discoveries: My Feature
+
+### [DISCOVERY] Sidecar finding (Discovered: 2026-01-01)
+- **Status:** OPEN
+""")
+        result = run_user_testing_audit(content, feature_path=feature_path)
+        # Sidecar takes precedence: 1 discovery, 0 bugs
+        self.assertEqual(result['discoveries'], 1)
+        self.assertEqual(result['bugs'], 0)
+
+
 # ===================================================================
 # Output Tests
 # ===================================================================

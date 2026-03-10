@@ -1219,8 +1219,12 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
 # User Testing Audit (Section 2.6)
 # ===================================================================
 
-def run_user_testing_audit(content):
-    """Parse User Testing Discoveries section and count entries.
+def run_user_testing_audit(content, feature_path=None):
+    """Parse discovery sidecar file and count entries.
+
+    Reads the discovery sidecar file (features/<name>.discoveries.md)
+    instead of an inline section. Falls back to inline section parsing
+    for backward compatibility when no sidecar exists.
 
     Uses structured field parsing (parse_discovery_entries) to detect
     statuses from the ``- **Status:** <VALUE>`` field line only — not
@@ -1230,7 +1234,21 @@ def run_user_testing_audit(content):
     Returns dict with 'status', 'bugs', 'discoveries', 'intent_drifts',
     'spec_disputes'.
     """
-    section_text = get_user_testing_section(content)
+    section_text = ''
+
+    # Try sidecar file first (per critic_tool.md Section 2.6)
+    if feature_path:
+        sidecar_path = os.path.splitext(feature_path)[0] + '.discoveries.md'
+        if os.path.isfile(sidecar_path):
+            try:
+                with open(sidecar_path, 'r') as f:
+                    section_text = f.read()
+            except (IOError, OSError):
+                section_text = ''
+
+    # Fallback: inline section (backward compatibility)
+    if not section_text:
+        section_text = get_user_testing_section(content)
 
     if not section_text:
         return {
@@ -1362,15 +1380,24 @@ def generate_action_items(feature_result, cdd_status=None):
     # Pre-parse User Testing discovery entries (block-level parsing)
     # Parse whenever any entries exist (not just HAS_OPEN_ITEMS) so that
     # RESOLVED entries are available for the pruning signal (Section 2.4).
+    # Read from sidecar file first, fall back to inline section.
     ut_entries = []
     _has_any_entries = (
         user_testing.get('bugs', 0) + user_testing.get('discoveries', 0)
         + user_testing.get('intent_drifts', 0)
         + user_testing.get('spec_disputes', 0)) > 0
     if _has_any_entries:
-        _ut_content = read_feature_file(
-            os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
-        _ut_section = get_user_testing_section(_ut_content)
+        _feature_abs = os.path.join(FEATURES_DIR, os.path.basename(feature_file))
+        _sidecar_path = os.path.splitext(_feature_abs)[0] + '.discoveries.md'
+        if os.path.isfile(_sidecar_path):
+            try:
+                with open(_sidecar_path, 'r') as _f:
+                    _ut_section = _f.read()
+            except (IOError, OSError):
+                _ut_section = ''
+        else:
+            _ut_content = read_feature_file(_feature_abs)
+            _ut_section = get_user_testing_section(_ut_content)
         ut_entries = parse_discovery_entries(_ut_section)
 
     # OPEN DISCOVERY/INTENT_DRIFT/SPEC_DISPUTE in User Testing -> HIGH Architect
@@ -2534,7 +2561,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     else:
         impl_gate = run_implementation_gate(content, feature_stem, filename, feature_path=feature_path)
 
-    user_testing = run_user_testing_audit(content)
+    user_testing = run_user_testing_audit(content, feature_path=feature_path)
 
     rel_path = os.path.relpath(feature_path, PROJECT_ROOT)
 
