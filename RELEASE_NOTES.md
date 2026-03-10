@@ -1,5 +1,16 @@
 # Release Notes
 
+### v0.8.1 — 2026-03-09
+
+**Discovery Sidecar Files**
+- User Testing Discoveries moved from inline feature file sections to separate `.discoveries.md` sidecar files. The Critic, impl_notes_companion, CDD status monitor, collab whats_different, and web-verify all updated to read/write discoveries from sidecar files. This prevents discovery edits from resetting feature lifecycle status to TODO.
+
+**QA Verification Integrity (Critic Section 2.16)**
+- New Critic invariant that enforces temporal constraints on QA verification. Detects features that bypassed the TESTING phase entirely (jumped straight to COMPLETE) and features whose TESTING-phase status commit predates the most recent spec reset.
+
+**BUG Routing Updates**
+- Updated web-verify and collab whats_different extraction tool to correctly record and route BUG discoveries using the new sidecar file format.
+
 ### v0.8.0 — 2026-03-09
 
 **Branch Collaboration (replaces Remote Collaboration)**
