@@ -118,7 +118,7 @@ echo "[Test 4] Launcher scripts created and executable"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
     if [ -x "$PROJECT/$launcher" ]; then
         log_pass "$launcher exists and is executable"
     else
@@ -134,7 +134,7 @@ echo "[Test 5] Launcher scripts export PURLIN_PROJECT_ROOT"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
-for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
     if grep -q 'export PURLIN_PROJECT_ROOT=' "$PROJECT/$launcher"; then
         log_pass "$launcher exports PURLIN_PROJECT_ROOT"
     else
@@ -299,6 +299,11 @@ if echo "$OUTPUT" | grep -q "pl-run-architect.sh"; then
     log_pass "Output mentions pl-run-architect.sh"
 else
     log_fail "Output missing pl-run-architect.sh"
+fi
+if echo "$OUTPUT" | grep -q "pl-run-pm.sh"; then
+    log_pass "Output mentions pl-run-pm.sh"
+else
+    log_fail "Output missing pl-run-pm.sh"
 fi
 if echo "$OUTPUT" | grep -q "pl-cdd-start.sh"; then
     log_pass "Output mentions pl-cdd-start.sh"
@@ -566,7 +571,7 @@ else
     log_fail "pl-run-architect.sh NOT regenerated on refresh"
 fi
 
-for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
     if [ -x "$PROJECT/$launcher" ]; then
         log_pass "$launcher is executable after refresh"
     else
@@ -670,7 +675,7 @@ fi
 
 # Verify new-style launchers still exist
 NEW_STYLE_OK=true
-for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
     if [ ! -x "$PROJECT/$launcher" ]; then
         log_fail "New-style launcher $launcher missing after refresh"
         NEW_STYLE_OK=false
@@ -885,7 +890,7 @@ else
 fi
 
 COLLAB_LAUNCHERS_OK=true
-for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh; do
+for launcher in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
     if [ ! -x "$CLONE_DIR/$launcher" ]; then
         log_fail "Collaborator missing launcher $launcher"
         COLLAB_LAUNCHERS_OK=false

@@ -392,6 +392,7 @@ else:
     generate_launcher "$PROJECT_ROOT/pl-run-architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
     generate_launcher "$PROJECT_ROOT/pl-run-builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
     generate_launcher "$PROJECT_ROOT/pl-run-qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
+    generate_launcher "$PROJECT_ROOT/pl-run-pm.sh"       "pm"        "PM_BASE.md"         "PM_OVERRIDES.md"       "Begin PM session."
 
     # 3.6 Command File Distribution
     copy_command_files
@@ -473,6 +474,7 @@ else:
     say "  ./pl-run-architect.sh      Start Architect session"
     say "  ./pl-run-builder.sh        Start Builder session"
     say "  ./pl-run-qa.sh             Start QA session"
+    say "  ./pl-run-pm.sh             Start PM session"
     say "  ./pl-cdd-start.sh   Start CDD dashboard"
     say "  ./pl-cdd-stop.sh    Stop CDD dashboard"
     if [ -n "$PROVIDER_SUMMARY" ]; then
@@ -533,6 +535,7 @@ else
     generate_launcher "$PROJECT_ROOT/pl-run-architect.sh" "architect" "ARCHITECT_BASE.md" "ARCHITECT_OVERRIDES.md" "Begin Architect session."
     generate_launcher "$PROJECT_ROOT/pl-run-builder.sh"  "builder"   "BUILDER_BASE.md"    "BUILDER_OVERRIDES.md"  "Begin Builder session."
     generate_launcher "$PROJECT_ROOT/pl-run-qa.sh"       "qa"        "QA_BASE.md"         "QA_OVERRIDES.md"       "Begin QA verification session."
+    generate_launcher "$PROJECT_ROOT/pl-run-pm.sh"       "pm"        "PM_BASE.md"         "PM_OVERRIDES.md"       "Begin PM session."
     # Remove stale launchers from previous naming conventions
     for stale in run_architect.sh run_builder.sh run_qa.sh; do
         rm -f "$PROJECT_ROOT/$stale"
