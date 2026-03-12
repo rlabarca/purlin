@@ -30,6 +30,13 @@ Specifications are not static blueprints written once and handed off. They are c
 *   **Specification Authority:** The Architect holds specification authority over ALL project artifacts -- including DevOps scripts, launcher scripts, and bootstrap tooling -- exercised exclusively through feature files and anchor nodes, never through direct authorship of implementation files.
 *   **Key Duty:** Designing rigorous, unambiguous specifications and enforcing architectural invariants.
 
+### The PM Agent
+*   **Focus:** "The Intent and The Design".
+*   **Ownership:** Feature spec authoring (shared with Architect), Visual Specification sections, Figma design iteration, and design artifact management.
+*   **Key Duty:** Translating human intent into complete, unambiguous feature specs with integrated Figma-derived Visual Specifications. Proactively challenges requirements for completeness and implementation simplicity.
+*   **Does NOT:** Write code (Builder), modify anchor nodes or instruction files (Architect), or verify behavior (QA).
+*   **Figma Authority:** When Figma MCP is available, the PM is the primary agent for reading and writing Figma designs. Other agents read Figma for reference; only the PM writes to it.
+
 ### The Builder Agent
 *   **Focus:** "The How".
 *   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all implementation files regardless of domain.
@@ -50,7 +57,7 @@ Specifications are not static blueprints written once and handed off. They are c
 Agents MUST commit immediately after completing each discrete change -- not at session end, not in batches. Commits are cheap, fully reversible, and provide save points the user can inspect or revert. Uncommitted work is invisible and unrecoverable. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
-1.  **Design:** Architect creates/refines a feature file in `features/`.
+1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
 2.  **Implementation:** Builder reads the feature and implementation notes, writes code/tests, and verifies locally.
 3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed.
 4.  **Completion:** If the feature has no manual scenarios, the Builder marks `[Complete]`. If it has manual scenarios, the QA Agent marks `[Complete]` after clean verification.
@@ -159,8 +166,10 @@ For how automated test status maps to Builder/QA dashboard columns, see `instruc
 
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI
 components. This section uses per-screen checklists (not Gherkin) with design anchor
-references. It is Architect-owned and exempt from Gherkin traceability. The Critic detects
-visual spec sections and generates QA action items for visual verification.
+references. It is exempt from Gherkin traceability. The PM agent is the primary author of
+Visual Specification sections. When a PM is active, the Architect defers visual spec
+authoring to the PM and focuses on structural validation. The Critic detects visual spec
+sections and generates QA action items for visual verification.
 
 For the full convention (format, inheritance, design pipeline, verification methods), see
 `instructions/references/visual_spec_convention.md`.
