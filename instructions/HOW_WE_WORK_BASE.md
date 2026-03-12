@@ -113,7 +113,7 @@ User Testing Discoveries are stored in **sidecar files** (`features/<name>.disco
 *   **Not a feature file:** Discovery sidecar files are NOT feature files. They do not appear in the dependency graph, are not processed by the Spec Gate or Implementation Gate, and are not tracked by the CDD lifecycle. The same exclusion rules as companion files (`*.impl.md`) apply.
 *   **Status reset exemption:** Edits to `<name>.discoveries.md` do NOT reset the parent feature's lifecycle status to TODO.
 *   **Orphan detection:** If `<name>.md` is orphaned, `<name>.discoveries.md` MUST also be flagged.
-*   **Content:** A **live queue** of open verification findings. **Any agent** (Architect, Builder, or QA) MAY record a new OPEN discovery. The QA Agent owns **lifecycle management**: verification, resolution confirmation, and pruning of RESOLVED entries.
+*   **Content:** A **live queue** of open verification findings. **Any agent** (Architect, Builder, QA, or PM) MAY record a new OPEN discovery. The QA Agent owns **lifecycle management**: verification, resolution confirmation, and pruning of RESOLVED entries.
 *   **Queue hygiene:** An empty or absent file means the feature has no open discoveries.
 
 ### 7.2 Discovery Types
@@ -127,7 +127,7 @@ For discovery lifecycle (status progression), queue hygiene, and feedback routin
 ## 8. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `tools/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
 
-*   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA columns).
+*   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA, PM columns).
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
 *   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
@@ -156,9 +156,10 @@ Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggrega
 *   **LOW:** Informational warnings that do not block release.
 
 **Role routing:**
-*   **Architect:** Spec gaps (Spec Gate FAIL), INFEASIBLE escalations from Builder, unacknowledged builder decisions, untracked files.
+*   **Architect:** Spec gaps (Spec Gate FAIL), INFEASIBLE escalations from Builder, unacknowledged builder decisions, untracked files, SPEC_DISPUTEs on Architect-owned features.
 *   **Builder:** Features in TODO lifecycle, failing automated tests, traceability gaps, open BUG entries.
 *   **QA:** Features in TESTING lifecycle, SPEC_UPDATED discoveries awaiting re-verification, visual verification passes.
+*   **PM:** SPEC_DISPUTEs on PM-owned features or Visual Specification screens, stale/missing/unprocessed design artifacts.
 
 For how automated test status maps to Builder/QA dashboard columns, see `instructions/references/cdd_internals.md`.
 
