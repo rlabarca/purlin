@@ -100,6 +100,77 @@ else
     log_fail "config.json does not exist"
 fi
 
+# --- Scenario: Config Schema Validates All Agent Roles ---
+echo ""
+echo "[Scenario] Config Schema Validates All Agent Roles"
+
+if [ -f "$CONFIG_FILE" ]; then
+    if python3 -c "
+import json
+c = json.load(open('$CONFIG_FILE'))
+agents = c.get('agents', {})
+models = {m['id'] for m in c.get('models', [])}
+for role in ['architect', 'builder', 'qa']:
+    a = agents[role]
+    assert isinstance(a.get('model'), str), f'{role} model must be string'
+    assert isinstance(a.get('effort'), str), f'{role} effort must be string'
+    assert isinstance(a.get('bypass_permissions'), bool), f'{role} bypass_permissions must be bool'
+    assert a['model'] in models, f'{role} model {a[\"model\"]} not in models array'
+# PM is optional - if present, validate same fields
+if 'pm' in agents:
+    a = agents['pm']
+    assert isinstance(a.get('model'), str), 'pm model must be string'
+    assert isinstance(a.get('effort'), str), 'pm effort must be string'
+    assert isinstance(a.get('bypass_permissions'), bool), 'pm bypass_permissions must be bool'
+    assert a['model'] in models, f'pm model {a[\"model\"]} not in models array'
+" 2>/dev/null; then
+        log_pass "All agent roles (architect, builder, qa, optional pm) validate correctly"
+    else
+        log_fail "Agent role validation failed"
+    fi
+else
+    log_fail "config.json does not exist"
+fi
+
+# --- Scenario: PM Agent Entry is Optional ---
+echo ""
+echo "[Scenario] PM Agent Entry is Optional"
+
+# Test 1: resolve_config.py accepts 'pm' role
+if python3 -c "
+import sys, os
+sys.path.insert(0, '$SCRIPT_DIR/config')
+os.environ['PURLIN_PROJECT_ROOT'] = '$PROJECT_ROOT'
+from resolve_config import resolve_config, _cli_role
+# Should not raise when called with 'pm'
+_cli_role('$PROJECT_ROOT', 'pm')
+" > /dev/null 2>&1; then
+    log_pass "resolve_config.py accepts 'pm' as a valid role"
+else
+    log_fail "resolve_config.py does not accept 'pm' role"
+fi
+
+# Test 2: PM falls back to defaults when absent from config
+PM_SANDBOX="$(mktemp -d)"
+mkdir -p "$PM_SANDBOX/.purlin"
+cat > "$PM_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": false },
+        "builder": { "model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true },
+        "qa": { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": false }
+    }
+}
+EOF
+
+PM_OUTPUT=$(PURLIN_PROJECT_ROOT="$PM_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" pm 2>/dev/null)
+if echo "$PM_OUTPUT" | grep -q 'AGENT_MODEL=""'; then
+    log_pass "PM falls back to empty model when absent from config"
+else
+    log_fail "PM did not fall back correctly (output: $PM_OUTPUT)"
+fi
+rm -rf "$PM_SANDBOX"
+
 # --- Scenario: Sample Config Matches Schema ---
 echo ""
 echo "[Scenario] Sample Config Matches Schema"
@@ -362,6 +433,123 @@ if echo "$CAPTURED" | grep -q "PURLIN_PROJECT_ROOT=$SANDBOX"; then
     log_pass "PURLIN_PROJECT_ROOT exported as project root"
 else
     log_fail "PURLIN_PROJECT_ROOT not set correctly (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Exports AGENT_ROLE ---
+echo ""
+echo "[Scenario] Launcher Exports AGENT_ROLE"
+setup_launcher_sandbox
+
+# Test each launcher exports its correct AGENT_ROLE
+for ROLE_INFO in "architect:pl-run-architect.sh" "builder:pl-run-builder.sh" "qa:pl-run-qa.sh"; do
+    ROLE="${ROLE_INFO%%:*}"
+    LAUNCHER="${ROLE_INFO#*:}"
+
+    cp "$PROJECT_ROOT/$LAUNCHER" "$SANDBOX/"
+
+    cat > "$SANDBOX/.purlin/config.json" << EOF
+{
+    "agents": {
+        "$ROLE": {
+            "model": "claude-sonnet-4-6",
+            "effort": "",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+    # Mock claude that captures AGENT_ROLE from its env
+    cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+echo "AGENT_ROLE=\$AGENT_ROLE" > "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+    chmod +x "$MOCK_DIR/claude"
+
+    PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/$LAUNCHER" > /dev/null 2>&1
+    CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+    if echo "$CAPTURED" | grep -q "AGENT_ROLE=$ROLE"; then
+        log_pass "$LAUNCHER exports AGENT_ROLE=$ROLE"
+    else
+        log_fail "$LAUNCHER AGENT_ROLE not set correctly (captured: $CAPTURED)"
+    fi
+done
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Reads Resolved Config ---
+echo ""
+echo "[Scenario] Launcher Reads Resolved Config"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "model": "claude-sonnet-4-6",
+            "effort": "high",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+# Verify launcher script calls resolve_config.py (not inline Python json import)
+if grep -q 'resolve_config.py' "$SANDBOX/pl-run-architect.sh"; then
+    log_pass "Launcher references resolve_config.py"
+else
+    log_fail "Launcher does not reference resolve_config.py"
+fi
+
+if ! grep -q 'python3 -c.*import json' "$SANDBOX/pl-run-architect.sh"; then
+    log_pass "Launcher does not use inline Python to read config.json directly"
+else
+    log_fail "Launcher uses inline Python pattern (should use resolve_config.py)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Falls Back When Config is Absent ---
+echo ""
+echo "[Scenario] Launcher Falls Back When Config is Absent (resolve_config.py unavailable)"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+# Remove resolve_config.py from sandbox to simulate unavailability
+rm -f "$SANDBOX/tools/config/resolve_config.py"
+# No config.json written
+
+# Mock claude that captures its env vars
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+echo "MODEL=\${AGENT_MODEL:-} EFFORT=\${AGENT_EFFORT:-} BYPASS=\${AGENT_BYPASS:-}" > "$CAPTURE_FILE"
+echo "\$@" >> "$CAPTURE_FILE"
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+# With resolver absent, defaults should apply: empty model, empty effort, bypass false
+# Check CLI args: no --model (empty default), --allowedTools present (bypass=false default)
+if echo "$CAPTURED" | grep -qv -- '--model'; then
+    log_pass "Fallback defaults: no --model passed (empty default)"
+else
+    log_fail "Fallback: --model unexpectedly present (captured: $CAPTURED)"
+fi
+
+# Should still launch claude (with --allowedTools since bypass defaults to false)
+if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
+    log_pass "Fallback: launcher dispatches with role restrictions (bypass=false default)"
+else
+    log_fail "Fallback: launcher did not dispatch correctly (captured: $CAPTURED)"
 fi
 
 teardown_launcher_sandbox

@@ -234,7 +234,7 @@ def main():
             print("Usage: resolve_config.py --key <name>", file=sys.stderr)
             sys.exit(1)
         _cli_key(project_root, sys.argv[2])
-    elif arg in ('architect', 'builder', 'qa'):
+    elif arg in ('architect', 'builder', 'qa', 'pm'):
         _cli_role(project_root, arg)
     else:
         print(f"Unknown argument: {arg}", file=sys.stderr)
