@@ -83,11 +83,12 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 1.  Gather intent via Probing Question Protocol.
 2.  If Figma design exists: read via MCP, run `/pl-design-ingest`.
 3.  Draft feature file using template (`tools/feature_templates/_feature.md`).
-4.  Declare Prerequisite links to relevant anchor nodes.
-5.  Write Gherkin scenarios for behavioral requirements.
-6.  Write Visual Specification for appearance requirements (from Figma).
-7.  Commit the spec.
-8.  The Architect validates during their next startup gap analysis.
+4.  Add `> Owner: PM` to the blockquote metadata. This routes design disputes and action items to the PM.
+5.  Declare Prerequisite links to relevant anchor nodes.
+6.  Write Gherkin scenarios for behavioral requirements.
+7.  Write Visual Specification for appearance requirements (from Figma).
+8.  Commit the spec.
+9.  The Architect validates during their next startup gap analysis.
 
 ## 6. Design Dispute Handling
 

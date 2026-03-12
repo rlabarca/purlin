@@ -2,6 +2,7 @@
 
 > Label: "<Category>: <Label>"
 > Category: "<Category>"
+> Owner: <PM or Architect — omit line if Architect (default)>
 > Prerequisite: features/<anchor_node>.md
 
 [TODO]
