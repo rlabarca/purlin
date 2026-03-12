@@ -34,10 +34,10 @@ The Status view is the default view (`/#status`).
 
 *   **Role-Based Columns:** The dashboard MUST render features in a table with the following columns:
     *   **Feature** -- The feature filename.
+    *   **PM** -- The PM role status badge.
     *   **Architect** -- The Architect role status badge.
     *   **Builder** -- The Builder role status badge.
     *   **QA** -- The QA role status badge.
-    *   **PM** -- The PM role status badge.
 *   **Column Alignment:** Status column headers (Architect, Builder, QA, PM) MUST be centered. The Feature column header MUST be left-justified.
 *   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA, PM, and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
 *   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
@@ -632,7 +632,7 @@ None.
 - [ ] Switching views updates the URL hash immediately
 - [ ] Loading the page with `#map` in the URL activates the Spec Map view
 - [ ] Active and Complete tables have matching column widths
-- [ ] Status column headers (Architect, Builder, QA, PM) are centered
+- [ ] Status column headers (PM, Architect, Builder, QA) are centered
 - [ ] Feature column header is left-justified
 - [ ] At viewport widths ≤600px, ARCHITECT and BUILDER column headers abbreviate to ARCH and BUILD
 - [ ] At viewport widths >600px, ARCHITECT and BUILDER column headers display full text (Architect, Builder)
@@ -641,7 +641,7 @@ None.
 - [ ] Workspace shows last commit summary (hash, message, relative timestamp)
 - [ ] Workspace updates on each 5-second refresh cycle without full page reload
 - [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
-- [ ] Table has columns: Feature, Architect, Builder, QA, PM
+- [ ] Table has columns: Feature, PM, Architect, Builder, QA
 - [ ] Badges use correct color mapping: DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange, ??=dim
 - [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns

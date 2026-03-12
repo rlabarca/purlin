@@ -23,7 +23,7 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    - For each `.claude/commands/pl-*.md` in consumer project (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
-   - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`):
+   - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
      - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
    - **IMPORTANT: `pl-cdd-start.sh` and `pl-cdd-stop.sh` are SYMLINKS managed exclusively by init.sh. NEVER read, compare, copy, or modify these files. They are refreshed automatically by the init step (step 4).**
 

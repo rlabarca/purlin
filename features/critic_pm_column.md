@@ -45,7 +45,7 @@ The `compute_role_status` function MUST return a `pm` key for each feature:
 - `N/A` -- Feature has no Visual Specification section, no Figma references, and is not `> Owner: PM`.
 
 ### 2.5 CDD Dashboard Updates
-- `_role_table_html()` adds a PM column.
+- `_role_table_html()` adds a PM column to the left of Architect (column order: Feature, PM, Architect, Builder, QA).
 - `get_feature_role_status()` reads `pm` from `critic.json`.
 - JavaScript `roles` arrays include `'pm'`.
 - Agent config save endpoint accepts `pm` key.
@@ -144,7 +144,7 @@ The `compute_role_status` function MUST return a `pm` key for each feature:
     Given the CDD dashboard is running
     And `critic.json` files contain `pm` role status
     When the dashboard renders the feature status table
-    Then a PM column is displayed alongside Architect, Builder, and QA columns
+    Then a PM column is displayed to the left of the Architect column
     And each feature row shows the PM status value
 
 ### Manual Scenarios (Human Verification Required)
