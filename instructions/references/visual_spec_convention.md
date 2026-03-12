@@ -2,6 +2,7 @@
 
 > This file is loaded on-demand by `/pl-spec`, `/pl-design-ingest`, `/pl-design-audit`,
 > `/pl-verify`, and `/pl-web-verify` commands when working with features that have visual specifications.
+> The PM agent is the primary author of Visual Specification sections when a PM is active.
 
 ## 9.1 Purpose
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI components. This section provides checklist-based visual acceptance criteria with optional design asset references, distinct from functional Gherkin scenarios.
@@ -36,7 +37,7 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   **Separate from functional scenarios** -- QA can batch all visual checks across features instead of interleaving with functional verification.
 
 ## 9.3 Ownership and Traceability
-*   The `## Visual Specification` section is **Architect-owned** (like the rest of the spec). QA does NOT modify it.
+*   The `## Visual Specification` section is **PM-owned** when a PM agent is active, otherwise **Architect-owned**. QA does NOT modify it.
 *   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
 *   The Critic detects visual spec sections and generates separate QA action items for visual verification.
 
