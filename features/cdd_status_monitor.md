@@ -37,10 +37,11 @@ The Status view is the default view (`/#status`).
     *   **Architect** -- The Architect role status badge.
     *   **Builder** -- The Builder role status badge.
     *   **QA** -- The QA role status badge.
-*   **Column Alignment:** Status column headers (Architect, Builder, QA) MUST be centered. The Feature column header MUST be left-justified.
-*   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
+    *   **PM** -- The PM role status badge.
+*   **Column Alignment:** Status column headers (Architect, Builder, QA, PM) MUST be centered. The Feature column header MUST be left-justified.
+*   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA, PM, and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
 *   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
-    *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A). Tombstone entries (files in `features/tombstones/`) are ALWAYS included in this section until the Builder processes them.
+    *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A, PM=DONE or N/A). Tombstone entries (files in `features/tombstones/`) are ALWAYS included in this section until the Builder processes them.
     *   **Complete** -- All roles fully satisfied. Capped at 10 most recent entries.
     *   **Workspace** -- Git status and last commit information.
 *   **Section Collapse/Expand Behavior:**
@@ -64,7 +65,7 @@ The Status view is the default view (`/#status`).
 |-------|-------|-------|
 | DONE | Green | Architect, Builder |
 | CLEAN | Green | QA |
-| TODO | Yellow | Architect, Builder, QA |
+| TODO | Yellow | Architect, Builder, QA, PM |
 | FAIL | Red | Builder, QA |
 | INFEASIBLE | Red | Builder |
 | BLOCKED | Gray | Builder |
@@ -138,9 +139,9 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     *   Flat `features` array (no `todo`/`testing`/`complete` sub-arrays).
     *   No top-level `test_status` field.
     *   No per-feature `test_status` or `qa_status` fields (replaced by role columns).
-    *   Role fields (`architect`, `builder`, `qa`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
+    *   Role fields (`architect`, `builder`, `qa`, `pm`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
-    *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`. No `change_scope` field is present on tombstone entries.
+    *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`, `"pm": "N/A"`. No `change_scope` field is present on tombstone entries.
     *   `delivery_phase` is present ONLY when `.purlin/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
     *   Array sorted by file path (deterministic).
 *   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.purlin/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
@@ -153,11 +154,11 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 
 ### 2.5 Role Status Integration
 *   **Critic JSON Discovery:** For each feature `features/<name>.md`, the monitor checks for `tests/<name>/critic.json` on disk.
-*   **Per-Feature Role Status:** If `critic.json` exists, the monitor reads the `role_status` object and exposes its `architect`, `builder`, and `qa` fields on the per-feature API entry. If no `critic.json` exists, all role fields are omitted (dashboard shows `??` in each column).
+*   **Per-Feature Role Status:** If `critic.json` exists, the monitor reads the `role_status` object and exposes its `architect`, `builder`, `qa`, and `pm` fields on the per-feature API entry. If no `critic.json` exists, all role fields are omitted (dashboard shows `??` in each column).
 *   **No Direct Computation:** CDD does NOT compute role status itself. It reads pre-computed values from the Critic's `role_status` output.
-*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, and QA columns with the badge/color mapping defined in Section 2.2.2. Blank cells when no `critic.json` exists.
+*   **Dashboard Columns:** Each feature entry on the web dashboard displays Architect, Builder, QA, and PM columns with the badge/color mapping defined in Section 2.2.2. Blank cells when no `critic.json` exists.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on critic or role status results.
-*   **Tombstone Role Status:** Tombstone files at `features/tombstones/<name>.md` do not have associated `critic.json` files. The dashboard MUST hardcode their role status: `architect=DONE`, `builder=TODO`, `qa=N/A`. This is a fixed invariant, not a computed value. The No Direct Computation rule applies only to regular feature files.
+*   **Tombstone Role Status:** Tombstone files at `features/tombstones/<name>.md` do not have associated `critic.json` files. The dashboard MUST hardcode their role status: `architect=DONE`, `builder=TODO`, `qa=N/A`, `pm=N/A`. This is a fixed invariant, not a computed value. The No Direct Computation rule applies only to regular feature files.
 
 ### 2.6 CLI Status Tool (Agent Interface)
 *   **Script Location:** `tools/cdd/status.sh` (executable, `chmod +x`). Wrapper calls a Python module for status computation.
@@ -308,20 +309,20 @@ These scenarios are validated by the Builder's automated test suite.
     Given a release is being prepared
     When the Architect checks the Zero-Queue Mandate
     Then the Architect calls GET /status.json on the configured CDD port
-    And verifies that all features have architect DONE, builder DONE, and qa either CLEAN or N/A
+    And verifies that all features have architect DONE, builder DONE, qa either CLEAN or N/A, and pm either DONE or N/A
 
 #### Scenario: Role Status in API Response
     Given the CDD server is running
-    And tests/<feature_name>/critic.json exists with role_status architect DONE, builder DONE, qa CLEAN
+    And tests/<feature_name>/critic.json exists with role_status architect DONE, builder DONE, qa CLEAN, pm N/A
     When an agent calls GET /status.json
-    Then the feature entry includes architect, builder, and qa fields with the correct values
+    Then the feature entry includes architect, builder, qa, and pm fields with the correct values
     And no test_status or qa_status fields are present
 
 #### Scenario: Role Status Omitted When No Critic File
     Given the CDD server is running
     And no critic.json exists for a feature
     When an agent calls GET /status.json
-    Then the feature entry does not include architect, builder, or qa fields
+    Then the feature entry does not include architect, builder, qa, or pm fields
 
 #### Scenario: Flat Features Array in API Response
     Given the CDD server is running with features in various lifecycle states
@@ -482,13 +483,13 @@ These scenarios are validated by the Builder's automated test suite.
     When an agent calls GET /status.json
     Then the features array includes an entry with file "features/tombstones/some_retired_feature.md"
     And the entry includes tombstone true
-    And the entry has architect DONE, builder TODO, qa N/A
+    And the entry has architect DONE, builder TODO, qa N/A, pm N/A
     And no change_scope field is present on the tombstone entry
 
 #### Scenario: Tombstone Entry in CLI Status Output
     Given a tombstone file exists at features/tombstones/some_retired_feature.md
     When an agent runs tools/cdd/status.sh
-    Then the JSON output includes the tombstone entry with tombstone true, architect DONE, builder TODO, qa N/A
+    Then the JSON output includes the tombstone entry with tombstone true, architect DONE, builder TODO, qa N/A, pm N/A
 
 #### Scenario: CLI Port Override via Flag
     Given the CDD server is not running
@@ -631,7 +632,7 @@ None.
 - [ ] Switching views updates the URL hash immediately
 - [ ] Loading the page with `#map` in the URL activates the Spec Map view
 - [ ] Active and Complete tables have matching column widths
-- [ ] Status column headers (Architect, Builder, QA) are centered
+- [ ] Status column headers (Architect, Builder, QA, PM) are centered
 - [ ] Feature column header is left-justified
 - [ ] At viewport widths ≤600px, ARCHITECT and BUILDER column headers abbreviate to ARCH and BUILD
 - [ ] At viewport widths >600px, ARCHITECT and BUILDER column headers display full text (Architect, Builder)
@@ -640,7 +641,7 @@ None.
 - [ ] Workspace shows last commit summary (hash, message, relative timestamp)
 - [ ] Workspace updates on each 5-second refresh cycle without full page reload
 - [ ] Features grouped into "ACTIVE" and "COMPLETE" sections
-- [ ] Table has columns: Feature, Architect, Builder, QA
+- [ ] Table has columns: Feature, Architect, Builder, QA, PM
 - [ ] Badges use correct color mapping: DONE/CLEAN=green, TODO=yellow, FAIL/INFEASIBLE=red, BLOCKED=gray, DISPUTED=orange, ??=dim
 - [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns
@@ -651,7 +652,7 @@ None.
 - [ ] Phase annotation disappears when no delivery plan exists
 - [ ] Tombstone entries appear in the Active section with feature name text color `--purlin-status-error` (red)
 - [ ] Tombstone entry names include a `[TOMBSTONE]` suffix
-- [ ] Tombstone entries display Architect=DONE, Builder=TODO, QA=N/A badges
+- [ ] Tombstone entries display Architect=DONE, Builder=TODO, QA=N/A, PM=N/A badges
 - [ ] Clicking a tombstone entry opens a deletion modal visually distinct from a standard feature modal
 - [ ] Tombstone deletion modal border uses `--purlin-status-error` instead of the normal border color
 - [ ] Tombstone deletion modal title text is rendered in `--purlin-status-error`
