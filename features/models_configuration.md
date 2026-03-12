@@ -6,7 +6,7 @@
 
 
 ## 1. Overview
-Purlin agents (Architect, Builder, QA) are launched via shell scripts that invoke the Claude CLI. This feature makes agent runtime parameters (model, effort, permissions) configurable via `config.json`. Claude is the sole supported LLM provider.
+Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that invoke the Claude CLI. This feature makes agent runtime parameters (model, effort, permissions) configurable via `config.json`. Claude is the sole supported LLM provider.
 
 
 ## 2. Requirements
@@ -54,44 +54,27 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
 }
 ```
 
-### 2.2 Launcher Script Behavior
-
-*   **Config Reading:** Each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) MUST read agent configuration from `config.json` at startup.
-*   **Claude Only:** All launchers dispatch exclusively to the Claude CLI. No provider field exists in config; Claude is implicit.
-*   **Dynamic CLI Arguments:**
-    *   If `model` is set, pass `--model <model>`.
-    *   If `effort` is set, pass `--effort <effort>`.
-    *   If `bypass_permissions` is `true`, pass `--dangerously-skip-permissions`.
-    *   If `bypass_permissions` is `false`, pass role-specific `--allowedTools` flags.
-*   **Role-Specific Tool Restrictions** (when `bypass_permissions` is `false`):
-    *   **Architect:** `"Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep"`
-    *   **Builder:** No `--allowedTools` flag (default permissions, user confirms each tool use).
-    *   **QA:** `"Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit"`
-*   **Fallback:** If `config.json` is missing or the `agents` section is absent, launchers MUST fall back to hardcoded defaults (Claude with default model, role-specific permissions).
-*   **Session Prompt:** Each role passes its concatenated instruction prompt file and a role-specific opening message.
-
-### 2.3 Bootstrap Generation
-
-*   **Updated Launchers:** `tools/init.sh` (Section 2.3, step 5 of `project_init.md`) MUST generate launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) with config-reading, Claude dispatch, and role-specific tool restrictions as described in Section 2.2.
-*   **No `.claude/agents/` Generation:** Init MUST NOT generate Claude-specific agent configuration files. Agent configuration is in `config.json`.
+### 2.2 Launcher Integration
+*   Launcher scripts read agent configuration from this schema at startup. Launcher behavior (config reading, CLI dispatch, prompt assembly, tool restrictions) is defined in `agent_launchers_common.md` and the per-role launcher feature specs.
+*   Launcher generation by `tools/init.sh` is defined in `project_init.md`.
+*   No `.claude/agents/` generation. Agent configuration lives in `config.json`.
 
 
 ## 3. Scenarios
 
 ### Automated Scenarios
 
-#### Scenario: Launcher Reads Agent Config from Config JSON
-    Given config.json contains agents.architect with model "claude-sonnet-4-6"
-    And agents.architect has effort "high" and bypass_permissions false
-    When the Architect launcher script is executed
-    Then it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
-    And it passes --allowedTools with the Architect role restrictions
+#### Scenario: Config Schema Validates All Agent Roles
+    Given config.json contains agents with keys architect, builder, qa, and pm
+    When each agent entry is read
+    Then it has model (string), effort (string), and bypass_permissions (boolean) fields
+    And the model value references an id from the models array
 
-#### Scenario: Launcher Falls Back When Config is Missing
-    Given config.json does not contain an agents section
-    When the Architect launcher script is executed
-    Then it invokes the claude CLI with current hardcoded defaults
-    And the Architect role restrictions are applied
+#### Scenario: PM Agent Entry is Optional
+    Given config.json contains agents with keys architect, builder, and qa
+    And no pm key exists in agents
+    When the PM launcher reads config
+    Then it falls back to default PM values (model claude-sonnet-4-6, effort medium)
 
 ### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
