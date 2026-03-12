@@ -1,12 +1,12 @@
-**Purlin command owner: Architect**
+**Purlin command owner: PM, Architect**
 
-If you are not operating as the Purlin Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-design-audit instead." and stop.
+If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-audit instead." and stop.
 
 ---
 
 Read `instructions/references/visual_spec_convention.md` before auditing.
 
-Audit all design artifacts and visual specifications across the project for integrity, staleness, and anchor consistency.
+Audit all design artifacts and visual specifications across the project for integrity, staleness, anchor consistency, and Figma design-spec conflicts.
 
 **Workflow:**
 
@@ -34,17 +34,29 @@ Audit all design artifacts and visual specifications across the project for inte
    - Hardcoded spacing values matching an anchor's spacing scale.
    - Flag each as WARNING with the suggested token name.
 
-5. **Report:** Print a summary table:
+5. **Figma staleness (MCP):** For screens referencing Figma URLs:
+   - If Figma MCP tools are available: read the design's `lastModified` timestamp via MCP.
+   - Compare against the Processed date. If Figma was modified after Processed, flag as STALE.
+   - If Figma MCP is not available: report staleness as N/A for Figma screens (no connectivity check).
+
+6. **Design-spec conflict detection (MCP):** For screens referencing Figma URLs when MCP is available:
+   - Extract key visual properties from the Figma design: primary colors, font families, layout structure.
+   - Compare against the written Description and the design anchor's token definitions.
+   - Flag discrepancies as DESIGN_CONFLICT warnings with specific differences listed.
+   - These are warnings for human review — descriptions may intentionally use token names rather than literal values.
+
+7. **Report:** Print a summary table:
    ```
-   Feature              | Screen           | Ref Status  | Staleness | Anchor
-   ---------------------|------------------|-------------|-----------|-------
-   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | CLEAN
-   my_feature           | Settings Panel   | MISSING     | N/A       | N/A
+   Feature              | Screen           | Ref Status  | Staleness | Anchor | Design Conflict
+   ---------------------|------------------|-------------|-----------|--------|----------------
+   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | CLEAN  | CLEAN
+   my_feature           | Settings Panel   | MISSING     | N/A       | N/A    | N/A
+   figma_feature        | Figma Screen     | OK          | STALE     | CLEAN  | 1 warning
    ```
 
-6. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.
+8. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.
 
-7. **Summary:** Report overall status:
+9. **Summary:** Report overall status:
    - CRITICAL issues found: "CRITICAL issues found -- resolve before release."
    - Warnings only: "Warnings found -- review recommended."
    - Clean: "All design artifacts clean."

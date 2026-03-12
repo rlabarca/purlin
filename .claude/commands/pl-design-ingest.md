@@ -1,6 +1,6 @@
-**Purlin command owner: Architect**
+**Purlin command owner: PM, Architect**
 
-If you are not operating as the Purlin Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-design-ingest instead." and stop.
+If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-ingest instead." and stop.
 
 ---
 
@@ -27,7 +27,8 @@ Ingest a design artifact into a feature's Visual Specification section. This com
 4. **Process artifact:**
    - Image/PDF: Read the file using the Read tool (multimodal). Analyze visual content.
    - Live web page: Fetch using WebFetch. Extract visual state, CSS patterns, component structure.
-   - Figma URL: Record the URL. Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Description noting manual processing is needed.
+   - Figma URL with MCP available: Call Figma MCP tools to extract component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations. Auto-generate the Description from the structured API data.
+   - Figma URL without MCP: Record the URL. Provide MCP installation instructions (`claude mcp add --transport http figma https://mcp.figma.com/mcp`). Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Description noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
 
 5. **Generate description:** Create a structured markdown description covering:
    - Layout hierarchy and component inventory

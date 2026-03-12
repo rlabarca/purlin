@@ -120,6 +120,99 @@ def map_color_to_token(hex_color, tokens):
 
 
 # ---------------------------------------------------------------------------
+# Figma MCP helpers — availability detection, setup instructions, extraction
+# ---------------------------------------------------------------------------
+
+FIGMA_MCP_SETUP_CMD = "claude mcp add --transport http figma https://mcp.figma.com/mcp"
+FIGMA_MCP_FALLBACK_NOTE = (
+    "For higher fidelity, install Figma MCP: " + FIGMA_MCP_SETUP_CMD
+)
+
+
+def is_figma_mcp_available(available_tools):
+    """Check whether Figma MCP tools are available in the current session.
+
+    Args:
+        available_tools: list of tool name strings available in the session.
+
+    Returns:
+        True if any tool name contains 'figma' (case-insensitive).
+    """
+    return any("figma" in t.lower() for t in available_tools)
+
+
+def generate_figma_no_mcp_description(figma_url):
+    """Generate a placeholder description when Figma MCP is not available.
+
+    Returns a dict with the description text, the MCP setup note, and a flag
+    indicating manual processing is needed.
+    """
+    return {
+        "description": "Placeholder — manual processing needed. "
+                       "Provide an exported image or screenshot to generate "
+                       "a full description.",
+        "mcp_note": FIGMA_MCP_FALLBACK_NOTE,
+        "needs_manual_processing": True,
+    }
+
+
+def generate_figma_mcp_description(mcp_metadata, tokens, fonts):
+    """Generate a structured description from Figma MCP-extracted metadata.
+
+    Args:
+        mcp_metadata: dict with keys "layout" (str), "components" (list of str),
+            "colors" (list of hex str), "fonts" (list of font family str),
+            "variables" (dict of variable_name -> value).
+        tokens: dict of {token_name: token_value} from design anchors.
+        fonts: dict of {font_name: token_name} from design anchors.
+
+    Returns:
+        dict with "description" (str) and "auto_generated" (bool).
+    """
+    parts = []
+
+    # Layout
+    if mcp_metadata.get("layout"):
+        parts.append(f"**Layout:** {mcp_metadata['layout']}")
+
+    # Components
+    if mcp_metadata.get("components"):
+        comp_list = ", ".join(mcp_metadata["components"])
+        parts.append(f"**Components:** {comp_list}")
+
+    # Colors — map to tokens where possible
+    if mcp_metadata.get("colors"):
+        color_parts = []
+        hex_to_token = {}
+        for tn, tv in tokens.items():
+            if tv.startswith("#"):
+                hex_to_token[tv.upper()] = tn
+        for c in mcp_metadata["colors"]:
+            mapped = hex_to_token.get(c.upper())
+            if mapped:
+                color_parts.append(f"var({mapped})")
+            else:
+                color_parts.append(c)
+        parts.append(f"**Colors:** {', '.join(color_parts)}")
+
+    # Fonts — map to tokens where possible
+    if mcp_metadata.get("fonts"):
+        font_parts = []
+        for f in mcp_metadata["fonts"]:
+            mapped = fonts.get(f)
+            if mapped:
+                font_parts.append(f"var({mapped})")
+            else:
+                font_parts.append(f)
+        parts.append(f"**Typography:** {', '.join(font_parts)}")
+
+    return {
+        "description": "\n".join(parts) if parts else "No metadata extracted.",
+        "auto_generated": True,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Test Classes
 # ---------------------------------------------------------------------------
 
@@ -184,11 +277,11 @@ Some requirements.
         self.assertIn(f"**Processed:** {today_str}", updated)
 
 
-class TestIngestFigmaURL(unittest.TestCase):
-    """Scenario: Ingest Figma URL"""
+class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
+    """Scenario: Ingest Figma URL Without MCP"""
 
     def test_figma_url_recorded_in_reference(self):
-        """Figma URL is recorded in the Reference line."""
+        """Figma URL is recorded in the Reference line as [Figma](<url>)."""
         feature_content = "# Feature: Test\n## Requirements\nStuff.\n"
         figma_url = "https://www.figma.com/file/abc123/My-Design"
 
@@ -215,6 +308,119 @@ class TestIngestFigmaURL(unittest.TestCase):
         refs = vs.get("references", [])
         self.assertEqual(len(refs), 1)
         self.assertEqual(refs[0]["reference_type"], "figma")
+
+    def test_no_mcp_produces_placeholder_description(self):
+        """When MCP is unavailable, description notes manual processing is needed."""
+        figma_url = "https://www.figma.com/file/abc123"
+        result = generate_figma_no_mcp_description(figma_url)
+
+        self.assertTrue(result["needs_manual_processing"])
+        self.assertIn("manual processing needed", result["description"].lower())
+
+    def test_no_mcp_suggests_figma_mcp_install(self):
+        """When MCP is unavailable, a note suggests installing Figma MCP."""
+        result = generate_figma_no_mcp_description("https://figma.com/file/x")
+
+        self.assertIn("Figma MCP", result["mcp_note"])
+        self.assertIn(FIGMA_MCP_SETUP_CMD, result["mcp_note"])
+
+
+class TestFigmaMCPAutoSetupWhenProcessingFigmaURL(unittest.TestCase):
+    """Scenario: Figma MCP Auto-Setup When Processing Figma URL"""
+
+    def test_mcp_not_available_detected(self):
+        """When no Figma tools are in the tool list, MCP is not available."""
+        tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
+        self.assertFalse(is_figma_mcp_available(tools))
+
+    def test_mcp_available_detected(self):
+        """When Figma tools are in the tool list, MCP is available."""
+        tools = ["Read", "Write", "figma_get_file", "figma_get_components"]
+        self.assertTrue(is_figma_mcp_available(tools))
+
+    def test_setup_instructions_include_install_command(self):
+        """MCP installation instructions include the claude mcp add command."""
+        self.assertIn("claude mcp add", FIGMA_MCP_SETUP_CMD)
+        self.assertIn("figma", FIGMA_MCP_SETUP_CMD)
+
+    def test_fallback_to_tier1_when_no_mcp(self):
+        """Without MCP, falls back to Tier 1/2 processing (prompt for export)."""
+        result = generate_figma_no_mcp_description("https://figma.com/file/x")
+        # Fallback produces a placeholder that prompts for an exported image
+        self.assertIn("exported image or screenshot", result["description"].lower())
+        self.assertTrue(result["needs_manual_processing"])
+
+
+class TestFigmaMCPExtractsDesignContextDirectly(unittest.TestCase):
+    """Scenario: Figma MCP Extracts Design Context Directly"""
+
+    def test_mcp_metadata_generates_description(self):
+        """Design metadata extracted via MCP produces an auto-generated description."""
+        mcp_metadata = {
+            "layout": "Vertical stack with header, content area, and footer",
+            "components": ["Header", "Sidebar", "DataTable", "Footer"],
+            "colors": ["#38BDF8", "#0B131A"],
+            "fonts": ["Montserrat", "Inter"],
+            "variables": {},
+        }
+        tokens = {"--purlin-accent": "#38BDF8", "--purlin-bg": "#0B131A"}
+        fonts = {"Montserrat": "--font-display", "Inter": "--font-body"}
+
+        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
+
+        self.assertTrue(result["auto_generated"])
+        self.assertIn("Layout:", result["description"])
+        self.assertIn("Components:", result["description"])
+
+    def test_colors_mapped_to_tokens(self):
+        """MCP-extracted colors are mapped to design anchor tokens."""
+        mcp_metadata = {
+            "layout": "Simple layout",
+            "components": [],
+            "colors": ["#38BDF8"],
+            "fonts": [],
+            "variables": {},
+        }
+        tokens = {"--purlin-accent": "#38BDF8"}
+        fonts = {}
+
+        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
+        self.assertIn("var(--purlin-accent)", result["description"])
+
+    def test_fonts_mapped_to_tokens(self):
+        """MCP-extracted fonts are mapped to design anchor font tokens."""
+        mcp_metadata = {
+            "layout": "",
+            "components": [],
+            "colors": [],
+            "fonts": ["Inter"],
+            "variables": {},
+        }
+        tokens = {}
+        fonts = {"Inter": "--font-body"}
+
+        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
+        self.assertIn("var(--font-body)", result["description"])
+
+    def test_reference_preserves_original_figma_url(self):
+        """The Reference line preserves the original Figma URL after MCP extraction."""
+        figma_url = "https://www.figma.com/file/abc123/My-Design"
+        feature_content = "# Feature: Test\n## Requirements\nStuff.\n"
+
+        mcp_desc = generate_figma_mcp_description(
+            {"layout": "Grid", "components": ["Card"], "colors": [], "fonts": [], "variables": {}},
+            {}, {},
+        )
+
+        updated = create_visual_spec_section(
+            feature_content,
+            screen_name="Dashboard",
+            reference=f"[Figma]({figma_url})",
+            description=mcp_desc["description"],
+        )
+
+        self.assertIn(f"[Figma]({figma_url})", updated)
+        self.assertIn("Layout:", updated)
 
 
 class TestIngestLiveWebPageURL(unittest.TestCase):
