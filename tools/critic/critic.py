@@ -83,6 +83,28 @@ def read_feature_file(filepath):
         return f.read()
 
 
+def extract_owner(content, filename):
+    """Extract the Owner tag from feature file blockquote metadata.
+
+    Returns 'PM' or 'Architect'. Defaults to 'Architect' when absent.
+    Anchor nodes (arch_*, design_*, policy_*) are always Architect-owned
+    regardless of any Owner tag present.
+    """
+    if is_policy_file(filename):
+        return 'Architect'
+    for line in content.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('> Owner:'):
+            value = stripped[len('> Owner:'):].strip().strip('"')
+            if value.upper() == 'PM':
+                return 'PM'
+            return 'Architect'
+        # Stop scanning after blockquote metadata ends
+        if stripped and not stripped.startswith('>') and not stripped.startswith('#') and not stripped.startswith('['):
+            break
+    return 'Architect'
+
+
 def parse_sections(content):
     """Parse markdown sections by heading.
 
@@ -1307,7 +1329,7 @@ def generate_action_items(feature_result, cdd_status=None):
         cdd_status: optional CDD feature_status.json data (for QA items)
 
     Returns:
-        dict with 'architect', 'builder', 'qa' lists of action items.
+        dict with 'architect', 'builder', 'qa', 'pm' lists of action items.
     """
     feature_file = feature_result['feature_file']
     feature_name = os.path.splitext(os.path.basename(feature_file))[0]
@@ -1318,6 +1340,12 @@ def generate_action_items(feature_result, cdd_status=None):
     architect_items = []
     builder_items = []
     qa_items = []
+    pm_items = []
+
+    # Owner tag and visual spec info for PM routing
+    owner = feature_result.get('_owner', 'Architect')
+    visual_spec = feature_result.get('visual_spec', {})
+    visual_screen_names = set(visual_spec.get('screen_names', []))
 
     # --- Architect items ---
     # Spec Gate FAIL -> HIGH
@@ -1411,7 +1439,16 @@ def generate_action_items(feature_result, cdd_status=None):
                 'description': f'Update spec for {feature_name}: {entry["heading"]}',
             })
         if entry['type'] == 'SPEC_DISPUTE' and entry['status'] == 'OPEN':
-            architect_items.append({
+            # Route SPEC_DISPUTEs to PM when: owner is PM, or the
+            # dispute references a Visual Specification screen.
+            _dispute_title = entry.get('title', '')
+            _routes_to_pm = (
+                owner == 'PM'
+                or _dispute_title.startswith('Visual:')
+                or 'visual specification' in _dispute_title.lower()
+                or any(sn in _dispute_title for sn in visual_screen_names)
+            )
+            _dispute_item = {
                 'priority': 'HIGH',
                 'category': 'user_testing',
                 'feature': feature_name,
@@ -1419,11 +1456,15 @@ def generate_action_items(feature_result, cdd_status=None):
                     f'Review disputed scenario in {feature_name}: '
                     f'{entry["heading"]}'
                 ),
-            })
+            }
+            if _routes_to_pm:
+                pm_items.append(_dispute_item)
+            else:
+                architect_items.append(_dispute_item)
 
-    # Visual reference validation items (Section 2.13)
+    # Visual reference validation items (Section 2.13) -> route to PM
     for vi in feature_result.get('_visual_ref_items', []):
-        architect_items.append({
+        pm_items.append({
             'priority': vi['priority'],
             'category': vi['category'],
             'feature': feature_name,
@@ -1852,6 +1893,7 @@ def generate_action_items(feature_result, cdd_status=None):
         'architect': architect_items,
         'builder': builder_items,
         'qa': qa_items,
+        'pm': pm_items,
     }
 
 
@@ -2671,10 +2713,30 @@ def compute_role_status(feature_result, cdd_status=None):
     else:
         qa_status = 'N/A'
 
+    # --- PM status ---
+    # PM is relevant when: feature has Owner: PM, or has Visual Specification,
+    # or has Figma references. Otherwise N/A.
+    pm_items = action_items.get('pm', [])
+    owner = feature_result.get('_owner', 'Architect')
+    _visual = feature_result.get('visual_spec', {})
+    _has_visual = _visual.get('present', False)
+    _has_figma = any(
+        r.get('reference_type') == 'figma'
+        for r in _visual.get('references', []))
+    _pm_relevant = owner == 'PM' or _has_visual or _has_figma
+
+    if not _pm_relevant:
+        pm_status = 'N/A'
+    elif pm_items:
+        pm_status = 'TODO'
+    else:
+        pm_status = 'DONE'
+
     return {
         'architect': architect_status,
         'builder': builder_status,
         'qa': qa_status,
+        'pm': pm_status,
         '_bypassed_verification': bypassed_verification,
         '_bypassed_manual_count': bypassed_manual_count,
     }
@@ -2787,6 +2849,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     # Store internal-only keys for action item generation
     result['_visual_ref_items'] = visual_ref_items
     result['_fixture_data'] = fixture_data
+    result['_owner'] = extract_owner(content, filename)
 
     # Generate action items (pass visual_spec and regression_scope)
     result['action_items'] = generate_action_items(result, cdd_status)
@@ -2828,6 +2891,7 @@ def generate_critic_json(feature_path, cdd_status=None):
         'architect': {'TODO'},
         'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
         'qa': {'TODO', 'FAIL', 'DISPUTED'},
+        'pm': {'TODO'},
     }
     for role, nonterminal_states in _nonterminal.items():
         rs = result['role_status'].get(role)
@@ -2853,6 +2917,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     # Clean up internal-only keys before returning
     result.pop('_visual_ref_items', None)
     result.pop('_fixture_data', None)
+    result.pop('_owner', None)
     # Remove internal role_status keys used for cross-function communication
     result['role_status'].pop('_bypassed_verification', None)
     result['role_status'].pop('_bypassed_manual_count', None)
@@ -2914,7 +2979,7 @@ def generate_critic_report(results, untracked_items=None):
     lines.append('## Action Items by Role')
     lines.append('')
     priority_order = {'CRITICAL': -1, 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
-    for role in ('Architect', 'Builder', 'QA'):
+    for role in ('Architect', 'Builder', 'QA', 'PM'):
         role_key = role.lower()
         lines.append(f'### {role}')
         lines.append('')

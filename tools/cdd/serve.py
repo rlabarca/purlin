@@ -350,7 +350,7 @@ def get_feature_test_status(feature_stem, tests_dir):
 def get_feature_role_status(feature_stem, tests_dir):
     """Reads role_status and verification_effort from tests/<feature_stem>/critic.json.
 
-    Returns dict with 'architect', 'builder', 'qa', and optionally
+    Returns dict with 'architect', 'builder', 'qa', 'pm', and optionally
     'verification_effort' keys, or None if no critic.json exists
     or it lacks role_status.
     """
@@ -580,6 +580,8 @@ def generate_api_status_json(cache=None):
                 entry["builder"] = role_status["builder"]
             if 'qa' in role_status:
                 entry["qa"] = role_status["qa"]
+            if 'pm' in role_status:
+                entry["pm"] = role_status["pm"]
             if 'verification_effort' in role_status:
                 entry["verification_effort"] = role_status["verification_effort"]
 
@@ -611,6 +613,7 @@ def generate_api_status_json(cache=None):
                 "architect": "DONE",
                 "builder": "TODO",
                 "qa": "N/A",
+                "pm": "N/A",
             })
 
     result = {
@@ -1769,7 +1772,7 @@ def generate_html(cache=None):
     def _agents_badge(config):
         models_list = config.get('models', [])
         agents = config.get('agents', {})
-        roles = ['architect', 'builder', 'qa']
+        roles = ['architect', 'builder', 'qa', 'pm']
         labels = []
         for role in roles:
             acfg = agents.get(role, {})
@@ -4387,7 +4390,7 @@ function renderAgentsRows(cfg) {{
   var container = document.getElementById('agents-rows');
   if (!container) return;
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa'];
+  var roles = ['architect', 'builder', 'qa', 'pm'];
   var html = '<div class="agent-hdr">' +
     '<span></span>' +
     '<span class="agent-hdr-cell">MODEL</span>' +
@@ -4449,7 +4452,7 @@ function renderAgentsRows(cfg) {{
 
 function diffUpdateAgentRows(cfg) {{
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa'];
+  var roles = ['architect', 'builder', 'qa', 'pm'];
   roles.forEach(function(role) {{
     var acfg = agents[role] || {{}};
     var modSel = document.getElementById('agent-model-' + role);
@@ -4547,7 +4550,7 @@ function updateAgentsBadge(cfg) {{
   if (!badge) return;
   var modelsList = cfg.models || [];
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa'];
+  var roles = ['architect', 'builder', 'qa', 'pm'];
   var labels = roles.map(function(role) {{
     var acfg = agents[role] || {{}};
     var mid = acfg.model || '';
@@ -4570,7 +4573,7 @@ function scheduleAgentSave() {{
 }}
 
 function saveAgentConfig() {{
-  var roles = ['architect', 'builder', 'qa'];
+  var roles = ['architect', 'builder', 'qa', 'pm'];
   var agentsPayload = {{}};
   roles.forEach(function(role) {{
     var modSel = document.getElementById('agent-model-' + role);
@@ -4621,7 +4624,7 @@ initFromHash();
 
 
 def _role_table_html(features):
-    """Renders a table of features with Architect, Builder, QA role columns.
+    """Renders a table of features with Architect, Builder, QA, PM role columns.
     Feature names are clickable to open the detail modal."""
     if not features:
         return ""
@@ -4632,6 +4635,7 @@ def _role_table_html(features):
         arch = _role_badge_html(entry.get("architect"))
         builder = _role_badge_html(entry.get("builder"))
         qa = _qa_badge_html(entry)
+        pm = _role_badge_html(entry.get("pm"))
         escaped_fname = fname.replace("'", "\\'")
         escaped_label = label.replace("'", "\\'")
 
@@ -4659,6 +4663,7 @@ def _role_table_html(features):
             f'<td class="badge-cell">{arch}</td>'
             f'<td class="badge-cell">{builder}</td>'
             f'<td class="badge-cell">{qa}</td>'
+            f'<td class="badge-cell">{pm}</td>'
             f'</tr>'
         )
     return (
@@ -4666,7 +4671,8 @@ def _role_table_html(features):
         f'<thead><tr><th>Feature</th>'
         f'<th class="badge-col"><span class="col-full">Architect</span><span class="col-abbr">Arch</span></th>'
         f'<th class="badge-col"><span class="col-full">Builder</span><span class="col-abbr">Build</span></th>'
-        f'<th class="badge-col">QA</th></tr></thead>'
+        f'<th class="badge-col">QA</th>'
+        f'<th class="badge-col">PM</th></tr></thead>'
         f'<tbody>{rows}</tbody>'
         f'</table>'
     )
@@ -4922,10 +4928,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(400, {'error': 'agents must be an object'})
             return
 
-        # Completeness check: all three roles must be present
-        required_roles = {'architect', 'builder', 'qa'}
+        # Completeness check: all four roles must be present
+        required_roles = {'architect', 'builder', 'qa', 'pm'}
         if not required_roles.issubset(agents_data.keys()):
-            self._send_json(400, {'error': 'agents payload must include all three roles: architect, builder, qa'})
+            self._send_json(400, {'error': 'agents payload must include all four roles: architect, builder, qa, pm'})
             return
 
         # Load current config via resolver (reads local if present, shared fallback)
