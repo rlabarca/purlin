@@ -8,7 +8,7 @@ Modify agent configuration in `.purlin/config.local.json`. No git commit is made
 /pl-agent-config [<role>] <key> <value>
 ```
 
-**role** (optional): `architect`, `builder`, or `qa`. Defaults to the current agent's role.
+**role** (optional): `architect`, `builder`, `qa`, or `pm`. Defaults to the current agent's role.
 **key**: `model`, `effort`, `startup_sequence`, `recommend_next_actions`, or `bypass_permissions`.
 **value**: The new value (booleans: `true`/`false`; model IDs as strings; effort as `low`/`medium`/`high`).
 
@@ -28,11 +28,11 @@ Modify agent configuration in `.purlin/config.local.json`. No git commit is made
 
 Parse `<role>`, `<key>`, and `<value>` from the command invocation.
 
-If `<role>` is omitted, infer it from the current agent context (Architect → `architect`, Builder → `builder`, QA → `qa`).
+If `<role>` is omitted, infer it from the current agent context (Architect → `architect`, Builder → `builder`, QA → `qa`, PM → `pm`).
 
-Validate `<role>` is one of `architect`, `builder`, `qa`. If not, abort:
+Validate `<role>` is one of `architect`, `builder`, `qa`, `pm`. If not, abort:
 ```
-Error: Unknown role '<role>'. Must be one of: architect, builder, qa
+Error: Unknown role '<role>'. Must be one of: architect, builder, qa, pm
 ```
 
 ### 2. Validate Key

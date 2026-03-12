@@ -8,8 +8,8 @@ Save or restore agent session state across context clears and terminal restarts.
 
 - **No argument:** Restore mode with role auto-detection.
 - **`save`:** Save mode -- write a checkpoint file.
-- **`<role>`** (`architect`, `builder`, `qa`): Restore mode with explicit role.
-- **Invalid argument:** Print error listing valid options (`save`, `architect`, `builder`, `qa`) and stop.
+- **`<role>`** (`architect`, `builder`, `qa`, `pm`): Restore mode with explicit role.
+- **Invalid argument:** Print error listing valid options (`save`, `architect`, `builder`, `qa`, `pm`) and stop.
 
 ---
 
@@ -101,9 +101,9 @@ No cleanup needed. The context guard uses a PreCompact hook with no runtime file
 ### Step 1 -- Role Detection (4-Tier Fallback)
 
 1. **Explicit argument:** If the user invoked `/pl-resume <role>`, use that role.
-2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "Role Definition: The Builder", "Role Definition: The Architect", "Role Definition: The QA"). If found, use the detected role.
-3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
-4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
+2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "Role Definition: The Builder", "Role Definition: The Architect", "Role Definition: The QA", "Role Definition: The PM"). If found, use the detected role.
+3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
+4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`, `pm`.
 
 ### Step 2 -- Checkpoint Detection
 
@@ -119,7 +119,7 @@ This step runs ONLY when the system prompt does NOT contain the role's base inst
 When instruction reload is needed:
 1. Read the 4 instruction layers in order:
    - `instructions/HOW_WE_WORK_BASE.md`
-   - `instructions/{ROLE}_BASE.md` (where ROLE is ARCHITECT, BUILDER, or QA)
+   - `instructions/{ROLE}_BASE.md` (where ROLE is ARCHITECT, BUILDER, QA, or PM)
    - `.purlin/HOW_WE_WORK_OVERRIDES.md`
    - `.purlin/{ROLE}_OVERRIDES.md`
 2. Present a condensed "Role Compact" -- key mandates, prohibitions, and protocol summaries extracted from the instructions. This is NOT a full file dump; it is a focused digest of the most critical rules.
@@ -156,7 +156,7 @@ Print this structured summary:
 
 ```
 Context Restored
-Role:           <Architect | Builder | QA>
+Role:           <Architect | Builder | QA | PM>
 Branch:         <main | <branch-name>>
 Checkpoint:     <found -- resuming from <timestamp> | none>
 

@@ -12,6 +12,7 @@ Detect the current agent role from system prompt markers:
 - "Role Definition: The Architect" -> `architect`
 - "Role Definition: The Builder" -> `builder`
 - "Role Definition: The QA" -> `qa`
+- "Role Definition: The PM" -> `pm`
 
 If no marker is found, ask the user which role they are.
 
@@ -25,6 +26,6 @@ Determine the variant to print:
 
 ### 3. Print Command Table
 
-Read `instructions/references/{role}_commands.md` (where `{role}` is `architect`, `builder`, or `qa`).
+Read `instructions/references/{role}_commands.md` (where `{role}` is `architect`, `builder`, `qa`, or `pm`).
 
 Print the appropriate variant verbatim.
