@@ -57,6 +57,7 @@ Format:
 | Figma export (image/PDF) | `` `features/design/<stem>/<exported-file>` `` | Stored locally, processed as image/PDF |
 | Figma design tokens | `` `features/design/<stem>/<name>.tokens.css` `` or `.tokens.json` | Stored alongside visual exports for reference |
 | Live web page URL | `[Live](<url>)` | Fetch via WebFetch to extract current visual state |
+| Figma frame (MCP) | `[Figma](<url>)` | Read via Figma MCP; extract metadata, tokens, layout; auto-generate description |
 
 ### Design-System Agnosticism
 
@@ -72,9 +73,39 @@ Format:
 
 ### Figma Integration Tiers
 
-*   **Tier 1 (Manual):** Public Figma URLs are recorded in `- **Reference:**` lines. The Architect manually processes the design into markdown by viewing the URL and describing what they see, mapped to the anchor's token system.
+*   **Tier 1 (Manual):** Public Figma URLs are recorded in `- **Reference:**` lines. The agent manually processes the design into markdown by viewing the URL and describing what they see, mapped to the anchor's token system.
 *   **Tier 2 (Export):** Designers export Figma frames as PNG/SVG/PDF. Exports are stored locally per the storage convention. If CSS or design tokens are exported from Figma dev mode, they are stored alongside as `<name>.tokens.css` or `<name>.tokens.json`.
-*   **Tier 3 (MCP - Deferred):** Direct Figma API integration via MCP is a future capability and is not covered by this anchor node.
+*   **Tier 3 (MCP -- Live API):** When Figma MCP is available, agents read design data directly via MCP protocol. The `[Figma](<url>)` reference format is preserved for audit trail. MCP enables: extracting component metadata, layout properties, design variables/tokens, auto-layout constraints, and annotations. Tier 3 supplements Tiers 1/2 -- projects without Figma MCP fall back gracefully to Tier 1 or Tier 2 processing.
+
+### Figma MCP Auto-Setup
+
+*   When an agent encounters a Figma URL and Figma MCP tools are not available in the current session, the agent checks for Figma-related tools in the tool list.
+*   If not available, the agent provides setup instructions: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
+*   OAuth requires human browser interaction -- the agent informs the user and provides instructions for the one-time authorization flow.
+*   After setup, a session restart is required for MCP tools to become available.
+
+### Figma Staleness Detection (MCP)
+
+*   When Figma MCP is available and a screen references a Figma URL, the agent reads the design's `lastModified` timestamp via MCP.
+*   The timestamp is compared against the `- **Processed:**` date in the Visual Specification.
+*   If the Figma design was modified after the processed date, the screen is flagged as STALE.
+*   This enables automated staleness detection for Figma-sourced designs (not possible for URLs alone without MCP).
+
+### Figma as Design Authority
+
+*   When a Visual Specification is derived from a Figma reference via MCP, the Figma design is the authority for visual properties.
+*   Written descriptions in the Visual Specification are the working document for agents; Figma is the source of truth for audits and disputes.
+*   Non-visual specs (calculations, performance, data behaviors) live in Requirements and Scenarios -- they are NOT governed by Figma.
+*   Visual specs live in the Visual Specification section, derived from Figma.
+*   Requirements/Scenarios govern behavior; Visual Specification governs appearance.
+*   Conflicts between written behavioral specs and Figma visual specs are flagged by `/pl-design-audit` as `DESIGN_CONFLICT` warnings.
+
+### Figma Write Policy
+
+*   Only the PM agent MAY use Figma MCP write capabilities (generate designs, modify components, push layouts).
+*   Architect, Builder, and QA MUST treat Figma as read-only via MCP.
+*   The PM writes to Figma during design iteration with the human; the human sees all MCP tool calls and can reject them.
+*   The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
 
 ### Live Web Page Processing
 
