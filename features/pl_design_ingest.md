@@ -8,15 +8,15 @@
 
 ## 1. Overview
 
-The `/pl-design-ingest` command provides the PM and Architect with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into structured markdown descriptions mapped to the project's design token system, and updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
+The `/pl-design-ingest` command provides the PM with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into structured markdown descriptions mapped to the project's design token system, and updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
 
 ---
 
 ## 2. Requirements
 
 ### 2.1 Role Guard
-- The command is shared between PM and Architect. The PM is the primary consumer; the Architect retains access for teams without a PM agent.
-- Builder and QA agents MUST be rejected with: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-ingest instead."
+- The command is PM-only. The PM is the sole consumer of design ingestion.
+- All other agents (Architect, Builder, QA) MUST be rejected with: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead."
 
 ### 2.2 Input Modes
 The command accepts one of the following inputs:

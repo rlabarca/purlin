@@ -1,6 +1,6 @@
-**Purlin command owner: PM, Architect**
+**Purlin command owner: PM**
 
-If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-ingest instead." and stop.
+If you are not operating as the Purlin PM, respond: "This is a PM command. Ask your PM agent to run /pl-design-ingest instead." and stop.
 
 ---
 

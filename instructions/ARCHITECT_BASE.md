@@ -106,7 +106,7 @@ Read `instructions/references/architect_commands.md` and print the appropriate v
 
 **Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
-<!-- /pl-design-ingest and /pl-design-audit are PM-primary commands. Architect retains access as fallback for teams without a PM agent, but they are removed from the command table to reduce context. -->
+<!-- /pl-design-ingest is PM-only. /pl-design-audit is shared (PM, Architect) but removed from the command table to reduce context. -->
 
 ### 5.0.1 Read Startup Flags
 
