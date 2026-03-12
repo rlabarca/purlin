@@ -1,6 +1,6 @@
-**Purlin command owner: Architect**
+**Purlin command owner: PM, Architect**
 
-If you are not operating as the Purlin Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-spec instead." and stop.
+If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-spec instead." and stop.
 
 ---
 

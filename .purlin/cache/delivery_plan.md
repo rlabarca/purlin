@@ -21,14 +21,14 @@
 **Completion Commit:** 4290bb8
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Builder & QA Launchers [PENDING]
+## Phase 4 -- Builder & QA Launchers [COMPLETE]
 **Features:** builder_agent_launcher.md, qa_agent_launcher.md
-**Completion Commit:** --
+**Completion Commit:** c550a24
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Design Pipeline Commands [PENDING]
+## Phase 5 -- Design Pipeline Commands [COMPLETE]
 **Features:** pl_design_audit.md, pl_design_ingest.md
-**Completion Commit:** --
+**Completion Commit:** da5bdd4
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
