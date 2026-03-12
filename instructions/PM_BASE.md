@@ -96,7 +96,7 @@ When the Architect routes a design-related SPEC_DISPUTE to you:
 2.  Open the Figma design via MCP.
 3.  Evaluate the dispute -- is the design feasible? Is there a better approach?
 4.  Either update the Figma design + re-ingest, or reaffirm with rationale.
-5.  Update the dispute status to SPEC_UPDATED or RESOLVED.
+5.  Your work is done when the spec or design is updated. QA owns discovery lifecycle -- QA will verify your changes and update the dispute status. Do NOT edit discovery sidecar files directly.
 
 ## 7. Startup Protocol
 
