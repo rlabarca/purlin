@@ -216,6 +216,7 @@ This initializes the submodule if needed, then creates or repairs launchers, com
 ./pl-run-architect.sh   # Architect agent
 ./pl-run-builder.sh     # Builder agent
 ./pl-run-qa.sh          # QA agent
+./pl-run-pm.sh          # PM agent
 ```
 
 ### 5. Run the CDD Dashboard
@@ -266,6 +267,6 @@ Created by `pl-init.sh` in your project root:
 *   `purlin/` -- The Purlin submodule (framework tooling and base rules). Treat as read-only.
 *   `.purlin/` -- Your project-specific overrides and config.
 *   `features/` -- Your feature specifications.
-*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` -- Agent launcher scripts.
+*   `pl-run-architect.sh` / `pl-run-builder.sh` / `pl-run-qa.sh` / `pl-run-pm.sh` -- Agent launcher scripts.
 *   `pl-init.sh` -- Collaborator setup shim. Commit this.
 *   `pl-cdd-start.sh` / `pl-cdd-stop.sh` -- CDD dashboard start/stop scripts.
