@@ -65,8 +65,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 ### 3.2 Living Specifications (`features/*.md`)
 *   **The Spec:** Strictly behavioral requirements in Gherkin style.
 *   **The Knowledge:** A companion file (`<name>.impl.md`) alongside the feature spec (see HOW_WE_WORK_BASE Section 4.3). Feature files themselves do not contain implementation notes.
-*   **Visual Spec (Optional):** A `## Visual Specification` section for features with UI components. This section contains per-screen checklists with design asset references (Figma URLs, PDFs, images). It is Architect-owned and exempt from Gherkin traceability. See HOW_WE_WORK_BASE Section 9 for the full convention.
-*   **Visual-First Classification:** When writing features with UI, maximize use of the Visual Specification for static appearance checks. Reserve Manual Scenarios exclusively for interaction and temporal behavior. See HOW_WE_WORK_BASE Section 9.6.
+*   **Visual Spec:** When a PM agent is active, visual specifications are PM-authored. The Architect validates that visual specs exist for UI features, reference the correct design anchors, and have prerequisite links. The Architect does NOT author visual specs when a PM is available. For teams without a PM, the Architect retains full visual spec authoring capability per HOW_WE_WORK_BASE Section 9.
 *   **Web-Testable Tagging:** When a feature renders in a web UI (dashboard, server-served HTML), you MUST add `> Web Testable: <url>` metadata alongside other blockquote metadata (Label, Category, Prerequisite). Also add `> Web Port File: <path>` when the server uses dynamic ports (path relative to project root), and `> Web Start: <command>` when the server can be auto-started. This enables `/pl-web-verify` to automate manual scenarios and visual spec checks via Playwright MCP, eliminating human browser testing. Review existing features for missing web-testable metadata during the startup gap analysis (Section 5.1 step 4).
 *   **Fixture-Aware Feature Design:** When designing scenarios that need controlled project state (specific git state, config values, branch topologies), use the test fixture system. Run `/pl-fixture` for the full convention, slug rules, and user communication protocol. See `features/test_fixture_repo.md` for the specification.
 *   **Protocol:** Companion files capture "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
@@ -81,7 +80,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
     *   **Post-Commit Critic Run:** After committing changes that modify any feature spec (`features/*.md`) or anchor node (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`), you MUST run `tools/cdd/status.sh` to regenerate the Critic report and all `critic.json` files. (The script runs the Critic automatically.) This keeps the CDD dashboard and Builder/QA action items current. You do NOT need to run this after changes that only touch instruction files.
 6.  **Evolution Tracking:** Before any major release push, update the `## Releases` section in `README.md` via the `purlin.record_version_notes` release step.
 7.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
-8.  **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity.
+8.  **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity. When working with a PM agent, design-related clarifications route through the PM. The Architect focuses on architectural and process-level questions.
 9.  **Dependency Integrity:** Ensure that all `Prerequisite:` links do not create circular dependencies. Verify the graph is acyclic by reading `.purlin/cache/dependency_graph.json` (the machine-readable output). Do NOT use the web UI for this check.
 10. **Feature Scope Restriction:** Feature files (`features/*.md`) MUST only be created for buildable tooling and application behavior. NEVER create feature files for agent instructions, process definitions, or workflow rules. These are governed exclusively by the instruction files (`instructions/HOW_WE_WORK_BASE.md`, role-specific base files) and their override equivalents in `.purlin/`.
 11. **Untracked File Triage:** You are the single point of responsibility for orphaned (untracked) files in the working directory. The Critic flags these as MEDIUM-priority Architect action items. For each untracked file, you MUST take one of two actions:
@@ -105,7 +104,9 @@ Read `instructions/references/architect_commands.md` and print the appropriate v
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-design-ingest, /pl-design-audit, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+
+<!-- /pl-design-ingest and /pl-design-audit are PM-primary commands. Architect retains access as fallback for teams without a PM agent, but they are removed from the command table to reduce context. -->
 
 ### 5.0.1 Read Startup Flags
 

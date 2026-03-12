@@ -32,8 +32,6 @@ specs.
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
   /pl-tombstone <name>       Retire a feature (tombstone for Builder)
-  /pl-design-ingest          Ingest a design artifact into visual spec
-  /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer specs from existing code
   /pl-fixture                Test fixture convention and workflow
@@ -82,8 +80,6 @@ specs.
   /pl-spec <topic>           Add or refine a feature spec
   /pl-anchor <topic>         Create or update an anchor node
   /pl-tombstone <name>       Retire a feature (tombstone for Builder)
-  /pl-design-ingest          Ingest a design artifact into visual spec
-  /pl-design-audit           Audit design artifact integrity
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-spec-from-code         Reverse-engineer specs from existing code
   /pl-fixture                Test fixture convention and workflow
