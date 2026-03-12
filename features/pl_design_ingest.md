@@ -8,14 +8,15 @@
 
 ## 1. Overview
 
-The `/pl-design-ingest` command provides the Architect with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into structured markdown descriptions mapped to the project's design token system, and updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
+The `/pl-design-ingest` command provides the PM and Architect with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into structured markdown descriptions mapped to the project's design token system, and updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
 
 ---
 
 ## 2. Requirements
 
 ### 2.1 Role Guard
-- The command is Architect-only. Non-Architect agents MUST be rejected with: "This is an Architect command. Ask your Architect agent to run /pl-design-ingest instead."
+- The command is shared between PM and Architect. The PM is the primary consumer; the Architect retains access for teams without a PM agent.
+- Builder and QA agents MUST be rejected with: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-design-ingest instead."
 
 ### 2.2 Input Modes
 The command accepts one of the following inputs:
@@ -39,7 +40,8 @@ The command processes the artifact according to its type:
 
 - **Image/PDF:** Read using Claude's multimodal Read tool. Analyze the visual content.
 - **Live web page URL:** Fetch the page using WebFetch to extract the current visual state. Extract observable CSS patterns, component structure, and computed styles.
-- **Figma URL:** Record the URL. Prompt the user to provide an exported image or screenshot to process. If the user provides one, process it as an image. If not, record the URL with a placeholder description noting it needs manual processing.
+- **Figma URL with MCP available:** Call Figma MCP tools to extract: component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations/comments. Generate the Description automatically from structured API data.
+- **Figma URL without MCP:** Record the URL. Prompt the user to provide an exported image or screenshot to process. If the user provides one, process it as an image. If not, record the URL with a placeholder description noting it needs manual processing. Add note: "For higher fidelity, install Figma MCP: `claude mcp add --transport http figma https://mcp.figma.com/mcp`"
 
 After reading the artifact, the command:
 1. Reads all `design_*.md` anchor nodes present in the project's `features/` directory.
@@ -89,13 +91,32 @@ After reading the artifact, the command:
     And a structured Description is generated
     And draft checklist items are created
 
-#### Scenario: Ingest Figma URL
+#### Scenario: Ingest Figma URL Without MCP
 
     Given a feature file "features/my_feature.md" exists
-    When the Architect runs /pl-design-ingest with a public Figma URL targeting screen "Settings Panel"
+    And Figma MCP tools are not available in the current session
+    When the agent runs /pl-design-ingest with a public Figma URL targeting screen "Settings Panel"
     Then the Figma URL is recorded in the Reference line as [Figma](<url>)
     And the user is prompted for an exported image or screenshot
     And if no export is provided the Description notes manual processing is needed
+    And a note suggests installing Figma MCP for higher fidelity
+
+#### Scenario: Figma MCP Auto-Setup When Processing Figma URL
+
+    Given a Figma URL is provided for ingestion
+    And Figma MCP tools are not available in the current session
+    When /pl-design-ingest attempts to process the URL
+    Then the skill provides MCP installation instructions
+    And falls back to Tier 1/2 processing (prompt for export)
+
+#### Scenario: Figma MCP Extracts Design Context Directly
+
+    Given a Figma URL is provided for ingestion
+    And Figma MCP tools are available
+    When /pl-design-ingest processes the URL
+    Then design metadata is extracted via MCP (layout, tokens, components)
+    And the Description is auto-generated from structured API data
+    And the Reference preserves the original Figma URL
 
 #### Scenario: Ingest Live Web Page URL
 
