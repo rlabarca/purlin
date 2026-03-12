@@ -20,7 +20,7 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     *   `capabilities` (object): Controls which dashboard controls appear for this model.
         *   `effort` (boolean): Whether the effort dropdown is shown.
         *   `permissions` (boolean): Whether the bypass-permissions checkbox is shown.
-*   **`agents` Section:** The `config.json` file MUST contain an `agents` object with keys `"architect"`, `"builder"`, and `"qa"`. Each agent entry MUST have:
+*   **`agents` Section:** The `config.json` file MUST contain an `agents` object with keys `"architect"`, `"builder"`, `"qa"`, and optionally `"pm"`. Each agent entry MUST have:
     *   `model` (string): Model ID from the `models` array.
     *   `effort` (string): One of `"low"`, `"medium"`, `"high"`. Only meaningful when the model's `capabilities.effort` is `true`.
     *   `bypass_permissions` (boolean): Whether to skip permission prompts. Only meaningful when the model's `capabilities.permissions` is `true`.
@@ -48,7 +48,8 @@ Purlin agents (Architect, Builder, QA) are launched via shell scripts that invok
     "agents": {
         "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true },
         "builder":   { "model": "claude-opus-4-6",   "effort": "high", "bypass_permissions": true },
-        "qa":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true }
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true },
+        "pm":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true }
     }
 }
 ```
