@@ -150,6 +150,24 @@ AGENT_RECOMMEND="true"
 if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
 fi
+LAUNCHER_EOF
+
+    # Part 4c2: Role-specific defaults when config section is absent
+    if [ "$ROLE" = "pm" ]; then
+        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+
+# PM-specific defaults when agents.pm is absent from config
+# (resolver returns empty model/effort when role section is missing)
+if [ -z "$AGENT_MODEL" ] && [ -z "$AGENT_EFFORT" ]; then
+    AGENT_MODEL="claude-sonnet-4-6"
+    AGENT_EFFORT="medium"
+    AGENT_BYPASS="true"
+fi
+LAUNCHER_EOF
+    fi
+
+    # Part 4d0: Validate startup controls (literal)
+    cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
 # --- Validate startup controls ---
 if [ "$AGENT_STARTUP" = "false" ] && [ "$AGENT_RECOMMEND" = "true" ]; then
