@@ -1,10 +1,11 @@
-**Purlin command: role-scoped (Builder: own file only; QA: own file only; Architect: any file)**
+**Purlin command: role-scoped (Builder: own file only; QA: own file only; PM: own file only; Architect: any file)**
 
 If you are the Builder: you may edit ONLY `.purlin/BUILDER_OVERRIDES.md`. Decline any other target and name its owner.
 If you are QA: you may edit ONLY `.purlin/QA_OVERRIDES.md`. Decline any other target and name its owner.
+If you are the PM: you may edit ONLY `.purlin/PM_OVERRIDES.md`. Decline any other target and name its owner.
 If you are the Architect: you may edit any `*_OVERRIDES.md` file.
 
-If no argument is provided, default to the calling role's own override file (Builder → BUILDER_OVERRIDES.md, QA → QA_OVERRIDES.md, Architect → ask).
+If no argument is provided, default to the calling role's own override file (Builder → BUILDER_OVERRIDES.md, QA → QA_OVERRIDES.md, PM → PM_OVERRIDES.md, Architect → ask).
 
 **Mode:** If invoked with `--scan-only`, execute steps 1-3 only (conflict scan), then stop. No edits are made.
 
@@ -15,6 +16,7 @@ If no argument is provided, default to the calling role's own override file (Bui
 - `ARCHITECT_OVERRIDES.md` ↔ `instructions/ARCHITECT_BASE.md`
 - `BUILDER_OVERRIDES.md` ↔ `instructions/BUILDER_BASE.md`
 - `QA_OVERRIDES.md` ↔ `instructions/QA_BASE.md`
+- `PM_OVERRIDES.md` ↔ `instructions/PM_BASE.md`
 
 ---
 
