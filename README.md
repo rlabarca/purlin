@@ -18,7 +18,7 @@ Purlin helps AI agents build software together using a shared set of specs. The 
 
 The framework is built on four goals:
 
-1. **Agents stay coordinated** -- three specialized roles (Architect, Builder, QA) each know exactly what to do next.
+1. **Agents stay coordinated** -- four specialized roles (PM, Architect, Builder, QA) each know exactly what to do next.
 2. **Specs are the source of truth** -- if the code disappeared tomorrow, any agent could rebuild it from the specs alone.
 3. **People steer, agents execute** -- you set the direction; agents handle the back-and-forth without meetings.
 4. **Code stays correct** -- specs and code are always in sync, so bugs from "stale requirements" don't happen.
@@ -42,7 +42,8 @@ The project's state is defined by specification files in `features/`. Those spec
 *   **Code is disposable; design is durable.** If all source code were deleted, the specs must be sufficient to rebuild. When code reveals new truths, the design is updated first.
 
 ### 2. Role Separation
-The framework defines three distinct agent roles:
+The framework defines four distinct agent roles:
+*   **The PM:** Owns "The Intent and The Design." Translates human intent into specs with Figma-derived visual specifications.
 *   **The Architect:** Owns "The What and The Why." Designs specifications and enforces architectural integrity.
 *   **The Builder:** Owns "The How." Implements code and tests based on specifications and documents discoveries.
 *   **The QA Agent:** Owns "The Verification and The Feedback." Executes manual scenarios, records structured discoveries, and tracks their resolution.
@@ -62,16 +63,17 @@ Purlin's built-in rules live inside the submodule. Your project-specific tweaks 
 
 Each role can read everything but only writes to its own domain. The Purlin submodule is read-only for all roles.
 
-| Domain | Architect | Builder | QA |
-|---|---|---|---|
-| Feature specs (`features/*.md`) | **Owner** | Read | Read |
-| Anchor nodes (`arch_*`, `design_*`, `policy_*`) | **Owner** | Read | Read |
-| Companion files (`*.impl.md`) | Create | **Owner** | Read |
-| Override files (`.purlin/*.md`) | **Owner** | Own file | Own file |
-| Project code and config | Read | **Owner** | Read |
-| Tests and traceability | Read | **Owner** | Read |
-| QA scripts and discoveries | Read | Read | **Owner** |
-| Purlin submodule (`purlin/`) | -- | -- | -- |
+| Domain | PM | Architect | Builder | QA |
+|---|---|---|---|---|
+| Feature specs (`features/*.md`) | Write | **Owner** | Read | Read |
+| Anchor nodes (`arch_*`, `design_*`, `policy_*`) | Read | **Owner** | Read | Read |
+| Design artifacts (`features/design/`) | **Owner** | Read | Read | Read |
+| Companion files (`*.impl.md`) | Read | Create | **Owner** | Read |
+| Override files (`.purlin/*.md`) | Own file | **Owner** | Own file | Own file |
+| Project code and config | Read | Read | **Owner** | Read |
+| Tests and traceability | Read | Read | **Owner** | Read |
+| QA scripts and discoveries | Read | Read | Read | **Owner** |
+| Purlin submodule (`purlin/`) | -- | -- | -- | -- |
 
 ### Shared Commands
 
@@ -92,6 +94,18 @@ Each role can read everything but only writes to its own domain. The Purlin subm
 
 ---
 
+### The PM
+
+Translates human intent into complete feature specs with Figma-derived visual specifications. Owns the design-to-spec pipeline.
+
+| Command | Description |
+|---|---|
+| `/pl-spec <topic>` | Add or refine a feature spec |
+| `/pl-design-ingest` | Ingest a design artifact into a feature's visual spec |
+| `/pl-design-audit` | Audit design artifact integrity and staleness |
+
+---
+
 ### The Architect
 
 Owns the specification system. Designs feature requirements, architectural constraints, and governance rules. Never writes code.
@@ -104,7 +118,6 @@ Owns the specification system. Designs feature requirements, architectural const
 | `/pl-release-check` | Run the release checklist step by step |
 | `/pl-release-run [<step>]` | Run a single release step by name |
 | `/pl-release-step` | Create, modify, or delete a local release step |
-| `/pl-design-ingest` | Ingest a design artifact into a feature's visual spec |
 | `/pl-design-audit` | Audit design artifact integrity and staleness |
 | `/pl-spec-code-audit` | Find spec gaps and code-side deviations |
 | `/pl-spec-from-code` | Reverse-engineer feature specs from existing code |
