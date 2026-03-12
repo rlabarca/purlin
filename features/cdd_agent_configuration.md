@@ -30,12 +30,12 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     *   All different: `"1x Opus 4.6 | 1x Sonnet 4.6 | 1x Haiku 4.5"`
     *   The segments are ordered by count descending, then alphabetically by label.
 *   **Section Header Row:** A non-data row at the top of the section body containing column labels for the control columns. Labels for narrow checkbox columns display on two lines to conserve horizontal space (e.g., "YOLO" centered; "Startup" / "Sequence" on two lines). The header row MUST span all control columns and remain visually aligned with the agent data rows below. The `cdd_startup_controls.md` feature appends two additional column headers to this row: **Startup** / **Sequence** and **Suggest** / **Next** (each on two lines).
-*   **Section Body:** Three rows, one per agent (Architect, Builder, QA). Each row contains:
+*   **Section Body:** Four rows, one per agent (Architect, Builder, QA, PM). Each row contains:
     1.  **Agent Name:** Inter 500, 12px, uppercase, `var(--purlin-primary)` color.
     2.  **Model Dropdown:** Lists models from the `models` array in config. Active selection matches config value.
     3.  **Effort Dropdown:** Options: `low`, `medium`, `high`. Visible only when the selected model has `capabilities.effort: true`.
     4.  **YOLO Checkbox:** No inline label (identified solely by the column header). Checked = `bypass_permissions: true` (agent skips permission prompts). Unchecked = `bypass_permissions: false` (agent asks before using tools). Visible only when the selected model has `capabilities.permissions: true`.
-*   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all three rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
+*   **Column Alignment:** All agent rows MUST use a consistent grid layout so that the left edges and widths of each control column (Model, Effort, YOLO) are identical across all four rows and aligned with the column header row above. Use CSS Grid or fixed-width columns -- not auto-sized flexbox -- to guarantee alignment. When a control is hidden due to capability flags, its column space MUST be preserved (use `visibility: hidden` or an empty placeholder) so that visible controls in adjacent columns do not shift.
 *   **Flicker-Free Updates:** When agent configuration is updated (via user interaction or auto-refresh), the Agents section MUST update without visible flicker. The implementation MUST diff incoming state against current DOM values and only update controls whose values have changed. Full section re-renders on every refresh cycle are prohibited.
 *   **Pending-Write Lock:** When a user changes a control value, that control is considered "pending" from the moment of user interaction until a `POST /config/agents` response confirms the change. While a control is pending, ALL incoming state updates -- both auto-refresh AND POST responses -- MUST NOT overwrite its value. Each pending lock is associated with the POST request that carries its change. When a POST response arrives, only pending locks that were included in that specific request are released; controls changed after that POST was sent remain pending. This ensures that rapid sequential edits are not reverted by a stale response from an earlier save.
 *   **Styling:** All controls follow existing dashboard patterns:
@@ -45,10 +45,10 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
 
 ### 2.2 Dashboard API Endpoints
 
-*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all three roles: `architect`, `builder`, `qa` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
-    *   **Completeness check:** The backend MUST reject any request that is missing one or more of the three expected roles (`architect`, `builder`, `qa`) with a 400 error: `"agents payload must include all three roles: architect, builder, qa"`. Partial saves that silently drop roles are not permitted.
+*   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all four roles: `architect`, `builder`, `qa`, `pm` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
+    *   **Completeness check:** The backend MUST reject any request that is missing one or more of the four expected roles (`architect`, `builder`, `qa`, `pm`) with a 400 error: `"agents payload must include all roles: architect, builder, qa, pm"`. Partial saves that silently drop roles are not permitted.
     *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object in `config.local.json` key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
-    *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all three roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present -- it MUST NOT send a partial payload.
+    *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all four roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present -- it MUST NOT send a partial payload.
 *   **`GET /config.json`:** Serves the resolved config (reads `config.local.json` if present, falls back to `config.json`) via the config resolver. This is transparent to the dashboard frontend.
 
 ### 2.3 Web-Verify Fixture Tags
@@ -64,11 +64,11 @@ The following fixture tags provide deterministic project states for web-verify t
 
 ### Automated Scenarios
 
-#### Scenario: Agents Section Displays Three Agent Rows in HTML
-    Given a valid resolved config with three agents (architect, builder, qa)
+#### Scenario: Agents Section Displays Four Agent Rows in HTML
+    Given a valid resolved config with four agents (architect, builder, qa, pm)
     And each agent has a configured model, effort, and bypass_permissions value
     When the dashboard HTML is generated
-    Then the Agents section contains three agent rows
+    Then the Agents section contains four agent rows
     And the architect row displays the configured model in its dropdown
     And the builder row displays the configured effort value
     And the qa row displays the configured bypass_permissions checkbox state
@@ -82,20 +82,20 @@ The following fixture tags provide deterministic project states for web-verify t
 
 #### Scenario: POST /config/agents Persists to config.local.json
     Given a valid resolved config exists
-    When a POST request is sent to /config/agents with body {"architect": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "builder": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "qa": {"model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": false}}
+    When a POST request is sent to /config/agents with body {"architect": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "builder": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}, "qa": {"model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": false}, "pm": {"model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true}}
     Then config.local.json contains the updated agents values
     And config.json (shared) is unchanged
     And the response contains the updated config
 
 #### Scenario: Collapsed Badge Shows Uniform Model Summary in HTML
-    Given all three agents are configured with the same model "claude-sonnet-4-6" (label "Sonnet 4.6")
+    Given all four agents are configured with the same model "claude-sonnet-4-6" (label "Sonnet 4.6")
     When the dashboard HTML is generated
-    Then the Agents section collapsed badge contains "3x Sonnet 4.6"
+    Then the Agents section collapsed badge contains "4x Sonnet 4.6"
 
 #### Scenario: Collapsed Badge Shows Grouped Model Summary in HTML
-    Given the architect uses "claude-opus-4-6" (label "Opus 4.6") and builder and qa use "claude-sonnet-4-6" (label "Sonnet 4.6")
+    Given the architect uses "claude-opus-4-6" (label "Opus 4.6") and builder, qa, and pm use "claude-sonnet-4-6" (label "Sonnet 4.6")
     When the dashboard HTML is generated
-    Then the Agents section collapsed badge contains "2x Sonnet 4.6 | 1x Opus 4.6"
+    Then the Agents section collapsed badge contains "3x Sonnet 4.6 | 1x Opus 4.6"
 
 #### Scenario: Agents Section Has Visual Separator in HTML
     Given a valid resolved config exists
