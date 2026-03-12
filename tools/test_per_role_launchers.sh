@@ -1,7 +1,7 @@
 #!/bin/bash
 # test_per_role_launchers.sh — Automated tests for per-role agent launcher features.
-# Tests PM launcher (pm_agent_launcher.md) and Architect launcher (architect_agent_launcher.md).
-# Produces tests/pm_agent_launcher/tests.json and tests/architect_agent_launcher/tests.json.
+# Tests PM, Architect, Builder, and QA launchers.
+# Produces tests/{pm,architect,builder,qa}_agent_launcher/tests.json.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +17,14 @@ ARCH_PASS=0
 ARCH_FAIL=0
 ARCH_ERRORS=""
 
+BUILD_PASS=0
+BUILD_FAIL=0
+BUILD_ERRORS=""
+
+QA_PASS=0
+QA_FAIL=0
+QA_ERRORS=""
+
 ###############################################################################
 # Helpers
 ###############################################################################
@@ -24,6 +32,10 @@ pm_pass() { PM_PASS=$((PM_PASS + 1)); echo "  PASS: $1"; }
 pm_fail() { PM_FAIL=$((PM_FAIL + 1)); PM_ERRORS="$PM_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
 arch_pass() { ARCH_PASS=$((ARCH_PASS + 1)); echo "  PASS: $1"; }
 arch_fail() { ARCH_FAIL=$((ARCH_FAIL + 1)); ARCH_ERRORS="$ARCH_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
+build_pass() { BUILD_PASS=$((BUILD_PASS + 1)); echo "  PASS: $1"; }
+build_fail() { BUILD_FAIL=$((BUILD_FAIL + 1)); BUILD_ERRORS="$BUILD_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
+qa_pass() { QA_PASS=$((QA_PASS + 1)); echo "  PASS: $1"; }
+qa_fail() { QA_FAIL=$((QA_FAIL + 1)); QA_ERRORS="$QA_ERRORS\n  FAIL: $1"; echo "  FAIL: $1"; }
 
 # Create a sandbox with minimal instructions and a mock claude binary.
 setup_launcher_sandbox() {
@@ -397,6 +409,276 @@ fi
 teardown_launcher_sandbox
 
 ###############################################################################
+echo ""
+echo "=== Builder Agent Launcher Tests ==="
+###############################################################################
+
+# --- Scenario: Builder Launcher Dispatches with Config ---
+echo ""
+echo "[Scenario] Builder Launcher Dispatches with Config"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": {
+            "model": "claude-opus-4-6",
+            "effort": "high",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--model claude-opus-4-6'; then
+    build_pass "Builder launcher passed --model claude-opus-4-6"
+else
+    build_fail "Builder launcher did not pass --model (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--effort high'; then
+    build_pass "Builder launcher passed --effort high"
+else
+    build_fail "Builder launcher did not pass --effort high (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
+    build_pass "Builder launcher passed --dangerously-skip-permissions when bypass=true"
+else
+    build_fail "Builder launcher did not pass --dangerously-skip-permissions (captured: $CAPTURED)"
+fi
+
+# Verify resolve_config.py is called
+if grep -q 'resolve_config.py' "$SANDBOX/pl-run-builder.sh"; then
+    build_pass "Builder launcher calls resolve_config.py builder"
+else
+    build_fail "Builder launcher does not reference resolve_config.py"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
+    build_pass "Builder launcher passes --append-system-prompt-file"
+else
+    build_fail "Builder launcher missing --append-system-prompt-file (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Builder Launcher Uses Default Permissions When bypass=false ---
+echo ""
+echo "[Scenario] Builder Launcher Uses Default Permissions When bypass=false"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": {
+            "model": "claude-opus-4-6",
+            "effort": "high",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
+    build_fail "Builder launcher should NOT pass --allowedTools when bypass=false (captured: $CAPTURED)"
+else
+    build_pass "Builder launcher does not pass --allowedTools when bypass=false"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
+    build_fail "Builder launcher should NOT pass --dangerously-skip-permissions when bypass=false (captured: $CAPTURED)"
+else
+    build_pass "Builder launcher does not pass --dangerously-skip-permissions when bypass=false"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Builder Launcher Assembles Correct Prompt ---
+echo ""
+echo "[Scenario] Builder Launcher Assembles Correct Prompt"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-builder.sh" "$SANDBOX/"
+
+# Create BUILDER_OVERRIDES.md to verify inclusion
+echo "# BUILDER_OVERRIDES content" > "$SANDBOX/.purlin/BUILDER_OVERRIDES.md"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "builder": {
+            "model": "claude-opus-4-6",
+            "effort": "high",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-builder.sh" > /dev/null 2>&1
+PROMPT_CONTENT=$(cat "$PROMPT_CAPTURE" 2>/dev/null || echo "")
+
+if echo "$PROMPT_CONTENT" | grep -q 'HOW_WE_WORK_BASE stub'; then
+    build_pass "Prompt includes HOW_WE_WORK_BASE.md content"
+else
+    build_fail "Prompt missing HOW_WE_WORK_BASE.md"
+fi
+
+if echo "$PROMPT_CONTENT" | grep -q 'BUILDER_BASE stub'; then
+    build_pass "Prompt includes BUILDER_BASE.md content"
+else
+    build_fail "Prompt missing BUILDER_BASE.md"
+fi
+
+if echo "$PROMPT_CONTENT" | grep -q 'BUILDER_OVERRIDES content'; then
+    build_pass "Prompt includes BUILDER_OVERRIDES.md content"
+else
+    build_fail "Prompt missing BUILDER_OVERRIDES.md"
+fi
+
+# Verify session message
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+if echo "$CAPTURED" | grep -q 'Begin Builder session.'; then
+    build_pass "Session message is 'Begin Builder session.'"
+else
+    build_fail "Wrong session message (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+
+###############################################################################
+echo ""
+echo "=== QA Agent Launcher Tests ==="
+###############################################################################
+
+# --- Scenario: QA Launcher Dispatches with Config ---
+echo ""
+echo "[Scenario] QA Launcher Dispatches with Config"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-qa.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "qa": {
+            "model": "claude-sonnet-4-6",
+            "effort": "medium",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-qa.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--model claude-sonnet-4-6'; then
+    qa_pass "QA launcher passed --model claude-sonnet-4-6"
+else
+    qa_fail "QA launcher did not pass --model (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--effort medium'; then
+    qa_pass "QA launcher passed --effort medium"
+else
+    qa_fail "QA launcher did not pass --effort medium (captured: $CAPTURED)"
+fi
+
+# Verify resolve_config.py qa is called
+if grep -q 'resolve_config.py' "$SANDBOX/pl-run-qa.sh"; then
+    qa_pass "QA launcher calls resolve_config.py qa"
+else
+    qa_fail "QA launcher does not reference resolve_config.py"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--allowedTools'; then
+    qa_pass "QA launcher passes --allowedTools (bypass=false)"
+else
+    qa_fail "QA launcher missing --allowedTools (captured: $CAPTURED)"
+fi
+
+# Verify the specific QA tool restrictions
+if echo "$CAPTURED" | grep -q 'Write' && echo "$CAPTURED" | grep -q 'Edit'; then
+    qa_pass "QA --allowedTools includes Write and Edit"
+else
+    qa_fail "QA --allowedTools missing Write/Edit (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
+    qa_pass "QA launcher passes --append-system-prompt-file"
+else
+    qa_fail "QA launcher missing --append-system-prompt-file (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: QA Launcher Assembles Correct Prompt ---
+echo ""
+echo "[Scenario] QA Launcher Assembles Correct Prompt"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-qa.sh" "$SANDBOX/"
+
+# Create QA_OVERRIDES.md to verify inclusion
+echo "# QA_OVERRIDES content" > "$SANDBOX/.purlin/QA_OVERRIDES.md"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "qa": {
+            "model": "claude-sonnet-4-6",
+            "effort": "medium",
+            "bypass_permissions": true
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-qa.sh" > /dev/null 2>&1
+PROMPT_CONTENT=$(cat "$PROMPT_CAPTURE" 2>/dev/null || echo "")
+
+if echo "$PROMPT_CONTENT" | grep -q 'HOW_WE_WORK_BASE stub'; then
+    qa_pass "Prompt includes HOW_WE_WORK_BASE.md content"
+else
+    qa_fail "Prompt missing HOW_WE_WORK_BASE.md"
+fi
+
+if echo "$PROMPT_CONTENT" | grep -q 'QA_BASE stub'; then
+    qa_pass "Prompt includes QA_BASE.md content"
+else
+    qa_fail "Prompt missing QA_BASE.md"
+fi
+
+if echo "$PROMPT_CONTENT" | grep -q 'QA_OVERRIDES content'; then
+    qa_pass "Prompt includes QA_OVERRIDES.md content"
+else
+    qa_fail "Prompt missing QA_OVERRIDES.md"
+fi
+
+# Verify session message
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+if echo "$CAPTURED" | grep -q 'Begin QA verification session.'; then
+    qa_pass "Session message is 'Begin QA verification session.'"
+else
+    qa_fail "Wrong session message (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+###############################################################################
 # Results
 ###############################################################################
 echo ""
@@ -412,14 +694,30 @@ if [ $ARCH_FAIL -gt 0 ]; then
     echo "  Failures:"
     echo -e "$ARCH_ERRORS"
 fi
+echo ""
+echo "  Builder Launcher: $BUILD_PASS/$((BUILD_PASS + BUILD_FAIL)) passed"
+if [ $BUILD_FAIL -gt 0 ]; then
+    echo "  Failures:"
+    echo -e "$BUILD_ERRORS"
+fi
+echo ""
+echo "  QA Launcher: $QA_PASS/$((QA_PASS + QA_FAIL)) passed"
+if [ $QA_FAIL -gt 0 ]; then
+    echo "  Failures:"
+    echo -e "$QA_ERRORS"
+fi
 echo "==============================="
 
 # Write per-feature test results
 PM_TOTAL=$((PM_PASS + PM_FAIL))
 ARCH_TOTAL=$((ARCH_PASS + ARCH_FAIL))
+BUILD_TOTAL=$((BUILD_PASS + BUILD_FAIL))
+QA_TOTAL=$((QA_PASS + QA_FAIL))
 
 PM_JSON="{\"status\": \"$([ $PM_FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $PM_PASS, \"failed\": $PM_FAIL, \"total\": $PM_TOTAL, \"test_file\": \"tools/test_per_role_launchers.sh\"}"
 ARCH_JSON="{\"status\": \"$([ $ARCH_FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $ARCH_PASS, \"failed\": $ARCH_FAIL, \"total\": $ARCH_TOTAL, \"test_file\": \"tools/test_per_role_launchers.sh\"}"
+BUILD_JSON="{\"status\": \"$([ $BUILD_FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $BUILD_PASS, \"failed\": $BUILD_FAIL, \"total\": $BUILD_TOTAL, \"test_file\": \"tools/test_per_role_launchers.sh\"}"
+QA_JSON="{\"status\": \"$([ $QA_FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $QA_PASS, \"failed\": $QA_FAIL, \"total\": $QA_TOTAL, \"test_file\": \"tools/test_per_role_launchers.sh\"}"
 
 mkdir -p "$TESTS_DIR/pm_agent_launcher"
 echo "$PM_JSON" > "$TESTS_DIR/pm_agent_launcher/tests.json"
@@ -427,8 +725,14 @@ echo "$PM_JSON" > "$TESTS_DIR/pm_agent_launcher/tests.json"
 mkdir -p "$TESTS_DIR/architect_agent_launcher"
 echo "$ARCH_JSON" > "$TESTS_DIR/architect_agent_launcher/tests.json"
 
+mkdir -p "$TESTS_DIR/builder_agent_launcher"
+echo "$BUILD_JSON" > "$TESTS_DIR/builder_agent_launcher/tests.json"
+
+mkdir -p "$TESTS_DIR/qa_agent_launcher"
+echo "$QA_JSON" > "$TESTS_DIR/qa_agent_launcher/tests.json"
+
 echo ""
-OVERALL_FAIL=$((PM_FAIL + ARCH_FAIL))
+OVERALL_FAIL=$((PM_FAIL + ARCH_FAIL + BUILD_FAIL + QA_FAIL))
 if [ $OVERALL_FAIL -eq 0 ]; then
     echo "All tests passed."
     exit 0
