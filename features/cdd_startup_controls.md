@@ -21,7 +21,7 @@ The flags allow expert users to bypass orientation and hand-holding while keepin
 
 ### 2.1 Config Schema
 
-*   **New fields:** Each agent entry in `config.json` (`agents.architect`, `agents.builder`, `agents.qa`) gains two new boolean fields:
+*   **New fields:** Each agent entry in `config.json` (`agents.architect`, `agents.builder`, `agents.qa`, `agents.pm`) gains two new boolean fields:
     *   `startup_sequence` (boolean, default `true`): When `true`, the agent runs its full orientation at session start (status check, Critic report, dependency graph, triage). When `false`, the agent skips orientation and awaits a direct instruction.
     *   `recommend_next_actions` (boolean, default `true`): When `true`, after orientation the agent presents a prioritized work plan and waits for approval before proceeding. When `false`, the agent orients silently and then awaits direction.
 *   **Invalid combination:** `startup_sequence: false` with `recommend_next_actions: true` is not meaningful. This combination MUST be rejected (see Section 2.3).
@@ -40,7 +40,8 @@ The flags allow expert users to bypass orientation and hand-holding while keepin
 "agents": {
     "architect": { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
     "builder":   { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
-    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true }
+    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
+    "pm":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": false, "recommend_next_actions": false }
 }
 ```
 
@@ -64,11 +65,11 @@ Purlin Builder — Ready
 ```
 
 *   **Commands shown per role:** Shared commands (`/pl-status`, `/pl-find`) appear in every agent's table, followed by the role-specific commands. The full command vocabulary for each role is defined in `README.md ## The Agents`.
-*   **Implementation:** This behavior is encoded in each role's instruction files (Architect-owned). The instruction files for `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, and `instructions/QA_BASE.md` are updated by the Architect as a companion action to this feature's delivery. The Builder does not modify instruction files.
+*   **Implementation:** This behavior is encoded in each role's instruction files (Architect-owned). The instruction files for `instructions/ARCHITECT_BASE.md`, `instructions/BUILDER_BASE.md`, `instructions/QA_BASE.md`, and `instructions/PM_BASE.md` are updated by the Architect as a companion action to this feature's delivery. The Builder does not modify instruction files.
 
 ### 2.3 Launcher Validation
 
-*   Each launcher (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`) MUST read `startup_sequence` and `recommend_next_actions` for its role from `config.json` at startup, before invoking Claude.
+*   Each launcher (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) MUST read `startup_sequence` and `recommend_next_actions` for its role from `config.json` at startup, before invoking Claude.
 *   **Invalid combination check:** When `startup_sequence` is `false` and `recommend_next_actions` is `true`, the launcher MUST print an error message to stderr describing the invalid combination and exit with status 1 without invoking Claude.
 *   **No behavioral injection:** The launchers do not conditionally modify the prompt or session message based on these flags. Actual conditional startup behavior is driven by the agent's instruction files (which read the flags from `config.json` directly).
 
@@ -89,7 +90,7 @@ Purlin Builder — Ready
 *   **Constraint enforcement:** When the user unchecks the Startup Sequence control, the Suggest Next checkbox for that agent MUST be simultaneously disabled and unchecked. Re-checking Startup Sequence re-enables Suggest Next to its previous state.
 *   **Persistence:** Changes are written via `POST /config/agents` immediately, using the same debounce and pending-write-lock pattern as existing model/effort/YOLO controls (see `cdd_agent_configuration.md` Section 2.1).
 *   **Styling:** Native checkboxes using `accent-color: var(--purlin-accent)`. No inline label text is rendered beside the checkboxes in agent rows; column headers provide all identification.
-*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Startup/Sequence | Suggest/Next)`. Column alignment is consistent across all three agent rows per the grid rules in `cdd_agent_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
+*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Startup/Sequence | Suggest/Next)`. Column alignment is consistent across all four agent rows per the grid rules in `cdd_agent_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
 
 ### 2.6 API Extension
 
