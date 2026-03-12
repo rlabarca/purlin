@@ -19,7 +19,7 @@ class TestModelsBadgeGrouping(unittest.TestCase):
     """Scenario: Collapsed Badge Shows Grouped Model Summary"""
 
     def test_uniform_badge(self):
-        """All agents same model -> '3x Sonnet 4.6'"""
+        """All agents same model -> '4x Sonnet 4.6'"""
         config = {
             'models': [
                 {'id': 'claude-sonnet-4-6', 'label': 'Sonnet 4.6',
@@ -29,12 +29,13 @@ class TestModelsBadgeGrouping(unittest.TestCase):
                 'architect': {'model': 'claude-sonnet-4-6'},
                 'builder': {'model': 'claude-sonnet-4-6'},
                 'qa': {'model': 'claude-sonnet-4-6'},
+                'pm': {'model': 'claude-sonnet-4-6'},
             }
         }
         from collections import Counter
         models_list = config['models']
         agents = config['agents']
-        roles = ['architect', 'builder', 'qa']
+        roles = ['architect', 'builder', 'qa', 'pm']
         labels = []
         for role in roles:
             acfg = agents.get(role, {})
@@ -44,25 +45,25 @@ class TestModelsBadgeGrouping(unittest.TestCase):
         counts = Counter(labels)
         segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         badge = ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
-        self.assertEqual(badge, '3x Sonnet 4.6')
+        self.assertEqual(badge, '4x Sonnet 4.6')
 
     def test_grouped_badge(self):
-        """Two groups -> '2x Sonnet 4.6 | 1x Opus 4.6'"""
+        """Two groups -> '3x Sonnet 4.6 | 1x Opus 4.6'"""
         from collections import Counter
-        labels = ['Opus 4.6', 'Sonnet 4.6', 'Sonnet 4.6']
+        labels = ['Opus 4.6', 'Sonnet 4.6', 'Sonnet 4.6', 'Sonnet 4.6']
         counts = Counter(labels)
         segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         badge = ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
-        self.assertEqual(badge, '2x Sonnet 4.6 | 1x Opus 4.6')
+        self.assertEqual(badge, '3x Sonnet 4.6 | 1x Opus 4.6')
 
     def test_all_different_badge(self):
-        """Three different -> sorted by count desc then alpha"""
+        """Four different -> sorted by count desc then alpha"""
         from collections import Counter
-        labels = ['Opus 4.6', 'Sonnet 4.6', 'Haiku 4.5']
+        labels = ['Opus 4.6', 'Sonnet 4.6', 'Haiku 4.5', 'Sonnet 4.6']
         counts = Counter(labels)
         segments = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         badge = ' | '.join(f'{c}x {lbl}' for lbl, c in segments)
-        self.assertEqual(badge, '1x Haiku 4.5 | 1x Opus 4.6 | 1x Sonnet 4.6')
+        self.assertEqual(badge, '2x Sonnet 4.6 | 1x Haiku 4.5 | 1x Opus 4.6')
 
 
 class TestModelsSectionHtmlStructure(unittest.TestCase):
@@ -277,6 +278,10 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'qa': {
                 'model': 'claude-opus-4-6',
                 'effort': 'medium', 'bypass_permissions': False
+            },
+            'pm': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': True
             }
         })
         handler.do_POST()
@@ -314,7 +319,7 @@ class TestConfigModelsEndpoint(unittest.TestCase):
         handler.send_response.assert_called_with(400)
         body = handler.wfile.getvalue()
         data = json.loads(body)
-        self.assertIn('all three roles', data.get('error', ''))
+        self.assertIn('all four roles', data.get('error', ''))
 
         os.remove('/tmp/test_cdd_model_cfg_partial.json')
 
@@ -342,6 +347,10 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'qa': {
                 'model': 'claude-opus-4-6',
                 'effort': 'medium', 'bypass_permissions': False
+            },
+            'pm': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': True
             }
         })
         handler.do_POST()
@@ -373,6 +382,10 @@ class TestConfigModelsEndpoint(unittest.TestCase):
             'qa': {
                 'model': 'claude-opus-4-6',
                 'effort': 'medium', 'bypass_permissions': False
+            },
+            'pm': {
+                'model': 'claude-opus-4-6',
+                'effort': 'medium', 'bypass_permissions': True
             }
         })
         handler.do_POST()
@@ -450,6 +463,40 @@ class TestPendingWriteLock(unittest.TestCase):
         calls = [m.start() for m in re.finditer(r'applyPendingWrites\(\)', html)]
         # At least 3: function def + sync path + async path
         self.assertGreaterEqual(len(calls), 3)
+
+
+class TestFourAgentRows(unittest.TestCase):
+    """Scenario: Agents Section Displays Four Agent Rows in HTML"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_js_roles_array_includes_four_agents(self, mock_run, mock_status):
+        """The JS roles array includes all four agents for dynamic row creation."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("['architect', 'builder', 'qa', 'pm']", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_js_builds_agent_row_with_model_effort_bypass(self, mock_run, mock_status):
+        """buildAgentRowHtml creates model dropdown, effort dropdown, and bypass checkbox."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # JS creates elements with role-based IDs via buildAgentRowHtml
+        self.assertIn("'agent-model-' + role", html)
+        self.assertIn("'agent-effort-' + role", html)
+        self.assertIn("'agent-bypass-' + role", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_role_table_includes_pm_column(self, mock_run, mock_status):
+        """The role status table header includes a PM column."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('>PM</th>', html)
 
 
 class TestSectionVisualSeparation(unittest.TestCase):

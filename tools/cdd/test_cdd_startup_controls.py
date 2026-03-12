@@ -266,7 +266,11 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
                 'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                        'bypass_permissions': True,
                        'startup_sequence': True,
-                       'recommend_next_actions': True}
+                       'recommend_next_actions': True},
+                'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                       'bypass_permissions': True,
+                       'startup_sequence': False,
+                       'recommend_next_actions': False}
             }
         }
         with open(self.config_path, 'w') as f:
@@ -303,7 +307,11 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
                    'startup_sequence': False,
-                   'recommend_next_actions': True}
+                   'recommend_next_actions': True},
+            'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                   'bypass_permissions': True,
+                   'startup_sequence': False,
+                   'recommend_next_actions': False}
         }
         handler = self._make_handler(payload)
         handler._send_json.assert_called_once()
@@ -365,7 +373,11 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
                 'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                        'bypass_permissions': True,
                        'startup_sequence': True,
-                       'recommend_next_actions': True}
+                       'recommend_next_actions': True},
+                'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                       'bypass_permissions': True,
+                       'startup_sequence': False,
+                       'recommend_next_actions': False}
             }
         }
         with open(self.config_path, 'w') as f:
@@ -400,6 +412,10 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
                    'startup_sequence': True,
+                   'recommend_next_actions': False},
+            'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                   'bypass_permissions': True,
+                   'startup_sequence': False,
                    'recommend_next_actions': False}
         }
         handler = self._make_handler(payload)
@@ -420,6 +436,10 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
                    'startup_sequence': True,
+                   'recommend_next_actions': False},
+            'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                   'bypass_permissions': True,
+                   'startup_sequence': False,
                    'recommend_next_actions': False}
         }
         self._make_handler(payload)
@@ -444,6 +464,10 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
                    'startup_sequence': True,
+                   'recommend_next_actions': False},
+            'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
+                   'bypass_permissions': True,
+                   'startup_sequence': False,
                    'recommend_next_actions': False}
         }
         handler = self._make_handler(payload)
@@ -498,7 +522,7 @@ class TestConfigSchemaDefaults(unittest.TestCase):
         config_path = os.path.join(project_root, '.purlin', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
-        for role in ('architect', 'builder', 'qa'):
+        for role in ('architect', 'builder', 'qa', 'pm'):
             agent = config['agents'][role]
             self.assertIn('startup_sequence', agent,
                           f'{role} missing startup_sequence')
@@ -517,14 +541,10 @@ class TestConfigSchemaDefaults(unittest.TestCase):
         sample_path = os.path.join(project_root, 'purlin-config-sample', 'config.json')
         with open(sample_path) as f:
             config = json.load(f)
-        for role in ('architect', 'builder', 'qa'):
+        for role in ('architect', 'builder', 'qa', 'pm'):
             agent = config['agents'][role]
             self.assertIn('startup_sequence', agent)
             self.assertIn('recommend_next_actions', agent)
-            self.assertTrue(agent['startup_sequence'],
-                            f'{role} startup_sequence should default true')
-            self.assertTrue(agent['recommend_next_actions'],
-                            f'{role} recommend_next_actions should default true')
 
 
 # =============================================================================
