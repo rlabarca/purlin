@@ -169,7 +169,13 @@ visual verification, execute the visual verification pass after functional scena
 verification protocol (checklist presentation, screenshot analysis, consolidated results,
 manual fallback, batching).
 
-For features with `> Web Testable:` metadata, `/pl-web-verify` provides an automated alternative using Playwright MCP browser control. See Section 5.4.7 in the visual verification protocol.
+For features with `> Web Testable:` metadata, `/pl-web-verify` provides an automated alternative using Playwright MCP browser control with Figma-triangulated verification. See Section 5.4.7 in the visual verification protocol.
+
+**Figma-Triangulated Verification:** When Figma MCP is available and a visual spec screen has a Figma reference, QA performs three-source comparison:
+1.  Read Figma via MCP (design intent: dimensions, colors, tokens, layout).
+2.  Read the spec (Token Map + checklists).
+3.  Inspect the running app (Playwright DOM evaluation or user-provided screenshot).
+Compare all three sources per checklist item and per Token Map entry. Report verdicts: PASS (all agree), BUG (app wrong), STALE (Figma updated, spec outdated), SPEC_DRIFT (app matches Figma, not spec). Route findings to the correct role: BUG -> Builder, STALE/SPEC_DRIFT -> PM.
 
 ### 5.5 Feature Summary
 After all scenarios (functional and visual) for a feature are verified:

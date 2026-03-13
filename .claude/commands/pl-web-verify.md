@@ -159,41 +159,90 @@ For each in-scope manual scenario:
    - Use Bash tools when feasible.
    - Otherwise mark as INCONCLUSIVE with a reason note recommending manual verification via `/pl-verify`.
 
-### Step 6 — Visual Spec Verification
+### Step 5.5 — Figma MCP Pre-Check (Visual Spec Only)
+
+Before visual spec verification, check for Figma MCP tool availability:
+1. Check for Figma MCP tools (e.g., `get_file`, `get_node`) in the available tool list.
+2. If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the Figma node ID from the reference URL.
+3. If Figma MCP is NOT available, note: "Figma MCP not available -- triangulated verification skipped." Proceed with spec-only verification in Step 6.
+4. Figma MCP access is read-only. Do NOT write to Figma.
+
+### Step 6 — Visual Spec Verification (Figma-Triangulated)
 
 For each in-scope visual spec screen:
 
+**6.1 — If Figma MCP is available and screen has a Figma reference:**
+
+Read all three sources:
+- **Figma:** Fetch ONLY the specific node (using node-id from Reference URL) via Figma MCP. Extract dimensions, colors, fonts, spacing, layout.
+- **Spec:** Read Token Map entries and checklist items from the feature file.
+- **App:** Navigate to the page via Playwright MCP. Read computed styles via `browser_evaluate`.
+
+**6.2 — Per checklist item (measurable):**
+1. Read the Figma property value via MCP.
+2. Read the spec's expected value from the checklist.
+3. Read the app's actual value via `browser_evaluate("getComputedStyle(el).property")`.
+4. Assign verdict: PASS (all agree), BUG (app wrong), STALE (Figma updated, spec outdated), SPEC_DRIFT (app matches Figma, not spec).
+
+**6.3 — Token Map verification:**
+For each Token Map entry (e.g., `surface -> var(--bg)`):
+1. Read the Figma design variable value via MCP.
+2. Read the app's computed CSS property value via `browser_evaluate`.
+3. Compare. Flag drift between Figma and app values.
+
+**6.4 — Non-measurable items (visual judgment):**
+1. Take screenshot via Playwright `browser_screenshot`.
+2. Read the Figma frame/node rendering via MCP.
+3. Vision-compare the screenshot against the Figma render.
+
+**6.5 — Fallback (no Figma MCP or no Figma reference):**
 1. Navigate to the appropriate page/view state via Playwright MCP.
 2. Set up required state (hover, expand, switch themes) via `browser_click`, `browser_hover`, etc.
 3. Take a full-page screenshot via `browser_screenshot`.
 4. Analyze the screenshot against each checklist item using vision.
-5. For interaction-dependent items (hover effects, transitions):
-   - Execute the interaction via Playwright MCP.
-   - Take another screenshot.
-   - Verify the expected visual change.
+5. For interaction-dependent items: execute the interaction, take another screenshot, verify.
 6. Record PASS/FAIL per checklist item with observation notes.
 
 ### Step 7 — Result Recording
 
-1. Print a summary table:
+1. **If Figma-triangulated verification was performed**, print a three-source report:
+   ```
+   === Triangulated Verification: <feature_name> ===
+
+   Screen: <Screen Name>
+     [PASS]  <item>         Figma=<val> Spec=<val> App=<val>
+     [BUG]   <item>         Figma=<val> Spec=<val> App=<val>   <- code wrong
+     [STALE] <item>         Figma=<val> Spec=<val>             <- Figma updated
+     [DRIFT] <item>         Figma=<val> Spec=<val> App=<val>   <- spec drift
+
+   Token Map:
+     [PASS]  <token> -> <project-token>   Figma=<val> App=<val>
+     [DRIFT] <token> -> <project-token>   Figma=<val> App=<val>  <- token drift
+
+   Summary: N passed, M BUG, K STALE, J DRIFT / T total
+   ```
+
+2. **If spec-only verification was performed**, print the standard summary:
    ```
    === Web Verification Results: <feature_name> ===
    Manual Scenarios: N passed, M failed, K inconclusive / T total
    Visual Spec:      N passed, M failed / T total
    ```
 
-2. **For failures:** Record each as a `[BUG]` discovery in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using this format:
+3. **For BUG failures:** Record each as a `[BUG]` discovery in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using this format:
    ```
    ### [BUG] <title> (Discovered: YYYY-MM-DD)
-   - **Scenario:** <scenario name>
-   - **Observed Behavior:** <what was observed from screenshot/DOM analysis>
+   - **Scenario:** <scenario name or visual checklist item>
+   - **Observed Behavior:** <what was observed -- include three-source values if triangulated>
    - **Expected Behavior:** <from the spec>
    - **Action Required:** Builder
    - **Status:** OPEN
    ```
    Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - web-verify findings"`
 
-3. **For inconclusive items:** List them with recommendation: "The following items could not be automated. Use `/pl-verify` for manual verification."
+4. **For STALE/DRIFT items:** Note as PM action items in the output. These are not BUG discoveries -- they indicate the spec needs re-ingestion or sync.
+
+5. **For inconclusive items:** List them with recommendation: "The following items could not be automated. Use `/pl-verify` for manual verification."
 
 ### Step 8 — Completion Gate
 

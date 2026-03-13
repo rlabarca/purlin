@@ -21,42 +21,49 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 
 ### 2.2 Inventory Scan
 - Scan all `features/*.md` files for `## Visual Specification` sections.
-- For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Description:**` presence and content, and checklist items (`- [ ]` / `- [x]`).
+- For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Token Map:**` presence and entries, and checklist items (`- [ ]` / `- [x]`).
+- Also scan for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
 
 ### 2.3 Reference Integrity
 - **Local files:** Verify the referenced file exists on disk. Missing files are reported as CRITICAL.
 - **URLs (Figma, Live):** Validate URL syntax only (no live connectivity check without MCP). Malformed URLs are reported as WARNING.
-- **No reference:** Screens with a `- **Description:**` but no `- **Reference:**` are reported as WARNING (description exists without a backing artifact).
-- **No description:** Screens with a `- **Reference:**` but no `- **Description:**` are reported as HIGH (unprocessed artifact).
+- **No reference:** Screens with a `- **Token Map:**` but no `- **Reference:**` are reported as WARNING (Token Map exists without a backing artifact).
+- **No Token Map:** Screens with a `- **Reference:**` but no `- **Token Map:**` are reported as HIGH (unprocessed artifact).
 
 ### 2.4 Staleness Check
 - For local artifact files: compare the file's modification time against the `- **Processed:**` date.
 - If the artifact file is newer than the processed date, flag the screen as STALE.
-- Screens with `- **Processed:** N/A` that have a local reference are flagged as UNPROCESSED (same as no description).
+- Screens with `- **Processed:** N/A` that have a local reference are flagged as UNPROCESSED (same as no Token Map).
 
 ### 2.5 Figma Staleness Detection (MCP)
 - When Figma MCP tools are available and a screen references a Figma URL, read the design's `lastModified` timestamp via MCP.
-- Compare against the `- **Processed:**` date. If the Figma design was modified after the description was generated, flag as STALE.
+- Compare against the `- **Processed:**` date. If the Figma design was modified after the Token Map was generated, flag as STALE.
 - When Figma MCP is not available, Figma URL screens report staleness as N/A (no connectivity check).
 
+### 2.5.1 Brief Staleness Detection
+- For features with a Figma reference, check for `brief.json` at `features/design/<feature_stem>/brief.json`.
+- If `brief.json` exists, compare `figma_last_modified` in the brief against the spec's `- **Processed:**` date. If the brief is newer, flag the spec as STALE (the Figma design has been updated since last ingestion).
+- If `brief.json` is missing and the screen has a Figma reference, report as WARNING: "No brief.json found -- Builder has no local design data cache."
+
 ### 2.6 Design-Spec Conflict Detection (MCP)
-- When Figma MCP tools are available, extract key visual properties from the Figma design: primary colors, font families, and major layout structure.
-- Compare against the written Description in the Visual Specification.
-- Flag discrepancies as `DESIGN_CONFLICT` warnings with specific differences listed (e.g., "Description says accent is var(--accent) mapped to blue, but Figma frame uses red #FF0000").
-- These are warnings, not errors -- descriptions may intentionally use token names rather than literal values. The warning surfaces potential drift for human review.
+- When Figma MCP tools are available, extract design variable names and values from the Figma design.
+- Compare against the Token Map entries in the Visual Specification.
+- Flag discrepancies as `DESIGN_CONFLICT` warnings with specific differences listed (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
+- Also compare Figma design variable resolved values against `brief.json` token values (if present) to detect drift between the two caches.
 
 ### 2.7 Anchor Consistency Check
 - Read the project's `design_*.md` anchor nodes.
-- Scan all `- **Description:**` content for literal values that should reference the anchor's design tokens:
-  - Hardcoded hex colors (e.g., `#38BDF8`) that match or approximate an anchor token value.
-  - Hardcoded font names (e.g., `Montserrat`) that should reference a font token.
-  - Hardcoded spacing values that match an anchor's spacing scale (if defined).
-- Flag each literal value as WARNING with a suggestion to use the corresponding token name.
+- Scan all Token Map entries for consistency with the anchor's token system:
+  - Token Map right-side values (project tokens) that do not match any token declared in the anchor.
+  - Hardcoded hex colors or literal values on the right side of Token Map entries that should reference anchor token names.
+  - Checklist items containing hardcoded values that should use token references.
+- Flag each inconsistency as WARNING with a suggestion to use the corresponding anchor token name.
 
 ### 2.8 Audit Report
-- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Anchor Consistency, Design Conflict.
+- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict.
 - Reference Status values: OK, MISSING (critical), MALFORMED_URL, NO_REF, UNPROCESSED.
 - Staleness values: CURRENT, STALE, N/A (URL reference or no processed date).
+- Brief Status values: CURRENT, STALE, MISSING, N/A (non-Figma reference).
 - Anchor Consistency values: CLEAN, N warnings.
 - For STALE items, offer to re-ingest by running `/pl-design-ingest` with the re-process flag.
 
@@ -99,18 +106,35 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 #### Scenario: Unprocessed Artifact Detected
 
     Given a feature has a Visual Specification screen with a Reference to a local file
-    And the screen has no Description field
-    When the Architect runs /pl-design-audit
+    And the screen has no Token Map
+    When the PM runs /pl-design-audit
     Then the screen is reported as UNPROCESSED
     And a HIGH-priority item is generated
 
 #### Scenario: Anchor Consistency Hardcoded Color Warning
 
     Given a design anchor defines "--purlin-accent: #38BDF8"
-    And a feature's Visual Specification Description contains the literal text "#38BDF8"
-    When the Architect runs /pl-design-audit
-    Then the Description is flagged with an anchor consistency WARNING
+    And a feature's Token Map maps "accent" to the literal text "#38BDF8"
+    When the PM runs /pl-design-audit
+    Then the Token Map entry is flagged with an anchor consistency WARNING
     And the suggestion says to use "var(--purlin-accent)" instead
+
+#### Scenario: Brief Staleness Detected
+
+    Given a feature has a Figma reference with Processed date 2026-01-15
+    And brief.json exists with figma_last_modified 2026-02-20
+    When /pl-design-audit runs
+    Then the screen is flagged as STALE
+    And the Brief Status column shows STALE
+    And remediation suggests /pl-design-ingest reprocess
+
+#### Scenario: Missing Brief Warning
+
+    Given a feature has a Figma reference
+    And no brief.json exists at features/design/<feature_stem>/brief.json
+    When /pl-design-audit runs
+    Then the Brief Status column shows MISSING
+    And a WARNING is reported: "No brief.json found"
 
 #### Scenario: Figma Modification Detected as Stale via MCP
 
@@ -122,12 +146,11 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 
 #### Scenario: Design-Spec Conflict Detected via MCP
 
-    Given a screen's Description says "accent color per var(--accent)"
-    And Figma MCP shows the frame uses a red (#FF0000) accent
-    And the design anchor maps var(--accent) to blue (#0284C7)
+    Given a screen's Token Map maps "primary" to "var(--accent)"
+    And Figma MCP shows the design variable "primary" has been renamed to "brand-primary"
     When /pl-design-audit runs
     Then a DESIGN_CONFLICT warning is flagged
-    And the warning identifies the specific property and values
+    And the warning identifies the specific token name mismatch
 
 #### Scenario: Clean Audit Report
 

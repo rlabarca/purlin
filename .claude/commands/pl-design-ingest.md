@@ -25,23 +25,33 @@ Ingest a design artifact into a feature's Visual Specification section. This com
 3. **Read design anchors:** Glob for all `features/design_*.md` files. Read each one to understand the project's design token system (color tokens, font tokens, spacing scale, theme behavior).
 
 4. **Process artifact:**
-   - Image/PDF: Read the file using the Read tool (multimodal). Analyze visual content.
-   - Live web page: Fetch using WebFetch. Extract visual state, CSS patterns, component structure.
-   - Figma URL with MCP available: Call Figma MCP tools to extract component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations. Auto-generate the Description from the structured API data.
-   - Figma URL without MCP: Record the URL. Provide MCP installation instructions (`claude mcp add --transport http figma https://mcp.figma.com/mcp`). Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Description noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
+   - Image/PDF: Read the file using the Read tool (multimodal). Analyze visual content. Extract observable design tokens.
+   - Live web page: Fetch using WebFetch. Extract visual state, CSS patterns, component structure. Map CSS properties to project tokens.
+   - Figma URL with MCP available: Call Figma MCP tools to extract component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations. Auto-generate the Token Map by mapping Figma design variable names to project tokens. Also generate `brief.json` (see step 5.1).
+   - Figma URL without MCP: Record the URL. Provide MCP installation instructions (`claude mcp add --transport http figma https://mcp.figma.com/mcp`). Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Token Map noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
 
-5. **Generate description:** Create a structured markdown description covering:
-   - Layout hierarchy and component inventory
-   - Spacing relationships (mapped to anchor spacing scale if defined)
-   - Color observations (mapped to project's design token names from anchor)
-   - Typography observations (mapped to project's font stack tokens from anchor)
-   - Structural elements specific to this feature
-   - For live web pages: observable CSS patterns compared against anchor tokens
+5. **Generate Token Map and checklists:**
+   - Create a Token Map mapping design token names (from Figma or observed from artifacts) to the project's token system:
+     ```markdown
+     - **Token Map:**
+       - `surface` -> `var(--project-bg)`
+       - `primary` -> `var(--project-accent)`
+     ```
+   - Generate measurable visual acceptance checklist items (`- [ ]`) derived from design properties (dimensions, spacing, colors, typography, layout).
+   - Do NOT generate prose descriptions. The Token Map + checklists replace the previous Description paragraph.
+
+5.1. **Generate brief.json (Figma MCP only):**
+   When processing a Figma URL with MCP available, also generate `features/design/<feature_stem>/brief.json` containing:
+   - `figma_url`: The source Figma URL
+   - `figma_last_modified`: The design's `lastModified` timestamp from MCP
+   - `screens`: Per-screen structured data (node ID, dimensions, components, layout)
+   - `tokens`: Figma design variable names and their resolved values
 
 6. **Update feature file:**
    - If no `## Visual Specification` section exists, create one with the `> **Design Anchor:**` declaration.
-   - Insert or update the `### Screen:` subsection with Reference, Processed date (today), Description, and draft checklist items.
+   - Insert or update the `### Screen:` subsection with Reference, Processed date (today), Token Map, and draft checklist items.
+   - Do NOT insert a `- **Description:**` field.
 
-7. **Commit:** Commit artifact file (if local) + feature spec update together: `spec(<feature_stem>): ingest design artifact for <screen_name>`.
+7. **Commit:** Commit artifact file (if local) + brief.json (if generated) + feature spec update together: `spec(<feature_stem>): ingest design artifact for <screen_name>`.
 
-**Token mapping rule:** When no `design_*.md` anchor exists, use literal observations and append a note: "No design anchor found -- descriptions use literal values. Create a design_*.md anchor to enable token mapping."
+**Token mapping rule:** When no `design_*.md` anchor exists, use literal values in the Token Map (e.g., `` `primary` -> `#2196F3` ``) and append a note: "No design anchor found -- Token Map uses literal values. Create a design_*.md anchor to enable token mapping."

@@ -45,6 +45,7 @@ None.
 ### Screen: <Screen Name>
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** <Describe the screen layout and structure>
+- **Token Map:**
+  - `<figma-token>` -> `<project-token>`
 - [ ] <Visual acceptance criterion>
 -->

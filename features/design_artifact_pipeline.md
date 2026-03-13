@@ -21,14 +21,61 @@ Defines invariants for how external design artifacts (images, PDFs, Figma URLs, 
 Each `### Screen:` subsection in a `## Visual Specification` section MUST include:
 
 *   `- **Reference:**` -- The path to a local artifact file, a Figma URL (`[Figma](<url>)`), a live web page URL (`[Live](<url>)`), or `N/A` when no reference exists.
-*   `- **Processed:**` -- The date (YYYY-MM-DD) when the referenced artifact was last converted to a structured markdown description, or `N/A` if not yet processed.
-*   `- **Description:**` -- A structured prose description of the visual design, derived from the referenced artifact and mapped to the project's design token system.
+*   `- **Processed:**` -- The date (YYYY-MM-DD) when the referenced artifact was last ingested and the Token Map was generated, or `N/A` if not yet processed.
+*   `- **Token Map:**` -- An explicit mapping from Figma design token names to the project's design token system. Each entry is formatted as `` `<figma-token>` -> `<project-token>` ``. This is the PM's primary value-add: bridging Figma's naming world and the project's token world.
+
+### Token Map Format
+
+The Token Map replaces prose descriptions. It provides a structured, auditable bridge between the design tool and the codebase:
+
+```markdown
+- **Token Map:**
+  - `surface` -> `var(--project-bg)`
+  - `on-surface` -> `var(--project-text)`
+  - `primary` -> `var(--project-accent)`
+  - `spacing-md` -> `var(--project-spacing-md)`
+```
+
+*   Each entry maps a Figma design variable name (left) to the project's corresponding token (right).
+*   The project token format is defined by the `design_*.md` anchor (CSS custom properties, SCSS variables, Tailwind classes, SwiftUI color assets, etc.).
+*   When no design anchor exists, the right side uses literal values (e.g., `` `primary` -> `#2196F3` ``).
+
+### Design Brief Cache
+
+During ingestion, the PM extracts a compact design brief from Figma and stores it locally at `features/design/<feature_stem>/brief.json`. This provides the Builder with structured, machine-readable design data without requiring Figma MCP access during implementation.
+
+**Schema:**
+```json
+{
+  "figma_url": "https://figma.com/design/...",
+  "figma_last_modified": "2026-03-13T09:00:00Z",
+  "screens": {
+    "<Screen Name>": {
+      "node_id": "<figma-node-id>",
+      "dimensions": {"width": 375, "height": 812},
+      "components": [
+        {"name": "ComponentName", "width": 120, "height": 160, "gap": 16}
+      ],
+      "layout": "<layout-type>",
+      "auto_layout": {"direction": "horizontal", "gap": 16, "padding": 24}
+    }
+  },
+  "tokens": {
+    "<figma-token-name>": "<resolved-value>"
+  }
+}
+```
+
+*   `brief.json` is generated once by the PM during ingestion (when the PM is already reading Figma via MCP).
+*   `figma_last_modified` is embedded for staleness detection.
+*   The Builder reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
+*   QA reads Figma MCP directly during verification for the freshest data. `brief.json` is a QA fallback if MCP is unavailable.
 
 ### Processing Mandate
 
-*   Every referenced artifact MUST have a corresponding `- **Description:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the markdown description is the working document that agents use.
-*   Unprocessed artifacts (reference exists but no description) are flagged as HIGH-priority Architect action items by the Critic.
-*   Descriptions MUST be structured to cover: layout hierarchy, component inventory, spacing relationships, color observations, typography observations, and structural elements specific to the feature.
+*   Every referenced artifact MUST have a corresponding `- **Token Map:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the Token Map and checklists are the working documents that agents use.
+*   Unprocessed artifacts (reference exists but no Token Map) are flagged as HIGH-priority PM action items by the Critic.
+*   The Builder reads Figma MCP directly for layout and structure details. The Token Map provides the token bridge; visual acceptance checklists provide measurable criteria. Prose descriptions are NOT used.
 
 ### Design Anchor Declaration
 
@@ -44,7 +91,7 @@ Format:
 
 *   Feature Visual Specifications **inherit** visual properties (colors, fonts, spacing scale, theme behavior) from the project's `design_*.md` anchor(s) declared in the `> **Design Anchor:**` line.
 *   Feature artifacts provide **layout and structure** -- component arrangement, screen-specific elements, information hierarchy.
-*   When processing a rough wireframe or sketch, the Architect MUST map observed visuals to the project's design token system as defined in the anchor. For example, a blue rectangle in a wireframe becomes "a button styled per the project's accent color token" -- not a literal blue color.
+*   When processing a rough wireframe or sketch, the PM MUST map observed design tokens to the project's design token system as defined in the anchor via the Token Map. For example, a Figma token named `surface` is mapped to the project's `var(--bg)` token -- not a literal hex color.
 *   **Conflict resolution:** The anchor always wins for visual properties. To deviate from anchor standards, update the anchor first (which triggers cascading resets to all dependent features).
 
 ### Supported Input Types
@@ -68,14 +115,22 @@ Format:
 ### Staleness Detection
 
 *   For local artifacts, the Critic compares the file's modification time (`mtime`) against the `- **Processed:**` date.
-*   If the artifact file is newer than the processed date, the description is flagged as STALE.
-*   Stale descriptions produce LOW-priority Architect action items prompting re-processing via `/pl-design-ingest` with the re-process flag.
+*   If the artifact file is newer than the processed date, the Token Map is flagged as STALE.
+*   Stale Token Maps produce LOW-priority PM action items prompting re-processing via `/pl-design-ingest` with the re-process flag.
+*   For `brief.json`, the Critic compares `figma_last_modified` against the spec's `- **Processed:**` date. If the brief is newer than the spec, the spec is flagged as STALE.
 
 ### Figma Integration Tiers
 
-*   **Tier 1 (Manual):** Public Figma URLs are recorded in `- **Reference:**` lines. The agent manually processes the design into markdown by viewing the URL and describing what they see, mapped to the anchor's token system.
-*   **Tier 2 (Export):** Designers export Figma frames as PNG/SVG/PDF. Exports are stored locally per the storage convention. If CSS or design tokens are exported from Figma dev mode, they are stored alongside as `<name>.tokens.css` or `<name>.tokens.json`.
-*   **Tier 3 (MCP -- Live API):** When Figma MCP is available, agents read design data directly via MCP protocol. The `[Figma](<url>)` reference format is preserved for audit trail. MCP enables: extracting component metadata, layout properties, design variables/tokens, auto-layout constraints, and annotations. Tier 3 supplements Tiers 1/2 -- projects without Figma MCP fall back gracefully to Tier 1 or Tier 2 processing.
+*   **Tier 1 (Manual):** Public Figma URLs are recorded in `- **Reference:**` lines. The PM manually creates the Token Map by viewing the URL and mapping observed design tokens to the project's token system. No `brief.json` is generated.
+*   **Tier 2 (Export):** Designers export Figma frames as PNG/SVG/PDF. Exports are stored locally per the storage convention. If CSS or design tokens are exported from Figma dev mode, they are stored alongside as `<name>.tokens.css` or `<name>.tokens.json`. The PM creates the Token Map from these exports.
+*   **Tier 3 (MCP -- Live API):** When Figma MCP is available, the PM reads design data directly via MCP protocol. The `[Figma](<url>)` reference format is preserved for audit trail. MCP enables: extracting component metadata, layout properties, design variables/tokens, auto-layout constraints, and annotations. At Tier 3, the PM also generates `brief.json` from the MCP data. Tier 3 supplements Tiers 1/2 -- projects without Figma MCP fall back gracefully to Tier 1 or Tier 2 processing.
+
+### Figma MCP Role Access
+
+*   **PM:** Full MCP access (read and write). Reads Figma for ingestion; writes to Figma during design iteration with human approval.
+*   **Builder:** Read-only MCP access. Reads Figma for layout/structure details when `brief.json` is insufficient. Primary design data source is `brief.json` + Token Map (local, no network).
+*   **QA:** Read-only MCP access. Reads Figma directly during verification for triangulated comparison (Figma vs Spec vs App). Fresh MCP data is preferred over `brief.json` for verification accuracy.
+*   **Architect:** No Figma MCP access. Does not evaluate visual design decisions.
 
 ### Figma MCP Auto-Setup
 
@@ -94,16 +149,41 @@ Format:
 ### Figma as Design Authority
 
 *   When a Visual Specification is derived from a Figma reference via MCP, the Figma design is the authority for visual properties.
-*   Written descriptions in the Visual Specification are the working document for agents; Figma is the source of truth for audits and disputes.
+*   The Token Map and checklists in the Visual Specification are the working documents for agents; Figma is the source of truth for audits, disputes, and triangulated verification.
 *   Non-visual specs (calculations, performance, data behaviors) live in Requirements and Scenarios -- they are NOT governed by Figma.
 *   Visual specs live in the Visual Specification section, derived from Figma.
 *   Requirements/Scenarios govern behavior; Visual Specification governs appearance.
-*   Conflicts between written behavioral specs and Figma visual specs are flagged by `/pl-design-audit` as `DESIGN_CONFLICT` warnings.
+*   Conflicts between the Token Map and Figma design variables are flagged by `/pl-design-audit` as `DESIGN_CONFLICT` warnings.
+
+### Triangulated Verification
+
+QA verification uses three independent sources to detect discrepancies:
+
+| Source | What QA reads | How |
+|--------|--------------|-----|
+| **Figma** | Component tree, dimensions, colors, fonts, spacing, auto-layout | Figma MCP (`get_file`, `get_node`) using the Reference URL |
+| **Spec** | Token Map + checklist items | Read from `features/<name>.md` |
+| **App** | Computed styles, DOM structure, rendered pixels | Playwright MCP (`browser_evaluate`, `browser_screenshot`) or user-provided screenshot |
+
+**Verdict matrix (per checklist item):**
+
+| Figma | Spec | App | Verdict | Action |
+|-------|------|-----|---------|--------|
+| Match | Match | Match | PASS | All three agree |
+| Changed | Stale | Match old | STALE | Figma updated but spec not re-ingested. PM action item. |
+| Match | Match | Differs | BUG | Code doesn't match spec. Builder action item. |
+| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Builder action item. |
+| Changed | Stale | Match Figma | SPEC_DRIFT | Code matches Figma but not spec. PM action item. |
+
+**Token verification:** For each Token Map entry, QA compares the Figma design variable value, the spec's project token mapping, and the app's computed CSS property value. Drift between any pair is flagged.
+
+**Non-web-testable features:** Triangulated verification still works using manual screenshots. QA reads Figma via MCP, the user provides a screenshot, and QA vision-compares the screenshot against Figma + spec checklists. Exact computed style values are replaced by vision-based approximation.
 
 ### Figma Write Policy
 
 *   Only the PM agent MAY use Figma MCP write capabilities (generate designs, modify components, push layouts).
-*   Architect, Builder, and QA MUST treat Figma as read-only via MCP.
+*   Builder and QA MUST treat Figma as read-only via MCP.
+*   Architect does not access Figma MCP.
 *   The PM writes to Figma during design iteration with the human; the human sees all MCP tool calls and can reject them.
 *   The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
 

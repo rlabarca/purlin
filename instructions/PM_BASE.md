@@ -63,8 +63,9 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 
 ### Reading from Figma (all sessions)
 *   Use Figma MCP tools to read component trees, layout, variables, tokens.
-*   Map Figma observations to the project's design anchor token system.
-*   Use `/pl-design-ingest` to formalize into Visual Specification sections.
+*   Map Figma design variable names to the project's design anchor token system via the Token Map.
+*   Generate `brief.json` from MCP data for Builder consumption.
+*   Use `/pl-design-ingest` to formalize into Visual Specification sections (Token Map + checklists, NOT prose descriptions).
 
 ### Writing to Figma (design iteration)
 *   Generate designs from descriptions when the human requests it.
@@ -81,12 +82,12 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 ## 5. Spec Authoring Workflow
 
 1.  Gather intent via Probing Question Protocol.
-2.  If Figma design exists: read via MCP, run `/pl-design-ingest`.
+2.  If Figma design exists: read via MCP, run `/pl-design-ingest` to generate Token Map + checklists + `brief.json`.
 3.  Draft feature file using template (`tools/feature_templates/_feature.md`).
 4.  Add `> Owner: PM` to the blockquote metadata. This routes design disputes and action items to the PM.
 5.  Declare Prerequisite links to relevant anchor nodes.
 6.  Write Gherkin scenarios for behavioral requirements.
-7.  Write Visual Specification for appearance requirements (from Figma).
+7.  Write Visual Specification for appearance requirements: Token Map (Figma tokens -> project tokens) + measurable acceptance checklists. Do NOT write prose descriptions.
 8.  Commit the spec.
 9.  The Architect validates during their next startup gap analysis.
 

@@ -239,10 +239,11 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
     *   `reference_path`: The value from `- **Reference:**` (local path, Figma URL, Live URL, or `N/A`).
     *   `reference_type`: One of `local`, `figma`, `live`, or `none`.
     *   `processed_date`: The value from `- **Processed:**` (YYYY-MM-DD or `N/A`).
-    *   `has_description`: Boolean indicating whether `- **Description:**` is present and non-empty.
+    *   `has_token_map`: Boolean indicating whether `- **Token Map:**` is present and contains at least one mapping entry.
 *   **Reference Integrity Check:** For references with `reference_type: "local"`, verify the file exists on disk relative to the project root. Missing files produce MEDIUM-priority PM action items with category `missing_design_reference`.
-*   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority PM action items with category `stale_design_description`.
-*   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_description` is false, produce HIGH-priority PM action items with category `unprocessed_artifact`.
+*   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority PM action items with category `stale_token_map`.
+*   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_token_map` is false, produce HIGH-priority PM action items with category `unprocessed_artifact`.
+*   **Brief Staleness Check:** For features with a Figma reference and a `brief.json` at `features/design/<feature_stem>/brief.json`, compare `figma_last_modified` in the brief against the spec's `processed_date`. If the brief is newer than the spec's processed date, produce LOW-priority PM action items with category `stale_token_map` noting that the Figma design has been updated since the spec was last ingested.
 *   **Per-Feature Output:** Include a `visual_spec` block in `tests/<feature_name>/critic.json`:
     ```json
     "visual_spec": {
@@ -255,7 +256,7 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
                 "reference_path": "features/design/cdd_status_monitor/dashboard-layout.png",
                 "reference_type": "local",
                 "processed_date": "2026-02-15",
-                "has_description": true
+                "has_token_map": true
             }
         ],
         "unprocessed_count": 0,

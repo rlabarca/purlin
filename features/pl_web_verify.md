@@ -3,12 +3,15 @@
 > Label: "/pl-web-verify Web Verify"
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
+> Prerequisite: features/design_artifact_pipeline.md
 
 [TODO]
 
 ## 1. Overview
 
-The `/pl-web-verify` skill provides automated execution of Manual Scenarios and Visual Specification checklist items for web-application features using Playwright MCP browser control tools. The LLM interprets Gherkin steps and visual checklist items, translates them into Playwright MCP actions (navigate, click, type, screenshot, evaluate JS), and judges results -- no step-definition code is needed. The LLM IS the step-definition engine.
+The `/pl-web-verify` skill provides automated execution of Manual Scenarios and Visual Specification checklist items for web-application features using Playwright MCP browser control tools with Figma-triangulated verification. The LLM interprets Gherkin steps and visual checklist items, translates them into Playwright MCP actions (navigate, click, type, screenshot, evaluate JS), and judges results -- no step-definition code is needed. The LLM IS the step-definition engine.
+
+When Figma MCP is available and a visual spec screen has a Figma reference, the skill performs three-source triangulated verification: comparing the Figma design (via MCP), the spec (Token Map + checklists), and the running app (via Playwright) to detect BUGs, STALE specs, and SPEC_DRIFT.
 
 This is an alternative *execution method* for Manual Scenarios and Visual Specs, not a new classification. The Automated/Manual/Visual taxonomy in feature specs stays unchanged. Features opt in via a `> Web Testable:` metadata annotation. Non-web features (CLI tools, file-based systems) remain manual via `/pl-verify`.
 
@@ -80,7 +83,62 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - Record results with evidence (screenshot observations, DOM values, JS evaluation results).
 - For steps requiring something outside the browser (file system, environment, email): use Bash tools when feasible, or mark as INCONCLUSIVE with a reason note recommending manual verification.
 
-### 2.9 Visual Spec Verification
+### 2.9 Figma MCP Pre-Check (Visual Spec Only)
+
+Before visual spec verification, check for Figma MCP tool availability:
+- Check for Figma MCP tools (e.g., `get_file`, `get_node`) in the available tool list.
+- If Figma MCP is available and a visual spec screen has a Figma reference (`[Figma](<url>)`), extract the Figma node ID from the reference URL for use in triangulated verification (Section 2.9.1).
+- If Figma MCP is NOT available, proceed with spec-only visual verification (no triangulation). Note in the output: "Figma MCP not available -- triangulated verification skipped. Install Figma MCP for three-source comparison."
+- Figma MCP access is read-only. QA MUST NOT write to Figma.
+
+### 2.9.1 Figma-Triangulated Visual Spec Verification
+
+When Figma MCP is available and a visual spec screen has a Figma reference, perform three-source comparison for each checklist item and Token Map entry:
+
+**Step 1 -- Read all three sources:**
+
+| Source | What QA reads | How |
+|--------|--------------|-----|
+| **Figma** | Component tree, dimensions, colors, fonts, spacing | Figma MCP (`get_file`, `get_node`) using the node ID from the Reference URL |
+| **Spec** | Token Map + checklist items | Read from `features/<name>.md` |
+| **App** | Computed styles, DOM structure, rendered pixels | Playwright MCP (`browser_evaluate`, `browser_screenshot`) |
+
+Fetch ONLY the specific Figma node referenced in the Reference URL (using the `node-id` parameter), not the entire file. This reduces response size from ~50K tokens to ~2-5K tokens per screen.
+
+**Step 2 -- Structured comparison (per checklist item):**
+
+For each measurable checklist item (e.g., `- [ ] Card width 120px`):
+1. Read the corresponding property from Figma via MCP.
+2. Read the expected value from the checklist.
+3. Read the actual value from the app via `browser_evaluate("getComputedStyle(el).property")`.
+4. Compare all three and assign a verdict:
+
+| Figma | Spec | App | Verdict | Action |
+|-------|------|-----|---------|--------|
+| Match | Match | Match | PASS | All three agree |
+| Changed | Stale | Match old | STALE | Figma updated, spec not re-ingested. PM action item. |
+| Match | Match | Differs | BUG | Code doesn't match spec. Builder action item. |
+| Changed | Changed | Differs | BUG | Spec is current but code is wrong. Builder action item. |
+| Changed | Stale | Match Figma | SPEC_DRIFT | Code matches Figma but not spec. PM action item. |
+
+**Step 3 -- Token verification:**
+
+For each Token Map entry (e.g., `surface -> var(--weather-bg)`):
+1. Read the Figma design variable value via MCP.
+2. Read the project token from the spec.
+3. Read the app's computed CSS property value via `browser_evaluate`.
+4. Compare all three. Token drift (Figma value != App value for the mapped token) is flagged.
+
+**Step 4 -- Visual judgment (non-measurable items):**
+
+For checklist items that cannot be measured via computed styles (e.g., `- [ ] Subtle left-edge shadow`):
+1. Take screenshot via Playwright.
+2. Read the Figma frame/node via MCP.
+3. Vision-compare the screenshot against the Figma render for the item.
+
+### 2.9.2 Spec-Only Visual Spec Verification (Fallback)
+
+When Figma MCP is NOT available, or a screen has no Figma reference:
 
 - For each in-scope visual spec screen, navigate to the appropriate page/view state.
 - Set up required state (e.g., hover, expand, switch themes) via Playwright MCP actions.
@@ -88,11 +146,38 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 - Analyze the screenshot against each checklist item using vision.
 - For interaction-dependent items (hover effects, transitions): execute the interaction, take another screenshot, then verify.
 - Record PASS/FAIL per checklist item with observation notes.
+- This is the previous behavior, preserved as fallback.
 
 ### 2.10 Result Recording
 
 - Print a summary: N passed, M failed, K inconclusive out of T total (separately for manual scenarios and visual spec items).
-- For failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (QA_BASE Section 4.3), including observed behavior from screenshot/DOM analysis and expected behavior from the spec.
+- **Three-source reporting (when Figma MCP was used):** Print a triangulated verification report with per-item attribution:
+  ```
+  === Triangulated Verification: <feature_name> ===
+
+  Screen: <Screen Name>
+    [PASS]  <item>         Figma=<val> Spec=<val> App=<val>
+    [BUG]   <item>         Figma=<val> Spec=<val> App=<val>   <- code wrong
+    [STALE] <item>         Figma=<val> Spec=<val>             <- Figma updated
+    [DRIFT] <item>         Figma=<val> Spec=<val> App=<val>   <- spec drift
+
+  Token Map:
+    [PASS]  <token> -> <project-token>   Figma=<val> App=<val>
+    [DRIFT] <token> -> <project-token>   Figma=<val> App=<val>  <- token drift
+
+  Summary: N passed, M BUG, K STALE, J DRIFT / T total
+  ```
+- **Verdict routing:**
+
+  | Verdict | Discovery Type | Routes To |
+  |---------|---------------|-----------|
+  | BUG (App wrong) | `[BUG]` | Builder |
+  | STALE (Figma updated, spec outdated) | Staleness PM action item | PM (re-ingest) |
+  | SPEC_DRIFT (App matches Figma, not spec) | `[DISCOVERY]` | PM (sync spec) |
+  | TOKEN_DRIFT (Figma value != App value) | `[BUG]` or `[DISCOVERY]` | Builder or PM depending on which changed |
+
+- For BUG failures: record as `[BUG]` discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`) using the standard discovery format (QA_BASE Section 4.3), including three-source comparison data in the observed behavior field.
+- For STALE/DRIFT items: record as PM action items (not BUG discoveries) noting the specific drift.
 - For inconclusive items: list them with recommendation for manual verification via `/pl-verify`.
 - Commit discovery entries with message format: `qa(<scope>): [BUG] - web-verify findings`.
 
@@ -245,12 +330,63 @@ The following instruction files MUST be updated by the Builder to reference the 
     And the summary recommends manual verification via `/pl-verify`
     And the inconclusive step is NOT recorded as a failure
 
-#### Scenario: Visual spec items verified via screenshot analysis
+#### Scenario: Visual spec items verified via screenshot analysis (no Figma MCP)
 
     Given a web-testable feature has a `## Visual Specification` with checklist items
+    And Figma MCP tools are not available
     When `/pl-web-verify` navigates to the screen and takes a screenshot
     Then each checklist item is analyzed against the screenshot using vision
     And PASS/FAIL is recorded per item with observation notes
+    And the output notes "Figma MCP not available -- triangulated verification skipped"
+
+#### Scenario: Figma-triangulated verification with all sources agreeing
+
+    Given a web-testable feature has a Visual Specification with a Figma reference
+    And the Token Map maps "primary" to "var(--accent)"
+    And a checklist item states "Card width 120px"
+    And Figma MCP is available
+    When `/pl-web-verify` performs triangulated verification
+    Then the Figma node width is read via MCP
+    And the app computed width is read via browser_evaluate
+    And all three sources agree on 120px
+    And the item is recorded as PASS with three-source attribution
+
+#### Scenario: Figma-triangulated verification detects BUG
+
+    Given a web-testable feature has a Visual Specification with a Figma reference
+    And a checklist item states "Icon 48x48"
+    And Figma reports 48px and spec says 48px but app computes 32px
+    When `/pl-web-verify` performs triangulated verification
+    Then the item is recorded as BUG with three-source attribution
+    And a [BUG] discovery is created routing to Builder
+
+#### Scenario: Figma-triangulated verification detects STALE spec
+
+    Given a web-testable feature has a Visual Specification with a Figma reference
+    And a checklist item states "heading-lg font"
+    And Figma has been updated to use "heading-xl" but spec still says "heading-lg"
+    When `/pl-web-verify` performs triangulated verification
+    Then the item is recorded as STALE
+    And the output notes Figma was updated but spec was not re-ingested
+    And a PM action item is generated for re-ingestion
+
+#### Scenario: Figma-triangulated verification detects token drift
+
+    Given a web-testable feature has a Token Map with "spacing-md" -> "var(--spacing-md)"
+    And Figma reports spacing-md resolved value is 20px
+    And the app's computed --spacing-md value is 16px
+    When `/pl-web-verify` performs token verification
+    Then the token entry is recorded as DRIFT
+    And the output shows Figma=20px App=16px
+
+#### Scenario: Three-source report format
+
+    Given `/pl-web-verify` has completed triangulated verification for a feature
+    When results are printed
+    Then the output includes a "Triangulated Verification" section
+    And each item shows Figma, Spec, and App values
+    And the Token Map section shows per-token comparison
+    And a summary line shows counts by verdict type
 
 #### Scenario: Regression scope respected
 

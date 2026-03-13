@@ -45,3 +45,12 @@ When multiple features have visual specs in the same session, you MAY offer to b
 
 ## 5.4.7 Playwright MCP Automated Alternative
 For features with `> Web Testable: <url>` metadata, `/pl-web-verify` provides fully automated visual verification using Playwright MCP browser control tools. The agent navigates to each screen, takes screenshots, executes interactions (hover, click, theme switch), and judges each checklist item via vision analysis -- no manual screenshot provision or human confirmation required. Results are recorded as PASS/FAIL per checklist item with observation notes. Failures are recorded as `[BUG]` discoveries in the standard format.
+
+When Figma MCP is also available and a visual spec screen has a Figma reference, `/pl-web-verify` performs **Figma-triangulated verification**: comparing three independent sources (Figma design via MCP, spec Token Map + checklists, running app via Playwright) to detect discrepancies with attribution. Verdicts include PASS, BUG (app wrong -> Builder), STALE (Figma updated -> PM re-ingest), and SPEC_DRIFT (app matches Figma but not spec -> PM sync). Token Map entries are also verified by comparing Figma design variable values against the app's computed CSS property values.
+
+## 5.4.8 Figma-Assisted Manual Verification
+For non-web-testable features, QA can still use Figma MCP during manual `/pl-verify` sessions. When a visual spec screen has a Figma reference and Figma MCP is available:
+1. QA reads Figma via MCP to extract expected layout, dimensions, colors from the referenced frame.
+2. The user provides a screenshot (photo, simulator capture, etc.).
+3. QA vision-compares the screenshot against the Figma frame data + spec checklists.
+4. Same three-source reporting (PASS/BUG/STALE/DRIFT), with vision-based approximation instead of computed style values.

@@ -14,24 +14,30 @@ Audit all design artifacts and visual specifications across the project for inte
    - Screen name
    - Reference path/URL (from `- **Reference:**`)
    - Processed date (from `- **Processed:**`)
-   - Whether a Description exists (from `- **Description:**`)
+   - Whether a Token Map exists (from `- **Token Map:**`)
    - Checklist item count
+   Also check for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
 
 2. **Reference integrity:** For each screen:
    - Local file references: verify the file exists on disk. Missing = CRITICAL.
    - URL references (Figma, Live): validate URL syntax only. Malformed = WARNING.
-   - Description without reference: WARNING.
-   - Reference without description: HIGH (unprocessed artifact).
+   - Token Map without reference: WARNING.
+   - Reference without Token Map: HIGH (unprocessed artifact).
 
 3. **Staleness check:** For local artifact files:
    - Read the file's modification time.
    - Compare against the Processed date.
    - If file is newer than processed date: STALE.
 
-4. **Anchor consistency:** Read all `features/design_*.md` anchor nodes. Scan descriptions for:
-   - Hardcoded hex colors that match or approximate a token value in the anchor.
-   - Hardcoded font family names that should reference a font token.
-   - Hardcoded spacing values matching an anchor's spacing scale.
+3.1. **Brief staleness:** For features with Figma references and a `brief.json`:
+   - Compare `figma_last_modified` in the brief against the spec's Processed date.
+   - If the brief is newer: STALE (Figma was updated since last ingestion).
+   - If `brief.json` is missing and screen has Figma reference: WARNING ("No brief.json found").
+
+4. **Anchor consistency:** Read all `features/design_*.md` anchor nodes. Scan Token Map entries and checklists for:
+   - Token Map right-side values that don't match any anchor token.
+   - Hardcoded hex colors or literal values in Token Map entries that should reference anchor tokens.
+   - Hardcoded values in checklist items that should use token references.
    - Flag each as WARNING with the suggested token name.
 
 5. **Figma staleness (MCP):** For screens referencing Figma URLs:
@@ -40,18 +46,18 @@ Audit all design artifacts and visual specifications across the project for inte
    - If Figma MCP is not available: report staleness as N/A for Figma screens (no connectivity check).
 
 6. **Design-spec conflict detection (MCP):** For screens referencing Figma URLs when MCP is available:
-   - Extract key visual properties from the Figma design: primary colors, font families, layout structure.
-   - Compare against the written Description and the design anchor's token definitions.
-   - Flag discrepancies as DESIGN_CONFLICT warnings with specific differences listed.
-   - These are warnings for human review — descriptions may intentionally use token names rather than literal values.
+   - Extract design variable names and values from the Figma design via MCP.
+   - Compare against the Token Map entries in the Visual Specification.
+   - Flag discrepancies as DESIGN_CONFLICT warnings (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
+   - Also compare Figma design variable resolved values against `brief.json` token values if present.
 
 7. **Report:** Print a summary table:
    ```
-   Feature              | Screen           | Ref Status  | Staleness | Anchor | Design Conflict
-   ---------------------|------------------|-------------|-----------|--------|----------------
-   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | CLEAN  | CLEAN
-   my_feature           | Settings Panel   | MISSING     | N/A       | N/A    | N/A
-   figma_feature        | Figma Screen     | OK          | STALE     | CLEAN  | 1 warning
+   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict
+   ---------------------|------------------|-------------|-----------|---------|--------|----------------
+   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN
+   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A
+   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning
    ```
 
 8. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.

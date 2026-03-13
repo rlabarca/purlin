@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The `/pl-design-ingest` command provides the PM with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into structured markdown descriptions mapped to the project's design token system, and updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
+The `/pl-design-ingest` command provides the PM with a structured workflow for ingesting external design artifacts (images, PDFs, Figma URLs, live web page URLs) into the Purlin specification system. It stores artifacts per the pipeline convention, processes them into a Token Map and visual acceptance checklists mapped to the project's design token system, and generates a `brief.json` design data cache when Figma MCP is available. It updates the target feature's Visual Specification section. This command dynamically reads whatever `design_*.md` anchors exist in the consumer project -- it does not depend on any specific design anchor.
 
 ---
 
@@ -38,28 +38,36 @@ The command accepts one of the following inputs:
 ### 2.5 Processing Workflow
 The command processes the artifact according to its type:
 
-- **Image/PDF:** Read using Claude's multimodal Read tool. Analyze the visual content.
-- **Live web page URL:** Fetch the page using WebFetch to extract the current visual state. Extract observable CSS patterns, component structure, and computed styles.
-- **Figma URL with MCP available:** Call Figma MCP tools to extract: component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations/comments. Generate the Description automatically from structured API data.
-- **Figma URL without MCP:** Record the URL. Prompt the user to provide an exported image or screenshot to process. If the user provides one, process it as an image. If not, record the URL with a placeholder description noting it needs manual processing. Add note: "For higher fidelity, install Figma MCP: `claude mcp add --transport http figma https://mcp.figma.com/mcp`"
+- **Image/PDF:** Read using Claude's multimodal Read tool. Analyze the visual content. Extract observable design tokens (colors, spacing, typography) and map them to the project's token system via the Token Map.
+- **Live web page URL:** Fetch the page using WebFetch to extract the current visual state. Extract observable CSS patterns, component structure, and computed styles. Map observed values to the project's token system via the Token Map.
+- **Figma URL with MCP available:** Call Figma MCP tools to extract: component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations/comments. Generate the Token Map automatically by mapping Figma design variable names to the project's token system. Also generate `brief.json` (see Section 2.5.1).
+- **Figma URL without MCP:** Record the URL. Prompt the user to provide an exported image or screenshot to process. If the user provides one, process it as an image. If not, record the URL with a placeholder Token Map noting it needs manual processing. Add note: "For higher fidelity, install Figma MCP: `claude mcp add --transport http figma https://mcp.figma.com/mcp`"
 
 After reading the artifact, the command:
 1. Reads all `design_*.md` anchor nodes present in the project's `features/` directory.
-2. Generates a structured markdown description covering:
-   - Layout hierarchy and component inventory
-   - Spacing relationships (mapped to the anchor's spacing scale if one is defined)
-   - Color observations (mapped to the project's design token names from the anchor)
-   - Typography observations (mapped to the project's font stack tokens from the anchor)
-   - Structural elements specific to this feature
-3. For live web pages: additionally documents observable CSS patterns and component structure compared against the anchor's token system.
+2. Generates a Token Map mapping design token names to the project's token system.
+3. Generates visual acceptance checklist items derived from measurable design properties (dimensions, spacing, colors, typography, layout).
+4. For live web pages: additionally maps observable CSS properties and component structure against the anchor's token system.
+
+### 2.5.1 Design Brief Generation (Figma MCP Only)
+When processing a Figma URL with MCP available, the command MUST also generate a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides the Builder with structured design data without requiring Figma MCP access during implementation.
+
+The brief includes:
+- `figma_url`: The source Figma URL.
+- `figma_last_modified`: The design's `lastModified` timestamp from MCP.
+- `screens`: Per-screen data with node ID, dimensions, component inventory (name, size, spacing, layout properties), and auto-layout constraints.
+- `tokens`: Figma design variable names and their resolved values.
+
+The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) or when Figma MCP is unavailable.
 
 ### 2.6 Feature File Update
 - Insert or update the `## Visual Specification` section in the target feature file.
 - Within the section, insert or update the target `### Screen:` subsection with:
   - `- **Reference:**` pointing to the stored artifact path or URL.
   - `- **Processed:**` set to the current date (YYYY-MM-DD).
-  - `- **Description:**` containing the generated structured prose.
-  - Draft visual acceptance checklist items (`- [ ]`) derived from the description.
+  - `- **Token Map:**` containing the generated token mappings (Figma design variable names -> project tokens).
+  - Draft visual acceptance checklist items (`- [ ]`) derived from measurable design properties.
+- Do NOT generate a `- **Description:**` prose paragraph. The Token Map + checklists replace prose descriptions.
 - If the feature file does not yet have a `> **Design Anchor:**` declaration, add one referencing the most relevant `design_*.md` anchor found in the project.
 
 ### 2.7 Commit Protocol
@@ -68,9 +76,9 @@ After reading the artifact, the command:
 
 ### 2.8 Design-System Agnostic Token Resolution
 - The command reads the project's `design_*.md` anchors at runtime to discover the token system.
-- Color values observed in artifacts are mapped to the nearest token name declared in the anchor.
-- Font observations are mapped to the anchor's font stack tokens.
-- If no design anchor exists in the project, the description uses literal observations without token mapping, and a note is added: "No design anchor found -- descriptions use literal values. Create a `design_*.md` anchor to enable token mapping."
+- Figma design variable names are mapped to the corresponding project token names declared in the anchor.
+- Color tokens, font tokens, and spacing tokens are all mapped through the Token Map.
+- If no design anchor exists in the project, the Token Map uses literal values (e.g., `` `primary` -> `#2196F3` ``), and a note is added: "No design anchor found -- Token Map uses literal values. Create a `design_*.md` anchor to enable token mapping."
 
 ---
 
@@ -82,23 +90,23 @@ After reading the artifact, the command:
 
     Given a feature file "features/my_feature.md" exists with no Visual Specification section
     And a design image "mockup.png" exists at a local path
-    When the Architect runs /pl-design-ingest with the image path targeting my_feature screen "Main Dashboard"
+    When the PM runs /pl-design-ingest with the image path targeting my_feature screen "Main Dashboard"
     Then the image is copied to "features/design/my_feature/mockup.png"
     And the feature file is updated with a Visual Specification section
     And the section contains a "Screen: Main Dashboard" subsection
     And the Reference line points to the stored artifact path
     And the Processed date is set to today
-    And a structured Description is generated
+    And a Token Map is generated mapping observed design tokens to the project's token system
     And draft checklist items are created
 
 #### Scenario: Ingest Figma URL Without MCP
 
     Given a feature file "features/my_feature.md" exists
     And Figma MCP tools are not available in the current session
-    When the agent runs /pl-design-ingest with a public Figma URL targeting screen "Settings Panel"
+    When the PM runs /pl-design-ingest with a public Figma URL targeting screen "Settings Panel"
     Then the Figma URL is recorded in the Reference line as [Figma](<url>)
     And the user is prompted for an exported image or screenshot
-    And if no export is provided the Description notes manual processing is needed
+    And if no export is provided the Token Map notes manual processing is needed
     And a note suggests installing Figma MCP for higher fidelity
 
 #### Scenario: Figma MCP Auto-Setup When Processing Figma URL
@@ -115,43 +123,46 @@ After reading the artifact, the command:
     And Figma MCP tools are available
     When /pl-design-ingest processes the URL
     Then design metadata is extracted via MCP (layout, tokens, components)
-    And the Description is auto-generated from structured API data
+    And the Token Map is auto-generated mapping Figma design variables to project tokens
+    And a brief.json is generated at features/design/<feature_stem>/brief.json
+    And the brief.json contains figma_url, figma_last_modified, screens, and tokens
     And the Reference preserves the original Figma URL
 
 #### Scenario: Ingest Live Web Page URL
 
     Given a feature file "features/my_feature.md" exists
     And a design anchor "features/design_visual_standards.md" exists with color tokens
-    When the Architect runs /pl-design-ingest with a live web page URL targeting screen "Current UI"
+    When the PM runs /pl-design-ingest with a live web page URL targeting screen "Current UI"
     Then the URL is recorded in the Reference line as [Live](<url>)
     And the page content is fetched via WebFetch
-    And the Description includes observable CSS patterns and component structure
-    And color observations are mapped to the design anchor's token names
+    And the Token Map maps observable CSS properties to the design anchor's token names
+    And checklist items are derived from the page's measurable visual properties
 
 #### Scenario: Re-Process Updated Artifact
 
     Given a feature file "features/my_feature.md" has a Visual Specification with screen "Main Dashboard"
     And the screen has a Reference to "features/design/my_feature/dashboard-layout.png"
     And the image file has been updated since the Processed date
-    When the Architect runs /pl-design-ingest with the re-process flag for my_feature screen "Main Dashboard"
-    Then the image is re-read and a new Description is generated
+    When the PM runs /pl-design-ingest with the re-process flag for my_feature screen "Main Dashboard"
+    Then the image is re-read and a new Token Map is generated
     And the Processed date is updated to today
-    And the previous Description is replaced
+    And the previous Token Map is replaced
+    And checklist items are updated to reflect the new design
 
 #### Scenario: Anchor Inheritance Token Mapping
 
     Given a design anchor "features/design_visual_standards.md" defines color tokens including "--accent: #38BDF8"
-    And a design artifact shows a blue button
+    And a Figma design uses a variable named "primary" with value #38BDF8
     When the artifact is processed by /pl-design-ingest
-    Then the Description maps the blue button color to "var(--accent)" (not the literal hex value)
-    And typography observations reference the anchor's font token names
+    Then the Token Map maps "primary" to "var(--accent)" (not the literal hex value)
+    And all design token entries reference the anchor's token names
 
 #### Scenario: No Design Anchor Fallback
 
     Given no design_*.md anchor files exist in the project's features/ directory
-    When the Architect runs /pl-design-ingest with a local image
-    Then the Description uses literal color and font observations
-    And a note is appended: "No design anchor found -- descriptions use literal values"
+    When the PM runs /pl-design-ingest with a local image
+    Then the Token Map uses literal values for token mappings
+    And a note is appended: "No design anchor found -- Token Map uses literal values"
 
 ### Manual Scenarios (Human Verification Required)
 
