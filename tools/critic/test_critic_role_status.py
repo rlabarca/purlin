@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Unit tests for the Critic PM Column feature.
+"""Unit tests for the Critic Role Status & Routing feature.
 
-Covers all automated scenarios from features/critic_pm_column.md.
-Outputs test results to tests/critic_pm_column/tests.json.
+Covers all automated scenarios from features/critic_role_status.md.
+Migrated from test_critic_pm_column.py + new scenarios for the unified model.
+Outputs test results to tests/critic_role_status/tests.json.
 """
 
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -19,7 +21,6 @@ from critic import (
     extract_owner,
     generate_action_items,
     compute_role_status,
-    generate_critic_json,
     generate_critic_report,
     parse_visual_spec,
     is_policy_file,
@@ -79,7 +80,27 @@ def _make_base_result(**overrides):
 
 
 # ===================================================================
-# Owner Tag Parsing Tests
+# Scenario: Anchor node Owner tag ignored
+# ===================================================================
+
+class TestAnchorNodeOwnerTagIgnored(unittest.TestCase):
+    """Anchor nodes are always Architect-owned regardless of Owner tag."""
+
+    def test_policy_anchor_always_architect(self):
+        content = '# Policy\n\n> Label: "Policy"\n> Owner: PM\n\n## 1. Purpose\n'
+        self.assertEqual(extract_owner(content, 'policy_test.md'), 'Architect')
+
+    def test_design_anchor_always_architect(self):
+        content = '# Design\n\n> Owner: PM\n'
+        self.assertEqual(extract_owner(content, 'design_test.md'), 'Architect')
+
+    def test_arch_anchor_always_architect(self):
+        content = '# Arch\n\n> Owner: PM\n'
+        self.assertEqual(extract_owner(content, 'arch_test.md'), 'Architect')
+
+
+# ===================================================================
+# Scenario: Owner tag parsing (supporting tests)
 # ===================================================================
 
 class TestExtractOwner(unittest.TestCase):
@@ -96,25 +117,12 @@ class TestExtractOwner(unittest.TestCase):
         content = '# Feature\n\n> Label: "Test"\n\n## 1. Overview\n'
         self.assertEqual(extract_owner(content, 'test.md'), 'Architect')
 
-    def test_anchor_node_always_architect(self):
-        content = '# Policy\n\n> Label: "Policy"\n> Owner: PM\n\n## 1. Purpose\n'
-        self.assertEqual(extract_owner(content, 'policy_test.md'), 'Architect')
-
-    def test_design_anchor_always_architect(self):
-        content = '# Design\n\n> Owner: PM\n'
-        self.assertEqual(extract_owner(content, 'design_test.md'), 'Architect')
-
-    def test_arch_anchor_always_architect(self):
-        content = '# Arch\n\n> Owner: PM\n'
-        self.assertEqual(extract_owner(content, 'arch_test.md'), 'Architect')
-
 
 # ===================================================================
-# SPEC_DISPUTE Routing Tests
+# Scenario: SPEC_DISPUTE on PM-owned feature routes to PM
 # ===================================================================
 
 class TestSpecDisputeOnPMOwnedFeature(unittest.TestCase):
-    """Scenario: SPEC_DISPUTE on PM-owned feature routes to PM"""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -146,7 +154,6 @@ Reqs.
 """
         with open(os.path.join(self.features_dir, 'pm_feature.md'), 'w') as f:
             f.write(feature_content)
-        # Discovery sidecar with SPEC_DISPUTE
         sidecar = """\
 ### [SPEC_DISPUTE] Behavior should be different (Discovered: 2026-03-01)
 - **Status:** OPEN
@@ -184,8 +191,11 @@ Reqs.
             critic.FEATURES_DIR = orig
 
 
+# ===================================================================
+# Scenario: SPEC_DISPUTE on Architect-owned feature routes to Architect
+# ===================================================================
+
 class TestSpecDisputeOnArchitectOwnedFeature(unittest.TestCase):
-    """Scenario: SPEC_DISPUTE on Architect-owned feature routes to Architect"""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -254,8 +264,11 @@ Reqs.
             critic.FEATURES_DIR = orig
 
 
+# ===================================================================
+# Scenario: SPEC_DISPUTE on feature with no Owner tag defaults to Architect
+# ===================================================================
+
 class TestSpecDisputeNoOwnerDefaultsToArchitect(unittest.TestCase):
-    """Scenario: SPEC_DISPUTE on feature with no Owner tag defaults to Architect"""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -321,8 +334,11 @@ Reqs.
             critic.FEATURES_DIR = orig
 
 
+# ===================================================================
+# Scenario: Visual SPEC_DISPUTE on Architect-owned feature routes to PM
+# ===================================================================
+
 class TestVisualSpecDisputeRoutesToPM(unittest.TestCase):
-    """Scenario: Visual SPEC_DISPUTE on Architect-owned feature routes to PM"""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -408,11 +424,10 @@ Reqs.
 
 
 # ===================================================================
-# Visual Reference Routing Tests
+# Scenario: Stale design description routes to PM
 # ===================================================================
 
 class TestStaleDesignRoutesToPM(unittest.TestCase):
-    """Scenario: Stale design description routes to PM"""
 
     def test_stale_design_routes_to_pm(self):
         result = _make_base_result()
@@ -431,8 +446,11 @@ class TestStaleDesignRoutesToPM(unittest.TestCase):
         self.assertEqual(len(arch_stale), 0)
 
 
+# ===================================================================
+# Scenario: Unprocessed artifact routes to PM
+# ===================================================================
+
 class TestUnprocessedArtifactRoutesToPM(unittest.TestCase):
-    """Scenario: Unprocessed artifact routes to PM"""
 
     def test_unprocessed_artifact_routes_to_pm(self):
         result = _make_base_result()
@@ -452,11 +470,10 @@ class TestUnprocessedArtifactRoutesToPM(unittest.TestCase):
 
 
 # ===================================================================
-# PM Role Status Tests
+# Scenario: Feature with no visual spec and not PM-owned reports PM N/A
 # ===================================================================
 
 class TestPMStatusNA(unittest.TestCase):
-    """Scenario: Feature with no visual spec and not PM-owned reports PM N/A"""
 
     def test_no_visual_no_pm_owner(self):
         result = _make_base_result()
@@ -466,8 +483,11 @@ class TestPMStatusNA(unittest.TestCase):
         self.assertEqual(status['pm'], 'N/A')
 
 
+# ===================================================================
+# Scenario: PM-owned feature with no PM items reports PM DONE
+# ===================================================================
+
 class TestPMStatusDONE(unittest.TestCase):
-    """Scenario: PM-owned feature with no PM items reports PM DONE"""
 
     def test_pm_owned_no_items(self):
         result = _make_base_result()
@@ -478,8 +498,11 @@ class TestPMStatusDONE(unittest.TestCase):
         self.assertEqual(status['pm'], 'DONE')
 
 
+# ===================================================================
+# Scenario: PM-owned feature with pending items reports PM TODO
+# ===================================================================
+
 class TestPMStatusTODO(unittest.TestCase):
-    """Scenario: PM-owned feature with pending items reports PM TODO"""
 
     def test_pm_owned_with_items(self):
         result = _make_base_result()
@@ -513,11 +536,10 @@ class TestPMStatusTODO(unittest.TestCase):
 
 
 # ===================================================================
-# Aggregate Report Tests
+# Scenario: Aggregate report includes PM section
 # ===================================================================
 
 class TestAggregateReportIncludesPMSection(unittest.TestCase):
-    """Scenario: Aggregate report includes PM section"""
 
     def test_pm_section_present(self):
         result = _make_base_result()
@@ -540,105 +562,254 @@ class TestAggregateReportIncludesPMSection(unittest.TestCase):
 
 
 # ===================================================================
-# CDD Dashboard PM Column Tests
+# Scenario: Per-feature critic.json includes all four role keys
 # ===================================================================
 
-class TestCDDDashboardPMColumn(unittest.TestCase):
-    """Scenario: CDD dashboard shows PM column"""
+class TestFourRoleKeys(unittest.TestCase):
 
-    def test_role_table_source_has_pm_column(self):
-        """Verify _role_table_html source code includes PM column header
-        and PM badge rendering."""
-        serve_path = os.path.join(SCRIPT_DIR, '..', 'cdd', 'serve.py')
-        with open(serve_path, 'r') as f:
-            source = f.read()
-        # Table header has PM column
-        self.assertIn('>PM</th>', source)
-        # PM badge is rendered in table rows
-        self.assertIn('pm = _role_badge_html(entry.get("pm"))', source)
-        # PM badge cell is in the row
-        self.assertIn('{pm}</td>', source)
-
-    def test_js_roles_include_pm(self):
-        """Verify JavaScript roles arrays include 'pm'."""
-        serve_path = os.path.join(SCRIPT_DIR, '..', 'cdd', 'serve.py')
-        with open(serve_path, 'r') as f:
-            source = f.read()
-        import re
-        js_roles = re.findall(
-            r"var roles = \['architect', 'builder', 'qa', 'pm'\];",
-            source)
-        self.assertTrue(
-            len(js_roles) >= 4,
-            f'Expected at least 4 JS roles arrays with pm, found {len(js_roles)}')
-
-    def test_status_json_includes_pm(self):
-        """Verify that when critic.json has pm in role_status,
-        get_feature_role_status returns it."""
-        root = tempfile.mkdtemp()
-        try:
-            tests_dir = os.path.join(root, 'tests', 'my_feature')
-            os.makedirs(tests_dir)
-            critic_json = {
-                'role_status': {
-                    'architect': 'DONE',
-                    'builder': 'DONE',
-                    'qa': 'CLEAN',
-                    'pm': 'N/A',
-                },
-            }
-            with open(os.path.join(tests_dir, 'critic.json'), 'w') as f:
-                json.dump(critic_json, f)
-
-            # Direct file-based test (no serve.py import needed)
-            critic_path = os.path.join(tests_dir, 'critic.json')
-            with open(critic_path, 'r') as f:
-                data = json.load(f)
-            rs = data.get('role_status')
-            self.assertIn('pm', rs)
-            self.assertEqual(rs['pm'], 'N/A')
-        finally:
-            shutil.rmtree(root)
-
-    def test_config_agents_requires_pm(self):
-        """Verify _handle_config_agents requires pm in agents payload."""
-        serve_path = os.path.join(SCRIPT_DIR, '..', 'cdd', 'serve.py')
-        with open(serve_path, 'r') as f:
-            source = f.read()
-        self.assertIn("'architect', 'builder', 'qa', 'pm'}", source)
-
-
-# ===================================================================
-# Integration: generate_action_items returns pm key
-# ===================================================================
-
-class TestActionItemsReturnPMKey(unittest.TestCase):
-    """Verify generate_action_items always returns a pm key."""
-
-    def test_pm_key_present(self):
+    def test_action_items_has_all_four_roles(self):
         result = _make_base_result()
         items = generate_action_items(result)
+        self.assertIn('architect', items)
+        self.assertIn('builder', items)
+        self.assertIn('qa', items)
         self.assertIn('pm', items)
-        self.assertIsInstance(items['pm'], list)
+        for role in ('architect', 'builder', 'qa', 'pm'):
+            self.assertIsInstance(items[role], list)
 
-
-class TestRoleStatusReturnsPMKey(unittest.TestCase):
-    """Verify compute_role_status always returns a pm key."""
-
-    def test_pm_key_present(self):
+    def test_role_status_has_all_four_roles(self):
         result = _make_base_result()
         status = compute_role_status(result)
+        self.assertIn('architect', status)
+        self.assertIn('builder', status)
+        self.assertIn('qa', status)
         self.assertIn('pm', status)
-        self.assertIn(status['pm'], ('DONE', 'TODO', 'N/A'))
 
 
 # ===================================================================
-# Test runner with output to tests/critic_pm_column/tests.json
+# Scenario: Architect action item from spec gate FAIL
+# ===================================================================
+
+class TestArchitectActionItemFromSpecGateFail(unittest.TestCase):
+
+    def test_spec_gate_fail_creates_architect_item(self):
+        result = _make_base_result()
+        result['feature_file'] = 'features/broken_feature.md'
+        result['spec_gate'] = {
+            'status': 'FAIL',
+            'checks': {
+                'section_completeness': {
+                    'status': 'FAIL',
+                    'detail': 'Missing sections: Requirements',
+                },
+                'scenario_classification': {'status': 'PASS', 'detail': 'OK'},
+                'policy_anchoring': {'status': 'PASS', 'detail': 'OK'},
+                'prerequisite_integrity': {'status': 'PASS', 'detail': 'OK'},
+                'gherkin_quality': {'status': 'PASS', 'detail': 'OK'},
+            },
+        }
+        items = generate_action_items(result)
+        arch_items = [i for i in items['architect']
+                      if i['priority'] == 'HIGH'
+                      and i.get('category') == 'spec_gate']
+        self.assertTrue(len(arch_items) > 0,
+                        'Spec Gate FAIL should create HIGH Architect item')
+        self.assertIn('section_completeness', arch_items[0]['description'])
+        # Must NOT create a PM item for spec gaps
+        pm_spec_items = [i for i in items['pm']
+                         if i.get('category') == 'spec_gate']
+        self.assertEqual(len(pm_spec_items), 0,
+                         'Spec Gate FAIL should NOT create PM item')
+
+    def test_spec_gate_fail_sets_architect_todo(self):
+        result = _make_base_result()
+        result['spec_gate'] = {
+            'status': 'FAIL',
+            'checks': {
+                'section_completeness': {
+                    'status': 'FAIL',
+                    'detail': 'Missing sections: Requirements',
+                },
+                'scenario_classification': {'status': 'PASS', 'detail': 'OK'},
+                'policy_anchoring': {'status': 'PASS', 'detail': 'OK'},
+                'prerequisite_integrity': {'status': 'PASS', 'detail': 'OK'},
+                'gherkin_quality': {'status': 'PASS', 'detail': 'OK'},
+            },
+        }
+        # Inject the action items so compute_role_status can see them
+        result['action_items'] = generate_action_items(result)
+        status = compute_role_status(result)
+        self.assertEqual(status['architect'], 'TODO')
+
+
+# ===================================================================
+# Scenario: Builder action item from lifecycle reset
+# ===================================================================
+
+class TestBuilderActionItemFromLifecycleReset(unittest.TestCase):
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: Reset Feature
+
+> Label: "Reset Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Test
+    Given X
+    When Y
+    Then Z
+"""
+        with open(os.path.join(
+                self.features_dir, 'reset_feature.md'), 'w') as f:
+            f.write(feature_content)
+        # CDD status showing this feature in TODO state
+        self.cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/reset_feature.md'}],
+                'testing': [],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_lifecycle_reset_creates_builder_item(self):
+        """When a feature resets to TODO lifecycle, Builder gets a HIGH item."""
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/reset_feature.md'
+            items = generate_action_items(result, cdd_status=self.cdd_status)
+            builder_reset = [i for i in items['builder']
+                             if i.get('category') == 'lifecycle_reset']
+            self.assertTrue(len(builder_reset) > 0,
+                            'Lifecycle reset should create Builder action item')
+            self.assertEqual(builder_reset[0]['priority'], 'HIGH')
+        finally:
+            critic.FEATURES_DIR = orig
+
+    def test_lifecycle_reset_sets_builder_todo(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/reset_feature.md'
+            result['action_items'] = generate_action_items(
+                result, cdd_status=self.cdd_status)
+            status = compute_role_status(result, cdd_status=self.cdd_status)
+            self.assertEqual(status['builder'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: QA action item from TESTING status with manual scenarios
+# ===================================================================
+
+class TestQAActionItemFromTestingWithManualScenarios(unittest.TestCase):
+
+    def setUp(self):
+        """Create a temp dir with a feature in TESTING state."""
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        feature_content = """\
+# Feature: Manual Feature
+
+> Label: "Manual Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### Manual Scenarios (Human Verification Required)
+
+#### Scenario: Manual Check One
+    Given a running system
+    When the user inspects the output
+    Then the display is correct
+
+#### Scenario: Manual Check Two
+    Given a running system
+    When the user clicks submit
+    Then the form saves correctly
+
+#### Scenario: Manual Check Three
+    Given a running system
+    When the user refreshes
+    Then data is preserved
+"""
+        with open(os.path.join(
+                self.features_dir, 'manual_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+        # CDD status with feature in TESTING
+        self.cdd_status = {
+            'features': {
+                'todo': [],
+                'testing': [{'file': 'features/manual_feature.md'}],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_testing_with_manual_creates_qa_item(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/manual_feature.md'
+            items = generate_action_items(
+                result, cdd_status=self.cdd_status)
+            qa_items = [i for i in items['qa']
+                        if i.get('category') == 'testing_status'
+                        and 'manual_feature' in i.get('feature', '')]
+            self.assertTrue(len(qa_items) > 0,
+                            'TESTING with manual scenarios should create QA item')
+            self.assertIn('3 manual scenario', qa_items[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+# ===================================================================
+# Test runner with output to tests/critic_role_status/tests.json
 # ===================================================================
 
 if __name__ == '__main__':
     project_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-    tests_out_dir = os.path.join(project_root, 'tests', 'critic_pm_column')
+    tests_out_dir = os.path.join(project_root, 'tests', 'critic_role_status')
     os.makedirs(tests_out_dir, exist_ok=True)
     status_file = os.path.join(tests_out_dir, 'tests.json')
 
@@ -654,7 +825,7 @@ if __name__ == '__main__':
         'passed': result.testsRun - failure_count,
         'failed': failure_count,
         'total': result.testsRun,
-        'test_file': 'tools/critic/test_critic_pm_column.py',
+        'test_file': 'tools/critic/test_critic_role_status.py',
     }
     with open(status_file, 'w') as f:
         json.dump(report, f)
