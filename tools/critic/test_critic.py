@@ -75,6 +75,7 @@ from critic import (
     _extract_scope_from_commit,
     _parse_web_testable,
     compute_verification_effort,
+    _get_requirements_diff,
 )
 import logic_drift
 
@@ -7756,6 +7757,338 @@ Requirements here.
                 len(result['action_items'][role]), 0,
                 f'Terminal status {terminal[role]} for {role} should '
                 f'not get fallback action items')
+
+
+# ===================================================================
+# Requirements Diff Detection Tests (Section 2.12)
+# ===================================================================
+
+class TestRequirementsDiff(unittest.TestCase):
+    """Test _get_requirements_diff() requirements section comparison."""
+
+    def test_detects_modified_requirement_section(self):
+        """Changed Requirements subsection is detected by number."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Some original content.
+### 2.2 Second Section
+Original text here.
+## 3. Scenarios
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Some original content.
+### 2.2 Second Section
+Modified text here with changes.
+## 3. Scenarios
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.2'])
+        self.assertFalse(result['visual_spec_changed'])
+
+    def test_detects_new_requirement_section(self):
+        """Added Requirements subsection is detected."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Content.
+## 3. Scenarios
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Content.
+### 2.2 New Section
+Brand new content.
+## 3. Scenarios
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.2'])
+
+    def test_detects_removed_requirement_section(self):
+        """Removed Requirements subsection is detected."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Content.
+### 2.2 Will Be Removed
+Going away.
+## 3. Scenarios
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Content.
+## 3. Scenarios
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.2'])
+
+    def test_detects_multiple_changed_sections(self):
+        """Multiple changed sections are listed sorted."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First
+Original A.
+### 2.2 Second
+Original B.
+### 2.5 Fifth
+Original E.
+## 3. Scenarios
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First
+Original A.
+### 2.2 Second
+Changed B.
+### 2.5 Fifth
+Changed E.
+## 3. Scenarios
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.2', '2.5'])
+
+    def test_no_changes_returns_empty(self):
+        """Identical content returns no changed sections."""
+        content = """# Feature
+## 2. Requirements
+### 2.1 First Section
+Same content.
+## 3. Scenarios
+"""
+        result = _get_requirements_diff(content, content)
+        self.assertEqual(result['changed_sections'], [])
+        self.assertFalse(result['visual_spec_changed'])
+
+    def test_detects_visual_spec_change(self):
+        """Visual Specification section change is detected."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First
+Same.
+## 4. Visual Specification
+### Screen: Dashboard
+- [ ] Old checklist item
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First
+Same.
+## 4. Visual Specification
+### Screen: Dashboard
+- [ ] Updated checklist item
+- [ ] New item
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], [])
+        self.assertTrue(result['visual_spec_changed'])
+
+    def test_requirements_and_visual_both_changed(self):
+        """Both requirements and visual spec changes detected together."""
+        old = """# Feature
+## 2. Requirements
+### 2.1 First
+Original.
+## 4. Visual Specification
+### Screen: Dashboard
+- [ ] Old item
+"""
+        current = """# Feature
+## 2. Requirements
+### 2.1 First
+Modified.
+## 4. Visual Specification
+### Screen: Dashboard
+- [ ] New item
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.1'])
+        self.assertTrue(result['visual_spec_changed'])
+
+    def test_unnumbered_requirements_heading(self):
+        """Requirements section without number prefix is found."""
+        old = """# Feature
+## Requirements
+### 2.1 First
+Original.
+"""
+        current = """# Feature
+## Requirements
+### 2.1 First
+Modified.
+"""
+        result = _get_requirements_diff(current, old)
+        self.assertEqual(result['changed_sections'], ['2.1'])
+
+
+class TestRequirementsDiffActionItem(unittest.TestCase):
+    """Test lifecycle_reset action item with requirements section diff."""
+
+    def _make_feature_result(self):
+        return {
+            'feature_file': 'features/my_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                    'traceability': {
+                        'status': 'PASS',
+                        '_matched': [],
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': 0,
+                'missing_count': 0,
+                'missing': [],
+                'repo_url': None,
+                'repo_unavailable': False,
+            },
+        }
+
+    @patch('critic._get_requirements_diff')
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_requirements_change_detected_no_scenario_diff(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_sdiff,
+            mock_rdiff):
+        """When no scenarios changed but requirements did, sections listed."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'current content'
+        mock_sdiff.return_value = {
+            'new': [], 'modified': [], 'removed': [],
+            'has_diff': False, 'commit_hash': 'abc123',
+            'old_content': 'old content',
+        }
+        mock_rdiff.return_value = {
+            'changed_sections': ['2.2'],
+            'visual_spec_changed': False,
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        desc = reset_items[0]['description']
+        self.assertIn('requirements sections modified [2.2]', desc)
+        self.assertNotIn('Review and implement spec changes', desc)
+        self.assertNotIn('visual spec updated', desc)
+
+    @patch('critic._get_requirements_diff')
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_requirements_and_visual_spec_change(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_sdiff,
+            mock_rdiff):
+        """Requirements + visual spec change both appear in description."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'current content'
+        mock_sdiff.return_value = {
+            'new': [], 'modified': [], 'removed': [],
+            'has_diff': False, 'commit_hash': 'abc123',
+            'old_content': 'old content',
+        }
+        mock_rdiff.return_value = {
+            'changed_sections': ['2.2', '2.5'],
+            'visual_spec_changed': True,
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        desc = reset_items[0]['description']
+        self.assertIn('requirements sections modified [2.2, 2.5]', desc)
+        self.assertIn('visual spec updated', desc)
+
+    @patch('critic._get_requirements_diff')
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_only_visual_spec_change(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_sdiff,
+            mock_rdiff):
+        """Only visual spec change (no requirements) appears correctly."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'current content'
+        mock_sdiff.return_value = {
+            'new': [], 'modified': [], 'removed': [],
+            'has_diff': False, 'commit_hash': 'abc123',
+            'old_content': 'old content',
+        }
+        mock_rdiff.return_value = {
+            'changed_sections': [],
+            'visual_spec_changed': True,
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        desc = reset_items[0]['description']
+        self.assertIn('visual spec updated', desc)
+        self.assertNotIn('requirements sections modified', desc)
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_generic_fallback_when_no_old_content(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_sdiff):
+        """Falls back to generic description when old_content is None."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_sdiff.return_value = {
+            'new': [], 'modified': [], 'removed': [],
+            'has_diff': False, 'commit_hash': None,
+            'old_content': None,
+        }
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/my_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        self.assertIn('Review and implement spec changes',
+                      reset_items[0]['description'])
 
 
 # ===================================================================

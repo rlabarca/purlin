@@ -1503,6 +1503,24 @@ def generate_action_items(feature_result, cdd_status=None):
             desc = (
                 f'Implement spec changes for {feature_name}: '
                 + ', '.join(parts))
+        elif (scenario_diff and not scenario_diff['has_diff']
+              and scenario_diff.get('old_content')):
+            # No scenario changes but spec was modified -- detect which
+            # Requirements subsections changed (Section 2.12)
+            req_diff = _get_requirements_diff(
+                _content, scenario_diff['old_content'])
+            if req_diff['changed_sections'] or req_diff[
+                    'visual_spec_changed']:
+                parts = []
+                if req_diff['changed_sections']:
+                    secs = ', '.join(req_diff['changed_sections'])
+                    parts.append(
+                        f'requirements sections modified [{secs}]')
+                if req_diff['visual_spec_changed']:
+                    parts.append('visual spec updated')
+                desc = (
+                    f'Implement spec changes for {feature_name}: '
+                    + ', '.join(parts))
 
         builder_items.append({
             'priority': 'HIGH',
@@ -2137,6 +2155,7 @@ def _get_scenario_diff(feature_file, current_content, project_root=None):
     empty_result = {
         'new': [], 'modified': [], 'removed': [],
         'has_diff': False, 'commit_hash': None,
+        'old_content': None,
     }
     if commit_hash is None:
         return empty_result
@@ -2171,6 +2190,85 @@ def _get_scenario_diff(feature_file, current_content, project_root=None):
         'removed': removed,
         'has_diff': bool(new or modified or removed),
         'commit_hash': commit_hash,
+        'old_content': old_content,
+    }
+
+
+def _get_requirements_diff(current_content, old_content):
+    """Detect which Requirements subsections changed between two versions.
+
+    Compares section headings and content under ``## 2. Requirements``
+    (or ``## Requirements``) between old and current file content.
+
+    Returns dict:
+        changed_sections: list of section number strings (e.g. ['2.2', '2.5'])
+        visual_spec_changed: bool -- True if Visual Specification section changed
+    """
+    import re
+
+    def _extract_req_sections(text):
+        """Extract Requirements subsections as {number: content} dict."""
+        sections = {}
+        # Find the Requirements section start
+        req_match = re.search(
+            r'^##\s+(?:\d+\.\s*)?Requirements\s*$', text, re.MULTILINE)
+        if not req_match:
+            return sections
+
+        req_start = req_match.end()
+        # Find where Requirements section ends (next ## heading)
+        next_h2 = re.search(r'^##\s+', text[req_start:], re.MULTILINE)
+        req_end = req_start + next_h2.start() if next_h2 else len(text)
+        req_text = text[req_start:req_end]
+
+        # Parse ### subsection headings with numbers like ### 2.1 Title
+        subsection_pattern = re.compile(
+            r'^###\s+(\d+\.\d+)\s+', re.MULTILINE)
+        matches = list(subsection_pattern.finditer(req_text))
+        for i, m in enumerate(matches):
+            section_num = m.group(1)
+            start = m.start()
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(
+                req_text)
+            sections[section_num] = req_text[start:end].strip()
+        return sections
+
+    def _extract_visual_spec(text):
+        """Extract Visual Specification section content."""
+        match = re.search(
+            r'^##\s+(?:\d+\.\s*)?Visual Specification\s*$',
+            text, re.MULTILINE)
+        if not match:
+            return None
+        start = match.start()
+        next_h2 = re.search(r'^##\s+', text[match.end():], re.MULTILINE)
+        end = match.end() + next_h2.start() if next_h2 else len(text)
+        return text[start:end].strip()
+
+    changed = []
+    current_secs = _extract_req_sections(current_content)
+    old_secs = _extract_req_sections(old_content)
+
+    # Sections added or modified
+    for num in current_secs:
+        if num not in old_secs or current_secs[num] != old_secs[num]:
+            changed.append(num)
+    # Sections removed
+    for num in old_secs:
+        if num not in current_secs:
+            changed.append(num)
+
+    # Sort by section number
+    changed.sort(key=lambda x: [int(p) for p in x.split('.')])
+
+    # Check Visual Specification
+    cur_vis = _extract_visual_spec(current_content)
+    old_vis = _extract_visual_spec(old_content)
+    visual_changed = cur_vis != old_vis
+
+    return {
+        'changed_sections': changed,
+        'visual_spec_changed': visual_changed,
     }
 
 
