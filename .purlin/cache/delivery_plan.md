@@ -6,9 +6,9 @@
 ## Summary
 Consolidation of PM role support into the unified critic_role_status model, implementation of requirements-section change detection in the Critic, and re-verification of CDD dashboard features after spec reordering. Phasing chosen because 2 HIGH-complexity features (critic_role_status full test suite, critic_tool new diff-aware detection) plus 4 additional features exceed single-session scope.
 
-## Phase 1 -- Tombstone + Critic Role Status [IN_PROGRESS]
+## Phase 1 -- Tombstone + Critic Role Status [COMPLETE]
 **Features:** tombstones/critic_pm_column.md, critic_role_status.md
-**Completion Commit:** --
+**Completion Commit:** 53859a6
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Critic Requirements Detection [PENDING]
