@@ -545,7 +545,7 @@ def generate_api_status_json(cache=None):
 
     Per spec Section 2.4:
     - Flat features array (no todo/testing/complete sub-arrays)
-    - Per-feature: file, label, architect, builder, qa from role_status
+    - Per-feature: file, label, architect, builder, qa, pm from role_status
     - No test_status or qa_status fields
     - No top-level test_status
     - Sorted by file path
@@ -1630,7 +1630,7 @@ def _feature_urgency(entry):
     Lower score = more urgent. Red states first, then yellow/orange, then rest.
     """
     scores = []
-    for role in ('architect', 'builder', 'qa'):
+    for role in ('architect', 'builder', 'qa', 'pm'):
         val = entry.get(role)
         if val is not None:
             scores.append(URGENCY_ORDER.get(val, 3))
@@ -1646,16 +1646,18 @@ def _is_feature_complete(entry):
     arch = entry.get('architect')
     builder = entry.get('builder')
     qa = entry.get('qa')
+    pm = entry.get('pm')
 
     # If no critic.json exists (no role fields), not complete
-    if arch is None and builder is None and qa is None:
+    if arch is None and builder is None and qa is None and pm is None:
         return False
 
     arch_ok = arch in ('DONE', None)
     builder_ok = builder in ('DONE', None)
     qa_ok = qa in ('CLEAN', 'N/A', None)
+    pm_ok = pm in ('DONE', 'N/A', None)
 
-    return arch_ok and builder_ok and qa_ok
+    return arch_ok and builder_ok and qa_ok and pm_ok
 
 
 def generate_html(cache=None):
@@ -1839,17 +1841,18 @@ def generate_html(cache=None):
         }
         all_statuses = []
         for e in features_list:
-            for role in ('architect', 'builder', 'qa'):
+            for role in ('architect', 'builder', 'qa', 'pm'):
                 val = e.get(role)
                 if val:
                     all_statuses.append(val)
         if not all_statuses:
             return '<span class="st-na">??</span>'
-        # DONE only if every feature has all three roles fully satisfied
+        # DONE only if every feature has all four roles fully satisfied
         def _satisfied(e):
             return (e.get('architect') in ('DONE',) and
                     e.get('builder') in ('DONE',) and
-                    e.get('qa') in ('CLEAN', 'N/A'))
+                    e.get('qa') in ('CLEAN', 'N/A') and
+                    e.get('pm') in ('DONE', 'N/A', None))
         if all(_satisfied(e) for e in features_list):
             return '<span class="st-done">DONE</span>'
         top = max(all_statuses, key=lambda s: severity.get(s, 0))
@@ -4660,19 +4663,20 @@ def _role_table_html(features):
             f'<tr>'
             f'<td><a class="feature-link" onclick="{onclick}">'
             f'{display_name}</a></td>'
+            f'<td class="badge-cell">{pm}</td>'
             f'<td class="badge-cell">{arch}</td>'
             f'<td class="badge-cell">{builder}</td>'
             f'<td class="badge-cell">{qa}</td>'
-            f'<td class="badge-cell">{pm}</td>'
             f'</tr>'
         )
     return (
         f'<table class="ft">'
         f'<thead><tr><th>Feature</th>'
+        f'<th class="badge-col">PM</th>'
         f'<th class="badge-col"><span class="col-full">Architect</span><span class="col-abbr">Arch</span></th>'
         f'<th class="badge-col"><span class="col-full">Builder</span><span class="col-abbr">Build</span></th>'
         f'<th class="badge-col">QA</th>'
-        f'<th class="badge-col">PM</th></tr></thead>'
+        f'</tr></thead>'
         f'<tbody>{rows}</tbody>'
         f'</table>'
     )

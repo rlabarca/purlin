@@ -105,12 +105,14 @@ class TestGetFeatureRoleStatus(unittest.TestCase):
                 "architect": "DONE",
                 "builder": "DONE",
                 "qa": "CLEAN",
+                "pm": "N/A",
             },
         })
         result = get_feature_role_status("my_feature", self.test_dir)
         self.assertEqual(result["architect"], "DONE")
         self.assertEqual(result["builder"], "DONE")
         self.assertEqual(result["qa"], "CLEAN")
+        self.assertEqual(result["pm"], "N/A")
 
     def test_missing_critic_json_returns_none(self):
         result = get_feature_role_status("nonexistent", self.test_dir)
@@ -232,6 +234,7 @@ class TestApiStatusJsonRoleStatus(unittest.TestCase):
                         "architect": "DONE",
                         "builder": "DONE",
                         "qa": "CLEAN",
+                        "pm": "N/A",
                     },
                 }, f)
 
@@ -248,6 +251,7 @@ class TestApiStatusJsonRoleStatus(unittest.TestCase):
                 self.assertEqual(entry["architect"], "DONE")
                 self.assertEqual(entry["builder"], "DONE")
                 self.assertEqual(entry["qa"], "CLEAN")
+                self.assertEqual(entry["pm"], "N/A")
                 # No old fields
                 self.assertNotIn("test_status", entry)
                 self.assertNotIn("qa_status", entry)
@@ -283,6 +287,7 @@ class TestApiStatusJsonOmitWhenNoCritic(unittest.TestCase):
                 self.assertNotIn("architect", entry)
                 self.assertNotIn("builder", entry)
                 self.assertNotIn("qa", entry)
+                self.assertNotIn("pm", entry)
             finally:
                 serve.FEATURES_ABS = orig_abs
                 serve.TESTS_DIR = orig_tests
@@ -369,17 +374,17 @@ class TestFeatureCompleteness(unittest.TestCase):
 
     def test_all_roles_done_is_complete(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "DONE", "qa": "CLEAN"}
+                 "builder": "DONE", "qa": "CLEAN", "pm": "N/A"}
         self.assertTrue(_is_feature_complete(entry))
 
     def test_builder_todo_is_not_complete(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "TODO", "qa": "CLEAN"}
+                 "builder": "TODO", "qa": "CLEAN", "pm": "N/A"}
         self.assertFalse(_is_feature_complete(entry))
 
     def test_qa_na_counts_as_complete(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "DONE", "qa": "N/A"}
+                 "builder": "DONE", "qa": "N/A", "pm": "N/A"}
         self.assertTrue(_is_feature_complete(entry))
 
     def test_no_critic_is_not_complete(self):
@@ -388,7 +393,17 @@ class TestFeatureCompleteness(unittest.TestCase):
 
     def test_builder_fail_is_not_complete(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "FAIL", "qa": "CLEAN"}
+                 "builder": "FAIL", "qa": "CLEAN", "pm": "N/A"}
+        self.assertFalse(_is_feature_complete(entry))
+
+    def test_pm_done_counts_as_complete(self):
+        entry = {"file": "f.md", "architect": "DONE",
+                 "builder": "DONE", "qa": "CLEAN", "pm": "DONE"}
+        self.assertTrue(_is_feature_complete(entry))
+
+    def test_pm_todo_is_not_complete(self):
+        entry = {"file": "f.md", "architect": "DONE",
+                 "builder": "DONE", "qa": "CLEAN", "pm": "TODO"}
         self.assertFalse(_is_feature_complete(entry))
 
 
@@ -397,27 +412,32 @@ class TestFeatureUrgency(unittest.TestCase):
 
     def test_fail_is_most_urgent(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "FAIL", "qa": "CLEAN"}
+                 "builder": "FAIL", "qa": "CLEAN", "pm": "N/A"}
         self.assertEqual(_feature_urgency(entry), 0)
 
     def test_todo_is_medium_urgent(self):
         entry = {"file": "f.md", "architect": "TODO",
-                 "builder": "DONE", "qa": "N/A"}
+                 "builder": "DONE", "qa": "N/A", "pm": "N/A"}
         self.assertEqual(_feature_urgency(entry), 1)
 
     def test_all_done_is_least_urgent(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "DONE", "qa": "CLEAN"}
+                 "builder": "DONE", "qa": "CLEAN", "pm": "N/A"}
         self.assertEqual(_feature_urgency(entry), 3)
 
     def test_infeasible_is_most_urgent(self):
         entry = {"file": "f.md", "architect": "TODO",
-                 "builder": "INFEASIBLE", "qa": "N/A"}
+                 "builder": "INFEASIBLE", "qa": "N/A", "pm": "N/A"}
         self.assertEqual(_feature_urgency(entry), 0)
 
     def test_disputed_is_medium_urgent(self):
         entry = {"file": "f.md", "architect": "DONE",
-                 "builder": "BLOCKED", "qa": "DISPUTED"}
+                 "builder": "BLOCKED", "qa": "DISPUTED", "pm": "N/A"}
+        self.assertEqual(_feature_urgency(entry), 1)
+
+    def test_pm_todo_affects_urgency(self):
+        entry = {"file": "f.md", "architect": "DONE",
+                 "builder": "DONE", "qa": "CLEAN", "pm": "TODO"}
         self.assertEqual(_feature_urgency(entry), 1)
 
 
@@ -427,9 +447,9 @@ class TestZeroQueueVerification(unittest.TestCase):
     def test_all_done_means_zero_queue(self):
         features = [
             {"file": "a.md", "architect": "DONE",
-             "builder": "DONE", "qa": "CLEAN"},
+             "builder": "DONE", "qa": "CLEAN", "pm": "N/A"},
             {"file": "b.md", "architect": "DONE",
-             "builder": "DONE", "qa": "N/A"},
+             "builder": "DONE", "qa": "N/A", "pm": "DONE"},
         ]
         all_complete = all(_is_feature_complete(f) for f in features)
         self.assertTrue(all_complete)
@@ -437,9 +457,17 @@ class TestZeroQueueVerification(unittest.TestCase):
     def test_one_todo_fails_zero_queue(self):
         features = [
             {"file": "a.md", "architect": "DONE",
-             "builder": "DONE", "qa": "CLEAN"},
+             "builder": "DONE", "qa": "CLEAN", "pm": "N/A"},
             {"file": "b.md", "architect": "TODO",
-             "builder": "DONE", "qa": "N/A"},
+             "builder": "DONE", "qa": "N/A", "pm": "N/A"},
+        ]
+        all_complete = all(_is_feature_complete(f) for f in features)
+        self.assertFalse(all_complete)
+
+    def test_pm_todo_fails_zero_queue(self):
+        features = [
+            {"file": "a.md", "architect": "DONE",
+             "builder": "DONE", "qa": "CLEAN", "pm": "TODO"},
         ]
         all_complete = all(_is_feature_complete(f) for f in features)
         self.assertFalse(all_complete)
@@ -1285,6 +1313,7 @@ class TestTombstoneEntryInApiResponse(unittest.TestCase):
                 self.assertEqual(entry["architect"], "DONE")
                 self.assertEqual(entry["builder"], "TODO")
                 self.assertEqual(entry["qa"], "N/A")
+                self.assertEqual(entry["pm"], "N/A")
                 self.assertNotIn("change_scope", entry)
             finally:
                 serve.FEATURES_ABS = orig_abs
@@ -1300,6 +1329,7 @@ class TestTombstoneEntryInApiResponse(unittest.TestCase):
             "architect": "DONE",
             "builder": "TODO",
             "qa": "N/A",
+            "pm": "N/A",
         }
         self.assertFalse(_is_feature_complete(entry))
 
@@ -1370,6 +1400,7 @@ class TestTombstoneEntryInCliOutput(unittest.TestCase):
                 self.assertEqual(entry["architect"], "DONE")
                 self.assertEqual(entry["builder"], "TODO")
                 self.assertEqual(entry["qa"], "N/A")
+                self.assertEqual(entry["pm"], "N/A")
             finally:
                 serve.FEATURES_ABS = orig_abs
                 serve.TESTS_DIR = orig_tests
