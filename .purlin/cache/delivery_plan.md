@@ -4,21 +4,21 @@
 **Total Phases:** 3
 
 ## Summary
-Consolidation of PM role support into the unified critic_role_status model, implementation of requirements-section change detection in the Critic, and re-verification of CDD dashboard features after spec reordering. Phasing chosen because 2 HIGH-complexity features (critic_role_status full test suite, critic_tool new diff-aware detection) plus 4 additional features exceed single-session scope.
+8 features reset to TODO after Architect spec updates (Token Map/brief.json pipeline, Figma triangulation, critic role status enhancements). Phased by dependency order: foundation anchors + critic engine first, then dashboard + design tools, then web verification.
 
-## Phase 1 -- Tombstone + Critic Role Status [COMPLETE]
-**Features:** tombstones/critic_pm_column.md, critic_role_status.md
-**Completion Commit:** 53859a6
+## Phase 1 -- Foundation & Critic Engine [IN_PROGRESS]
+**Features:** policy_critic.md, design_artifact_pipeline.md, critic_tool.md, critic_role_status.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic Requirements Detection [COMPLETE]
-**Features:** critic_tool.md, policy_critic.md
-**Completion Commit:** 9ef0bdb
+## Phase 2 -- Dashboard & Design Tools [PENDING]
+**Features:** cdd_status_monitor.md, pl_design_audit.md, pl_design_ingest.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- CDD Dashboard Re-verification [COMPLETE]
-**Features:** cdd_status_monitor.md, cdd_agent_configuration.md, cdd_startup_controls.md
-**Completion Commit:** f732e9c
+## Phase 3 -- Figma-Triangulated Web Verification [PENDING]
+**Features:** pl_web_verify.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
