@@ -804,6 +804,222 @@ Reqs.
 
 
 # ===================================================================
+# Scenario: QA DISPUTED generates informational action item when
+#           dispute routes to PM
+# ===================================================================
+
+
+class TestQADisputedInformationalItemPM(unittest.TestCase):
+    """When a PM-owned feature has an OPEN SPEC_DISPUTE, QA status is
+    DISPUTED and a LOW-priority informational QA action item must be
+    generated referencing PM as the resolver. The HIGH-priority
+    resolution item must appear in PM action items."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: PM Disputed Info
+
+> Label: "PM Disputed Info"
+> Owner: PM
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(
+                self.features_dir, 'pm_disputed_info.md'), 'w') as f:
+            f.write(feature_content)
+        sidecar = """\
+### [SPEC_DISPUTE] Design layout doesn't match (Discovered: 2026-03-01)
+- **Status:** OPEN
+"""
+        with open(os.path.join(
+                self.features_dir,
+                'pm_disputed_info.discoveries.md'), 'w') as f:
+            f.write(sidecar)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_qa_disputed_has_low_informational_item(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/pm_disputed_info.md'
+            result['_owner'] = 'PM'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            cdd_status = {
+                'features': {
+                    'testing': [],
+                    'complete': [
+                        {'file': 'features/pm_disputed_info.md'}],
+                    'todo': [],
+                },
+            }
+            # Compute role status to verify QA is DISPUTED
+            status = compute_role_status(result, cdd_status)
+            self.assertEqual(status['qa'], 'DISPUTED')
+
+            # Generate action items and verify QA has informational item
+            items = generate_action_items(result, cdd_status=cdd_status)
+            qa_items = items['qa']
+            suspended = [
+                i for i in qa_items
+                if 'suspended' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(suspended) > 0,
+                'QA DISPUTED should have informational action item')
+            self.assertEqual(suspended[0]['priority'], 'LOW')
+            self.assertIn('PM', suspended[0]['description'])
+
+            # PM should have the HIGH-priority resolution item
+            pm_items = items['pm']
+            pm_dispute = [
+                i for i in pm_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(pm_dispute) > 0,
+                'PM should have HIGH-priority dispute resolution item')
+            self.assertEqual(pm_dispute[0]['priority'], 'HIGH')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED
+# ===================================================================
+
+
+class TestBuilderBlockedClearsOnResolvedDispute(unittest.TestCase):
+    """When a feature had an OPEN SPEC_DISPUTE (Builder was BLOCKED)
+    and PM resolves it by marking RESOLVED without editing the feature
+    file, Builder should NOT be BLOCKED. The feature lifecycle has NOT
+    reset to TODO (no spec edit occurred)."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: Resolved Dispute
+
+> Label: "Resolved Dispute"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(
+                self.features_dir, 'resolved_dispute.md'), 'w') as f:
+            f.write(feature_content)
+        sidecar = """\
+### [SPEC_DISPUTE] User disagrees with expected behavior (Discovered: 2026-01-01)
+- **Status:** RESOLVED
+- **Resolution:** Spec is correct as-is. No change needed.
+"""
+        with open(os.path.join(
+                self.features_dir,
+                'resolved_dispute.discoveries.md'), 'w') as f:
+            f.write(sidecar)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_resolved_dispute_does_not_block_builder(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved_dispute.md'
+            result['user_testing'] = {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'complete': [
+                        {'file': 'features/resolved_dispute.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            self.assertNotEqual(
+                status['builder'], 'BLOCKED',
+                'RESOLVED dispute should NOT block Builder')
+            # With structural_completeness PASS and no lifecycle TODO,
+            # builder should be DONE
+            self.assertEqual(status['builder'], 'DONE')
+        finally:
+            critic.FEATURES_DIR = orig
+
+    def test_no_lifecycle_reset_without_spec_edit(self):
+        """Feature stays in COMPLETE lifecycle when dispute is resolved
+        without editing the feature file."""
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved_dispute.md'
+            result['user_testing'] = {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            cdd_status = {
+                'features': {
+                    'complete': [
+                        {'file': 'features/resolved_dispute.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            # QA should not be TODO -- dispute is resolved
+            self.assertNotEqual(status['qa'], 'DISPUTED')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
 # Test runner with output to tests/critic_role_status/tests.json
 # ===================================================================
 

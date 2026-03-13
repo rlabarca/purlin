@@ -293,7 +293,7 @@ def parse_visual_spec(content):
 
     Each entry in ``references`` has: screen_name, reference_path,
     reference_type ('local'|'figma'|'live'|'none'), processed_date,
-    has_description.
+    has_token_map.
     """
     empty = {
         'present': False, 'screens': 0, 'items': 0,
@@ -340,7 +340,7 @@ def parse_visual_spec(content):
         'unprocessed_count': sum(
             1 for r in references
             if r['reference_path'] and r['reference_type'] != 'none'
-            and not r['has_description']),
+            and not r['has_token_map']),
         'stale_count': 0,  # Computed later by validate_visual_references()
         'missing_reference_count': 0,  # Computed later
     }
@@ -350,12 +350,12 @@ def _parse_screen_reference(body):
     """Extract reference metadata from a screen subsection body.
 
     Returns dict: reference_path, reference_type, processed_date,
-    has_description.
+    has_token_map.
     """
     reference_path = None
     reference_type = 'none'
     processed_date = None
-    has_description = False
+    has_token_map = False
 
     for line in body.split('\n'):
         stripped = line.strip()
@@ -384,20 +384,21 @@ def _parse_screen_reference(body):
             if date_value.upper() != 'N/A' and date_value:
                 processed_date = date_value
 
-        # Description line
-        if stripped.startswith('- **Description:**'):
-            desc_value = stripped[len('- **Description:**'):].strip()
-            has_description = bool(desc_value)
+        # Token Map line
+        if stripped.startswith('- **Token Map:**'):
+            map_value = stripped[len('- **Token Map:**'):].strip()
+            has_token_map = bool(map_value)
 
     return {
         'reference_path': reference_path,
         'reference_type': reference_type,
         'processed_date': processed_date,
-        'has_description': has_description,
+        'has_token_map': has_token_map,
     }
 
 
-def validate_visual_references(visual_spec, project_root=None):
+def validate_visual_references(visual_spec, project_root=None,
+                                feature_stem=None):
     """Validate visual spec references: integrity, staleness, unprocessed.
 
     Mutates ``visual_spec`` dict in-place to update stale_count and
@@ -406,6 +407,7 @@ def validate_visual_references(visual_spec, project_root=None):
     Args:
         visual_spec: dict from parse_visual_spec()
         project_root: project root path (defaults to PROJECT_ROOT)
+        feature_stem: feature filename without extension, for brief.json lookup
 
     Returns:
         list of action item dicts.
@@ -420,7 +422,7 @@ def validate_visual_references(visual_spec, project_root=None):
 
         # Unprocessed artifact check (HIGH)
         if (ref['reference_type'] != 'none' and ref['reference_path']
-                and not ref['has_description']):
+                and not ref['has_token_map']):
             items.append({
                 'priority': 'HIGH',
                 'category': 'unprocessed_artifact',
@@ -459,15 +461,75 @@ def validate_visual_references(visual_spec, project_root=None):
                         stale_count += 1
                         items.append({
                             'priority': 'LOW',
-                            'category': 'stale_design_description',
+                            'category': 'stale_token_map',
                             'description': (
-                                f'Stale design description for screen '
+                                f'Stale Token Map for screen '
                                 f'"{screen}": artifact modified after '
                                 f'processed date {ref["processed_date"]}'
                             ),
                         })
                 except (ValueError, OSError):
                     pass  # Skip if date parsing or file access fails
+
+    # Brief.json staleness check — Figma references only (Section 2.13)
+    if feature_stem:
+        has_figma_ref = any(
+            r['reference_type'] == 'figma' for r in visual_spec.get(
+                'references', []))
+        if has_figma_ref:
+            brief_path = os.path.join(
+                root, 'features', 'design', feature_stem, 'brief.json')
+            if os.path.isfile(brief_path):
+                try:
+                    with open(brief_path, 'r') as bf:
+                        brief_data = json.load(bf)
+                    figma_last_mod = brief_data.get('figma_last_modified', '')
+                    # Compare against each Figma screen's processed date
+                    for ref in visual_spec.get('references', []):
+                        if (ref['reference_type'] == 'figma'
+                                and ref['processed_date']
+                                and figma_last_mod):
+                            try:
+                                brief_dt = datetime.fromisoformat(
+                                    figma_last_mod.replace('Z', '+00:00'))
+                                proc_dt = datetime.strptime(
+                                    ref['processed_date'], '%Y-%m-%d')
+                                # brief_dt is timezone-aware, make naive for
+                                # comparison
+                                brief_ts = calendar.timegm(
+                                    brief_dt.timetuple())
+                                proc_ts = calendar.timegm(
+                                    proc_dt.timetuple())
+                                if brief_ts > proc_ts + 86400:
+                                    stale_count += 1
+                                    screen = ref.get(
+                                        'screen_name', 'Unknown')
+                                    items.append({
+                                        'priority': 'LOW',
+                                        'category': 'stale_token_map',
+                                        'description': (
+                                            f'Stale Token Map for screen '
+                                            f'"{screen}": brief.json '
+                                            f'figma_last_modified '
+                                            f'({figma_last_mod}) is newer '
+                                            f'than processed date '
+                                            f'{ref["processed_date"]}'
+                                        ),
+                                    })
+                            except (ValueError, TypeError):
+                                pass
+                except (json.JSONDecodeError, IOError, OSError):
+                    pass  # Skip if brief.json is malformed or unreadable
+            else:
+                # Missing brief.json for Figma-referenced feature
+                items.append({
+                    'priority': 'LOW',
+                    'category': 'missing_brief',
+                    'description': (
+                        f'No brief.json found for {feature_stem} -- '
+                        f'Builder has no local design data cache'
+                    ),
+                })
 
     visual_spec['stale_count'] = stale_count
     visual_spec['missing_reference_count'] = missing_count
@@ -1907,6 +1969,34 @@ def generate_action_items(feature_result, cdd_status=None):
             ),
         })
 
+    # QA DISPUTED informational action item (Section 2.11)
+    # When QA is DISPUTED, the resolution routes to PM or Architect.
+    # Generate a LOW-priority informational QA item so the consistency
+    # rule is satisfied and the status is visible in QA's action list.
+    open_disputes = [
+        e for e in ut_entries
+        if e['type'] == 'SPEC_DISPUTE' and e['status'] == 'OPEN'
+    ]
+    if open_disputes:
+        for dispute in open_disputes:
+            _d_title = dispute.get('title', '')
+            _d_routes_to_pm = (
+                owner == 'PM'
+                or _d_title.startswith('Visual:')
+                or 'visual specification' in _d_title.lower()
+                or any(sn in _d_title for sn in visual_screen_names)
+            )
+            _resolver = 'PM' if _d_routes_to_pm else 'Architect'
+            qa_items.append({
+                'priority': 'LOW',
+                'category': 'user_testing',
+                'feature': feature_name,
+                'description': (
+                    f'Scenario suspended pending SPEC_DISPUTE '
+                    f'resolution by {_resolver} for {feature_name}'
+                ),
+            })
+
     return {
         'architect': architect_items,
         'builder': builder_items,
@@ -2698,12 +2788,22 @@ def compute_role_status(feature_result, cdd_status=None):
     has_infeasible = bd_summary.get('INFEASIBLE', 0) > 0
 
     # Pre-parse User Testing discovery entries once (block-level parsing)
+    # Try sidecar file first, fall back to inline section.
     try:
         _content = read_feature_file(
             os.path.join(FEATURES_DIR, os.path.basename(feature_file)))
     except (IOError, OSError):
         _content = ''
-    _ut_section = get_user_testing_section(_content)
+    _feature_abs = os.path.join(FEATURES_DIR, os.path.basename(feature_file))
+    _sidecar_path = os.path.splitext(_feature_abs)[0] + '.discoveries.md'
+    if os.path.isfile(_sidecar_path):
+        try:
+            with open(_sidecar_path, 'r') as _f:
+                _ut_section = _f.read()
+        except (IOError, OSError):
+            _ut_section = get_user_testing_section(_content)
+    else:
+        _ut_section = get_user_testing_section(_content)
     _ut_entries = parse_discovery_entries(_ut_section)
 
     # Check for OPEN SPEC_DISPUTEs (Builder becomes BLOCKED)
@@ -2906,7 +3006,8 @@ def generate_critic_json(feature_path, cdd_status=None):
 
     # Visual spec detection and reference validation (Section 2.13)
     visual_spec = parse_visual_spec(content)
-    visual_ref_items = validate_visual_references(visual_spec)
+    visual_ref_items = validate_visual_references(
+        visual_spec, feature_stem=feature_stem)
 
     # Fixture tag parsing and validation (policy_critic Section 2.11)
     fixture_data = parse_fixture_tags(content)

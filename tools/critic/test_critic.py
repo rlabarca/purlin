@@ -5755,7 +5755,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 ### Screen: Dashboard
 - **Reference:** `features/design/my_feature/dashboard-layout.png`
 - **Processed:** 2026-02-15
-- **Description:** A structured description of the dashboard layout.
+- **Token Map:** A structured description of the dashboard layout.
 - [ ] Layout correct
 - [ ] Colors match
 """
@@ -5769,7 +5769,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
                          'features/design/my_feature/dashboard-layout.png')
         self.assertEqual(ref['reference_type'], 'local')
         self.assertEqual(ref['processed_date'], '2026-02-15')
-        self.assertTrue(ref['has_description'])
+        self.assertTrue(ref['has_token_map'])
         self.assertEqual(result['unprocessed_count'], 0)
 
     def test_figma_reference(self):
@@ -5781,7 +5781,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 ### Screen: Settings
 - **Reference:** [Figma](https://figma.com/file/abc123)
 - **Processed:** N/A
-- **Description:** The settings panel design.
+- **Token Map:** The settings panel design.
 - [ ] Check layout
 """
         result = parse_visual_spec(content)
@@ -5790,7 +5790,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
         self.assertEqual(ref['reference_path'],
                          'https://figma.com/file/abc123')
         self.assertIsNone(ref['processed_date'])
-        self.assertTrue(ref['has_description'])
+        self.assertTrue(ref['has_token_map'])
 
     def test_live_reference(self):
         content = """\
@@ -5801,7 +5801,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 ### Screen: Current UI
 - **Reference:** [Live](https://example.com/dashboard)
 - **Processed:** 2026-01-01
-- **Description:** Current dashboard state.
+- **Token Map:** Current dashboard state.
 - [ ] Matches design
 """
         result = parse_visual_spec(content)
@@ -5819,7 +5819,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 ### Screen: Conceptual
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** Conceptual design based on requirements.
+- **Token Map:** Conceptual design based on requirements.
 - [ ] Layout follows convention
 """
         result = parse_visual_spec(content)
@@ -5839,7 +5839,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 """
         result = parse_visual_spec(content)
         ref = result['references'][0]
-        self.assertFalse(ref['has_description'])
+        self.assertFalse(ref['has_token_map'])
         self.assertEqual(result['unprocessed_count'], 1)
 
     def test_multiple_screens_mixed(self):
@@ -5851,7 +5851,7 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
 ### Screen: Home
 - **Reference:** `features/design/multi/home.png`
 - **Processed:** 2026-01-01
-- **Description:** Home page layout.
+- **Token Map:** Home page layout.
 - [ ] Header visible
 
 ### Screen: Profile
@@ -5865,9 +5865,9 @@ class TestVisualSpecReferenceExtraction(unittest.TestCase):
         home = result['references'][0]
         profile = result['references'][1]
         self.assertEqual(home['reference_type'], 'local')
-        self.assertTrue(home['has_description'])
+        self.assertTrue(home['has_token_map'])
         self.assertEqual(profile['reference_type'], 'figma')
-        self.assertFalse(profile['has_description'])
+        self.assertFalse(profile['has_token_map'])
         self.assertEqual(result['unprocessed_count'], 1)
 
     def test_no_visual_spec_returns_empty_references(self):
@@ -5904,7 +5904,7 @@ class TestValidateVisualReferences(unittest.TestCase):
                 'reference_path': 'features/design/my_feature/missing.png',
                 'reference_type': 'local',
                 'processed_date': '2026-01-01',
-                'has_description': True,
+                'has_token_map': True,
             }],
             'unprocessed_count': 0, 'stale_count': 0,
             'missing_reference_count': 0,
@@ -5925,7 +5925,7 @@ class TestValidateVisualReferences(unittest.TestCase):
                 'reference_path': 'features/design/test/mockup.png',
                 'reference_type': 'local',
                 'processed_date': None,
-                'has_description': False,
+                'has_token_map': False,
             }],
             'unprocessed_count': 1, 'stale_count': 0,
             'missing_reference_count': 0,
@@ -5957,14 +5957,14 @@ class TestValidateVisualReferences(unittest.TestCase):
                 'reference_path': 'features/design/test/layout.png',
                 'reference_type': 'local',
                 'processed_date': '2026-01-01',
-                'has_description': True,
+                'has_token_map': True,
             }],
             'unprocessed_count': 0, 'stale_count': 0,
             'missing_reference_count': 0,
         }
         items = validate_visual_references(visual_spec, self.tmpdir)
         stale = [i for i in items
-                 if i['category'] == 'stale_design_description']
+                 if i['category'] == 'stale_token_map']
         self.assertEqual(len(stale), 1)
         self.assertEqual(stale[0]['priority'], 'LOW')
         self.assertEqual(visual_spec['stale_count'], 1)
@@ -5990,14 +5990,14 @@ class TestValidateVisualReferences(unittest.TestCase):
                 'reference_path': 'features/design/test/layout.png',
                 'reference_type': 'local',
                 'processed_date': '2026-02-01',
-                'has_description': True,
+                'has_token_map': True,
             }],
             'unprocessed_count': 0, 'stale_count': 0,
             'missing_reference_count': 0,
         }
         items = validate_visual_references(visual_spec, self.tmpdir)
         stale = [i for i in items
-                 if i['category'] == 'stale_design_description']
+                 if i['category'] == 'stale_token_map']
         self.assertEqual(len(stale), 0)
         self.assertEqual(visual_spec['stale_count'], 0)
 
@@ -6011,14 +6011,14 @@ class TestValidateVisualReferences(unittest.TestCase):
                     'reference_path': 'https://figma.com/file/abc',
                     'reference_type': 'figma',
                     'processed_date': None,
-                    'has_description': True,
+                    'has_token_map': True,
                 },
                 {
                     'screen_name': 'Live View',
                     'reference_path': 'https://example.com',
                     'reference_type': 'live',
                     'processed_date': '2026-01-01',
-                    'has_description': True,
+                    'has_token_map': True,
                 },
             ],
             'unprocessed_count': 0, 'stale_count': 0,
@@ -6048,7 +6048,7 @@ class TestValidateVisualReferences(unittest.TestCase):
                 'reference_path': 'features/design/test/layout.png',
                 'reference_type': 'local',
                 'processed_date': '2026-02-01',
-                'has_description': True,
+                'has_token_map': True,
             }],
             'unprocessed_count': 0, 'stale_count': 0,
             'missing_reference_count': 0,
@@ -6111,7 +6111,7 @@ Test feature.
 ### Screen: Dashboard Main
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** Main dashboard view.
+- **Token Map:** Main dashboard view.
 - [ ] Layout is correct
 - [ ] Colors match theme
 """
@@ -6158,7 +6158,7 @@ NON_WEB_FEATURE = """\
 ### Screen: Output View
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** CLI output view.
+- **Token Map:** CLI output view.
 - [ ] Text alignment is correct
 - [ ] Colors are readable
 - [ ] Font is monospace
@@ -6246,7 +6246,7 @@ class TestVerificationEffortWebTestable(unittest.TestCase):
 ### Screen: Dashboard Main
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** Main dashboard view.
+- **Token Map:** Main dashboard view.
 - [ ] Layout is correct
 - [ ] Colors match theme
 """
@@ -6433,7 +6433,7 @@ class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
 ### Screen: Main View
 - **Reference:** N/A
 - **Processed:** N/A
-- **Description:** Main view.
+- **Token Map:** Main view.
 - [ ] Layout correct
 - [ ] Colors right
 - [ ] Spacing consistent
@@ -8089,6 +8089,314 @@ class TestRequirementsDiffActionItem(unittest.TestCase):
         self.assertEqual(len(reset_items), 1)
         self.assertIn('Review and implement spec changes',
                       reset_items[0]['description'])
+
+
+# ===================================================================
+# QA DISPUTED Informational Action Item (critic_role_status scenarios)
+# ===================================================================
+
+
+class TestQADisputedInformationalActionItem(unittest.TestCase):
+    """Scenario: QA DISPUTED generates informational action item when
+    dispute routes to PM.
+
+    When a feature has an OPEN SPEC_DISPUTE that routes to PM (Owner: PM),
+    the Critic must generate a LOW-priority informational QA action item
+    noting the suspended scenario, AND the HIGH-priority resolution item
+    must appear in PM action items.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: PM Owned Disputed
+
+> Label: "Tool: PM Disputed"
+> Owner: PM
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+
+### [SPEC_DISPUTE] Visual design doesn't match intent (Discovered: 2026-03-01)
+- **Status:** OPEN
+"""
+        with open(os.path.join(
+                self.features_dir, 'pm_disputed.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_disputed_generates_low_qa_item_referencing_pm(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/pm_disputed.md'
+            result['_owner'] = 'PM'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+
+            # QA should have a LOW-priority informational item
+            qa_items = items['qa']
+            dispute_qa = [
+                i for i in qa_items
+                if 'suspended' in i['description'].lower()
+                or 'SPEC_DISPUTE' in i['description']
+            ]
+            self.assertTrue(
+                len(dispute_qa) > 0,
+                'QA should have an informational action item for DISPUTED')
+            self.assertEqual(dispute_qa[0]['priority'], 'LOW')
+            self.assertIn('PM', dispute_qa[0]['description'])
+
+            # PM should have the HIGH-priority resolution item
+            pm_items = items['pm']
+            dispute_pm = [
+                i for i in pm_items
+                if 'disputed' in i['description'].lower()
+                or 'SPEC_DISPUTE' in i['description']
+            ]
+            self.assertTrue(
+                len(dispute_pm) > 0,
+                'PM should have the HIGH-priority dispute resolution item')
+            self.assertEqual(dispute_pm[0]['priority'], 'HIGH')
+
+            # Architect should NOT have the dispute item
+            arch_items = items['architect']
+            dispute_arch = [
+                i for i in arch_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertEqual(
+                len(dispute_arch), 0,
+                'Architect should NOT have the dispute item for PM-owned')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestBuilderBlockedClearsOnResolved(unittest.TestCase):
+    """Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED.
+
+    When a feature had an OPEN SPEC_DISPUTE (Builder was BLOCKED) and PM
+    resolves it by marking RESOLVED without editing the spec, Builder
+    should no longer be BLOCKED.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        # Feature with RESOLVED dispute (no longer OPEN)
+        content = """\
+# Feature: Resolved Dispute
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+
+### [SPEC_DISPUTE] User disagrees with behavior (Discovered: 2026-01-01)
+- **Status:** RESOLVED
+"""
+        with open(os.path.join(
+                self.features_dir, 'resolved_dispute.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_resolved_dispute_does_not_block_builder(self):
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved_dispute.md'
+            # User testing shows no OPEN items (dispute is RESOLVED)
+            result['user_testing'] = {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            status = compute_role_status(result)
+            # Builder should NOT be BLOCKED (dispute is RESOLVED, not OPEN)
+            self.assertNotEqual(status['builder'], 'BLOCKED')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_lifecycle_not_reset_when_spec_not_edited(self):
+        """When dispute is resolved without spec edit, feature lifecycle
+        does not reset to TODO."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/resolved_dispute.md'
+            result['user_testing'] = {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            # Feature is in COMPLETE lifecycle (dispute resolved, no spec edit)
+            cdd_status = {
+                'features': {
+                    'complete': [
+                        {'file': 'features/resolved_dispute.md'}],
+                    'testing': [], 'todo': [],
+                },
+            }
+            status = compute_role_status(result, cdd_status)
+            # Builder should be DONE (structural_completeness is PASS,
+            # no open bugs, no lifecycle TODO)
+            self.assertEqual(status['builder'], 'DONE')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestBriefStalenessCheck(unittest.TestCase):
+    """Scenario: Brief Staleness Detected / Missing Brief Warning"""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_stale_brief_generates_action_item(self):
+        """brief.json figma_last_modified newer than processed date
+        generates stale_token_map action item."""
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 2,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'https://figma.com/file/abc',
+                'reference_type': 'figma',
+                'processed_date': '2026-01-15',
+                'has_token_map': True,
+            }],
+            'unprocessed_count': 0,
+            'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        # Create brief.json with a newer figma_last_modified
+        design_dir = os.path.join(
+            self.root, 'features', 'design', 'my_feature')
+        os.makedirs(design_dir)
+        brief = {
+            'figma_url': 'https://figma.com/file/abc',
+            'figma_last_modified': '2026-02-20T09:00:00Z',
+            'screens': {}, 'tokens': {},
+        }
+        with open(os.path.join(design_dir, 'brief.json'), 'w') as f:
+            json.dump(brief, f)
+
+        items = validate_visual_references(
+            visual_spec, project_root=self.root,
+            feature_stem='my_feature')
+
+        stale_items = [i for i in items
+                       if i['category'] == 'stale_token_map']
+        self.assertTrue(
+            len(stale_items) > 0,
+            'Should generate stale_token_map for newer brief.json')
+        self.assertIn('brief.json', stale_items[0]['description'])
+
+    def test_missing_brief_generates_warning(self):
+        """Figma-referenced feature with no brief.json generates
+        missing_brief action item."""
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 1,
+            'screen_names': ['Settings'],
+            'references': [{
+                'screen_name': 'Settings',
+                'reference_path': 'https://figma.com/file/xyz',
+                'reference_type': 'figma',
+                'processed_date': '2026-01-15',
+                'has_token_map': True,
+            }],
+            'unprocessed_count': 0,
+            'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        # No brief.json exists
+        items = validate_visual_references(
+            visual_spec, project_root=self.root,
+            feature_stem='my_feature')
+
+        missing_items = [i for i in items
+                         if i['category'] == 'missing_brief']
+        self.assertTrue(
+            len(missing_items) > 0,
+            'Should generate missing_brief for Figma ref without brief.json')
+        self.assertIn('No brief.json', missing_items[0]['description'])
+
+    def test_no_brief_check_for_non_figma_refs(self):
+        """Non-Figma references should not trigger brief.json checks."""
+        visual_spec = {
+            'present': True, 'screens': 1, 'items': 1,
+            'screen_names': ['Dashboard'],
+            'references': [{
+                'screen_name': 'Dashboard',
+                'reference_path': 'features/design/f/img.png',
+                'reference_type': 'local',
+                'processed_date': '2026-01-15',
+                'has_token_map': True,
+            }],
+            'unprocessed_count': 0,
+            'stale_count': 0,
+            'missing_reference_count': 0,
+        }
+        items = validate_visual_references(
+            visual_spec, project_root=self.root,
+            feature_stem='my_feature')
+
+        brief_items = [i for i in items
+                       if 'brief' in i.get('category', '')]
+        self.assertEqual(
+            len(brief_items), 0,
+            'Non-Figma refs should not trigger brief checks')
 
 
 # ===================================================================
