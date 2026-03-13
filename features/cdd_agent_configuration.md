@@ -30,7 +30,7 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     *   All different: `"1x Opus 4.6 | 1x Sonnet 4.6 | 1x Haiku 4.5"`
     *   The segments are ordered by count descending, then alphabetically by label.
 *   **Section Header Row:** A non-data row at the top of the section body containing column labels for the control columns. Labels for narrow checkbox columns display on two lines to conserve horizontal space (e.g., "YOLO" centered; "Startup" / "Sequence" on two lines). The header row MUST span all control columns and remain visually aligned with the agent data rows below. The `cdd_startup_controls.md` feature appends two additional column headers to this row: **Startup** / **Sequence** and **Suggest** / **Next** (each on two lines).
-*   **Section Body:** Four rows, one per agent (Architect, Builder, QA, PM). Each row contains:
+*   **Section Body:** Four rows, one per agent (PM, Architect, Builder, QA). Each row contains:
     1.  **Agent Name:** Inter 500, 12px, uppercase, `var(--purlin-primary)` color.
     2.  **Model Dropdown:** Lists models from the `models` array in config. Active selection matches config value.
     3.  **Effort Dropdown:** Options: `low`, `medium`, `high`. Visible only when the selected model has `capabilities.effort: true`.

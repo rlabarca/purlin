@@ -38,10 +38,10 @@ The flags allow expert users to bypass orientation and hand-holding while keepin
 
 ```json
 "agents": {
+    "pm":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": false, "recommend_next_actions": false },
     "architect": { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
     "builder":   { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
-    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
-    "pm":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": false, "recommend_next_actions": false }
+    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true }
 }
 ```
 
