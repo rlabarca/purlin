@@ -38,7 +38,7 @@ The Status view is the default view (`/#status`).
     *   **Architect** -- The Architect role status badge.
     *   **Builder** -- The Builder role status badge.
     *   **QA** -- The QA role status badge.
-*   **Column Alignment:** Status column headers (Architect, Builder, QA, PM) MUST be centered. The Feature column header MUST be left-justified.
+*   **Column Alignment:** Status column headers (PM, Architect, Builder, QA) MUST be centered. The Feature column header MUST be left-justified.
 *   **Responsive Column Labels:** At narrow viewport widths (≤600px), the ARCHITECT and BUILDER column header labels MUST automatically abbreviate to ARCH and BUILD respectively. This prevents layout overflow when the dashboard is displayed in a small or side-by-side window. The QA, PM, and Feature column labels are unchanged at all widths. The abbreviation MUST be implemented via CSS media queries only -- no JavaScript required.
 *   **Three Collapsible Sections:** Features are displayed in three collapsible sections:
     *   **Active** -- Any feature where at least one role is not fully satisfied (i.e., not all of: Architect=DONE, Builder=DONE, QA=CLEAN or N/A, PM=DONE or N/A). Tombstone entries (files in `features/tombstones/`) are ALWAYS included in this section until the Builder processes them.
