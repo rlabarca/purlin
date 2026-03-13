@@ -947,6 +947,14 @@ The following fixture tags provide deterministic project states for integration-
     Then the description includes "1 modified" in the scenario diff summary
     And the modified scenario title is listed
 
+#### Scenario: Requirements Section Change Detected When No Scenarios Changed
+    Given a feature was previously at COMPLETE lifecycle state
+    And the Architect modifies Requirements section 2.2 without changing any scenario titles
+    And the feature resets to TODO lifecycle state
+    When the Critic generates the lifecycle_reset action item
+    Then the scenario diff shows has_diff false
+    And the description includes "requirements sections modified [2.2]"
+
 ### Manual Scenarios (Human Verification Required)
 
 None
@@ -958,7 +966,7 @@ None
 ### Screen: CDD Dashboard -- Role Status Columns
 
 - **Reference:** N/A
-- [ ] Each feature row shows Architect, Builder, and QA columns with role status badges
+- [ ] Each feature row shows PM, Architect, Builder, and QA columns with role status badges
 - [ ] Badge values match the role_status values from critic.json (TODO, DONE, FAIL, BLOCKED, INFEASIBLE, CLEAN, N/A, DISPUTED)
 - [ ] Features without critic.json show "??" placeholder in all role columns
 - [ ] Badge styling uses existing CDD dashboard status badge pattern and color tokens
