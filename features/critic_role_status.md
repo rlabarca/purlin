@@ -44,7 +44,7 @@ The Critic recognizes four agent roles: **PM**, **Architect**, **Builder**, **QA
 *   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit), OR has other Builder action items.
 *   `FAIL`: tests.json exists with status FAIL.
 *   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes.
-*   `BLOCKED`: Active SPEC_DISPUTE exists for this feature (scenarios suspended).
+*   `BLOCKED`: OPEN SPEC_DISPUTE exists for this feature (scenarios suspended). Only OPEN-status disputes trigger BLOCKED; disputes in SPEC_UPDATED, RESOLVED, or PRUNED status do not.
 
 Builder Precedence (highest wins): INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 
@@ -96,6 +96,9 @@ The Critic generates imperative action items for each role based on analysis res
 |--------|----------|---------|
 | Features in TESTING status with manual scenarios | HIGH | "Verify cdd_status_monitor: 3 manual scenario(s)" |
 | SPEC_UPDATED discoveries (feature in TESTING lifecycle) | MEDIUM | "Re-verify critic_tool: [item title]" |
+| OPEN SPEC_DISPUTE (dispute routes to PM or Architect) | LOW | "Scenario suspended pending SPEC_DISPUTE resolution by PM for X" |
+
+The SPEC_DISPUTE informational item satisfies the role_status/action_item consistency rule: QA=DISPUTED must have at least one QA action item. The item is LOW priority because QA has no actionable work -- the resolution is owned by PM or Architect.
 
 **PM action items:**
 
@@ -106,7 +109,7 @@ The Critic generates imperative action items for each role based on analysis res
 | `stale_design_description` items | LOW | "Re-process stale design for X: [screen]" |
 | `unprocessed_artifact` items | HIGH | "Process design artifact for X: [screen]" |
 | `missing_design_reference` items | MEDIUM | "Fix missing design reference for X: [screen]" |
-| DESIGN_CONFLICT warnings | MEDIUM | "Resolve design conflict in X: [detail]" |
+| DESIGN_CONFLICT warnings (from `/pl-design-audit`, not Critic-generated) | MEDIUM | "Resolve design conflict in X: [detail]" |
 
 ### 2.6 Architect-Retained Items
 The following items remain with Architect and MUST NOT be routed to PM:
@@ -115,6 +118,13 @@ The following items remain with Architect and MUST NOT be routed to PM:
 - Builder decision items (DEVIATION/DISCOVERY).
 - SPEC_DISPUTEs on Architect-owned features (no Owner tag or `> Owner: Architect`) that do not reference Visual Specification screens.
 - Untracked file items.
+
+### 2.6.1 SPEC_DISPUTE Resolution Handoff
+When PM or Architect resolves a SPEC_DISPUTE, the resolution cascade to Builder works as follows:
+
+*   **Resolution with spec edit** (typical): PM/Architect updates the Visual Specification or scenario in the feature file. This edit resets the feature to TODO lifecycle, signaling the Builder via the standard lifecycle reset mechanism. The discovery transitions from OPEN to SPEC_UPDATED.
+*   **Resolution without spec edit** (dispute rejected): PM/Architect determines the current spec is correct and marks the discovery as RESOLVED in the sidecar file without editing the feature file. In this case, no lifecycle reset occurs. Builder's BLOCKED status clears automatically because the OPEN SPEC_DISPUTE no longer exists (RESOLVED disputes do not trigger BLOCKED). Builder status reverts to whatever it was before the dispute (typically DONE if tests pass).
+*   **Invariant:** The resolver (PM or Architect) MUST transition the discovery status from OPEN to either SPEC_UPDATED (if the spec is changed) or RESOLVED (if the spec is upheld). Leaving a dispute in OPEN status after resolution is a process error.
 
 ### 2.7 Canonical JSON Schema for Role Keys
 The per-feature `critic.json` MUST include all four roles in both `action_items` and `role_status`:
@@ -138,6 +148,8 @@ The per-feature `critic.json` MUST include all four roles in both `action_items`
 
 ### 2.8 Aggregate Report Role Iteration
 The aggregate report generator (`CRITIC_REPORT.md`) MUST iterate over `('Architect', 'Builder', 'QA', 'PM')` for the role-specific action items section. PM action items are listed under a `### PM` subsection.
+
+**Note:** This iteration order (Architect first, PM last) differs from the CDD dashboard column order (PM first, then Architect, Builder, QA). The difference is intentional: the report is agent-facing and follows the traditional workflow sequence (spec -> build -> verify -> design review), while the dashboard is human-facing and places PM first as the project-level oversight role.
 
 ### 2.9 SPEC_DISPUTE Visual Detection
 Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` prefix, `visual specification` substring (case-insensitive), or exact screen name matches from the feature's parsed `visual_spec.screen_names`. This heuristic covers the standard naming conventions without requiring structured metadata in discovery entries.
@@ -261,6 +273,24 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     Given an anchor node file (arch_*.md) with `> Owner: PM` metadata
     When the Critic parses the owner
     Then the owner resolves to Architect (anchor nodes are always Architect-owned)
+
+#### Scenario: QA DISPUTED generates informational action item when dispute routes to PM
+
+    Given a feature file with `> Owner: PM` metadata
+    And the feature has an OPEN SPEC_DISPUTE in its discovery sidecar
+    When the Critic computes role status and generates action items
+    Then role_status.qa is DISPUTED
+    And a LOW-priority QA action item is generated describing the suspended scenario
+    And the QA action item references PM as the resolver
+    And the HIGH-priority resolution action item appears in the pm action items
+
+#### Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED
+
+    Given a feature had an OPEN SPEC_DISPUTE (Builder was BLOCKED)
+    And PM resolves the dispute by marking it RESOLVED without editing the feature file
+    When the Critic computes role status
+    Then role_status.builder is not BLOCKED (no OPEN disputes remain)
+    And the feature lifecycle has NOT reset to TODO (no spec edit occurred)
 
 ### Manual Scenarios (Human Verification Required)
 

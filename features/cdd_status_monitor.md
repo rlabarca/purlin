@@ -64,14 +64,14 @@ The Status view is the default view (`/#status`).
 
 | Badge | Color | Roles |
 |-------|-------|-------|
-| DONE | Green | Architect, Builder |
+| DONE | Green | Architect, Builder, PM |
 | CLEAN | Green | QA |
 | TODO | Yellow | Architect, Builder, QA, PM |
 | FAIL | Red | Builder, QA |
 | INFEASIBLE | Red | Builder |
 | BLOCKED | Gray | Builder |
 | DISPUTED | Orange | QA |
-| N/A | Blank/dim | QA |
+| N/A | Blank/dim | QA, PM |
 | ?? | Dim (`--purlin-dim`) | Any (no critic.json -- not yet generated) |
 
 *   **Scope:** The web dashboard is for human consumption only. Agents must use the `/status.json` API endpoint or the CLI tool.
@@ -99,6 +99,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     *   **Architect:** DONE (the tombstone file is the completed Architect action).
     *   **Builder:** TODO (deletion work is pending).
     *   **QA:** N/A (no QA verification required for deletions).
+    *   **PM:** N/A (no design work required for deletions).
 *   **Feature Name Styling:** The feature name cell MUST render the tombstone entry name in `var(--purlin-status-error)`. The name MUST include a `[TOMBSTONE]` suffix to make the deletion state unambiguous at a glance. Example: `some_retired_feature [TOMBSTONE]`.
 *   **Sorting:** Tombstone entries sort alongside other TODO-state features in the Active section urgency order (after FAIL/INFEASIBLE entries, before alphabetical).
 *   **Tombstone Modal:** Clicking a tombstone entry opens a visually distinct deletion modal:
@@ -131,6 +132,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
           "architect": "DONE | TODO",
           "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
           "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A",
+          "pm": "DONE | TODO | N/A",
           "change_scope": "full | targeted:... | cosmetic | dependency-only"
         }
       ]

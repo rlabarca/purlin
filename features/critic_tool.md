@@ -179,7 +179,7 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 *   `TODO`: Feature is in TODO lifecycle state (spec modified after last status commit, implementation review needed), OR has other Builder action items to address (traceability gaps, open BUGs, etc.).
 *   `FAIL`: tests.json exists with status FAIL.
 *   `INFEASIBLE`: `[INFEASIBLE]` tag present in Implementation Notes (Builder halted, escalated to Architect).
-*   `BLOCKED`: Active SPEC_DISPUTE exists for this feature (scenarios suspended, Builder cannot implement).
+*   `BLOCKED`: OPEN SPEC_DISPUTE exists for this feature (scenarios suspended, Builder cannot implement). Only OPEN-status disputes trigger BLOCKED; disputes in SPEC_UPDATED, RESOLVED, or PRUNED status do not.
 
 **Builder Precedence (highest wins):** INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 
@@ -198,7 +198,9 @@ The Critic MUST compute a `role_status` object for each feature, summarizing whe
 
 **Lifecycle State Dependency:** QA TODO conditions (a) and (b) both use `.purlin/cache/feature_status.json` to determine the feature's lifecycle state (TESTING). If unavailable, TESTING-based TODO detection is skipped for both conditions. FAIL, DISPUTED, CLEAN, and N/A are lifecycle-independent.
 
-**Role Status / Action Item Consistency:** Every non-terminal role status (Builder: TODO, FAIL, INFEASIBLE, BLOCKED; QA: TODO, FAIL, DISPUTED; Architect: TODO) MUST have at least one corresponding action item in `action_items` for that role. A role status indicating outstanding work with zero action items is a Critic bug — the agent reads action items from the report, not role_status, so a missing action item means the work is invisible.
+**Role Status / Action Item Consistency:** Every non-terminal role status (Builder: TODO, FAIL, INFEASIBLE, BLOCKED; QA: TODO, FAIL, DISPUTED; Architect: TODO; PM: TODO) MUST have at least one corresponding action item in `action_items` for that role. A role status indicating outstanding work with zero action items is a Critic bug — the agent reads action items from the report, not role_status, so a missing action item means the work is invisible.
+
+**QA DISPUTED Action Item:** When QA status is DISPUTED, the SPEC_DISPUTE's resolution action item routes to PM or Architect (per `critic_role_status.md` Section 2.5). To satisfy the consistency rule, the Critic MUST generate an informational LOW-priority QA action item: `"Scenario suspended pending SPEC_DISPUTE resolution by <PM|Architect> for <feature>"`. This makes the DISPUTED status visible in QA's action item list without implying QA should act on the dispute.
 
 ### 2.12 Regression Scope Computation
 The Critic MUST compute a regression set for each TESTING feature based on the Builder's declared change scope. The scope is extracted from the most recent status commit message for the feature.
@@ -238,9 +240,9 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
     *   `reference_type`: One of `local`, `figma`, `live`, or `none`.
     *   `processed_date`: The value from `- **Processed:**` (YYYY-MM-DD or `N/A`).
     *   `has_description`: Boolean indicating whether `- **Description:**` is present and non-empty.
-*   **Reference Integrity Check:** For references with `reference_type: "local"`, verify the file exists on disk relative to the project root. Missing files produce MEDIUM-priority Architect action items with category `missing_design_reference`.
-*   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority Architect action items with category `stale_design_description`.
-*   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_description` is false, produce HIGH-priority Architect action items with category `unprocessed_artifact`.
+*   **Reference Integrity Check:** For references with `reference_type: "local"`, verify the file exists on disk relative to the project root. Missing files produce MEDIUM-priority PM action items with category `missing_design_reference`.
+*   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority PM action items with category `stale_design_description`.
+*   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_description` is false, produce HIGH-priority PM action items with category `unprocessed_artifact`.
 *   **Per-Feature Output:** Include a `visual_spec` block in `tests/<feature_name>/critic.json`:
     ```json
     "visual_spec": {
