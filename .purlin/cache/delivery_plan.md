@@ -1,35 +1,25 @@
 # Delivery Plan
 
-**Created:** 2026-03-12
-**Total Phases:** 5
+**Created:** 2026-03-13
+**Total Phases:** 3
 
 ## Summary
-10 features reset to Builder TODO after Architect spec updates (PM role support, Figma MCP integration, launcher refactor to resolve_config.py). Phased by dependency order: config foundation first, then per-role launchers, then design pipeline commands.
+Consolidation of PM role support into the unified critic_role_status model, implementation of requirements-section change detection in the Critic, and re-verification of CDD dashboard features after spec reordering. Phasing chosen because 2 HIGH-complexity features (critic_role_status full test suite, critic_tool new diff-aware detection) plus 4 additional features exceed single-session scope.
 
-## Phase 1 -- Config & Launcher Foundation [COMPLETE]
-**Features:** models_configuration.md, agent_launchers_common.md
-**Completion Commit:** e38e2b5
+## Phase 1 -- Tombstone + Critic Role Status [IN_PROGRESS]
+**Features:** tombstones/critic_pm_column.md, critic_role_status.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Project Init & Design Anchor [COMPLETE]
-**Features:** project_init.md, design_artifact_pipeline.md
-**Completion Commit:** 2ecce9a
+## Phase 2 -- Critic Requirements Detection [PENDING]
+**Features:** critic_tool.md, policy_critic.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- PM & Architect Launchers [COMPLETE]
-**Features:** pm_agent_launcher.md, architect_agent_launcher.md
-**Completion Commit:** 4290bb8
-**QA Bugs Addressed:** --
-
-## Phase 4 -- Builder & QA Launchers [COMPLETE]
-**Features:** builder_agent_launcher.md, qa_agent_launcher.md
-**Completion Commit:** c550a24
-**QA Bugs Addressed:** --
-
-## Phase 5 -- Design Pipeline Commands [COMPLETE]
-**Features:** pl_design_audit.md, pl_design_ingest.md
-**Completion Commit:** da5bdd4
+## Phase 3 -- CDD Dashboard Re-verification [PENDING]
+**Features:** cdd_status_monitor.md, cdd_agent_configuration.md, cdd_startup_controls.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
-- **2026-03-12:** Phases 1 and 2 completed in a single session. Phase 2 work was trivial (design_artifact_pipeline is cosmetic anchor, project_init was a small PM launcher addition).
+_None._
