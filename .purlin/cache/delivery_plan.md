@@ -6,9 +6,9 @@
 ## Summary
 8 features reset to TODO after Architect spec updates (Token Map/brief.json pipeline, Figma triangulation, critic role status enhancements). Phased by dependency order: foundation anchors + critic engine first, then dashboard + design tools, then web verification.
 
-## Phase 1 -- Foundation & Critic Engine [IN_PROGRESS]
+## Phase 1 -- Foundation & Critic Engine [COMPLETE]
 **Features:** policy_critic.md, design_artifact_pipeline.md, critic_tool.md, critic_role_status.md
-**Completion Commit:** --
+**Completion Commit:** b5686b8
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Dashboard & Design Tools [PENDING]
