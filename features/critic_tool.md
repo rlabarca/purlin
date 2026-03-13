@@ -5,6 +5,7 @@
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/impl_notes_companion.md
 > Prerequisite: features/test_fixture_repo.md
+> Prerequisite: features/critic_role_status.md
 
 ## 1. Overview
 The Critic tool is the project coordination engine. It performs dual-gate validation (Spec Gate + Implementation Gate) on feature files, audits user testing status, generates role-specific action items for each agent, and produces per-feature reports and an aggregate `CRITIC_REPORT.md`. Every agent runs the Critic at session start to determine their priorities.
@@ -102,12 +103,14 @@ For each feature file, produce `tests/<feature_name>/critic.json`:
     "action_items": {
         "architect": [{"priority": "HIGH | MEDIUM | LOW", "category": "<source_category>", "feature": "<feature_name>", "description": "<imperative action>"}],
         "builder": [],
-        "qa": []
+        "qa": [],
+        "pm": []
     },
     "role_status": {
         "architect": "DONE | TODO",
         "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
-        "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A"
+        "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A",
+        "pm": "DONE | TODO | N/A"
     }
 }
 ```
@@ -115,7 +118,7 @@ For each feature file, produce `tests/<feature_name>/critic.json`:
 ### 2.8 Aggregate Report
 The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
 *   Summary table: feature name, spec gate status, implementation gate status, user testing status.
-*   **Action Items by Role:** A section with `### Architect`, `### Builder`, `### QA` subsections. Each subsection lists action items sorted by priority (HIGH first), aggregated across all features. This is the primary coordination output.
+*   **Action Items by Role:** A section with `### Architect`, `### Builder`, `### QA`, `### PM` subsections. Each subsection lists action items sorted by priority (HIGH first), aggregated across all features. This is the primary coordination output. See `critic_role_status.md` for the complete routing rules that determine which items appear under each role.
 *   Builder decision audit: all AUTONOMOUS/DEVIATION/DISCOVERY entries across features.
 *   Policy violations: all FORBIDDEN pattern matches.
 *   Traceability gaps: scenarios without matching tests.
@@ -124,12 +127,12 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
 ### 2.9 CDD Integration (Decoupled)
 The Critic is agent-facing; CDD is human-facing. The CDD **web server** does NOT auto-run the Critic on requests -- it reads from pre-computed `critic.json` files only. The `tools/cdd/status.sh` CLI tool, however, DOES auto-run the Critic before outputting status (see `cdd_status_monitor.md` Section 2.6), ensuring agents always receive fresh data from a single invocation.
 
-*   **Role Status Contract:** CDD reads the `role_status` object from on-disk `tests/<feature_name>/critic.json` files to display Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT read or display spec_gate or implementation_gate status directly.
+*   **Role Status Contract:** CDD reads the `role_status` object from on-disk `tests/<feature_name>/critic.json` files to display PM, Architect, Builder, and QA columns on the dashboard and in the `/status.json` API. CDD does NOT read or display spec_gate or implementation_gate status directly. See `critic_role_status.md` for the role status computation model that produces these values.
 *   **No Blocking:** The `critic_gate_blocking` config key is deprecated (no-op). CDD does not gate status transitions based on Critic results.
-*   **No Legacy Fields:** The CDD `/status.json` endpoint does NOT include `critic_status`, `test_status`, or `qa_status` fields. Per-feature entries expose `architect`, `builder`, and `qa` fields read from `role_status` when a `critic.json` file exists on disk.
+*   **No Legacy Fields:** The CDD `/status.json` endpoint does NOT include `critic_status`, `test_status`, or `qa_status` fields. Per-feature entries expose `architect`, `builder`, `qa`, and `pm` fields read from `role_status` when a `critic.json` file exists on disk.
 
 ### 2.10 Role-Specific Action Item Generation
-The Critic MUST generate imperative action items for each role based on the analysis results. Action items are derived as follows:
+The Critic MUST generate imperative action items for each of the four roles (Architect, Builder, QA, PM) based on the analysis results. The complete routing rules -- which items go to which role, including Owner-tag-based routing and PM-specific design items -- are defined in `critic_role_status.md` Section 2.5. The table below summarizes the primary derivation sources:
 
 | Role | Source | Example Item |
 |------|--------|-------------|
@@ -166,7 +169,7 @@ The Critic MUST generate imperative action items for each role based on the anal
 **CDD Feature Status Dependency:** Builder and QA action items that depend on CDD feature status (TODO or TESTING state) require `.purlin/cache/feature_status.json` to exist on disk. The `tools/cdd/status.sh` CLI tool triggers a Critic run before outputting status (see `cdd_status_monitor.md` Section 2.6). The Critic's own `run.sh` wrapper still invokes `tools/cdd/status.sh` internally to refresh `feature_status.json` before launching `critic.py`; the `CRITIC_RUNNING` guard prevents that inner call from triggering a second Critic run. If the CDD tool is unavailable or fails, the Critic proceeds with whatever cached data exists; if no file is found, lifecycle-dependent items are skipped with a note in the report.
 
 ### 2.11 Role Status Computation
-The Critic MUST compute a `role_status` object for each feature, summarizing whether each agent role has outstanding work. This is the primary input for CDD's role-based dashboard.
+The Critic MUST compute a `role_status` object for each feature, summarizing whether each of the four agent roles (PM, Architect, Builder, QA) has outstanding work. This is the primary input for CDD's role-based dashboard. The complete role status computation model -- including status values, precedence chains, and PM status rules -- is defined in `critic_role_status.md` Sections 2.3-2.4.
 
 **Architect Status:**
 *   `TODO`: Any HIGH or CRITICAL priority Architect action items exist (Spec Gate FAIL, open SPEC_DISPUTE, INFEASIBLE tag, open DISCOVERY/INTENT_DRIFT, unacknowledged DEVIATION).
@@ -488,7 +491,7 @@ The following fixture tags provide deterministic project states for integration-
 #### Scenario: Action Items in Critic JSON Output
     Given the Critic tool completes analysis of a feature with spec gaps and traceability gaps
     When the per-feature critic.json is written
-    Then it contains an action_items object with architect, builder, and qa arrays
+    Then it contains an action_items object with architect, builder, qa, and pm arrays
 
 #### Scenario: Action Items in Aggregate Report
     Given the Critic tool has run on multiple features with various gaps
@@ -500,7 +503,7 @@ The following fixture tags provide deterministic project states for integration-
     Given the Critic tool has run on multiple feature files
     When CRITIC_REPORT.md is generated
     Then it contains a "Summary" section with a table having Feature, Spec Gate, Implementation Gate, and User Testing columns
-    And it contains an "Action Items by Role" section with Architect, Builder, and QA subsections
+    And it contains an "Action Items by Role" section with Architect, Builder, QA, and PM subsections
     And it contains a "Builder Decision Audit" section
     And it contains a "Policy Violations" section
     And it contains a "Traceability Gaps" section
@@ -704,8 +707,8 @@ The following fixture tags provide deterministic project states for integration-
 #### Scenario: Role Status in Critic JSON Output
     Given the Critic tool completes analysis of a feature
     When the per-feature critic.json is written
-    Then it contains a role_status object with architect, builder, and qa fields
-    And the values conform to the defined status enums
+    Then it contains a role_status object with architect, builder, qa, and pm fields
+    And the values conform to the defined status enums per critic_role_status.md
 
 #### Scenario: Untracked File Detection
     Given untracked files exist in the working directory (not covered by .gitignore)
