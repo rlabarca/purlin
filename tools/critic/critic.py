@@ -3000,10 +3000,10 @@ def generate_critic_json(feature_path, cdd_status=None):
                 result['action_items'].setdefault(role, []).append({
                     'priority': 'HIGH',
                     'category': 'consistency',
-                    'feature': feature_name,
+                    'feature': feature_stem,
                     'description': (
                         f'Investigate {role} status {rs} for '
-                        f'{feature_name} (no specific action item generated)'
+                        f'{feature_stem} (no specific action item generated)'
                     ),
                 })
 
