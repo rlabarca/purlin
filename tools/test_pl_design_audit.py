@@ -3,6 +3,7 @@
 
 Verifies the underlying operations: inventory scanning, reference integrity,
 staleness detection, anchor consistency, unprocessed artifact detection,
+brief staleness detection, missing brief warning,
 Figma MCP staleness detection, design-spec conflict detection, and
 clean audit path.
 
@@ -28,13 +29,13 @@ from critic import parse_visual_spec, validate_visual_references
 
 
 # ---------------------------------------------------------------------------
-# Anchor consistency helpers — scan descriptions for hardcoded values
+# Anchor consistency helpers — scan Token Map entries for hardcoded values
 # ---------------------------------------------------------------------------
 
 def extract_anchor_tokens(anchor_content):
     """Extract design token name-value pairs from a design anchor file.
 
-    Parses tables with | Token | Value | rows and extracts --token-name → value
+    Parses tables with | Token | Value | rows and extracts --token-name -> value
     mappings.  Also extracts font family names from font token values.
     """
     tokens = {}  # token_name -> value (e.g. "--purlin-accent" -> "#38BDF8")
@@ -57,8 +58,8 @@ def extract_anchor_tokens(anchor_content):
     return tokens, fonts
 
 
-def scan_description_for_hardcoded_values(description, tokens, fonts):
-    """Scan a description string for hardcoded hex colors and font names.
+def scan_content_for_hardcoded_values(content, tokens, fonts):
+    """Scan content (Token Map entries or checklists) for hardcoded hex colors and font names.
 
     Returns a list of dicts: {"literal": str, "suggestion": str, "type": str}.
     """
@@ -66,7 +67,7 @@ def scan_description_for_hardcoded_values(description, tokens, fonts):
 
     # Check for hardcoded hex colors that match a token value
     hex_re = re.compile(r'#[0-9A-Fa-f]{6}\b')
-    for hex_match in hex_re.finditer(description):
+    for hex_match in hex_re.finditer(content):
         hex_val = hex_match.group(0).upper()
         for token_name, token_value in tokens.items():
             if token_value.upper() == hex_val:
@@ -78,7 +79,7 @@ def scan_description_for_hardcoded_values(description, tokens, fonts):
 
     # Check for hardcoded font family names
     for font_name, token_name in fonts.items():
-        if font_name in description:
+        if font_name in content:
             warnings.append({
                 "literal": font_name,
                 "suggestion": f"var({token_name})",
@@ -120,17 +121,17 @@ def check_figma_staleness(figma_last_modified, processed_date_str):
     }
 
 
-def detect_design_conflicts(figma_properties, description, anchor_tokens):
-    """Detect conflicts between Figma MCP-extracted properties and the description.
+def detect_design_conflicts(figma_variables, token_map_entries, anchor_tokens):
+    """Detect conflicts between Figma design variables and Token Map entries.
 
-    Compares visual properties extracted from Figma (colors, fonts, layout)
-    against the written description in the Visual Specification.  Flags
-    discrepancies as DESIGN_CONFLICT items.
+    Compares design variable names from Figma MCP against the Token Map
+    entries in the Visual Specification.  Flags discrepancies as
+    DESIGN_CONFLICT items.
 
     Args:
-        figma_properties: dict with keys like "colors" (list of hex strings),
-            "fonts" (list of font family names), "layout" (str description).
-        description: The written description from the Visual Spec.
+        figma_variables: dict of {variable_name: resolved_value} from Figma MCP.
+        token_map_entries: dict of {figma_token_name: project_token} from the
+            Token Map in the Visual Specification.
         anchor_tokens: dict of {token_name: token_value} from the design anchor.
 
     Returns:
@@ -139,58 +140,41 @@ def detect_design_conflicts(figma_properties, description, anchor_tokens):
     """
     conflicts = []
 
-    # Build a reverse map: hex value -> token name
+    # Check for token name mismatches: Token Map references a Figma variable
+    # that no longer exists in the Figma design (renamed/removed)
+    for map_key, map_value in token_map_entries.items():
+        if map_key not in figma_variables:
+            conflicts.append({
+                "property": f"token ({map_key})",
+                "figma_value": "<missing>",
+                "spec_value": map_value,
+                "type": "DESIGN_CONFLICT",
+            })
+
+    # Check for value drift: Figma variable exists but resolved value differs
+    # from what the anchor token maps to
     hex_to_token = {}
     for token_name, token_value in anchor_tokens.items():
         if token_value.startswith("#"):
             hex_to_token[token_value.upper()] = token_name
 
-    # Check colors: if Figma uses a color that maps to a different token than
-    # what the description references
-    for figma_color in figma_properties.get("colors", []):
-        figma_hex = figma_color.upper()
-        figma_token = hex_to_token.get(figma_hex)
-
-        if figma_token:
-            # Figma uses a known token color — check if the description
-            # references a DIFFERENT token for the same property
-            token_var = f"var({figma_token})"
-            if token_var not in description and figma_hex not in description:
-                # Description doesn't mention this token at all — not a conflict,
-                # just potentially missing info.  Skip.
-                pass
-        else:
-            # Figma uses a color NOT in the anchor — check if the description
-            # claims it uses an anchor token
-            for token_name, token_value in anchor_tokens.items():
-                if not token_value.startswith("#"):
-                    continue
-                token_var = f"var({token_name})"
-                if token_var in description and token_value.upper() != figma_hex:
-                    conflicts.append({
-                        "property": f"color ({token_name})",
-                        "figma_value": figma_color,
-                        "spec_value": token_var,
-                        "type": "DESIGN_CONFLICT",
-                    })
-
-    # Check fonts: if Figma uses a font not mentioned in the description
-    for figma_font in figma_properties.get("fonts", []):
-        if figma_font not in description:
-            # Check if the description mentions a different font via token
-            for token_name, token_value in anchor_tokens.items():
-                if "'" in token_value:
-                    font_match = re.match(r"'([A-Za-z ]+)'", token_value)
-                    if font_match:
-                        anchor_font = font_match.group(1)
-                        token_var = f"var({token_name})"
-                        if token_var in description and anchor_font != figma_font:
-                            conflicts.append({
-                                "property": f"font ({token_name})",
-                                "figma_value": figma_font,
-                                "spec_value": f"{token_var} ({anchor_font})",
-                                "type": "DESIGN_CONFLICT",
-                            })
+    for var_name, var_value in figma_variables.items():
+        if var_name in token_map_entries:
+            mapped_project_token = token_map_entries[var_name]
+            # Extract the anchor token name from var(--token-name)
+            token_match = re.match(r'var\((--[\w-]+)\)', mapped_project_token)
+            if token_match:
+                anchor_name = token_match.group(1)
+                if anchor_name in anchor_tokens:
+                    anchor_val = anchor_tokens[anchor_name].upper()
+                    figma_val = var_value.upper() if isinstance(var_value, str) else str(var_value)
+                    if figma_val.startswith("#") and anchor_val != figma_val:
+                        conflicts.append({
+                            "property": f"token ({var_name})",
+                            "figma_value": var_value,
+                            "spec_value": mapped_project_token,
+                            "type": "DESIGN_CONFLICT",
+                        })
 
     return conflicts
 
@@ -210,7 +194,7 @@ class TestInventoryScanDiscoversAllVisualSpecs(unittest.TestCase):
 ### Screen: Dashboard
 - **Reference:** features/design/test/dash.png
 - **Processed:** 2025-01-15
-- **Description:** A dashboard layout.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check layout
 """
         without_spec = """## Requirements
@@ -251,7 +235,7 @@ class TestMissingLocalReferenceDetected(unittest.TestCase):
 ### Screen: Main
 - **Reference:** features/design/my_feature/mockup.png
 - **Processed:** 2025-01-15
-- **Description:** Layout description.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Verify layout
 """
         vs = parse_visual_spec(content)
@@ -269,7 +253,7 @@ class TestMissingLocalReferenceDetected(unittest.TestCase):
 ### Screen: Main
 - **Reference:** features/design/my_feature/mockup.png
 - **Processed:** 2025-01-15
-- **Description:** Layout description.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Verify layout
 """
         vs = parse_visual_spec(content)
@@ -284,16 +268,16 @@ class TestMissingLocalReferenceDetected(unittest.TestCase):
         self.assertEqual(len(missing), 0)
 
 
-class TestStaleDescriptionDetected(unittest.TestCase):
-    """Scenario: Stale Description Detected"""
+class TestStaleTokenMapDetected(unittest.TestCase):
+    """Scenario: Stale Description Detected (now Token Map staleness)"""
 
     def test_artifact_newer_than_processed_date(self):
-        """Artifact modified after processed date produces stale_design_description item."""
+        """Artifact modified after processed date produces stale_token_map item."""
         content = """## Visual Specification
 ### Screen: Dashboard
 - **Reference:** features/design/my_feature/dashboard-layout.png
 - **Processed:** 2025-01-15
-- **Description:** Layout description.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Verify layout
 """
         vs = parse_visual_spec(content)
@@ -309,7 +293,7 @@ class TestStaleDescriptionDetected(unittest.TestCase):
 
             items = validate_visual_references(vs, project_root=tmpdir)
 
-        stale = [i for i in items if i["category"] == "stale_design_description"]
+        stale = [i for i in items if i["category"] == "stale_token_map"]
         self.assertEqual(len(stale), 1)
         self.assertEqual(stale[0]["priority"], "LOW")
 
@@ -319,7 +303,7 @@ class TestStaleDescriptionDetected(unittest.TestCase):
 ### Screen: Dashboard
 - **Reference:** features/design/my_feature/dashboard-layout.png
 - **Processed:** 2025-03-01
-- **Description:** Layout description.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Verify layout
 """
         vs = parse_visual_spec(content)
@@ -335,15 +319,15 @@ class TestStaleDescriptionDetected(unittest.TestCase):
 
             items = validate_visual_references(vs, project_root=tmpdir)
 
-        stale = [i for i in items if i["category"] == "stale_design_description"]
+        stale = [i for i in items if i["category"] == "stale_token_map"]
         self.assertEqual(len(stale), 0)
 
 
 class TestUnprocessedArtifactDetected(unittest.TestCase):
     """Scenario: Unprocessed Artifact Detected"""
 
-    def test_reference_without_description_flagged(self):
-        """Screen with reference but no description produces unprocessed_artifact item."""
+    def test_reference_without_token_map_flagged(self):
+        """Screen with reference but no Token Map produces unprocessed_artifact item."""
         content = """## Visual Specification
 ### Screen: Settings
 - **Reference:** features/design/my_feature/settings.png
@@ -362,13 +346,13 @@ class TestUnprocessedArtifactDetected(unittest.TestCase):
         self.assertEqual(len(unprocessed), 1)
         self.assertEqual(unprocessed[0]["priority"], "HIGH")
 
-    def test_reference_with_description_not_flagged(self):
-        """Screen with reference AND description does not produce unprocessed item."""
+    def test_reference_with_token_map_not_flagged(self):
+        """Screen with reference AND Token Map does not produce unprocessed item."""
         content = """## Visual Specification
 ### Screen: Settings
 - **Reference:** features/design/my_feature/settings.png
 - **Processed:** 2025-01-15
-- **Description:** Settings panel with form fields.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check settings layout
 """
         vs = parse_visual_spec(content)
@@ -386,8 +370,8 @@ class TestUnprocessedArtifactDetected(unittest.TestCase):
 class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
     """Scenario: Anchor Consistency Hardcoded Color Warning"""
 
-    def test_hardcoded_hex_matches_anchor_token(self):
-        """Hardcoded hex color matching an anchor token produces a warning."""
+    def test_hardcoded_hex_in_token_map(self):
+        """Token Map entry with hardcoded hex matching an anchor token produces a warning."""
         anchor_content = """## 2. Invariants
 ### 2.2 Color Token System
 | Token | Value | Usage |
@@ -396,17 +380,18 @@ class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
 | `--purlin-bg` | `#0B131A` | Page background |
 """
         tokens, fonts = extract_anchor_tokens(anchor_content)
-        description = "The button uses color #38BDF8 for the accent."
+        # Token Map entry with literal hex instead of var(--purlin-accent)
+        token_map_text = "`accent` -> `#38BDF8`"
 
-        warnings = scan_description_for_hardcoded_values(description, tokens, fonts)
+        warnings = scan_content_for_hardcoded_values(token_map_text, tokens, fonts)
 
         self.assertEqual(len(warnings), 1)
         self.assertEqual(warnings[0]["literal"], "#38BDF8")
         self.assertEqual(warnings[0]["suggestion"], "var(--purlin-accent)")
         self.assertEqual(warnings[0]["type"], "color")
 
-    def test_hardcoded_font_name_matches_anchor_token(self):
-        """Hardcoded font name matching an anchor token produces a warning."""
+    def test_hardcoded_font_name_in_checklist(self):
+        """Checklist item with hardcoded font name matching an anchor token produces a warning."""
         anchor_content = """## Typography
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -414,9 +399,9 @@ class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
 | `--font-body` | `'Inter', sans-serif` | Body text |
 """
         tokens, fonts = extract_anchor_tokens(anchor_content)
-        description = "The heading uses Montserrat at 32px weight 200."
+        checklist_text = "- [ ] Title uses Montserrat at 32px weight 200"
 
-        warnings = scan_description_for_hardcoded_values(description, tokens, fonts)
+        warnings = scan_content_for_hardcoded_values(checklist_text, tokens, fonts)
 
         font_warnings = [w for w in warnings if w["type"] == "font"]
         self.assertEqual(len(font_warnings), 1)
@@ -424,16 +409,16 @@ class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
         self.assertEqual(font_warnings[0]["suggestion"], "var(--font-display)")
 
     def test_no_hardcoded_values_clean(self):
-        """Description with no hardcoded values produces no warnings."""
+        """Token Map entries with proper token references produce no warnings."""
         anchor_content = """## Color Token System
 | Token | Value | Usage |
 |-------|-------|-------|
 | `--purlin-accent` | `#38BDF8` | Links |
 """
         tokens, fonts = extract_anchor_tokens(anchor_content)
-        description = "The button uses var(--purlin-accent) for highlighting."
+        token_map_text = "`accent` -> `var(--purlin-accent)`"
 
-        warnings = scan_description_for_hardcoded_values(description, tokens, fonts)
+        warnings = scan_content_for_hardcoded_values(token_map_text, tokens, fonts)
         self.assertEqual(len(warnings), 0)
 
     def test_hex_color_not_in_anchor_no_warning(self):
@@ -444,13 +429,13 @@ class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
 | `--purlin-accent` | `#38BDF8` | Links |
 """
         tokens, fonts = extract_anchor_tokens(anchor_content)
-        description = "The custom element uses #FF00FF for emphasis."
+        token_map_text = "`custom` -> `#FF00FF`"
 
-        warnings = scan_description_for_hardcoded_values(description, tokens, fonts)
+        warnings = scan_content_for_hardcoded_values(token_map_text, tokens, fonts)
         self.assertEqual(len(warnings), 0)
 
     def test_multiple_hardcoded_values(self):
-        """Description with multiple hardcoded values produces multiple warnings."""
+        """Content with multiple hardcoded values produces multiple warnings."""
         anchor_content = """## Token System
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -459,23 +444,177 @@ class TestAnchorConsistencyHardcodedColorWarning(unittest.TestCase):
 | `--font-display` | `'Montserrat', sans-serif` | Titles |
 """
         tokens, fonts = extract_anchor_tokens(anchor_content)
-        description = "Uses #38BDF8 accent on #0B131A background with Montserrat headings."
+        content = ("`accent` -> `#38BDF8`\n"
+                   "`bg` -> `#0B131A`\n"
+                   "- [ ] Title uses Montserrat headings")
 
-        warnings = scan_description_for_hardcoded_values(description, tokens, fonts)
+        warnings = scan_content_for_hardcoded_values(content, tokens, fonts)
         self.assertTrue(len(warnings) >= 3)
+
+
+class TestBriefStalenessDetected(unittest.TestCase):
+    """Scenario: Brief Staleness Detected"""
+
+    def test_brief_newer_than_processed_flags_stale(self):
+        """brief.json with figma_last_modified newer than Processed date flags STALE."""
+        content = """## Visual Specification
+### Screen: Figma Screen
+- **Reference:** [Figma](https://www.figma.com/file/abc123)
+- **Processed:** 2026-01-15
+- **Token Map:** `primary` -> `var(--purlin-accent)`
+- [ ] Check layout
+"""
+        vs = parse_visual_spec(content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create brief.json with figma_last_modified newer than processed date
+            brief_dir = os.path.join(tmpdir, "features", "design", "test_feature")
+            os.makedirs(brief_dir)
+            brief_data = {
+                "figma_url": "https://www.figma.com/file/abc123",
+                "figma_last_modified": "2026-02-20T14:30:00Z",
+                "screens": {},
+                "tokens": {}
+            }
+            with open(os.path.join(brief_dir, "brief.json"), "w") as f:
+                json.dump(brief_data, f)
+
+            items = validate_visual_references(
+                vs, project_root=tmpdir, feature_stem="test_feature")
+
+        stale = [i for i in items if i["category"] == "stale_token_map"]
+        self.assertTrue(len(stale) >= 1)
+        # Verify the staleness is from brief.json comparison
+        brief_stale = [i for i in stale if "brief.json" in i.get("description", "")]
+        self.assertTrue(len(brief_stale) >= 1)
+
+    def test_brief_older_than_processed_not_stale(self):
+        """brief.json with figma_last_modified older than Processed date is not stale."""
+        content = """## Visual Specification
+### Screen: Figma Screen
+- **Reference:** [Figma](https://www.figma.com/file/abc123)
+- **Processed:** 2026-03-01
+- **Token Map:** `primary` -> `var(--purlin-accent)`
+- [ ] Check layout
+"""
+        vs = parse_visual_spec(content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            brief_dir = os.path.join(tmpdir, "features", "design", "test_feature")
+            os.makedirs(brief_dir)
+            brief_data = {
+                "figma_url": "https://www.figma.com/file/abc123",
+                "figma_last_modified": "2026-01-15T14:30:00Z",
+                "screens": {},
+                "tokens": {}
+            }
+            with open(os.path.join(brief_dir, "brief.json"), "w") as f:
+                json.dump(brief_data, f)
+
+            items = validate_visual_references(
+                vs, project_root=tmpdir, feature_stem="test_feature")
+
+        stale = [i for i in items
+                 if i["category"] == "stale_token_map"
+                 and "brief.json" in i.get("description", "")]
+        self.assertEqual(len(stale), 0)
+
+    def test_brief_staleness_suggests_reprocess(self):
+        """Stale brief.json detection provides remediation data."""
+        result = check_figma_staleness(
+            figma_last_modified="2026-02-20T14:30:00Z",
+            processed_date_str="2026-01-15",
+        )
+        self.assertTrue(result["stale"])
+        self.assertIn("figma_date", result)
+        self.assertIn("processed_date", result)
+
+
+class TestMissingBriefWarning(unittest.TestCase):
+    """Scenario: Missing Brief Warning"""
+
+    def test_missing_brief_for_figma_feature_produces_warning(self):
+        """Missing brief.json for a Figma-referenced feature produces a warning."""
+        content = """## Visual Specification
+### Screen: Figma Screen
+- **Reference:** [Figma](https://www.figma.com/file/abc123)
+- **Processed:** 2026-01-15
+- **Token Map:** `primary` -> `var(--purlin-accent)`
+- [ ] Check layout
+"""
+        vs = parse_visual_spec(content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # No brief.json created — it's missing
+            items = validate_visual_references(
+                vs, project_root=tmpdir, feature_stem="test_feature")
+
+        missing_brief = [i for i in items if i["category"] == "missing_brief"]
+        self.assertTrue(len(missing_brief) >= 1)
+        self.assertIn("brief.json", missing_brief[0]["description"])
+
+    def test_no_missing_brief_when_brief_exists(self):
+        """No missing_brief warning when brief.json exists."""
+        content = """## Visual Specification
+### Screen: Figma Screen
+- **Reference:** [Figma](https://www.figma.com/file/abc123)
+- **Processed:** 2026-01-15
+- **Token Map:** `primary` -> `var(--purlin-accent)`
+- [ ] Check layout
+"""
+        vs = parse_visual_spec(content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            brief_dir = os.path.join(tmpdir, "features", "design", "test_feature")
+            os.makedirs(brief_dir)
+            brief_data = {
+                "figma_url": "https://www.figma.com/file/abc123",
+                "figma_last_modified": "2026-01-10T14:30:00Z",
+                "screens": {},
+                "tokens": {}
+            }
+            with open(os.path.join(brief_dir, "brief.json"), "w") as f:
+                json.dump(brief_data, f)
+
+            items = validate_visual_references(
+                vs, project_root=tmpdir, feature_stem="test_feature")
+
+        missing_brief = [i for i in items if i["category"] == "missing_brief"]
+        self.assertEqual(len(missing_brief), 0)
+
+    def test_no_missing_brief_for_non_figma_feature(self):
+        """Non-Figma features do not produce missing_brief warnings."""
+        content = """## Visual Specification
+### Screen: Local Screen
+- **Reference:** features/design/my_feature/mockup.png
+- **Processed:** 2026-01-15
+- **Token Map:** `surface` -> `var(--purlin-bg)`
+- [ ] Check layout
+"""
+        vs = parse_visual_spec(content)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            art_dir = os.path.join(tmpdir, "features", "design", "my_feature")
+            os.makedirs(art_dir)
+            with open(os.path.join(art_dir, "mockup.png"), "w") as f:
+                f.write("fake image")
+            # Set mtime before processed date to avoid stale artifact
+            old_ts = calendar.timegm(datetime(2025, 1, 1, tzinfo=timezone.utc).timetuple())
+            os.utime(os.path.join(art_dir, "mockup.png"), (old_ts, old_ts))
+
+            items = validate_visual_references(
+                vs, project_root=tmpdir, feature_stem="my_feature")
+
+        missing_brief = [i for i in items if i["category"] == "missing_brief"]
+        self.assertEqual(len(missing_brief), 0)
 
 
 class TestCleanAuditReport(unittest.TestCase):
     """Scenario: Clean Audit Report"""
 
     def test_all_valid_references_no_issues(self):
-        """All features with valid references, current descriptions, and no literals
+        """All features with valid references, current Token Maps, and no literals
         produce zero action items."""
         content = """## Visual Specification
 ### Screen: Dashboard
 - **Reference:** features/design/test/dash.png
 - **Processed:** 2099-12-31
-- **Description:** Dashboard uses var(--purlin-accent) for links.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check layout
 """
         vs = parse_visual_spec(content)
@@ -499,12 +638,12 @@ class TestCleanAuditReport(unittest.TestCase):
 ### Screen: Figma Screen
 - **Reference:** [Figma](https://www.figma.com/file/abc123)
 - **Processed:** 2025-01-15
-- **Description:** Component layout from Figma.
+- **Token Map:** `primary` -> `var(--purlin-accent)`
 - [ ] Check component
 ### Screen: Live Screen
 - **Reference:** [Live](https://example.com/dashboard)
 - **Processed:** 2025-02-01
-- **Description:** Current production view.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check live view
 """
         vs = parse_visual_spec(content)
@@ -558,77 +697,85 @@ class TestFigmaModificationDetectedAsStaleViaMCP(unittest.TestCase):
 class TestDesignSpecConflictDetectedViaMCP(unittest.TestCase):
     """Scenario: Design-Spec Conflict Detected via MCP"""
 
-    def test_figma_color_conflicts_with_description_token(self):
-        """Figma uses red (#FF0000) but description says accent per var(--accent)
-        which maps to blue (#0284C7) — produces a DESIGN_CONFLICT."""
+    def test_figma_variable_renamed_produces_conflict(self):
+        """Token Map maps 'primary' to var(--accent) but Figma variable 'primary'
+        has been renamed to 'brand-primary' — produces a DESIGN_CONFLICT."""
         anchor_tokens = {
             "--accent": "#0284C7",
             "--bg": "#F5F6F0",
         }
-        figma_props = {
-            "colors": ["#FF0000"],
-            "fonts": [],
+        # Token Map says primary -> var(--accent)
+        token_map_entries = {
+            "primary": "var(--accent)",
         }
-        description = "accent color per var(--accent)"
+        # But Figma no longer has "primary" — it's been renamed
+        figma_variables = {
+            "brand-primary": "#0284C7",
+        }
 
-        conflicts = detect_design_conflicts(figma_props, description, anchor_tokens)
+        conflicts = detect_design_conflicts(
+            figma_variables, token_map_entries, anchor_tokens)
 
-        self.assertEqual(len(conflicts), 1)
-        self.assertEqual(conflicts[0]["type"], "DESIGN_CONFLICT")
-        self.assertIn("--accent", conflicts[0]["property"])
-        self.assertEqual(conflicts[0]["figma_value"], "#FF0000")
-        self.assertIn("var(--accent)", conflicts[0]["spec_value"])
+        self.assertTrue(len(conflicts) >= 1)
+        # Should flag that "primary" is missing from Figma
+        primary_conflict = [c for c in conflicts if "primary" in c["property"]]
+        self.assertTrue(len(primary_conflict) >= 1)
+        self.assertEqual(primary_conflict[0]["type"], "DESIGN_CONFLICT")
 
-    def test_figma_font_conflicts_with_description(self):
-        """Figma uses Roboto but description references var(--font-body) (Inter)
-        — produces a DESIGN_CONFLICT for font."""
+    def test_figma_value_drift_produces_conflict(self):
+        """Figma variable value changed but Token Map still points to old anchor token."""
         anchor_tokens = {
-            "--font-body": "'Inter', sans-serif",
+            "--accent": "#0284C7",
         }
-        figma_props = {
-            "colors": [],
-            "fonts": ["Roboto"],
+        token_map_entries = {
+            "primary": "var(--accent)",
         }
-        description = "Body text uses var(--font-body) for readability."
+        # Figma "primary" now resolves to a different color
+        figma_variables = {
+            "primary": "#FF0000",
+        }
 
-        conflicts = detect_design_conflicts(figma_props, description, anchor_tokens)
+        conflicts = detect_design_conflicts(
+            figma_variables, token_map_entries, anchor_tokens)
 
-        font_conflicts = [c for c in conflicts if "font" in c["property"]]
-        self.assertEqual(len(font_conflicts), 1)
-        self.assertEqual(font_conflicts[0]["figma_value"], "Roboto")
-        self.assertIn("Inter", font_conflicts[0]["spec_value"])
+        self.assertTrue(len(conflicts) >= 1)
+        self.assertEqual(conflicts[0]["type"], "DESIGN_CONFLICT")
+        self.assertEqual(conflicts[0]["figma_value"], "#FF0000")
 
     def test_no_conflict_when_figma_matches_anchor(self):
-        """No DESIGN_CONFLICT when Figma properties match the anchor tokens."""
+        """No DESIGN_CONFLICT when Figma variables match the anchor tokens."""
         anchor_tokens = {
             "--accent": "#0284C7",
             "--font-body": "'Inter', sans-serif",
         }
-        figma_props = {
-            "colors": ["#0284C7"],
-            "fonts": ["Inter"],
+        token_map_entries = {
+            "primary": "var(--accent)",
         }
-        description = "accent color per var(--accent), body text per var(--font-body)."
+        figma_variables = {
+            "primary": "#0284C7",
+        }
 
-        conflicts = detect_design_conflicts(figma_props, description, anchor_tokens)
+        conflicts = detect_design_conflicts(
+            figma_variables, token_map_entries, anchor_tokens)
         self.assertEqual(len(conflicts), 0)
 
-    def test_conflict_identifies_specific_property_and_values(self):
-        """DESIGN_CONFLICT warning identifies the specific property and values."""
+    def test_conflict_identifies_specific_token_mismatch(self):
+        """DESIGN_CONFLICT warning identifies the specific token name mismatch."""
         anchor_tokens = {
             "--accent": "#0284C7",
         }
-        figma_props = {
-            "colors": ["#FF0000"],
-            "fonts": [],
+        token_map_entries = {
+            "primary": "var(--accent)",
         }
-        description = "The button uses var(--accent) for the primary action."
+        figma_variables = {
+            "brand-primary": "#0284C7",
+        }
 
-        conflicts = detect_design_conflicts(figma_props, description, anchor_tokens)
+        conflicts = detect_design_conflicts(
+            figma_variables, token_map_entries, anchor_tokens)
 
         self.assertTrue(len(conflicts) >= 1)
         conflict = conflicts[0]
-        # Must include: property name, figma value, spec value, type
         self.assertIn("property", conflict)
         self.assertIn("figma_value", conflict)
         self.assertIn("spec_value", conflict)
