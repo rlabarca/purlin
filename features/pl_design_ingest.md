@@ -40,7 +40,10 @@ The command processes the artifact according to its type:
 
 - **Image/PDF:** Read using Claude's multimodal Read tool. Analyze the visual content. Extract observable design tokens (colors, spacing, typography) and map them to the project's token system via the Token Map.
 - **Live web page URL:** Fetch the page using WebFetch to extract the current visual state. Extract observable CSS patterns, component structure, and computed styles. Map observed values to the project's token system via the Token Map.
-- **Figma URL with MCP available:** Call Figma MCP tools to extract: component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations/comments. Generate the Token Map automatically by mapping Figma design variable names to the project's token system. Also generate `brief.json` (see Section 2.5.1).
+- **Figma URL with MCP available:** Call Figma MCP tools to extract: component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations/comments. Processing proceeds in two sub-steps:
+  1. **Annotation extraction:** Call `get_design_context` on the frame. Extract annotations containing behavioral notes (states, interactions, edge cases). Present extracted behavioral notes to the user: "I found these behavioral notes in the Figma annotations: [list]. I'll use these to draft scenarios -- let me know if any are outdated." If annotations contain behavioral notes, draft Gherkin scenario outlines from them and present to the user for confirmation before finalizing.
+  2. **Identity token detection:** After extracting design variables via MCP, compare each variable name against the project's design anchor token list. For matches (with or without `var()` / `--` prefix normalization), auto-generate identity Token Map entries. Report: "N of M Figma variables match project tokens (identity mappings). K require manual mapping."
+  Generate the Token Map automatically by mapping Figma design variable names to the project's token system. For identity mappings (Figma name matches project token), auto-generate entries without user input. Also generate `brief.json` (see Section 2.5.1).
 - **Figma URL without MCP:** Record the URL. Prompt the user to provide an exported image or screenshot to process. If the user provides one, process it as an image. If not, record the URL with a placeholder Token Map noting it needs manual processing. Add note: "For higher fidelity, install Figma MCP: `claude mcp add --transport http figma https://mcp.figma.com/mcp`"
 
 After reading the artifact, the command:
@@ -163,6 +166,25 @@ The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) o
     When the PM runs /pl-design-ingest with a local image
     Then the Token Map uses literal values for token mappings
     And a note is appended: "No design anchor found -- Token Map uses literal values"
+
+#### Scenario: Identity Token Auto-Detection During Figma Ingestion
+
+    Given a Figma design has variables named "--app-bg" and "--app-text"
+    And a design anchor defines tokens "--app-bg" and "--app-text"
+    And Figma MCP tools are available
+    When the PM runs /pl-design-ingest with the Figma URL
+    Then the Token Map contains identity entries auto-generated without user input
+    And the PM reports "2 of 2 Figma variables match project tokens (identity mappings). 0 require manual mapping."
+    And each identity entry maps the Figma name to its var() equivalent
+
+#### Scenario: Annotation Extraction Pre-Populates Behavioral Context
+
+    Given a Figma frame has annotations describing empty state and loading behavior
+    And Figma MCP tools are available
+    When the PM runs /pl-design-ingest with the Figma URL
+    Then the PM presents extracted behavioral notes before probing
+    And draft Gherkin scenario outlines are generated from the annotations
+    And probing questions skip topics already covered by annotations
 
 ### Manual Scenarios (Human Verification Required)
 

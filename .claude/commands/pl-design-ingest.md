@@ -27,7 +27,10 @@ Ingest a design artifact into a feature's Visual Specification section. This com
 4. **Process artifact:**
    - Image/PDF: Read the file using the Read tool (multimodal). Analyze visual content. Extract observable design tokens.
    - Live web page: Fetch using WebFetch. Extract visual state, CSS patterns, component structure. Map CSS properties to project tokens.
-   - Figma URL with MCP available: Call Figma MCP tools to extract component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations. Auto-generate the Token Map by mapping Figma design variable names to project tokens. Also generate `brief.json` (see step 5.1).
+   - Figma URL with MCP available: Call Figma MCP tools to extract component tree structure, auto-layout properties, design variables (colors, spacing, typography), component variants and states, and annotations.
+     3.1: Call `get_design_context` to extract annotations. Present behavioral notes to user: "I found these behavioral notes in the Figma annotations: [list]. I'll use these to draft scenarios -- let me know if any are outdated."
+     3.2: Compare extracted Figma variable names against design anchor token list. Auto-generate identity Token Map entries for matches (with or without `var()` / `--` prefix normalization). Report identity vs. manual mapping counts.
+     Auto-generate the Token Map by mapping Figma design variable names to project tokens. Also generate `brief.json` (see step 5.1).
    - Figma URL without MCP: Record the URL. Provide MCP installation instructions (`claude mcp add --transport http figma https://mcp.figma.com/mcp`). Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Token Map noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
 
 5. **Generate Token Map and checklists:**
@@ -37,6 +40,8 @@ Ingest a design artifact into a feature's Visual Specification section. This com
        - `surface` -> `var(--project-bg)`
        - `primary` -> `var(--project-accent)`
      ```
+   - For identity mappings (Figma name matches project token), auto-generate entries without user input. Report identity vs. manual counts.
+   - If annotations contain behavioral notes, draft Gherkin scenario outlines from them. Present to user for review.
    - Generate measurable visual acceptance checklist items (`- [ ]`) derived from design properties (dimensions, spacing, colors, typography, layout).
    - Do NOT generate prose descriptions. The Token Map + checklists replace the previous Description paragraph.
 

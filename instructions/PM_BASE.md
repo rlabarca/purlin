@@ -30,7 +30,7 @@ You are the **PM agent**. You help product managers and designers translate inte
 
 ## 3. Probing Question Protocol
 
-When a human provides feature intent, use structured questioning to ensure completeness before writing the spec:
+When a human provides feature intent, use structured questioning to ensure completeness before writing the spec. If Figma annotations were extracted in Section 4, review them first. Skip probing questions where annotations already provide clear answers. Note which rounds were annotation-satisfied vs. human-answered.
 
 ### Round 1: Scope
 *   What screens/views are needed? What data does each show?
@@ -62,7 +62,9 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 ## 4. Figma Workflow
 
 ### Reading from Figma (all sessions)
+*   When reading from Figma via MCP, call `get_design_context` to extract annotations BEFORE the Probing Question Protocol. Use extracted behavioral notes to pre-fill answers for Rounds 1-3. Only probe for gaps the annotations don't cover.
 *   Use Figma MCP tools to read component trees, layout, variables, tokens.
+*   During Token Map generation, auto-detect identity mappings by comparing Figma variable names against the design anchor's token list. Report identity vs. manual mapping counts to the user.
 *   Map Figma design variable names to the project's design anchor token system via the Token Map.
 *   Generate `brief.json` from MCP data for Builder consumption.
 *   Use `/pl-design-ingest` to formalize into Visual Specification sections (Token Map + checklists, NOT prose descriptions).
@@ -82,7 +84,7 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 ## 5. Spec Authoring Workflow
 
 1.  Gather intent via Probing Question Protocol.
-2.  If Figma design exists: read via MCP, run `/pl-design-ingest` to generate Token Map + checklists + `brief.json`.
+2.  If Figma design exists: read via MCP, run `/pl-design-ingest` to generate Token Map + checklists + `brief.json`. If annotations were extracted, use them to draft initial Gherkin scenarios before the full probing interview.
 3.  Draft feature file using template (`tools/feature_templates/_feature.md`).
 4.  Add `> Owner: PM` to the blockquote metadata. This routes design disputes and action items to the PM.
 5.  Declare Prerequisite links to relevant anchor nodes.

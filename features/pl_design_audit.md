@@ -23,6 +23,7 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 - Scan all `features/*.md` files for `## Visual Specification` sections.
 - For each section, extract per-screen data: `### Screen:` name, `- **Reference:**` path/URL, `- **Processed:**` date, `- **Token Map:**` presence and entries, and checklist items (`- [ ]` / `- [x]`).
 - Also scan for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
+- If Figma MCP is available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
 
 ### 2.3 Reference Integrity
 - **Local files:** Verify the referenced file exists on disk. Missing files are reported as CRITICAL.
@@ -60,7 +61,7 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 - Flag each inconsistency as WARNING with a suggestion to use the corresponding anchor token name.
 
 ### 2.8 Audit Report
-- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict.
+- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict, Annotations (optional -- shown when Figma MCP is available, otherwise omitted). The Annotations column shows the annotation count per screen or "N/A" when Figma MCP is not available. This is informational metadata only -- it does not affect pass/fail status.
 - Reference Status values: OK, MISSING (critical), MALFORMED_URL, NO_REF, UNPROCESSED.
 - Staleness values: CURRENT, STALE, N/A (URL reference or no processed date).
 - Brief Status values: CURRENT, STALE, MISSING, N/A (non-Figma reference).
