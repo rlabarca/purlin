@@ -3,7 +3,7 @@
 
 Verifies the underlying operations: artifact storage, Visual Specification
 section creation/update, anchor token reading, re-processing detection,
-token mapping, and no-anchor fallback behavior.
+token mapping, brief.json generation, and no-anchor fallback behavior.
 
 Produces tests/pl_design_ingest/tests.json at project root.
 """
@@ -41,7 +41,7 @@ def store_local_artifact(source_path, feature_stem, project_root):
     return os.path.join("features", "design", feature_stem, filename)
 
 
-def create_visual_spec_section(feature_content, screen_name, reference, description,
+def create_visual_spec_section(feature_content, screen_name, reference, token_map,
                                processed_date=None, design_anchor=None, checklist=None):
     """Insert or update a Visual Specification section in a feature file.
 
@@ -55,7 +55,7 @@ def create_visual_spec_section(feature_content, screen_name, reference, descript
     screen_block = f"### Screen: {screen_name}\n"
     screen_block += f"- **Reference:** {reference}\n"
     screen_block += f"- **Processed:** {processed_date}\n"
-    screen_block += f"- **Description:** {description}\n"
+    screen_block += f"- **Token Map:** {token_map}\n"
     for item in checklist:
         screen_block += f"- [ ] {item}\n"
 
@@ -119,6 +119,65 @@ def map_color_to_token(hex_color, tokens):
     return None
 
 
+def generate_token_map(observed_tokens, anchor_tokens):
+    """Generate Token Map entries mapping observed tokens to project tokens.
+
+    Args:
+        observed_tokens: dict of {figma_var_name: resolved_value}
+        anchor_tokens: dict of {project_token_name: token_value}
+
+    Returns:
+        dict of {figma_var_name: project_token_reference_or_literal}
+    """
+    # Build reverse map: hex value -> anchor token name
+    hex_to_anchor = {}
+    for token_name, token_value in anchor_tokens.items():
+        if token_value.startswith("#"):
+            hex_to_anchor[token_value.upper()] = token_name
+
+    token_map = {}
+    for var_name, var_value in observed_tokens.items():
+        if isinstance(var_value, str) and var_value.startswith("#"):
+            anchor_name = hex_to_anchor.get(var_value.upper())
+            if anchor_name:
+                token_map[var_name] = f"var({anchor_name})"
+            else:
+                token_map[var_name] = var_value
+        else:
+            token_map[var_name] = str(var_value)
+
+    return token_map
+
+
+def generate_brief_json(figma_url, figma_last_modified, screens, tokens,
+                        feature_stem, project_root):
+    """Generate brief.json at features/design/<feature_stem>/brief.json.
+
+    Args:
+        figma_url: The source Figma URL.
+        figma_last_modified: ISO 8601 datetime string from MCP.
+        screens: dict of screen data.
+        tokens: dict of Figma design variable names and resolved values.
+        feature_stem: feature filename without extension.
+        project_root: project root path.
+
+    Returns:
+        Path to the generated brief.json relative to project root.
+    """
+    brief = {
+        "figma_url": figma_url,
+        "figma_last_modified": figma_last_modified,
+        "screens": screens,
+        "tokens": tokens,
+    }
+    brief_dir = os.path.join(project_root, "features", "design", feature_stem)
+    os.makedirs(brief_dir, exist_ok=True)
+    brief_path = os.path.join(brief_dir, "brief.json")
+    with open(brief_path, 'w') as f:
+        json.dump(brief, f, indent=2, sort_keys=True)
+    return os.path.join("features", "design", feature_stem, "brief.json")
+
+
 # ---------------------------------------------------------------------------
 # Figma MCP helpers — availability detection, setup instructions, extraction
 # ---------------------------------------------------------------------------
@@ -141,73 +200,61 @@ def is_figma_mcp_available(available_tools):
     return any("figma" in t.lower() for t in available_tools)
 
 
-def generate_figma_no_mcp_description(figma_url):
-    """Generate a placeholder description when Figma MCP is not available.
+def generate_figma_no_mcp_token_map(figma_url):
+    """Generate a placeholder Token Map when Figma MCP is not available.
 
-    Returns a dict with the description text, the MCP setup note, and a flag
+    Returns a dict with the token_map text, the MCP setup note, and a flag
     indicating manual processing is needed.
     """
     return {
-        "description": "Placeholder — manual processing needed. "
-                       "Provide an exported image or screenshot to generate "
-                       "a full description.",
+        "token_map": "Placeholder -- manual processing needed. "
+                     "Provide an exported image or screenshot to generate "
+                     "a full Token Map.",
         "mcp_note": FIGMA_MCP_FALLBACK_NOTE,
         "needs_manual_processing": True,
     }
 
 
-def generate_figma_mcp_description(mcp_metadata, tokens, fonts):
-    """Generate a structured description from Figma MCP-extracted metadata.
+def generate_figma_mcp_token_map(mcp_metadata, tokens, fonts):
+    """Generate a Token Map from Figma MCP-extracted metadata.
 
     Args:
         mcp_metadata: dict with keys "layout" (str), "components" (list of str),
-            "colors" (list of hex str), "fonts" (list of font family str),
+            "colors" (dict of {var_name: hex_value}),
+            "fonts" (dict of {var_name: font_family}),
             "variables" (dict of variable_name -> value).
         tokens: dict of {token_name: token_value} from design anchors.
         fonts: dict of {font_name: token_name} from design anchors.
 
     Returns:
-        dict with "description" (str) and "auto_generated" (bool).
+        dict with "token_map" (dict) and "auto_generated" (bool).
     """
-    parts = []
+    token_map = {}
 
-    # Layout
-    if mcp_metadata.get("layout"):
-        parts.append(f"**Layout:** {mcp_metadata['layout']}")
+    # Build reverse maps for matching
+    hex_to_token = {}
+    for tn, tv in tokens.items():
+        if tv.startswith("#"):
+            hex_to_token[tv.upper()] = tn
 
-    # Components
-    if mcp_metadata.get("components"):
-        comp_list = ", ".join(mcp_metadata["components"])
-        parts.append(f"**Components:** {comp_list}")
+    # Map color variables
+    for var_name, hex_value in mcp_metadata.get("colors", {}).items():
+        mapped = hex_to_token.get(hex_value.upper())
+        if mapped:
+            token_map[var_name] = f"var({mapped})"
+        else:
+            token_map[var_name] = hex_value
 
-    # Colors — map to tokens where possible
-    if mcp_metadata.get("colors"):
-        color_parts = []
-        hex_to_token = {}
-        for tn, tv in tokens.items():
-            if tv.startswith("#"):
-                hex_to_token[tv.upper()] = tn
-        for c in mcp_metadata["colors"]:
-            mapped = hex_to_token.get(c.upper())
-            if mapped:
-                color_parts.append(f"var({mapped})")
-            else:
-                color_parts.append(c)
-        parts.append(f"**Colors:** {', '.join(color_parts)}")
-
-    # Fonts — map to tokens where possible
-    if mcp_metadata.get("fonts"):
-        font_parts = []
-        for f in mcp_metadata["fonts"]:
-            mapped = fonts.get(f)
-            if mapped:
-                font_parts.append(f"var({mapped})")
-            else:
-                font_parts.append(f)
-        parts.append(f"**Typography:** {', '.join(font_parts)}")
+    # Map font variables
+    for var_name, font_family in mcp_metadata.get("fonts", {}).items():
+        mapped = fonts.get(font_family)
+        if mapped:
+            token_map[var_name] = f"var({mapped})"
+        else:
+            token_map[var_name] = font_family
 
     return {
-        "description": "\n".join(parts) if parts else "No metadata extracted.",
+        "token_map": token_map,
         "auto_generated": True,
     }
 
@@ -237,7 +284,7 @@ class TestIngestLocalImageArtifact(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(project_root, stored_path)))
 
     def test_visual_spec_section_created(self):
-        """Feature file is updated with a Visual Specification section."""
+        """Feature file is updated with a Visual Specification section containing Token Map."""
         feature_content = """# Feature: My Feature
 ## 1. Overview
 A test feature.
@@ -248,7 +295,7 @@ Some requirements.
             feature_content,
             screen_name="Main Dashboard",
             reference="features/design/my_feature/mockup.png",
-            description="A dashboard layout with navigation sidebar.",
+            token_map="`surface` -> `var(--purlin-bg)`, `accent` -> `var(--purlin-accent)`",
             design_anchor="features/design_visual_standards.md",
             checklist=["Verify sidebar placement", "Check color tokens"],
         )
@@ -256,13 +303,15 @@ Some requirements.
         vs = parse_visual_spec(updated)
         self.assertTrue(vs["present"])
         self.assertEqual(vs["screens"], 1)
-        self.assertIn("Main Dashboard", vs.get("screen_names", [updated]))
         self.assertIn("## Visual Specification", updated)
         self.assertIn("### Screen: Main Dashboard", updated)
         self.assertIn("**Reference:** features/design/my_feature/mockup.png", updated)
-        self.assertIn("**Description:** A dashboard layout", updated)
+        self.assertIn("**Token Map:**", updated)
+        self.assertIn("surface", updated)
         self.assertIn("- [ ] Verify sidebar placement", updated)
         self.assertIn("Design Anchor:", updated)
+        # Must NOT contain Description field
+        self.assertNotIn("**Description:**", updated)
 
     def test_processed_date_set_to_today(self):
         """Processed date is set to today's date."""
@@ -271,10 +320,24 @@ Some requirements.
             feature_content,
             screen_name="Screen A",
             reference="features/design/test/img.png",
-            description="Test description.",
+            token_map="`primary` -> `var(--purlin-accent)`",
         )
         today_str = date.today().isoformat()
         self.assertIn(f"**Processed:** {today_str}", updated)
+
+    def test_token_map_generated_not_description(self):
+        """Token Map is generated, not a prose Description."""
+        feature_content = "# Feature: Test\n## Requirements\nStuff.\n"
+        updated = create_visual_spec_section(
+            feature_content,
+            screen_name="Screen A",
+            reference="features/design/test/img.png",
+            token_map="`surface` -> `var(--purlin-bg)`",
+            checklist=["Background uses --purlin-bg token"],
+        )
+        self.assertIn("**Token Map:**", updated)
+        self.assertNotIn("**Description:**", updated)
+        self.assertIn("- [ ] Background uses --purlin-bg token", updated)
 
 
 class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
@@ -289,7 +352,7 @@ class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
             feature_content,
             screen_name="Settings Panel",
             reference=f"[Figma]({figma_url})",
-            description="Placeholder — manual processing needed.",
+            token_map="Placeholder -- manual processing needed.",
         )
 
         self.assertIn(f"[Figma]({figma_url})", updated)
@@ -301,7 +364,7 @@ class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
 ### Screen: Design
 - **Reference:** [Figma](https://figma.com/file/xyz)
 - **Processed:** 2025-01-15
-- **Description:** Design from Figma.
+- **Token Map:** `primary` -> `var(--purlin-accent)`
 - [ ] Check layout
 """
         vs = parse_visual_spec(content)
@@ -309,17 +372,17 @@ class TestIngestFigmaURLWithoutMCP(unittest.TestCase):
         self.assertEqual(len(refs), 1)
         self.assertEqual(refs[0]["reference_type"], "figma")
 
-    def test_no_mcp_produces_placeholder_description(self):
-        """When MCP is unavailable, description notes manual processing is needed."""
+    def test_no_mcp_produces_placeholder_token_map(self):
+        """When MCP is unavailable, Token Map notes manual processing is needed."""
         figma_url = "https://www.figma.com/file/abc123"
-        result = generate_figma_no_mcp_description(figma_url)
+        result = generate_figma_no_mcp_token_map(figma_url)
 
         self.assertTrue(result["needs_manual_processing"])
-        self.assertIn("manual processing needed", result["description"].lower())
+        self.assertIn("manual processing needed", result["token_map"].lower())
 
     def test_no_mcp_suggests_figma_mcp_install(self):
         """When MCP is unavailable, a note suggests installing Figma MCP."""
-        result = generate_figma_no_mcp_description("https://figma.com/file/x")
+        result = generate_figma_no_mcp_token_map("https://figma.com/file/x")
 
         self.assertIn("Figma MCP", result["mcp_note"])
         self.assertIn(FIGMA_MCP_SETUP_CMD, result["mcp_note"])
@@ -345,82 +408,105 @@ class TestFigmaMCPAutoSetupWhenProcessingFigmaURL(unittest.TestCase):
 
     def test_fallback_to_tier1_when_no_mcp(self):
         """Without MCP, falls back to Tier 1/2 processing (prompt for export)."""
-        result = generate_figma_no_mcp_description("https://figma.com/file/x")
+        result = generate_figma_no_mcp_token_map("https://figma.com/file/x")
         # Fallback produces a placeholder that prompts for an exported image
-        self.assertIn("exported image or screenshot", result["description"].lower())
+        self.assertIn("manual processing needed", result["token_map"].lower())
         self.assertTrue(result["needs_manual_processing"])
 
 
 class TestFigmaMCPExtractsDesignContextDirectly(unittest.TestCase):
     """Scenario: Figma MCP Extracts Design Context Directly"""
 
-    def test_mcp_metadata_generates_description(self):
-        """Design metadata extracted via MCP produces an auto-generated description."""
+    def test_mcp_metadata_generates_token_map(self):
+        """Design metadata extracted via MCP produces an auto-generated Token Map."""
         mcp_metadata = {
-            "layout": "Vertical stack with header, content area, and footer",
-            "components": ["Header", "Sidebar", "DataTable", "Footer"],
-            "colors": ["#38BDF8", "#0B131A"],
-            "fonts": ["Montserrat", "Inter"],
+            "colors": {"accent": "#38BDF8", "background": "#0B131A"},
+            "fonts": {"heading": "Montserrat", "body": "Inter"},
             "variables": {},
         }
         tokens = {"--purlin-accent": "#38BDF8", "--purlin-bg": "#0B131A"}
         fonts = {"Montserrat": "--font-display", "Inter": "--font-body"}
 
-        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
+        result = generate_figma_mcp_token_map(mcp_metadata, tokens, fonts)
 
         self.assertTrue(result["auto_generated"])
-        self.assertIn("Layout:", result["description"])
-        self.assertIn("Components:", result["description"])
+        self.assertIn("accent", result["token_map"])
+        self.assertIn("background", result["token_map"])
 
     def test_colors_mapped_to_tokens(self):
-        """MCP-extracted colors are mapped to design anchor tokens."""
+        """MCP-extracted colors are mapped to design anchor tokens in Token Map."""
         mcp_metadata = {
-            "layout": "Simple layout",
-            "components": [],
-            "colors": ["#38BDF8"],
-            "fonts": [],
+            "colors": {"primary": "#38BDF8"},
+            "fonts": {},
             "variables": {},
         }
         tokens = {"--purlin-accent": "#38BDF8"}
         fonts = {}
 
-        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
-        self.assertIn("var(--purlin-accent)", result["description"])
+        result = generate_figma_mcp_token_map(mcp_metadata, tokens, fonts)
+        self.assertEqual(result["token_map"]["primary"], "var(--purlin-accent)")
 
     def test_fonts_mapped_to_tokens(self):
-        """MCP-extracted fonts are mapped to design anchor font tokens."""
+        """MCP-extracted fonts are mapped to design anchor font tokens in Token Map."""
         mcp_metadata = {
-            "layout": "",
-            "components": [],
-            "colors": [],
-            "fonts": ["Inter"],
+            "colors": {},
+            "fonts": {"body-font": "Inter"},
             "variables": {},
         }
         tokens = {}
         fonts = {"Inter": "--font-body"}
 
-        result = generate_figma_mcp_description(mcp_metadata, tokens, fonts)
-        self.assertIn("var(--font-body)", result["description"])
+        result = generate_figma_mcp_token_map(mcp_metadata, tokens, fonts)
+        self.assertEqual(result["token_map"]["body-font"], "var(--font-body)")
 
     def test_reference_preserves_original_figma_url(self):
         """The Reference line preserves the original Figma URL after MCP extraction."""
         figma_url = "https://www.figma.com/file/abc123/My-Design"
         feature_content = "# Feature: Test\n## Requirements\nStuff.\n"
 
-        mcp_desc = generate_figma_mcp_description(
-            {"layout": "Grid", "components": ["Card"], "colors": [], "fonts": [], "variables": {}},
-            {}, {},
+        mcp_result = generate_figma_mcp_token_map(
+            {"colors": {"accent": "#38BDF8"}, "fonts": {}, "variables": {}},
+            {"--purlin-accent": "#38BDF8"}, {},
         )
+
+        # Format token map as string for the Visual Spec
+        map_str = ", ".join(
+            f"`{k}` -> `{v}`" for k, v in mcp_result["token_map"].items())
 
         updated = create_visual_spec_section(
             feature_content,
             screen_name="Dashboard",
             reference=f"[Figma]({figma_url})",
-            description=mcp_desc["description"],
+            token_map=map_str,
         )
 
         self.assertIn(f"[Figma]({figma_url})", updated)
-        self.assertIn("Layout:", updated)
+        self.assertIn("Token Map:", updated)
+
+    def test_brief_json_generated(self):
+        """brief.json is generated at features/design/<feature_stem>/brief.json."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            figma_url = "https://www.figma.com/file/abc123"
+            brief_path = generate_brief_json(
+                figma_url=figma_url,
+                figma_last_modified="2026-03-01T12:00:00Z",
+                screens={"Dashboard": {"node_id": "123", "dimensions": {"width": 1440, "height": 900}}},
+                tokens={"primary": "#38BDF8", "background": "#0B131A"},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+            )
+
+            self.assertEqual(brief_path, "features/design/my_feature/brief.json")
+            full_path = os.path.join(tmpdir, brief_path)
+            self.assertTrue(os.path.exists(full_path))
+
+            with open(full_path, 'r') as f:
+                brief_data = json.load(f)
+
+            self.assertEqual(brief_data["figma_url"], figma_url)
+            self.assertEqual(brief_data["figma_last_modified"], "2026-03-01T12:00:00Z")
+            self.assertIn("Dashboard", brief_data["screens"])
+            self.assertIn("primary", brief_data["tokens"])
 
 
 class TestIngestLiveWebPageURL(unittest.TestCase):
@@ -435,11 +521,14 @@ class TestIngestLiveWebPageURL(unittest.TestCase):
             feature_content,
             screen_name="Current UI",
             reference=f"[Live]({live_url})",
-            description="Current production dashboard with sidebar navigation.",
+            token_map="`surface` -> `var(--purlin-bg)`, `accent` -> `var(--purlin-accent)`",
+            checklist=["Background matches --purlin-bg", "Links use --purlin-accent"],
         )
 
         self.assertIn(f"[Live]({live_url})", updated)
         self.assertIn("### Screen: Current UI", updated)
+        self.assertIn("Token Map:", updated)
+        self.assertIn("- [ ] Background matches --purlin-bg", updated)
 
     def test_live_reference_type_detected(self):
         """parse_visual_spec detects Live URL references correctly."""
@@ -447,7 +536,7 @@ class TestIngestLiveWebPageURL(unittest.TestCase):
 ### Screen: Live View
 - **Reference:** [Live](https://example.com/page)
 - **Processed:** 2025-02-01
-- **Description:** Live page with components.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check components
 """
         vs = parse_visual_spec(content)
@@ -459,26 +548,23 @@ class TestIngestLiveWebPageURL(unittest.TestCase):
 class TestReProcessUpdatedArtifact(unittest.TestCase):
     """Scenario: Re-Process Updated Artifact"""
 
-    def test_reprocess_updates_description_and_date(self):
-        """Re-processing replaces the description and updates the processed date."""
+    def test_reprocess_updates_token_map_and_date(self):
+        """Re-processing replaces the Token Map and updates the processed date."""
         original = """# Feature: My Feature
 ## Visual Specification
 ### Screen: Main Dashboard
 - **Reference:** features/design/my_feature/dashboard-layout.png
 - **Processed:** 2025-01-15
-- **Description:** Original layout description.
+- **Token Map:** `surface` -> `var(--purlin-bg)`
 - [ ] Check layout
 """
-        # Simulate re-processing by creating new section content
-        # In real usage, the agent re-reads the artifact and generates a new description
-        new_description = "Updated layout with new sidebar component."
+        # Simulate re-processing by replacing Token Map content
+        new_token_map = "`surface` -> `var(--purlin-bg)`, `accent` -> `var(--purlin-accent)`"
         today_str = date.today().isoformat()
 
-        # The reprocess workflow detects the existing screen and replaces it
-        # Here we test the replacement mechanism
         updated = original.replace(
-            "- **Description:** Original layout description.",
-            f"- **Description:** {new_description}",
+            "- **Token Map:** `surface` -> `var(--purlin-bg)`",
+            f"- **Token Map:** {new_token_map}",
         ).replace(
             "- **Processed:** 2025-01-15",
             f"- **Processed:** {today_str}",
@@ -488,14 +574,37 @@ class TestReProcessUpdatedArtifact(unittest.TestCase):
         refs = vs.get("references", [])
         self.assertEqual(len(refs), 1)
         self.assertEqual(refs[0]["processed_date"], today_str)
-        self.assertTrue(refs[0]["has_description"])
+        self.assertTrue(refs[0]["has_token_map"])
+
+    def test_reprocess_updates_checklist(self):
+        """Re-processing updates checklist items to reflect the new design."""
+        original = """# Feature: My Feature
+## Visual Specification
+### Screen: Main Dashboard
+- **Reference:** features/design/my_feature/dashboard-layout.png
+- **Processed:** 2025-01-15
+- **Token Map:** `surface` -> `var(--purlin-bg)`
+- [ ] Old checklist item
+"""
+        today_str = date.today().isoformat()
+        updated = original.replace(
+            "- [ ] Old checklist item",
+            "- [ ] New sidebar placement check\n- [ ] Updated color token verification",
+        ).replace(
+            "- **Processed:** 2025-01-15",
+            f"- **Processed:** {today_str}",
+        )
+
+        self.assertIn("- [ ] New sidebar placement check", updated)
+        self.assertIn("- [ ] Updated color token verification", updated)
+        self.assertNotIn("- [ ] Old checklist item", updated)
 
 
 class TestAnchorInheritanceTokenMapping(unittest.TestCase):
     """Scenario: Anchor Inheritance Token Mapping"""
 
     def test_color_mapped_to_token(self):
-        """Hex color matching an anchor token maps to the token name."""
+        """Figma variable value matching an anchor token maps to the token name."""
         with tempfile.TemporaryDirectory() as tmpdir:
             features_dir = os.path.join(tmpdir, "features")
             os.makedirs(features_dir)
@@ -525,23 +634,24 @@ class TestAnchorInheritanceTokenMapping(unittest.TestCase):
             self.assertIn("Montserrat", fonts)
             self.assertEqual(fonts["Montserrat"], "--font-display")
 
-    def test_unknown_color_returns_none(self):
-        """Hex color not in anchor tokens returns None."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            features_dir = os.path.join(tmpdir, "features")
-            os.makedirs(features_dir)
+    def test_token_map_uses_var_not_literal(self):
+        """Token Map maps Figma variable to var(--token) not literal hex value."""
+        tokens = {"--purlin-accent": "#38BDF8", "--purlin-bg": "#0B131A"}
+        observed = {"primary": "#38BDF8", "surface": "#0B131A"}
 
-            anchor_content = """# Design: Standards
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--purlin-accent` | `#38BDF8` | Links |
-"""
-            with open(os.path.join(features_dir, "design_test.md"), "w") as f:
-                f.write(anchor_content)
+        token_map = generate_token_map(observed, tokens)
 
-            tokens, fonts = read_design_anchors(features_dir)
-            result = map_color_to_token("#FF00FF", tokens)
-            self.assertIsNone(result)
+        self.assertEqual(token_map["primary"], "var(--purlin-accent)")
+        self.assertEqual(token_map["surface"], "var(--purlin-bg)")
+
+    def test_unknown_color_uses_literal(self):
+        """Figma variable with value not in anchor tokens uses literal value."""
+        tokens = {"--purlin-accent": "#38BDF8"}
+        observed = {"custom": "#FF00FF"}
+
+        token_map = generate_token_map(observed, tokens)
+
+        self.assertEqual(token_map["custom"], "#FF00FF")
 
 
 class TestNoDesignAnchorFallback(unittest.TestCase):
@@ -558,17 +668,16 @@ class TestNoDesignAnchorFallback(unittest.TestCase):
             self.assertEqual(len(tokens), 0)
             self.assertEqual(len(fonts), 0)
 
-    def test_no_anchor_literal_observations_used(self):
-        """Without anchors, colors cannot be mapped and should use literal values."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            features_dir = os.path.join(tmpdir, "features")
-            os.makedirs(features_dir)
+    def test_no_anchor_token_map_uses_literals(self):
+        """Without anchors, Token Map uses literal values for token mappings."""
+        tokens = {}  # No anchor tokens
+        observed = {"primary": "#38BDF8", "surface": "#0B131A"}
 
-            tokens, fonts = read_design_anchors(features_dir)
+        token_map = generate_token_map(observed, tokens)
 
-            # With empty tokens, mapping returns None — agent uses literal
-            result = map_color_to_token("#38BDF8", tokens)
-            self.assertIsNone(result)
+        # With no anchor tokens, values should be literal hex
+        self.assertEqual(token_map["primary"], "#38BDF8")
+        self.assertEqual(token_map["surface"], "#0B131A")
 
     def test_nonexistent_features_dir_returns_empty(self):
         """When features/ directory does not exist, returns empty tokens."""
