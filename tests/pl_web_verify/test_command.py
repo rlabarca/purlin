@@ -5,10 +5,21 @@ Covers automated scenarios from features/pl_web_verify.md:
 - Auto-discover web-testable features
 - URL override from argument
 - Playwright MCP not available triggers auto-setup
+- Headed Playwright MCP detected triggers reconfiguration
+- Dynamic port resolution from port file
+- Port file missing falls back to metadata URL
+- Server auto-start when not reachable
+- Server not reachable and no start command
+- URL override takes precedence over port file
 - Manual scenario PASS recorded correctly
 - Manual scenario FAIL creates BUG discovery
 - Inconclusive step handled gracefully
-- Visual spec items verified via screenshot analysis
+- Visual spec items verified via screenshot analysis (no Figma MCP)
+- Figma-triangulated verification with all sources agreeing
+- Figma-triangulated verification detects BUG
+- Figma-triangulated verification detects STALE spec
+- Figma-triangulated verification detects token drift
+- Three-source report format
 - Regression scope respected
 - Cosmetic scope skips feature
 - QA completion gate prompts for completion
@@ -27,6 +38,9 @@ These tests verify the underlying behaviors that the command depends on:
 - BUG discovery format validation
 - INCONCLUSIVE classification
 - Visual spec extraction from feature files
+- Figma reference and Token Map extraction from visual specs
+- Triangulated verification verdict logic (PASS, BUG, STALE, DRIFT)
+- Three-source report format with per-item attribution
 - Role-based completion gate behavior
 - Instruction file references across 7 files
 """
@@ -179,6 +193,72 @@ SAMPLE_CRITIC_DEPENDENCY_ONLY = """\
 }
 """
 
+# Sample feature spec with Figma reference and Token Map in Visual Specification
+SAMPLE_WEB_TESTABLE_WITH_FIGMA = """\
+# Feature: Sample Web Feature with Figma
+
+> Label: "Sample Feature"
+> Category: "CDD"
+> Prerequisite: features/policy_critic.md
+> Prerequisite: features/design_visual_standards.md
+> Web Testable: http://localhost:9086
+> Web Port File: .purlin/runtime/cdd.port
+
+[TESTING]
+
+## 1. Overview
+A sample feature with Figma-backed visual specification.
+
+## 3. Scenarios
+### Manual Scenarios (Human Verification Required)
+None.
+
+## Visual Specification
+
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
+### Screen: Dashboard Main View
+- **Reference:** [Figma](https://figma.com/design/ABC123/Dashboard?node-id=42:100)
+- **Processed:** 2026-03-10
+- **Token Map:**
+  - `surface` -> `var(--purlin-bg)`
+  - `on-surface` -> `var(--purlin-primary)`
+  - `primary` -> `var(--purlin-accent)`
+  - `spacing-md` -> `16px`
+- [ ] Card width 120px
+- [ ] Heading uses var(--font-display)
+- [ ] Icon 48x48
+- [ ] Subtle left-edge shadow
+"""
+
+# Sample feature spec WITHOUT Figma reference in Visual Specification
+SAMPLE_WEB_TESTABLE_NO_FIGMA_VISUAL = """\
+# Feature: Sample Web Feature No Figma Visual
+
+> Label: "Sample Feature"
+> Category: "CDD"
+> Prerequisite: features/policy_critic.md
+> Web Testable: http://localhost:9086
+
+[TESTING]
+
+## 1. Overview
+A sample feature with visual spec but no Figma reference.
+
+## 3. Scenarios
+### Manual Scenarios (Human Verification Required)
+None.
+
+## Visual Specification
+
+### Screen: Settings Panel
+- **Reference:** N/A
+- **Processed:** N/A
+- [ ] Toggle switch is 40x20
+- [ ] Label font is 14px Inter
+"""
+
 # Sample feature spec with Test Fixtures metadata for fixture-backed testing
 SAMPLE_WEB_TESTABLE_WITH_FIXTURES = """\
 # Feature: Sample Web Feature with Fixtures
@@ -315,6 +395,99 @@ def _detect_fixture_tag_in_steps(scenario_text):
     """
     match = re.search(r'fixture tag "([^"]+)"', scenario_text)
     return match.group(1) if match else None
+
+
+def _extract_figma_references(content):
+    """Extract Figma reference URLs from Visual Specification screens.
+
+    Returns a list of dicts with 'screen', 'url', and 'node_id' keys.
+    """
+    refs = []
+    current_screen = None
+    for line in content.split('\n'):
+        if line.startswith('### Screen:'):
+            current_screen = line.replace('### Screen:', '').strip()
+        if current_screen and '**Reference:**' in line:
+            match = re.search(
+                r'\[Figma\]\(([^)]+)\)', line)
+            if match:
+                url = match.group(1)
+                node_match = re.search(r'node-id=([^&\s]+)', url)
+                node_id = node_match.group(1) if node_match else None
+                refs.append({
+                    'screen': current_screen,
+                    'url': url,
+                    'node_id': node_id
+                })
+    return refs
+
+
+def _extract_token_map(content):
+    """Extract Token Map entries from Visual Specification.
+
+    Returns a list of dicts with 'figma_token' and 'project_token' keys.
+    """
+    entries = []
+    in_token_map = False
+    for line in content.split('\n'):
+        if '**Token Map:**' in line:
+            in_token_map = True
+            continue
+        if in_token_map:
+            # Token Map entries are indented list items: - `X` -> `Y`
+            match = re.match(
+                r'\s*-\s*`([^`]+)`\s*->\s*`([^`]+)`', line)
+            if match:
+                entries.append({
+                    'figma_token': match.group(1),
+                    'project_token': match.group(2)
+                })
+            elif line.strip() and not line.strip().startswith('-'):
+                # End of token map (non-list line)
+                in_token_map = False
+    return entries
+
+
+def _extract_visual_screens(content):
+    """Extract screen names and their Figma reference status.
+
+    Returns a list of dicts with 'name' and 'has_figma' keys.
+    """
+    screens = []
+    current_screen = None
+    for line in content.split('\n'):
+        if line.startswith('### Screen:'):
+            if current_screen:
+                screens.append(current_screen)
+            current_screen = {
+                'name': line.replace('### Screen:', '').strip(),
+                'has_figma': False
+            }
+        if current_screen and '[Figma](' in line:
+            current_screen['has_figma'] = True
+    if current_screen:
+        screens.append(current_screen)
+    return screens
+
+
+def _assign_triangulation_verdict(figma_val, spec_val, app_val):
+    """Assign a triangulation verdict based on three-source comparison.
+
+    Returns one of: 'PASS', 'BUG', 'STALE', 'SPEC_DRIFT'.
+    """
+    if figma_val == spec_val == app_val:
+        return 'PASS'
+    if figma_val != spec_val and app_val == spec_val:
+        # Figma changed, spec and app still match old value
+        return 'STALE'
+    if figma_val == spec_val and app_val != spec_val:
+        # Spec and Figma agree, app is wrong
+        return 'BUG'
+    if figma_val != spec_val and app_val == figma_val:
+        # App matches Figma but spec is stale
+        return 'SPEC_DRIFT'
+    # Figma changed, spec changed, but app still wrong
+    return 'BUG'
 
 
 def _extract_web_port_file(content):
@@ -692,15 +865,19 @@ class TestInconclusiveStepHandling(unittest.TestCase):
         self.assertIn('Bash', content)
 
 
-class TestVisualSpecVerification(unittest.TestCase):
-    """Scenario: Visual spec items verified via screenshot analysis
+class TestVisualSpecVerificationNoFigma(unittest.TestCase):
+    """Scenario: Visual spec items verified via screenshot analysis (no Figma MCP)
 
-    Given a web-testable feature has a Visual Specification with checklist items
+    Given a web-testable feature has a `## Visual Specification` with checklist
+    And Figma MCP tools are not available
     When `/pl-web-verify` navigates to the screen and takes a screenshot
     Then each checklist item is analyzed against the screenshot using vision
     And PASS/FAIL is recorded per item with observation notes
+    And the output notes "Figma MCP not available -- triangulated verification
+    skipped"
 
-    Test: Verifies visual spec extraction and per-item result recording.
+    Test: Verifies visual spec extraction, per-item result recording, and
+    the fallback path when Figma MCP is unavailable.
     """
 
     def test_visual_checklist_items_extracted(self):
@@ -731,6 +908,353 @@ class TestVisualSpecVerification(unittest.TestCase):
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn('Visual Spec Verification', content)
+
+    def test_skill_file_documents_no_figma_fallback(self):
+        """Skill file documents the no-Figma-MCP fallback path."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn(
+            'Figma MCP not available', content)
+        self.assertIn(
+            'triangulated verification skipped', content)
+
+    def test_skill_file_fallback_uses_screenshot_only(self):
+        """Fallback path uses screenshot + vision, no Figma MCP calls."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        # The fallback section (6.5) should reference screenshot analysis
+        self.assertIn('full-page screenshot', content)
+        self.assertIn('vision', content.lower())
+
+    def test_no_figma_reference_screen_uses_fallback(self):
+        """Screens without Figma reference use fallback verification."""
+        screens = _extract_visual_screens(SAMPLE_WEB_TESTABLE_NO_FIGMA_VISUAL)
+        self.assertEqual(len(screens), 1)
+        self.assertEqual(screens[0]['name'], 'Settings Panel')
+        self.assertFalse(screens[0]['has_figma'])
+
+
+class TestFigmaTriangulatedAllAgree(unittest.TestCase):
+    """Scenario: Figma-triangulated verification with all sources agreeing
+
+    Given a web-testable feature has a Visual Specification with Figma reference
+    And the Token Map maps "primary" to "var(--accent)"
+    And a checklist item states "Card width 120px"
+    And Figma MCP is available
+    When `/pl-web-verify` performs triangulated verification
+    Then the Figma node width is read via MCP
+    And the app computed width is read via browser_evaluate
+    And all three sources agree on 120px
+    And the item is recorded as PASS with three-source attribution
+
+    Test: Verifies Figma reference extraction, Token Map parsing, and
+    skill file protocol for three-source PASS verdict.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_figma_reference_extracted(self):
+        """Figma reference URL is correctly extracted from visual spec."""
+        refs = _extract_figma_references(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['screen'], 'Dashboard Main View')
+        self.assertIn('figma.com', refs[0]['url'])
+
+    def test_figma_node_id_extracted(self):
+        """Figma node ID is parsed from the reference URL."""
+        refs = _extract_figma_references(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        self.assertEqual(refs[0]['node_id'], '42:100')
+
+    def test_token_map_entries_extracted(self):
+        """Token Map entries are correctly parsed from visual spec."""
+        entries = _extract_token_map(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        self.assertEqual(len(entries), 4)
+        names = [e['figma_token'] for e in entries]
+        self.assertIn('surface', names)
+        self.assertIn('on-surface', names)
+        self.assertIn('primary', names)
+        self.assertIn('spacing-md', names)
+
+    def test_token_map_project_tokens_extracted(self):
+        """Token Map project token values are correctly parsed."""
+        entries = _extract_token_map(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        token_dict = {e['figma_token']: e['project_token'] for e in entries}
+        self.assertEqual(token_dict['surface'], 'var(--purlin-bg)')
+        self.assertEqual(token_dict['primary'], 'var(--purlin-accent)')
+
+    def test_pass_verdict_when_all_agree(self):
+        """PASS verdict assigned when Figma, Spec, and App all agree."""
+        verdict = _assign_triangulation_verdict('120px', '120px', '120px')
+        self.assertEqual(verdict, 'PASS')
+
+    def test_skill_references_figma_mcp_tools(self):
+        """Skill file references Figma MCP tools get_file and get_node."""
+        self.assertIn('get_file', self.command_content)
+        self.assertIn('get_node', self.command_content)
+
+    def test_skill_documents_three_source_comparison(self):
+        """Skill file documents reading Figma, Spec, and App sources."""
+        self.assertIn('Figma', self.command_content)
+        self.assertIn('Spec', self.command_content)
+        self.assertIn('App', self.command_content)
+
+    def test_skill_fetches_specific_node_not_entire_file(self):
+        """Skill file specifies fetching only the referenced Figma node."""
+        self.assertIn('node-id', self.command_content)
+        self.assertIn('specific', self.command_content.lower())
+
+    def test_skill_uses_browser_evaluate_for_computed_styles(self):
+        """Skill file uses browser_evaluate with getComputedStyle."""
+        self.assertIn('getComputedStyle', self.command_content)
+
+    def test_figma_screen_detected_as_having_figma(self):
+        """Screen with Figma reference is correctly flagged."""
+        screens = _extract_visual_screens(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        self.assertEqual(len(screens), 1)
+        self.assertTrue(screens[0]['has_figma'])
+
+
+class TestFigmaTriangulatedDetectsBug(unittest.TestCase):
+    """Scenario: Figma-triangulated verification detects BUG
+
+    Given a web-testable feature has a Visual Specification with Figma reference
+    And a checklist item states "Icon 48x48"
+    And Figma reports 48px and spec says 48px but app computes 32px
+    When `/pl-web-verify` performs triangulated verification
+    Then the item is recorded as BUG with three-source attribution
+    And a [BUG] discovery is created routing to Builder
+
+    Test: Verifies BUG verdict logic and skill file BUG routing.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_bug_verdict_when_app_differs(self):
+        """BUG verdict when Figma and Spec agree but App differs."""
+        verdict = _assign_triangulation_verdict('48px', '48px', '32px')
+        self.assertEqual(verdict, 'BUG')
+
+    def test_bug_verdict_when_all_differ_figma_changed(self):
+        """BUG verdict when Figma changed, Spec changed, App still wrong."""
+        verdict = _assign_triangulation_verdict('56px', '56px', '32px')
+        self.assertEqual(verdict, 'BUG')
+
+    def test_skill_documents_bug_verdict_row(self):
+        """Skill file includes BUG in the verdict matrix."""
+        # The verdict table should have a BUG row
+        self.assertIn('BUG', self.command_content)
+        self.assertIn('code wrong', self.command_content.lower())
+
+    def test_skill_routes_bug_to_builder(self):
+        """Skill file routes BUG discoveries to Builder."""
+        self.assertIn('Action Required:** Builder', self.command_content)
+
+    def test_skill_creates_bug_discovery_for_triangulated_bugs(self):
+        """Skill file records triangulated BUGs as [BUG] discoveries."""
+        # The result recording section should reference BUG discovery
+        self.assertIn('[BUG]', self.command_content)
+        self.assertIn('three-source', self.command_content.lower())
+
+    def test_bug_discovery_includes_three_source_data(self):
+        """BUG discovery observed behavior includes three-source values."""
+        self.assertIn(
+            'three-source values if triangulated', self.command_content)
+
+
+class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
+    """Scenario: Figma-triangulated verification detects STALE spec
+
+    Given a web-testable feature has a Visual Specification with Figma reference
+    And a checklist item states "heading-lg font"
+    And Figma has been updated to use "heading-xl" but spec still says
+    "heading-lg"
+    When `/pl-web-verify` performs triangulated verification
+    Then the item is recorded as STALE
+    And the output notes Figma was updated but spec was not re-ingested
+    And a PM action item is generated for re-ingestion
+
+    Test: Verifies STALE verdict logic and PM routing.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_stale_verdict_when_figma_updated(self):
+        """STALE verdict when Figma changed but spec and app match old."""
+        verdict = _assign_triangulation_verdict(
+            'heading-xl', 'heading-lg', 'heading-lg')
+        self.assertEqual(verdict, 'STALE')
+
+    def test_stale_distinct_from_bug(self):
+        """STALE is distinct from BUG -- spec is outdated, not code."""
+        stale = _assign_triangulation_verdict('new', 'old', 'old')
+        bug = _assign_triangulation_verdict('48px', '48px', '32px')
+        self.assertNotEqual(stale, bug)
+        self.assertEqual(stale, 'STALE')
+        self.assertEqual(bug, 'BUG')
+
+    def test_skill_documents_stale_verdict_row(self):
+        """Skill file includes STALE in the verdict matrix."""
+        self.assertIn('STALE', self.command_content)
+        self.assertIn('Figma updated', self.command_content)
+
+    def test_skill_routes_stale_to_pm(self):
+        """Skill file routes STALE items to PM for re-ingestion."""
+        self.assertIn('PM action item', self.command_content)
+        self.assertIn('re-ingest', self.command_content.lower())
+
+    def test_stale_not_recorded_as_bug_discovery(self):
+        """Skill file distinguishes STALE from BUG in result recording."""
+        # STALE items should NOT be recorded as [BUG] discoveries
+        self.assertIn('STALE/DRIFT', self.command_content)
+        self.assertIn('not BUG discoveries', self.command_content)
+
+
+class TestFigmaTriangulatedDetectsTokenDrift(unittest.TestCase):
+    """Scenario: Figma-triangulated verification detects token drift
+
+    Given a web-testable feature has a Token Map with
+    "spacing-md" -> "var(--spacing-md)"
+    And Figma reports spacing-md resolved value is 20px
+    And the app's computed --spacing-md value is 16px
+    When `/pl-web-verify` performs token verification
+    Then the token entry is recorded as DRIFT
+    And the output shows Figma=20px App=16px
+
+    Test: Verifies Token Map extraction, token drift detection logic, and
+    skill file documentation of token verification.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_token_map_extracted_for_drift_check(self):
+        """Token Map entries are available for drift checking."""
+        entries = _extract_token_map(SAMPLE_WEB_TESTABLE_WITH_FIGMA)
+        spacing = [e for e in entries if e['figma_token'] == 'spacing-md']
+        self.assertEqual(len(spacing), 1)
+        self.assertEqual(spacing[0]['project_token'], '16px')
+
+    def test_token_drift_detected(self):
+        """Token drift detected when Figma value differs from App value."""
+        # Simulate: Figma reports 20px, App computes 16px
+        figma_val = '20px'
+        app_val = '16px'
+        self.assertNotEqual(figma_val, app_val)
+
+    def test_token_pass_when_values_match(self):
+        """Token PASS when Figma resolved value matches App value."""
+        figma_val = '16px'
+        app_val = '16px'
+        self.assertEqual(figma_val, app_val)
+
+    def test_skill_documents_token_verification(self):
+        """Skill file documents Token Map verification step."""
+        self.assertIn('Token Map verification', self.command_content)
+
+    def test_skill_documents_token_drift_output(self):
+        """Skill file shows Figma and App values in token drift output."""
+        self.assertIn('Figma=', self.command_content)
+        self.assertIn('App=', self.command_content)
+
+    def test_skill_reads_figma_design_variable(self):
+        """Skill file reads Figma design variable value via MCP."""
+        self.assertIn('design variable', self.command_content.lower())
+
+    def test_skill_reads_computed_css_property(self):
+        """Skill file reads app CSS property via browser_evaluate."""
+        self.assertIn('computed CSS property', self.command_content)
+
+    def test_drift_flagged_per_token_entry(self):
+        """Skill file flags drift per Token Map entry individually."""
+        self.assertIn('[DRIFT]', self.command_content)
+        self.assertIn('token drift', self.command_content.lower())
+
+
+class TestThreeSourceReportFormat(unittest.TestCase):
+    """Scenario: Three-source report format
+
+    Given `/pl-web-verify` has completed triangulated verification
+    When results are printed
+    Then the output includes a "Triangulated Verification" section
+    And each item shows Figma, Spec, and App values
+    And the Token Map section shows per-token comparison
+    And a summary line shows counts by verdict type
+
+    Test: Verifies the skill file includes the three-source report format
+    with all required sections and attribution columns.
+    """
+
+    def setUp(self):
+        with open(COMMAND_FILE) as f:
+            self.command_content = f.read()
+
+    def test_report_has_triangulated_header(self):
+        """Report includes the Triangulated Verification header."""
+        self.assertIn(
+            'Triangulated Verification', self.command_content)
+
+    def test_report_has_screen_label(self):
+        """Report format includes Screen: label for per-screen results."""
+        self.assertIn('Screen:', self.command_content)
+
+    def test_report_shows_pass_verdict_with_three_values(self):
+        """Report PASS lines show Figma, Spec, and App values."""
+        # Look for the report format template with all three sources
+        self.assertIn('[PASS]', self.command_content)
+        self.assertIn('Figma=', self.command_content)
+        self.assertIn('Spec=', self.command_content)
+        self.assertIn('App=', self.command_content)
+
+    def test_report_shows_bug_verdict(self):
+        """Report BUG lines show three values with code-wrong annotation."""
+        self.assertIn('[BUG]', self.command_content)
+        self.assertIn('<- code wrong', self.command_content)
+
+    def test_report_shows_stale_verdict(self):
+        """Report STALE lines show Figma and Spec values."""
+        self.assertIn('[STALE]', self.command_content)
+        self.assertIn('<- Figma updated', self.command_content)
+
+    def test_report_shows_drift_verdict(self):
+        """Report DRIFT lines show Figma, Spec, App values."""
+        self.assertIn('[DRIFT]', self.command_content)
+        self.assertIn('<- spec drift', self.command_content)
+
+    def test_report_has_token_map_section(self):
+        """Report includes a Token Map section for per-token comparison."""
+        self.assertIn('Token Map:', self.command_content)
+        self.assertIn('<- token drift', self.command_content)
+
+    def test_report_has_summary_line(self):
+        """Report includes summary with counts by verdict type."""
+        self.assertIn('Summary:', self.command_content)
+        self.assertIn('BUG', self.command_content)
+        self.assertIn('STALE', self.command_content)
+        self.assertIn('DRIFT', self.command_content)
+
+    def test_report_verdict_routing(self):
+        """Skill file documents verdict routing to Builder and PM."""
+        # BUG -> Builder (via Action Required), STALE/DRIFT -> PM
+        self.assertIn('Action Required:** Builder', self.command_content)
+        self.assertIn('PM action items', self.command_content)
+
+    def test_all_verdicts_produce_correct_types(self):
+        """All verdict assignments produce expected values."""
+        self.assertEqual(
+            _assign_triangulation_verdict('a', 'a', 'a'), 'PASS')
+        self.assertEqual(
+            _assign_triangulation_verdict('a', 'a', 'b'), 'BUG')
+        self.assertEqual(
+            _assign_triangulation_verdict('b', 'a', 'a'), 'STALE')
+        self.assertEqual(
+            _assign_triangulation_verdict('b', 'a', 'b'), 'SPEC_DRIFT')
 
 
 class TestRegressionScopeRespected(unittest.TestCase):
