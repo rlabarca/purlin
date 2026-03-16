@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 41,
+  "passed": 47,
   "failed": 0,
-  "total": 41,
+  "total": 47,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -167,6 +167,30 @@
     },
     {
       "name": "Re-Analysis After Retry",
+      "status": "PASS"
+    },
+    {
+      "name": "Sequential Phase Output Streamed to Terminal",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Output Streamed to Terminal",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Phase Heartbeat During Execution",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Phase Output Not Streamed",
+      "status": "PASS"
+    },
+    {
+      "name": "Heartbeat Stops After Parallel Group Completes",
+      "status": "PASS"
+    },
+    {
+      "name": "Resume Session Output Streamed and Appended",
       "status": "PASS"
     }
   ]

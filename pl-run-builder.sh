@@ -22,10 +22,13 @@ done
 PROMPT_FILE=$(mktemp)
 PARALLEL_PROMPT_FILE=""
 BOOTSTRAP_PROMPT_FILE=""
+HEARTBEAT_PID=""
 cleanup() {
     rm -f "$PROMPT_FILE"
     [ -n "$PARALLEL_PROMPT_FILE" ] && rm -f "$PARALLEL_PROMPT_FILE"
     [ -n "$BOOTSTRAP_PROMPT_FILE" ] && rm -f "$BOOTSTRAP_PROMPT_FILE"
+    # Kill any active heartbeat process
+    [ -n "$HEARTBEAT_PID" ] && kill "$HEARTBEAT_PID" 2>/dev/null
     # Clean up any orphaned continuous-mode worktrees
     if [ "$CONTINUOUS" = "true" ]; then
         for wt_dir in "$SCRIPT_DIR"/continuous-phase-*; do
@@ -373,8 +376,8 @@ BOOTSTRAP_OVERRIDE
     claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
         "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
-        "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
-    BOOTSTRAP_RC=$?
+        "Begin Builder session." 2>&1 | tee "$BOOTSTRAP_LOG"
+    BOOTSTRAP_RC=${PIPESTATUS[0]}
     rm -f "$BOOTSTRAP_PROMPT_FILE"
     BOOTSTRAP_PROMPT_FILE=""
 
@@ -511,10 +514,45 @@ while [ "$OUTER_BREAK" = "false" ]; do
             WT_PHASES+=("$PHASE_NUM")
         done
 
+        # Start heartbeat process for parallel group visibility (Section 2.16)
+        HEARTBEAT_PID=""
+        (
+            while true; do
+                sleep 15
+                STATUS_PARTS=()
+                for i in "${!WT_PHASES[@]}"; do
+                    PNUM="${WT_PHASES[$i]}"
+                    LFILE="${WT_LOGS[$i]}"
+                    PID_VAL="${WT_PIDS[$i]}"
+                    FSIZE="0K"
+                    if [ -f "$LFILE" ]; then
+                        BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
+                        FSIZE="$((BYTES / 1024))K"
+                    fi
+                    if kill -0 "$PID_VAL" 2>/dev/null; then
+                        STATUS_PARTS+=("Phase $PNUM (running, $FSIZE)")
+                    else
+                        STATUS_PARTS+=("Phase $PNUM (done, $FSIZE)")
+                    fi
+                done
+                TIMESTAMP=$(date +%H:%M:%S)
+                IFS=', '
+                echo "[$TIMESTAMP] Parallel group: ${STATUS_PARTS[*]}" >&2
+                unset IFS
+            done
+        ) &
+        HEARTBEAT_PID=$!
+
         # Wait for all parallel builders to complete
         for pid in "${WT_PIDS[@]}"; do
             wait "$pid" 2>/dev/null
         done
+
+        # Terminate heartbeat before merge (Section 2.16)
+        if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
+            kill "$HEARTBEAT_PID" 2>/dev/null
+            wait "$HEARTBEAT_PID" 2>/dev/null
+        fi
 
         # Merge each worktree branch back to main
         MERGE_FAILED=false
@@ -598,12 +636,12 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     claude --print --session-id "$SESSION_ID" \
                         "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
-                        "$INITIAL_MSG" > "$LOG_FILE" 2>&1
+                        "$INITIAL_MSG" 2>&1 | tee "$LOG_FILE"
                     ;;
                 resume)
                     claude --resume "$SESSION_ID" --print \
                         "${CLI_ARGS[@]}" \
-                        "Approved. Proceed." >> "$LOG_FILE" 2>&1
+                        "Approved. Proceed." 2>&1 | tee -a "$LOG_FILE"
                     ;;
             esac
 

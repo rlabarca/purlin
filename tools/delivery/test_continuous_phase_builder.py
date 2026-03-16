@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 42 automated scenarios.
+"""Tests for continuous phase builder — exercises all 47 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -2499,6 +2499,322 @@ if pending:
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Builder Output Visibility (Section 2.16) (6)
+# ============================================================
+
+def test_sequential_phase_output_streamed():
+    """Sequential phase output is streamed to terminal via tee AND written to log file.
+    Verifies that sequential execution uses '| tee' (not just > redirect)."""
+    source = read_launcher()
+
+    # Find the sequential execution section (after "SEQUENTIAL EXECUTION" comment)
+    seq_section_start = source.find('# SEQUENTIAL EXECUTION')
+    assert seq_section_start != -1, "Could not find SEQUENTIAL EXECUTION section"
+    seq_section = source[seq_section_start:]
+    # Limit to the sequential block (before the closing 'fi' of the parallel/sequential branch)
+    seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
+
+    # Check that the run/retry path uses tee (not just > redirect)
+    has_tee_run = bool(re.search(r'tee "\$LOG_FILE"', seq_section))
+
+    # Also verify the log file is written (tee writes to both stdout and file)
+    # Verify via an integration test
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[("continue", "done")])
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'continuous_build_phase_1.log')
+        log_exists = os.path.exists(log_path)
+        log_content = ""
+        if log_exists:
+            with open(log_path) as f:
+                log_content = f.read()
+
+        # With tee, output goes to both stdout and log file
+        # stdout should have the builder output (streamed via tee)
+        stdout_has_output = "Phase 1 of" in proc.stdout
+        log_has_output = "Phase 1 of" in log_content
+        # Log and stdout should match
+        log_matches_stdout = log_content.strip() == proc.stdout.strip() if log_content else False
+
+        ok = has_tee_run and log_exists and stdout_has_output and log_has_output and log_matches_stdout
+        record("Sequential Phase Output Streamed to Terminal", ok,
+               f"tee_in_source={has_tee_run}, log={log_exists}, "
+               f"stdout_output={stdout_has_output}, log_output={log_has_output}, "
+               f"content_match={log_matches_stdout}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_output_streamed():
+    """Bootstrap output is streamed to terminal via tee AND written to bootstrap log."""
+    source = read_launcher()
+
+    # Verify bootstrap uses tee for output streaming
+    bootstrap_section_start = source.find('# --- Bootstrap session')
+    assert bootstrap_section_start != -1, "Could not find bootstrap section"
+    bootstrap_section = source[bootstrap_section_start:]
+    bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial')]
+
+    has_tee_bootstrap = bool(re.search(r'tee "\$BOOTSTRAP_LOG"', bootstrap_section))
+    has_pipestatus = 'PIPESTATUS' in bootstrap_section
+
+    # Integration test
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, None, graph)
+        mock_bin = make_bootstrap_mock_claude(
+            tmpdir, creates_plan=True,
+            eval_responses=[("stop", "All phases complete successfully")]
+        )
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        bootstrap_log = os.path.join(tmpdir, '.purlin', 'runtime',
+                                     'continuous_build_bootstrap.log')
+        log_exists = os.path.exists(bootstrap_log)
+        log_content = ""
+        if log_exists:
+            with open(bootstrap_log) as f:
+                log_content = f.read()
+
+        # Bootstrap output should be in both stdout (streamed) and log file
+        stdout_has_output = "Bootstrap session complete" in proc.stdout
+        log_has_output = "Bootstrap session complete" in log_content
+
+        ok = has_tee_bootstrap and has_pipestatus and log_exists and stdout_has_output and log_has_output
+        record("Bootstrap Output Streamed to Terminal", ok,
+               f"tee={has_tee_bootstrap}, pipestatus={has_pipestatus}, "
+               f"log={log_exists}, stdout={stdout_has_output}, "
+               f"log_output={log_has_output}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_parallel_heartbeat_during_execution():
+    """Parallel group has a background heartbeat printing status to stderr every 15 seconds."""
+    source = read_launcher()
+
+    # Find the parallel execution section
+    parallel_section_start = source.find('# PARALLEL EXECUTION')
+    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
+    parallel_section = source[parallel_section_start:]
+    # Limit scope
+    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+
+    # Verify heartbeat process is started
+    has_heartbeat_loop = 'sleep 15' in parallel_section
+    has_heartbeat_output = 'Parallel group:' in parallel_section
+    has_stderr_output = '>&2' in parallel_section
+    has_log_size = 'wc -c' in parallel_section
+    has_running_status = '(running,' in parallel_section
+    has_done_status = '(done,' in parallel_section
+    has_timestamp = 'date +%H:%M:%S' in parallel_section
+    has_heartbeat_bg = 'HEARTBEAT_PID=$!' in parallel_section
+
+    ok = (has_heartbeat_loop and has_heartbeat_output and has_stderr_output and
+          has_log_size and has_running_status and has_done_status and
+          has_timestamp and has_heartbeat_bg)
+    record("Parallel Phase Heartbeat During Execution", ok,
+           f"loop={has_heartbeat_loop}, output={has_heartbeat_output}, "
+           f"stderr={has_stderr_output}, size={has_log_size}, "
+           f"running={has_running_status}, done={has_done_status}, "
+           f"timestamp={has_timestamp}, bg={has_heartbeat_bg}" if not ok else "")
+
+
+def test_parallel_output_not_streamed():
+    """Parallel Builder output stays in log files only — not streamed to terminal."""
+    source = read_launcher()
+
+    # Find the parallel builder invocation
+    parallel_section_start = source.find('# PARALLEL EXECUTION')
+    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
+    parallel_section = source[parallel_section_start:]
+    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+
+    # The parallel claude call should use > redirect (NOT tee)
+    # The invocation spans multiple lines with \ continuations, so use DOTALL
+    has_redirect_only = bool(re.search(
+        r'claude --print.*?> "\$LOG_FILE" 2>&1',
+        parallel_section,
+        re.DOTALL
+    ))
+    # Should NOT have tee in the parallel builder invocation subshell
+    # Extract the subshell block (between '(' and ') &')
+    subshell_start = parallel_section.find('(\n                cd "$WT_DIR"')
+    subshell_end = parallel_section.find(') &', subshell_start) if subshell_start >= 0 else -1
+    builder_subshell = parallel_section[subshell_start:subshell_end] if subshell_start >= 0 else ""
+    has_no_tee_for_builder = 'tee' not in builder_subshell
+
+    # Integration: verify parallel output does NOT appear on stdout
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (1, "A", "PENDING", ["a.md"]),
+            (2, "B", "PENDING", ["b.md"]),
+        ])
+        graph = make_graph([("a.md", []), ("b.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=2,
+                                   eval_responses=[("continue", "Parallel group done")])
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Parallel builder output should NOT be in stdout
+        stdout_clean = "Phase 1 of" not in proc.stdout
+
+        ok = has_redirect_only and has_no_tee_for_builder and stdout_clean
+        record("Parallel Phase Output Not Streamed", ok,
+               f"redirect={has_redirect_only}, no_tee={has_no_tee_for_builder}, "
+               f"stdout_clean={stdout_clean}, stdout={proc.stdout[:200]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_heartbeat_stops_after_parallel_complete():
+    """Heartbeat process is terminated immediately after all parallel Builders complete,
+    before worktree merge begins."""
+    source = read_launcher()
+
+    # Find the parallel execution section
+    parallel_section_start = source.find('# PARALLEL EXECUTION')
+    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
+    parallel_section = source[parallel_section_start:]
+    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+
+    # Verify heartbeat kill is after wait and before merge
+    wait_pos = parallel_section.find('# Wait for all parallel builders')
+    heartbeat_kill_pos = parallel_section.find('# Terminate heartbeat before merge')
+    merge_pos = parallel_section.find('# Merge each worktree branch')
+
+    has_kill_after_wait = wait_pos < heartbeat_kill_pos if (wait_pos >= 0 and heartbeat_kill_pos >= 0) else False
+    has_kill_before_merge = heartbeat_kill_pos < merge_pos if (heartbeat_kill_pos >= 0 and merge_pos >= 0) else False
+
+    # Verify the kill command targets the heartbeat PID
+    has_kill_cmd = 'kill "$HEARTBEAT_PID"' in parallel_section
+    # Verify it waits for the heartbeat to actually terminate
+    has_wait_heartbeat = 'wait "$HEARTBEAT_PID"' in parallel_section
+
+    # Also verify cleanup function kills heartbeat on unexpected exit
+    cleanup_section = source[source.find('cleanup()'):source.find('trap cleanup')]
+    has_cleanup_kill = 'HEARTBEAT_PID' in cleanup_section
+
+    ok = (has_kill_after_wait and has_kill_before_merge and
+          has_kill_cmd and has_wait_heartbeat and has_cleanup_kill)
+    record("Heartbeat Stops After Parallel Group Completes", ok,
+           f"after_wait={has_kill_after_wait}, before_merge={has_kill_before_merge}, "
+           f"kill_cmd={has_kill_cmd}, wait_hb={has_wait_heartbeat}, "
+           f"cleanup={has_cleanup_kill}" if not ok else "")
+
+
+def test_resume_session_output_streamed_and_appended():
+    """Resume session output is streamed via tee -a to append to existing log file."""
+    source = read_launcher()
+
+    # Find the sequential execution section
+    seq_section_start = source.find('# SEQUENTIAL EXECUTION')
+    assert seq_section_start != -1, "Could not find SEQUENTIAL EXECUTION section"
+    seq_section = source[seq_section_start:]
+    seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
+
+    # The resume path should use tee -a (append mode)
+    has_tee_append = bool(re.search(r'tee -a "\$LOG_FILE"', seq_section))
+
+    # Integration test: verify both initial and resumed output in log
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+
+        # Custom mock: first call outputs approval prompt, resume outputs completion
+        mock_bin_dir = os.path.join(tmpdir, 'mock_bin')
+        os.makedirs(mock_bin_dir, exist_ok=True)
+
+        state_file = os.path.join(tmpdir, '.purlin', 'runtime', 'call_count')
+        with open(state_file, 'w') as f:
+            f.write('0')
+
+        mock_script = os.path.join(mock_bin_dir, 'claude')
+        with open(mock_script, 'w') as f:
+            f.write(f'''#!/bin/bash
+INVOCATION_LOG="{tmpdir}/.purlin/runtime/claude_invocations.log"
+echo "$@" >> "$INVOCATION_LOG"
+
+EVAL_STATE="{tmpdir}/.purlin/runtime/eval_count"
+if echo "$@" | grep -q "json-schema"; then
+    INPUT=$(cat)
+    ECOUNT=0
+    [ -f "$EVAL_STATE" ] && ECOUNT=$(cat "$EVAL_STATE")
+    ECOUNT=$((ECOUNT + 1))
+    echo "$ECOUNT" > "$EVAL_STATE"
+    if [ "$ECOUNT" -eq 1 ]; then
+        echo '{{"action": "approve", "reason": "Builder waiting for approval"}}'
+    else
+        echo '{{"action": "stop", "reason": "All phases complete successfully"}}'
+    fi
+    exit 0
+fi
+
+STATE_FILE="{state_file}"
+COUNT=$(cat "$STATE_FILE")
+COUNT=$((COUNT + 1))
+echo "$COUNT" > "$STATE_FILE"
+
+if [ "$COUNT" -eq 1 ]; then
+    echo "INITIAL_RUN_OUTPUT"
+    echo "Ready to go, or would you like to adjust the plan?"
+else
+    echo "RESUMED_RUN_OUTPUT"
+    echo "Phase 1 of 1 complete"
+fi
+exit 0
+''')
+        os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
+
+        mock_uuidgen = os.path.join(mock_bin_dir, 'uuidgen')
+        with open(mock_uuidgen, 'w') as f:
+            f.write('#!/bin/bash\necho "00000000-0000-0000-0000-000000000001"\n')
+        os.chmod(mock_uuidgen, os.stat(mock_uuidgen).st_mode | stat.S_IEXEC)
+
+        mock_git = os.path.join(mock_bin_dir, 'git')
+        with open(mock_git, 'w') as f:
+            f.write('#!/bin/bash\necho "abc1234"\nexit 0\n')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin_dir, ['--continuous'])
+
+        log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'continuous_build_phase_1.log')
+        log_content = ""
+        if os.path.exists(log_path):
+            with open(log_path) as f:
+                log_content = f.read()
+
+        # Log should contain both initial and resumed output (tee -a appends)
+        has_initial = "INITIAL_RUN_OUTPUT" in log_content
+        has_resumed = "RESUMED_RUN_OUTPUT" in log_content
+        # stdout should have both outputs (streamed via tee)
+        stdout_has_initial = "INITIAL_RUN_OUTPUT" in proc.stdout
+        stdout_has_resumed = "RESUMED_RUN_OUTPUT" in proc.stdout
+
+        ok = (has_tee_append and has_initial and has_resumed and
+              stdout_has_initial and stdout_has_resumed)
+        record("Resume Session Output Streamed and Appended", ok,
+               f"tee_append={has_tee_append}, log_initial={has_initial}, "
+               f"log_resumed={has_resumed}, stdout_initial={stdout_has_initial}, "
+               f"stdout_resumed={stdout_has_resumed}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -2580,6 +2896,14 @@ if __name__ == '__main__':
     test_parallel_group_invalidated()
     test_phase_count_changes_in_summary()
     test_reanalysis_after_retry()
+
+    # Builder Output Visibility (Section 2.16) (6)
+    test_sequential_phase_output_streamed()
+    test_bootstrap_output_streamed()
+    test_parallel_heartbeat_during_execution()
+    test_parallel_output_not_streamed()
+    test_heartbeat_stops_after_parallel_complete()
+    test_resume_session_output_streamed_and_appended()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)
