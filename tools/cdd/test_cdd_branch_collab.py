@@ -1516,6 +1516,60 @@ class TestJoinBranchAssessmentCreatesTrackingBranchWhenNoLocalExists(unittest.Te
             self.assertEqual(f.read().strip(), 'feature/auth')
 
 
+class TestJoinBranchWithNonexistentRemoteBranchReturnsError(unittest.TestCase):
+    """Scenario: Join Branch With Nonexistent Remote Branch Returns Error
+
+    Given no branch "nonexistent" exists as a remote tracking branch
+    When a POST request is sent to /branch-collab/join with body {"branch": "nonexistent"}
+    Then the response contains an error message
+    And no branch checkout occurs
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.purlin', 'runtime'), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch('serve.subprocess.run')
+    @patch('serve.get_branch_collab_config', return_value={'remote': 'origin', 'auto_fetch_interval': 300})
+    def test_nonexistent_branch_returns_error(self, mock_config, mock_run):
+        checkout_called = []
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr='', stdout='')
+            cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+            if 'rev-parse' in cmd_str and '--abbrev-ref' in cmd_str:
+                result.stdout = 'main'
+            elif 'fetch' in cmd_str and 'nonexistent' in cmd_str:
+                # git fetch fails for nonexistent branch
+                raise subprocess.CalledProcessError(1, cmd)
+            elif 'checkout' in cmd_str:
+                checkout_called.append(cmd)
+            return result
+        mock_run.side_effect = run_side_effect
+
+        body = json.dumps({"branch": "nonexistent"}).encode('utf-8')
+        handler = MagicMock()
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler._send_json = MagicMock()
+
+        with patch.object(serve, 'PROJECT_ROOT', self.tmpdir):
+            serve.Handler._handle_branch_collab_join(handler)
+
+        args = handler._send_json.call_args[0]
+        self.assertEqual(args[0], 400)
+        self.assertIn('error', args[1])
+        self.assertIn('nonexistent', args[1]['error'])
+        # No checkout should have occurred
+        self.assertEqual(len(checkout_called), 0)
+        # active_branch file should not exist
+        rt_path = os.path.join(self.tmpdir, '.purlin', 'runtime', 'active_branch')
+        self.assertFalse(os.path.exists(rt_path))
+
+
 class TestJoinBranchAssessmentReturnsSyncStateWithDirtyFileList(unittest.TestCase):
     """Scenario: Join Branch Assessment Returns Sync State With Dirty File List
 
