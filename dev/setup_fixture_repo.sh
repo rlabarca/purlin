@@ -672,6 +672,56 @@ commit_and_tag "main/cdd_qa_effort_display/auto-and-todo" \
 
 # =====================================================================
 echo ""
+echo "--- cdd_modal_base ---"
+
+reset_workdir
+create_base_project
+
+# standard: features with varied metadata for modal rendering verification
+create_feature "feature_simple.md" "Simple Feature" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feature_multi_prereq.md" "Multi Prerequisite Feature" "Dashboard" \
+    "policy_critic.md,feature_simple.md" "TESTING"
+create_feature "feature_long_content.md" "Long Content Feature" "Tools" "policy_critic.md" "TODO" \
+    "### 2.2 Extended Requirements
+
+- This feature has multiple requirements sections.
+- It includes lists, code blocks, and varied formatting.
+
+\`\`\`python
+def example():
+    return 'test'
+\`\`\`
+
+### 2.3 Additional Details
+
+- Bullet point one
+- Bullet point two
+- Bullet point three with \`inline code\`
+
+> Blockquote with important note about implementation."
+
+# Add implementation notes companion file for the multi-prereq feature
+cat > features/feature_multi_prereq.impl.md <<'IMPL'
+# Implementation Notes: Multi Prerequisite Feature
+
+## Builder Decisions
+
+### [DISCOVERY] Unexpected edge case
+The multi-prerequisite resolution required special handling for circular references.
+**Acknowledged**
+IMPL
+
+create_critic_json "feature_simple" "DONE" "DONE" "CLEAN"
+create_critic_json "feature_multi_prereq" "DONE" "DONE" "TODO"
+create_critic_json "feature_long_content" "DONE" "TODO" "N/A"
+create_tests_json_pass "feature_simple"
+create_tests_json_pass "feature_multi_prereq"
+
+commit_and_tag "main/cdd_modal_base/standard" \
+    "Project with features having varied metadata for modal rendering verification"
+
+# =====================================================================
+echo ""
 echo "--- cdd_spec_map ---"
 
 reset_workdir
