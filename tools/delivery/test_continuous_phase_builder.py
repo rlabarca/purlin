@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 34 automated scenarios.
+"""Tests for continuous phase builder — exercises all 42 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -272,7 +272,7 @@ def make_graph(features):
     }
 
 
-def run_launcher(tmpdir, mock_bin, extra_args=None, env_extra=None):
+def run_launcher(tmpdir, mock_bin, extra_args=None, env_extra=None, stdin_input=None):
     """Run the launcher script with mock PATH."""
     # Create a modified launcher that uses our test project
     launcher_copy = os.path.join(tmpdir, 'pl-run-builder.sh')
@@ -290,14 +290,17 @@ def run_launcher(tmpdir, mock_bin, extra_args=None, env_extra=None):
     if extra_args:
         cmd.extend(extra_args)
 
-    proc = subprocess.run(
-        cmd,
+    kwargs = dict(
         capture_output=True,
         text=True,
         env=env,
         timeout=30,
         cwd=tmpdir,
     )
+    if stdin_input is not None:
+        kwargs['input'] = stdin_input
+
+    proc = subprocess.run(cmd, **kwargs)
     return proc
 
 
@@ -781,27 +784,330 @@ def test_all_phases_complete():
 
 
 # ============================================================
-# Scenario: No Delivery Plan at Launch
+# Bootstrap Scenarios (Section 2.15)
 # ============================================================
-def test_no_delivery_plan():
-    """--continuous with no delivery plan -> error, non-zero exit."""
+
+def make_bootstrap_mock_claude(tmpdir, creates_plan=True, exit_code=0,
+                               plan_text=None, eval_responses=None):
+    """Create a mock claude for bootstrap tests.
+
+    The first non-evaluator call is the bootstrap session.
+    If creates_plan=True, the mock creates a delivery plan file.
+    Subsequent non-evaluator calls are phase execution calls.
+    """
+    mock_bin_dir = os.path.join(tmpdir, 'mock_bin')
+    os.makedirs(mock_bin_dir, exist_ok=True)
+
+    plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+    if plan_text is None:
+        plan_text = make_plan([(1, "A", "PENDING", ["a.md"])])
+
+    eval_seq_file = os.path.join(tmpdir, '.purlin', 'runtime', 'eval_responses')
+    if eval_responses is None:
+        eval_responses = [("stop", "All phases complete successfully")]
+    with open(eval_seq_file, 'w') as f:
+        for action, reason in eval_responses:
+            f.write(f"{action}|{reason}\n")
+
+    mock_script = os.path.join(mock_bin_dir, 'claude')
+    with open(mock_script, 'w') as f:
+        f.write(f'''#!/bin/bash
+INVOCATION_LOG="{tmpdir}/.purlin/runtime/claude_invocations.log"
+echo "$@" >> "$INVOCATION_LOG"
+
+# Evaluator calls
+if echo "$@" | grep -q "json-schema"; then
+    cat > /dev/null
+    SEQ_FILE="{eval_seq_file}"
+    COUNTER_FILE="{tmpdir}/.purlin/runtime/eval_counter"
+    IDX=0
+    [ -f "$COUNTER_FILE" ] && IDX=$(cat "$COUNTER_FILE")
+    IDX=$((IDX + 1))
+    echo "$IDX" > "$COUNTER_FILE"
+    RESPONSE=$(sed -n "${{IDX}}p" "$SEQ_FILE")
+    if [ -z "$RESPONSE" ]; then
+        echo '{{"action": "stop", "reason": "Sequence exhausted"}}'
+    else
+        ACTION="${{RESPONSE%%|*}}"
+        REASON="${{RESPONSE#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+    fi
+    exit 0
+fi
+
+# Track builder calls
+CALL_FILE="{tmpdir}/.purlin/runtime/builder_call_count"
+CALL_NUM=0
+[ -f "$CALL_FILE" ] && CALL_NUM=$(cat "$CALL_FILE")
+CALL_NUM=$((CALL_NUM + 1))
+echo "$CALL_NUM" > "$CALL_FILE"
+
+if [ "$CALL_NUM" -eq 1 ]; then
+    # Bootstrap call
+    CREATES_PLAN="{str(creates_plan).lower()}"
+    if [ "$CREATES_PLAN" = "true" ]; then
+        cat > "{plan_path}" << 'PLAN_EOF'
+{plan_text}
+PLAN_EOF
+    fi
+    echo "Bootstrap session complete."
+    exit {exit_code}
+fi
+
+# Phase execution calls
+echo "Phase complete"
+exit 0
+''')
+    os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
+
+    mock_uuidgen = os.path.join(mock_bin_dir, 'uuidgen')
+    with open(mock_uuidgen, 'w') as f:
+        f.write('#!/bin/bash\necho "00000000-0000-0000-0000-$(date +%s%N)"\n')
+    os.chmod(mock_uuidgen, os.stat(mock_uuidgen).st_mode | stat.S_IEXEC)
+
+    mock_git = os.path.join(mock_bin_dir, 'git')
+    with open(mock_git, 'w') as f:
+        f.write(f'''#!/bin/bash
+echo "$@" >> "{tmpdir}/.purlin/runtime/git_invocations.log"
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
+    merge|branch|diff) ;;
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+    os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+    mock_md5 = os.path.join(mock_bin_dir, 'md5')
+    with open(mock_md5, 'w') as f:
+        f.write('#!/bin/bash\nmd5sum "$2" 2>/dev/null | cut -d" " -f1 || echo "nohash"\n')
+    os.chmod(mock_md5, os.stat(mock_md5).st_mode | stat.S_IEXEC)
+
+    return mock_bin_dir
+
+
+def test_bootstrap_creates_delivery_plan():
+    """--continuous with no plan -> bootstrap creates plan, prints summary,
+    bootstrap log written."""
     tmpdir = tempfile.mkdtemp()
     try:
-        # Create project but NO delivery plan
         graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, None, graph)
-        mock_bin = make_mock_claude(tmpdir, "noop")
+        mock_bin = make_bootstrap_mock_claude(
+            tmpdir, creates_plan=True,
+            eval_responses=[("stop", "All phases complete successfully")]
+        )
+
+        # Default stdin (empty) -> approval defaults to yes
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        bootstrap_log = os.path.join(tmpdir, '.purlin', 'runtime',
+                                     'continuous_build_bootstrap.log')
+        log_exists = os.path.exists(bootstrap_log)
+        has_summary = "Delivery plan created" in proc.stderr
+
+        ok = log_exists and has_summary
+        record("Bootstrap Creates Delivery Plan", ok,
+               f"log={log_exists}, summary={has_summary}, "
+               f"rc={proc.returncode}, stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_plan_approved():
+    """Bootstrap creates plan, user approves -> enters orchestration loop."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, None, graph)
+        mock_bin = make_bootstrap_mock_claude(
+            tmpdir, creates_plan=True,
+            eval_responses=[("stop", "All phases complete successfully")]
+        )
+
+        # Approve the plan via stdin
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'], stdin_input="y\n")
+
+        invocations = get_invocations(tmpdir)
+        # Should have bootstrap call + at least one phase execution call
+        builder_calls = [inv for inv in invocations if 'json-schema' not in inv]
+        has_orchestration = "Entering continuous orchestration loop" in proc.stderr
+
+        ok = has_orchestration and len(builder_calls) >= 2
+        record("Bootstrap Plan Approved", ok,
+               f"orchestration={has_orchestration}, calls={len(builder_calls)}, "
+               f"rc={proc.returncode}, stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_plan_declined():
+    """Bootstrap creates plan, user declines -> exit 0, plan remains."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, None, graph)
+        mock_bin = make_bootstrap_mock_claude(tmpdir, creates_plan=True)
+
+        # Decline the plan
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'], stdin_input="n\n")
+
+        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_exists = os.path.exists(plan_path)
+        has_declined_msg = "declined" in proc.stderr.lower()
+
+        ok = (
+            proc.returncode == 0
+            and plan_exists
+            and has_declined_msg
+        )
+        record("Bootstrap Plan Declined", ok,
+               f"rc={proc.returncode}, plan={plan_exists}, "
+               f"declined={has_declined_msg}, stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_completes_work_directly():
+    """Bootstrap with no plan needed -> Builder completes work directly,
+    no plan created, exit 0."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, None, graph)
+        mock_bin = make_bootstrap_mock_claude(
+            tmpdir, creates_plan=False, exit_code=0
+        )
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
+        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_exists = os.path.exists(plan_path)
+        has_direct_msg = "completed all work directly" in proc.stderr.lower()
+
         ok = (
-            proc.returncode != 0
-            and "delivery plan" in proc.stderr.lower()
+            proc.returncode == 0
+            and not plan_exists
+            and has_direct_msg
         )
-        record("No Delivery Plan at Launch", ok,
-               f"rc={proc.returncode}, stderr={proc.stderr[:300]}" if not ok else "")
+        record("Bootstrap Completes Work Directly", ok,
+               f"rc={proc.returncode}, plan={plan_exists}, "
+               f"direct={has_direct_msg}, stderr={proc.stderr[:500]}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_failure():
+    """Bootstrap exits non-zero without creating plan -> error, non-zero exit."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, None, graph)
+        mock_bin = make_bootstrap_mock_claude(
+            tmpdir, creates_plan=False, exit_code=1
+        )
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        has_error_msg = "interactive" in proc.stderr.lower()
+
+        ok = (
+            proc.returncode != 0
+            and has_error_msg
+        )
+        record("Bootstrap Failure", ok,
+               f"rc={proc.returncode}, error={has_error_msg}, "
+               f"stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_distinct_system_prompt():
+    """Bootstrap session uses distinct override text, NOT continuous/server overrides."""
+    source = read_launcher()
+
+    has_bootstrap_override = 'BOOTSTRAP MODE ACTIVE' in source
+    has_bootstrap_heredoc = "BOOTSTRAP_OVERRIDE" in source
+
+    # Verify bootstrap prompt file is distinct from the main PROMPT_FILE
+    has_separate_file = 'BOOTSTRAP_PROMPT_FILE=$(mktemp)' in source
+
+    # Verify bootstrap does NOT use $PROMPT_FILE (which has continuous overrides)
+    # Bootstrap should use $BOOTSTRAP_PROMPT_FILE
+    has_bootstrap_prompt_ref = '--append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE"' in source
+
+    ok = (has_bootstrap_override and has_bootstrap_heredoc and
+          has_separate_file and has_bootstrap_prompt_ref)
+    record("Bootstrap Uses Distinct System Prompt Override", ok,
+           f"override={has_bootstrap_override}, heredoc={has_bootstrap_heredoc}, "
+           f"separate={has_separate_file}, ref={has_bootstrap_prompt_ref}" if not ok else "")
+
+
+def test_bootstrap_plan_validated_before_approval():
+    """After bootstrap creates plan, phase analyzer validates before approval prompt."""
+    source = read_launcher()
+
+    # Verify the validation step exists between plan creation check and approval prompt
+    # The pattern: check plan exists -> run analyzer -> check result -> prompt
+    has_validate_msg = 'Validating' in source
+    has_analyzer_call = 'PHASE_ANALYZER' in source
+
+    # More structural: the bootstrap block runs the analyzer after detecting plan exists
+    bootstrap_section = source[source.find('Bootstrap session when no delivery plan'):]
+    bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial')]
+    has_validate_in_bootstrap = ('VALIDATE_RC' in bootstrap_section and
+                                 'PHASE_ANALYZER' in bootstrap_section)
+
+    ok = has_validate_msg and has_analyzer_call and has_validate_in_bootstrap
+    record("Bootstrap Plan Validated Before Approval", ok,
+           f"validate={has_validate_msg}, analyzer={has_analyzer_call}, "
+           f"in_bootstrap={has_validate_in_bootstrap}" if not ok else "")
+
+
+def test_bootstrap_plan_has_dependency_cycle():
+    """Bootstrap creates plan, analyzer detects issues -> prints error, exit 0."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        # No graph file -> analyzer will fail
+        make_mock_project(tmpdir, None, None)
+        mock_bin = make_bootstrap_mock_claude(tmpdir, creates_plan=True)
+
+        # Remove the dependency graph so the analyzer fails
+        graph_path = os.path.join(tmpdir, '.purlin', 'cache', 'dependency_graph.json')
+        if os.path.exists(graph_path):
+            os.remove(graph_path)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        has_validation_fail = "validation failed" in proc.stderr.lower()
+        has_manual_edit_msg = "manual editing" in proc.stderr.lower()
+
+        ok = (
+            proc.returncode == 0
+            and has_validation_fail
+            and has_manual_edit_msg
+        )
+        record("Bootstrap Plan Has Dependency Cycle", ok,
+               f"rc={proc.returncode}, fail={has_validation_fail}, "
+               f"manual={has_manual_edit_msg}, stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_bootstrap_prefers_conservative_sizing():
+    """Bootstrap override text includes sizing bias language."""
+    source = read_launcher()
+
+    has_sizing_bias = 'SIZING BIAS' in source
+    has_more_phases = 'Prefer MORE phases over fewer' in source
+    has_smaller = 'Prefer SMALLER phases over larger' in source
+    has_parallelization = 'Maximize parallelization' in source
+
+    ok = has_sizing_bias and has_more_phases and has_smaller and has_parallelization
+    record("Bootstrap Prefers Conservative Phase Sizing", ok,
+           f"bias={has_sizing_bias}, more={has_more_phases}, "
+           f"smaller={has_smaller}, parallel={has_parallelization}" if not ok else "")
 
 
 # ============================================================
@@ -860,7 +1166,7 @@ exit 0
 # Scenario: Pass-Through Flags Forwarded
 # ============================================================
 def test_passthrough_flags():
-    """--max-turns and --max-budget-usd forwarded to claude -p invocations."""
+    """--max-budget-usd forwarded to claude -p invocations."""
     tmpdir = tempfile.mkdtemp()
     try:
         plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
@@ -870,19 +1176,17 @@ def test_passthrough_flags():
                                    eval_responses=[("continue", "done")])
 
         proc = run_launcher(tmpdir, mock_bin, [
-            '--continuous', '--max-turns', '50', '--max-budget-usd', '10'
+            '--continuous', '--max-budget-usd', '10'
         ])
 
         invocations = get_invocations(tmpdir)
         builder_calls = [inv for inv in invocations if 'json-schema' not in inv]
 
-        has_max_turns = any('--max-turns 50' in inv for inv in builder_calls)
         has_max_budget = any('--max-budget-usd 10' in inv for inv in builder_calls)
 
-        ok = has_max_turns and has_max_budget
+        ok = has_max_budget
         record("Pass-Through Flags Forwarded", ok,
-               f"max_turns={has_max_turns}, max_budget={has_max_budget}, "
-               f"calls={builder_calls}" if not ok else "")
+               f"max_budget={has_max_budget}, calls={builder_calls}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -2253,7 +2557,7 @@ def write_results():
 if __name__ == '__main__':
     print("Running continuous_phase_builder tests...\n")
 
-    # Original 19 scenarios
+    # Core scenarios (10)
     test_continuous_flag_accepted()
     test_default_behavior()
     test_sequential_completion()
@@ -2264,7 +2568,19 @@ if __name__ == '__main__':
     test_retry_limit_exceeded()
     test_evaluator_stop_on_error()
     test_all_phases_complete()
-    test_no_delivery_plan()
+
+    # Bootstrap scenarios (Section 2.15) (9)
+    test_bootstrap_creates_delivery_plan()
+    test_bootstrap_plan_approved()
+    test_bootstrap_plan_declined()
+    test_bootstrap_completes_work_directly()
+    test_bootstrap_failure()
+    test_bootstrap_distinct_system_prompt()
+    test_bootstrap_plan_validated_before_approval()
+    test_bootstrap_plan_has_dependency_cycle()
+    test_bootstrap_prefers_conservative_sizing()
+
+    # Remaining original scenarios (8)
     test_evaluator_failure_fallback()
     test_passthrough_flags()
     test_system_prompt_overrides()
@@ -2274,7 +2590,7 @@ if __name__ == '__main__':
     test_worktree_cleanup()
     test_delivery_plan_central_update()
 
-    # New scenarios: Dynamic Delivery Plan Handling (Section 2.12)
+    # Dynamic Delivery Plan Handling (Section 2.12) (8)
     test_builder_adds_qa_fix_phase()
     test_builder_splits_phase()
     test_builder_removes_remaining_phases()
@@ -2284,13 +2600,13 @@ if __name__ == '__main__':
     test_non_contiguous_phase_numbers()
     test_removed_phase_had_dependents()
 
-    # New scenarios: Parallel Plan Amendments (Section 2.13)
+    # Parallel Plan Amendments (Section 2.13) (4)
     test_parallel_both_request_amendments()
     test_parallel_amendment_structured_files()
     test_amendment_files_cleaned_up()
     test_sequential_builder_modifies_plan_directly()
 
-    # New scenarios: Evaluator Amendment Detection (Section 2.14)
+    # Evaluator Amendment Detection (Section 2.14) (3)
     test_parallel_group_invalidated()
     test_phase_count_changes_in_summary()
     test_reanalysis_after_retry()

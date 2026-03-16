@@ -11,12 +11,10 @@ export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
 # --- Parse launcher flags ---
 CONTINUOUS=false
-MAX_TURNS=""
 MAX_BUDGET_USD=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --continuous) CONTINUOUS=true; shift ;;
-        --max-turns) MAX_TURNS="$2"; shift 2 ;;
         --max-budget-usd) MAX_BUDGET_USD="$2"; shift 2 ;;
         *) shift ;;
     esac
@@ -25,9 +23,11 @@ done
 # --- Prompt assembly ---
 PROMPT_FILE=$(mktemp)
 PARALLEL_PROMPT_FILE=""
+BOOTSTRAP_PROMPT_FILE=""
 cleanup() {
     rm -f "$PROMPT_FILE"
     [ -n "$PARALLEL_PROMPT_FILE" ] && rm -f "$PARALLEL_PROMPT_FILE"
+    [ -n "$BOOTSTRAP_PROMPT_FILE" ] && rm -f "$BOOTSTRAP_PROMPT_FILE"
     # Clean up any orphaned continuous-mode worktrees
     if [ "$CONTINUOUS" = "true" ]; then
         for wt_dir in "$SCRIPT_DIR"/continuous-phase-*; do
@@ -143,7 +143,6 @@ HAIKU_MODEL="claude-haiku-4-5-20251001"
 
 # Build pass-through args for claude --print
 PASSTHROUGH_ARGS=()
-[ -n "$MAX_TURNS" ] && PASSTHROUGH_ARGS+=(--max-turns "$MAX_TURNS")
 [ -n "$MAX_BUDGET_USD" ] && PASSTHROUGH_ARGS+=(--max-budget-usd "$MAX_BUDGET_USD")
 
 # Tracking variables (file-based retry counts for bash 3 compat)
@@ -335,10 +334,102 @@ with open('$DELIVERY_PLAN', 'w') as f:
     fi
 }
 
-# --- Validate: delivery plan exists ---
+# --- Bootstrap session when no delivery plan exists (Section 2.15) ---
 if [ ! -f "$DELIVERY_PLAN" ]; then
-    echo "Error: No delivery plan found at .purlin/cache/delivery_plan.md" >&2
-    exit 1
+    echo "No delivery plan found. Starting bootstrap session..." >&2
+    BOOTSTRAP_LOG="${RUNTIME_DIR}/continuous_build_bootstrap.log"
+
+    # Create bootstrap-specific prompt file (distinct from continuous/server overrides)
+    BOOTSTRAP_PROMPT_FILE=$(mktemp)
+    cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$BOOTSTRAP_PROMPT_FILE"
+    printf "\n\n" >> "$BOOTSTRAP_PROMPT_FILE"
+    cat "$CORE_DIR/instructions/BUILDER_BASE.md" >> "$BOOTSTRAP_PROMPT_FILE"
+    if [ -f "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" ]; then
+        printf "\n\n" >> "$BOOTSTRAP_PROMPT_FILE"
+        cat "$SCRIPT_DIR/.purlin/HOW_WE_WORK_OVERRIDES.md" >> "$BOOTSTRAP_PROMPT_FILE"
+    fi
+    if [ -f "$SCRIPT_DIR/.purlin/BUILDER_OVERRIDES.md" ]; then
+        printf "\n\n" >> "$BOOTSTRAP_PROMPT_FILE"
+        cat "$SCRIPT_DIR/.purlin/BUILDER_OVERRIDES.md" >> "$BOOTSTRAP_PROMPT_FILE"
+    fi
+    printf "\n\n" >> "$BOOTSTRAP_PROMPT_FILE"
+    cat >> "$BOOTSTRAP_PROMPT_FILE" << 'BOOTSTRAP_OVERRIDE'
+BOOTSTRAP MODE ACTIVE: You are running in non-interactive print mode to
+initialize a delivery plan for continuous execution. There is no human user
+present. You MUST:
+- Execute your full startup protocol (Sections 2.0-2.3) including scope
+  assessment.
+- If scope assessment determines phasing IS warranted: create the delivery
+  plan using /pl-delivery-plan WITHOUT asking for user approval. Auto-accept
+  the phased delivery option. After committing the delivery plan, HALT
+  IMMEDIATELY. Do not begin Phase 1.
+- If scope assessment determines phasing is NOT warranted: proceed directly
+  with implementation. Complete all work autonomously.
+- NEVER ask "Ready to go?" or wait for any approval.
+- SIZING BIAS: Prefer MORE phases over fewer.
+  Prefer SMALLER phases over larger.
+  Maximize parallelization -- group independent features into separate
+  phases that can run concurrently. Each phase must be completable within
+  a single session without context exhaustion. When in doubt, split.
+This override takes precedence over any instruction to "wait for approval"
+or "ask the user."
+BOOTSTRAP_OVERRIDE
+
+    BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+    claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
+        "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
+        --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
+        "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
+    BOOTSTRAP_RC=$?
+    rm -f "$BOOTSTRAP_PROMPT_FILE"
+    BOOTSTRAP_PROMPT_FILE=""
+
+    # Outcome detection via file-existence checking, not output parsing
+    if [ -f "$DELIVERY_PLAN" ]; then
+        # Plan created -> validate with phase analyzer dry-run
+        echo "Bootstrap created a delivery plan. Validating..." >&2
+        VALIDATE_OUTPUT=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>&1)
+        VALIDATE_RC=$?
+
+        if [ $VALIDATE_RC -ne 0 ]; then
+            echo "Plan validation failed:" >&2
+            echo "$VALIDATE_OUTPUT" | head -20 >&2
+            echo "The plan has been committed for manual editing." >&2
+            echo "Fix the plan at .purlin/cache/delivery_plan.md and re-run --continuous." >&2
+            exit 0
+        fi
+
+        # Print plan summary and prompt for approval
+        PHASE_SUMMARY=$(python3 -c "
+import re
+with open('$DELIVERY_PLAN') as f:
+    content = f.read()
+phases = re.findall(r'## Phase \d+ -- .+? \[(PENDING|IN_PROGRESS|COMPLETE)\]', content)
+pending = sum(1 for s in phases if s == 'PENDING')
+print(f'{len(phases)} phases ({pending} pending)')
+" 2>/dev/null || echo "unknown")
+
+        echo "" >&2
+        echo "Delivery plan created ($PHASE_SUMMARY). Review at .purlin/cache/delivery_plan.md." >&2
+        printf "Proceed? [Y/n] " >&2
+        read -r APPROVAL 2>/dev/null || APPROVAL=""
+
+        if [ -n "$APPROVAL" ] && ! echo "$APPROVAL" | grep -qi '^y'; then
+            echo "Plan declined. The plan remains committed to git for editing." >&2
+            exit 0
+        fi
+
+        echo "Approved. Entering continuous orchestration loop." >&2
+        # Fall through to the main orchestration loop below
+    elif [ $BOOTSTRAP_RC -eq 0 ]; then
+        # No plan + exit 0 -> Builder completed work directly
+        echo "Bootstrap completed all work directly (phasing not warranted)." >&2
+        exit 0
+    else
+        # No plan + non-zero exit -> bootstrap failed
+        echo "Error: Bootstrap session failed. Run an interactive Builder session to investigate." >&2
+        exit 1
+    fi
 fi
 
 # --- Track initial PENDING phase count for summary ---

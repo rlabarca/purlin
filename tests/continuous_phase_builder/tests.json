@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 34,
+  "passed": 42,
   "failed": 0,
-  "total": 34,
+  "total": 42,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -46,7 +46,39 @@
       "status": "PASS"
     },
     {
-      "name": "No Delivery Plan at Launch",
+      "name": "Bootstrap Creates Delivery Plan",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Plan Approved",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Plan Declined",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Completes Work Directly",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Failure",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Uses Distinct System Prompt Override",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Plan Validated Before Approval",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Plan Has Dependency Cycle",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap Prefers Conservative Phase Sizing",
       "status": "PASS"
     },
     {
