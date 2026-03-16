@@ -259,6 +259,126 @@ def generate_figma_mcp_token_map(mcp_metadata, tokens, fonts):
     }
 
 
+def _normalize_token_name(name):
+    """Normalize a token name by stripping var() wrapper and -- prefix.
+
+    Examples:
+        "var(--app-bg)" -> "app-bg"
+        "--app-bg"      -> "app-bg"
+        "app-bg"        -> "app-bg"
+    """
+    s = name.strip()
+    m = re.match(r'^var\((.+)\)$', s)
+    if m:
+        s = m.group(1).strip()
+    s = s.lstrip('-')
+    return s
+
+
+def detect_identity_tokens(figma_variables, anchor_tokens):
+    """Detect identity mappings between Figma variable names and project tokens.
+
+    An identity mapping occurs when a Figma variable name matches a project
+    token name after normalization (stripping ``var()`` and ``--`` prefix).
+
+    Args:
+        figma_variables: dict of {variable_name: resolved_value} from Figma MCP.
+        anchor_tokens: dict of {token_name: token_value} from design anchors.
+            Token names include the ``--`` prefix (e.g. ``--app-bg``).
+
+    Returns:
+        dict with keys:
+            "identity_entries": dict mapping figma_name -> "var(--token-name)"
+                for each identity match.
+            "manual_entries": list of figma variable names requiring manual mapping.
+            "identity_count": int count of identity matches.
+            "manual_count": int count of variables needing manual mapping.
+            "total": int total Figma variables inspected.
+    """
+    normalized_anchor = {}
+    for token_name in anchor_tokens:
+        norm = _normalize_token_name(token_name)
+        normalized_anchor[norm] = token_name  # norm -> original token name
+
+    identity_entries = {}
+    manual_entries = []
+
+    for figma_name in figma_variables:
+        norm_figma = _normalize_token_name(figma_name)
+        if norm_figma in normalized_anchor:
+            original_token = normalized_anchor[norm_figma]
+            identity_entries[figma_name] = f"var({original_token})"
+        else:
+            manual_entries.append(figma_name)
+
+    return {
+        "identity_entries": identity_entries,
+        "manual_entries": manual_entries,
+        "identity_count": len(identity_entries),
+        "manual_count": len(manual_entries),
+        "total": len(figma_variables),
+    }
+
+
+def extract_annotations(figma_annotations):
+    """Extract behavioral notes from Figma annotations.
+
+    Annotations that describe behavior (states, interactions, edge cases)
+    are extracted and categorized.  Non-behavioral annotations (style notes,
+    developer handoff details) are excluded.
+
+    Args:
+        figma_annotations: list of dicts, each with at least a "label" key
+            (the annotation text).  May also contain "type" (str).
+
+    Returns:
+        dict with keys:
+            "behavioral_notes": list of annotation text strings containing
+                behavioral keywords (state, interaction, edge case, etc.).
+            "scenario_drafts": list of dicts with "title" and "outline" keys
+                for each behavioral note that can be turned into a scenario.
+            "topics_covered": list of topic keywords found in the annotations.
+            "count": int total annotations inspected.
+    """
+    BEHAVIORAL_KEYWORDS = [
+        "empty", "loading", "error", "hover", "click", "submit",
+        "disabled", "enabled", "hidden", "visible", "state",
+        "interaction", "edge case", "fallback", "timeout",
+        "validation", "overflow", "collapse", "expand",
+    ]
+
+    behavioral_notes = []
+    scenario_drafts = []
+    topics_covered = set()
+
+    for ann in figma_annotations:
+        text = ann.get("label", "")
+        text_lower = text.lower()
+
+        matched_keywords = [kw for kw in BEHAVIORAL_KEYWORDS if kw in text_lower]
+        if matched_keywords:
+            behavioral_notes.append(text)
+            topics_covered.update(matched_keywords)
+
+            # Generate a draft scenario outline from the annotation
+            title = text.split(".")[0].strip()
+            if len(title) > 60:
+                title = title[:57] + "..."
+            scenario_drafts.append({
+                "title": title,
+                "outline": f"Given the feature is in the described state\n"
+                           f"When the user triggers the behavior\n"
+                           f"Then {text}",
+            })
+
+    return {
+        "behavioral_notes": behavioral_notes,
+        "scenario_drafts": scenario_drafts,
+        "topics_covered": sorted(topics_covered),
+        "count": len(figma_annotations),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Test Classes
 # ---------------------------------------------------------------------------
@@ -684,6 +804,168 @@ class TestNoDesignAnchorFallback(unittest.TestCase):
         tokens, fonts = read_design_anchors("/nonexistent/path/features")
         self.assertEqual(len(tokens), 0)
         self.assertEqual(len(fonts), 0)
+
+
+class TestIdentityTokenAutoDetectionDuringFigmaIngestion(unittest.TestCase):
+    """Scenario: Identity Token Auto-Detection During Figma Ingestion"""
+
+    def test_identity_mappings_detected(self):
+        """Figma variables matching project tokens produce identity entries."""
+        figma_variables = {"--app-bg": "#0B131A", "--app-text": "#E2E8F0"}
+        anchor_tokens = {"--app-bg": "#0B131A", "--app-text": "#E2E8F0"}
+
+        result = detect_identity_tokens(figma_variables, anchor_tokens)
+
+        self.assertEqual(result["identity_count"], 2)
+        self.assertEqual(result["manual_count"], 0)
+        self.assertIn("--app-bg", result["identity_entries"])
+        self.assertIn("--app-text", result["identity_entries"])
+
+    def test_identity_entries_use_var_format(self):
+        """Identity entries map Figma name to its var() equivalent."""
+        figma_variables = {"--app-bg": "#0B131A"}
+        anchor_tokens = {"--app-bg": "#0B131A"}
+
+        result = detect_identity_tokens(figma_variables, anchor_tokens)
+
+        self.assertEqual(result["identity_entries"]["--app-bg"], "var(--app-bg)")
+
+    def test_non_matching_variables_listed_as_manual(self):
+        """Figma variables not matching any project token are listed as manual."""
+        figma_variables = {"--app-bg": "#0B131A", "custom-color": "#FF00FF"}
+        anchor_tokens = {"--app-bg": "#0B131A"}
+
+        result = detect_identity_tokens(figma_variables, anchor_tokens)
+
+        self.assertEqual(result["identity_count"], 1)
+        self.assertEqual(result["manual_count"], 1)
+        self.assertIn("custom-color", result["manual_entries"])
+
+    def test_normalization_strips_var_wrapper(self):
+        """Normalization handles var() wrapper differences."""
+        # Figma uses bare name, anchor uses -- prefix
+        figma_variables = {"app-bg": "#0B131A"}
+        anchor_tokens = {"--app-bg": "#0B131A"}
+
+        result = detect_identity_tokens(figma_variables, anchor_tokens)
+
+        self.assertEqual(result["identity_count"], 1)
+        self.assertEqual(result["manual_count"], 0)
+
+    def test_report_format(self):
+        """Report includes identity_count, manual_count, and total."""
+        figma_variables = {"--app-bg": "#0B131A", "--app-text": "#E2E8F0"}
+        anchor_tokens = {"--app-bg": "#0B131A", "--app-text": "#E2E8F0"}
+
+        result = detect_identity_tokens(figma_variables, anchor_tokens)
+
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(result["identity_count"], 2)
+        self.assertEqual(result["manual_count"], 0)
+        # Verify the report message can be constructed
+        msg = (f"{result['identity_count']} of {result['total']} Figma variables "
+               f"match project tokens (identity mappings). "
+               f"{result['manual_count']} require manual mapping.")
+        self.assertIn("2 of 2", msg)
+        self.assertIn("0 require manual mapping", msg)
+
+
+class TestAnnotationExtractionPrePopulatesBehavioralContext(unittest.TestCase):
+    """Scenario: Annotation Extraction Pre-Populates Behavioral Context"""
+
+    def test_behavioral_annotations_extracted(self):
+        """Annotations describing empty state and loading behavior are extracted."""
+        annotations = [
+            {"label": "Empty state shows a placeholder illustration"},
+            {"label": "Loading state displays a spinner overlay"},
+            {"label": "Logo uses brand colors"},  # non-behavioral
+        ]
+
+        result = extract_annotations(annotations)
+
+        self.assertEqual(len(result["behavioral_notes"]), 2)
+        self.assertIn("Empty state shows a placeholder illustration",
+                       result["behavioral_notes"])
+        self.assertIn("Loading state displays a spinner overlay",
+                       result["behavioral_notes"])
+
+    def test_scenario_drafts_generated(self):
+        """Draft Gherkin scenario outlines are generated from behavioral annotations."""
+        annotations = [
+            {"label": "Empty state shows a placeholder illustration"},
+        ]
+
+        result = extract_annotations(annotations)
+
+        self.assertEqual(len(result["scenario_drafts"]), 1)
+        draft = result["scenario_drafts"][0]
+        self.assertIn("title", draft)
+        self.assertIn("outline", draft)
+        self.assertIn("Given", draft["outline"])
+        self.assertIn("When", draft["outline"])
+        self.assertIn("Then", draft["outline"])
+
+    def test_topics_covered_populated(self):
+        """Topics covered by annotations are tracked for probing skip."""
+        annotations = [
+            {"label": "Empty state shows a placeholder illustration"},
+            {"label": "Loading state displays a spinner overlay"},
+        ]
+
+        result = extract_annotations(annotations)
+
+        self.assertIn("empty", result["topics_covered"])
+        self.assertIn("loading", result["topics_covered"])
+
+    def test_non_behavioral_annotations_excluded(self):
+        """Non-behavioral annotations (style notes) are excluded."""
+        annotations = [
+            {"label": "Uses 16px padding on left side"},
+            {"label": "Brand color is blue #38BDF8"},
+        ]
+
+        result = extract_annotations(annotations)
+
+        self.assertEqual(len(result["behavioral_notes"]), 0)
+        self.assertEqual(len(result["scenario_drafts"]), 0)
+
+    def test_probing_skip_count(self):
+        """Topics covered by annotations reduce probing questions."""
+        annotations = [
+            {"label": "Empty state shows a placeholder illustration"},
+            {"label": "Error state displays a retry button"},
+            {"label": "Hover on card reveals action buttons"},
+        ]
+
+        result = extract_annotations(annotations)
+
+        # Three behavioral annotations covering three topics
+        self.assertTrue(len(result["topics_covered"]) >= 3)
+        # Probing questions skip topics already covered
+        self.assertIn("empty", result["topics_covered"])
+        self.assertIn("error", result["topics_covered"])
+        self.assertIn("hover", result["topics_covered"])
+
+    def test_empty_annotations_list(self):
+        """Empty annotations list produces empty results."""
+        result = extract_annotations([])
+
+        self.assertEqual(result["count"], 0)
+        self.assertEqual(len(result["behavioral_notes"]), 0)
+        self.assertEqual(len(result["scenario_drafts"]), 0)
+        self.assertEqual(len(result["topics_covered"]), 0)
+
+    def test_annotation_count_reported(self):
+        """Total annotation count is reported regardless of behavioral filtering."""
+        annotations = [
+            {"label": "Empty state shows a placeholder"},
+            {"label": "Brand color is blue"},
+            {"label": "Font size is 14px"},
+        ]
+
+        result = extract_annotations(annotations)
+
+        self.assertEqual(result["count"], 3)
 
 
 # ---------------------------------------------------------------------------
