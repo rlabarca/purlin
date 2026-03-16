@@ -16,9 +16,9 @@
 **Completion Commit:** c143c43
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Verification Effort [PENDING]
+## Phase 3 -- Verification Effort [COMPLETE]
 **Features:** qa_verification_effort.md
-**Completion Commit:** --
+**Completion Commit:** 58efb1b
 **QA Bugs Addressed:** --
 
 ## Phase 4 -- AFT Web Tool [PENDING]
