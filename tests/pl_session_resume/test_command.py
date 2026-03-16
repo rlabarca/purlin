@@ -601,30 +601,44 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
 
-class TestStep0NoOp(unittest.TestCase):
-    """Scenario: Step 0 is a no-op placeholder.
+class TestStep0ContextGuardCounterReset(unittest.TestCase):
+    """Scenario: Step 0 resets context guard counter.
 
-    Step 0 is a no-op placeholder retained for step numbering sequence.
-    Step 0 must not reference turn_count or session_meta files.
+    Step 0 resets the context guard turn counter to zero, clearing stale
+    counter state from the previous session. Step 7 must NOT reset the
+    counter (restore flow consumes real context during state gathering).
     """
 
-    def test_step0_no_turn_count_references(self):
-        """Step 0 does not reference turn_count files."""
+    def test_step0_heading_references_counter_reset(self):
+        """Step 0 heading references Context Guard Counter Reset."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('Step 0 -- Context Guard Counter Reset', content)
+
+    def test_step0_mentions_reset_to_zero(self):
+        """Step 0 instructs resetting the counter to zero."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('Reset the context guard turn counter to zero', content)
+
+    def test_step7_prohibits_counter_reset(self):
+        """Step 7 explicitly prohibits resetting the counter."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn(
+            'Do NOT reset the context guard counter here', content)
+
+    def test_step0_no_turn_count_file_references(self):
+        """Step 0 does not reference legacy turn_count files."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertNotIn('turn_count_${PPID}', content)
 
-    def test_step0_no_session_meta_references(self):
-        """Step 0 does not reference session_meta files."""
+    def test_step0_no_session_meta_file_references(self):
+        """Step 0 does not reference legacy session_meta files."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertNotIn('session_meta_$PPID', content)
-
-    def test_step0_is_noop(self):
-        """Step 0 heading indicates no-op."""
-        with open(COMMAND_FILE) as f:
-            content = f.read()
-        self.assertIn('Step 0 -- (No-op)', content)
 
 
 class TestCheckpointCleanupAfterRestore(unittest.TestCase):

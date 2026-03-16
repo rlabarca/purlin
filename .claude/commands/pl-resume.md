@@ -102,9 +102,9 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 Execute this 8-step sequence:
 
-### Step 0 -- (No-op)
+### Step 0 -- Context Guard Counter Reset
 
-No cleanup needed. The context guard uses a PreCompact hook with no runtime files (no counters, no session metadata). This step is retained as a placeholder for the step numbering sequence.
+Reset the context guard turn counter to zero. This clears stale counter state carried over from the previous session so the guard accurately tracks remaining budget for the new session.
 
 ### Step 1 -- Role Detection (4-Tier Fallback)
 
@@ -194,4 +194,5 @@ Uncommitted:    <none | summary>
 ### Step 7 -- Cleanup and Continue
 
 - If a checkpoint file was read in Step 2, **delete it** (the role-scoped file `session_checkpoint_<role>.md` has been consumed). Any other role's checkpoint files remain untouched.
+- Do NOT reset the context guard counter here. The restore flow consumes ~25-30 turns of real context during state gathering; resetting the counter at this point would cause the guard to misrepresent remaining budget. The only counter reset occurs in Step 0 (clearing stale state from the previous session).
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 6) gives the user visibility; they can interrupt if needed.
