@@ -179,6 +179,70 @@ def detect_design_conflicts(figma_variables, token_map_entries, anchor_tokens):
     return conflicts
 
 
+def check_figma_dev_status_drift(spec_status, current_status):
+    """Check whether the spec's Figma Status matches the current dev status.
+
+    Args:
+        spec_status: The ``> Figma Status:`` value from the feature spec
+            (e.g. ``"Design"``, ``"Ready for Dev"``, ``"Completed"``),
+            or ``None`` if absent.
+        current_status: The current dev mode status from Figma MCP
+            (e.g. ``"Ready for Dev"``), or ``None`` if unavailable.
+
+    Returns:
+        dict with keys:
+            "drift" (bool): True if the statuses differ.
+            "spec_status" (str | None): The spec value.
+            "current_status" (str | None): The live value.
+            "verdict" (str): "CURRENT", "DRIFT", or "N/A".
+    """
+    if spec_status is None or current_status is None:
+        return {
+            "drift": False,
+            "spec_status": spec_status,
+            "current_status": current_status,
+            "verdict": "N/A",
+        }
+    is_drift = spec_status.strip().lower() != current_status.strip().lower()
+    return {
+        "drift": is_drift,
+        "spec_status": spec_status,
+        "current_status": current_status,
+        "verdict": "DRIFT" if is_drift else "CURRENT",
+    }
+
+
+def check_version_id_staleness(brief_version_id, current_version_id):
+    """Check whether the brief's Figma version ID matches the current one.
+
+    Version ID comparison is more precise than timestamp comparison for
+    detecting design changes.
+
+    Args:
+        brief_version_id: The ``figma_version_id`` value from ``brief.json``,
+            or ``None`` if absent.
+        current_version_id: The current file version from Figma MCP,
+            or ``None`` if MCP is unavailable.
+
+    Returns:
+        dict with keys:
+            "stale" (bool): True if version IDs differ.
+            "brief_version" (str | None): The brief value.
+            "current_version" (str | None): The live value.
+    """
+    if brief_version_id is None or current_version_id is None:
+        return {
+            "stale": False,
+            "brief_version": brief_version_id,
+            "current_version": current_version_id,
+        }
+    return {
+        "stale": brief_version_id != current_version_id,
+        "brief_version": brief_version_id,
+        "current_version": current_version_id,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Test Classes
 # ---------------------------------------------------------------------------
@@ -780,6 +844,95 @@ class TestDesignSpecConflictDetectedViaMCP(unittest.TestCase):
         self.assertIn("figma_value", conflict)
         self.assertIn("spec_value", conflict)
         self.assertEqual(conflict["type"], "DESIGN_CONFLICT")
+
+
+class TestFigmaDevStatusDriftDetected(unittest.TestCase):
+    """Scenario: Figma Dev Status Drift Detected"""
+
+    def test_drift_when_statuses_differ(self):
+        """Spec says Design, Figma says Ready for Dev -> DRIFT."""
+        result = check_figma_dev_status_drift(
+            spec_status="Design",
+            current_status="Ready for Dev",
+        )
+        self.assertTrue(result["drift"])
+        self.assertEqual(result["verdict"], "DRIFT")
+        self.assertEqual(result["spec_status"], "Design")
+        self.assertEqual(result["current_status"], "Ready for Dev")
+
+    def test_no_drift_when_statuses_match(self):
+        """Spec and Figma both say Ready for Dev -> CURRENT."""
+        result = check_figma_dev_status_drift(
+            spec_status="Ready for Dev",
+            current_status="Ready for Dev",
+        )
+        self.assertFalse(result["drift"])
+        self.assertEqual(result["verdict"], "CURRENT")
+
+    def test_na_when_spec_status_absent(self):
+        """No Figma Status in spec -> N/A."""
+        result = check_figma_dev_status_drift(
+            spec_status=None,
+            current_status="Ready for Dev",
+        )
+        self.assertFalse(result["drift"])
+        self.assertEqual(result["verdict"], "N/A")
+
+    def test_na_when_mcp_unavailable(self):
+        """MCP unavailable (current_status=None) -> N/A."""
+        result = check_figma_dev_status_drift(
+            spec_status="Design",
+            current_status=None,
+        )
+        self.assertFalse(result["drift"])
+        self.assertEqual(result["verdict"], "N/A")
+
+    def test_case_insensitive_comparison(self):
+        """Status comparison is case-insensitive."""
+        result = check_figma_dev_status_drift(
+            spec_status="design",
+            current_status="Design",
+        )
+        self.assertFalse(result["drift"])
+        self.assertEqual(result["verdict"], "CURRENT")
+
+
+class TestVersionIdStalenessDetected(unittest.TestCase):
+    """Scenario: Version ID Staleness Detected"""
+
+    def test_different_version_ids_flag_stale(self):
+        """brief.json v123 vs Figma v456 -> stale."""
+        result = check_version_id_staleness(
+            brief_version_id="v123",
+            current_version_id="v456",
+        )
+        self.assertTrue(result["stale"])
+        self.assertEqual(result["brief_version"], "v123")
+        self.assertEqual(result["current_version"], "v456")
+
+    def test_same_version_ids_not_stale(self):
+        """Matching version IDs -> not stale."""
+        result = check_version_id_staleness(
+            brief_version_id="v123",
+            current_version_id="v123",
+        )
+        self.assertFalse(result["stale"])
+
+    def test_missing_brief_version_not_stale(self):
+        """No figma_version_id in brief -> not stale (N/A)."""
+        result = check_version_id_staleness(
+            brief_version_id=None,
+            current_version_id="v456",
+        )
+        self.assertFalse(result["stale"])
+
+    def test_mcp_unavailable_not_stale(self):
+        """MCP unavailable (current=None) -> not stale."""
+        result = check_version_id_staleness(
+            brief_version_id="v123",
+            current_version_id=None,
+        )
+        self.assertFalse(result["stale"])
 
 
 # ---------------------------------------------------------------------------
