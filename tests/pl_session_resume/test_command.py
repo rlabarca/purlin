@@ -11,6 +11,11 @@ Covers automated scenarios from features/pl_session_resume.md:
 - Checkpoint Cleanup After Restore
 - Role Inferred From Single Checkpoint File
 - Multiple Checkpoints Prompt User Selection
+- PM Save Writes Role-Scoped Checkpoint File
+- PM Cold Start Checks Figma MCP Availability
+- Builder Cold Start Loads Tombstones and Anchors
+- QA Cold Start Reads Verification Effort
+- Cold Start Respects Startup Flags
 
 The agent command is a Claude skill defined in .claude/commands/pl-resume.md.
 These tests verify the underlying behaviors that the command depends on:
@@ -18,7 +23,10 @@ These tests verify the underlying behaviors that the command depends on:
 - Checkpoint format validation (required fields, ISO 8601 timestamps)
 - Role detection logic (explicit argument, system prompt inference,
   checkpoint file discovery, multi-checkpoint selection)
-- Argument validation (save, architect, builder, qa, invalid)
+- Argument validation (save, architect, builder, qa, pm, invalid)
+- PM-specific checkpoint fields (Spec Drafts, Figma Context, Probing Round)
+- Cold-start extension behaviors (tombstones, anchors, verification effort)
+- Startup flag handling (startup_sequence, recommend_next_actions)
 """
 import json
 import os
@@ -33,8 +41,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
 COMMAND_FILE = os.path.join(
     PROJECT_ROOT, '.claude', 'commands', 'pl-resume.md')
 
-VALID_ROLES = {'architect', 'builder', 'qa'}
-VALID_ARGS = {'save', 'architect', 'builder', 'qa'}
+VALID_ROLES = {'architect', 'builder', 'qa', 'pm'}
+VALID_ARGS = {'save', 'architect', 'builder', 'qa', 'pm'}
 
 # ISO 8601 pattern: YYYY-MM-DDTHH:MM:SSZ or with timezone offset
 ISO_8601_PATTERN = re.compile(
@@ -77,6 +85,37 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 1. [HIGH] cdd_spec_map.md
 2. [NORMAL] cdd_qa_effort_display.md
 **Pending Decisions:** None
+"""
+
+SAMPLE_CHECKPOINT_PM = """# Session Checkpoint
+
+**Role:** pm
+**Timestamp:** 2026-03-10T09:00:00Z
+**Branch:** main
+
+## Current Work
+
+**Feature:** features/cdd_status_monitor.md
+**In Progress:** Drafting visual specification for status monitor redesign
+
+### Done
+- Read existing feature spec
+- Reviewed Figma designs for monitor layout
+
+### Next
+1. Complete Visual Specification section
+2. Add checklist items for QA verification
+
+## Uncommitted Changes
+None
+
+## Notes
+Figma file has updated token mappings -- need to verify against design_visual_standards.
+
+## PM Context
+**Spec Drafts:** cdd_status_monitor.md visual spec in progress
+**Figma Context:** CDD Dashboard / Status Monitor frame
+**Probing Round:** 2
 """
 
 SAMPLE_CHECKPOINT_ARCHITECT = """# Session Checkpoint
@@ -126,8 +165,12 @@ def _make_cache_dir(tmpdir):
 def _write_checkpoint(tmpdir, role='builder', content=None):
     """Write a role-scoped checkpoint file to the temp project directory."""
     if content is None:
-        content = SAMPLE_CHECKPOINT_BUILDER if role == 'builder' \
-            else SAMPLE_CHECKPOINT_ARCHITECT
+        _defaults = {
+            'builder': SAMPLE_CHECKPOINT_BUILDER,
+            'architect': SAMPLE_CHECKPOINT_ARCHITECT,
+            'pm': SAMPLE_CHECKPOINT_PM,
+        }
+        content = _defaults.get(role, SAMPLE_CHECKPOINT_BUILDER)
     cache_dir = _make_cache_dir(tmpdir)
     path = os.path.join(cache_dir, f'session_checkpoint_{role}.md')
     with open(path, 'w') as f:
@@ -151,7 +194,7 @@ def _discover_checkpoint_roles(cache_dir):
     Returns a list of role names (e.g., ['builder', 'architect']).
     """
     roles = []
-    for role in ('architect', 'builder', 'qa'):
+    for role in ('architect', 'builder', 'pm', 'qa'):
         path = os.path.join(cache_dir, f'session_checkpoint_{role}.md')
         if os.path.isfile(path):
             roles.append(role)
@@ -249,7 +292,7 @@ class TestSaveWritesRoleScopedCheckpointFile(unittest.TestCase):
         """Saving a builder checkpoint does not create other role files."""
         _write_checkpoint(self.tmpdir, role='builder')
         cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
-        for other_role in ('architect', 'qa'):
+        for other_role in ('architect', 'qa', 'pm'):
             other_path = os.path.join(
                 cache_dir, f'session_checkpoint_{other_role}.md')
             self.assertFalse(os.path.exists(other_path),
@@ -304,14 +347,15 @@ class TestConcurrentSavesDoNotOverwrite(unittest.TestCase):
             content = f.read()
         self.assertIn('**Role:** architect', content)
 
-    def test_all_three_roles_can_coexist(self):
-        """All three role checkpoints can exist simultaneously."""
+    def test_all_four_roles_can_coexist(self):
+        """All four role checkpoints can exist simultaneously."""
         qa_content = SAMPLE_CHECKPOINT_BUILDER.replace(
             '**Role:** builder', '**Role:** qa').replace(
             '## Builder Context', '## QA Context')
         _write_checkpoint(self.tmpdir, role='builder')
         _write_checkpoint(self.tmpdir, role='architect')
         _write_checkpoint(self.tmpdir, role='qa', content=qa_content)
+        _write_checkpoint(self.tmpdir, role='pm')
         for role in VALID_ROLES:
             self.assertTrue(os.path.isfile(
                 _checkpoint_path(self.tmpdir, role)),
@@ -465,8 +509,8 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
     """
 
     def test_valid_roles_recognized(self):
-        """All three valid roles are recognized."""
-        for role in ('architect', 'builder', 'qa'):
+        """All four valid roles are recognized."""
+        for role in ('architect', 'builder', 'qa', 'pm'):
             self.assertIn(role, VALID_ROLES)
 
     def test_explicit_role_overrides_system_prompt(self):
@@ -485,7 +529,7 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
 
     def test_command_table_file_exists_for_each_role(self):
         """Command table reference files exist for all roles."""
-        for role in ('architect', 'builder', 'qa'):
+        for role in ('architect', 'builder', 'qa', 'pm'):
             path = os.path.join(
                 PROJECT_ROOT, 'instructions', 'references',
                 f'{role}_commands.md')
@@ -494,7 +538,7 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
 
     def test_instruction_files_exist_for_each_role(self):
         """Base instruction files exist for all roles."""
-        for role in ('ARCHITECT', 'BUILDER', 'QA'):
+        for role in ('ARCHITECT', 'BUILDER', 'QA', 'PM'):
             path = os.path.join(
                 PROJECT_ROOT, 'instructions', f'{role}_BASE.md')
             self.assertTrue(os.path.isfile(path),
@@ -502,7 +546,7 @@ class TestRoleFromExplicitArgument(unittest.TestCase):
 
     def test_override_files_exist_for_each_role(self):
         """Override instruction files exist for all roles."""
-        for role in ('ARCHITECT', 'BUILDER', 'QA'):
+        for role in ('ARCHITECT', 'BUILDER', 'QA', 'PM'):
             path = os.path.join(
                 PROJECT_ROOT, '.purlin', f'{role}_OVERRIDES.md')
             self.assertTrue(os.path.isfile(path),
@@ -531,15 +575,15 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
 
     def test_valid_arguments_accepted(self):
         """All valid arguments pass validation."""
-        for arg in ('save', 'architect', 'builder', 'qa'):
+        for arg in ('save', 'architect', 'builder', 'qa', 'pm'):
             self.assertIn(arg, VALID_ARGS)
 
     def test_error_lists_all_valid_options(self):
         """Error message includes all valid options."""
         error_msg = (
             'Invalid argument: "invalid". '
-            'Valid options: save, architect, builder, qa')
-        for option in ('save', 'architect', 'builder', 'qa'):
+            'Valid options: save, architect, builder, qa, pm')
+        for option in ('save', 'architect', 'builder', 'qa', 'pm'):
             self.assertIn(option, error_msg)
 
     def test_no_checkpoint_written_on_invalid_arg(self):
@@ -727,10 +771,11 @@ class TestMultipleCheckpointsPromptUserSelection(unittest.TestCase):
                               '**Role:** builder', '**Role:** qa'))
         _write_checkpoint(self.tmpdir, role='builder')
         _write_checkpoint(self.tmpdir, role='architect')
+        _write_checkpoint(self.tmpdir, role='pm')
         cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
         discovered = _discover_checkpoint_roles(cache_dir)
-        # Function iterates in fixed order: architect, builder, qa
-        self.assertEqual(discovered, ['architect', 'builder', 'qa'])
+        # Function iterates in fixed order: architect, builder, pm, qa
+        self.assertEqual(discovered, ['architect', 'builder', 'pm', 'qa'])
 
     def test_multiple_checkpoints_triggers_selection(self):
         """More than one checkpoint means auto-inference cannot proceed."""
@@ -801,6 +846,408 @@ class TestCommandFileRoleScopedPaths(unittest.TestCase):
                     continue  # Role-scoped, OK
                 self.fail(
                     f'Found old non-role-scoped checkpoint path: {line}')
+
+
+class TestPMSaveWritesRoleScopedCheckpointFile(unittest.TestCase):
+    """Scenario: PM Save Writes Role-Scoped Checkpoint File
+
+    Given an agent is in an active session with role "pm"
+    And the agent is drafting a feature spec with Figma context
+    When the agent invokes /pl-resume save
+    Then .purlin/cache/session_checkpoint_pm.md is created
+    And the file contains "**Role:** pm"
+    And the file contains a Spec Drafts field
+    And the file contains a Figma Context field
+    And the file contains a Probing Round field
+    And no other session_checkpoint_*.md files are modified
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_pm_checkpoint_file_created(self):
+        """PM checkpoint file is written to session_checkpoint_pm.md."""
+        path = _write_checkpoint(self.tmpdir, role='pm')
+        self.assertTrue(os.path.isfile(path))
+        self.assertTrue(path.endswith('session_checkpoint_pm.md'))
+
+    def test_pm_checkpoint_contains_role_field(self):
+        """PM checkpoint file contains '**Role:** pm'."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        path = _checkpoint_path(self.tmpdir, 'pm')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('**Role:** pm', content)
+
+    def test_pm_checkpoint_contains_spec_drafts(self):
+        """PM checkpoint contains a Spec Drafts field."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        path = _checkpoint_path(self.tmpdir, 'pm')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('**Spec Drafts:**', content)
+
+    def test_pm_checkpoint_contains_figma_context(self):
+        """PM checkpoint contains a Figma Context field."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        path = _checkpoint_path(self.tmpdir, 'pm')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('**Figma Context:**', content)
+
+    def test_pm_checkpoint_contains_probing_round(self):
+        """PM checkpoint contains a Probing Round field."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        path = _checkpoint_path(self.tmpdir, 'pm')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('**Probing Round:**', content)
+
+    def test_pm_checkpoint_has_pm_context_section(self):
+        """PM checkpoint contains ## PM Context section."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        path = _checkpoint_path(self.tmpdir, 'pm')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('## PM Context', content)
+
+    def test_no_other_checkpoint_files_modified(self):
+        """Saving a PM checkpoint does not create other role files."""
+        _write_checkpoint(self.tmpdir, role='pm')
+        cache_dir = os.path.join(self.tmpdir, '.purlin', 'cache')
+        for other_role in ('architect', 'builder', 'qa'):
+            other_path = os.path.join(
+                cache_dir, f'session_checkpoint_{other_role}.md')
+            self.assertFalse(os.path.exists(other_path),
+                             f'Unexpected checkpoint for {other_role}')
+
+    def test_command_file_has_pm_context_section(self):
+        """Command file includes PM-specific checkpoint fields."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('## PM Context', content)
+        self.assertIn('**Spec Drafts:**', content)
+        self.assertIn('**Figma Context:**', content)
+        self.assertIn('**Probing Round:**', content)
+
+
+class TestPMColdStartChecksFigmaMCPAvailability(unittest.TestCase):
+    """Scenario: PM Cold Start Checks Figma MCP Availability
+
+    Given .purlin/cache/session_checkpoint_pm.md does not exist
+    When the agent invokes /pl-resume pm
+    Then the PM state-gathering sequence runs
+    And the Figma MCP availability check is performed
+    And the recovery summary displays "Figma MCP: available" or
+    "Figma MCP: not available"
+    And the recovery summary displays "Checkpoint: none"
+    """
+
+    def test_pm_checkpoint_missing_detected(self):
+        """Missing PM checkpoint is detected for cold start."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            _make_cache_dir(tmpdir)
+            path = _checkpoint_path(tmpdir, 'pm')
+            self.assertFalse(os.path.exists(path))
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_command_file_references_figma_mcp_in_pm_section(self):
+        """Command file references Figma MCP in PM cold-start gathering."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('Figma MCP', content)
+
+    def test_recovery_summary_has_pm_figma_line(self):
+        """Recovery summary template includes PM Figma MCP status line."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('Figma MCP:', content)
+        # Check the PM-only conditional line is in the summary template
+        self.assertIn('<PM only>', content)
+
+    def test_figma_mcp_status_values(self):
+        """Figma MCP status uses 'available' or 'not available'."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        # The template should reference both possible values
+        self.assertIn('available', content)
+        self.assertIn('not available', content)
+
+    def test_pm_role_accepted_as_explicit_argument(self):
+        """'pm' is a valid explicit argument for /pl-resume."""
+        self.assertIn('pm', VALID_ARGS)
+
+    def test_startup_state_gathering_has_pm_section(self):
+        """The startup state gathering reference includes a PM section."""
+        ref_path = os.path.join(
+            PROJECT_ROOT, 'instructions', 'references',
+            'startup_state_gathering.md')
+        with open(ref_path) as f:
+            content = f.read()
+        self.assertIn('### PM', content)
+        self.assertIn('Figma MCP Availability Check', content)
+
+
+class TestBuilderColdStartLoadsTombstonesAndAnchors(unittest.TestCase):
+    """Scenario: Builder Cold Start Loads Tombstones and Anchors
+
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
+    And features/tombstones/ contains at least one tombstone file
+    And features/ contains at least one anchor node file
+    When the agent invokes /pl-resume builder
+    Then the Builder cold-start extensions run
+    And the tombstone check lists all files in features/tombstones/
+    And all anchor node files in features/ are read
+    And the recovery summary includes tombstone tasks as HIGH-priority items
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        # Create project structure
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+        self.tombstones_dir = os.path.join(self.features_dir, 'tombstones')
+        os.makedirs(self.tombstones_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_tombstone_directory_listing(self):
+        """Tombstone files in features/tombstones/ are discoverable."""
+        tombstone = os.path.join(
+            self.tombstones_dir, 'old_feature.md')
+        with open(tombstone, 'w') as f:
+            f.write('# Tombstone: old_feature\n')
+        files = os.listdir(self.tombstones_dir)
+        self.assertEqual(files, ['old_feature.md'])
+
+    def test_multiple_tombstones_listed(self):
+        """All tombstone files are discoverable."""
+        for name in ('feature_a.md', 'feature_b.md'):
+            with open(os.path.join(self.tombstones_dir, name), 'w') as f:
+                f.write(f'# Tombstone: {name}\n')
+        files = sorted(os.listdir(self.tombstones_dir))
+        self.assertEqual(files, ['feature_a.md', 'feature_b.md'])
+
+    def test_anchor_node_files_discoverable_by_prefix(self):
+        """Anchor node files match design_*.md and policy_*.md patterns."""
+        for name in ('design_visual.md', 'policy_critic.md'):
+            with open(os.path.join(self.features_dir, name), 'w') as f:
+                f.write(f'# {name}\n')
+        import glob
+        anchors = []
+        for pattern in ('design_*.md', 'policy_*.md', 'arch_*.md'):
+            anchors.extend(
+                glob.glob(os.path.join(self.features_dir, pattern)))
+        basenames = sorted(os.path.basename(p) for p in anchors)
+        self.assertEqual(basenames, ['design_visual.md', 'policy_critic.md'])
+
+    def test_impl_files_excluded_from_anchor_listing(self):
+        """Companion .impl.md files are not anchor nodes."""
+        for name in ('design_visual.md', 'design_visual.impl.md'):
+            with open(os.path.join(self.features_dir, name), 'w') as f:
+                f.write(f'# {name}\n')
+        import glob
+        anchors = []
+        for pattern in ('design_*.md', 'policy_*.md', 'arch_*.md'):
+            matches = glob.glob(os.path.join(self.features_dir, pattern))
+            anchors.extend(
+                p for p in matches if not p.endswith('.impl.md'))
+        basenames = [os.path.basename(p) for p in anchors]
+        self.assertEqual(basenames, ['design_visual.md'])
+
+    def test_command_file_references_tombstone_check(self):
+        """Command file Step 5 references tombstone listing for Builder."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('tombstone', content.lower())
+
+    def test_command_file_references_anchor_preload(self):
+        """Command file Step 5 references anchor node preload for Builder."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('anchor node', content.lower())
+
+    def test_real_project_anchor_nodes_exist(self):
+        """The real project has at least one anchor node file."""
+        import glob
+        features_dir = os.path.join(PROJECT_ROOT, 'features')
+        anchors = []
+        for pattern in ('design_*.md', 'policy_*.md', 'arch_*.md'):
+            matches = glob.glob(os.path.join(features_dir, pattern))
+            anchors.extend(
+                p for p in matches if not p.endswith('.impl.md'))
+        self.assertGreater(len(anchors), 0,
+                           'Project should have at least one anchor node')
+
+
+class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
+    """Scenario: QA Cold Start Reads Verification Effort
+
+    Given .purlin/cache/session_checkpoint_qa.md does not exist
+    And at least one feature is in TESTING state
+    When the agent invokes /pl-resume qa
+    Then the QA cold-start extensions run
+    And verification_effort is read from each TESTING feature's critic.json
+    And the recovery summary includes effort classification per feature
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_critic_json_verification_effort_readable(self):
+        """verification_effort field is readable from critic.json."""
+        test_dir = os.path.join(self.tmpdir, 'tests', 'some_feature')
+        os.makedirs(test_dir)
+        critic_data = {
+            'feature': 'some_feature',
+            'verification_effort': {
+                'total_manual': 3,
+                'total_auto': 5,
+                'summary': '3 manual, 5 auto'
+            }
+        }
+        with open(os.path.join(test_dir, 'critic.json'), 'w') as f:
+            json.dump(critic_data, f)
+        with open(os.path.join(test_dir, 'critic.json')) as f:
+            data = json.load(f)
+        self.assertIn('verification_effort', data)
+        self.assertEqual(data['verification_effort']['total_manual'], 3)
+
+    def test_verification_effort_has_required_fields(self):
+        """verification_effort contains total_manual and total_auto."""
+        effort = {
+            'total_manual': 2,
+            'total_auto': 4,
+            'summary': '2 manual, 4 auto'
+        }
+        self.assertIn('total_manual', effort)
+        self.assertIn('total_auto', effort)
+        self.assertIn('summary', effort)
+
+    def test_real_project_testing_features_have_critic_json(self):
+        """Features in TESTING state have critic.json with effort data."""
+        # Check actual project: find any TESTING features from status
+        tests_dir = os.path.join(PROJECT_ROOT, 'tests')
+        if not os.path.isdir(tests_dir):
+            self.skipTest('No tests/ directory in project')
+        # At minimum, verify the critic.json structure for any existing feature
+        found_any = False
+        for entry in os.listdir(tests_dir):
+            critic_path = os.path.join(tests_dir, entry, 'critic.json')
+            if os.path.isfile(critic_path):
+                with open(critic_path) as f:
+                    data = json.load(f)
+                if 'verification_effort' in data:
+                    found_any = True
+                    effort = data['verification_effort']
+                    self.assertIn('total_manual', effort)
+                    self.assertIn('total_auto', effort)
+                    break
+        if not found_any:
+            self.skipTest('No critic.json with verification_effort found')
+
+    def test_command_file_references_verification_effort(self):
+        """Command file Step 5 references verification_effort for QA."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('verification_effort', content)
+
+    def test_startup_state_gathering_references_verification_effort(self):
+        """Startup state gathering reference includes QA effort reading."""
+        ref_path = os.path.join(
+            PROJECT_ROOT, 'instructions', 'references',
+            'startup_state_gathering.md')
+        with open(ref_path) as f:
+            content = f.read()
+        self.assertIn('Verification Effort', content)
+        self.assertIn('verification_effort', content)
+
+
+class TestColdStartRespectsStartupFlags(unittest.TestCase):
+    """Scenario: Cold Start Respects Startup Flags
+
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
+    And .purlin/config.json sets recommend_next_actions to false for builder
+    When the agent invokes /pl-resume builder
+    Then the core state-gathering sequence runs
+    And the cold-start extensions run
+    And the recovery summary displays a brief status summary
+    And the agent does not auto-generate a full work plan
+    And the agent awaits user direction
+    """
+
+    def test_config_json_has_startup_sequence_field(self):
+        """config.json contains startup_sequence for builder."""
+        config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        builder_cfg = config.get('agents', {}).get('builder', {})
+        self.assertIn('startup_sequence', builder_cfg)
+
+    def test_config_json_has_recommend_next_actions_field(self):
+        """config.json contains recommend_next_actions for builder."""
+        config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        builder_cfg = config.get('agents', {}).get('builder', {})
+        self.assertIn('recommend_next_actions', builder_cfg)
+
+    def test_all_roles_have_startup_flags(self):
+        """All four roles have startup_sequence and recommend_next_actions."""
+        config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        for role in ('pm', 'architect', 'builder', 'qa'):
+            role_cfg = config.get('agents', {}).get(role, {})
+            self.assertIn('startup_sequence', role_cfg,
+                          f'{role} missing startup_sequence')
+            self.assertIn('recommend_next_actions', role_cfg,
+                          f'{role} missing recommend_next_actions')
+
+    def test_startup_flags_are_boolean(self):
+        """Startup flags are boolean values."""
+        config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        for role in ('pm', 'architect', 'builder', 'qa'):
+            role_cfg = config.get('agents', {}).get(role, {})
+            self.assertIsInstance(role_cfg['startup_sequence'], bool,
+                                 f'{role} startup_sequence not bool')
+            self.assertIsInstance(role_cfg['recommend_next_actions'], bool,
+                                 f'{role} recommend_next_actions not bool')
+
+    def test_command_file_references_startup_flags(self):
+        """Command file Step 5 references startup flag handling."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('startup_sequence', content)
+        self.assertIn('recommend_next_actions', content)
+
+    def test_command_file_has_startup_disabled_message(self):
+        """Command file includes the startup_sequence disabled message."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn(
+            'startup_sequence disabled -- awaiting instruction', content)
+
+    def test_flags_default_to_true(self):
+        """Startup flags default to true when absent from config."""
+        # Simulate missing fields -- default should be True
+        empty_config = {'agents': {'builder': {}}}
+        builder_cfg = empty_config['agents']['builder']
+        startup = builder_cfg.get('startup_sequence', True)
+        recommend = builder_cfg.get('recommend_next_actions', True)
+        self.assertTrue(startup)
+        self.assertTrue(recommend)
 
 
 if __name__ == '__main__':

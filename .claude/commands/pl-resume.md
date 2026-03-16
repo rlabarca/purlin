@@ -78,6 +78,14 @@ Append these sections after the common fields:
 **Discovery Processing:** <discoveries reviewed vs. pending>
 ```
 
+**PM only:**
+```markdown
+## PM Context
+**Spec Drafts:** <which feature specs are being authored or refined>
+**Figma Context:** <which Figma files or frames are being referenced, or "None">
+**Probing Round:** <current round in the Probing Question Protocol, if active, or "N/A">
+```
+
 ### After Writing
 
 Print confirmation:
@@ -144,9 +152,18 @@ Execute the core state-gathering sequence (always, both cases):
 
 **When no checkpoint exists (cold start):** additionally gather:
 - Read `.purlin/cache/dependency_graph.json` for the feature graph.
-- **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state.
-- **QA:** Identify features in TESTING state from the Critic report.
+- **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state. List `features/tombstones/` for tombstone tasks. Read ALL anchor node files in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`).
+- **QA:** Identify features in TESTING state from the Critic report. For each, read `verification_effort` from `tests/<feature_name>/critic.json`.
 - **Architect:** Perform spec-level gap analysis on TODO/TESTING features.
+- **PM:** Check for Figma MCP tools in the current session. If not available, inform the user and provide setup instructions.
+
+**Startup flag handling (cold start only):**
+When no checkpoint exists, check `startup_sequence` and `recommend_next_actions` from `.purlin/config.json` for the detected role:
+- `startup_sequence: false` -- output `"startup_sequence disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
+- `recommend_next_actions: false` -- present only a brief status summary (feature counts, open Critic items) instead of a full work plan. Await user direction.
+- Both `true` (default) -- proceed with full work plan generation.
+
+When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
 
 **When a checkpoint exists:** skip the dependency graph read and role-specific analysis (the checkpoint's work plan already incorporates these). Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
 
@@ -170,6 +187,7 @@ Next Steps:
 Action Items:   <count> items from Critic report
 <Builder only>  Delivery plan: Phase X of Y -- next: <feature>
 <QA only>       Verification queue: N features in TESTING
+<PM only>       Figma MCP: <available | not available>
 Uncommitted:    <none | summary>
 ```
 
