@@ -3661,8 +3661,8 @@ function openModal(filePath, label) {{
   var currentModal = {{ file: filePath, specContent: null, implContent: null, hasImpl: false, specMeta: null }};
   window._currentModal = currentModal;
 
-  // Check if impl.md exists (derive path: features/foo.md -> features/foo.impl.md)
-  var implPath = filePath.replace(/\\.md$/, '.impl.md');
+  // Cache key for impl notes (derived from feature path)
+  var implCacheKey = filePath.replace(/\\.md$/, '.impl.md');
 
   // Load spec
   var specPromise = modalCache[filePath]
@@ -3671,12 +3671,12 @@ function openModal(filePath, label) {{
         .then(function(r) {{ if (!r.ok) throw new Error('Failed'); return r.text(); }})
         .then(function(md) {{ modalCache[filePath] = md; return md; }});
 
-  // Try loading impl
-  var implPromise = modalCache[implPath]
-    ? Promise.resolve(modalCache[implPath])
-    : fetch('/impl-notes?file=' + encodeURIComponent(implPath))
+  // Try loading impl (endpoint resolves feature path to companion)
+  var implPromise = modalCache[implCacheKey]
+    ? Promise.resolve(modalCache[implCacheKey])
+    : fetch('/impl-notes?file=' + encodeURIComponent(filePath))
         .then(function(r) {{ if (!r.ok) return null; return r.text(); }})
-        .then(function(md) {{ if (md) modalCache[implPath] = md; return md; }})
+        .then(function(md) {{ if (md) modalCache[implCacheKey] = md; return md; }})
         .catch(function() {{ return null; }});
 
   Promise.all([specPromise, implPromise]).then(function(results) {{
@@ -4974,12 +4974,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, "Error reading file")
 
     def _serve_impl_notes(self):
-        """Serve the raw markdown content of an implementation notes file."""
+        """Serve the raw markdown content of an implementation notes file.
+
+        Accepts a feature file path (e.g., features/critic_tool.md) and
+        resolves the companion path as features/<stem>.impl.md.
+        """
         parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
         file_param = params.get('file', [''])[0]
 
-        abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, file_param))
+        # Resolve feature path to companion path: strip .md, add .impl.md
+        if file_param.endswith('.impl.md'):
+            companion_param = file_param
+        elif file_param.endswith('.md'):
+            companion_param = file_param[:-3] + '.impl.md'
+        else:
+            self.send_error(400, "Invalid file parameter")
+            return
+
+        abs_path = os.path.normpath(
+            os.path.join(PROJECT_ROOT, companion_param))
         allowed_dir = os.path.normpath(FEATURES_DIR)
         if not abs_path.startswith(allowed_dir):
             self.send_error(403, "Access denied")
