@@ -345,7 +345,7 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     And pl-run-architect.sh exists at the project root with outdated content
     When the user runs "purlin/tools/init.sh"
     Then pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh are regenerated with current template content
-    And all three launchers are executable
+    And all four launchers are executable
 
 #### Scenario: Idempotent Repeated Runs
 
