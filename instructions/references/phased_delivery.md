@@ -66,7 +66,7 @@ Each delivery phase has an internal three-step structure that separates implemen
 
 ### B1 (Build Sub-Phase)
 
-Existing per-feature implementation loop (Steps 0-3 in BUILDER_BASE). Each feature is implemented and locally tested including AFTs. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort). Fast iteration.
+Existing per-feature implementation loop (Steps 0-3 in BUILDER_BASE). Each feature is implemented and locally tested including AFTs. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort) for implementation decisions. AFT verification (`/pl-aft-web`) uses Figma MCP for three-source comparison when available, regardless of this priority. The Builder iterates per-feature until `/pl-aft-web` passes. Fast iteration.
 
 ### B2 (Test Sub-Phase)
 
