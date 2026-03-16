@@ -3,6 +3,7 @@
   "passed": 11,
   "failed": 0,
   "total": 11,
+  "test_file": "tools/delivery/test_phase_analyzer.py",
   "details": [
     {
       "name": "Analyze Delivery Plan with Correct Ordering",

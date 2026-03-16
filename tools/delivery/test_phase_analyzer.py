@@ -481,6 +481,7 @@ def write_results():
         "passed": results["passed"],
         "failed": results["failed"],
         "total": results["total"],
+        "test_file": "tools/delivery/test_phase_analyzer.py",
         "details": results["details"],
     }
 
