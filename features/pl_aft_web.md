@@ -204,6 +204,20 @@ When a feature has `> AFT Web:` metadata and the project has a fixture repo (res
 
 **Error handling:** If fixture checkout fails (tag not found, repo unreachable), the scenario is marked INCONCLUSIVE with a note about the missing fixture. Other scenarios in the feature continue normally.
 
+### 2.15 Legacy Cleanup
+
+The following legacy artifacts from the pre-rename `/pl-web-verify` era MUST be removed or updated by the Builder:
+
+1. **Delete** `.claude/commands/pl-web-verify.md` (the old skill file). The new file at `.claude/commands/pl-aft-web.md` (Section 2.2) replaces it entirely.
+2. **Rename** test directory `tests/pl_web_verify/` to `tests/pl_aft_web/`. Update all internal references: module docstrings, fixture paths, test method names, sample data using `> Web Testable:` to `> AFT Web:`, and assertions checking for `pl-web-verify` to `pl-aft-web`.
+3. **Update** `tools/critic/critic.py`: rename `_parse_web_testable()` to `_parse_aft_web()` and change the regex from `> Web Testable:` to `> AFT Web:`. Update all call sites.
+4. **Update** `tools/critic/test_critic.py`: replace `> Web Testable:` with `> AFT Web:` in all test data and assertions.
+5. **Update** `dev/setup_fixture_repo.sh`:
+   - Line 217: `> Web Testable: true` to `> AFT Web: http://localhost:9086` (use proper URL format).
+   - Line 1416: `echo "--- pl_web_verify ---"` to `echo "--- pl_aft_web ---"`.
+   - Line 1432: tag `main/pl_web_verify/web-testable-features` to `main/pl_aft_web/web-testable-features`.
+6. **Update** `.claude/commands/pl-aft-web.md` content: all references to `> Web Testable:` become `> AFT Web:`, all references to `> Web Port File:` are removed, all references to `> Web Start:` become `> AFT Start:`, all self-references to `/pl-web-verify` become `/pl-aft-web`.
+
 ### 2.13 Instruction Updates
 
 The following instruction files MUST be updated by the Builder to reference the new skill:
@@ -449,6 +463,14 @@ The following instruction files MUST be updated by the Builder to reference the 
     When `/pl-aft-web` moves to the next scenario
     Then the fixture-backed CDD server has been stopped
     And the fixture checkout directory has been removed
+
+#### Scenario: Legacy pl-web-verify references fully removed
+
+    Given the pl-aft-web skill file exists at `.claude/commands/pl-aft-web.md`
+    When a search is performed for "pl-web-verify" or "Web Testable" across all non-release-note files
+    Then zero matches are found
+    And the old skill file `.claude/commands/pl-web-verify.md` does not exist
+    And the test directory is `tests/pl_aft_web/` (not `tests/pl_web_verify/`)
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -90,7 +90,7 @@ Inherits shared modal infrastructure (width, font size control, close behavior, 
 *   **Tabbed View:** When a companion `.impl.md` file exists for the feature, the modal shows two tabs: "Specification" and "Implementation Notes". Tab content is lazy-loaded and cached for instant switching.
 *   **Single Tab:** When no companion file exists, the modal shows content without tabs (same as current behavior).
 *   **API Endpoints:** Feature content is served via `/feature?file=<path>` and companion content via `/impl-notes?file=<path>` (Section 2.4).
-*   **Metadata Tag Display:** Metadata blockquotes (`> Key: Value` lines at the top of feature files -- Label, Category, Prerequisite, Web Testable, Web Port File, Web Start, and any other `> Key: Value` patterns) MUST be extracted from the markdown and displayed in a dedicated metadata area between the header/tabs and the body content.
+*   **Metadata Tag Display:** Metadata blockquotes (`> Key: Value` lines at the top of feature files -- Label, Category, Prerequisite, AFT Web, AFT Start, and any other `> Key: Value` patterns) MUST be extracted from the markdown and displayed in a dedicated metadata area between the header/tabs and the body content.
     *   Each tag on its own row.
     *   Tag names (the key portion) rendered in a highlight color distinct from the value text.
     *   Multiple tags of the same type (e.g., multiple Prerequisites) each appear on separate rows.
