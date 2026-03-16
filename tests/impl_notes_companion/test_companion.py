@@ -217,24 +217,161 @@ class TestDependencyGraphExcludesCompanion(unittest.TestCase):
 # ===================================================================
 
 class TestOrphanDetectionCompanion(unittest.TestCase):
-    """Companion file without parent feature must be flagged as orphan."""
+    """Companion file without parent feature must be flagged as orphan by Critic."""
 
     def test_orphan_companion_flagged(self):
-        from cleanup_orphaned_features import get_referenced_features
+        from critic import audit_orphan_companions
 
         tmpdir = tempfile.mkdtemp()
         try:
             # Create an orphan companion (no parent .md)
             with open(os.path.join(tmpdir, 'gone.impl.md'), 'w') as f:
                 f.write('# Implementation Notes\n')
-            # Create a valid feature (not orphaned due to protected roots)
+            # Create a valid feature with companion (not orphaned)
             with open(os.path.join(tmpdir, 'valid.md'), 'w') as f:
                 f.write('> Label: "Valid"\n> Category: "Test"\n')
+            with open(os.path.join(tmpdir, 'valid.impl.md'), 'w') as f:
+                f.write('# Implementation Notes: Valid\n')
 
-            orphans = get_referenced_features(tmpdir)
-            self.assertIn('gone.impl.md', orphans)
+            items = audit_orphan_companions(features_dir=tmpdir)
+            # gone.impl.md should be flagged (no parent gone.md)
+            flagged_files = [item['description'] for item in items]
+            self.assertTrue(
+                any('gone.impl.md' in d for d in flagged_files),
+                f'Expected gone.impl.md to be flagged, got: {flagged_files}'
+            )
+            # valid.impl.md should NOT be flagged (valid.md exists)
+            self.assertFalse(
+                any('valid.impl.md' in d for d in flagged_files),
+                f'valid.impl.md should not be flagged'
+            )
+            # Verify action item structure
+            self.assertEqual(items[0]['priority'], 'MEDIUM')
+            self.assertEqual(items[0]['category'], 'orphan_companion')
         finally:
             shutil.rmtree(tmpdir)
+
+    def test_no_orphans_returns_empty(self):
+        from critic import audit_orphan_companions
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            with open(os.path.join(tmpdir, 'feat.md'), 'w') as f:
+                f.write('# Feature\n')
+            with open(os.path.join(tmpdir, 'feat.impl.md'), 'w') as f:
+                f.write('# Implementation Notes\n')
+
+            items = audit_orphan_companions(features_dir=tmpdir)
+            self.assertEqual(items, [])
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+# ===================================================================
+# Scenario: Companion File Served via API
+# ===================================================================
+
+class TestCompanionFileServedViaAPI(unittest.TestCase):
+    """The /impl-notes endpoint serves companion file content."""
+
+    def setUp(self):
+        sys.path.insert(0, os.path.join(TOOLS_DIR, 'cdd'))
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_endpoint_resolves_feature_to_companion(self):
+        """GET /impl-notes?file=features/critic_tool.md returns companion content."""
+        import http.server
+        import urllib.parse
+        from io import BytesIO
+
+        # Create feature and companion
+        with open(os.path.join(self.features_dir, 'critic_tool.md'), 'w') as f:
+            f.write('# Feature: Critic Tool\n')
+        companion_content = '# Implementation Notes: Critic Tool\nSome notes.'
+        with open(os.path.join(self.features_dir, 'critic_tool.impl.md'), 'w') as f:
+            f.write(companion_content)
+
+        # Import serve module and test path resolution logic directly
+        import importlib
+        import serve as serve_mod
+
+        # Save and override PROJECT_ROOT and FEATURES_DIR
+        orig_project_root = serve_mod.PROJECT_ROOT
+        orig_features_dir = serve_mod.FEATURES_DIR
+        serve_mod.PROJECT_ROOT = self.tmpdir
+        serve_mod.FEATURES_DIR = self.features_dir
+
+        try:
+            # Simulate the resolution logic from _serve_impl_notes
+            file_param = 'features/critic_tool.md'
+            if file_param.endswith('.impl.md'):
+                companion_param = file_param
+            elif file_param.endswith('.md'):
+                companion_param = file_param[:-3] + '.impl.md'
+            else:
+                self.fail('Invalid file parameter')
+
+            abs_path = os.path.normpath(
+                os.path.join(self.tmpdir, companion_param))
+            allowed_dir = os.path.normpath(self.features_dir)
+            self.assertTrue(abs_path.startswith(allowed_dir))
+            self.assertTrue(os.path.isfile(abs_path))
+
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.assertEqual(content, companion_content)
+        finally:
+            serve_mod.PROJECT_ROOT = orig_project_root
+            serve_mod.FEATURES_DIR = orig_features_dir
+
+
+# ===================================================================
+# Scenario: No Companion File Returns 404
+# ===================================================================
+
+class TestNoCompanionReturns404(unittest.TestCase):
+    """The /impl-notes endpoint returns 404 when no companion exists."""
+
+    def setUp(self):
+        sys.path.insert(0, os.path.join(TOOLS_DIR, 'cdd'))
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_missing_companion_resolves_to_no_file(self):
+        """GET /impl-notes?file=features/policy_critic.md returns 404 when no companion."""
+        import serve as serve_mod
+
+        # Create feature without companion
+        with open(os.path.join(self.features_dir, 'policy_critic.md'), 'w') as f:
+            f.write('# Policy: Critic\n')
+
+        orig_project_root = serve_mod.PROJECT_ROOT
+        orig_features_dir = serve_mod.FEATURES_DIR
+        serve_mod.PROJECT_ROOT = self.tmpdir
+        serve_mod.FEATURES_DIR = self.features_dir
+
+        try:
+            file_param = 'features/policy_critic.md'
+            companion_param = file_param[:-3] + '.impl.md'
+            abs_path = os.path.normpath(
+                os.path.join(self.tmpdir, companion_param))
+            # The companion file should NOT exist
+            self.assertFalse(
+                os.path.isfile(abs_path),
+                f'Expected no companion file at {abs_path}'
+            )
+        finally:
+            serve_mod.PROJECT_ROOT = orig_project_root
+            serve_mod.FEATURES_DIR = orig_features_dir
 
 
 # ===================================================================

@@ -2098,6 +2098,35 @@ def audit_untracked_files(project_root=None):
     return items
 
 
+def audit_orphan_companions(features_dir=None):
+    """Detect companion .impl.md files with no corresponding parent feature.
+
+    Scans features/*.impl.md and checks whether a matching <name>.md exists.
+    Returns Architect action items for orphaned companions.
+    """
+    fdir = features_dir or FEATURES_DIR
+    if not os.path.isdir(fdir):
+        return []
+
+    all_files = set(os.listdir(fdir))
+    items = []
+    for f in sorted(all_files):
+        if not f.endswith('.impl.md'):
+            continue
+        parent = f.replace('.impl.md', '.md')
+        if parent not in all_files:
+            items.append({
+                'priority': 'MEDIUM',
+                'category': 'orphan_companion',
+                'feature': 'project',
+                'description': (
+                    f'Orphaned companion file: {f} '
+                    f'(no parent feature {parent} exists)'
+                ),
+            })
+    return items
+
+
 # ===================================================================
 # Diff-Aware Lifecycle Reset Detection (policy_critic Section 2.12)
 # ===================================================================
@@ -3185,12 +3214,13 @@ def write_critic_json(feature_path, cdd_status=None):
     return data
 
 
-def generate_critic_report(results, untracked_items=None):
+def generate_critic_report(results, untracked_items=None, orphan_items=None):
     """Generate CRITIC_REPORT.md from a list of per-feature results.
 
     Args:
         results: list of critic.json data dicts
         untracked_items: optional list of untracked file action items
+        orphan_items: optional list of orphan companion file action items
 
     Returns:
         str: markdown report content
@@ -3236,6 +3266,16 @@ def generate_critic_report(results, untracked_items=None):
                 )
         else:
             lines.append('No action items.')
+        # Orphan Companion Files subsection under Architect
+        if role == 'Architect' and orphan_items:
+            lines.append('')
+            lines.append('#### Orphan Companion Files')
+            lines.append('')
+            for item in orphan_items:
+                lines.append(
+                    f'- **[{item["priority"]}]**: '
+                    f'{item["description"]}'
+                )
         # Untracked Files subsection under Architect
         if role == 'Architect' and untracked_items:
             lines.append('')
@@ -3390,8 +3430,15 @@ def main():
         # Audit untracked files (project-level, not per-feature)
         untracked_items = audit_untracked_files()
 
+        # Audit orphan companion files (project-level)
+        orphan_items = audit_orphan_companions()
+
         # Generate aggregate report
-        report = generate_critic_report(results, untracked_items=untracked_items)
+        report = generate_critic_report(
+            results,
+            untracked_items=untracked_items,
+            orphan_items=orphan_items,
+        )
         report_path = os.path.join(PROJECT_ROOT, 'CRITIC_REPORT.md')
         with open(report_path, 'w') as f:
             f.write(report)
