@@ -51,12 +51,25 @@ Ingest a design artifact into a feature's Visual Specification section. This com
    - `figma_last_modified`: The design's `lastModified` timestamp from MCP
    - `screens`: Per-screen structured data (node ID, dimensions, components, layout)
    - `tokens`: Figma design variable names and their resolved values
+   - `code_connect` (optional): When MCP response includes Code Connect data, include component-to-source mappings. Each entry maps a component name to `source_file`, `props`, and `figma_node_id`. Report: "Code Connect data found for N components." Omit key silently if no Code Connect data present.
+
+5.2. **Extract Figma dev status (Figma MCP only):**
+   When processing a Figma URL with MCP available:
+   - Read the frame's dev mode status (Design, Ready for Dev, Completed) via MCP.
+   - If available, include in `brief.json` as `figma_dev_status` (`"ready_for_dev"`, `"completed"`, or `null`).
+   - Include the Figma file version ID in `brief.json` as `figma_version_id`.
+   - Report: "Figma dev status: <status>".
+   - If unavailable, set `figma_dev_status` to `null` and omit `> Figma Status:` from the feature spec.
 
 6. **Update feature file:**
    - If no `## Visual Specification` section exists, create one with the `> **Design Anchor:**` declaration.
    - Insert or update the `### Screen:` subsection with Reference, Processed date (today), Token Map, and draft checklist items.
    - Do NOT insert a `- **Description:**` field.
+   - If Figma dev status was extracted (step 5.2), add `> Figma Status: <status>` to the feature spec's blockquote metadata (after Prerequisite lines).
 
-7. **Commit:** Commit artifact file (if local) + brief.json (if generated) + feature spec update together: `spec(<feature_stem>): ingest design artifact for <screen_name>`.
+7. **Dev Resources linking (Figma MCP only, optional):**
+   After ingestion, offer to attach the feature spec URL to the Figma node via the Dev Resources API. This creates bidirectional traceability visible in Figma Dev Mode. Ask user: "Would you like to link this spec back to the Figma component via Dev Resources?" Only proceed with user confirmation. Skip silently if declined or if Dev Resources API is unavailable.
+
+8. **Commit:** Commit artifact file (if local) + brief.json (if generated) + feature spec update together: `spec(<feature_stem>): ingest design artifact for <screen_name>`.
 
 **Token mapping rule:** When no `design_*.md` anchor exists, use literal values in the Token Map (e.g., `` `primary` -> `#2196F3` ``) and append a note: "No design anchor found -- Token Map uses literal values. Create a design_*.md anchor to enable token mapping."

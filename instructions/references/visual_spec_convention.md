@@ -49,7 +49,7 @@ The section is placed at the end of the feature file (discoveries are stored in 
 *   The Critic detects visual spec sections and generates separate QA action items for visual verification.
 
 ## 9.3.1 Design Brief Cache
-When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides the Builder with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. See `design_artifact_pipeline.md` for the schema.
+When Figma MCP is available during ingestion, the PM also generates a `brief.json` at `features/design/<feature_stem>/brief.json`. This compact, machine-readable file provides the Builder with structured design data (dimensions, component hierarchy, layout, token values) without requiring Figma MCP access during implementation. When Code Connect is configured in the Figma organization, `brief.json` may also contain a `code_connect` key mapping component names to their source file paths and property configurations. See `design_artifact_pipeline.md` for the schema.
 
 ## 9.4 Design Asset Storage
 *   Design assets referenced by visual specs may be stored as project-local files (e.g., `docs/mockups/`) or as external URLs (e.g., Figma links).

@@ -63,6 +63,29 @@ The brief includes:
 
 The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) or when Figma MCP is unavailable.
 
+### 2.5.2 Code Connect Data Extraction (Figma MCP Only)
+When the MCP response includes Code Connect data (component code references, property mappings), the PM includes this data in `brief.json` under a `code_connect` key. Each entry maps a component name to its source file path, property configuration, and Figma node ID.
+
+- Report: "Code Connect data found for N components. Included in brief.json for Builder reference."
+- If no Code Connect data is present in the MCP response, the `code_connect` key is omitted from `brief.json` (no error, no warning).
+- Code Connect data supplements the Token Map -- it does not replace it.
+
+### 2.5.3 Figma Dev Status Extraction (Figma MCP Only)
+During ingestion of a Figma URL with MCP available, the command reads the Figma frame's dev mode status (Design, Ready for Dev, or Completed).
+
+- If available, set `> Figma Status: <status>` in the feature spec's blockquote metadata section.
+- Include the status in `brief.json` as `figma_dev_status` (`"ready_for_dev"`, `"completed"`, or `null`).
+- Include the Figma file version ID in `brief.json` as `figma_version_id` for precise staleness detection.
+- Report: "Figma dev status: Ready for Dev" (or current status).
+- If the dev status is unavailable (e.g., free/Pro plan without Dev Mode), omit silently -- no `> Figma Status:` line, `figma_dev_status` set to `null`.
+
+### 2.9 Dev Resources Linking (Optional)
+After ingestion of a Figma URL with MCP available, the PM may optionally attach the feature spec URL to the Figma node via the Dev Resources API. This creates bidirectional traceability visible to designers in Figma Dev Mode.
+
+- Prompt the user for confirmation before writing to Figma.
+- PM-only (consistent with the Figma Write Policy).
+- If the user declines or Dev Resources API is unavailable, skip silently.
+
 ### 2.6 Feature File Update
 - Insert or update the `## Visual Specification` section in the target feature file.
 - Within the section, insert or update the target `### Screen:` subsection with:
@@ -177,6 +200,15 @@ The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) o
     And the PM reports "2 of 2 Figma variables match project tokens (identity mappings). 0 require manual mapping."
     And each identity entry maps the Figma name to its var() equivalent
 
+#### Scenario: Code Connect Data Extracted Into Brief
+
+    Given a Figma design has Code Connect mappings published for component "Card"
+    And the MCP response includes code reference data
+    When /pl-design-ingest processes the Figma URL
+    Then brief.json contains a "code_connect" key
+    And the "Card" entry includes source_file, props, and figma_node_id
+    And the PM reports "Code Connect data found for 1 component"
+
 #### Scenario: Annotation Extraction Pre-Populates Behavioral Context
 
     Given a Figma frame has annotations describing empty state and loading behavior
@@ -185,6 +217,22 @@ The brief is NOT generated for non-Figma inputs (images, PDFs, live web pages) o
     Then the PM presents extracted behavioral notes before probing
     And draft Gherkin scenario outlines are generated from the annotations
     And probing questions skip topics already covered by annotations
+
+#### Scenario: Figma Dev Status Extracted During Ingestion
+
+    Given a Figma frame is marked "Ready for Dev" in Dev Mode
+    And Figma MCP tools are available
+    When /pl-design-ingest processes the Figma URL
+    Then the feature spec contains "> Figma Status: Ready for Dev"
+    And brief.json contains "figma_dev_status": "ready_for_dev"
+    And brief.json contains a "figma_version_id" field
+
+#### Scenario: Dev Status Not Available Silently Omitted
+
+    Given a Figma frame has no dev status set
+    When /pl-design-ingest processes the Figma URL
+    Then the feature spec does NOT contain a "> Figma Status:" line
+    And brief.json contains "figma_dev_status": null
 
 ### Manual Scenarios (Human Verification Required)
 

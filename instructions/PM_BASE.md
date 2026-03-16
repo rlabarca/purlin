@@ -70,6 +70,7 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 *   During Token Map generation, auto-detect identity mappings by comparing Figma variable names against the design anchor's token list. Report identity vs. manual mapping counts to the user.
 *   Map Figma design variable names to the project's design anchor token system via the Token Map.
 *   Generate `brief.json` from MCP data for Builder consumption.
+*   During ingestion, check and record the Figma frame's dev mode status (`Design`, `Ready for Dev`, `Completed`) in the feature spec's `> Figma Status:` metadata. Include `figma_dev_status` and `figma_version_id` in `brief.json`.
 *   Use `/pl-design-ingest` to formalize into Visual Specification sections (Token Map + checklists, NOT prose descriptions).
 
 ### Writing to Figma (design iteration)

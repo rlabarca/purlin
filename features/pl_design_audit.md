@@ -61,12 +61,27 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
 - Flag each inconsistency as WARNING with a suggestion to use the corresponding anchor token name.
 
 ### 2.8 Audit Report
-- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict, Annotations (optional -- shown when Figma MCP is available, otherwise omitted). The Annotations column shows the annotation count per screen or "N/A" when Figma MCP is not available. This is informational metadata only -- it does not affect pass/fail status.
+- Print a summary table with columns: Feature, Screen, Reference Status, Staleness, Brief Status, Anchor Consistency, Design Conflict, Dev Status, Annotations (optional -- shown when Figma MCP is available, otherwise omitted). The Dev Status column shows CURRENT, DRIFT, or N/A. The Annotations column shows the annotation count per screen or "N/A" when Figma MCP is not available. Both Dev Status and Annotations are informational metadata only -- they do not affect pass/fail status.
 - Reference Status values: OK, MISSING (critical), MALFORMED_URL, NO_REF, UNPROCESSED.
 - Staleness values: CURRENT, STALE, N/A (URL reference or no processed date).
 - Brief Status values: CURRENT, STALE, MISSING, N/A (non-Figma reference).
 - Anchor Consistency values: CLEAN, N warnings.
+- Dev Status values: CURRENT, DRIFT, N/A (no Figma Status metadata, no MCP, or no Figma reference).
 - For STALE items, offer to re-ingest by running `/pl-design-ingest` with the re-process flag.
+
+### 2.10 Figma Dev Status Consistency Check
+For features with `> Figma Status:` metadata and a Figma reference, check the current dev status via Figma MCP (when available).
+
+- Compare the current Figma dev status against the spec's `> Figma Status:` value.
+- Discrepancies are flagged as INFO (not errors) with a suggestion to update the spec.
+- Add a "Dev Status" column to the audit report table. Values: CURRENT (matches), DRIFT (mismatch), N/A (no Figma Status metadata, no MCP, or no Figma reference).
+
+### 2.11 Version ID Drift Detection
+When `brief.json` contains a `figma_version_id` field, compare against the current Figma file version via MCP.
+
+- Different version IDs flag the screen as STALE (more precise than timestamp comparison).
+- This supplements timestamp-based staleness detection and takes precedence when both are available.
+- When Figma MCP is not available, version ID comparison is skipped (reported as N/A).
 
 ### 2.9 Exit Codes
 - If any CRITICAL issues are found (missing local references), the audit reports "CRITICAL issues found -- resolve before release."
@@ -152,6 +167,21 @@ The `/pl-design-audit` command provides the PM and Architect with a comprehensiv
     When /pl-design-audit runs
     Then a DESIGN_CONFLICT warning is flagged
     And the warning identifies the specific token name mismatch
+
+#### Scenario: Figma Dev Status Drift Detected
+
+    Given a feature spec has "> Figma Status: Design"
+    And Figma MCP shows the frame is now "Ready for Dev"
+    When /pl-design-audit runs
+    Then the Dev Status column shows DRIFT
+    And an INFO item suggests updating the spec
+
+#### Scenario: Version ID Staleness Detected
+
+    Given brief.json has figma_version_id "v123"
+    And Figma MCP reports current version "v456"
+    When /pl-design-audit runs
+    Then the screen is flagged as STALE via version comparison
 
 #### Scenario: Clean Audit Report
 

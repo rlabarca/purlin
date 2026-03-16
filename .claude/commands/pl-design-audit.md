@@ -52,13 +52,25 @@ Audit all design artifacts and visual specifications across the project for inte
    - Flag discrepancies as DESIGN_CONFLICT warnings (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
    - Also compare Figma design variable resolved values against `brief.json` token values if present.
 
+6.1. **Figma dev status consistency (MCP):** For features with `> Figma Status:` metadata and a Figma reference when MCP is available:
+   - Read the current dev status via MCP.
+   - Compare against the spec's `> Figma Status:` value.
+   - Discrepancies flagged as INFO with suggestion to update the spec.
+   - Report in the "Dev Status" column: CURRENT (matches), DRIFT (mismatch), N/A (no metadata/MCP/reference).
+
+6.2. **Version ID drift (MCP):** For screens where `brief.json` contains `figma_version_id`:
+   - Read the current Figma file version via MCP.
+   - Compare against `figma_version_id` in `brief.json`.
+   - Different versions flag the screen as STALE (more precise than timestamp).
+   - This supplements timestamp-based detection and takes precedence when both are available.
+
 7. **Report:** Print a summary table. The Annotations column is optional — show it when Figma MCP is available, omit otherwise. Annotation count is informational metadata only (not a pass/fail check).
    ```
-   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Annotations
-   ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------
-   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN           | N/A
-   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A
-   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | 3
+   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Dev Status | Annotations
+   ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------|------------
+   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN           | N/A        | N/A
+   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A        | N/A
+   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | DRIFT      | 3
    ```
 
 8. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.

@@ -82,6 +82,28 @@ During ingestion, the PM extracts a compact design brief from Figma and stores i
 *   The Builder reads `brief.json` as the primary design data source, falling back to Figma MCP only when the brief is missing, ambiguous, or incomplete.
 *   QA reads Figma MCP directly during verification for the freshest data. `brief.json` is a QA fallback if MCP is unavailable.
 
+### Code Connect Enhancement (Progressive)
+
+Code Connect is an optional enhancement available when Figma Org/Enterprise plans have published Code Connect mappings for their component libraries. When present, Figma MCP responses include component code references alongside existing design data. These references are captured in `brief.json` during ingestion under a `code_connect` key.
+
+*   Code Connect data does NOT replace the Token Map -- both coexist. Token Map bridges design-system tokens (colors, spacing, typography). Code Connect bridges components (which source component to use and how to configure its props).
+*   Code Connect mapping files (`.figma.tsx`, `.figma.swift`, etc.) are Builder-owned implementation artifacts, not spec artifacts.
+*   Publishing Code Connect to Figma is a CI/CD concern outside Purlin's scope. We capture whatever data the MCP returns; we do not manage the publishing pipeline.
+*   The `code_connect` key in `brief.json` is OPTIONAL -- present only when Code Connect data exists in the MCP response.
+
+**Schema addition to `brief.json`:**
+```json
+{
+  "code_connect": {
+    "<ComponentName>": {
+      "source_file": "src/components/Card.tsx",
+      "props": { "variant": "outlined", "size": "large" },
+      "figma_node_id": "<node-id>"
+    }
+  }
+}
+```
+
 ### Processing Mandate
 
 *   Every referenced artifact MUST have a corresponding `- **Token Map:**` in the Visual Specification section. The binary file (or URL) is the audit reference; the Token Map and checklists are the working documents that agents use.
@@ -123,12 +145,30 @@ Format:
 *   The processing step maps observed visuals to whatever token system the anchor declares. References to tokens in descriptions use the anchor's own naming (e.g., `var(--accent)`, `text-primary`, `Color.accentColor`).
 *   The `/pl-design-ingest` command dynamically reads whatever `design_*.md` anchors exist in the consumer project at runtime -- it does not depend on any specific anchor.
 
+### Figma Dev Mode Status Tracking
+
+Feature specs may include `> Figma Status: <status>` metadata in the blockquote metadata section. This tracks the Figma design's dev mode status at the time of last ingestion.
+
+*   **Values:** `Design`, `Ready for Dev`, `Completed` (or omitted entirely for features with no Figma integration).
+*   **Set by:** PM during `/pl-design-ingest` (read from Figma Dev Mode via MCP) or manually when MCP is unavailable.
+*   **Advisory gate:** The Critic generates a LOW-priority PM action item when a feature is in Builder TODO state with `Figma Status: Design`. This is advisory, not blocking -- the human decides whether to wait for design completion.
+*   **Point-in-time snapshot:** The status is not live-synced. The PM updates it during re-ingestion. This is consistent with "spec is the source of truth."
+
 ### Staleness Detection
 
 *   For local artifacts, the Critic compares the file's modification time (`mtime`) against the `- **Processed:**` date.
 *   If the artifact file is newer than the processed date, the Token Map is flagged as STALE.
 *   Stale Token Maps produce LOW-priority PM action items prompting re-processing via `/pl-design-ingest` with the re-process flag.
 *   For `brief.json`, the Critic compares `figma_last_modified` against the spec's `- **Processed:**` date. If the brief is newer than the spec, the spec is flagged as STALE.
+*   **Version ID comparison:** When `brief.json` contains a `figma_version_id` field, staleness detection prefers version ID comparison over timestamp comparison. Different version IDs indicate design changes more precisely than timestamps, eliminating timezone ambiguity and rapid-edit false positives. When both `figma_version_id` and `figma_last_modified` are present, version ID takes precedence.
+
+### Figma Dev Resources (Bidirectional Linking)
+
+The PM may optionally attach feature spec URLs to Figma nodes via the Dev Resources API during `/pl-design-ingest`. This creates bidirectional traceability visible to designers in Figma Dev Mode -- designers can navigate from a component directly to the spec that governs it.
+
+*   This is an opt-in step. The PM offers linking after ingestion; the user confirms before any write to Figma.
+*   Consistent with the existing Figma Write Policy (PM-only, human-approved).
+*   Does not affect the ingestion pipeline if declined or unavailable.
 
 ### Figma Integration Tiers
 
