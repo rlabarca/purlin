@@ -1503,13 +1503,20 @@ def generate_action_items(feature_result, cdd_status=None):
         if entry['type'] == 'SPEC_DISPUTE' and entry['status'] == 'OPEN':
             # Route SPEC_DISPUTEs to PM when: owner is PM, or the
             # dispute references a Visual Specification screen.
+            # Action Required override takes precedence over heuristics.
             _dispute_title = entry.get('title', '')
-            _routes_to_pm = (
-                owner == 'PM'
-                or _dispute_title.startswith('Visual:')
-                or 'visual specification' in _dispute_title.lower()
-                or any(sn in _dispute_title for sn in visual_screen_names)
-            )
+            action_req = (entry.get('action_required') or '').strip().lower()
+            if action_req == 'pm':
+                _routes_to_pm = True
+            elif action_req == 'architect':
+                _routes_to_pm = False
+            else:
+                _routes_to_pm = (
+                    owner == 'PM'
+                    or _dispute_title.startswith('Visual:')
+                    or 'visual specification' in _dispute_title.lower()
+                    or any(sn in _dispute_title for sn in visual_screen_names)
+                )
             _dispute_item = {
                 'priority': 'HIGH',
                 'category': 'user_testing',

@@ -911,6 +911,163 @@ Reqs.
 
 
 # ===================================================================
+# Scenario: SPEC_DISPUTE with Action Required PM on Architect-owned
+#           feature routes to PM
+# ===================================================================
+
+class TestSpecDisputeActionRequiredPMOverride(unittest.TestCase):
+    """SPEC_DISPUTE on Architect-owned feature with Action Required: PM
+    routes to PM."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: Arch Owned Triaged
+
+> Label: "Arch Triaged"
+> Owner: Architect
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(
+                self.features_dir, 'arch_triaged.md'), 'w') as f:
+            f.write(feature_content)
+        sidecar = """\
+### [SPEC_DISPUTE] Colors don't match design intent (Discovered: 2026-03-01)
+- **Status:** OPEN
+- **Action Required:** PM
+"""
+        with open(os.path.join(
+                self.features_dir, 'arch_triaged.discoveries.md'), 'w') as f:
+            f.write(sidecar)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_action_required_pm_routes_to_pm(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/arch_triaged.md'
+            result['_owner'] = 'Architect'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+            pm_disputes = [i for i in items['pm']
+                           if 'disputed scenario' in i['description'].lower()]
+            arch_disputes = [i for i in items['architect']
+                             if 'disputed scenario' in i['description'].lower()]
+            self.assertTrue(len(pm_disputes) > 0,
+                            'Action Required: PM should route to PM')
+            self.assertEqual(len(arch_disputes), 0,
+                             'Action Required: PM should NOT route to Architect')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: SPEC_DISPUTE with Action Required Architect on PM-owned
+#           feature stays with Architect
+# ===================================================================
+
+class TestSpecDisputeActionRequiredArchitectOverride(unittest.TestCase):
+    """SPEC_DISPUTE on PM-owned feature with Action Required: Architect
+    stays with Architect."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: PM Owned Arch Override
+
+> Label: "PM Arch Override"
+> Owner: PM
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Some Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+"""
+        with open(os.path.join(
+                self.features_dir, 'pm_arch_override.md'), 'w') as f:
+            f.write(feature_content)
+        sidecar = """\
+### [SPEC_DISPUTE] Behavioral requirement is wrong (Discovered: 2026-03-01)
+- **Status:** OPEN
+- **Action Required:** Architect
+"""
+        with open(os.path.join(
+                self.features_dir,
+                'pm_arch_override.discoveries.md'), 'w') as f:
+            f.write(sidecar)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_action_required_architect_stays_with_architect(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/pm_arch_override.md'
+            result['_owner'] = 'PM'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+            arch_disputes = [i for i in items['architect']
+                             if 'disputed scenario' in i['description'].lower()]
+            pm_disputes = [i for i in items['pm']
+                           if 'disputed scenario' in i['description'].lower()]
+            self.assertTrue(len(arch_disputes) > 0,
+                            'Action Required: Architect should route to Architect')
+            self.assertEqual(len(pm_disputes), 0,
+                             'Action Required: Architect should NOT route to PM')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
 # Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED
 # ===================================================================
 
