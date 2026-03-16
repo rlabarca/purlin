@@ -25,3 +25,21 @@ The automated test suite lives at `tests/cdd_agent_configuration/`. If a prior i
 
 BUG — Live agent turn counters not shown in Dashboard agent config rows; fixed by implementing GET /context-guard/counters endpoint and rendering span UI with 5-second auto-refresh.
 DISCOVERY — Concurrent threshold changes caused value revert due to pending-write lock gap; lock extended to block any response (not just auto-refresh) from overwriting controls with pending edits.
+
+### Audit Finding -- 2026-03-16
+
+[DISCOVERY] Visual separator between Workspace and Agents sections needs CSS margin verification
+
+**Source:** /pl-spec-code-audit --deep
+**Severity:** MEDIUM
+**Details:** The visual spec requires a visible vertical gap between sections. Verify that CSS margin between the Workspace container bottom and the Agents section heading matches the gap between Active/Complete sections and Workspace sections.
+**Suggested fix:** Add or verify `margin-top` on the Agents section container matching existing section gaps.
+
+### Audit Finding -- 2026-03-16
+
+[DISCOVERY] Per-request pending-write lock isolation has no test coverage
+
+**Source:** /pl-spec-code-audit --deep
+**Severity:** MEDIUM
+**Details:** Implementation notes describe per-request lock association as warranted, but no test covers concurrent rapid edits being isolated from stale responses.
+**Suggested fix:** Add test `test_pending_lock_per_request_isolation()` or escalate as [INFEASIBLE] if concurrency testing is impractical in the current test harness.

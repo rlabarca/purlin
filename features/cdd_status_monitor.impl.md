@@ -69,3 +69,12 @@
 *   **[DISCOVERY]** (acknowledged) Lifecycle Integration test Stage 4 (COMPLETE) expects qa=CLEAN, but gets qa=TODO. Root cause: the test's `[Complete]` commit lacks the `[Verified]` tag required by policy_critic.md Section 2.16 for features with manual scenarios. The test was written before Section 2.16 was added. The temp feature includes a Manual Scenarios subsection, triggering the QA Verification Integrity check. Fix options: (1) add `[Verified]` to the test's Complete commit, or (2) remove the manual scenario subsection from the temp feature so it qualifies as all-automated. (Severity: HIGH)
 *   **JS Syntax Error from Python f-string \\n escaping (2026-03-15):** BUG found during web-verify — `extractMetadata()` JS function used `md.split('\n')` inside a Python f-string. Python interpreted `\n` as a literal newline character, embedding it in the generated JS output and splitting the string literal across two lines. This created an unterminated string that broke ALL JavaScript on the page (every function became undefined — openModal, closeModal, toggleTheme, etc.). Fix: escaped as `'\\n'` so Python renders the two-character sequence `\n` in the output, which JS correctly interprets as a newline character in the string.
 *   **extractMetadata returning 0 tags due to heading before blockquotes (2026-03-15):** BUG found during web-verify — feature files start with `# Feature: Name` heading before the `> Key: Value` metadata blockquotes. The `extractMetadata()` function set `inMetaBlock = false` on the first non-blank, non-metadata line (the heading), so metadata extraction never happened. Fix: added a `foundFirstMeta` boolean — before finding any `>` metadata line, non-blank lines pass through as cleaned content without ending the scan. Only after finding the first metadata line does a subsequent non-metadata line end the block.
+
+### Audit Finding -- 2026-03-16
+
+[DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN
+
+**Source:** /pl-spec-code-audit --deep
+**Severity:** HIGH
+**Details:** serve.py:1956 `color:#FFF`, :3656 `color:#666`, :3704 `color:#FF4500`, :3748 `color:#fff`. All bypass the `var(--purlin-*)` token system.
+**Suggested fix:** Replace with `var(--purlin-surface)`, `var(--purlin-muted)`, `var(--purlin-status-error)`, `var(--purlin-surface)` respectively.

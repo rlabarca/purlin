@@ -23,3 +23,12 @@
 *   **Search Dim Implementation (2026-03-04):** DISCOVERY — Search functional behavior and visual treatment were unspecified; Builder added case-insensitive substring match against node label and filename, with non-matching nodes dimmed (opacity 0.15/0.08 for nodes/edges) rather than hidden — preserving spatial context while making matches stand out.
 *   **Anchor Node Border Detection (2026-03-04):** BUG — Green border regex incorrectly matched `context_guard.md` and `spec_code_audit_role_clarity.md` as anchor nodes and missed `design_*`/`policy_*` prefixes; fixed by correcting regex to `/^(arch_|design_|policy_)/` and adding `isAnchor` boolean as a Cytoscape node data property.
 *   **Dynamic Category Label Sizing (2026-02-25):** Category group labels scale inversely with zoom: `LABEL_BASE_FONT / zoom` clamped to [12, 80]px in model coordinates. At zoom ~0.15 (typical fit-all), labels render at ~12 screen pixels; at zoom ≥1.0, labels stay at 12px model coords. Padding scales proportionally: `max(24, fontSize * 1.2)` to prevent label overlap with child nodes at low zoom. `text-margin-y` scales as `-(fontSize * 0.67)`. Updates are triggered via: (1) Cytoscape `zoom` event → rAF-debounced `scheduleUpdateCategoryLabels()`, (2) direct `updateCategoryLabelSizes()` calls after `runPackedLayout()`, after `cy.fit()`, and after recenter. State variable `labelSizeRaf` tracks the pending animation frame to prevent redundant updates.
+
+### Audit Finding -- 2026-03-16
+
+[DISCOVERY] Hardcoded hex colors in graph.py violate design_visual_standards Section 2.7 FORBIDDEN
+
+**Source:** /pl-spec-code-audit --deep
+**Severity:** HIGH
+**Details:** graph.py lines 259-274 contain multiple hex color literals for node/edge rendering. These bypass the `var(--purlin-*)` token system.
+**Suggested fix:** Replace all hex literals with appropriate `var(--purlin-*)` tokens or CSS custom properties. Node colors should map to status tokens (--purlin-status-good, --purlin-status-todo, etc.).

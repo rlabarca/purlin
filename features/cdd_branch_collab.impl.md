@@ -49,3 +49,12 @@ BUG -- Active branch panel rendered controls across three rows instead of two; f
 INTENT_DRIFT -- Sync state annotation was ambiguous about perspective (e.g., "1 ahead"); fixed to use remote-perspective framing ("Remote is N behind/ahead of local") per spec Section 2.3.
 BUG -- Leave button appeared visually near Check Remote due to insufficient vertical margin between Row 1 and Row 2; fixed by increasing gap from 6px to 14px.
 INTENT_DRIFT -- Branch dropdown and sync badge lacked left-edge alignment; spec updated to mandate horizontal alignment of Row 1 and Row 2 left edges; verified passing after flex container and margin fix.
+
+### Audit Finding -- 2026-03-16
+
+[DISCOVERY] Undefined CSS token --purlin-fg used in branch collab UI
+
+**Source:** /pl-spec-code-audit --deep
+**Severity:** HIGH
+**Details:** The branch collab section of serve.py references `--purlin-fg` which is not defined in design_visual_standards.md Section 2.2. The spec also references it.
+**Suggested fix:** Replace `--purlin-fg` with the appropriate defined token: `--purlin-text` for body text or `--purlin-surface` for high-contrast text on colored backgrounds.
