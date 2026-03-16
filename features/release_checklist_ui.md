@@ -6,6 +6,7 @@
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/test_fixture_repo.md
+> Prerequisite: features/cdd_modal_base.md
 > Web Testable: http://localhost:9086
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd
@@ -60,9 +61,9 @@ Behavior when a checkbox is toggled:
 
 ### 2.6 Step Detail Modal
 
-Triggered by clicking a step's friendly name. Uses the same modal overlay and container pattern as the Feature Detail Modal used elsewhere in the CDD Dashboard.
+Triggered by clicking a step's friendly name. Inherits shared modal infrastructure (width, font size control, close behavior, scrollable body, theme integration) from `cdd_modal_base.md`.
 
-**Dismissal:** The modal is dismissed by clicking the close button (X), clicking outside the modal container, or pressing Escape.
+**Dismissal:** Inherited from `cdd_modal_base.md` (X button, Escape key, click outside modal).
 
 **Modal structure:**
 *   **Header row:** Step friendly name (Montserrat or Inter Bold, section-header scale). A `GLOBAL` or `LOCAL` source badge is displayed adjacent to the name.
@@ -218,6 +219,12 @@ And no row flickers or disappears and reappears during the update,
 And the scroll position of the page does not change,
 And rows whose content did not change appear visually undisturbed.
 
+#### Scenario: Step Detail Modal Width and Font Slider (auto-web)
+    Given the release checklist is expanded showing at least 1 step
+    When the User clicks a step's friendly name to open the step detail modal
+    Then the modal width is 70% of the viewport width
+    And a font size adjustment control (minus, slider, plus) is visible in the modal header
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
@@ -249,3 +256,5 @@ None.
 - [ ] CODE section body is rendered in a monospace code block with `--purlin-surface` background
 - [ ] Modal is scrollable when content exceeds viewport height
 - [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
+- [ ] Step detail modal width is 70% of viewport width (inherited from cdd_modal_base.md)
+- [ ] Font size control (minus, slider, plus) visible in step detail modal header

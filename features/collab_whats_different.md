@@ -4,6 +4,7 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_branch_collab.md
 > Prerequisite: features/design_visual_standards.md
+> Prerequisite: features/cdd_modal_base.md
 > Web Testable: http://localhost:9086
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd
@@ -139,8 +140,8 @@ All matched files are classified as `purlin_config`, which rolls up to the `[N P
   - Implementation may be CSS-only or minimal JS (builder's choice).
   - Text color: `var(--purlin-muted)`.
   - The same animated ellipsis pattern is reused for the "Summarize Impact" button (Section 2.14).
-- Close behavior: X button, Escape key, or click outside the modal.
-- Follows existing CDD modal patterns: 700px max-width, 80vh max-height, scrollable body.
+- Close behavior: inherited from `cdd_modal_base.md` (X button, Escape key, click outside modal).
+- Inherits shared modal infrastructure from `cdd_modal_base.md`: 70vw width, 80vh max-height, scrollable body, font size control, title sizing, theme integration.
 - Modal body uses `.modal-body` markdown CSS for rendered content.
 
 ### 2.9 Dashboard UI: Change Tags Bar
@@ -590,6 +591,24 @@ The deep analysis is derived from the same extraction data as the standard diges
     Then the What's Different modal template contains an X close button element
     And the modal container has the standard CDD modal overlay pattern
 
+#### Scenario: What's Different Modal Width (auto-web)
+    Given an active branch is set with sync state not SAME
+    And a cached digest exists
+    When the User clicks the "What's Different?" button
+    Then the modal width is 70% of the viewport width
+
+#### Scenario: What's Different Modal Font Slider (auto-web)
+    Given the What's Different modal is open
+    When the User adjusts the font size slider
+    Then all digest text (headings, paragraphs, code, tags, impact summary) scales together
+    And text wraps correctly without horizontal overflow
+
+#### Scenario: What's Different Modal Font Persists (auto-web)
+    Given the User has adjusted the font size slider in the What's Different modal
+    When the User closes the modal
+    And the User reopens the What's Different modal
+    Then the font size slider position is retained at the previously set value
+
 ### Manual Scenarios (Human Verification Required)
 
 None
@@ -617,7 +636,7 @@ None
 - **Reference:** N/A
 - **Processed:** N/A
 - **Description:** The modal follows the existing CDD modal pattern (Feature Detail Modal, Kill modal, Delete Confirmation Modal). Max-width 700px, max-height 80vh, scrollable body. The modal header contains the title "What's Different?" and the generation date in `var(--purlin-muted)`. Below the title and date, a change tags bar displays pill-shaped tag badges in a flex-wrap row. Each tag uses `var(--purlin-tag-fill)` background and `var(--purlin-tag-outline)` border with domain-specific text colors. The modal body renders the markdown digest with `.modal-body` CSS. Section headers for Spec Changes, Code Changes, and Purlin Changes use domain-specific colors.
-- [ ] Modal max-width 700px, max-height 80vh, scrollable body
+- [ ] Modal width 70vw (inherited from cdd_modal_base.md), max-height 80vh, scrollable body
 - [ ] Modal overlay and container match existing CDD modal pattern
 - [ ] Title "What's Different?" in modal header
 - [ ] "Generated:" label bold (font-weight 700)
@@ -656,7 +675,7 @@ None
 - [ ] Each action item is a single line: `[CATEGORY] feature — description`
 - [ ] Modal body markdown rendered with proper formatting (lists, headers, code blocks)
 - [ ] Close via X button, Escape, or click outside modal
-- [ ] Modal typography: 700px max-width, 80vh max-height, scrollable body, generation date prominently at top
+- [ ] Modal typography: 70vw width (inherited from cdd_modal_base.md), 80vh max-height, scrollable body, generation date prominently at top
 - [ ] "Generating" animated ellipsis (`.` / `..` / `...` cycling at ~500ms) in `var(--purlin-muted)` during generation
 - [ ] "Summarizing" animated ellipsis (same pattern) during deep analysis generation
 - [ ] Regenerate click triggers animated "Generating" ellipsis state, then displays fresh content
@@ -668,3 +687,6 @@ None
 - [ ] Deep Analysis: "Architect Actions" header in `var(--purlin-status-warning)`, `[INFEASIBLE]` in `var(--purlin-status-error)`, `[INTENT_DRIFT]` in `var(--purlin-status-warning)`
 - [ ] Deep Analysis: "Builder Actions" header in `var(--purlin-status-good)`, `[BUG]` in `var(--purlin-status-error)`
 - [ ] Modal close via Escape key and clicking outside modal (JS behavior)
+- [ ] Font size control (minus, slider, plus) visible in modal header (inherited from cdd_modal_base.md)
+- [ ] Font size slider scales all digest text together (headings, paragraphs, code, tags, impact summary)
+- [ ] Font size persists when closing and reopening the What's Different modal

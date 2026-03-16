@@ -7,6 +7,7 @@
 > Prerequisite: features/impl_notes_companion.md
 > Prerequisite: features/test_fixture_repo.md
 > Prerequisite: features/critic_role_status.md
+> Prerequisite: features/cdd_modal_base.md
 > Web Testable: http://localhost:9086
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd
@@ -82,12 +83,19 @@ The Status view is the default view (`/#status`).
 *   **Placeholder:** Uses `var(--purlin-dim)` color token for readable contrast in both themes.
 
 #### 2.2.4 Feature Detail Modal
+
+Inherits shared modal infrastructure (width, font size control, close behavior, scrollable body, theme integration) from `cdd_modal_base.md`.
+
 *   **Trigger:** Clicking a feature name in the status table opens the modal.
-*   **Content:** Renders the feature file's markdown content in a scrollable container.
+*   **Content:** Renders the feature file's markdown content.
 *   **Tabbed View:** When a companion `.impl.md` file exists for the feature, the modal shows two tabs: "Specification" and "Implementation Notes". Tab content is lazy-loaded and cached for instant switching.
 *   **Single Tab:** When no companion file exists, the modal shows content without tabs (same as current behavior).
-*   **Close Methods:** The modal MUST close via: (1) X button in the top-right corner, (2) clicking outside the modal, (3) pressing Escape.
 *   **API Endpoints:** Feature content is served via `/feature?file=<path>` and companion content via `/impl-notes?file=<path>` (Section 2.4).
+*   **Metadata Tag Display:** Metadata blockquotes (`> Key: Value` lines at the top of feature files -- Label, Category, Prerequisite, Web Testable, Web Port File, Web Start, and any other `> Key: Value` patterns) MUST be extracted from the markdown and displayed in a dedicated metadata area between the header/tabs and the body content.
+    *   Each tag on its own row.
+    *   Tag names (the key portion) rendered in a highlight color distinct from the value text.
+    *   Multiple tags of the same type (e.g., multiple Prerequisites) each appear on separate rows.
+    *   Extracted metadata MUST NOT appear as blockquotes in the rendered markdown body.
 *   **Tombstone Modal Variant:** When the user clicks a tombstone entry (Section 2.2.5), the modal opens in a visually distinct deletion state. See Section 2.2.5 for full details.
 
 #### 2.2.5 Tombstone Feature Display
@@ -584,6 +592,54 @@ These scenarios are validated by the Builder's automated test suite.
     And a "READY FOR DELETION" banner is prominently displayed at the top of the content area
     And no tabs are shown in the tombstone modal
 
+#### Scenario: Metadata Tags Displayed Separately (auto-web)
+    Given the User is viewing the Status view
+    When the User clicks a feature name that has Label, Category, and Prerequisite metadata
+    Then the feature detail modal opens
+    And metadata tags are displayed in a dedicated area between the header/tabs and the body
+    And each tag name is rendered in a highlight color distinct from the value text
+    And the metadata blockquotes do not appear as blockquotes in the rendered markdown body
+
+#### Scenario: Multiple Prerequisites on Separate Rows (auto-web)
+    Given the User is viewing the Status view
+    And a feature has 3 Prerequisite metadata lines
+    When the User clicks that feature name
+    Then the feature detail modal shows 3 separate rows for the Prerequisite tags
+
+#### Scenario: Modal Opens with Correct Width (auto-web)
+    Given the User is viewing the Status view
+    When the User clicks a feature name
+    Then the feature detail modal width is 70% of the viewport width
+
+#### Scenario: Font Size Slider Changes Text Size (auto-web)
+    Given the User has opened a feature detail modal
+    When the User records the baseline text size
+    And the User moves the font size slider to the maximum position
+    Then all text elements in the modal body have grown proportionally
+
+#### Scenario: Metadata Tags Rendered Correctly (auto-web)
+    Given the User is viewing the Status view
+    And a feature has Label, Category, and 2 or more Prerequisites
+    When the User clicks that feature name
+    Then the modal shows a dedicated metadata area with highlighted tag names
+    And no duplicate metadata blockquotes appear in the body
+
+#### Scenario: Text Wraps at Max Font Size (auto-web)
+    Given the User has opened a feature detail modal
+    When the User moves the font size slider to the maximum position
+    Then no horizontal scrollbar appears in the modal body
+
+#### Scenario: Font Size Persists Across Feature Modals (auto-web)
+    Given the User has opened a feature detail modal and adjusted the font size slider
+    When the User closes the modal
+    And the User opens a different feature detail modal
+    Then the font size slider position is retained at the previously set value
+
+#### Scenario: Title Size Matches Spec (auto-web)
+    Given the User has opened a feature detail modal
+    When the modal is displayed
+    Then the modal title computed font size is 8 points larger than the default body font size
+
 #### Scenario: Server Start/Stop Lifecycle (auto-web)
     Given the CDD server is not running
     When the User runs tools/cdd/start.sh
@@ -661,3 +717,10 @@ None.
 - [ ] Tombstone deletion modal title text is rendered in `--purlin-status-error`
 - [ ] A "READY FOR DELETION" banner appears prominently at the top of the tombstone modal content area
 - [ ] Tombstone deletion modal shows no tabs (single content view only)
+- [ ] Feature detail modal width is 70% of viewport width (inherited from cdd_modal_base.md)
+- [ ] Font size control (minus, slider, plus) visible in feature detail modal header
+- [ ] Metadata tags in dedicated area above markdown body (between header/tabs and content)
+- [ ] Each metadata tag on its own row with tag name in highlight color
+- [ ] Multiple Prerequisites displayed on separate rows
+- [ ] No duplicate metadata blockquotes in rendered markdown body
+- [ ] Modal title is 8pts larger than body text default

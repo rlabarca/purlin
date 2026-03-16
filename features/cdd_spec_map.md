@@ -4,6 +4,7 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
+> Prerequisite: features/cdd_modal_base.md
 > Web Testable: http://localhost:9086
 > Web Port File: .purlin/runtime/cdd.port
 > Web Start: /pl-cdd
@@ -13,7 +14,7 @@
 ## 1. Overview
 The Spec Map view within the CDD Dashboard renders an interactive dependency graph of all feature files. It provides visual exploration of the project's feature relationships, category groupings, and prerequisite chains. This feature absorbs all visualization and generation requirements from the retired `software_map_generator.md`.
 
-The Spec Map view is activated via the view mode toggle in the dashboard shell (defined in `cdd_status_monitor.md` Section 2.2.1). The dashboard shell owns the unified header, search box, theme system, and feature detail modal; this feature owns the graph rendering, generation, and reactive update logic.
+The Spec Map view is activated via the view mode toggle in the dashboard shell (defined in `cdd_status_monitor.md` Section 2.2.1). The dashboard shell owns the unified header, search box, theme system, and feature detail modal; this feature owns the graph rendering, generation, and reactive update logic. The feature detail modal opened from graph node clicks inherits shared modal infrastructure (width, font size control, close behavior, theme integration) from `cdd_modal_base.md`.
 
 ## 2. Requirements
 
@@ -169,6 +170,9 @@ These scenarios are validated by the Builder's automated test suite.
     Given the User is viewing the Spec Map view
     When the User clicks a feature node
     Then the shared feature detail modal opens showing the rendered markdown content
+    And the modal occupies 70% of the viewport width
+    And metadata tags are displayed in a dedicated area above the markdown body
+    And a font size adjustment control is visible in the modal header
     And the modal has an X button in the top-right corner
     When the User clicks the X button or clicks outside the modal or presses Escape
     Then the modal closes
@@ -302,6 +306,38 @@ These scenarios are validated by the Builder's automated test suite.
     And no edge selection, tooltip, or modal is triggered
     And edge hover highlighting during node hover still functions normally
 
+#### Scenario: Font Size Persists Across Node Clicks (auto-web)
+    Given the User is viewing the Spec Map view
+    And the User clicks a feature node to open the modal
+    And the User adjusts the font size slider
+    When the User closes the modal
+    And the User clicks a different feature node
+    Then the font size slider retains the previously set position
+
+#### Scenario: Metadata Extraction from Graph Node (auto-web)
+    Given the User is viewing the Spec Map view
+    And a feature node has Label, Category, and multiple Prerequisites
+    When the User clicks that feature node
+    Then each metadata tag is displayed on its own row in the dedicated metadata area
+    And tag names are highlighted
+    And no metadata blockquotes appear in the rendered markdown body
+
+#### Scenario: Spec Map Modal Width (auto-web)
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node
+    Then the modal width is 70% of the viewport width
+
+#### Scenario: Spec Map Modal Metadata (auto-web)
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node
+    Then the metadata area displays tag names in a highlight color distinct from value text
+
+#### Scenario: Spec Map Modal Font Slider (auto-web)
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node and opens the modal
+    And the User adjusts the font size slider
+    Then all text elements in the modal body scale together
+
 ### Manual Scenarios (Human Verification Required)
 
 None.
@@ -343,4 +379,8 @@ None.
 - [ ] Double-clicking a category box zooms the view to maximize that category within the viewport
 - [ ] Double-clicking the canvas background recenters and zoom-to-fits (same as Recenter Graph button)
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
+- [ ] Modal from graph node click occupies 70% viewport width (inherited from cdd_modal_base.md)
+- [ ] Metadata tags displayed with highlighted names in dedicated area above markdown body
+- [ ] Font size control works identically to Status view modal
+- [ ] Modal renders correctly in both Blueprint and Architect themes with font size control
 
