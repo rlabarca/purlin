@@ -31,3 +31,7 @@ Plan validation against the dependency graph happens at two points: (1) at creat
 ## Removed: --max-budget-usd Pass-Through
 
 [DISCOVERY] (acknowledged) The `--max-budget-usd` pass-through flag was removed from the spec. Continuous mode runs until completion -- the user can Ctrl+C to stop. Budget exhaustion mid-phase creates a confusing failure mode where the phase stops partway through work.
+
+## Output Streaming with tee and Exit Codes
+
+When using `cmd | tee file`, `$?` reflects tee's exit code, not the Builder's. In continuous mode this is safe because the evaluator (not exit code) drives all orchestration decisions. For additional robustness, `set -o pipefail` or `${PIPESTATUS[0]}` can be used to capture the Builder's actual exit code through the pipe if needed.

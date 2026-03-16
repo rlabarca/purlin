@@ -133,6 +133,7 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 - **Merge conflict escalation.** If merging parallel worktree branches produces a conflict, the loop stops immediately and directs the user to resolve manually.
 - **Evaluator fallback.** If the evaluator itself fails (Haiku unavailable), the launcher falls back to checking whether the delivery plan file changed since the last phase.
 - **Auto-bootstrap with approval.** If no delivery plan exists, the launcher creates one via a bootstrap session, presents it for user approval, then enters the continuous loop. The bootstrap favors conservative phase sizing to keep each session within context budget.
+- **Output visibility.** Sequential phases and bootstrap stream Builder output to the terminal in real time. Parallel phases show a periodic heartbeat with elapsed time and log growth. Full log files are always written for the evaluator.
 
 ### Logging
 

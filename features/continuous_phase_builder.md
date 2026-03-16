@@ -39,13 +39,14 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - Each phase invocation uses a unique session ID: `continuous-phase-<phase_number>-<uuid>`.
 - The Builder is invoked with `claude -p --session-id <session_id>` plus all resolved config flags (model, effort, permissions) and the assembled system prompt.
 - The initial message includes phase-specific context: `"Begin Builder session. CONTINUOUS MODE -- proceed immediately with work plan, do not wait for approval."`.
+- Builder output is streamed to the terminal in real time (see Section 2.16).
 
 ### 2.4 Parallel Phase Execution
 
 - For execution groups with multiple phases (`parallel: true`), launch each phase's Builder in a separate git worktree.
 - Each parallel Builder is invoked with `claude -p -w <worktree-name>` where the worktree name is `continuous-phase-<phase_number>`.
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
-- The launcher waits for all parallel Builders in the group to complete before proceeding.
+- The launcher waits for all parallel Builders in the group to complete before proceeding. A background heartbeat process provides progress visibility (see Section 2.16).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
@@ -120,6 +121,7 @@ possible to avoid conflicts.
 - For parallel phases, log files include the worktree context: `.purlin/runtime/continuous_build_phase_<N>_worktree.log`.
 - Evaluator decisions are logged to stderr with timestamps.
 - At exit, the launcher prints a summary: phases completed, parallel groups used, any failures, retries consumed, total wall-clock duration.
+- Log files are always written identically regardless of whether output is also streamed to the terminal (see Section 2.16). The evaluator reads from log files, not terminal output.
 
 ### 2.10 Error Handling
 
@@ -188,6 +190,7 @@ possible to avoid conflicts.
 - **Plan validation:** After bootstrap creates the plan and before the approval prompt, the launcher runs the phase analyzer as a dry-run validation. If the analyzer detects dependency cycles or structural errors, the launcher prints the error, notes that the plan has been committed for manual editing, and exits 0. The user fixes the plan and re-runs `--continuous` (which will skip bootstrap since the plan now exists).
 - **Approval checkpoint:** When bootstrap creates a valid delivery plan, the launcher prints a summary to stdout (phase count, features per phase, identified parallel groups) and prompts the user: `"Delivery plan created (N phases). Review at .purlin/cache/delivery_plan.md. Proceed? [Y/n]"`. If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
+- Bootstrap output is streamed to the terminal in real time (see Section 2.16).
 - The bootstrap session does NOT receive the continuous phase override (Section 2.7) or server permission override (Section 2.8). It receives only the bootstrap-specific override.
 - Bootstrap override text:
 
@@ -211,6 +214,16 @@ present. You MUST:
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 ```
+
+### 2.16 Builder Output Visibility
+
+- **Sequential phases:** Builder output is streamed to the terminal (stdout) in real time via `2>&1 | tee "$LOG_FILE"`. For resumed sessions (evaluator `approve` action), use `tee -a` to append to the existing log file.
+- **Bootstrap session:** Same `tee` treatment as sequential phases. Output is streamed to the terminal and written to the bootstrap log file.
+- **Parallel phases:** Output stays in log files only (no terminal streaming). Interleaved output from multiple Builders is unreadable.
+- **Parallel heartbeat:** A background process prints a status line to stderr every 15 seconds with format: `[HH:MM:SS] Parallel group: Phase 3 (running, 45K), Phase 5 (running, 23K)`. The size value reflects log file growth. When an individual phase process exits, the heartbeat reflects this (e.g., `Phase 3 (done, 67K)`).
+- **Heartbeat lifecycle:** The heartbeat process is started when a parallel group begins and terminated immediately after all parallel Builders in the group complete (before merge).
+- **Log file integrity:** Log files are always written identically regardless of whether output is also streamed to the terminal. The evaluator reads from log files, not terminal output.
+- **Non-continuous mode:** Without `--continuous`, this section has no effect. Non-continuous mode is already interactive.
 
 ### 2.11 Default Behavior Preservation
 
@@ -528,6 +541,53 @@ or "ask the user."
     Then the launcher re-runs the phase analyzer
     And Phase 3's dependency on the removed Phase 2 is no longer blocking
     And the analyzer includes Phase 3 in the execution groups
+
+#### Scenario: Sequential Phase Output Streamed to Terminal
+    Given --continuous is active
+    And the phase analyzer returns a sequential group for Phase 2
+    When the Builder runs Phase 2
+    Then the Builder's output is streamed to the terminal in real time via tee
+    And the full output is simultaneously written to .purlin/runtime/continuous_build_phase_2.log
+    And the log file content is identical to what was streamed
+
+#### Scenario: Bootstrap Output Streamed to Terminal
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    When the bootstrap session runs
+    Then the Builder's output is streamed to the terminal in real time via tee
+    And the full output is simultaneously written to .purlin/runtime/continuous_build_bootstrap.log
+
+#### Scenario: Parallel Phase Heartbeat During Execution
+    Given --continuous is active
+    And the phase analyzer returns a parallel group with Phases 3 and 5
+    When both parallel Builders are running
+    Then a background heartbeat process prints a status line to stderr every 15 seconds
+    And the status line includes elapsed time and per-phase log file size
+    And the format is "[HH:MM:SS] Parallel group: Phase 3 (running, <size>), Phase 5 (running, <size>)"
+
+#### Scenario: Parallel Phase Output Not Streamed
+    Given --continuous is active
+    And the phase analyzer returns a parallel group with Phases 3 and 5
+    When both parallel Builders are running
+    Then Builder output is written only to log files
+    And no Builder output is streamed to the terminal
+
+#### Scenario: Heartbeat Stops After Parallel Group Completes
+    Given --continuous is active
+    And a parallel group with Phases 3 and 5 is running with an active heartbeat
+    When both parallel Builders complete
+    Then the heartbeat process is terminated immediately
+    And no further heartbeat lines are printed to stderr
+    And the termination occurs before worktree merge begins
+
+#### Scenario: Resume Session Output Streamed and Appended
+    Given --continuous is active
+    And the evaluator returned "approve" for Phase 2
+    And .purlin/runtime/continuous_build_phase_2.log already contains output from the initial run
+    When the launcher resumes the session with "Approved. Proceed."
+    Then the resumed output is streamed to the terminal in real time
+    And the resumed output is appended to the existing log file via tee -a
+    And the log file contains both the initial and resumed output
 
 ### Manual Scenarios (Human Verification Required)
 None.
