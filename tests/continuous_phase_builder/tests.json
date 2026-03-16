@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 19,
+  "passed": 34,
   "failed": 0,
-  "total": 19,
+  "total": 34,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -79,6 +79,66 @@
     },
     {
       "name": "Delivery Plan Updated Centrally",
+      "status": "PASS"
+    },
+    {
+      "name": "Builder Adds QA Fix Phase Mid-Execution",
+      "status": "PASS"
+    },
+    {
+      "name": "Builder Splits Phase Into Two",
+      "status": "PASS"
+    },
+    {
+      "name": "Builder Removes Remaining Phases",
+      "status": "PASS"
+    },
+    {
+      "name": "New Phase Has Dependencies on Completed Work",
+      "status": "PASS"
+    },
+    {
+      "name": "New Phase Creates New Dependency Chain",
+      "status": "PASS"
+    },
+    {
+      "name": "Builder Removes Some Phases But Not All",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-Contiguous Phase Numbers After Amendment",
+      "status": "PASS"
+    },
+    {
+      "name": "Removed Phase Had Dependents",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Builders Both Request Plan Amendments",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Builder Amendment Requests Use Structured Files",
+      "status": "PASS"
+    },
+    {
+      "name": "Amendment Files Cleaned Up After Application",
+      "status": "PASS"
+    },
+    {
+      "name": "Sequential Builder Modifies Delivery Plan Directly",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Group Invalidated by Plan Amendment",
+      "status": "PASS"
+    },
+    {
+      "name": "Phase Count Changes Reflected in Summary",
+      "status": "PASS"
+    },
+    {
+      "name": "Re-Analysis After Retry",
       "status": "PASS"
     }
   ]

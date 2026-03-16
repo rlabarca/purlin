@@ -24,8 +24,10 @@ done
 
 # --- Prompt assembly ---
 PROMPT_FILE=$(mktemp)
+PARALLEL_PROMPT_FILE=""
 cleanup() {
     rm -f "$PROMPT_FILE"
+    [ -n "$PARALLEL_PROMPT_FILE" ] && rm -f "$PARALLEL_PROMPT_FILE"
     # Clean up any orphaned continuous-mode worktrees
     if [ "$CONTINUOUS" = "true" ]; then
         for wt_dir in "$SCRIPT_DIR"/continuous-phase-*; do
@@ -74,6 +76,23 @@ server processes as needed for local verification. You MUST clean up (stop) any
 started servers before halting at phase completion. Use dynamic ports where
 possible to avoid conflicts.
 SERVER_OVERRIDE
+
+    # Create parallel-specific prompt file with amendment instructions
+    PARALLEL_PROMPT_FILE=$(mktemp)
+    cat "$PROMPT_FILE" > "$PARALLEL_PROMPT_FILE"
+    printf "\n\n" >> "$PARALLEL_PROMPT_FILE"
+    cat >> "$PARALLEL_PROMPT_FILE" << 'PARALLEL_OVERRIDE'
+You are running in a parallel worktree. Do NOT modify the delivery plan directly.
+If you need to add, split, or remove phases, write a plan amendment request to
+.purlin/runtime/plan_amendment_phase_<N>.json instead, where <N> is your assigned
+phase number. Use this JSON format:
+{
+  "requesting_phase": <N>,
+  "amendments": [
+    {"action": "add", "phase_number": <new_N>, "label": "...", "features": ["..."], "reason": "..."}
+  ]
+}
+PARALLEL_OVERRIDE
 fi
 
 # --- Read agent config via resolver ---
@@ -130,8 +149,11 @@ PASSTHROUGH_ARGS=()
 # Tracking variables (file-based retry counts for bash 3 compat)
 PHASES_COMPLETED=0
 PARALLEL_GROUPS_USED=0
+GROUPS_EXECUTED=0
 TOTAL_RETRIES=0
 FAILURES=()
+PLAN_AMENDED=false
+INITIAL_PENDING_COUNT=0
 START_TIME=$(date +%s)
 
 # Evaluator JSON schema
@@ -176,9 +198,11 @@ ${plan_content}
 
 ## Classification Rules:
 - "Phase N of M complete" + delivery plan updated -> action: "continue"
+- Builder amended the delivery plan (new/split/modified phases) + phase complete -> action: "continue"
 - "Ready to go?" / "Ready to resume?" (approval prompt) -> action: "approve"
 - Context exhaustion / checkpoint saved mid-phase -> action: "retry"
 - Partial progress (features done but phase incomplete) -> action: "retry"
+- Builder output mentions plan amendment but current phase not complete -> action: "retry"
 - Error requiring human input (INFEASIBLE, missing fixture) -> action: "stop"
 - All phases complete / delivery plan deleted -> action: "stop" (with success reason)
 - No meaningful progress detected -> action: "stop"
@@ -256,51 +280,114 @@ with open('$DELIVERY_PLAN', 'w') as f:
 " 2>/dev/null
 }
 
+# --- Helper: apply plan amendment files after parallel merge ---
+apply_plan_amendments() {
+    local any_applied=false
+    for amend_file in "$RUNTIME_DIR"/plan_amendment_phase_*.json; do
+        [ -f "$amend_file" ] || continue
+        any_applied=true
+
+        python3 -c "
+import json, re, sys
+
+with open('$amend_file') as f:
+    request = json.load(f)
+
+with open('$DELIVERY_PLAN') as f:
+    plan_content = f.read()
+
+for amendment in request.get('amendments', []):
+    action = amendment['action']
+    if action == 'add':
+        phase_num = amendment.get('phase_number', 99)
+        label = amendment.get('label', 'Untitled')
+        features = ', '.join(amendment.get('features', []))
+        reason = amendment.get('reason', '')
+        new_section = '\n## Phase {} -- {} [PENDING]\n'.format(phase_num, label)
+        new_section += '**Features:** {}\n'.format(features)
+        new_section += '**Completion Commit:** --\n'
+        new_section += '**QA Bugs Addressed:** --\n'
+        if reason:
+            new_section += '**Amendment Reason:** {}\n'.format(reason)
+        marker = '## Plan Amendments'
+        if marker in plan_content:
+            plan_content = plan_content.replace(marker, new_section + '\n' + marker)
+        else:
+            plan_content += '\n' + new_section
+    elif action == 'remove':
+        phase_num = amendment.get('phase_number', 0)
+        plan_content = re.sub(
+            r'(## Phase {} -- .+?) \[PENDING\]'.format(phase_num),
+            r'\1 [REMOVED]',
+            plan_content
+        )
+
+with open('$DELIVERY_PLAN', 'w') as f:
+    f.write(plan_content)
+" 2>/dev/null
+
+        rm -f "$amend_file"
+    done
+
+    if [ "$any_applied" = "true" ]; then
+        PLAN_AMENDED=true
+        log_eval "Applied plan amendments from parallel builders"
+    fi
+}
+
 # --- Validate: delivery plan exists ---
 if [ ! -f "$DELIVERY_PLAN" ]; then
     echo "Error: No delivery plan found at .purlin/cache/delivery_plan.md" >&2
     exit 1
 fi
 
-# --- Run phase analyzer ---
-echo "Running phase analyzer..." >&2
-ANALYZER_JSON=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
-ANALYZER_RC=$?
-
-if [ $ANALYZER_RC -ne 0 ]; then
-    echo "Error: Phase analyzer failed (exit code $ANALYZER_RC)." >&2
-    # Re-run to capture stderr
-    PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 1>/dev/null 2>&2
-    exit 1
-fi
-
-if [ -z "$ANALYZER_JSON" ]; then
-    echo "Error: Phase analyzer produced no output." >&2
-    exit 1
-fi
-
-# Extract group count
-GROUPS_COUNT=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['groups']))")
-
-if [ "$GROUPS_COUNT" = "0" ]; then
-    echo "No pending phases to execute." >&2
-    exit 0
-fi
-
-echo "Phase analyzer found $GROUPS_COUNT execution group(s)." >&2
+# --- Track initial PENDING phase count for summary ---
+INITIAL_PENDING_COUNT=$(python3 -c "
+import re
+with open('$DELIVERY_PLAN') as f:
+    content = f.read()
+print(len(re.findall(r'## Phase \d+ -- .+? \[PENDING\]', content)))
+" 2>/dev/null || echo "0")
 
 # ================================================================
-# Main orchestration loop
+# Main orchestration loop (re-analyzes before each execution group)
 # ================================================================
 
 OUTER_BREAK=false
-GROUP_IDX=0
 
-while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
+while [ "$OUTER_BREAK" = "false" ]; do
 
-    # Extract group info via python
-    IS_PARALLEL=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['groups'][$GROUP_IDX]['parallel'])")
-    PHASE_LIST=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(' '.join(str(p) for p in json.load(sys.stdin)['groups'][$GROUP_IDX]['phases']))")
+    # Re-run phase analyzer before each execution group
+    echo "Running phase analyzer..." >&2
+    ANALYZER_JSON=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
+    ANALYZER_RC=$?
+
+    if [ $ANALYZER_RC -ne 0 ]; then
+        echo "Error: Phase analyzer failed (exit code $ANALYZER_RC)." >&2
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 1>/dev/null 2>&2
+        FAILURES+=("analyzer_failure")
+        break
+    fi
+
+    if [ -z "$ANALYZER_JSON" ]; then
+        echo "Error: Phase analyzer produced no output." >&2
+        FAILURES+=("analyzer_failure")
+        break
+    fi
+
+    # Check if any groups remain
+    GROUPS_COUNT=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['groups']))")
+
+    if [ "$GROUPS_COUNT" = "0" ]; then
+        echo "No pending phases to execute." >&2
+        break
+    fi
+
+    GROUPS_EXECUTED=$((GROUPS_EXECUTED + 1))
+
+    # Always take the FIRST group (re-analysis provides fresh ordering)
+    IS_PARALLEL=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['groups'][0]['parallel'])")
+    PHASE_LIST=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(' '.join(str(p) for p in json.load(sys.stdin)['groups'][0]['phases']))")
 
     if [ "$IS_PARALLEL" = "True" ]; then
         # ============================================================
@@ -322,13 +409,13 @@ while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
 
             git -C "$SCRIPT_DIR" worktree add -b "$WT_BRANCH" "$WT_DIR" HEAD 2>/dev/null
 
-            INITIAL_MSG="Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase ${PHASE_NUM} ONLY. Work exclusively on Phase ${PHASE_NUM} features. Do not wait for approval. Do not modify the delivery plan."
+            INITIAL_MSG="Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase ${PHASE_NUM} ONLY. Work exclusively on Phase ${PHASE_NUM} features. Do not wait for approval."
 
             (
                 cd "$WT_DIR" || exit 1
                 export PURLIN_PROJECT_ROOT="$WT_DIR"
                 claude --print "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
-                    --append-system-prompt-file "$PROMPT_FILE" \
+                    --append-system-prompt-file "$PARALLEL_PROMPT_FILE" \
                     "$INITIAL_MSG" > "$LOG_FILE" 2>&1
             ) &
 
@@ -369,6 +456,9 @@ while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
             continue
         fi
 
+        # Process plan amendment files from parallel builders
+        apply_plan_amendments
+
         # Evaluate using the last parallel log
         PLAN_HASH_BEFORE=$(get_plan_hash)
         LAST_LOG="${WT_LOGS[${#WT_LOGS[@]}-1]}"
@@ -391,13 +481,13 @@ while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
 
         case "$ACTION" in
             continue)
-                GROUP_IDX=$((GROUP_IDX + 1))
+                # Loop back to re-analyze (fresh ordering)
                 ;;
             stop)
                 OUTER_BREAK=true
                 ;;
             *)
-                GROUP_IDX=$((GROUP_IDX + 1))
+                # Loop back to re-analyze
                 ;;
         esac
 
@@ -432,6 +522,12 @@ while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
                     ;;
             esac
 
+            # Detect plan amendments by sequential Builder
+            PLAN_HASH_AFTER=$(get_plan_hash)
+            if [ "$PLAN_HASH_BEFORE" != "$PLAN_HASH_AFTER" ]; then
+                PLAN_AMENDED=true
+            fi
+
             # Run evaluator
             EVAL_OUTPUT=$(run_evaluator "$LOG_FILE")
 
@@ -446,9 +542,9 @@ while [ "$GROUP_IDX" -lt "$GROUPS_COUNT" ] && [ "$OUTER_BREAK" = "false" ]; do
 
             case "$ACTION" in
                 continue)
+                    update_plan_phase_status "$PHASE_NUM"
                     PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
-                    GROUP_IDX=$((GROUP_IDX + 1))
-                    break
+                    break  # Exit inner loop; outer loop re-analyzes
                     ;;
                 approve)
                     log_eval "Resuming session for Phase $PHASE_NUM"
@@ -502,8 +598,11 @@ DURATION=$((END_TIME - START_TIME))
 echo "" >&2
 echo "=== Continuous Build Summary ===" >&2
 echo "Phases completed: $PHASES_COMPLETED" >&2
-echo "Execution groups: $GROUPS_COUNT ($PARALLEL_GROUPS_USED parallel)" >&2
+echo "Execution groups: $GROUPS_EXECUTED ($PARALLEL_GROUPS_USED parallel)" >&2
 echo "Retries consumed: $TOTAL_RETRIES" >&2
+if [ "$PLAN_AMENDED" = "true" ]; then
+    echo "Note: delivery plan was amended during execution" >&2
+fi
 if [ ${#FAILURES[@]} -gt 0 ]; then
     echo "Failures: ${FAILURES[*]}" >&2
 fi
