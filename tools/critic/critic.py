@@ -2676,7 +2676,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
             **zeroed,
             'aft_skip': 1,
             'total_auto': 1,
-            'summary': '0 manual',
+            'summary': 'builder-verified',
         }
 
     # Parse feature data
@@ -2714,7 +2714,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
                 **zeroed,
                 'aft_test_only': 1,
                 'total_auto': 1,
-                'summary': '0 manual',
+                'summary': 'builder-verified',
             }
         else:
             return zeroed

@@ -6337,7 +6337,7 @@ class TestVerificationEffortAutoTestOnly(unittest.TestCase):
         self.assertEqual(ve['aft_test_only'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
-        self.assertEqual(ve['summary'], '0 manual')
+        self.assertEqual(ve['summary'], 'builder-verified')
 
 
 class TestVerificationEffortCosmeticScope(unittest.TestCase):
@@ -6358,7 +6358,7 @@ class TestVerificationEffortCosmeticScope(unittest.TestCase):
         self.assertEqual(ve['aft_skip'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
-        self.assertEqual(ve['summary'], '0 manual')
+        self.assertEqual(ve['summary'], 'builder-verified')
 
 
 class TestVerificationEffortTargetedScope(unittest.TestCase):
