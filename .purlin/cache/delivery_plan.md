@@ -6,9 +6,9 @@
 ## Summary
 Remediation of 16 features reset to TODO by the Architect's deep spec-code audit. All items are low-complexity (review+retag, verify compliance, or small code fixes ~20 lines total). Phased for incremental QA checkpoints.
 
-## Phase 1 -- Config & Script Fixes [IN_PROGRESS]
+## Phase 1 -- Config & Script Fixes [COMPLETE]
 **Features:** pm_agent_launcher.md, continuous_phase_builder.md
-**Completion Commit:** --
+**Completion Commit:** 73e9e88
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- CSS Token & Modal Fixes [PENDING]
