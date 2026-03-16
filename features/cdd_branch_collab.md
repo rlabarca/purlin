@@ -106,7 +106,7 @@ Join uses a two-phase flow: **assessment** (fetch + compute state) then **confir
    - On any failure (e.g., remote rejects, no network): log server-side and continue. Returns `push_result: "failed"`.
 2. Fetch the target branch from remote: `git fetch <remote> <name>`. If `origin/<name>` does not exist after fetch, return error.
 3. Check if a local branch `<name>` already exists.
-4. **If no local branch exists:** Check if working tree is dirty. If dirty, return error with `"dirty": true` and `"dirty_files": [...]`. If clean, create tracking branch: `git checkout -b <name> origin/<name>`, record base branch, write active_branch, and return `{ "status": "ok", "branch": "<name>", "completed": true }`. No Phase 2 needed.
+4. **If no local branch exists:** Check if working tree is dirty (uncommitted changes outside `.purlin/`). If dirty, return error with `"dirty": true` and `"dirty_files": [...]`. If clean, create tracking branch: `git checkout -b <name> origin/<name>`, record base branch, write active_branch, and return `{ "status": "ok", "branch": "<name>", "completed": true }`. No Phase 2 needed.
 5. **If local branch exists:** Compute two sync states:
    - **HEAD-relative** (primary): compare `origin/<name>` vs `HEAD` using the same computation as the branches table (Section 2.5). This tells the user how the branch relates to their current position.
    - **Local-vs-remote** (reconciliation): compare local `<name>` vs `origin/<name>`. This determines what action is needed to sync the local copy before joining.
