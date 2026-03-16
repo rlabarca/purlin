@@ -25,7 +25,7 @@ When a delivery plan exists at session start, the Builder resumes from the next 
 The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
 
 ## 10.5 Phasing is Optional
-Phased delivery is never automatic. The Builder proposes phasing based on scope assessment, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
+Phased delivery is never automatic. The Builder proposes phasing based on scope assessment, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely. **Exception:** When the Builder is launched with `--continuous` mode and no delivery plan exists, the bootstrap session creates the plan autonomously. The user reviews and approves the plan at a checkpoint before continuous execution begins.
 
 ## 10.6 Architect Awareness
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
@@ -114,6 +114,8 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 
 ### How It Works
 
+0. **Bootstrap (if needed):** If no delivery plan exists when `--continuous` is invoked, the launcher runs a one-time bootstrap Builder session. This session runs the standard scope assessment and either creates a delivery plan autonomously or completes the work directly if phasing is not warranted. The bootstrap uses a conservative sizing bias (more/smaller phases, maximize parallelization) to prevent context exhaustion. After plan creation, the user is prompted to approve before the loop begins. See `features/continuous_phase_builder.md` Section 2.15.
+
 1. **Phase Analysis:** Before the first phase, the launcher runs `tools/delivery/phase_analyzer.py` to determine execution order and parallelization opportunities. The analyzer reads the delivery plan and dependency graph, topologically sorts phases by their inter-phase dependencies, and groups independent phases into parallel execution sets.
 
 2. **Execution Loop:** The launcher iterates through execution groups sequentially. For single-phase groups, the Builder runs in `-p` mode (non-interactive). For multi-phase groups, each Builder runs in a separate git worktree (`-w` flag) and the worktree branches are merged back after all complete.
@@ -131,6 +133,7 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 - **Merge conflict escalation.** If merging parallel worktree branches produces a conflict, the loop stops immediately and directs the user to resolve manually.
 - **Evaluator fallback.** If the evaluator itself fails (Haiku unavailable), the launcher falls back to checking whether the delivery plan file changed since the last phase.
 - **Pass-through flags.** `--max-turns N` and `--max-budget-usd N` are forwarded to each Builder invocation.
+- **Auto-bootstrap with approval.** If no delivery plan exists, the launcher creates one via a bootstrap session, presents it for user approval, then enters the continuous loop. The bootstrap favors conservative phase sizing to keep each session within context budget.
 
 ### Logging
 

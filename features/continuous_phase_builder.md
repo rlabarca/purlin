@@ -124,7 +124,7 @@ possible to avoid conflicts.
 
 ### 2.10 Error Handling
 
-- No delivery plan at launch: print error, exit non-zero.
+- No delivery plan at launch: run bootstrap session (see Section 2.15). If bootstrap fails, print error and exit non-zero.
 - Phase analyzer failure: print error, exit non-zero.
 - Evaluator invocation failure (Haiku unavailable, malformed JSON): fall back to delivery plan hash check. If the delivery plan file changed since the last phase, treat as `continue`. If unchanged and Builder exited, treat as `stop`.
 - Merge conflict during parallel merge: stop immediately, report conflicting files, exit non-zero.
@@ -175,6 +175,43 @@ possible to avoid conflicts.
 | Builder output mentions plan amendment but current phase not complete | `retry` |
 
 - The evaluator prompt must instruct Haiku to check whether the delivery plan was modified by comparing phase counts or looking for amendment markers in Builder output.
+
+### 2.15 Bootstrap Session
+
+- When `--continuous` is active and no delivery plan exists at `.purlin/cache/delivery_plan.md`, the launcher runs a bootstrap Builder session before entering the orchestration loop.
+- The bootstrap session uses `-p` mode with a bootstrap-specific system prompt override (distinct from the continuous phase override in 2.7 and the server override in 2.8).
+- The bootstrap override instructs the Builder to: execute the standard startup protocol including scope assessment; if phasing is warranted, create the delivery plan via `/pl-delivery-plan` without user approval and halt immediately (do not begin Phase 1); if phasing is not warranted, complete the work directly and halt.
+- **Conservative sizing bias:** The bootstrap override explicitly instructs the Builder to prefer more phases over fewer, smaller phases over larger, and to maximize parallelization opportunities. The goal is to keep each phase's context footprint small enough for reliable autonomous completion. When in doubt, split.
+- Outcome detection uses file-existence checking, not output parsing:
+  - Plan file exists after bootstrap -> approval checkpoint, then continuous loop (Section 2.2).
+  - No plan file + exit code 0 -> Builder completed all work directly (phasing not warranted). Launcher exits successfully with summary.
+  - No plan file + exit code non-zero -> bootstrap failed. Launcher exits with error directing the user to run an interactive session.
+- **Plan validation:** After bootstrap creates the plan and before the approval prompt, the launcher runs the phase analyzer as a dry-run validation. If the analyzer detects dependency cycles or structural errors, the launcher prints the error, notes that the plan has been committed for manual editing, and exits 0. The user fixes the plan and re-runs `--continuous` (which will skip bootstrap since the plan now exists).
+- **Approval checkpoint:** When bootstrap creates a valid delivery plan, the launcher prints a summary to stdout (phase count, features per phase, identified parallel groups) and prompts the user: `"Delivery plan created (N phases). Review at .purlin/cache/delivery_plan.md. Proceed? [Y/n]"`. If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
+- The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
+- The bootstrap session does NOT receive the continuous phase override (Section 2.7) or server permission override (Section 2.8). It receives only the bootstrap-specific override.
+- Bootstrap override text:
+
+```
+BOOTSTRAP MODE ACTIVE: You are running in non-interactive print mode to
+initialize a delivery plan for continuous execution. There is no human user
+present. You MUST:
+- Execute your full startup protocol (Sections 2.0-2.3) including scope
+  assessment.
+- If scope assessment determines phasing IS warranted: create the delivery
+  plan using /pl-delivery-plan WITHOUT asking for user approval. Auto-accept
+  the phased delivery option. After committing the delivery plan, HALT
+  IMMEDIATELY. Do not begin Phase 1.
+- If scope assessment determines phasing is NOT warranted: proceed directly
+  with implementation. Complete all work autonomously.
+- NEVER ask "Ready to go?" or wait for any approval.
+- SIZING BIAS: Prefer MORE phases over fewer. Prefer SMALLER phases over
+  larger. Maximize parallelization -- group independent features into
+  separate phases that can run concurrently. Each phase must be completable
+  within a single session without context exhaustion. When in doubt, split.
+This override takes precedence over any instruction to "wait for approval"
+or "ask the user."
+```
 
 ### 2.11 Default Behavior Preservation
 
@@ -263,12 +300,72 @@ possible to avoid conflicts.
     And the launcher exits with zero status
     And the summary reports all phases completed successfully
 
-#### Scenario: No Delivery Plan at Launch
+#### Scenario: Bootstrap Creates Delivery Plan
     Given pl-run-builder.sh is invoked with --continuous
     And no delivery plan exists at .purlin/cache/delivery_plan.md
-    When the launcher starts
-    Then it prints an error message about missing delivery plan
+    When the launcher starts the bootstrap session
+    And the bootstrap Builder creates a delivery plan and exits
+    Then the launcher prints a plan summary (phase count, parallel groups)
+    And prompts the user to approve the plan
+    And the bootstrap log is written to .purlin/runtime/continuous_build_bootstrap.log
+
+#### Scenario: Bootstrap Plan Approved
+    Given the bootstrap session created a delivery plan
+    When the user approves the plan at the approval checkpoint
+    Then the launcher enters the continuous orchestration loop
+
+#### Scenario: Bootstrap Plan Declined
+    Given the bootstrap session created a delivery plan
+    When the user declines at the approval checkpoint
+    Then the launcher exits with zero status
+    And the delivery plan remains committed to git for user editing
+
+#### Scenario: Bootstrap Completes Work Directly
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    And the scope assessment determines phasing is not warranted
+    When the bootstrap Builder completes all work and exits with zero status
+    Then the launcher detects no delivery plan was created
+    And exits successfully with a summary noting direct completion
+
+#### Scenario: Bootstrap Failure
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    When the bootstrap Builder exits with non-zero status
+    And no delivery plan was created
+    Then the launcher prints an error directing the user to run an interactive session
     And exits with non-zero status
+
+#### Scenario: Bootstrap Uses Distinct System Prompt Override
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists
+    When the bootstrap session is launched
+    Then the Builder's system prompt includes the bootstrap override text
+    And it does NOT include the continuous phase override (Section 2.7)
+    And it does NOT include the server permission override (Section 2.8)
+
+#### Scenario: Bootstrap Plan Validated Before Approval
+    Given the bootstrap session created a delivery plan
+    When the launcher runs the phase analyzer as a dry-run validation
+    And the analyzer detects no dependency cycles or errors
+    Then the launcher prints the plan summary
+    And prompts the user for approval
+
+#### Scenario: Bootstrap Plan Has Dependency Cycle
+    Given the bootstrap session created a delivery plan
+    When the launcher runs the phase analyzer as a dry-run validation
+    And the analyzer detects a dependency cycle
+    Then the launcher prints the cycle error with the involved phases
+    And notes that the plan has been committed for manual editing
+    And exits with zero status without entering the continuous loop
+
+#### Scenario: Bootstrap Prefers Conservative Phase Sizing
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists
+    When the bootstrap session creates a delivery plan
+    Then the plan prefers more smaller phases over fewer larger ones
+    And independent features are placed in separate phases for parallel execution
+    And each phase is sized to complete within a single session's context budget
 
 #### Scenario: Evaluator Failure Fallback
     Given --continuous is active
