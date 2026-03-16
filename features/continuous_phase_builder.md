@@ -397,5 +397,47 @@ possible to avoid conflicts.
     Then the launcher re-runs the phase analyzer on the amended plan
     And picks up any changes made during the retry
 
+#### Scenario: Builder Removes Some Phases But Not All
+    Given --continuous is active with Phases 1, 2, 3, 4 PENDING
+    And the Builder completes Phase 1 and removes Phase 3 (scope no longer needed)
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And the analyzer returns groups containing Phases 2 and 4 only
+    And Phase 3 does not appear in any execution group
+
+#### Scenario: Non-Contiguous Phase Numbers After Amendment
+    Given --continuous is active with Phases 1, 2, 3 PENDING
+    And the Builder completes Phase 1 and adds Phase 7 (skipping 4-6)
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And the analyzer processes Phases 2, 3, and 7 as PENDING
+    And non-contiguous numbering does not cause an error
+
+#### Scenario: Amendment Files Cleaned Up After Application
+    Given --continuous is active with parallel Builders
+    And Builder for Phase 3 writes .purlin/runtime/plan_amendment_phase_3.json
+    And Builder for Phase 5 writes .purlin/runtime/plan_amendment_phase_5.json
+    When both Builders complete and the orchestrator applies the amendments
+    Then .purlin/runtime/plan_amendment_phase_3.json is deleted
+    And .purlin/runtime/plan_amendment_phase_5.json is deleted
+    And the amendments are reflected in the delivery plan Markdown
+
+#### Scenario: Sequential Builder Modifies Delivery Plan Directly
+    Given --continuous is active with a sequential (non-parallel) execution group
+    And the Builder completes Phase 2 and adds Phase 6 directly in the delivery plan Markdown
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And Phase 6 appears as PENDING in the analysis results
+    And no amendment request file was needed for the sequential Builder
+
+#### Scenario: Removed Phase Had Dependents
+    Given --continuous is active with Phases 1, 2, 3 PENDING
+    And Phase 3 depends on Phase 2
+    And the Builder completes Phase 1 and removes Phase 2
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And Phase 3's dependency on the removed Phase 2 is no longer blocking
+    And the analyzer includes Phase 3 in the execution groups
+
 ### Manual Scenarios (Human Verification Required)
 None.
