@@ -382,6 +382,47 @@ class TestLocalStepBadge(unittest.TestCase):
         self.assertNotEqual(global_step["source"], self.step["source"])
 
 
+class TestStepDetailModalWidthAndFontSlider(unittest.TestCase):
+    """Scenario: Step Detail Modal Width and Font Slider (auto-web)
+
+    Given the release checklist is expanded showing at least 1 step
+    When the User clicks a step's friendly name to open the step detail modal
+    Then the modal width is 70% of the viewport width
+    And a font size adjustment control (minus, slider, plus) is visible in the modal header.
+    """
+
+    def setUp(self):
+        with open(os.path.join(SERVE_DIR, 'serve.py')) as f:
+            self.content = f.read()
+
+    def test_step_modal_uses_modal_content_class(self):
+        """Step detail modal container uses the shared .modal-content class."""
+        step_start = self.content.find('id="step-modal-overlay"')
+        step_end = self.content.find('</div>\n</div>\n', step_start + 100)
+        step_html = self.content[step_start:step_end]
+        self.assertIn('class="modal-content"', step_html)
+
+    def test_modal_content_width_70vw(self):
+        """The .modal-content CSS rule includes width:70vw."""
+        self.assertRegex(self.content, r'\.modal-content\{[^}]*width:\s*70vw')
+
+    def test_step_modal_has_font_controls(self):
+        """Step detail modal header includes font size control elements."""
+        step_start = self.content.find('id="step-modal-overlay"')
+        step_end = self.content.find('</div>\n</div>\n', step_start + 100)
+        step_html = self.content[step_start:step_end]
+        self.assertIn('modal-font-controls', step_html)
+        self.assertIn('modal-font-slider', step_html)
+
+    def test_step_modal_has_minus_and_plus_buttons(self):
+        """Step detail modal has minus and plus font adjustment buttons."""
+        step_start = self.content.find('id="step-modal-overlay"')
+        step_end = self.content.find('</div>\n</div>\n', step_start + 100)
+        step_html = self.content[step_start:step_end]
+        self.assertIn('adjustModalFont(-1)', step_html)
+        self.assertIn('adjustModalFont(1)', step_html)
+
+
 if __name__ == '__main__':
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])

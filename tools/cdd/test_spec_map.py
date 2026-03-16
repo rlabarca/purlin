@@ -685,6 +685,209 @@ class TestDoubleClickBackgroundRecentersGraph(unittest.TestCase):
         self.assertIn('evt.target === instance', self.content)
 
 
+class TestFeatureDetailModalViaGraphNode(unittest.TestCase):
+    """Scenario: Feature Detail Modal via Graph Node
+
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node
+    Then the shared feature detail modal opens showing the rendered markdown content
+    And the modal occupies 70% of the viewport width
+    And metadata tags are displayed in a dedicated area above the markdown body
+    And a font size adjustment control is visible in the modal header
+    And the modal has an X button in the top-right corner
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_node_tap_opens_modal(self):
+        """Node tap on feature node calls openModal."""
+        self.assertIn('openModal', self.content)
+        self.assertIn("'tap', 'node[!isCategory]'", self.content)
+
+    def test_modal_width_70vw(self):
+        """Feature detail modal uses 70vw width via .modal-content."""
+        self.assertRegex(self.content, r'\.modal-content\{[^}]*width:\s*70vw')
+
+    def test_metadata_area_above_body(self):
+        """modal-metadata div exists before modal-body in the feature modal."""
+        meta_pos = self.content.find('id="modal-metadata"')
+        body_pos = self.content.find('id="modal-body"')
+        self.assertGreater(meta_pos, -1)
+        self.assertGreater(body_pos, -1)
+        self.assertLess(meta_pos, body_pos)
+
+    def test_font_size_control_in_modal_header(self):
+        """Font size control (slider, minus, plus) present in feature modal header."""
+        # Find the feature modal's header section
+        modal_start = self.content.find('id="modal-overlay"')
+        modal_end = self.content.find('</div>\n</div>', modal_start + 100)
+        modal_html = self.content[modal_start:modal_end]
+        self.assertIn('modal-font-controls', modal_html)
+        self.assertIn('modal-font-slider', modal_html)
+
+    def test_close_button_present(self):
+        """X close button present in feature detail modal header."""
+        self.assertIn('id="modal-close"', self.content)
+
+
+class TestFontSizePersistsAcrossNodeClicks(unittest.TestCase):
+    """Scenario: Font Size Persists Across Node Clicks (auto-web)
+
+    Given the User clicks a feature node and adjusts the font size slider
+    When the User closes the modal and clicks a different feature node
+    Then the font size slider retains the previously set position.
+
+    Tests that the session storage mechanism persists font size across
+    different modal opens, verified via the shared font infrastructure.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_session_storage_key_used(self):
+        """Font adjustment stored in sessionStorage for persistence."""
+        self.assertIn('purlin-modal-font-adjust', self.content)
+
+    def test_font_restored_on_page_load(self):
+        """Font adjustment value is read from sessionStorage on page load."""
+        self.assertIn('sessionStorage.getItem(MODAL_FONT_STORAGE_KEY', self.content)
+
+    def test_all_sliders_synced_on_change(self):
+        """setModalFont syncs all slider elements to the same value."""
+        self.assertIn("querySelectorAll('.modal-font-slider')", self.content)
+
+    def test_all_modal_contents_receive_css_var(self):
+        """setModalFont applies --modal-font-adjust to all .modal-content elements."""
+        self.assertIn("querySelectorAll('.modal-content')", self.content)
+        self.assertIn("'--modal-font-adjust'", self.content)
+
+
+class TestMetadataExtractionFromGraphNode(unittest.TestCase):
+    """Scenario: Metadata Extraction from Graph Node (auto-web)
+
+    Given a feature node has Label, Category, and multiple Prerequisites
+    When the User clicks that feature node
+    Then each metadata tag is displayed on its own row in the dedicated metadata area
+    And tag names are highlighted
+    And no metadata blockquotes appear in the rendered markdown body.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_extract_metadata_function_exists(self):
+        """extractMetadata function parses blockquote metadata from markdown."""
+        self.assertIn('function extractMetadata(md)', self.content)
+
+    def test_extract_returns_tags_and_cleaned(self):
+        """extractMetadata returns tags array and cleaned markdown without blockquotes."""
+        self.assertIn('tags: tags, cleaned:', self.content)
+
+    def test_render_metadata_generates_rows(self):
+        """renderMetadata creates per-tag rows with key and value spans."""
+        self.assertIn('function renderMetadata(tags)', self.content)
+        self.assertIn('modal-meta-row', self.content)
+
+    def test_metadata_displayed_in_dedicated_area(self):
+        """openModal populates the modal-metadata element with rendered tags."""
+        self.assertIn('renderMetadata(currentModal.specMeta)', self.content)
+
+    def test_metadata_blockquotes_stripped_from_body(self):
+        """Cleaned markdown (without blockquotes) is used for body rendering."""
+        # extractMetadata strips metadata lines, openModal uses cleaned content
+        self.assertIn('.specContent', self.content)
+        self.assertIn('extractMetadata', self.content)
+
+
+class TestSpecMapModalWidth(unittest.TestCase):
+    """Scenario: Spec Map Modal Width (auto-web)
+
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node
+    Then the modal width is 70% of the viewport width.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_modal_content_width_70vw(self):
+        """The .modal-content CSS rule includes width:70vw."""
+        self.assertRegex(self.content, r'\.modal-content\{[^}]*width:\s*70vw')
+
+    def test_narrow_viewport_fallback(self):
+        """On narrow viewports (<500px), modal falls back to 90vw."""
+        self.assertIn('max-width:500px', self.content)
+        self.assertIn('90vw', self.content)
+
+
+class TestSpecMapModalMetadata(unittest.TestCase):
+    """Scenario: Spec Map Modal Metadata (auto-web)
+
+    Given the User is viewing the Spec Map view
+    When the User clicks a feature node
+    Then the metadata area displays tag names in a highlight color distinct from value text.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_meta_key_uses_accent_color(self):
+        """modal-meta-key styled with --purlin-accent for highlighted tag names."""
+        self.assertRegex(
+            self.content,
+            r'\.modal-meta-key\{[^}]*color:\s*var\(--purlin-accent\)')
+
+    def test_meta_val_uses_muted_color(self):
+        """modal-meta-val styled with --purlin-muted, distinct from key color."""
+        self.assertRegex(
+            self.content,
+            r'\.modal-meta-val\{[^}]*color:\s*var\(--purlin-muted\)')
+
+    def test_key_and_val_colors_differ(self):
+        """Tag key (accent) and value (muted) use different color tokens."""
+        # Both must be present with different tokens
+        self.assertIn('--purlin-accent', self.content)
+        self.assertIn('--purlin-muted', self.content)
+
+
+class TestSpecMapModalFontSlider(unittest.TestCase):
+    """Scenario: Spec Map Modal Font Slider (auto-web)
+
+    Given the User clicks a feature node and opens the modal
+    When the User adjusts the font size slider
+    Then all text elements in the modal body scale together.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_modal_body_font_uses_calc_with_adjust(self):
+        """Modal body font-size uses calc() with --modal-font-adjust variable."""
+        self.assertRegex(
+            self.content,
+            r'\.modal-body\{[^}]*font-size:\s*calc\([^)]*--modal-font-adjust')
+
+    def test_headings_scale_with_adjust(self):
+        """Modal body h1, h2, h3 use calc() with --modal-font-adjust."""
+        for tag in ('h1', 'h2', 'h3'):
+            pattern = rf'\.modal-body {tag}\{{{{font-size:calc\([^)]*--modal-font-adjust'
+            self.assertRegex(self.content, pattern,
+                             f'.modal-body {tag} missing font-size calc with --modal-font-adjust')
+
+    def test_code_scales_with_adjust(self):
+        """Code blocks in modal body scale with --modal-font-adjust."""
+        # .modal-body code has multi-line CSS; check both selector and calc exist
+        self.assertIn('.modal-body code', self.content)
+        self.assertIn('calc(11px + var(--modal-font-adjust)', self.content)
+
+
 class TestMermaidGeneration(unittest.TestCase):
     def test_generates_valid_mermaid(self):
         features = {

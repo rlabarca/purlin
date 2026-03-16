@@ -969,9 +969,105 @@ class TestModalCloseButtonPresent(unittest.TestCase):
         self.assertIn('wd-modal-overlay', html)
 
 
+SERVE_PY_PATH = os.path.join(CDD_DIR, 'serve.py')
+
+
+class TestWhatsDifferentModalWidth(unittest.TestCase):
+    """Scenario: What's Different Modal Width (auto-web)
+
+    Given an active branch is set with sync state not SAME
+    And a cached digest exists
+    When the User clicks the "What's Different?" button
+    Then the modal width is 70% of the viewport width.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY_PATH) as f:
+            self.content = f.read()
+
+    def test_wd_modal_uses_modal_content_class(self):
+        """WD modal container uses the shared .modal-content class."""
+        # Find the WD modal overlay section
+        wd_start = self.content.find('id="wd-modal-overlay"')
+        wd_end = self.content.find('</div>\n</div>', wd_start + 100)
+        wd_html = self.content[wd_start:wd_end]
+        self.assertIn('class="modal-content"', wd_html)
+
+    def test_modal_content_width_70vw(self):
+        """The .modal-content CSS rule applies 70vw width."""
+        self.assertRegex(self.content, r'\.modal-content\{[^}]*width:\s*70vw')
+
+
+class TestWhatsDifferentModalFontSlider(unittest.TestCase):
+    """Scenario: What's Different Modal Font Slider (auto-web)
+
+    Given the What's Different modal is open
+    When the User adjusts the font size slider
+    Then all digest text (headings, paragraphs, code, tags, impact summary) scales together
+    And text wraps correctly without horizontal overflow.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY_PATH) as f:
+            self.content = f.read()
+
+    def test_wd_modal_has_font_controls(self):
+        """WD modal header includes font size control elements."""
+        wd_start = self.content.find('id="wd-modal-overlay"')
+        wd_end = self.content.find('</div>\n</div>', wd_start + 100)
+        wd_html = self.content[wd_start:wd_end]
+        self.assertIn('modal-font-controls', wd_html)
+        self.assertIn('modal-font-slider', wd_html)
+
+    def test_wd_modal_body_uses_font_adjust(self):
+        """WD modal body inherits calc-based font sizing from .modal-body."""
+        # The WD modal body uses class="modal-body" so it inherits the calc rule
+        wd_start = self.content.find('id="wd-modal-overlay"')
+        wd_end = self.content.find('</div>\n</div>\n', wd_start + 100)
+        wd_html = self.content[wd_start:wd_end]
+        self.assertIn('class="modal-body"', wd_html)
+
+    def test_set_modal_font_applies_to_all_modals(self):
+        """setModalFont applies CSS var to all .modal-content elements."""
+        self.assertIn("querySelectorAll('.modal-content')", self.content)
+
+
+class TestWhatsDifferentModalFontPersists(unittest.TestCase):
+    """Scenario: What's Different Modal Font Persists (auto-web)
+
+    Given the User has adjusted the font size slider in the What's Different modal
+    When the User closes the modal
+    And the User reopens the What's Different modal
+    Then the font size slider position is retained at the previously set value.
+    """
+
+    def setUp(self):
+        with open(SERVE_PY_PATH) as f:
+            self.content = f.read()
+
+    def test_session_storage_persistence(self):
+        """Font adjustment persists via sessionStorage key."""
+        self.assertIn('purlin-modal-font-adjust', self.content)
+        self.assertIn('sessionStorage.setItem(MODAL_FONT_STORAGE_KEY', self.content)
+
+    def test_font_restored_from_session_storage(self):
+        """Font value is read from sessionStorage on page load."""
+        self.assertIn('sessionStorage.getItem(MODAL_FONT_STORAGE_KEY', self.content)
+
+    def test_all_sliders_synced(self):
+        """All modal sliders are synced to the same value when changed."""
+        self.assertIn("querySelectorAll('.modal-font-slider')", self.content)
+
+
 if __name__ == '__main__':
+    import importlib
     loader = unittest.TestLoader()
-    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    suite = unittest.TestSuite()
+    # Load dashboard tests (this module)
+    suite.addTests(loader.loadTestsFromModule(sys.modules[__name__]))
+    # Load extraction tests from sibling module
+    test_extract = importlib.import_module('test_extract')
+    suite.addTests(loader.loadTestsFromModule(test_extract))
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     failed = len(result.failures) + len(result.errors)
@@ -982,5 +1078,9 @@ if __name__ == '__main__':
             'passed': result.testsRun - failed,
             'failed': failed,
             'total': result.testsRun,
+            'test_files': [
+                'tests/collab_whats_different/test_extract.py',
+                'tests/collab_whats_different/test_dashboard.py',
+            ],
         }, f)
     sys.exit(0 if result.wasSuccessful() else 1)
