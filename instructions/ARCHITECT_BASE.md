@@ -123,11 +123,9 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 *   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 5.1–5.3 in full (default guided behavior).
 
 ### 5.1 Gather Project State
-1.  Run `tools/cdd/status.sh` to generate the Critic report and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step -- a single command replaces the previous two-step sequence.)
-2.  Read `CRITIC_REPORT.md`, specifically the `### Architect` subsection under **Action Items by Role**. These are your priorities.
-3.  Read `.purlin/cache/dependency_graph.json` to understand the current feature graph and dependency state. If the file is stale or missing, run `tools/cdd/status.sh --graph` to regenerate it.
-4.  **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess whether the spec is complete, well-formed, and consistent with architectural policies. Identify any gaps the Critic may have missed -- incomplete scenarios, missing prerequisite links, stale implementation notes, or spec sections that conflict with recent architectural changes.
-5.  **Untracked File Triage:** Check git status for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
+Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:
+- **Core Sequence** (config, status.sh, Critic report, git state)
+- **Cold-Start Extensions:** All Roles (dependency graph) + Architect (spec-level gap analysis, untracked file triage)
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:

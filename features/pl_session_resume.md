@@ -10,7 +10,7 @@
 
 The `/pl-resume` agent skill provides a two-mode mechanism for saving and restoring agent session state across context clears and terminal restarts. When an agent is about to run out of context, it invokes `/pl-resume save` to write a structured checkpoint file. When a new session starts (with or without the launcher), the agent invokes `/pl-resume` to read the checkpoint, gather fresh project state, and resume from where the previous session left off.
 
-This skill is shared across all roles (Architect, Builder, QA). The launcher scripts handle fresh session bootstrap but provide no mid-session recovery. The delivery plan (`.purlin/cache/delivery_plan.md`) partially addresses multi-phase Builder work but does not capture per-step state within a feature's implementation protocol. This skill fills that gap.
+This skill is shared across all roles (Architect, Builder, QA, PM). The launcher scripts handle fresh session bootstrap but provide no mid-session recovery. The delivery plan (`.purlin/cache/delivery_plan.md`) partially addresses multi-phase Builder work but does not capture per-step state within a feature's implementation protocol. This skill fills that gap.
 
 ---
 
@@ -24,12 +24,12 @@ This skill is shared across all roles (Architect, Builder, QA). The launcher scr
 
 - **No argument:** Restore mode with role auto-detection.
 - **`save`:** Save mode -- write a checkpoint file capturing current session state.
-- **`<role>`** (one of `architect`, `builder`, `qa`): Restore mode with explicit role selection.
-- **Invalid argument:** Print an error listing valid options (`save`, `architect`, `builder`, `qa`) and exit.
+- **`<role>`** (one of `architect`, `builder`, `qa`, `pm`): Restore mode with explicit role selection.
+- **Invalid argument:** Print an error listing valid options (`save`, `architect`, `builder`, `qa`, `pm`) and exit.
 
 ### 2.2 Save Mode (`/pl-resume save`)
 
-The agent writes a structured checkpoint to a **role-scoped** file: `.purlin/cache/session_checkpoint_<role>.md` (e.g., `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`). The agent composes the file based on its own understanding of its current state (no automated extraction is needed).
+The agent writes a structured checkpoint to a **role-scoped** file: `.purlin/cache/session_checkpoint_<role>.md` (e.g., `session_checkpoint_builder.md`, `session_checkpoint_architect.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). The agent composes the file based on its own understanding of its current state (no automated extraction is needed).
 
 Role-scoped files ensure that concurrent agents can save checkpoints independently without overwriting each other. Each role's checkpoint is isolated — a Builder save never affects an Architect's saved state, and vice versa.
 
@@ -39,7 +39,7 @@ The checkpoint file is written to disk but NOT committed. It survives `/clear` a
 
 The checkpoint MUST include:
 
-- **Role** (`architect`, `builder`, or `qa`)
+- **Role** (`architect`, `builder`, `qa`, or `pm`)
 - **Timestamp** (ISO 8601 format)
 - **Branch** (current git branch)
 - **Current Feature** (the feature being worked on, or "none")
@@ -74,9 +74,17 @@ When the saving agent is the Architect, the checkpoint MUST additionally include
 - **Spec Reviews** (which spec reviews or updates are in progress)
 - **Discovery Processing** (which discoveries have been reviewed, which are pending)
 
-#### 2.2.5 Checkpoint File Format
+#### 2.2.5 PM-Specific Fields
 
-The checkpoint file path is `.purlin/cache/session_checkpoint_<role>.md` where `<role>` is the agent's current role (`architect`, `builder`, or `qa`). For example, a Builder save produces `session_checkpoint_builder.md`.
+When the saving agent is the PM, the checkpoint MUST additionally include:
+
+- **Spec Drafts** (which feature specs are being authored or refined)
+- **Figma Context** (which Figma files or frames are being referenced, or "None")
+- **Probing Round** (current round in the Probing Question Protocol, if active, or "N/A")
+
+#### 2.2.6 Checkpoint File Format
+
+The checkpoint file path is `.purlin/cache/session_checkpoint_<role>.md` where `<role>` is the agent's current role (`architect`, `builder`, `qa`, or `pm`). For example, a Builder save produces `session_checkpoint_builder.md`.
 
 The checkpoint is human-readable Markdown. The structure uses headings and labeled fields:
 
@@ -134,8 +142,8 @@ The skill determines the agent's role using the following priority:
 
 1. **Explicit argument:** If the user invoked `/pl-resume <role>`, use that role.
 2. **System prompt inference:** Check if role identity markers are present in the current system prompt (e.g., "You are the Architect", "You are the Builder", "You are the QA"). If found, use the detected role.
-3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
-4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`.
+3. **Checkpoint file discovery:** Check which role-scoped checkpoint files exist in `.purlin/cache/` (`session_checkpoint_architect.md`, `session_checkpoint_builder.md`, `session_checkpoint_qa.md`, `session_checkpoint_pm.md`). If exactly one exists, infer the role from that file. If multiple exist, present the list and ask the user which role to resume.
+4. **Ask user:** If no method above succeeds, prompt the user to select their role from `architect`, `builder`, `qa`, `pm`.
 
 #### 2.3.2 Step 2 -- Checkpoint Detection
 
@@ -164,21 +172,24 @@ When the system prompt already contains the role instructions (agent was started
 
 #### 2.3.5 Step 5 -- Gather Fresh Project State
 
-Execute the core state-gathering sequence (always, both cases):
+Execute the state-gathering sequence defined in `instructions/references/startup_state_gathering.md`.
 
-- Read `.purlin/config.json` for role-specific settings.
-- Run `tools/cdd/status.sh` to regenerate the Critic report.
-- Read `CRITIC_REPORT.md` -- the role-specific subsection under "Action Items by Role".
-- Check `git status` for uncommitted changes.
-- Check `git log --oneline -10` for recent commit history.
+**Always (both warm resume and cold start):**
+- Execute the **Core Sequence** (Architect, Builder, QA) or **PM section** (PM only).
 
-**When no checkpoint exists (cold start):** additionally gather:
-- Read `.purlin/cache/dependency_graph.json` for the feature graph.
-- **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state.
-- **QA:** Identify features in TESTING state from the Critic report.
-- **Architect:** Perform spec-level gap analysis on TODO/TESTING features.
+**Cold start only (no checkpoint):**
+- Execute the **Cold-Start Extensions** for the detected role. This includes the dependency graph read (All Roles section) plus the role-specific extension section (Builder, QA, Architect, or PM).
 
-**When a checkpoint exists:** skip the dependency graph read, skip role-specific analysis (the checkpoint's work plan already incorporates these). Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
+**Warm resume (checkpoint exists):**
+- Skip Cold-Start Extensions. The checkpoint's work plan already incorporates this context. Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
+
+**Startup flag handling (cold start only):**
+When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `startup_sequence` and `recommend_next_actions` from `.purlin/config.json` for the detected role:
+- `startup_sequence: false` -- output `"startup_sequence disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
+- `recommend_next_actions: false` -- present only a brief status summary (feature counts, open Critic items) instead of a full work plan. Await user direction.
+- Both `true` (default) -- proceed with full work plan generation.
+
+When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
 
 #### 2.3.6 Step 6 -- Present Recovery Summary
 
@@ -186,7 +197,7 @@ Print a structured recovery summary:
 
 ```
 Context Restored
-Role:           [Architect | Builder | QA]
+Role:           [Architect | Builder | QA | PM]
 Branch:         [main | collab/<name>]
 Checkpoint:     [found -- resuming from <timestamp> | none]
 
@@ -200,6 +211,7 @@ Next Steps:
 Action Items:   [count] items from Critic report
 [Builder only]  Delivery plan: Phase X of Y -- next: <feature>
 [QA only]       Verification queue: N features in TESTING
+[PM only]       Figma MCP: [available | not available]
 Uncommitted:    [none | summary]
 ```
 
@@ -266,7 +278,7 @@ Uncommitted:    [none | summary]
     Given an agent is in an active session
     When the agent invokes /pl-resume with an invalid argument
     Then the output contains an error message
-    And the error lists valid options: save, architect, builder, qa
+    And the error lists valid options: save, architect, builder, qa, pm
     And no checkpoint file is written or read
 
 #### Scenario: Checkpoint Cleanup After Restore
@@ -321,6 +333,58 @@ Uncommitted:    [none | summary]
     And prints the Architect command table
     And gathers fresh project state
     And presents the recovery summary
+
+#### Scenario: PM Save Writes Role-Scoped Checkpoint File
+
+    Given an agent is in an active session with role "pm"
+    And the agent is drafting a feature spec with Figma context
+    When the agent invokes /pl-resume save
+    Then .purlin/cache/session_checkpoint_pm.md is created
+    And the file contains "**Role:** pm"
+    And the file contains a Spec Drafts field
+    And the file contains a Figma Context field
+    And the file contains a Probing Round field
+    And no other session_checkpoint_*.md files are modified
+
+#### Scenario: PM Cold Start Checks Figma MCP Availability
+
+    Given .purlin/cache/session_checkpoint_pm.md does not exist
+    When the agent invokes /pl-resume pm
+    Then the PM state-gathering sequence runs
+    And the Figma MCP availability check is performed
+    And the recovery summary displays "Figma MCP: available" or "Figma MCP: not available"
+    And the recovery summary displays "Checkpoint: none"
+
+#### Scenario: Builder Cold Start Loads Tombstones and Anchors
+
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
+    And features/tombstones/ contains at least one tombstone file
+    And features/ contains at least one anchor node file
+    When the agent invokes /pl-resume builder
+    Then the Builder cold-start extensions run
+    And the tombstone check lists all files in features/tombstones/
+    And all anchor node files in features/ are read
+    And the recovery summary includes tombstone tasks as HIGH-priority items
+
+#### Scenario: QA Cold Start Reads Verification Effort
+
+    Given .purlin/cache/session_checkpoint_qa.md does not exist
+    And at least one feature is in TESTING state
+    When the agent invokes /pl-resume qa
+    Then the QA cold-start extensions run
+    And verification_effort is read from each TESTING feature's critic.json
+    And the recovery summary includes effort classification per feature
+
+#### Scenario: Cold Start Respects Startup Flags
+
+    Given .purlin/cache/session_checkpoint_builder.md does not exist
+    And .purlin/config.json sets recommend_next_actions to false for the builder role
+    When the agent invokes /pl-resume builder
+    Then the core state-gathering sequence runs
+    And the cold-start extensions run
+    And the recovery summary displays a brief status summary
+    And the agent does not auto-generate a full work plan
+    And the agent awaits user direction
 
 ### Manual Scenarios (Human Verification Required)
 

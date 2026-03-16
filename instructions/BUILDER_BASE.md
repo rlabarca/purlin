@@ -41,16 +41,9 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 *   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 2.1–2.3 in full (default guided behavior).
 
 ### 2.1 Gather Project State
-1.  Run `tools/cdd/status.sh` to regenerate the Critic report and CDD feature status. Do NOT re-read or re-parse the raw JSON output — use `CRITIC_REPORT.md` (step 2) as the sole source for Builder action items and feature status.
-2.  Read `CRITIC_REPORT.md`, specifically the `### Builder` subsection under **Action Items by Role**. These are your priorities.
-3.  Read `.purlin/cache/dependency_graph.json` to understand feature dependencies and identify any blocked features.
-4.  **Spec-Level Gap Analysis (Critical):** **If a delivery plan exists** (step 2.1.5), only read feature specs for features in the **current phase**. Gap analysis for other phases is deferred to the session that works on those phases. **If no delivery plan exists**, read specs for all features in TODO or TESTING state. For each feature in scope, read the full feature spec (`features/<name>.md`). Compare the Requirements and Automated Scenarios sections against the current implementation code. Identify any requirements sections, scenarios, or schema changes that have no corresponding implementation -- independent of what the Critic reports. The Critic's traceability engine uses keyword matching which can produce false positives; the specs are the source of truth.
-5.  **Delivery Plan Check:** Check if a delivery plan exists at `.purlin/cache/delivery_plan.md`. If it exists, read the plan, identify the current phase (first PENDING or IN_PROGRESS phase), and check for QA bugs from prior phases that need to be addressed first.
-6.  **Tombstone Check:** Check for pending retirement tasks by listing `features/tombstones/`. For each tombstone file found:
-    *   Read the tombstone to understand what code to delete and what dependencies to check.
-    *   Add it to your action items as a HIGH-priority task labeled: `[TOMBSTONE] Retire <feature_name>: delete specified code`.
-    *   Tombstones are processed before new feature implementation work (they may remove code that new features replace).
-7.  **Anchor Preload (MANDATORY):** Read ALL anchor node files present in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`) once. Identify every FORBIDDEN pattern and INVARIANT from each anchor and keep them active in working context for the entire session. This replaces per-feature anchor reads — anchors are loaded once at session start, not re-read for each feature.
+Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:
+- **Core Sequence** (config, status.sh, Critic report, git state)
+- **Cold-Start Extensions:** All Roles (dependency graph) + Builder (delivery plan, spec-level gap analysis, tombstone check, anchor preload)
 
 ### 2.2 Propose a Work Plan
 

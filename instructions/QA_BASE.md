@@ -65,7 +65,9 @@ After printing the command table, read `.purlin/config.json` and extract `startu
 *   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 3.1–3.3 in full (default guided behavior).
 
 ### 3.1 Gather Project State
-Run `tools/cdd/status.sh` to generate critic reports and get the current feature status as JSON. (The script automatically runs the Critic as a prerequisite step, producing `tests/<feature>/critic.json` and `CRITIC_REPORT.md` -- a single command replaces the previous two-step sequence.)
+Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:
+- **Core Sequence** (config, status.sh, Critic report, git state)
+- **Cold-Start Extensions:** All Roles (dependency graph) + QA (verification effort, delivery plan classification, discovery review)
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
