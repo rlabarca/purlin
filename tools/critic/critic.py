@@ -105,6 +105,24 @@ def extract_owner(content, filename):
     return 'Architect'
 
 
+def extract_figma_status(content):
+    """Extract the Figma Status tag from feature file blockquote metadata.
+
+    Returns the status value (e.g., 'Design', 'Ready for Dev', 'Completed')
+    or None when absent.
+    """
+    for line in content.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('> Figma Status:'):
+            return stripped[len('> Figma Status:'):].strip().strip('"')
+        # Stop scanning after blockquote metadata ends
+        if (stripped and not stripped.startswith('>')
+                and not stripped.startswith('#')
+                and not stripped.startswith('[')):
+            break
+    return None
+
+
 def parse_sections(content):
     """Parse markdown sections by heading.
 
@@ -2004,6 +2022,21 @@ def generate_action_items(feature_result, cdd_status=None):
                 ),
             })
 
+    # --- PM items ---
+    # Figma Dev Status Advisory Gate (policy_critic Section 2.9)
+    # Features in Builder TODO with Figma Status: Design -> LOW PM
+    figma_status = feature_result.get('_figma_status')
+    if lifecycle_state == 'todo' and figma_status == 'Design':
+        pm_items.append({
+            'priority': 'LOW',
+            'category': 'figma_design_not_ready',
+            'feature': feature_name,
+            'description': (
+                f'Figma design not marked Ready for Dev for '
+                f'{feature_name}'
+            ),
+        })
+
     return {
         'architect': architect_items,
         'builder': builder_items,
@@ -3056,6 +3089,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     result['_visual_ref_items'] = visual_ref_items
     result['_fixture_data'] = fixture_data
     result['_owner'] = extract_owner(content, filename)
+    result['_figma_status'] = extract_figma_status(content)
 
     # Generate action items (pass visual_spec and regression_scope)
     result['action_items'] = generate_action_items(result, cdd_status)

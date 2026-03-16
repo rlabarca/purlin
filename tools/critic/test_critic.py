@@ -76,6 +76,7 @@ from critic import (
     _parse_aft_web,
     compute_verification_effort,
     _get_requirements_diff,
+    extract_figma_status,
 )
 import logic_drift
 
@@ -8410,6 +8411,204 @@ class TestBriefStalenessCheck(unittest.TestCase):
         self.assertEqual(
             len(brief_items), 0,
             'Non-Figma refs should not trigger brief checks')
+
+
+# ===================================================================
+# Figma Dev Status Advisory Gate Tests (policy_critic Section 2.9)
+# ===================================================================
+
+class TestFigmaDevStatusAdvisoryGate(unittest.TestCase):
+    """Test that features in Builder TODO with Figma Status: Design
+    generate a LOW-priority PM action item."""
+
+    def test_extract_figma_status_present(self):
+        content = ('# Feature: Foo\n'
+                   '> Label: "Foo"\n'
+                   '> Figma Status: Design\n'
+                   '\n## Purpose\n')
+        self.assertEqual(extract_figma_status(content), 'Design')
+
+    def test_extract_figma_status_ready_for_dev(self):
+        content = ('# Feature: Foo\n'
+                   '> Label: "Foo"\n'
+                   '> Figma Status: Ready for Dev\n'
+                   '\n## Purpose\n')
+        self.assertEqual(extract_figma_status(content), 'Ready for Dev')
+
+    def test_extract_figma_status_absent(self):
+        content = ('# Feature: Foo\n'
+                   '> Label: "Foo"\n'
+                   '\n## Purpose\n')
+        self.assertIsNone(extract_figma_status(content))
+
+    def test_advisory_gate_generates_pm_item(self):
+        """Builder TODO + Figma Status: Design -> LOW PM item."""
+        cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/my_ui.md', 'label': 'UI'}],
+                'testing': [],
+                'complete': [],
+            },
+        }
+        result = {
+            'feature_file': 'features/my_ui.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS', 'violations': [],
+                                         'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS',
+                                                'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                        'detail': 'OK',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [],
+                                    'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+            'visual_spec': {'present': False, 'screens': 0, 'items': 0,
+                            'screen_names': []},
+            'regression_scope': {
+                'declared': 'full', 'scenarios': [],
+                'visual_items': 0, 'cross_validation_warnings': [],
+            },
+            '_visual_ref_items': [],
+            '_owner': 'Architect',
+            '_figma_status': 'Design',
+        }
+        items = generate_action_items(result, cdd_status=cdd_status)
+        pm_figma = [i for i in items['pm']
+                    if i['category'] == 'figma_design_not_ready']
+        self.assertEqual(len(pm_figma), 1)
+        self.assertEqual(pm_figma[0]['priority'], 'LOW')
+        self.assertIn('not marked Ready for Dev', pm_figma[0]['description'])
+
+    def test_advisory_gate_not_triggered_when_ready_for_dev(self):
+        """Figma Status: Ready for Dev should NOT trigger the gate."""
+        cdd_status = {
+            'features': {
+                'todo': [{'file': 'features/my_ui.md', 'label': 'UI'}],
+                'testing': [],
+                'complete': [],
+            },
+        }
+        result = {
+            'feature_file': 'features/my_ui.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0,
+                                     'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS', 'violations': [],
+                                         'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS',
+                                                'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                        'detail': 'OK',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [],
+                                    'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+            'visual_spec': {'present': False, 'screens': 0, 'items': 0,
+                            'screen_names': []},
+            'regression_scope': {
+                'declared': 'full', 'scenarios': [],
+                'visual_items': 0, 'cross_validation_warnings': [],
+            },
+            '_visual_ref_items': [],
+            '_owner': 'Architect',
+            '_figma_status': 'Ready for Dev',
+        }
+        items = generate_action_items(result, cdd_status=cdd_status)
+        pm_figma = [i for i in items['pm']
+                    if i['category'] == 'figma_design_not_ready']
+        self.assertEqual(len(pm_figma), 0)
+
+    def test_advisory_gate_not_triggered_when_not_todo(self):
+        """Feature in TESTING (not TODO) should NOT trigger the gate."""
+        import tempfile
+        import critic
+        orig_features = critic.FEATURES_DIR
+        tmpdir = tempfile.mkdtemp()
+        critic.FEATURES_DIR = tmpdir
+        try:
+            # Create a minimal feature file for TESTING-state reading
+            with open(os.path.join(tmpdir, 'my_ui.md'), 'w') as f:
+                f.write('# Feature: UI\n\n## 3. Scenarios\n\n'
+                        '### Manual Scenarios\n\n'
+                        '#### Scenario: Manual Check\n\n'
+                        '    Given something\n    Then verified\n')
+            cdd_status = {
+                'features': {
+                    'todo': [],
+                    'testing': [{'file': 'features/my_ui.md',
+                                 'label': 'UI'}],
+                    'complete': [],
+                },
+            }
+            result = {
+                'feature_file': 'features/my_ui.md',
+                'spec_gate': {'status': 'PASS', 'checks': {}},
+                'implementation_gate': {
+                    'status': 'PASS',
+                    'checks': {
+                        'traceability': {
+                            'status': 'PASS', 'coverage': 1.0,
+                            'detail': 'OK'},
+                        'policy_adherence': {
+                            'status': 'PASS', 'violations': [],
+                            'detail': 'OK'},
+                        'structural_completeness': {
+                            'status': 'PASS', 'detail': 'OK'},
+                        'builder_decisions': {
+                            'status': 'PASS',
+                            'summary': {
+                                'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                'DEVIATION': 0, 'DISCOVERY': 0},
+                            'detail': 'OK',
+                        },
+                        'logic_drift': {
+                            'status': 'PASS', 'pairs': [],
+                            'detail': 'OK'},
+                    },
+                },
+                'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                                 'discoveries': 0, 'intent_drifts': 0,
+                                 'spec_disputes': 0},
+                'visual_spec': {'present': False, 'screens': 0,
+                                'items': 0, 'screen_names': []},
+                'regression_scope': {
+                    'declared': 'full', 'scenarios': [],
+                    'visual_items': 0,
+                    'cross_validation_warnings': [],
+                },
+                '_visual_ref_items': [],
+                '_owner': 'Architect',
+                '_figma_status': 'Design',
+            }
+            items = generate_action_items(result, cdd_status=cdd_status)
+            pm_figma = [i for i in items['pm']
+                        if i['category'] == 'figma_design_not_ready']
+            self.assertEqual(len(pm_figma), 0)
+        finally:
+            critic.FEATURES_DIR = orig_features
 
 
 # ===================================================================
