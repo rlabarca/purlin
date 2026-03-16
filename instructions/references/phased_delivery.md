@@ -107,3 +107,38 @@ When B2 finds failures, the Builder does NOT blindly attempt a fix. Instead:
 - Update the spec to resolve the contradiction (triggers lifecycle reset, Builder re-implements)
 - Add approach guidance to the companion file (Builder reads it next session)
 - Acknowledge the Builder's workaround (unblocks `[Complete]`)
+
+## 10.11 Continuous Phase Mode
+
+The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` flag that automates the multi-phase delivery cycle. When active, the launcher progresses through all delivery plan phases without human intervention, using an LLM evaluator to decide the correct action after each Builder exit.
+
+### How It Works
+
+1. **Phase Analysis:** Before the first phase, the launcher runs `tools/delivery/phase_analyzer.py` to determine execution order and parallelization opportunities. The analyzer reads the delivery plan and dependency graph, topologically sorts phases by their inter-phase dependencies, and groups independent phases into parallel execution sets.
+
+2. **Execution Loop:** The launcher iterates through execution groups sequentially. For single-phase groups, the Builder runs in `-p` mode (non-interactive). For multi-phase groups, each Builder runs in a separate git worktree (`-w` flag) and the worktree branches are merged back after all complete.
+
+3. **LLM Evaluator:** After each Builder exit, the output is piped to a Haiku-based evaluator that returns a structured decision: `continue` (next phase), `approve` (Builder paused for approval, resume session), `retry` (context exhaustion, relaunch same phase), or `stop` (error or completion).
+
+4. **System Prompt Overrides:** In continuous mode, two overrides are appended to the Builder's system prompt: (a) an auto-proceed override that instructs the Builder to never pause for approval, and (b) a server permission override that grants the Builder permission to start/stop server processes for local verification.
+
+### Key Properties
+
+- **Opt-in only.** Without `--continuous`, the launcher behaves identically to today. Continuous mode is never automatic.
+- **Phase ordering correction.** The phase analyzer detects when the delivery plan has phases in the wrong dependency order and reorders them automatically.
+- **Parallel execution.** Independent phases (no cross-phase feature dependencies) run concurrently in separate worktrees, reducing total build time.
+- **Retry budget.** Maximum 2 consecutive retries per phase. If the retry limit is exceeded, the loop exits with an escalation message.
+- **Merge conflict escalation.** If merging parallel worktree branches produces a conflict, the loop stops immediately and directs the user to resolve manually.
+- **Evaluator fallback.** If the evaluator itself fails (Haiku unavailable), the launcher falls back to checking whether the delivery plan file changed since the last phase.
+- **Pass-through flags.** `--max-turns N` and `--max-budget-usd N` are forwarded to each Builder invocation.
+
+### Logging
+
+- Each phase's full output is written to `.purlin/runtime/continuous_build_phase_<N>.log`.
+- At exit, a summary reports: phases completed, parallel groups used, any failures, retries consumed, and total wall-clock duration.
+
+### Cross-References
+
+- Feature spec: `features/continuous_phase_builder.md`
+- Phase analyzer spec: `features/phase_analyzer.md`
+- Builder launcher spec: `features/builder_agent_launcher.md`
