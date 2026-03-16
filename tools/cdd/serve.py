@@ -3596,7 +3596,7 @@ function applySearchFilter() {{
 function extractMetadata(md) {{
   // Extract '> Key: Value' blockquote metadata lines from the beginning of markdown.
   // Returns {{ tags: [{{key, value}}], cleaned: mdWithoutMetadataBlockquotes }}.
-  var lines = md.split('\n');
+  var lines = md.split('\\n');
   var tags = [];
   var cleanedLines = [];
   var inMetaBlock = true; // only strip leading metadata blockquotes
@@ -3618,7 +3618,7 @@ function extractMetadata(md) {{
     }}
     cleanedLines.push(line);
   }}
-  return {{ tags: tags, cleaned: cleanedLines.join('\n') }};
+  return {{ tags: tags, cleaned: cleanedLines.join('\\n') }};
 }}
 
 function renderMetadata(tags) {{
