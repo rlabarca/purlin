@@ -214,7 +214,7 @@ create_web_feature() {
         echo ""
         echo "> Label: \"$label\""
         echo "> Category: \"$category\""
-        echo "> Web Testable: true"
+        echo "> AFT Web: http://localhost:9086"
         if [[ -n "$prereqs" ]]; then
             while IFS=',' read -ra PREREQ_ARR; do
                 for prereq in "${PREREQ_ARR[@]}"; do
@@ -1413,7 +1413,7 @@ commit_and_tag "main/pl_spec_code_audit/spec-code-gaps" \
 
 # =====================================================================
 echo ""
-echo "--- pl_web_verify ---"
+echo "--- pl_aft_web ---"
 
 reset_workdir
 create_base_project
@@ -1429,8 +1429,8 @@ create_tests_json_pass "web_feat_a"
 create_tests_json_pass "web_feat_b"
 create_tests_json_pass "non_web_feat"
 
-commit_and_tag "main/pl_web_verify/web-testable-features" \
-    "Project with multiple web-testable features for verifying discovery and execution flow"
+commit_and_tag "main/pl_aft_web/web-testable-features" \
+    "Project with multiple AFT-web-eligible features for verifying discovery and execution flow"
 
 # =====================================================================
 echo ""

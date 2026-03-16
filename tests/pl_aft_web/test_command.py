@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Tests for the /pl-web-verify agent command.
+"""Tests for the /pl-aft-web agent command.
 
-Covers automated scenarios from features/pl_web_verify.md:
+Covers automated scenarios from features/pl_aft_web.md:
 - Auto-discover web-testable features
 - URL override from argument
 - Playwright MCP not available triggers auto-setup
@@ -24,15 +24,15 @@ Covers automated scenarios from features/pl_web_verify.md:
 - Cosmetic scope skips feature
 - QA completion gate prompts for completion
 - Builder completion gate is summary only
-- Instruction files updated with web-verify references
+- Instruction files updated with aft-web references
 - Fixture-backed server started for scenario with fixture tag
 - Fixture checkout failure marks scenario inconclusive
 - Fixture cleanup after scenario completion
 
-The agent command is a Claude skill defined in .claude/commands/pl-web-verify.md.
+The agent command is a Claude skill defined in .claude/commands/pl-aft-web.md.
 These tests verify the underlying behaviors that the command depends on:
 - Skill file structure (role guard, argument docs, execution protocol)
-- Web Testable metadata parsing from feature files
+- AFT Web metadata parsing from feature files
 - URL override argument parsing
 - Scope filtering logic (cosmetic, targeted, dependency-only)
 - BUG discovery format validation
@@ -54,9 +54,9 @@ import unittest
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
 COMMAND_FILE = os.path.join(
-    PROJECT_ROOT, '.claude', 'commands', 'pl-web-verify.md')
+    PROJECT_ROOT, '.claude', 'commands', 'pl-aft-web.md')
 
-# Instruction files that must reference /pl-web-verify per Section 2.11
+# Instruction files that must reference /pl-aft-web per Section 2.13
 INSTRUCTION_FILES = {
     'feature_format': os.path.join(
         PROJECT_ROOT, 'instructions', 'references', 'feature_format.md'),
@@ -76,16 +76,15 @@ INSTRUCTION_FILES = {
         PROJECT_ROOT, 'instructions', 'references', 'builder_commands.md'),
 }
 
-# Sample feature spec with Web Testable metadata
-SAMPLE_WEB_TESTABLE_WITH_PORT_FILE = """\
-# Feature: Sample Web Feature with Port File
+# Sample feature spec with AFT Web metadata and AFT Start
+SAMPLE_AFT_WEB_WITH_START = """\
+# Feature: Sample Web Feature with Start
 
 > Label: "Sample Feature"
 > Category: "CDD"
 > Prerequisite: features/policy_critic.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
-> Web Start: /pl-cdd
+> AFT Web: http://localhost:9086
+> AFT Start: /pl-cdd
 
 [TESTING]
 
@@ -107,7 +106,7 @@ SAMPLE_WEB_TESTABLE_FEATURE = """\
 > Label: "Sample Feature"
 > Category: "CDD"
 > Prerequisite: features/policy_critic.md
-> Web Testable: http://localhost:9086
+> AFT Web: http://localhost:9086
 
 [TESTING]
 
@@ -143,7 +142,7 @@ A sample feature for testing.
 - [ ] Status badges show correct colors
 """
 
-# Sample feature spec WITHOUT Web Testable metadata
+# Sample feature spec WITHOUT AFT Web metadata
 SAMPLE_NON_WEB_FEATURE = """\
 # Feature: CLI Tool
 
@@ -201,8 +200,7 @@ SAMPLE_WEB_TESTABLE_WITH_FIGMA = """\
 > Category: "CDD"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_visual_standards.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
+> AFT Web: http://localhost:9086
 
 [TESTING]
 
@@ -239,7 +237,7 @@ SAMPLE_WEB_TESTABLE_NO_FIGMA_VISUAL = """\
 > Label: "Sample Feature"
 > Category: "CDD"
 > Prerequisite: features/policy_critic.md
-> Web Testable: http://localhost:9086
+> AFT Web: http://localhost:9086
 
 [TESTING]
 
@@ -266,9 +264,8 @@ SAMPLE_WEB_TESTABLE_WITH_FIXTURES = """\
 > Label: "Sample Feature"
 > Category: "CDD"
 > Prerequisite: features/policy_critic.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
-> Web Start: /pl-cdd
+> AFT Web: http://localhost:9086
+> AFT Start: /pl-cdd
 > Test Fixtures: https://github.com/org/fixtures.git
 
 [TESTING]
@@ -328,9 +325,9 @@ def _write_critic_json(tmpdir, feature_name, content):
     return path
 
 
-def _extract_web_testable_url(content):
-    """Extract the Web Testable URL from feature file content."""
-    match = re.search(r'>\s*Web Testable:\s*(\S+)', content)
+def _extract_aft_web_url(content):
+    """Extract the AFT Web URL from feature file content."""
+    match = re.search(r'>\s*AFT Web:\s*(\S+)', content)
     return match.group(1) if match else None
 
 
@@ -490,30 +487,28 @@ def _assign_triangulation_verdict(figma_val, spec_val, app_val):
     return 'BUG'
 
 
-def _extract_web_port_file(content):
-    """Extract the Web Port File path from feature file content."""
-    match = re.search(r'>\s*Web Port File:\s*(\S+)', content)
-    return match.group(1) if match else None
-
-
-def _extract_web_start(content):
-    """Extract the Web Start command from feature file content."""
-    match = re.search(r'>\s*Web Start:\s*(.+)', content)
+def _extract_aft_start(content):
+    """Extract the AFT Start command from feature file content."""
+    match = re.search(r'>\s*AFT Start:\s*(.+)', content)
     return match.group(1).strip() if match else None
 
 
-def _resolve_url(base_url, port_file_path=None, url_override=None,
-                 project_root=None):
+# Runtime port file path (hardcoded, not per-feature metadata)
+RUNTIME_PORT_FILE = '.purlin/runtime/cdd.port'
+
+
+def _resolve_url(base_url, url_override=None, project_root=None):
     """Resolve the effective URL using the priority order.
 
-    Priority: (1) URL override, (2) runtime port file, (3) base URL.
+    Priority: (1) URL override, (2) runtime port file at
+    .purlin/runtime/cdd.port, (3) base URL.
     Returns the resolved URL string.
     """
     if url_override:
         return url_override
 
-    if port_file_path and project_root:
-        abs_port_path = os.path.join(project_root, port_file_path)
+    if project_root:
+        abs_port_path = os.path.join(project_root, RUNTIME_PORT_FILE)
         if os.path.isfile(abs_port_path):
             try:
                 with open(abs_port_path) as f:
@@ -557,12 +552,12 @@ class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
     """Scenario: Auto-discover web-testable features
 
     Given the Critic report shows features in TESTING state
-    And some features have `> Web Testable:` metadata and others do not
-    When `/pl-web-verify` is invoked without arguments
-    Then only features with `> Web Testable:` metadata are selected
+    And some features have `> AFT Web:` metadata and others do not
+    When `/pl-aft-web` is invoked without arguments
+    Then only features with `> AFT Web:` metadata are selected
     And features without the annotation are silently skipped
 
-    Test: Verifies Web Testable metadata parsing and filtering logic.
+    Test: Verifies AFT Web metadata parsing and filtering logic.
     """
 
     def setUp(self):
@@ -571,18 +566,18 @@ class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    def test_web_testable_url_extracted(self):
-        """URL is correctly extracted from > Web Testable: metadata."""
-        url = _extract_web_testable_url(SAMPLE_WEB_TESTABLE_FEATURE)
+    def test_aft_web_url_extracted(self):
+        """URL is correctly extracted from > AFT Web: metadata."""
+        url = _extract_aft_web_url(SAMPLE_WEB_TESTABLE_FEATURE)
         self.assertEqual(url, 'http://localhost:9086')
 
     def test_non_web_feature_returns_none(self):
-        """Feature without Web Testable metadata returns None."""
-        url = _extract_web_testable_url(SAMPLE_NON_WEB_FEATURE)
+        """Feature without AFT Web metadata returns None."""
+        url = _extract_aft_web_url(SAMPLE_NON_WEB_FEATURE)
         self.assertIsNone(url)
 
-    def test_filtering_selects_only_web_testable(self):
-        """Only features with Web Testable metadata pass the filter."""
+    def test_filtering_selects_only_aft_web(self):
+        """Only features with AFT Web metadata pass the filter."""
         _write_feature(self.tmpdir, 'web_feat', SAMPLE_WEB_TESTABLE_FEATURE)
         _write_feature(self.tmpdir, 'cli_feat', SAMPLE_NON_WEB_FEATURE)
         features_dir = os.path.join(self.tmpdir, 'features')
@@ -591,20 +586,20 @@ class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
             path = os.path.join(features_dir, fname)
             with open(path) as f:
                 content = f.read()
-            if _extract_web_testable_url(content):
+            if _extract_aft_web_url(content):
                 eligible.append(fname)
         self.assertEqual(eligible, ['web_feat.md'])
 
-    def test_web_testable_metadata_position(self):
-        """Web Testable metadata works alongside other > metadata lines."""
+    def test_aft_web_metadata_position(self):
+        """AFT Web metadata works alongside other > metadata lines."""
         content = SAMPLE_WEB_TESTABLE_FEATURE
         self.assertIn('> Label:', content)
         self.assertIn('> Category:', content)
         self.assertIn('> Prerequisite:', content)
-        self.assertIn('> Web Testable:', content)
+        self.assertIn('> AFT Web:', content)
 
     def test_command_file_exists(self):
-        """The skill command file .claude/commands/pl-web-verify.md exists."""
+        """The skill command file .claude/commands/pl-aft-web.md exists."""
         self.assertTrue(os.path.isfile(COMMAND_FILE),
                         f'Command file not found: {COMMAND_FILE}')
 
@@ -612,8 +607,8 @@ class TestAutoDiscoverWebTestableFeatures(unittest.TestCase):
 class TestUrlOverrideFromArgument(unittest.TestCase):
     """Scenario: URL override from argument
 
-    Given a feature has `> Web Testable: http://localhost:9086`
-    When `/pl-web-verify feature_name http://localhost:3000` is invoked
+    Given a feature has `> AFT Web: http://localhost:9086`
+    When `/pl-aft-web feature_name http://localhost:3000` is invoked
     Then the URL override `http://localhost:3000` is used instead
 
     Test: Verifies URL override argument parsing.
@@ -640,8 +635,8 @@ class TestUrlOverrideFromArgument(unittest.TestCase):
         self.assertEqual(features, ['feature_a', 'feature_b'])
 
     def test_url_override_replaces_spec_url(self):
-        """URL override takes precedence over the spec's Web Testable URL."""
-        spec_url = _extract_web_testable_url(SAMPLE_WEB_TESTABLE_FEATURE)
+        """URL override takes precedence over the spec's AFT Web URL."""
+        spec_url = _extract_aft_web_url(SAMPLE_WEB_TESTABLE_FEATURE)
         _, override = _parse_url_override(
             ['sample_web', 'http://localhost:3000'])
         effective_url = override if override else spec_url
@@ -666,7 +661,7 @@ class TestPlaywrightMcpAutoSetup(unittest.TestCase):
     """Scenario: Playwright MCP not available triggers auto-setup
 
     Given Playwright MCP tools are not available in the current session
-    When `/pl-web-verify` is invoked
+    When `/pl-aft-web` is invoked
     Then the skill attempts to install and configure Playwright MCP
     And informs the user a session restart is required
     And stops execution (does not attempt verification)
@@ -708,7 +703,7 @@ class TestManualScenarioPassRecording(unittest.TestCase):
 
     Given a web-testable feature has a manual scenario with Given/When/Then
     And Playwright MCP is available
-    When `/pl-web-verify` executes the scenario
+    When `/pl-aft-web` executes the scenario
     And all Then/And verification points pass
     Then the scenario is recorded as PASS with evidence notes
 
@@ -755,7 +750,7 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
     """Scenario: Manual scenario FAIL creates BUG discovery
 
     Given a web-testable feature has a manual scenario
-    When `/pl-web-verify` executes the scenario
+    When `/pl-aft-web` executes the scenario
     And a Then verification point fails
     Then a [BUG] discovery is recorded in the feature's discovery sidecar file
     And the discovery includes observed behavior from screenshot/DOM
@@ -811,7 +806,7 @@ class TestManualScenarioFailCreatesBugDiscovery(unittest.TestCase):
             content = f.read()
         self.assertIn('qa(', content)
         self.assertIn('[BUG]', content)
-        self.assertIn('web-verify', content)
+        self.assertIn('aft-web', content)
 
     def test_skill_records_bugs_in_discovery_sidecar(self):
         """Skill file directs BUG recording to discovery sidecar files."""
@@ -824,7 +819,7 @@ class TestInconclusiveStepHandling(unittest.TestCase):
     """Scenario: Inconclusive step handled gracefully
 
     Given a manual scenario contains a step requiring non-browser verification
-    When `/pl-web-verify` cannot automate that step
+    When `/pl-aft-web` cannot automate that step
     Then the step is marked INCONCLUSIVE
     And the summary recommends manual verification via `/pl-verify`
     And the inconclusive step is NOT recorded as a failure
@@ -870,7 +865,7 @@ class TestVisualSpecVerificationNoFigma(unittest.TestCase):
 
     Given a web-testable feature has a `## Visual Specification` with checklist
     And Figma MCP tools are not available
-    When `/pl-web-verify` navigates to the screen and takes a screenshot
+    When `/pl-aft-web` navigates to the screen and takes a screenshot
     Then each checklist item is analyzed against the screenshot using vision
     And PASS/FAIL is recorded per item with observation notes
     And the output notes "Figma MCP not available -- triangulated verification
@@ -941,7 +936,7 @@ class TestFigmaTriangulatedAllAgree(unittest.TestCase):
     And the Token Map maps "primary" to "var(--accent)"
     And a checklist item states "Card width 120px"
     And Figma MCP is available
-    When `/pl-web-verify` performs triangulated verification
+    When `/pl-aft-web` performs triangulated verification
     Then the Figma node width is read via MCP
     And the app computed width is read via browser_evaluate
     And all three sources agree on 120px
@@ -1022,7 +1017,7 @@ class TestFigmaTriangulatedDetectsBug(unittest.TestCase):
     Given a web-testable feature has a Visual Specification with Figma reference
     And a checklist item states "Icon 48x48"
     And Figma reports 48px and spec says 48px but app computes 32px
-    When `/pl-web-verify` performs triangulated verification
+    When `/pl-aft-web` performs triangulated verification
     Then the item is recorded as BUG with three-source attribution
     And a [BUG] discovery is created routing to Builder
 
@@ -1072,7 +1067,7 @@ class TestFigmaTriangulatedDetectsStale(unittest.TestCase):
     And a checklist item states "heading-lg font"
     And Figma has been updated to use "heading-xl" but spec still says
     "heading-lg"
-    When `/pl-web-verify` performs triangulated verification
+    When `/pl-aft-web` performs triangulated verification
     Then the item is recorded as STALE
     And the output notes Figma was updated but spec was not re-ingested
     And a PM action item is generated for re-ingestion
@@ -1122,7 +1117,7 @@ class TestFigmaTriangulatedDetectsTokenDrift(unittest.TestCase):
     "spacing-md" -> "var(--spacing-md)"
     And Figma reports spacing-md resolved value is 20px
     And the app's computed --spacing-md value is 16px
-    When `/pl-web-verify` performs token verification
+    When `/pl-aft-web` performs token verification
     Then the token entry is recorded as DRIFT
     And the output shows Figma=20px App=16px
 
@@ -1180,7 +1175,7 @@ class TestFigmaTriangulatedDetectsTokenDrift(unittest.TestCase):
 class TestThreeSourceReportFormat(unittest.TestCase):
     """Scenario: Three-source report format
 
-    Given `/pl-web-verify` has completed triangulated verification
+    Given `/pl-aft-web` has completed triangulated verification
     When results are printed
     Then the output includes a "Triangulated Verification" section
     And each item shows Figma, Spec, and App values
@@ -1261,7 +1256,7 @@ class TestRegressionScopeRespected(unittest.TestCase):
     """Scenario: Regression scope respected
 
     Given a feature's critic.json has regression_scope: "targeted:Scenario A"
-    When `/pl-web-verify` is invoked for that feature
+    When `/pl-aft-web` is invoked for that feature
     Then only "Scenario A" is executed
     And all other manual scenarios and visual items are skipped
 
@@ -1324,7 +1319,7 @@ class TestCosmeticScopeSkipsFeature(unittest.TestCase):
     """Scenario: Cosmetic scope skips feature
 
     Given a feature's critic.json has regression_scope: "cosmetic"
-    When `/pl-web-verify` is invoked for that feature
+    When `/pl-aft-web` is invoked for that feature
     Then the feature is skipped entirely with a note
 
     Test: Verifies cosmetic scope filtering.
@@ -1424,13 +1419,13 @@ class TestBuilderCompletionGate(unittest.TestCase):
 
 
 class TestInstructionFilesUpdated(unittest.TestCase):
-    """Scenario: Instruction files updated with web-verify references
+    """Scenario: Instruction files updated with aft-web references
 
     Given the skill file has been created
-    When instruction updates are applied per Section 2.11
-    Then /pl-web-verify appears in both QA and Builder authorized command lists
-    And /pl-web-verify [name] appears in all variants of both command tables
-    And > Web Testable: is documented in feature_format.md
+    When instruction updates are applied per Section 2.13
+    Then /pl-aft-web appears in both QA and Builder authorized command lists
+    And /pl-aft-web [name] appears in all variants of both command tables
+    And > AFT Web: is documented in feature_format.md
     And visual_spec_convention.md references the automated alternative
     And visual_verification_protocol.md has Section 5.4.7 for Playwright MCP
 
@@ -1438,62 +1433,62 @@ class TestInstructionFilesUpdated(unittest.TestCase):
     """
 
     def test_all_seven_instruction_files_exist(self):
-        """All 7 instruction files from Section 2.11 exist."""
+        """All 7 instruction files from Section 2.13 exist."""
         for name, path in INSTRUCTION_FILES.items():
             self.assertTrue(os.path.isfile(path),
                             f'Instruction file not found: {name} at {path}')
 
     def test_qa_base_authorized_commands(self):
-        """QA_BASE.md authorized commands include /pl-web-verify."""
+        """QA_BASE.md authorized commands include /pl-aft-web."""
         with open(INSTRUCTION_FILES['qa_base']) as f:
             content = f.read()
         # Find the authorized commands line
         for line in content.split('\n'):
-            if 'Authorized commands:' in line and '/pl-web-verify' in line:
+            if 'Authorized commands:' in line and '/pl-aft-web' in line:
                 break
         else:
-            self.fail('/pl-web-verify not in QA_BASE authorized commands')
+            self.fail('/pl-aft-web not in QA_BASE authorized commands')
 
     def test_builder_base_authorized_commands(self):
-        """BUILDER_BASE.md authorized commands include /pl-web-verify."""
+        """BUILDER_BASE.md authorized commands include /pl-aft-web."""
         with open(INSTRUCTION_FILES['builder_base']) as f:
             content = f.read()
         for line in content.split('\n'):
-            if 'Authorized commands:' in line and '/pl-web-verify' in line:
+            if 'Authorized commands:' in line and '/pl-aft-web' in line:
                 break
         else:
-            self.fail('/pl-web-verify not in BUILDER_BASE authorized commands')
+            self.fail('/pl-aft-web not in BUILDER_BASE authorized commands')
 
     def test_qa_commands_both_variants(self):
-        """qa_commands.md has /pl-web-verify in both table variants."""
+        """qa_commands.md has /pl-aft-web in both table variants."""
         with open(INSTRUCTION_FILES['qa_commands']) as f:
             content = f.read()
-        occurrences = content.count('/pl-web-verify')
+        occurrences = content.count('/pl-aft-web')
         self.assertGreaterEqual(
             occurrences, 2,
             f'Expected >= 2 occurrences in qa_commands.md, found {occurrences}')
 
     def test_builder_commands_both_variants(self):
-        """builder_commands.md has /pl-web-verify in both table variants."""
+        """builder_commands.md has /pl-aft-web in both table variants."""
         with open(INSTRUCTION_FILES['builder_commands']) as f:
             content = f.read()
-        occurrences = content.count('/pl-web-verify')
+        occurrences = content.count('/pl-aft-web')
         self.assertGreaterEqual(
             occurrences, 2,
             f'Expected >= 2 in builder_commands.md, found {occurrences}')
 
-    def test_feature_format_documents_web_testable(self):
-        """feature_format.md documents > Web Testable: metadata."""
+    def test_feature_format_documents_aft_web(self):
+        """feature_format.md documents > AFT Web: metadata."""
         with open(INSTRUCTION_FILES['feature_format']) as f:
             content = f.read()
-        self.assertIn('Web Testable', content)
-        self.assertIn('/pl-web-verify', content)
+        self.assertIn('AFT Web', content)
+        self.assertIn('/pl-aft-web', content)
 
     def test_visual_spec_convention_references_automated_alt(self):
         """visual_spec_convention.md references automated Playwright MCP."""
         with open(INSTRUCTION_FILES['visual_spec_convention']) as f:
             content = f.read()
-        self.assertIn('/pl-web-verify', content)
+        self.assertIn('/pl-aft-web', content)
         self.assertIn('Playwright MCP', content)
 
     def test_visual_verification_protocol_section_547(self):
@@ -1507,10 +1502,10 @@ class TestInstructionFilesUpdated(unittest.TestCase):
         """visual_verification_protocol.md on-demand loader includes cmd."""
         with open(INSTRUCTION_FILES['visual_verification_protocol']) as f:
             content = f.read()
-        # The loader notice at the top should mention /pl-web-verify
+        # The loader notice at the top should mention /pl-aft-web
         lines = content.split('\n')[:5]
         loader_text = '\n'.join(lines)
-        self.assertIn('/pl-web-verify', loader_text)
+        self.assertIn('/pl-aft-web', loader_text)
 
     def test_visual_spec_convention_loader_notice(self):
         """visual_spec_convention.md on-demand loader includes cmd."""
@@ -1518,33 +1513,33 @@ class TestInstructionFilesUpdated(unittest.TestCase):
             content = f.read()
         lines = content.split('\n')[:5]
         loader_text = '\n'.join(lines)
-        self.assertIn('/pl-web-verify', loader_text)
+        self.assertIn('/pl-aft-web', loader_text)
 
-    def test_qa_base_references_web_testable_in_section_54(self):
-        """QA_BASE.md Section 5.4 references Web Testable and /pl-web-verify."""
+    def test_qa_base_references_aft_web_in_section_54(self):
+        """QA_BASE.md Section 5.4 references AFT Web and /pl-aft-web."""
         with open(INSTRUCTION_FILES['qa_base']) as f:
             content = f.read()
-        self.assertIn('Web Testable', content)
+        self.assertIn('AFT Web', content)
         self.assertIn('Section 5.4.7', content)
 
-    def test_builder_base_references_web_verification(self):
-        """BUILDER_BASE.md references web verification in Section 5.3."""
+    def test_builder_base_references_aft_web(self):
+        """BUILDER_BASE.md references AFT Web verification."""
         with open(INSTRUCTION_FILES['builder_base']) as f:
             content = f.read()
-        self.assertIn('Web Verification', content)
-        self.assertIn('Web Testable', content)
+        self.assertIn('AFT Web', content)
+        self.assertIn('/pl-aft-web', content)
 
 
 class TestDynamicPortResolution(unittest.TestCase):
-    """Scenario: Dynamic port resolution from port file
+    """Scenario: Dynamic port resolution from runtime port file
 
-    Given a feature has `> Web Testable: http://localhost:9086`
-    And the feature has `> Web Port File: .purlin/runtime/cdd.port`
+    Given a feature has `> AFT Web: http://localhost:9086`
     And `.purlin/runtime/cdd.port` contains `52288`
-    When `/pl-web-verify` resolves the URL for that feature
+    When `/pl-aft-web` resolves the URL for that feature
     Then the resolved URL is `http://localhost:52288`
+    And port `9086` from the metadata is not used
 
-    Test: Verifies port file reading and URL port replacement.
+    Test: Verifies internal port file reading and URL port replacement.
     """
 
     def setUp(self):
@@ -1553,30 +1548,18 @@ class TestDynamicPortResolution(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    def test_port_file_metadata_extracted(self):
-        """Web Port File metadata is correctly extracted."""
-        port_file = _extract_web_port_file(
-            SAMPLE_WEB_TESTABLE_WITH_PORT_FILE)
-        self.assertEqual(port_file, '.purlin/runtime/cdd.port')
-
-    def test_web_start_metadata_extracted(self):
-        """Web Start metadata is correctly extracted."""
-        start_cmd = _extract_web_start(
-            SAMPLE_WEB_TESTABLE_WITH_PORT_FILE)
+    def test_aft_start_metadata_extracted(self):
+        """AFT Start metadata is correctly extracted."""
+        start_cmd = _extract_aft_start(SAMPLE_AFT_WEB_WITH_START)
         self.assertEqual(start_cmd, '/pl-cdd')
 
-    def test_no_port_file_metadata_returns_none(self):
-        """Feature without Web Port File returns None."""
-        port_file = _extract_web_port_file(SAMPLE_WEB_TESTABLE_FEATURE)
-        self.assertIsNone(port_file)
-
-    def test_no_web_start_returns_none(self):
-        """Feature without Web Start returns None."""
-        start_cmd = _extract_web_start(SAMPLE_WEB_TESTABLE_FEATURE)
+    def test_no_aft_start_returns_none(self):
+        """Feature without AFT Start returns None."""
+        start_cmd = _extract_aft_start(SAMPLE_WEB_TESTABLE_FEATURE)
         self.assertIsNone(start_cmd)
 
-    def test_port_file_overrides_spec_port(self):
-        """Port from file replaces port in Web Testable URL."""
+    def test_runtime_port_file_overrides_spec_port(self):
+        """Runtime port file replaces port in AFT Web URL."""
         runtime_dir = os.path.join(self.tmpdir, '.purlin', 'runtime')
         os.makedirs(runtime_dir)
         with open(os.path.join(runtime_dir, 'cdd.port'), 'w') as f:
@@ -1584,7 +1567,6 @@ class TestDynamicPortResolution(unittest.TestCase):
 
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path='.purlin/runtime/cdd.port',
             project_root=self.tmpdir)
         self.assertEqual(resolved, 'http://localhost:52288')
 
@@ -1592,7 +1574,6 @@ class TestDynamicPortResolution(unittest.TestCase):
         """Missing port file falls back to spec URL."""
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path='.purlin/runtime/cdd.port',
             project_root=self.tmpdir)
         self.assertEqual(resolved, 'http://localhost:9086')
 
@@ -1605,7 +1586,6 @@ class TestDynamicPortResolution(unittest.TestCase):
 
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path='.purlin/runtime/cdd.port',
             project_root=self.tmpdir)
         self.assertEqual(resolved, 'http://localhost:9086')
 
@@ -1618,17 +1598,15 @@ class TestDynamicPortResolution(unittest.TestCase):
 
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path='.purlin/runtime/cdd.port',
             url_override='http://localhost:3000',
             project_root=self.tmpdir)
         self.assertEqual(resolved, 'http://localhost:3000')
 
-    def test_no_port_file_path_uses_base_url(self):
-        """No port file path uses base URL directly."""
+    def test_no_project_root_uses_base_url(self):
+        """No project root uses base URL directly."""
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path=None,
-            project_root=self.tmpdir)
+            project_root=None)
         self.assertEqual(resolved, 'http://localhost:9086')
 
     def test_invalid_port_file_content_falls_back(self):
@@ -1640,9 +1618,12 @@ class TestDynamicPortResolution(unittest.TestCase):
 
         resolved = _resolve_url(
             'http://localhost:9086',
-            port_file_path='.purlin/runtime/cdd.port',
             project_root=self.tmpdir)
         self.assertEqual(resolved, 'http://localhost:9086')
+
+    def test_runtime_port_file_path_is_hardcoded(self):
+        """The runtime port file path is a module constant, not per-feature."""
+        self.assertEqual(RUNTIME_PORT_FILE, '.purlin/runtime/cdd.port')
 
 
 class TestHeadedPlaywrightDetection(unittest.TestCase):
@@ -1650,7 +1631,7 @@ class TestHeadedPlaywrightDetection(unittest.TestCase):
 
     Given Playwright MCP tools are available in the current session
     But the MCP server was configured without `--headless`
-    When `/pl-web-verify` is invoked
+    When `/pl-aft-web` is invoked
     Then the skill instructs the user to reconfigure with headless mode
 
     Test: Verifies skill file has headless detection logic.
@@ -1694,13 +1675,13 @@ class TestDynamicPortResolutionInSkillFile(unittest.TestCase):
         with open(COMMAND_FILE) as f:
             self.command_content = f.read()
 
-    def test_skill_references_web_port_file(self):
-        """Skill file references Web Port File metadata."""
-        self.assertIn('Web Port File', self.command_content)
+    def test_skill_references_runtime_port_file(self):
+        """Skill file references runtime port file."""
+        self.assertIn('cdd.port', self.command_content)
 
-    def test_skill_references_web_start(self):
-        """Skill file references Web Start metadata."""
-        self.assertIn('Web Start', self.command_content)
+    def test_skill_references_aft_start(self):
+        """Skill file references AFT Start metadata."""
+        self.assertIn('AFT Start', self.command_content)
 
     def test_skill_documents_priority_order(self):
         """Skill file documents URL override > port file > spec URL."""
@@ -1727,10 +1708,10 @@ class TestDynamicPortResolutionInSkillFile(unittest.TestCase):
 class TestFixtureBackedServerStarted(unittest.TestCase):
     """Scenario: Fixture-backed server started for scenario with fixture tag
 
-    Given a feature has `> Web Testable: http://localhost:9086`
+    Given a feature has `> AFT Web: http://localhost:9086`
     And the feature has `> Test Fixtures: https://github.com/org/fixtures.git`
     And a scenario's Given step references fixture tag "main/feature/scenario-one"
-    When `/pl-web-verify` processes that scenario
+    When `/pl-aft-web` processes that scenario
     Then the fixture tag is checked out to a temp directory
     And a CDD server is started with `--project-root <fixture-dir> --port 0`
     And the ephemeral port from the server's stdout is used for navigation
@@ -1796,7 +1777,7 @@ class TestFixtureCheckoutFailureInconclusive(unittest.TestCase):
 
     Given a feature has `> Test Fixtures: https://github.com/org/fixtures.git`
     And a scenario references fixture tag "main/feature/nonexistent-tag"
-    When `/pl-web-verify` attempts to check out the fixture
+    When `/pl-aft-web` attempts to check out the fixture
     Then the checkout fails (tag not found)
     And the scenario is marked INCONCLUSIVE
     And other scenarios in the feature continue normally
@@ -1843,7 +1824,7 @@ class TestFixtureCleanupAfterCompletion(unittest.TestCase):
     """Scenario: Fixture cleanup after scenario completion
 
     Given a fixture-backed scenario has completed (pass or fail)
-    When `/pl-web-verify` moves to the next scenario
+    When `/pl-aft-web` moves to the next scenario
     Then the fixture-backed CDD server has been stopped
     And the fixture checkout directory has been removed
 
@@ -1874,8 +1855,86 @@ class TestFixtureCleanupAfterCompletion(unittest.TestCase):
         self.assertIn('Non-fixture scenarios', self.command_content)
 
 
+class TestLegacyPlWebVerifyRemoved(unittest.TestCase):
+    """Scenario: Legacy pl-web-verify references fully removed
+
+    Given the pl-aft-web skill file exists at `.claude/commands/pl-aft-web.md`
+    When a search is performed for "pl-web-verify" or "Web Testable" across
+    all non-release-note files
+    Then zero matches are found
+    And the old skill file `.claude/commands/pl-web-verify.md` does not exist
+    And the test directory is `tests/pl_aft_web/` (not `tests/pl_web_verify/`)
+
+    Test: Verifies that all legacy references have been cleaned up.
+    """
+
+    def test_old_skill_file_does_not_exist(self):
+        """The old .claude/commands/pl-web-verify.md file does not exist."""
+        old_path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-web-verify.md')
+        self.assertFalse(
+            os.path.isfile(old_path),
+            f'Old skill file still exists: {old_path}')
+
+    def test_new_skill_file_exists(self):
+        """The new .claude/commands/pl-aft-web.md file exists."""
+        self.assertTrue(
+            os.path.isfile(COMMAND_FILE),
+            f'New skill file not found: {COMMAND_FILE}')
+
+    def test_old_test_directory_does_not_exist(self):
+        """The old tests/pl_web_verify/ directory does not exist."""
+        old_dir = os.path.join(PROJECT_ROOT, 'tests', 'pl_web_verify')
+        self.assertFalse(
+            os.path.isdir(old_dir),
+            f'Old test directory still exists: {old_dir}')
+
+    def test_new_test_directory_exists(self):
+        """The new tests/pl_aft_web/ directory exists."""
+        new_dir = os.path.join(PROJECT_ROOT, 'tests', 'pl_aft_web')
+        self.assertTrue(
+            os.path.isdir(new_dir),
+            f'New test directory not found: {new_dir}')
+
+    def test_no_web_testable_in_skill_file(self):
+        """The new skill file contains no 'Web Testable' references."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertNotIn('Web Testable', content)
+
+    def test_no_pl_web_verify_in_skill_file(self):
+        """The new skill file contains no 'pl-web-verify' references."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertNotIn('pl-web-verify', content)
+
+    def test_no_web_testable_in_critic(self):
+        """tools/critic/critic.py contains no 'Web Testable' references."""
+        critic_path = os.path.join(
+            PROJECT_ROOT, 'tools', 'critic', 'critic.py')
+        with open(critic_path) as f:
+            content = f.read()
+        self.assertNotIn('Web Testable', content)
+
+    def test_no_web_testable_in_fixture_setup(self):
+        """dev/setup_fixture_repo.sh contains no 'Web Testable' refs."""
+        fixture_path = os.path.join(
+            PROJECT_ROOT, 'dev', 'setup_fixture_repo.sh')
+        with open(fixture_path) as f:
+            content = f.read()
+        self.assertNotIn('Web Testable', content)
+
+    def test_no_pl_web_verify_in_fixture_setup(self):
+        """dev/setup_fixture_repo.sh has no 'pl_web_verify' tag refs."""
+        fixture_path = os.path.join(
+            PROJECT_ROOT, 'dev', 'setup_fixture_repo.sh')
+        with open(fixture_path) as f:
+            content = f.read()
+        self.assertNotIn('pl_web_verify', content)
+
+
 # =============================================================================
-# Test runner: writes results to tests/pl_web_verify/tests.json
+# Test runner: writes results to tests/pl_aft_web/tests.json
 # =============================================================================
 if __name__ == '__main__':
     import json as _json
@@ -1891,7 +1950,7 @@ if __name__ == '__main__':
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    tests_dir = os.path.join(project_root, 'tests', 'pl_web_verify')
+    tests_dir = os.path.join(project_root, 'tests', 'pl_aft_web')
     os.makedirs(tests_dir, exist_ok=True)
     passed = result.testsRun - len(result.failures) - len(result.errors)
     failed = len(result.failures) + len(result.errors)
