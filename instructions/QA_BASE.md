@@ -111,7 +111,7 @@ When the user reports a FAIL or disputes a scenario, ask them to describe what t
 Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`
 
 *   **OPEN:** Just recorded. Architect and Builder have not yet responded.
-*   **SPEC_UPDATED:** Architect has updated the Gherkin scenarios to address this.
+*   **SPEC_UPDATED:** Architect or PM has updated the spec (Gherkin scenarios or Visual Specification) to address this.
 *   **RESOLVED:** Builder has re-implemented and the fix passes verification.
 *   **PRUNED:** Entry removed from Discoveries and summarized in Implementation Notes (see Section 4.5).
 
