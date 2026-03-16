@@ -1290,12 +1290,12 @@ def _qa_badge_html(entry):
 
     # Build tooltip with full category breakdown (omit zero categories)
     auto_parts = []
-    if ve.get("auto_web", 0) > 0:
-        auto_parts.append(f'{ve["auto_web"]} web')
-    if ve.get("auto_test_only", 0) > 0:
-        auto_parts.append(f'{ve["auto_test_only"]} test-only')
-    if ve.get("auto_skip", 0) > 0:
-        auto_parts.append(f'{ve["auto_skip"]} skip')
+    if ve.get("aft_web", 0) > 0:
+        auto_parts.append(f'{ve["aft_web"]} web')
+    if ve.get("aft_test_only", 0) > 0:
+        auto_parts.append(f'{ve["aft_test_only"]} test-only')
+    if ve.get("aft_skip", 0) > 0:
+        auto_parts.append(f'{ve["aft_skip"]} skip')
 
     manual_parts = []
     if ve.get("manual_interactive", 0) > 0:

@@ -549,7 +549,7 @@ def parse_fixture_tags(content):
     """Parse fixture tag declarations from a feature spec.
 
     Detects:
-    - ``### 2.x Web-Verify Fixture Tags`` sections (and variants like
+    - ``### 2.x AFT Web Fixture Tags`` sections (and variants like
       ``Integration Test Fixture Tags``, ``Fixture Tags Required``,
       ``Fixture Tags for Testing``)
     - ``> Test Fixtures: <repo-url>`` metadata lines
@@ -571,7 +571,7 @@ def parse_fixture_tags(content):
 
     # Find fixture tag sections: ### 2.x ... Fixture Tags ...
     # Matches headings like:
-    #   ### 2.5 Web-Verify Fixture Tags
+    #   ### 2.5 AFT Web Fixture Tags
     #   ### 2.13 Integration Test Fixture Tags
     #   ### 2.3 Fixture Tags Required
     #   ### 2.8 Fixture Tags for Testing
@@ -2626,12 +2626,12 @@ def _get_feature_change_scope(feature_file, cdd_status):
     return None
 
 
-def _parse_web_testable(content):
-    """Extract > Web Testable: URL from feature file metadata.
+def _parse_aft_web(content):
+    """Extract > AFT Web: URL from feature file metadata.
 
     Returns the URL string if found, or None if not present.
     """
-    match = re.search(r'^>\s*Web Testable:\s*(.+)', content, re.MULTILINE)
+    match = re.search(r'^>\s*AFT Web:\s*(.+)', content, re.MULTILINE)
     if match:
         return match.group(1).strip()
     return None
@@ -2641,13 +2641,13 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
                                 role_status, feature_result):
     """Compute verification_effort block for a feature.
 
-    Classifies pending QA work into auto-resolvable and human-required
-    categories per qa_verification_effort.md.
+    Classifies pending verification work into Builder-owned AFT categories
+    and QA-owned manual categories per qa_verification_effort.md.
 
     Returns dict with category counts, totals, and summary.
     """
     zeroed = {
-        'auto_web': 0, 'auto_test_only': 0, 'auto_skip': 0,
+        'aft_web': 0, 'aft_test_only': 0, 'aft_skip': 0,
         'manual_interactive': 0, 'manual_visual': 0, 'manual_hardware': 0,
         'total_auto': 0, 'total_manual': 0, 'summary': 'no QA items',
     }
@@ -2662,23 +2662,26 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
                    and role_status.get('qa') == 'TODO'
                    and role_status.get('_bypassed_verification', False))
     if lifecycle_state != 'testing' and not bypassed_qa:
+        # Builder-completed features (qa: N/A) get "builder-verified"
+        if lifecycle_state == 'complete' and role_status.get('qa') == 'N/A':
+            return {**zeroed, 'summary': 'builder-verified'}
         return zeroed
 
     # Only TESTING features reach here
     declared = regression_scope.get('declared', 'full')
 
-    # Cosmetic scope: auto_skip (if not escalated — escalation changes declared to 'full')
+    # Cosmetic scope: aft_skip (if not escalated — escalation changes declared to 'full')
     if declared == 'cosmetic':
         return {
             **zeroed,
-            'auto_skip': 1,
+            'aft_skip': 1,
             'total_auto': 1,
-            'summary': '1 auto, 0 manual',
+            'summary': '0 manual',
         }
 
     # Parse feature data
-    web_testable_url = _parse_web_testable(content)
-    is_web = web_testable_url is not None
+    aft_web_url = _parse_aft_web(content)
+    is_web = aft_web_url is not None
     scenarios = parse_scenarios(content)
     visual = parse_visual_spec(content)
 
@@ -2698,7 +2701,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     manual_count = len(manual_scenarios)
     visual_items = regression_scope.get('visual_items', 0)
 
-    # Auto:TestOnly — only automated scenarios, no manual, no visual, tests pass
+    # AFT:TestOnly — only automated scenarios, no manual, no visual, tests pass
     has_manual = manual_count > 0
     has_visual = visual_items > 0
     struct = feature_result.get('implementation_gate', {}).get(
@@ -2709,15 +2712,15 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         if tests_pass:
             return {
                 **zeroed,
-                'auto_test_only': 1,
+                'aft_test_only': 1,
                 'total_auto': 1,
-                'summary': '1 auto, 0 manual',
+                'summary': '0 manual',
             }
         else:
             return zeroed
 
     # Classify manual scenarios and visual items
-    auto_web = 0
+    aft_web = 0
     manual_interactive = 0
     manual_visual = 0
     manual_hardware = 0
@@ -2726,8 +2729,8 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         r'\b(hardware|serial|GPIO|USB|device|physical)\b', re.IGNORECASE)
 
     if is_web:
-        # Web-testable: visual items -> auto_web; manual scenarios classified normally
-        auto_web = visual_items
+        # AFT web: visual items -> aft_web; manual scenarios classified normally
+        aft_web = visual_items
         for s in manual_scenarios:
             if hardware_keywords.search(s.get('body', '')):
                 manual_hardware += 1
@@ -2743,18 +2746,15 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         # Non-web visual items -> manual_visual
         manual_visual = visual_items
 
-    total_auto = auto_web
+    total_auto = aft_web
     total_manual = manual_interactive + manual_visual + manual_hardware
 
-    if total_auto == 0 and total_manual == 0:
-        summary = 'no QA items'
-    else:
-        summary = f'{total_auto} auto, {total_manual} manual'
+    summary = f'{total_manual} manual'
 
     return {
-        'auto_web': auto_web,
-        'auto_test_only': 0,
-        'auto_skip': 0,
+        'aft_web': aft_web,
+        'aft_test_only': 0,
+        'aft_skip': 0,
         'manual_interactive': manual_interactive,
         'manual_visual': manual_visual,
         'manual_hardware': manual_hardware,

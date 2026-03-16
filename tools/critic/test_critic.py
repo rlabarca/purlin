@@ -73,7 +73,7 @@ from critic import (
     validate_visual_references,
     compute_regression_set,
     _extract_scope_from_commit,
-    _parse_web_testable,
+    _parse_aft_web,
     compute_verification_effort,
     _get_requirements_diff,
 )
@@ -6068,7 +6068,7 @@ WEB_TESTABLE_FEATURE = """\
 
 > Label: "Test"
 > Category: "CDD Dashboard"
-> Web Testable: http://localhost:9086
+> AFT Web: http://localhost:9086
 
 ## 1. Overview
 Test feature.
@@ -6186,27 +6186,27 @@ AUTO_ONLY_FEATURE = """\
 """
 
 
-class TestParseWebTestable(unittest.TestCase):
-    """Scenario: Web-testable detection."""
+class TestParseAftWeb(unittest.TestCase):
+    """Scenario: AFT Web metadata detection."""
 
-    def test_web_testable_found(self):
-        content = '> Label: "Test"\n> Web Testable: http://localhost:9086\n'
-        self.assertEqual(_parse_web_testable(content), 'http://localhost:9086')
+    def test_aft_web_found(self):
+        content = '> Label: "Test"\n> AFT Web: http://localhost:9086\n'
+        self.assertEqual(_parse_aft_web(content), 'http://localhost:9086')
 
-    def test_web_testable_not_found(self):
+    def test_aft_web_not_found(self):
         content = '> Label: "Test"\n> Category: "Tools"\n'
-        self.assertIsNone(_parse_web_testable(content))
+        self.assertIsNone(_parse_aft_web(content))
 
 
-class TestVerificationEffortWebTestable(unittest.TestCase):
-    """Scenario: Web-testable feature classifies visual items as auto_web and manual scenarios normally."""
+class TestVerificationEffortAftWeb(unittest.TestCase):
+    """Scenario: AFT-web feature classifies visual items as aft_web and manual scenarios normally."""
 
     WEB_FEATURE_NO_HARDWARE = """\
 # Feature: Test
 
 > Label: "Test"
 > Category: "CDD Dashboard"
-> Web Testable: http://localhost:9086
+> AFT Web: http://localhost:9086
 
 ## 3. Scenarios
 
@@ -6251,7 +6251,7 @@ class TestVerificationEffortWebTestable(unittest.TestCase):
 - [ ] Colors match theme
 """
 
-    def test_web_feature_visual_auto_web_manual_interactive(self):
+    def test_aft_web_feature_visual_aft_web_manual_interactive(self):
         regression_scope = {
             'declared': 'full',
             'scenarios': ['Manual one', 'Manual two', 'Manual three'],
@@ -6263,16 +6263,16 @@ class TestVerificationEffortWebTestable(unittest.TestCase):
         ve = compute_verification_effort(
             self.WEB_FEATURE_NO_HARDWARE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 2)  # visual items only
+        self.assertEqual(ve['aft_web'], 2)  # visual items only
         self.assertEqual(ve['manual_interactive'], 3)
         self.assertEqual(ve['manual_visual'], 0)
         self.assertEqual(ve['total_auto'], 2)
         self.assertEqual(ve['total_manual'], 3)
-        self.assertEqual(ve['summary'], '2 auto, 3 manual')
+        self.assertEqual(ve['summary'], '3 manual')
 
 
-class TestVerificationEffortWebTestableMixed(unittest.TestCase):
-    """Scenario: Web-testable feature with mixed manual types and visual items."""
+class TestVerificationEffortAftWebMixed(unittest.TestCase):
+    """Scenario: AFT-web feature with mixed manual types and visual items."""
 
     def test_web_feature_mixed_manual_types(self):
         regression_scope = {
@@ -6286,12 +6286,12 @@ class TestVerificationEffortWebTestableMixed(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 2)  # visual items only
+        self.assertEqual(ve['aft_web'], 2)  # visual items only
         self.assertEqual(ve['manual_interactive'], 2)
         self.assertEqual(ve['manual_hardware'], 1)
         self.assertEqual(ve['total_auto'], 2)
         self.assertEqual(ve['total_manual'], 3)
-        self.assertEqual(ve['summary'], '2 auto, 3 manual')
+        self.assertEqual(ve['summary'], '3 manual')
 
 
 class TestVerificationEffortNonWeb(unittest.TestCase):
@@ -6310,17 +6310,17 @@ class TestVerificationEffortNonWeb(unittest.TestCase):
         ve = compute_verification_effort(
             NON_WEB_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 0)
+        self.assertEqual(ve['aft_web'], 0)
         self.assertEqual(ve['manual_interactive'], 2)
         self.assertEqual(ve['manual_hardware'], 1)
         self.assertEqual(ve['manual_visual'], 3)
         self.assertEqual(ve['total_auto'], 0)
         self.assertEqual(ve['total_manual'], 6)
-        self.assertEqual(ve['summary'], '0 auto, 6 manual')
+        self.assertEqual(ve['summary'], '6 manual')
 
 
 class TestVerificationEffortAutoTestOnly(unittest.TestCase):
-    """Scenario: Feature with only automated scenarios classifies as auto_test_only."""
+    """Scenario: Feature with only automated scenarios classifies as aft_test_only."""
 
     def test_auto_only_with_passing_tests(self):
         regression_scope = {
@@ -6334,16 +6334,16 @@ class TestVerificationEffortAutoTestOnly(unittest.TestCase):
         ve = compute_verification_effort(
             AUTO_ONLY_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_test_only'], 1)
+        self.assertEqual(ve['aft_test_only'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
-        self.assertEqual(ve['summary'], '1 auto, 0 manual')
+        self.assertEqual(ve['summary'], '0 manual')
 
 
 class TestVerificationEffortCosmeticScope(unittest.TestCase):
-    """Scenario: Cosmetic scope feature classified as auto_skip."""
+    """Scenario: Cosmetic scope feature classified as aft_skip."""
 
-    def test_cosmetic_scope_auto_skip(self):
+    def test_cosmetic_scope_aft_skip(self):
         regression_scope = {
             'declared': 'cosmetic',
             'scenarios': [],
@@ -6355,10 +6355,10 @@ class TestVerificationEffortCosmeticScope(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_skip'], 1)
+        self.assertEqual(ve['aft_skip'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
-        self.assertEqual(ve['summary'], '1 auto, 0 manual')
+        self.assertEqual(ve['summary'], '0 manual')
 
 
 class TestVerificationEffortTargetedScope(unittest.TestCase):
@@ -6376,7 +6376,7 @@ class TestVerificationEffortTargetedScope(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['auto_web'], 0)  # No visual items in scope
+        self.assertEqual(ve['aft_web'], 0)  # No visual items in scope
         self.assertEqual(ve['manual_interactive'], 2)  # 2 targeted manual scenarios
         self.assertEqual(ve['total_auto'], 0)
         self.assertEqual(ve['total_manual'], 2)
@@ -6403,7 +6403,7 @@ class TestVerificationEffortBuilderIncomplete(unittest.TestCase):
 class TestVerificationEffortNonTestingLifecycle(unittest.TestCase):
     """Lifecycle gating: non-testing features return zeroed counts."""
 
-    def test_complete_feature_returns_zeroed(self):
+    def test_complete_feature_qa_clean_returns_no_qa_items(self):
         regression_scope = {
             'declared': 'full', 'scenarios': [], 'visual_items': 0,
             'cross_validation_warnings': [],
@@ -6416,9 +6416,22 @@ class TestVerificationEffortNonTestingLifecycle(unittest.TestCase):
         self.assertEqual(ve['summary'], 'no QA items')
         self.assertEqual(ve['total_auto'], 0)
 
+    def test_complete_feature_qa_na_returns_builder_verified(self):
+        regression_scope = {
+            'declared': 'full', 'scenarios': [], 'visual_items': 0,
+            'cross_validation_warnings': [],
+        }
+        role_status = {'architect': 'DONE', 'builder': 'DONE', 'qa': 'N/A'}
+        result = _make_base_result()
+        ve = compute_verification_effort(
+            WEB_TESTABLE_FEATURE, 'complete', regression_scope,
+            role_status, result)
+        self.assertEqual(ve['summary'], 'builder-verified')
+        self.assertEqual(ve['total_auto'], 0)
+
 
 class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
-    """Scenario: Visual spec items classified by web-testability."""
+    """Scenario: Visual spec items classified by AFT eligibility."""
 
     def test_non_web_visual_only(self):
         content = """\
@@ -6453,9 +6466,9 @@ class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
             content, 'testing', regression_scope,
             role_status, result)
         self.assertEqual(ve['manual_visual'], 6)
-        self.assertEqual(ve['auto_web'], 0)
+        self.assertEqual(ve['aft_web'], 0)
         self.assertEqual(ve['total_manual'], 6)
-        self.assertEqual(ve['summary'], '0 auto, 6 manual')
+        self.assertEqual(ve['summary'], '6 manual')
 
 
 class TestVerificationEffortInCriticJson(unittest.TestCase):
@@ -6479,9 +6492,9 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
             data = generate_critic_json(feature_path)
             self.assertIn('verification_effort', data)
             ve = data['verification_effort']
-            self.assertIn('auto_web', ve)
-            self.assertIn('auto_test_only', ve)
-            self.assertIn('auto_skip', ve)
+            self.assertIn('aft_web', ve)
+            self.assertIn('aft_test_only', ve)
+            self.assertIn('aft_skip', ve)
             self.assertIn('manual_interactive', ve)
             self.assertIn('manual_visual', ve)
             self.assertIn('manual_hardware', ve)
@@ -6502,10 +6515,10 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
 class TestParseFixtureTags(unittest.TestCase):
     """Test parse_fixture_tags() extraction from feature specs."""
 
-    def test_extracts_web_verify_fixture_tags(self):
+    def test_extracts_aft_web_fixture_tags(self):
         content = """# Feature: Test
 ## 2. Requirements
-### 2.5 Web-Verify Fixture Tags
+### 2.5 AFT Web Fixture Tags
 
 The following fixture tags:
 
@@ -6588,7 +6601,7 @@ Nothing fancy.
 
     def test_skips_header_row(self):
         """The 'Tag' header in markdown table should not be extracted."""
-        content = """### 2.1 Web-Verify Fixture Tags
+        content = """### 2.1 AFT Web Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -6599,7 +6612,7 @@ Nothing fancy.
         self.assertNotIn('Tag', result['tags'])
 
     def test_multiple_fixture_tag_sections(self):
-        content = """### 2.5 Web-Verify Fixture Tags
+        content = """### 2.5 AFT Web Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -6764,7 +6777,7 @@ class TestFixtureTagsInCriticJson(unittest.TestCase):
 Test feature.
 
 ## 2. Requirements
-### 2.1 Web-Verify Fixture Tags
+### 2.1 AFT Web Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|

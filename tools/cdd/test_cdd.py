@@ -1774,7 +1774,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "aft_web": 3, "aft_test_only": 2, "aft_skip": 0,
                 "manual_interactive": 0, "manual_visual": 0,
                 "manual_hardware": 0,
                 "total_auto": 5, "total_manual": 0,
@@ -1792,7 +1792,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "aft_web": 3, "aft_test_only": 2, "aft_skip": 0,
                 "manual_interactive": 0, "manual_visual": 0,
                 "manual_hardware": 0,
                 "total_auto": 5, "total_manual": 0,
@@ -1809,7 +1809,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 3, "auto_test_only": 0, "auto_skip": 0,
+                "aft_web": 3, "aft_test_only": 0, "aft_skip": 0,
                 "manual_interactive": 2, "manual_visual": 4,
                 "manual_hardware": 0,
                 "total_auto": 3, "total_manual": 6,
@@ -1827,7 +1827,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 0, "auto_test_only": 0, "auto_skip": 0,
+                "aft_web": 0, "aft_test_only": 0, "aft_skip": 0,
                 "manual_interactive": 0, "manual_visual": 0,
                 "manual_hardware": 0,
                 "total_auto": 0, "total_manual": 0,
@@ -1850,7 +1850,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 3, "auto_test_only": 2, "auto_skip": 0,
+                "aft_web": 3, "aft_test_only": 2, "aft_skip": 0,
                 "manual_interactive": 0, "manual_visual": 0,
                 "manual_hardware": 0,
                 "total_auto": 5, "total_manual": 0,
@@ -1889,7 +1889,7 @@ class TestQaBadgeHtml(unittest.TestCase):
         entry = {
             "qa": "TODO",
             "verification_effort": {
-                "auto_web": 3, "auto_test_only": 0, "auto_skip": 0,
+                "aft_web": 3, "aft_test_only": 0, "aft_skip": 0,
                 "manual_interactive": 2, "manual_visual": 4,
                 "manual_hardware": 0,
                 "total_auto": 3, "total_manual": 6,
@@ -1929,7 +1929,7 @@ class TestVerificationEffortInApiStatus(unittest.TestCase):
                     "qa": "TODO",
                 },
                 "verification_effort": {
-                    "auto_web": 5, "auto_test_only": 0, "auto_skip": 0,
+                    "aft_web": 5, "aft_test_only": 0, "aft_skip": 0,
                     "manual_interactive": 0, "manual_visual": 0,
                     "manual_hardware": 0,
                     "total_auto": 5, "total_manual": 0,
