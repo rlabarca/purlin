@@ -1,39 +1,59 @@
 # Delivery Plan
 
-**Created:** 2026-03-15
-**Total Phases:** 6
+**Created:** 2026-03-16
+**Total Phases:** 10
 
 ## Summary
-16 features reset to TODO, primarily driven by the new cross-cutting modal standards (design_modal_standards anchor + cdd_modal_base foundation). Phased to establish modal infrastructure first, then cascade adoption across CDD dashboard consumers, then address independent tool and policy features.
+16 features reset to TODO after spec updates (primarily AFT pattern introduction, verification effort reclassification, and CDD dashboard refinements). All features have existing implementations from prior delivery — this round is review-and-update. Phased by dependency order: foundation anchors first, then test infrastructure, then core tools, then CDD dashboard consumers.
 
-## Phase 1 -- Modal Foundation [COMPLETE]
-**Features:** design_modal_standards.md, cdd_modal_base.md
-**Completion Commit:** 4dbbf42
+## Phase 1 -- Foundation Anchors [IN_PROGRESS]
+**Features:** policy_critic.md, arch_automated_feedback_tests.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- CDD Monitor Modal Adoption [COMPLETE]
+## Phase 2 -- Test Infrastructure [PENDING]
+**Features:** test_fixture_repo.md, cdd_startup_controls.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 3 -- Verification Effort [PENDING]
+**Features:** qa_verification_effort.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 4 -- AFT Web Tool [PENDING]
+**Features:** pl_aft_web.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 5 -- Modal & Lifecycle [PENDING]
+**Features:** cdd_modal_base.md, cdd_lifecycle.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 6 -- CDD Monitor Core [PENDING]
 **Features:** cdd_status_monitor.md
-**Completion Commit:** 317ddfb
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Modal Consumer Features [COMPLETE]
-**Features:** cdd_spec_map.md, collab_whats_different.md, release_checklist_ui.md
-**Completion Commit:** 47702b3
+## Phase 7 -- Branch Collab & Spec Map [PENDING]
+**Features:** cdd_branch_collab.md, cdd_spec_map.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Dashboard Config, Collab & Policy [COMPLETE]
-**Features:** cdd_agent_configuration.md, cdd_branch_collab.md, policy_critic.md, critic_role_status.md
-**Completion Commit:** f71c690
+## Phase 8 -- Agent Config & What's Different [PENDING]
+**Features:** cdd_agent_configuration.md, collab_whats_different.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Session Resume & Audit [COMPLETE]
-**Features:** pl_session_resume.md, pl_spec_code_audit.md
-**Completion Commit:** e47aa01
+## Phase 9 -- Release UI & QA Effort Display [PENDING]
+**Features:** release_checklist_ui.md, cdd_qa_effort_display.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Design Pipeline & Tools [COMPLETE]
-**Features:** design_artifact_pipeline.md, pl_design_audit.md, pl_design_ingest.md, project_init.md
-**Completion Commit:** 4cda0dc
+## Phase 10 -- Agent Behavior Tests [PENDING]
+**Features:** agent_behavior_tests.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
