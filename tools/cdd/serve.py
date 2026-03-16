@@ -2117,9 +2117,10 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   color:var(--purlin-muted);word-break:break-word;
 }}
 .modal-body{{
-  padding:14px;overflow-y:auto;flex:1;
+  padding:14px;overflow-y:auto;overflow-x:hidden;flex:1;
   line-height:1.6;color:var(--purlin-muted);
   font-size:calc(13px + var(--modal-font-adjust) * 1px);
+  overflow-wrap:break-word;word-wrap:break-word;
 }}
 .modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-primary);margin:12px 0 6px}}
 .modal-body h1{{font-size:calc(16px + var(--modal-font-adjust) * 1px)}}
@@ -2134,6 +2135,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 }}
 .modal-body pre{{background:var(--purlin-bg);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
 .modal-body pre code{{padding:0;background:none}}
+.modal-body table{{max-width:100%;table-layout:fixed;word-break:break-word}}
 .modal-body blockquote{{border-left:3px solid var(--purlin-accent);padding-left:10px;color:var(--purlin-dim);margin:6px 0}}
 </style>
 </head>

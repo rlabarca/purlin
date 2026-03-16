@@ -220,6 +220,22 @@ class TestTextWrapsAtAllSliderPositions(unittest.TestCase):
         html = _generate_html()
         self.assertIn('width:70vw', html)
 
+    def test_modal_body_has_overflow_wrap_break_word(self):
+        """overflow-wrap:break-word prevents horizontal overflow at large font sizes."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-body\s*\{[^}]*overflow-wrap:\s*break-word'
+        )
+
+    def test_modal_body_has_overflow_x_hidden(self):
+        """overflow-x:hidden prevents horizontal scrollbar in modal body."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-body\s*\{[^}]*overflow-x:\s*hidden'
+        )
+
 
 class TestFontSizePersistsAcrossModalOpens(unittest.TestCase):
     """Scenario: Font Size Persists Across Modal Opens
