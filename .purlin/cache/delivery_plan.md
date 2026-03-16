@@ -1,50 +1,65 @@
 # Delivery Plan
 
 **Created:** 2026-03-16
-**Total Phases:** 8
+**Total Phases:** 11
 
 ## Summary
-Remediation of 16 features reset to TODO by the Architect's deep spec-code audit. All items are low-complexity (review+retag, verify compliance, or small code fixes ~20 lines total). Phased for incremental QA checkpoints. Plan restructured to respect dependency graph ordering.
+14 features reset to TODO after Architect spec revisions. Work spans anchor/policy reviews (7 features), CDD dashboard sections (4 features), a session resume skill (1), coordination logic (1), and test infrastructure (1). Phased delivery maximizes parallelization — the phase analyzer can run independent phases concurrently in separate worktrees.
 
-## Phase 1 -- Config & Script Fixes [COMPLETE]
-**Features:** pm_agent_launcher.md, continuous_phase_builder.md
-**Completion Commit:** 73e9e88
-**QA Bugs Addressed:** --
-
-## Phase 2 -- Design Anchors (Foundation) [PENDING]
-**Features:** design_modal_standards.md, design_visual_standards.md
+## Phase 1 -- Critical Path Anchors [IN_PROGRESS]
+**Features:** policy_critic.md, design_visual_standards.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Design & AFT Anchors [PENDING]
+## Phase 2 -- Non-Critical Anchors A [PENDING]
 **Features:** design_artifact_pipeline.md, arch_automated_feedback_tests.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Policy Anchors (Critic & Release) [PENDING]
-**Features:** policy_critic.md, policy_release.md
+## Phase 3 -- Non-Critical Anchor B [PENDING]
+**Features:** design_modal_standards.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Command & Companion [PENDING]
-**Features:** impl_notes_companion.md, pl_session_resume.md
+## Phase 4 -- Policy Chain [PENDING]
+**Features:** policy_release.md, policy_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Policy & CDD Core [PENDING]
-**Features:** policy_branch_collab.md, cdd_status_monitor.md
+## Phase 5 -- Core Coordination [PENDING]
+**Features:** impl_notes_companion.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- CDD Consumers [PENDING]
-**Features:** release_checklist_ui.md, cdd_branch_collab.md
+## Phase 6 -- Session Resume [PENDING]
+**Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Config & Behavior Tests [PENDING]
-**Features:** cdd_agent_configuration.md, agent_behavior_tests.md
+## Phase 7 -- CDD Dashboard Core [PENDING]
+**Features:** cdd_status_monitor.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 8 -- CDD Agent Config [PENDING]
+**Features:** cdd_agent_configuration.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 9 -- CDD Branch Collab [PENDING]
+**Features:** cdd_branch_collab.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 10 -- Release Checklist UI [PENDING]
+**Features:** release_checklist_ui.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 11 -- Test Infrastructure [PENDING]
+**Features:** agent_behavior_tests.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
-Restructured Phases 2-8 to resolve dependency cycles detected by phase analyzer. Anchor nodes moved to early phases; consumer features ordered after their transitive prerequisites (agent_behavior_tests depends transitively on cdd_agent_configuration via cdd_startup_controls).
+_None._
