@@ -26,7 +26,7 @@
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Hardcoded hex colors in graph.py violate design_visual_standards Section 2.7 FORBIDDEN
+[DISCOVERY] Hardcoded hex colors in graph.py violate design_visual_standards Section 2.7 FORBIDDEN — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** HIGH

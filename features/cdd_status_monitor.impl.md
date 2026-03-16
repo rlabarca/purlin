@@ -72,7 +72,7 @@
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN
+[DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** HIGH

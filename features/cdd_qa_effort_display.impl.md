@@ -8,7 +8,7 @@ All effort data comes from the Critic's per-feature `critic.json` output. The da
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Scenario "Status JSON includes verification_effort" may lack explicit test match
+[DISCOVERY] Scenario "Status JSON includes verification_effort" may lack explicit test match — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** MEDIUM

@@ -52,7 +52,7 @@ INTENT_DRIFT -- Branch dropdown and sync badge lacked left-edge alignment; spec 
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Undefined CSS token --purlin-fg used in branch collab UI
+[DISCOVERY] Undefined CSS token --purlin-fg used in branch collab UI — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** HIGH

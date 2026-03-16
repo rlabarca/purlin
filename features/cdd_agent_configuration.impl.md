@@ -28,7 +28,7 @@ DISCOVERY — Concurrent threshold changes caused value revert due to pending-wr
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Visual separator between Workspace and Agents sections needs CSS margin verification
+[DISCOVERY] Visual separator between Workspace and Agents sections needs CSS margin verification — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** MEDIUM
@@ -37,9 +37,9 @@ DISCOVERY — Concurrent threshold changes caused value revert due to pending-wr
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Per-request pending-write lock isolation has no test coverage
+[DISCOVERY] Per-request pending-write lock isolation has no test coverage — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** MEDIUM
 **Details:** Implementation notes describe per-request lock association as warranted, but no test covers concurrent rapid edits being isolated from stale responses.
-**Suggested fix:** Add test `test_pending_lock_per_request_isolation()` or escalate as [INFEASIBLE] if concurrency testing is impractical in the current test harness.
+**Suggested fix:** Add test `test_pending_lock_per_request_isolation()` or escalate as infeasible if concurrency testing is impractical in the current test harness.

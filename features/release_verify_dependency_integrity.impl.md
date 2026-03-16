@@ -6,7 +6,7 @@ The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Ma
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] Reverse reference classification not implemented as tiered severity
+[DISCOVERY] Reverse reference classification not implemented as tiered severity — **ACKNOWLEDGED**
 
 **Source:** /pl-spec-code-audit --deep
 **Severity:** MEDIUM
