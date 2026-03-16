@@ -1774,7 +1774,7 @@ def generate_html(cache=None):
     def _agents_badge(config):
         models_list = config.get('models', [])
         agents = config.get('agents', {})
-        roles = ['architect', 'builder', 'qa', 'pm']
+        roles = ['pm', 'architect', 'builder', 'qa']
         labels = []
         for role in roles:
             acfg = agents.get(role, {})
@@ -4545,7 +4545,7 @@ function renderAgentsRows(cfg) {{
   var container = document.getElementById('agents-rows');
   if (!container) return;
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa', 'pm'];
+  var roles = ['pm', 'architect', 'builder', 'qa'];
   var html = '<div class="agent-hdr">' +
     '<span></span>' +
     '<span class="agent-hdr-cell">MODEL</span>' +
@@ -4607,7 +4607,7 @@ function renderAgentsRows(cfg) {{
 
 function diffUpdateAgentRows(cfg) {{
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa', 'pm'];
+  var roles = ['pm', 'architect', 'builder', 'qa'];
   roles.forEach(function(role) {{
     var acfg = agents[role] || {{}};
     var modSel = document.getElementById('agent-model-' + role);
@@ -4705,7 +4705,7 @@ function updateAgentsBadge(cfg) {{
   if (!badge) return;
   var modelsList = cfg.models || [];
   var agents = cfg.agents || {{}};
-  var roles = ['architect', 'builder', 'qa', 'pm'];
+  var roles = ['pm', 'architect', 'builder', 'qa'];
   var labels = roles.map(function(role) {{
     var acfg = agents[role] || {{}};
     var mid = acfg.model || '';
@@ -4728,7 +4728,7 @@ function scheduleAgentSave() {{
 }}
 
 function saveAgentConfig() {{
-  var roles = ['architect', 'builder', 'qa', 'pm'];
+  var roles = ['pm', 'architect', 'builder', 'qa'];
   var agentsPayload = {{}};
   roles.forEach(function(role) {{
     var modSel = document.getElementById('agent-model-' + role);

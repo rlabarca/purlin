@@ -465,17 +465,17 @@ class TestPendingWriteLock(unittest.TestCase):
         self.assertGreaterEqual(len(calls), 3)
 
 
-class TestFourAgentRows(unittest.TestCase):
-    """Scenario: Agents Section Displays Four Agent Rows in HTML"""
+class TestFourAgentRowsInSpecOrder(unittest.TestCase):
+    """Scenario: Agents Section Displays Four Agent Rows in Spec Order"""
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_js_roles_array_includes_four_agents(self, mock_run, mock_status):
-        """The JS roles array includes all four agents for dynamic row creation."""
+    def test_js_roles_array_in_spec_order(self, mock_run, mock_status):
+        """The JS roles array lists agents in spec order: PM, Architect, Builder, QA."""
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        self.assertIn("['architect', 'builder', 'qa', 'pm']", html)
+        self.assertIn("['pm', 'architect', 'builder', 'qa']", html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -484,7 +484,6 @@ class TestFourAgentRows(unittest.TestCase):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # JS creates elements with role-based IDs via buildAgentRowHtml
         self.assertIn("'agent-model-' + role", html)
         self.assertIn("'agent-effort-' + role", html)
         self.assertIn("'agent-bypass-' + role", html)
