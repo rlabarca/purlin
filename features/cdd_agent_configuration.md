@@ -64,11 +64,12 @@ The following fixture tags provide deterministic project states for web-verify t
 
 ### Automated Scenarios
 
-#### Scenario: Agents Section Displays Four Agent Rows in HTML
+#### Scenario: Agents Section Displays Four Agent Rows in Spec Order
     Given a valid resolved config with four agents (architect, builder, qa, pm)
     And each agent has a configured model, effort, and bypass_permissions value
     When the dashboard HTML is generated
     Then the Agents section contains four agent rows
+    And the rows appear in spec order: PM, Architect, Builder, QA (top to bottom)
     And the architect row displays the configured model in its dropdown
     And the builder row displays the configured effort value
     And the qa row displays the configured bypass_permissions checkbox state
