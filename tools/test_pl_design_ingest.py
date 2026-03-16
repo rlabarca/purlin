@@ -150,7 +150,8 @@ def generate_token_map(observed_tokens, anchor_tokens):
 
 
 def generate_brief_json(figma_url, figma_last_modified, screens, tokens,
-                        feature_stem, project_root):
+                        feature_stem, project_root, code_connect=None,
+                        figma_dev_status=None, figma_version_id=None):
     """Generate brief.json at features/design/<feature_stem>/brief.json.
 
     Args:
@@ -160,6 +161,10 @@ def generate_brief_json(figma_url, figma_last_modified, screens, tokens,
         tokens: dict of Figma design variable names and resolved values.
         feature_stem: feature filename without extension.
         project_root: project root path.
+        code_connect: optional dict of component Code Connect data.
+        figma_dev_status: optional dev mode status string
+            (e.g. "ready_for_dev", "completed"), or None.
+        figma_version_id: optional Figma file version ID string.
 
     Returns:
         Path to the generated brief.json relative to project root.
@@ -170,6 +175,11 @@ def generate_brief_json(figma_url, figma_last_modified, screens, tokens,
         "screens": screens,
         "tokens": tokens,
     }
+    if code_connect:
+        brief["code_connect"] = code_connect
+    brief["figma_dev_status"] = figma_dev_status
+    if figma_version_id is not None:
+        brief["figma_version_id"] = figma_version_id
     brief_dir = os.path.join(project_root, "features", "design", feature_stem)
     os.makedirs(brief_dir, exist_ok=True)
     brief_path = os.path.join(brief_dir, "brief.json")
@@ -966,6 +976,158 @@ class TestAnnotationExtractionPrePopulatesBehavioralContext(unittest.TestCase):
         result = extract_annotations(annotations)
 
         self.assertEqual(result["count"], 3)
+
+
+class TestCodeConnectDataExtractedIntoBrief(unittest.TestCase):
+    """Scenario: Code Connect Data Extracted Into Brief"""
+
+    def test_code_connect_included_in_brief(self):
+        """brief.json contains a code_connect key when data is provided."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            code_connect = {
+                "Card": {
+                    "source_file": "src/components/Card.tsx",
+                    "props": {"variant": "outlined", "size": "large"},
+                    "figma_node_id": "42:123",
+                },
+            }
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={"Main": {"node_id": "1:2", "dimensions": {}}},
+                tokens={"primary": "#0284C7"},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+                code_connect=code_connect,
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertIn("code_connect", brief)
+            self.assertIn("Card", brief["code_connect"])
+            card = brief["code_connect"]["Card"]
+            self.assertEqual(card["source_file"], "src/components/Card.tsx")
+            self.assertEqual(card["props"]["variant"], "outlined")
+            self.assertEqual(card["figma_node_id"], "42:123")
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_code_connect_omitted_when_absent(self):
+        """brief.json has no code_connect key when data is not provided."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={},
+                tokens={},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertNotIn("code_connect", brief)
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestFigmaDevStatusExtractedDuringIngestion(unittest.TestCase):
+    """Scenario: Figma Dev Status Extracted During Ingestion"""
+
+    def test_dev_status_in_brief(self):
+        """brief.json contains figma_dev_status when provided."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={},
+                tokens={},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+                figma_dev_status="ready_for_dev",
+                figma_version_id="v789",
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertEqual(brief["figma_dev_status"], "ready_for_dev")
+            self.assertEqual(brief["figma_version_id"], "v789")
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_version_id_included(self):
+        """brief.json contains figma_version_id for staleness detection."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={},
+                tokens={},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+                figma_version_id="v456",
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertIn("figma_version_id", brief)
+            self.assertEqual(brief["figma_version_id"], "v456")
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestDevStatusNotAvailableSilentlyOmitted(unittest.TestCase):
+    """Scenario: Dev Status Not Available Silently Omitted"""
+
+    def test_dev_status_null_when_unavailable(self):
+        """brief.json contains figma_dev_status: null when not available."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={},
+                tokens={},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+                figma_dev_status=None,
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertIn("figma_dev_status", brief)
+            self.assertIsNone(brief["figma_dev_status"])
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_no_version_id_when_unavailable(self):
+        """brief.json omits figma_version_id when not provided."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            generate_brief_json(
+                figma_url="https://figma.com/design/abc",
+                figma_last_modified="2026-03-10T10:00:00Z",
+                screens={},
+                tokens={},
+                feature_stem="my_feature",
+                project_root=tmpdir,
+            )
+            brief_path = os.path.join(
+                tmpdir, "features", "design", "my_feature", "brief.json")
+            with open(brief_path) as f:
+                brief = json.load(f)
+            self.assertNotIn("figma_version_id", brief)
+        finally:
+            shutil.rmtree(tmpdir)
 
 
 # ---------------------------------------------------------------------------
