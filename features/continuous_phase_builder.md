@@ -21,7 +21,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - `pl-run-builder.sh` accepts `--continuous` as an optional flag.
 - When `--continuous` is absent, behavior is identical to the current launcher (single interactive session).
 - `--continuous` implies `-p` mode (print mode, non-interactive) for each phase invocation.
-- Optional pass-through flags: `--max-turns N` and `--max-budget-usd N`, forwarded to each `claude -p` invocation.
+- Optional pass-through flag: `--max-budget-usd N`, forwarded to each `claude -p` invocation.
 
 ### 2.2 Phase Analyzer Integration (Re-Analyze Loop)
 
@@ -37,8 +37,8 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 ### 2.3 Sequential Phase Execution
 
 - For execution groups with a single phase (`parallel: false`), run the Builder in `-p` mode.
-- Each phase invocation uses a named session: `continuous-phase-<phase_number>-<timestamp>`.
-- The Builder is invoked with `claude -p -n <session_name>` plus all resolved config flags (model, effort, permissions) and the assembled system prompt.
+- Each phase invocation uses a unique session ID: `continuous-phase-<phase_number>-<uuid>`.
+- The Builder is invoked with `claude -p --session-id <session_id>` plus all resolved config flags (model, effort, permissions) and the assembled system prompt.
 - The initial message includes phase-specific context: `"Begin Builder session. CONTINUOUS MODE -- proceed immediately with work plan, do not wait for approval."`.
 
 ### 2.4 Parallel Phase Execution
@@ -278,10 +278,9 @@ possible to avoid conflicts.
     And continues if the delivery plan was modified, stops if unchanged
 
 #### Scenario: Pass-Through Flags Forwarded
-    Given pl-run-builder.sh is invoked with --continuous --max-turns 50 --max-budget-usd 10
+    Given pl-run-builder.sh is invoked with --continuous --max-budget-usd 10
     When each phase Builder is invoked
-    Then --max-turns 50 is passed to the claude -p invocation
-    And --max-budget-usd 10 is passed to the claude -p invocation
+    Then --max-budget-usd 10 is passed to the claude -p invocation
 
 #### Scenario: System Prompt Overrides Injected
     Given --continuous is active

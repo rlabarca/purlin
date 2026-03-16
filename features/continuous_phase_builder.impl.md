@@ -2,9 +2,9 @@
 
 ## CLI Flag Mapping
 
-[DISCOVERY] The spec references `claude -p -n <session_name>` for named sessions, but the real Claude Code CLI uses `--session-id <uuid>` instead. Implementation uses `--session-id` with `uuidgen`-generated UUIDs. The spec should be updated to reflect the actual CLI flag.
+[DISCOVERY] (acknowledged) The spec references `claude -p -n <session_name>` for named sessions, but the real Claude Code CLI uses `--session-id <uuid>` instead. Implementation uses `--session-id` with `uuidgen`-generated UUIDs. Spec updated: Section 2.3 now uses `--session-id <session_id>`.
 
-[DISCOVERY] The spec references `--max-turns N` as a pass-through flag, but this flag does not exist in the Claude Code CLI (`claude --help` shows no `--max-turns`). The flag is accepted and forwarded but will cause a CLI error if used. Only `--max-budget-usd` is a real CLI flag.
+[DISCOVERY] (acknowledged) The spec references `--max-turns N` as a pass-through flag, but this flag does not exist in the Claude Code CLI (`claude --help` shows no `--max-turns`). Only `--max-budget-usd` is a real CLI flag. Spec updated: removed `--max-turns` from Section 2.1 and the Pass-Through Flags Forwarded scenario.
 
 ## Bash 3 Compatibility
 
