@@ -257,3 +257,4 @@ None.
 - [ ] GLOBAL/LOCAL source badge is visible adjacent to the step's friendly name in the modal header
 - [ ] Step detail modal width is 70% of viewport width (inherited from cdd_modal_base.md)
 - [ ] Font size control (minus, slider, plus) visible in step detail modal header
+- [ ] Step detail modal title renders at a font size 8pt larger than the modal body text, per design_modal_standards

@@ -132,9 +132,9 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 
 Restore mode follows an 8-step sequence. Each step is mandatory unless noted otherwise.
 
-#### 2.3.0 Step 0 -- (No-op)
+#### 2.3.0 Step 0 -- Context Guard Counter Reset
 
-No cleanup needed. This step is retained as a placeholder for the step numbering sequence.
+Reset the context guard turn counter to zero. This clears stale counter state carried over from the previous session so the guard accurately tracks remaining budget for the new session.
 
 #### 2.3.1 Step 1 -- Role Detection (4-Tier Fallback)
 
@@ -218,6 +218,7 @@ Uncommitted:    [none | summary]
 #### 2.3.7 Step 7 -- Cleanup and Continue
 
 - If a checkpoint file was read in Step 2, delete it (it has been consumed).
+- Do NOT reset the context guard counter here. The restore flow consumes ~25-30 turns of real context during state gathering; resetting the counter at this point would cause the guard to misrepresent remaining budget. The only counter reset occurs in Step 0 (clearing stale state from the previous session).
 - Immediately begin executing the work plan starting with the first item. Do NOT ask for confirmation. The recovery summary (Step 6) gives the user visibility; they can interrupt if needed.
 
 ---

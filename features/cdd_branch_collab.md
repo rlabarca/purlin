@@ -49,7 +49,7 @@ When `.purlin/runtime/active_branch` is absent or empty:
 2. **Branches table** (below creation row):
    - Populated from `git branch -r` filtered to exclude `HEAD`, `main`/`master`.
    - Columns: Branch | State | Action
-   - The **State** column shows the per-branch sync state badge using the same styling as the active-branch sync badge: EMPTY=normal text (`--purlin-fg`, no badge), SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange. State is computed from the `branch_collab_branches` data (Section 2.7).
+   - The **State** column shows the per-branch sync state badge using the same styling as the active-branch sync badge: EMPTY=normal text (`--purlin-text`, no badge), SAME=green, AHEAD/BEHIND=yellow, DIVERGED=orange. State is computed from the `branch_collab_branches` data (Section 2.7).
    - Each row has a **Join** button in the Action column.
    - Empty state: "No remote branches found."
 
@@ -69,7 +69,7 @@ When `.purlin/runtime/active_branch` contains a branch name:
 
 1. **Active branch panel** (replaces creation row):
    - **Branch row (single line):** `[branch-dropdown ▾] [Leave]`. The branch dropdown is a `<select>` populated with all known branches from remote (current branch pre-selected). Changing selection -> `POST /branch-collab/join`. The "Leave" button is right-aligned on the same row -> `POST /branch-collab/leave`. Does NOT delete any branches. Branch remains joinable.
-   - **Sync state row:** badge with remote-perspective sync annotation + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /branch-collab/fetch`. Annotation format: EMPTY (no annotation), SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local)"`, BEHIND -> `"BEHIND (Remote is N ahead of local)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local)"`. Color: EMPTY -> normal text (`--purlin-fg`, no badge background), SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`).
+   - **Sync state row:** badge with remote-perspective sync annotation + "Last check: N min ago" (or "Never") + "Check Remote" button (right-aligned): `POST /branch-collab/fetch`. Annotation format: EMPTY (no annotation), SAME (no annotation), AHEAD -> `"AHEAD (Remote is N behind local)"`, BEHIND -> `"BEHIND (Remote is N ahead of local)"`, DIVERGED -> `"DIVERGED (Remote is N ahead, M behind local)"`. Color: EMPTY -> normal text (`--purlin-text`, no badge background), SAME -> green (`--purlin-status-good`), AHEAD/BEHIND -> yellow (`--purlin-status-todo`), DIVERGED -> orange (`--purlin-status-warning`).
    - **Panel alignment:** The branch row and sync state row MUST share a consistent left edge. The dropdown's left edge on Row 1 and the sync badge's left edge on Row 2 MUST be horizontally aligned, giving the active branch panel a coherent vertical alignment.
 
 2. **CONTRIBUTORS table:**
@@ -164,7 +164,7 @@ For `guide-pull`: return `{ "status": "ok", "action_required": "pull", "command"
 - EMPTY/SAME/AHEAD/BEHIND/DIVERGED five-state logic. For branches in the branches table (setup mode, no local checkout), sync state is computed by comparing `origin/<branch>` against the current HEAD:
   - `git log HEAD..origin/<branch> --oneline` -> commits the branch has that HEAD does not.
   - `git log origin/<branch>..HEAD --oneline` -> commits HEAD has that the branch does not.
-  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has literally zero total commits (`git rev-list --count origin/<branch>` returns 0). This means the branch is an orphan or degenerate ref with no history at all. Shows `"EMPTY"` in normal text color (`--purlin-fg`) without a badge background.
+  - **EMPTY:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has literally zero total commits (`git rev-list --count origin/<branch>` returns 0). This means the branch is an orphan or degenerate ref with no history at all. Shows `"EMPTY"` in normal text color (`--purlin-text`) without a badge background.
   - **SAME:** Both directions return zero lines AND `origin/<branch>` and HEAD point to the same commit AND the branch has at least one total commit (`git rev-list --count origin/<branch>` returns > 0). This covers both new branches created from main (zero unique commits vs main, but sharing main's commit history) and established branches whose work has been merged. Shows green badge (`--purlin-status-good`).
   - **AHEAD:** Branch has unique commits HEAD does not, but HEAD has none the branch lacks. Shows yellow badge.
   - **BEHIND:** HEAD has commits the branch lacks, but the branch has none HEAD lacks. This is a stale branch. Shows yellow badge.
@@ -597,7 +597,7 @@ The following fixture tags provide real git branch topology for integration-leve
     Given an active branch "feature/empty" is set
     And feature/empty has literally zero total commits
     When the dashboard HTML is generated
-    Then the sync state position shows "EMPTY" in normal text color (--purlin-fg)
+    Then the sync state position shows "EMPTY" in normal text color (--purlin-text)
     And the text does not use a badge class (no st-good, st-todo, st-disputed)
 
 #### Scenario: Branches Table Shows BEHIND For Stale Remote Branch
@@ -965,7 +965,7 @@ The following fixture tags provide real git branch topology for integration-leve
     Then SAME branches show a green badge (--purlin-status-good)
     And AHEAD/BEHIND branches show a yellow badge (--purlin-status-todo)
     And DIVERGED branches show an orange badge (--purlin-status-warning)
-    And EMPTY branches show normal text (--purlin-fg) without badge background
+    And EMPTY branches show normal text (--purlin-text) without badge background
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -990,7 +990,7 @@ None.
 - [ ] CONTRIBUTORS table columns: Name, Commits, Last Active, Last Commit Subject (no Role)
 - [ ] CONTRIBUTORS empty state: "(no commits on this branch yet)"
 - [ ] "Last remote sync: N min ago" annotation in LOCAL BRANCH body (not heading), only when active
-- [ ] Sync badge colors: EMPTY=normal text (`--purlin-fg`, no badge), SAME=green (`--purlin-status-good`), AHEAD/BEHIND=yellow (`--purlin-status-todo`), DIVERGED=orange (`--purlin-status-warning`)
+- [ ] Sync badge colors: EMPTY=normal text (`--purlin-text`, no badge), SAME=green (`--purlin-status-good`), AHEAD/BEHIND=yellow (`--purlin-status-todo`), DIVERGED=orange (`--purlin-status-warning`)
 - [ ] Create Branch click transitions section from setup mode (creation row + branches table) to active mode (branch dropdown + sync badge)
 - [ ] Leave click transitions section from active mode back to setup mode (creation row + branches table visible)
 - [ ] "Refresh Branches" button positioned to the right of the branches table heading in setup mode

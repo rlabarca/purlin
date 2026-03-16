@@ -32,6 +32,14 @@ This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not
 - Fixture cleanup happens after each scenario via `tools/test_support/fixture.sh cleanup`.
 - If the fixture repo does not exist when the test runner starts, the runner MUST invoke `dev/setup_behavior_fixtures.sh` to create it before proceeding. This removes the manual prerequisite of running the setup script separately.
 
+### 2.2.1 Fixture Setup Script Contract
+
+The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparation:
+
+*   **Success:** Exit code 0. Outputs created tag names to stdout (one per line).
+*   **Failure:** Exit code 1. Outputs error description to stderr.
+*   **Idempotent:** Safe to run multiple times; skips already-existing fixtures.
+
 ### 2.3 System Prompt Construction
 
 - The test runner constructs the system prompt using the same 4-layer concatenation order as the launcher scripts:
@@ -48,6 +56,7 @@ This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not
 - The trigger message simulates a session start (e.g., `"Begin Builder session."`) or a command invocation (e.g., `"/pl-help"`).
 - The `--output-format json` flag enables structured parsing of Claude's response.
 - Each test invocation is independent (no session state carries between tests).
+- The test runner uses `jq` for JSON response parsing (extracting the result field from Claude's `--output-format json` output). If `jq` is unavailable, the runner falls back to raw output string matching.
 
 ### 2.5 Assertion Strategy
 

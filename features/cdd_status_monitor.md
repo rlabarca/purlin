@@ -656,8 +656,22 @@ None.
 
 ## Visual Specification
 
+> **Design Anchor:** features/design_visual_standards.md
+> **Inheritance:** Colors, typography, and theme switching per anchor.
+
 ### Screen: CDD Dashboard -- Status View
 - **Reference:** N/A
+
+**Token Map:**
+| Design Token | CSS Custom Property |
+|---|---|
+| surface | `var(--purlin-bg)` |
+| on-surface | `var(--purlin-text)` |
+| primary | `var(--purlin-primary)` |
+| accent | `var(--purlin-accent)` |
+| muted | `var(--purlin-muted)` |
+| border | `var(--purlin-border)` |
+
 - [ ] Dashboard title reads "PURLIN CDD DASHBOARD" in the header left group
 - [ ] Active project name displayed on a second line below the title, left-aligned with the "P" in PURLIN
 - [ ] Project name uses Inter Medium 500, body text size (14px), color matches the logo triangle (`--purlin-primary`)

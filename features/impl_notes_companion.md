@@ -57,6 +57,15 @@ The companion file contains the extracted implementation notes content. The file
 - When no companion file exists, the modal shows content without tabs (same as current behavior).
 - Tab content is lazy-loaded and cached for instant switching.
 
+### 2.10 Companion File API Endpoint
+
+The CDD Dashboard exposes companion file content via:
+
+*   **Endpoint:** `GET /impl-notes?file=<feature_path>`
+*   **Response (200):** Raw markdown content of the companion file.
+*   **Response (404):** No companion file exists for the given feature path.
+*   **Path resolution:** The `file` parameter is the feature filename (e.g., `critic_tool.md`). The endpoint resolves the companion as `features/<stem>.impl.md`.
+
 ### 2.9 Integration Test Fixture Tags
 
 | Tag | State Description |
@@ -103,7 +112,7 @@ And `critic_tool.impl.md` is not included
 
 #### Scenario: Orphan Detection Flags Companion Without Parent
 Given a companion file `features/old_feature.impl.md` without a corresponding `features/old_feature.md`
-When the cleanup tool detects orphaned features
+When the Critic scans `features/*.impl.md` files and no corresponding `features/<name>.md` parent exists, the companion is flagged as an orphan in the Critic report
 Then `old_feature.impl.md` is flagged as orphaned
 
 #### Scenario: Companion File Served via API

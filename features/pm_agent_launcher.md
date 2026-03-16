@@ -34,7 +34,7 @@ When `agents.pm` is absent from the resolved config:
 The PM defaults to Sonnet 4.6 (creative iteration is fast and conversational).
 
 ### 2.5 Startup Sequence Config
-*   The PM uses `startup_sequence: false` and `recommend_next_actions: false` by default.
+*   The PM uses `startup_sequence: true` and `recommend_next_actions: true` by default, consistent with other agent roles.
 *   The PM is a conversational agent that awaits human direction rather than running automated gap analysis.
 
 ### 2.6 Init Script Generation

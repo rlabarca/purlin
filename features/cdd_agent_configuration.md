@@ -126,7 +126,7 @@ The following fixture tags provide deterministic project states for web-verify t
 ### Screen: CDD Dashboard -- Agent Config Section
 - **Reference:** N/A
 - [ ] Agents section heading ("Agent Config") has a visible underline separator matching Active/Complete/Workspace headings
-- [ ] A visible vertical gap separates the bottom of the Workspace box from the top of the Agents section, matching the gap between Active/Complete sections and Workspace
+- [ ] A visible vertical gap of at least 16px (matching the gap between Active/Complete sections and the Workspace box) separates the bottom of the Workspace box from the top of the Agents section
 - [ ] Agents section has a chevron indicator (right=collapsed, down=expanded)
 - [ ] Collapsed state shows grouped model badge (e.g., "3x Sonnet 4.6" or "1x Opus 4.6 | 2x Sonnet 4.6")
 - [ ] A column header row appears above the agent data rows with a label cell for each control column
