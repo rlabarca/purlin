@@ -61,8 +61,12 @@ All AFT tools follow the pattern `pl-aft-<type>`:
 
 ### FORBIDDEN
 
-- AFTs MUST NOT require human interaction during execution (that is manual verification, not an AFT)
-- AFTs MUST NOT start/stop servers (server management is human-owned per existing mandates)
+No grepable FORBIDDEN patterns defined for this anchor. All constraints below are behavioral and verified via testing and QA review, not automated pattern scanning.
+
+### Behavioral Constraints (Non-Grepable)
+
+- AFTs MUST NOT require human interaction during execution (that is manual verification, not an AFT). Verification: QA review of test scripts.
+- AFTs MUST NOT start or stop application servers as part of the test execution itself. Test infrastructure that starts a server BEFORE the AFT runs (e.g., `> AFT Start:` metadata) is permitted -- the server lifecycle is harness-owned, not AFT-owned. Verification: QA review of test scripts.
 
 ## Scenarios
 

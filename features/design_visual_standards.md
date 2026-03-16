@@ -6,12 +6,16 @@
 ## 1. Purpose
 Defines the visual language for all Purlin-branded web tools (CDD Dashboard). This anchor node establishes color tokens, typography, theme switching behavior, and logo placement that all visual tool features MUST adhere to.
 
+This anchor is the project's **visual design anchor** -- the single source of truth for colors, fonts, spacing, and theme behavior. Features with Visual Specifications declare this anchor via `> **Design Anchor:** features/design_visual_standards.md`.
+
 ## 2. Invariants
 
 ### 2.1 Brand Identity
 *   **Name:** Purlin
 *   **Tagline:** Collaborative Design-Driven Agentic Development Framework
 *   **Logo:** `assets/purlin-logo.svg` -- standalone SVG with dark-theme defaults. When embedded inline in tools, uses CSS classes for theme-responsive fills.
+
+Purlin has two built-in themes: **Blueprint** (dark, default) and **Architect** (light). These names are used throughout this anchor and all dependent features.
 
 ### 2.2 Color Token System
 All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors are FORBIDDEN.
@@ -57,6 +61,10 @@ All tool CSS MUST use `var(--purlin-*)` custom properties. Hardcoded hex colors 
 | `--purlin-tag-outline` | `#334155` |
 | `--font-display` | `'Montserrat', sans-serif` |
 | `--font-body` | `'Inter', sans-serif` |
+
+#### Token Scoping Rules
+
+All `--purlin-*` tokens MUST be defined at `:root` scope (dark theme) and `[data-theme='light']` scope (light theme) in the global stylesheet. Features MUST NOT redefine or locally override `--purlin-*` tokens. Feature-specific styling uses the tokens, never redefines them.
 
 ### 2.3 Typography
 
@@ -106,8 +114,13 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   **Color:** `var(--purlin-primary)` -- the same token used for the logo triangle main fill (`.logo-fill`). This ensures the project name color matches the logo and switches correctly between Blueprint (dark) and Architect (light) themes.
 
 ### 2.7 FORBIDDEN Patterns
+
 *   Hardcoded hex colors in tool CSS (MUST use `var(--purlin-*)` custom properties).
+    *   **Grepable pattern:** `#[0-9a-fA-F]{3,8}` in any `.py`, `.html`, `.css`, or `.js` file under `tools/`.
+    *   **Scan scope:** `tools/**/*.{py,html,css,js}`
 *   Inline style color values that bypass the token system.
+    *   **Grepable pattern:** `style=` attributes containing `color:` or `background` values not using `var(--purlin-*)`.
+    *   **Scan scope:** `tools/**/*.{py,html,css,js}`
 
 ### 2.8 Design Artifact Inheritance
 When a design artifact is processed for a Purlin tool feature via `/pl-design-ingest`:

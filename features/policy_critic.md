@@ -6,6 +6,8 @@
 ## 1. Purpose
 This policy defines the invariants and constraints governing the Critic -- the project coordination engine that validates specification-implementation quality AND generates role-specific action items for each agent. The Critic is the single source of truth for what each agent should work on next.
 
+This policy is a prerequisite for `policy_release.md` and all release-related features. Changes here cascade to 19+ dependent features.
+
 ## 2. Invariants
 
 ### 2.1 Dual-Gate Principle
@@ -141,6 +143,8 @@ When a feature resets to TODO lifecycle state (spec modified after last status c
 *   **Priority:** HIGH (unchanged from current lifecycle_reset behavior).
 *   **Traceability cross-check:** When new scenarios are detected, the Critic MUST verify that each new scenario has a **strong traceability match** (not just keyword overlap with pre-existing tests). A new scenario matched only to tests that existed before the spec edit is flagged as a **weak match** — the existing test likely does not cover the new behavior. Weak matches for new scenarios produce an additional HIGH-priority Builder action item: `"New scenario '<title>' has no dedicated test — existing keyword match is likely a false positive"`.
 
+A **strong match** requires that the test function name or body contains 3 or more distinctive keywords from the scenario title (excluding common words like 'the', 'when', 'given', 'then', 'and', 'a'). Matches with fewer than 3 keywords are **weak matches** and generate MEDIUM-priority traceability warnings.
+
 ### 2.13 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, QA, and PM columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
 
@@ -212,6 +216,8 @@ A lifecycle reset to TODO occurs when the feature spec is modified after the las
 **Action Item Generation:** When this invariant triggers, the Critic MUST generate a HIGH-priority QA action item with category `bypassed_qa_verification`. The message depends on the sub-case:
 *   No TESTING commit: `"Feature <name> has N manual scenario(s) that bypassed QA verification -- no TESTING-phase commit found"`
 *   Missing [Verified]: `"Feature <name> has N manual scenario(s) but [Complete] lacks [Verified] tag -- run /pl-complete to verify"`
+
+The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Complete]` commit message for a feature indicates QA verification occurred. The tag has no timestamp semantics -- only presence/absence matters.
 
 **`[Verified]` Tag Contract:** The `[Verified]` tag is a bracketed trailer appended to the `[Complete]` status commit message, produced exclusively by `/pl-complete` (QA-only). Format: `status(<scope>): [Complete features/<name>.md] [Verified]`. The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- Builder completions apply only to features with zero manual scenarios.
 

@@ -35,11 +35,14 @@ This policy establishes the governance rules and invariants for the Purlin relea
 *   When a new global step is published by Purlin (via a submodule update), consumer projects automatically receive it on the next tool run without any manual config migration.
 *   New steps are appended to the end of the local config with `enabled: true`. They do not displace existing custom ordering.
 *   Unknown step IDs in the local config (referencing steps not present in either JSON file) are silently skipped with a warning. They never cause a hard error, ensuring forward compatibility when a global step is removed.
+*   When a step ID is present in local config but absent from both global and local step definition JSON files (e.g., after a Purlin update removes a global step), the Critic generates a LOW-priority Architect action item: `Step <id> not found in any definition file -- remove from local config if no longer needed.` This ensures stale references are surfaced without causing hard errors.
 
 ### 2.6 Architect Ownership
 *   The `.purlin/release/` directory (both `local_steps.json` and `config.json`) is Architect-owned. The Architect agent creates and maintains these files.
 *   The CDD Dashboard MAY write to `config.json` when the user reorders or toggles steps via the UI. This is the only automated write to Architect-owned files permitted.
 *   Builders and QA agents do not modify release config files.
+
+Both the Architect (via `/pl-release-step`) and the CDD Dashboard (via user drag-reorder or toggle in the UI) may write to `config.json`. Last-write-wins; no lock mechanism is required. The CDD Dashboard reads `config.json` from disk before each write to incorporate any manual or Architect edits since the last Dashboard write.
 
 ## 3. FORBIDDEN Patterns
 

@@ -44,6 +44,8 @@ Detection: read `.purlin/runtime/active_branch`. If present and non-empty, that 
 
 All collaboration commands (`/pl-remote-push`, `/pl-remote-pull`) use the collaboration branch as their integration target. During an active branch, the local machine checks out that branch, making push and pull symmetric same-branch operations.
 
+Throughout this policy, **collaboration branch** is the canonical term for the branch that push/pull operations target. **Active branch** refers specifically to the value stored in `.purlin/runtime/active_branch`. When no active branch exists, the collaboration branch defaults to `main`.
+
 ### 2.5 Collaboration Branch Restriction (Critical)
 
 - `/pl-remote-push` and `/pl-remote-pull` MUST be run from the active collaboration branch.
@@ -61,13 +63,15 @@ Always `git fetch` before pushing. If the local collaboration branch is BEHIND o
 
 `/pl-remote-pull` uses `git merge` (not rebase) on the local collaboration branch. The collaboration branch is a shared integration branch -- rebasing rewrites commits other contributors depend on.
 
+If `git merge` encounters conflicts during `/pl-remote-pull`, the command halts with file-level conflict context (which files conflict, the merge state). Conflict resolution is a human responsibility -- the agent does not auto-resolve. After manual resolution, the user runs `/pl-remote-pull` again to verify clean state.
+
 ### 2.9 Contributor Identity
 
 Attribution via git author metadata (`git log --format="%ae|%an|%cr|%s"`). No manifest file required.
 
 ### 2.10 Branch Lifecycle
 
-All branch transitions abort if the working tree is dirty (uncommitted changes outside `.purlin/`).
+All branch transitions abort if the working tree is dirty. A dirty working tree is defined as: `git status --porcelain` returns any staged or unstaged modifications to tracked files outside `.purlin/`. Untracked files are ignored. Changes inside `.purlin/` (runtime state, caches) are exempt.
 
 - **Create:** Dashboard creates the branch from HEAD and pushes to remote. The local machine checks out the new branch. The branch becomes immediately discoverable by other collaborators via `git fetch`.
 - **Join:** Dashboard fetches the remote branch, checks out the branch locally, and sets it as active.

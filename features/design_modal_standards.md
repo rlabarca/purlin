@@ -17,6 +17,7 @@ Defines the visual and behavioral constraints for all text-based (content-readin
 ### Title
 
 - Modal titles MUST render 8 points larger than the modal's default body font size.
+- The default body font size is inherited from the project's design anchor (for Purlin: `design_visual_standards.md` Section 2.3, Inter 14px). With a 14px base, titles render at 22px.
 
 ### Font Size Control
 
