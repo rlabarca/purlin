@@ -528,24 +528,11 @@ class TestPerBranchSyncStateInBranchCollabBranches(unittest.TestCase):
             cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
             if 'branch' in cmd_str and '-r' in cmd_str:
                 result.stdout = '  origin/v0.5-sprint\n'
+            elif 'for-each-ref' in cmd_str and 'ahead-behind' in cmd_str:
+                # _batch_branch_sync: origin/v0.5-sprint is 0 ahead, 2 behind HEAD
+                result.stdout = 'origin/v0.5-sprint 0 2\n'
             elif 'rev-parse' in cmd_str:
                 result.stdout = 'abc1234'
-            elif 'log' in cmd_str:
-                range_arg = next((a for a in cmd if '..' in a), '')
-                if range_arg.startswith('main..'):
-                    # Branch has unique commits vs main (not EMPTY)
-                    result.stdout = 'abc unique1\n'
-                # With compare_to_head=True, ranges use HEAD:
-                # HEAD..origin/<branch> = what branch has that HEAD doesn't
-                # origin/<branch>..HEAD = what HEAD has that branch doesn't
-                elif '..origin/' in range_arg:
-                    # HEAD..origin/branch: branch has 0 unique commits beyond HEAD
-                    result.stdout = ''
-                elif 'origin/' in range_arg and '..HEAD' in range_arg:
-                    # origin/branch..HEAD: HEAD has 2 commits beyond branch
-                    result.stdout = 'xyz commit1\nuvw commit2\n'
-                else:
-                    result.stdout = ''
             else:
                 result.stdout = ''
             return result
