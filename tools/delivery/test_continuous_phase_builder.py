@@ -1163,35 +1163,6 @@ exit 0
 
 
 # ============================================================
-# Scenario: Pass-Through Flags Forwarded
-# ============================================================
-def test_passthrough_flags():
-    """--max-budget-usd forwarded to claude -p invocations."""
-    tmpdir = tempfile.mkdtemp()
-    try:
-        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
-        graph = make_graph([("a.md", [])])
-        make_mock_project(tmpdir, plan, graph)
-        mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
-
-        proc = run_launcher(tmpdir, mock_bin, [
-            '--continuous', '--max-budget-usd', '10'
-        ])
-
-        invocations = get_invocations(tmpdir)
-        builder_calls = [inv for inv in invocations if 'json-schema' not in inv]
-
-        has_max_budget = any('--max-budget-usd 10' in inv for inv in builder_calls)
-
-        ok = has_max_budget
-        record("Pass-Through Flags Forwarded", ok,
-               f"max_budget={has_max_budget}, calls={builder_calls}" if not ok else "")
-    finally:
-        shutil.rmtree(tmpdir)
-
-
-# ============================================================
 # Scenario: System Prompt Overrides Injected
 # ============================================================
 def test_system_prompt_overrides():
@@ -2580,9 +2551,8 @@ if __name__ == '__main__':
     test_bootstrap_plan_has_dependency_cycle()
     test_bootstrap_prefers_conservative_sizing()
 
-    # Remaining original scenarios (8)
+    # Remaining original scenarios (7)
     test_evaluator_failure_fallback()
-    test_passthrough_flags()
     test_system_prompt_overrides()
     test_phase_specific_assignment()
     test_logging_per_phase()

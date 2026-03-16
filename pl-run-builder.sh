@@ -11,11 +11,9 @@ export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
 # --- Parse launcher flags ---
 CONTINUOUS=false
-MAX_BUDGET_USD=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --continuous) CONTINUOUS=true; shift ;;
-        --max-budget-usd) MAX_BUDGET_USD="$2"; shift 2 ;;
         *) shift ;;
     esac
 done
@@ -140,10 +138,6 @@ RUNTIME_DIR="$SCRIPT_DIR/.purlin/runtime"
 DELIVERY_PLAN="$SCRIPT_DIR/.purlin/cache/delivery_plan.md"
 PHASE_ANALYZER="$CORE_DIR/tools/delivery/phase_analyzer.py"
 HAIKU_MODEL="claude-haiku-4-5-20251001"
-
-# Build pass-through args for claude --print
-PASSTHROUGH_ARGS=()
-[ -n "$MAX_BUDGET_USD" ] && PASSTHROUGH_ARGS+=(--max-budget-usd "$MAX_BUDGET_USD")
 
 # Tracking variables (file-based retry counts for bash 3 compat)
 PHASES_COMPLETED=0
@@ -377,7 +371,7 @@ BOOTSTRAP_OVERRIDE
 
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
     claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
-        "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
+        "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
         "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
     BOOTSTRAP_RC=$?
@@ -505,7 +499,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             (
                 cd "$WT_DIR" || exit 1
                 export PURLIN_PROJECT_ROOT="$WT_DIR"
-                claude --print "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
+                claude --print "${CLI_ARGS[@]}" \
                     --append-system-prompt-file "$PARALLEL_PROMPT_FILE" \
                     "$INITIAL_MSG" > "$LOG_FILE" 2>&1
             ) &
@@ -602,13 +596,13 @@ while [ "$OUTER_BREAK" = "false" ]; do
             case "$RUN_ACTION" in
                 run|retry)
                     claude --print --session-id "$SESSION_ID" \
-                        "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
+                        "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
                         "$INITIAL_MSG" > "$LOG_FILE" 2>&1
                     ;;
                 resume)
                     claude --resume "$SESSION_ID" --print \
-                        "${CLI_ARGS[@]}" "${PASSTHROUGH_ARGS[@]}" \
+                        "${CLI_ARGS[@]}" \
                         "Approved. Proceed." >> "$LOG_FILE" 2>&1
                     ;;
             esac
