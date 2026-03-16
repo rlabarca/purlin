@@ -2041,7 +2041,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   border:2px solid var(--purlin-border);border-top-color:var(--purlin-accent);
   border-radius:50%;animation:bc-spin 0.8s linear infinite;
 }}
-/* Feature Detail Modal */
+/* Text-Based Modal (shared base per design_modal_standards) */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,0.7);z-index:1000;
@@ -2049,16 +2049,41 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 }}
 .modal-overlay.visible{{display:flex}}
 .modal-content{{
+  --modal-font-adjust:0;
   background:var(--purlin-surface);border:1px solid var(--purlin-border);
-  border-radius:6px;width:700px;max-width:90vw;
+  border-radius:6px;width:70vw;
   max-height:80vh;display:flex;flex-direction:column;
   position:relative;
 }}
+@media(max-width:500px){{.modal-content{{width:90vw}}}}
 .modal-header{{
   display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px;border-bottom:1px solid var(--purlin-border);flex-shrink:0;
+  gap:10px;
 }}
-.modal-header h2{{font-size:13px;color:var(--purlin-primary);margin:0;border:0;padding:0}}
+.modal-header h2{{font-size:21px;color:var(--purlin-primary);margin:0;border:0;padding:0}}
+.modal-font-controls{{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}}
+.modal-font-btn{{
+  background:none;border:1px solid var(--purlin-border);color:var(--purlin-muted);
+  cursor:pointer;font-size:14px;width:24px;height:24px;
+  border-radius:3px;display:flex;align-items:center;
+  justify-content:center;line-height:1;font-family:inherit;
+}}
+.modal-font-btn:hover{{background:var(--purlin-tag-fill);color:var(--purlin-primary);border-color:var(--purlin-muted)}}
+.modal-font-slider{{
+  width:100px;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--purlin-border);border-radius:2px;outline:none;cursor:pointer;
+}}
+.modal-font-slider::-webkit-slider-thumb{{
+  -webkit-appearance:none;appearance:none;width:12px;height:12px;
+  border-radius:50%;background:var(--purlin-accent);cursor:pointer;
+}}
+.modal-font-slider::-moz-range-thumb{{
+  width:12px;height:12px;border:none;
+  border-radius:50%;background:var(--purlin-accent);cursor:pointer;
+}}
 .modal-close{{
   background:none;border:1px solid var(--purlin-border);color:var(--purlin-muted);
   cursor:pointer;font-size:14px;width:24px;height:24px;
@@ -2080,17 +2105,18 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .modal-body{{
   padding:14px;overflow-y:auto;flex:1;
   line-height:1.6;color:var(--purlin-muted);
+  font-size:calc(13px + var(--modal-font-adjust) * 1px);
 }}
 .modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-primary);margin:12px 0 6px}}
-.modal-body h1{{font-size:16px}}
-.modal-body h2{{font-size:14px;border:0;padding:0}}
-.modal-body h3{{font-size:12px}}
+.modal-body h1{{font-size:calc(16px + var(--modal-font-adjust) * 1px)}}
+.modal-body h2{{font-size:calc(14px + var(--modal-font-adjust) * 1px);border:0;padding:0}}
+.modal-body h3{{font-size:calc(12px + var(--modal-font-adjust) * 1px)}}
 .modal-body p{{margin:6px 0}}
 .modal-body ul,.modal-body ol{{margin:6px 0 6px 20px}}
 .modal-body li{{margin:2px 0}}
 .modal-body code{{
   background:var(--purlin-bg);padding:1px 4px;border-radius:2px;
-  font-size:11px;color:var(--purlin-accent);
+  font-size:calc(11px + var(--modal-font-adjust) * 1px);color:var(--purlin-accent);
 }}
 .modal-body pre{{background:var(--purlin-bg);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
 .modal-body pre code{{padding:0;background:none}}
@@ -2218,6 +2244,11 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   <div class="modal-content">
     <div class="modal-header">
       <h2 id="modal-title">Feature</h2>
+      <div class="modal-font-controls">
+        <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
+      </div>
       <button class="modal-close" id="modal-close" title="Close">X</button>
     </div>
     <div class="modal-tabs" id="modal-tabs" style="display:none">
@@ -2250,7 +2281,12 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 <div class="modal-overlay" id="wd-modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h2 id="wd-modal-title" style="font-size:13px;color:var(--purlin-primary);margin:0">What's Different?</h2>
+      <h2 id="wd-modal-title">What's Different?</h2>
+      <div class="modal-font-controls">
+        <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
+      </div>
       <button class="modal-close" onclick="closeWdModal()" title="Close">X</button>
     </div>
     <div id="wd-modal-date" style="padding:4px 14px 0;color:var(--purlin-muted);font-size:11px;display:flex;align-items:center;gap:8px"></div>
@@ -2280,6 +2316,11 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   <div class="modal-content">
     <div class="modal-header">
       <h2 id="step-modal-title">Step</h2>
+      <div class="modal-font-controls">
+        <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
+      </div>
       <button class="modal-close" onclick="closeStepModal()" title="Close">X</button>
     </div>
     <div class="modal-body" id="step-modal-body" style="padding:14px;overflow-y:auto"></div>
@@ -2290,6 +2331,40 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 </div>
 
 <script>
+// ============================
+// Modal Font Size Control (shared base per design_modal_standards)
+// ============================
+var MODAL_FONT_STORAGE_KEY = 'purlin-modal-font-adjust';
+var _modalFontAdjust = parseInt(sessionStorage.getItem(MODAL_FONT_STORAGE_KEY) || '0', 10);
+// Clamp to valid range on load
+if (isNaN(_modalFontAdjust) || _modalFontAdjust < -4) _modalFontAdjust = 0;
+if (_modalFontAdjust > 30) _modalFontAdjust = 30;
+
+function setModalFont(value) {{
+  value = Math.max(-4, Math.min(30, value));
+  _modalFontAdjust = value;
+  sessionStorage.setItem(MODAL_FONT_STORAGE_KEY, String(value));
+  // Apply to all text-based modal containers
+  document.querySelectorAll('.modal-content').forEach(function(el) {{
+    el.style.setProperty('--modal-font-adjust', value);
+  }});
+  // Sync all sliders
+  document.querySelectorAll('.modal-font-slider').forEach(function(s) {{
+    s.value = value;
+  }});
+}}
+
+function adjustModalFont(delta) {{
+  setModalFont(_modalFontAdjust + delta);
+}}
+
+// Initialize font adjustment on page load
+(function() {{
+  if (_modalFontAdjust !== 0) {{
+    setModalFont(_modalFontAdjust);
+  }}
+}})();
+
 // ============================
 // State
 // ============================
