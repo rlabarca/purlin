@@ -17,6 +17,7 @@ Audit all design artifacts and visual specifications across the project for inte
    - Whether a Token Map exists (from `- **Token Map:**`)
    - Checklist item count
    Also check for `brief.json` at `features/design/<feature_stem>/brief.json` for each feature with a Figma reference.
+   If Figma MCP tools are available, also extract annotation count per screen via `get_design_context`. Report as informational metadata (not a pass/fail check).
 
 2. **Reference integrity:** For each screen:
    - Local file references: verify the file exists on disk. Missing = CRITICAL.
@@ -51,13 +52,13 @@ Audit all design artifacts and visual specifications across the project for inte
    - Flag discrepancies as DESIGN_CONFLICT warnings (e.g., "Token Map maps `primary` to `var(--accent)`, but Figma design variable `primary` has been renamed to `brand-primary`").
    - Also compare Figma design variable resolved values against `brief.json` token values if present.
 
-7. **Report:** Print a summary table:
+7. **Report:** Print a summary table. The Annotations column is optional — show it when Figma MCP is available, omit otherwise. Annotation count is informational metadata only (not a pass/fail check).
    ```
-   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict
-   ---------------------|------------------|-------------|-----------|---------|--------|----------------
-   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN
-   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A
-   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning
+   Feature              | Screen           | Ref Status  | Staleness | Brief   | Anchor | Design Conflict | Annotations
+   ---------------------|------------------|-------------|-----------|---------|--------|-----------------|------------
+   cdd_status_monitor   | Web Dashboard    | OK          | CURRENT   | N/A     | CLEAN  | CLEAN           | N/A
+   my_feature           | Settings Panel   | MISSING     | N/A       | N/A     | N/A    | N/A             | N/A
+   figma_feature        | Figma Screen     | OK          | STALE     | CURRENT | CLEAN  | 1 warning       | 3
    ```
 
 8. **Offer remediation:** For STALE items, offer to re-ingest via `/pl-design-ingest reprocess <feature> <screen>`.
