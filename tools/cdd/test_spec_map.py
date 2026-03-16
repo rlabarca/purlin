@@ -888,6 +888,312 @@ class TestSpecMapModalFontSlider(unittest.TestCase):
         self.assertIn('calc(11px + var(--modal-font-adjust)', self.content)
 
 
+class TestReactiveUpdateOnFeatureChange(unittest.TestCase):
+    """Scenario: Reactive Update on Feature Change
+
+    Given the CDD Dashboard server is running
+    And the Spec Map view is active
+    When a feature file is created, modified, or deleted
+    Then the tool automatically regenerates the Mermaid exports
+    And the tool automatically regenerates dependency_graph.json
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_file_watcher_function_exists(self):
+        """_file_watcher function polls for feature file changes."""
+        self.assertIn('def _file_watcher()', self.content)
+
+    def test_poll_interval_set(self):
+        """File watcher polls at 2-second intervals."""
+        self.assertIn('POLL_INTERVAL = 2', self.content)
+
+    def test_watcher_runs_in_daemon_thread(self):
+        """File watcher runs as a daemon thread."""
+        self.assertIn('daemon=True', self.content)
+        self.assertIn('start_file_watcher', self.content)
+
+    def test_watcher_calls_graph_generation(self):
+        """File watcher triggers run_full_generation on changes."""
+        self.assertIn('_run_graph_generation', self.content)
+
+
+class TestZoomPreservedOnRefreshWhenModified(unittest.TestCase):
+    """Scenario: Zoom Preserved on Refresh When Modified
+
+    Given the User has zoomed or panned the graph in the Spec Map view
+    When the dashboard auto-refreshes
+    Then the current zoom level and pan position are preserved
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_user_modified_view_flag_exists(self):
+        """userModifiedView flag tracks zoom/pan changes."""
+        self.assertIn('var userModifiedView = false', self.content)
+
+    def test_viewport_event_sets_flag(self):
+        """Viewport events set userModifiedView when not programmatic."""
+        self.assertIn('userModifiedView = true', self.content)
+
+    def test_programmatic_guard_prevents_false_positive(self):
+        """programmaticViewport flag prevents auto-fit from setting userModifiedView."""
+        self.assertIn('var programmaticViewport = false', self.content)
+        self.assertIn('if (!programmaticViewport)', self.content)
+
+    def test_modified_view_preserves_zoom_on_refresh(self):
+        """When userModifiedView is true, renderGraph preserves zoom/pan."""
+        self.assertIn('if (userModifiedView)', self.content)
+
+
+class TestZoomResetsOnRefreshWhenUnmodified(unittest.TestCase):
+    """Scenario: Zoom Resets on Refresh When Unmodified
+
+    Given the User has not modified zoom or pan since the last fit
+    When the dashboard auto-refreshes
+    Then the graph is re-fitted to the viewable area
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_user_modified_view_defaults_false(self):
+        """userModifiedView starts as false for auto-fit behavior."""
+        self.assertIn('var userModifiedView = false', self.content)
+
+    def test_fit_called_in_render(self):
+        """cy.fit() called during renderGraph for auto-fit."""
+        self.assertIn('cy.fit(undefined, 40)', self.content)
+
+
+class TestRecenterGraphButtonResetsViewAndInteractionState(unittest.TestCase):
+    """Scenario: Recenter Graph Button Resets View and Interaction State
+
+    Given the User has zoomed or panned the graph
+    When the User clicks the Recenter Graph button
+    Then the zoom and pan are reset to fit the graph in the viewable area
+    And the interaction state is reset to unmodified
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_recenter_function_exists(self):
+        """recenterGraph function is defined."""
+        self.assertIn('function recenterGraph()', self.content)
+
+    def test_recenter_resets_user_modified_view(self):
+        """recenterGraph resets userModifiedView to false."""
+        # Find recenterGraph function and verify it resets the flag
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('userModifiedView = false', block)
+
+    def test_recenter_calls_fit(self):
+        """recenterGraph calls cy.fit() to zoom-to-fit."""
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('cy.fit(undefined, 40)', block)
+
+    def test_recenter_button_in_html(self):
+        """Recenter Graph button exists in the Spec Map view."""
+        self.assertIn('id="recenter-btn"', self.content)
+        self.assertIn('recenterGraph()', self.content)
+
+
+class TestNodePositionPreservedOnRefreshWhenManuallyMoved(unittest.TestCase):
+    """Scenario: Node Position Preserved on Refresh When Manually Moved
+
+    Given the User has dragged one or more nodes to new positions
+    When the dashboard auto-refreshes and the graph has not changed substantively
+    Then each moved node is restored to its saved position
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_user_modified_nodes_flag_exists(self):
+        """userModifiedNodes flag tracks manual node drags."""
+        self.assertIn('var userModifiedNodes = false', self.content)
+
+    def test_dragfree_sets_modified_nodes(self):
+        """Cytoscape dragfree event sets userModifiedNodes flag."""
+        self.assertIn("'dragfree'", self.content)
+        self.assertIn('userModifiedNodes = true', self.content)
+
+    def test_save_node_positions_function(self):
+        """saveNodePositions persists positions to localStorage."""
+        self.assertIn('function saveNodePositions(key)', self.content)
+        self.assertIn('localStorage.setItem', self.content)
+
+    def test_restore_node_positions_function(self):
+        """restoreNodePositions reads positions from localStorage."""
+        self.assertIn('function restoreNodePositions(key)', self.content)
+        self.assertIn('localStorage.getItem', self.content)
+
+    def test_positions_restored_when_nodes_modified_and_hash_unchanged(self):
+        """restoreNodePositions called when userModifiedNodes and hash unchanged."""
+        self.assertIn('if (userModifiedNodes && !hashChanged)', self.content)
+        self.assertIn('restoreNodePositions(newHash)', self.content)
+
+
+class TestNodePositionsDiscardedWhenGraphChangesSubstantively(unittest.TestCase):
+    """Scenario: Node Positions Discarded When Graph Changes Substantively
+
+    Given the User has manually moved one or more nodes
+    When a feature file is added, removed, or a node's category changes
+    Then the saved node positions are discarded
+    And the graph re-runs the full packed layout algorithm
+    And the position interaction state resets to unmodified
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_content_hash_function_exists(self):
+        """computeContentHash derives key from node file:category pairs."""
+        self.assertIn('function computeContentHash(features)', self.content)
+
+    def test_hash_change_clears_saved_positions(self):
+        """When content hash changes, localStorage positions are removed."""
+        self.assertIn('localStorage.removeItem(lastContentHash)', self.content)
+
+    def test_hash_change_resets_modified_nodes(self):
+        """userModifiedNodes reset to false when hash changes."""
+        idx = self.content.find('var hashChanged')
+        block = self.content[idx:idx + 300]
+        self.assertIn('userModifiedNodes = false', block)
+
+    def test_last_content_hash_tracked(self):
+        """lastContentHash tracks the previous render's hash for comparison."""
+        self.assertIn('var lastContentHash = null', self.content)
+        self.assertIn('lastContentHash = newHash', self.content)
+
+
+class TestRecenterGraphButtonResetsNodePositions(unittest.TestCase):
+    """Scenario: Recenter Graph Button Resets Node Positions
+
+    Given the User has manually moved one or more nodes
+    When the User clicks the Recenter Graph button
+    Then all node positions are reset to the packed layout positions
+    And the position interaction state resets to unmodified
+    And subsequent auto-refresh cycles re-layout rather than restore saved positions
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_recenter_resets_user_modified_nodes(self):
+        """recenterGraph resets userModifiedNodes to false."""
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('userModifiedNodes = false', block)
+
+    def test_recenter_clears_local_storage(self):
+        """recenterGraph removes saved positions from localStorage."""
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('localStorage.removeItem', block)
+
+    def test_recenter_reruns_packed_layout(self):
+        """recenterGraph re-runs runPackedLayout for fresh positions."""
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('runPackedLayout()', block)
+
+
+class TestCategoryLabelsReadableAtOverviewZoom(unittest.TestCase):
+    """Scenario: Category Labels Readable at Overview Zoom
+
+    Given the User is viewing the Spec Map with all nodes visible
+    When the zoom level is approximately 0.15 (typical fit-all)
+    Then category group labels render at approximately 12 screen pixels
+    And when zoomed in to 1.0 or higher labels remain at 12px model coords
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_label_base_font_constant(self):
+        """LABEL_BASE_FONT constant defines base size for scaling."""
+        self.assertIn('var LABEL_BASE_FONT = 12', self.content)
+
+    def test_update_category_label_sizes_function(self):
+        """updateCategoryLabelSizes function exists."""
+        self.assertIn('function updateCategoryLabelSizes()', self.content)
+
+    def test_font_size_clamped(self):
+        """Font size clamped to [12, 80] range."""
+        self.assertIn('Math.min(80, Math.max(12,', self.content)
+
+    def test_scaling_inversely_with_zoom(self):
+        """Font size scales as LABEL_BASE_FONT / zoom."""
+        self.assertIn('LABEL_BASE_FONT / zoom', self.content)
+
+    def test_labels_updated_on_zoom_event(self):
+        """Label sizes update via rAF-debounced zoom handler."""
+        self.assertIn('scheduleUpdateCategoryLabels', self.content)
+        self.assertIn('requestAnimationFrame', self.content)
+
+
+class TestUniformNodeAppearanceWithAnchorBorderDistinction(unittest.TestCase):
+    """Scenario: Uniform Node Appearance with Anchor Border Distinction
+
+    Given the User is viewing the Spec Map view
+    When the graph renders all feature nodes
+    Then all nodes have the same background color (--purlin-surface at low opacity)
+    And all regular (non-anchor) nodes have the same border color (--purlin-border)
+    And anchor nodes (arch_*, design_*, policy_*) have a green border (--purlin-status-good)
+    """
+
+    def setUp(self):
+        with open(SERVE_PY) as f:
+            self.content = f.read()
+
+    def test_is_anchor_detected_by_filename_prefix(self):
+        """isAnchor boolean derived from arch_/design_/policy_ filename prefix."""
+        self.assertIn("isAnchor = /^(arch_|design_|policy_)/.test(filename)",
+                       self.content)
+
+    def test_is_anchor_stored_as_node_data(self):
+        """isAnchor boolean stored as Cytoscape node data property."""
+        self.assertIn('isAnchor: isAnchor', self.content)
+
+    def test_anchor_style_selector(self):
+        """Cytoscape style selector targets anchor nodes via [?isAnchor]."""
+        self.assertIn("selector: 'node[?isAnchor]'", self.content)
+
+    def test_anchor_border_uses_status_good(self):
+        """Anchor nodes use c.statusGood (--purlin-status-good) border color."""
+        self.assertIn("'border-color': c.statusGood", self.content)
+
+    def test_anchor_border_width_thicker(self):
+        """Anchor nodes have 3px border width (vs 2px regular)."""
+        # Find the anchor style block
+        idx = self.content.find("selector: 'node[?isAnchor]'")
+        block = self.content[idx:idx + 200]
+        self.assertIn("'border-width': 3", block)
+
+    def test_regular_nodes_use_border_token(self):
+        """Regular (non-anchor) nodes use c.border for border color."""
+        self.assertIn("'border-color': c.border", self.content)
+
+    def test_status_good_in_theme_colors(self):
+        """getThemeColors includes statusGood from --purlin-status-good."""
+        self.assertIn('statusGood', self.content)
+        self.assertIn('--purlin-status-good', self.content)
+
+
 class TestMermaidGeneration(unittest.TestCase):
     def test_generates_valid_mermaid(self):
         features = {
