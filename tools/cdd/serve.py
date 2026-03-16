@@ -3594,27 +3594,34 @@ function applySearchFilter() {{
 // Metadata Extraction
 // ============================
 function extractMetadata(md) {{
-  // Extract '> Key: Value' blockquote metadata lines from the beginning of markdown.
+  // Extract '> Key: Value' blockquote metadata lines from the top of markdown.
+  // Feature files start with '# Feature: Name' then metadata blockquotes.
   // Returns {{ tags: [{{key, value}}], cleaned: mdWithoutMetadataBlockquotes }}.
   var lines = md.split('\\n');
   var tags = [];
   var cleanedLines = [];
-  var inMetaBlock = true; // only strip leading metadata blockquotes
+  var inMetaBlock = true;
+  var foundFirstMeta = false;
   for (var i = 0; i < lines.length; i++) {{
     var line = lines[i];
     if (inMetaBlock) {{
       var m = line.match(/^>\s*([^:]+):\s*(.+)$/);
       if (m) {{
         tags.push({{ key: m[1].trim(), value: m[2].trim() }});
+        foundFirstMeta = true;
         continue; // skip this line from cleaned output
       }}
-      // Allow blank lines between metadata lines
+      // Allow blank lines between metadata lines and before first metadata
       if (line.trim() === '') {{
         cleanedLines.push(line);
         continue;
       }}
-      // Non-metadata, non-blank line: end of metadata block
-      inMetaBlock = false;
+      // Non-metadata, non-blank line
+      if (foundFirstMeta) {{
+        // Already found metadata; this line ends the metadata block
+        inMetaBlock = false;
+      }}
+      // Before first metadata, allow headings/text (push to cleaned, keep scanning)
     }}
     cleanedLines.push(line);
   }}
