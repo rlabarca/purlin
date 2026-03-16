@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "passed": 19,
+  "failed": 0,
+  "total": 19,
+  "test_file": "tools/delivery/test_continuous_phase_builder.py",
+  "details": [
+    {
+      "name": "Continuous Flag Accepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Default Behavior Without Continuous Flag",
+      "status": "PASS"
+    },
+    {
+      "name": "Sequential Phase Completion",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Phase Execution",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Phase Merge Conflict",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Returns Approve",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Returns Retry",
+      "status": "PASS"
+    },
+    {
+      "name": "Retry Limit Exceeded",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Returns Stop on Error",
+      "status": "PASS"
+    },
+    {
+      "name": "All Phases Complete",
+      "status": "PASS"
+    },
+    {
+      "name": "No Delivery Plan at Launch",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Failure Fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "Pass-Through Flags Forwarded",
+      "status": "PASS"
+    },
+    {
+      "name": "System Prompt Overrides Injected",
+      "status": "PASS"
+    },
+    {
+      "name": "Phase-Specific Builder Assignment",
+      "status": "PASS"
+    },
+    {
+      "name": "Logging Per Phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Exit Summary",
+      "status": "PASS"
+    },
+    {
+      "name": "Worktree Cleanup on Error",
+      "status": "PASS"
+    },
+    {
+      "name": "Delivery Plan Updated Centrally",
+      "status": "PASS"
+    }
+  ]
+}
