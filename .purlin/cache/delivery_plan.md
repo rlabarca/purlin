@@ -21,9 +21,9 @@
 **Completion Commit:** 58efb1b
 **QA Bugs Addressed:** --
 
-## Phase 4 -- AFT Web Tool [PENDING]
+## Phase 4 -- AFT Web Tool [COMPLETE]
 **Features:** pl_aft_web.md
-**Completion Commit:** --
+**Completion Commit:** f6d78aa
 **QA Bugs Addressed:** --
 
 ## Phase 5 -- Modal & Lifecycle [PENDING]
