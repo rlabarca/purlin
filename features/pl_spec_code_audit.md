@@ -18,7 +18,7 @@ The `/pl-spec-code-audit` command performs a bidirectional audit between feature
 ### 2.1 Role Gating
 
 - The command is shared between Architect and Builder roles.
-- Non-Architect/Builder agents MUST receive: "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit."
+- Non-Architect/Builder agents (QA, PM) MUST receive: "This command is for the Architect or Builder. Ask the appropriate agent to run /pl-spec-code-audit."
 
 ### 2.2 Plan Mode Entry
 
