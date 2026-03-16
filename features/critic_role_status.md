@@ -59,7 +59,7 @@ QA Precedence (highest wins): FAIL > DISPUTED > TODO > CLEAN > N/A.
 
 **PM Status:**
 *   `DONE`: No PM action items for this feature.
-*   `TODO`: Pending PM work (visual spec gaps, stale designs, disputes on PM-owned features).
+*   `TODO`: Pending PM work (visual spec gaps, stale designs, disputes on PM-owned features, disputes triaged to PM via `Action Required: PM`).
 *   `N/A`: Feature has no Visual Specification section, no Figma references, and is not `> Owner: PM`.
 
 ### 2.5 Action Item Routing
@@ -72,7 +72,8 @@ The Critic generates imperative action items for each role based on analysis res
 |--------|----------|---------|
 | Spec Gate FAIL (missing sections, broken prereqs) | HIGH | "Fix spec gap: section_completeness -- missing Requirements" |
 | OPEN DISCOVERY/INTENT_DRIFT in User Testing | HIGH | "Update spec for cdd_status_monitor: [discovery title]" |
-| OPEN SPEC_DISPUTE on Architect-owned features (no Owner tag or `> Owner: Architect`) that do not reference Visual Specification screens | HIGH | "Review disputed scenario in critic_tool: [dispute title]" |
+| OPEN SPEC_DISPUTE on Architect-owned features (no Owner tag or `> Owner: Architect`) that do not reference Visual Specification screens and do not have `Action Required: PM` set | HIGH | "Review disputed scenario in critic_tool: [dispute title]" |
+| SPEC_DISPUTEs with explicit `Action Required: Architect` (override, e.g. on PM-owned features) | HIGH | "Review disputed scenario in X: [dispute title]" |
 | `[INFEASIBLE]` tag in Implementation Notes | CRITICAL | "Revise infeasible spec for submodule_sync: [rationale]" |
 | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | HIGH | "Acknowledge Builder decision in critic_tool: [tag title]" |
 | Spec Gate WARN (no manual scenarios, empty impl notes) | LOW | "Improve spec: scenario_classification -- only Automated" |
@@ -106,6 +107,7 @@ The SPEC_DISPUTE informational item satisfies the role_status/action_item consis
 |--------|----------|---------|
 | SPEC_DISPUTEs on features with `> Owner: PM` | HIGH | "Review disputed scenario in X: [dispute title]" |
 | SPEC_DISPUTEs referencing Visual Specification screens (regardless of Owner tag) | HIGH | "Review visual dispute in X: [dispute title]" |
+| SPEC_DISPUTEs with explicit `Action Required: PM` (Architect triage) | HIGH | "Review disputed scenario in X: [dispute title]" |
 | `stale_design_description` items | LOW | "Re-process stale design for X: [screen]" |
 | `unprocessed_artifact` items | HIGH | "Process design artifact for X: [screen]" |
 | `missing_design_reference` items | MEDIUM | "Fix missing design reference for X: [screen]" |
@@ -116,7 +118,7 @@ The following items remain with Architect and MUST NOT be routed to PM:
 - All spec gate items.
 - All INFEASIBLE items.
 - Builder decision items (DEVIATION/DISCOVERY).
-- SPEC_DISPUTEs on Architect-owned features (no Owner tag or `> Owner: Architect`) that do not reference Visual Specification screens.
+- SPEC_DISPUTEs on Architect-owned features (no Owner tag or `> Owner: Architect`) that do not reference Visual Specification screens and do not have `Action Required: PM` set.
 - Untracked file items.
 
 ### 2.6.1 SPEC_DISPUTE Resolution Handoff
@@ -152,7 +154,7 @@ The aggregate report generator (`CRITIC_REPORT.md`) MUST iterate over `('Archite
 **Note:** This iteration order (Architect first, PM last) differs from the CDD dashboard column order (PM first, then Architect, Builder, QA). The difference is intentional: the report is agent-facing and follows the traditional workflow sequence (spec -> build -> verify -> design review), while the dashboard is human-facing and places PM first as the project-level oversight role.
 
 ### 2.9 SPEC_DISPUTE Visual Detection
-Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` prefix, `visual specification` substring (case-insensitive), or exact screen name matches from the feature's parsed `visual_spec.screen_names`. This heuristic covers the standard naming conventions without requiring structured metadata in discovery entries.
+Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` prefix, `visual specification` substring (case-insensitive), or exact screen name matches from the feature's parsed `visual_spec.screen_names`. This heuristic covers the standard naming conventions without requiring structured metadata in discovery entries. **Precedence:** The `Action Required` override (Section 2.5) takes precedence over visual detection heuristics. If `Action Required: Architect` is set on a dispute with a visual title, the dispute routes to Architect despite the visual heuristic. If `Action Required: PM` is set on a non-visual dispute, it routes to PM without needing a visual title match.
 
 ---
 
@@ -283,6 +285,26 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And a LOW-priority QA action item is generated describing the suspended scenario
     And the QA action item references PM as the resolver
     And the HIGH-priority resolution action item appears in the pm action items
+
+#### Scenario: SPEC_DISPUTE with Action Required PM on Architect-owned feature routes to PM
+
+    Given a feature file with `> Owner: Architect` metadata (or no Owner tag)
+    And the feature has an OPEN SPEC_DISPUTE with `Action Required: PM`
+    When the Critic generates action items
+    Then the SPEC_DISPUTE appears in the `pm` action items
+    And does not appear in the `architect` action items
+    And a LOW-priority QA action item is generated describing the suspended scenario
+    And the QA action item references PM as the resolver
+
+#### Scenario: SPEC_DISPUTE with Action Required Architect on PM-owned feature stays with Architect
+
+    Given a feature file with `> Owner: PM` metadata
+    And the feature has an OPEN SPEC_DISPUTE with `Action Required: Architect`
+    When the Critic generates action items
+    Then the SPEC_DISPUTE appears in the `architect` action items
+    And does not appear in the `pm` action items
+    And a LOW-priority QA action item is generated describing the suspended scenario
+    And the QA action item references Architect as the resolver
 
 #### Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED
 
