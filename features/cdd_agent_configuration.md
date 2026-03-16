@@ -134,8 +134,8 @@ The following fixture tags provide deterministic project states for web-verify t
 - [ ] Agent data rows contain no inline labels for any checkbox controls; identification is solely via the column header row
 - [ ] Agent name labels are Inter 500, 12px, uppercase, using `var(--purlin-primary)` color
 - [ ] Column header row is visually aligned with the control columns in the agent data rows below it
-- [ ] Model dropdowns are left-edge aligned across all three agent rows
-- [ ] Effort dropdowns are left-edge aligned across all three agent rows
+- [ ] Model dropdowns are left-edge aligned across all four agent rows
+- [ ] Effort dropdowns are left-edge aligned across all four agent rows
 - [ ] All dropdowns in the same column have identical widths across rows
 - [ ] When a control is hidden (capability-gated), its column space is preserved so adjacent controls do not shift
 - [ ] YOLO checkboxes are center-aligned under the "YOLO" column header
