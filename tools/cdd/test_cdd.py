@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import os
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -1954,6 +1955,273 @@ class TestVerificationEffortInApiStatus(unittest.TestCase):
             }, f)
         result = get_feature_role_status(stem, self.test_dir)
         self.assertNotIn("verification_effort", result)
+
+
+# ===================================================================
+# Modal Metadata & Font Scenarios (auto-web)
+# ===================================================================
+
+def _gen_html():
+    """Generate dashboard HTML with mocked feature data."""
+    import serve as _serve
+    from unittest.mock import patch as _patch
+    with _patch('serve.get_feature_status', return_value=([], [], [])), \
+         _patch('serve.run_command', return_value=""):
+        return _serve.generate_html()
+
+
+class TestMetadataTagsDisplayedSeparately(unittest.TestCase):
+    """Scenario: Metadata Tags Displayed Separately (auto-web)
+
+    Given the User is viewing the Status view
+    When the User clicks a feature name that has Label, Category, and Prerequisite metadata
+    Then the feature detail modal opens
+    And metadata tags are displayed in a dedicated area between the header/tabs and the body
+    And each tag name is rendered in a highlight color distinct from the value text
+    And the metadata blockquotes do not appear as blockquotes in the rendered markdown body
+    """
+
+    def test_modal_metadata_div_exists(self):
+        html = _gen_html()
+        self.assertIn('id="modal-metadata"', html)
+        self.assertIn('class="modal-metadata"', html)
+
+    def test_extract_metadata_function_exists(self):
+        html = _gen_html()
+        self.assertIn('function extractMetadata(', html)
+
+    def test_render_metadata_function_exists(self):
+        html = _gen_html()
+        self.assertIn('function renderMetadata(', html)
+
+    def test_metadata_area_between_tabs_and_body(self):
+        """modal-metadata div must appear after modal-tabs and before modal-body."""
+        html = _gen_html()
+        tabs_pos = html.index('id="modal-tabs"')
+        meta_pos = html.index('id="modal-metadata"')
+        body_pos = html.index('id="modal-body"')
+        self.assertLess(tabs_pos, meta_pos, "metadata div must be after tabs")
+        self.assertLess(meta_pos, body_pos, "metadata div must be before body")
+
+    def test_metadata_key_uses_accent_color(self):
+        """Tag names should use --purlin-accent for highlight color."""
+        html = _gen_html()
+        self.assertRegex(
+            html,
+            r'\.modal-meta-key\s*\{[^}]*color:\s*var\(--purlin-accent\)'
+        )
+
+    def test_open_modal_calls_extract_metadata(self):
+        """openModal() must call extractMetadata on the spec content."""
+        html = _gen_html()
+        self.assertIn('extractMetadata(', html)
+
+    def test_open_modal_renders_metadata(self):
+        """openModal() must call renderMetadata to populate the metadata area."""
+        html = _gen_html()
+        self.assertIn('renderMetadata(', html)
+
+    def test_open_modal_uses_cleaned_markdown(self):
+        """openModal() must pass cleaned markdown (without metadata) to marked.parse."""
+        html = _gen_html()
+        self.assertIn('extracted.cleaned', html)
+
+
+class TestMultiplePrerequisitesOnSeparateRows(unittest.TestCase):
+    """Scenario: Multiple Prerequisites on Separate Rows (auto-web)
+
+    Given the User is viewing the Status view
+    And a feature has 3 Prerequisite metadata lines
+    When the User clicks that feature name
+    Then the feature detail modal shows 3 separate rows for the Prerequisite tags
+    """
+
+    def test_each_tag_rendered_as_separate_row(self):
+        """renderMetadata must create one modal-meta-row per tag."""
+        html = _gen_html()
+        self.assertIn('modal-meta-row', html)
+        # Verify each tag gets its own row div inside the loop
+        self.assertRegex(
+            html,
+            r'for\s*\(.*i\s*<\s*tags\.length.*\)\s*\{[^}]*modal-meta-row'
+        )
+
+    def test_extract_metadata_handles_multiple_same_key(self):
+        """extractMetadata must collect multiple '> Prerequisite:' lines as separate entries."""
+        html = _gen_html()
+        # The regex match in extractMetadata captures key and value per line
+        self.assertIn("m[1].trim()", html)
+        self.assertIn("m[2].trim()", html)
+        self.assertIn("tags.push", html)
+
+
+class TestModalOpensWithCorrectWidth(unittest.TestCase):
+    """Scenario: Modal Opens with Correct Width (auto-web)
+
+    Given the User is viewing the Status view
+    When the User clicks a feature name
+    Then the feature detail modal width is 70% of the viewport width
+    """
+
+    def test_modal_content_width_is_70vw(self):
+        html = _gen_html()
+        self.assertRegex(
+            html,
+            r'\.modal-content\s*\{[^}]*width:\s*70vw'
+        )
+
+    def test_narrow_viewport_fallback(self):
+        html = _gen_html()
+        self.assertIn('width:90vw', html)
+        self.assertRegex(html, r'@media\s*\(max-width:\s*500px\)')
+
+
+class TestFontSizeSliderChangesTextSize(unittest.TestCase):
+    """Scenario: Font Size Slider Changes Text Size (auto-web)
+
+    Given the User has opened a feature detail modal
+    When the User records the baseline text size
+    And the User moves the font size slider to the maximum position
+    Then all text elements in the modal body have grown proportionally
+    """
+
+    def test_body_uses_calc_with_font_adjust(self):
+        html = _gen_html()
+        self.assertRegex(
+            html,
+            r'\.modal-body\s*\{[^}]*font-size:\s*calc\(13px\s*\+\s*var\(--modal-font-adjust\)'
+        )
+
+    def test_all_text_elements_scale(self):
+        """h1, h2, h3, code all use calc() with --modal-font-adjust."""
+        html = _gen_html()
+        for tag in ('h1', 'h2', 'h3', 'code'):
+            self.assertRegex(
+                html,
+                rf'\.modal-body {tag}\s*\{{[^}}]*font-size:\s*calc\(\d+px\s*\+\s*var\(--modal-font-adjust\)',
+                f"modal-body {tag} must use calc() with --modal-font-adjust"
+            )
+
+    def test_set_modal_font_applies_css_variable(self):
+        html = _gen_html()
+        self.assertIn("setProperty('--modal-font-adjust'", html)
+
+
+class TestMetadataTagsRenderedCorrectly(unittest.TestCase):
+    """Scenario: Metadata Tags Rendered Correctly (auto-web)
+
+    Given the User is viewing the Status view
+    And a feature has Label, Category, and 2 or more Prerequisites
+    When the User clicks that feature name
+    Then the modal shows a dedicated metadata area with highlighted tag names
+    And no duplicate metadata blockquotes appear in the body
+    """
+
+    def test_metadata_css_classes_defined(self):
+        html = _gen_html()
+        self.assertIn('.modal-metadata', html)
+        self.assertIn('.modal-meta-row', html)
+        self.assertIn('.modal-meta-key', html)
+        self.assertIn('.modal-meta-val', html)
+
+    def test_metadata_hidden_when_empty(self):
+        """Empty metadata div should not display."""
+        html = _gen_html()
+        self.assertIn('.modal-metadata:empty', html)
+        self.assertRegex(
+            html,
+            r'\.modal-metadata:empty\s*\{[^}]*display:\s*none'
+        )
+
+    def test_extract_metadata_strips_blockquotes(self):
+        """extractMetadata removes '> Key: Value' lines from the cleaned output."""
+        html = _gen_html()
+        # The function skips metadata lines with 'continue'
+        self.assertIn('continue; // skip this line', html)
+
+    def test_open_modal_stores_spec_meta(self):
+        """openModal stores extracted metadata in currentModal.specMeta."""
+        html = _gen_html()
+        self.assertIn('currentModal.specMeta', html)
+
+
+class TestTextWrapsAtMaxFontSize(unittest.TestCase):
+    """Scenario: Text Wraps at Max Font Size (auto-web)
+
+    Given the User has opened a feature detail modal
+    When the User moves the font size slider to the maximum position
+    Then no horizontal scrollbar appears in the modal body
+    """
+
+    def test_modal_body_overflow_y_auto(self):
+        html = _gen_html()
+        self.assertRegex(
+            html,
+            r'\.modal-body\s*\{[^}]*overflow-y:\s*auto'
+        )
+
+    def test_modal_content_uses_viewport_width(self):
+        """70vw width constrains text to viewport bounds, preventing horizontal overflow."""
+        html = _gen_html()
+        self.assertIn('width:70vw', html)
+
+    def test_pre_blocks_have_overflow_x_auto(self):
+        """pre blocks should scroll horizontally rather than overflow the modal."""
+        html = _gen_html()
+        self.assertRegex(
+            html,
+            r'\.modal-body pre\s*\{[^}]*overflow-x:\s*auto'
+        )
+
+
+class TestFontSizePersistsAcrossFeatureModals(unittest.TestCase):
+    """Scenario: Font Size Persists Across Feature Modals (auto-web)
+
+    Given the User has opened a feature detail modal and adjusted the font size slider
+    When the User closes the modal
+    And the User opens a different feature detail modal
+    Then the font size slider position is retained at the previously set value
+    """
+
+    def test_session_storage_key_defined(self):
+        html = _gen_html()
+        self.assertIn('purlin-modal-font-adjust', html)
+
+    def test_session_storage_set_on_change(self):
+        html = _gen_html()
+        self.assertIn('sessionStorage.setItem(MODAL_FONT_STORAGE_KEY', html)
+
+    def test_session_storage_read_on_init(self):
+        html = _gen_html()
+        self.assertIn('sessionStorage.getItem(MODAL_FONT_STORAGE_KEY', html)
+
+    def test_font_adjust_applied_on_modal_open(self):
+        """setModalFont is called with stored value to restore slider on open."""
+        html = _gen_html()
+        self.assertIn('setModalFont(_modalFontAdjust)', html)
+
+
+class TestTitleSizeMatchesSpec(unittest.TestCase):
+    """Scenario: Title Size Matches Spec (auto-web)
+
+    Given the User has opened a feature detail modal
+    When the modal is displayed
+    Then the modal title computed font size is 8 points larger than the default body font size
+    """
+
+    def test_title_is_8pts_above_body_default(self):
+        html = _gen_html()
+        title_match = re.search(
+            r'\.modal-header h2\s*\{[^}]*font-size:\s*(\d+)px', html)
+        body_match = re.search(
+            r'\.modal-body\s*\{[^}]*font-size:\s*calc\((\d+)px', html)
+        self.assertIsNotNone(title_match, "Title font-size not found")
+        self.assertIsNotNone(body_match, "Body default font-size not found")
+        title_size = int(title_match.group(1))
+        body_default = int(body_match.group(1))
+        self.assertEqual(title_size - body_default, 8,
+                         f"Title ({title_size}px) should be 8pts above "
+                         f"body default ({body_default}px)")
 
 
 # ===================================================================

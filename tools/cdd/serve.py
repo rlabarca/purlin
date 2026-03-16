@@ -2102,6 +2102,20 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 }}
 .modal-tab:hover{{color:var(--purlin-primary)}}
 .modal-tab.active{{color:var(--purlin-accent);border-bottom-color:var(--purlin-accent)}}
+.modal-metadata{{
+  padding:8px 14px 0;flex-shrink:0;
+  font-size:12px;font-family:var(--font-body);
+}}
+.modal-metadata:empty{{display:none}}
+.modal-meta-row{{
+  display:flex;gap:6px;padding:2px 0;line-height:1.5;
+}}
+.modal-meta-key{{
+  color:var(--purlin-accent);font-weight:600;white-space:nowrap;
+}}
+.modal-meta-val{{
+  color:var(--purlin-muted);word-break:break-word;
+}}
 .modal-body{{
   padding:14px;overflow-y:auto;flex:1;
   line-height:1.6;color:var(--purlin-muted);
@@ -2255,6 +2269,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <button class="modal-tab active" data-tab="spec" onclick="switchModalTab('spec')">Specification</button>
       <button class="modal-tab" data-tab="impl" onclick="switchModalTab('impl')">Implementation Notes</button>
     </div>
+    <div class="modal-metadata" id="modal-metadata"></div>
     <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
@@ -3576,6 +3591,49 @@ function applySearchFilter() {{
 }}
 
 // ============================
+// Metadata Extraction
+// ============================
+function extractMetadata(md) {{
+  // Extract '> Key: Value' blockquote metadata lines from the beginning of markdown.
+  // Returns {{ tags: [{{key, value}}], cleaned: mdWithoutMetadataBlockquotes }}.
+  var lines = md.split('\n');
+  var tags = [];
+  var cleanedLines = [];
+  var inMetaBlock = true; // only strip leading metadata blockquotes
+  for (var i = 0; i < lines.length; i++) {{
+    var line = lines[i];
+    if (inMetaBlock) {{
+      var m = line.match(/^>\s*([^:]+):\s*(.+)$/);
+      if (m) {{
+        tags.push({{ key: m[1].trim(), value: m[2].trim() }});
+        continue; // skip this line from cleaned output
+      }}
+      // Allow blank lines between metadata lines
+      if (line.trim() === '') {{
+        cleanedLines.push(line);
+        continue;
+      }}
+      // Non-metadata, non-blank line: end of metadata block
+      inMetaBlock = false;
+    }}
+    cleanedLines.push(line);
+  }}
+  return {{ tags: tags, cleaned: cleanedLines.join('\n') }};
+}}
+
+function renderMetadata(tags) {{
+  if (!tags || tags.length === 0) return '';
+  var html = '';
+  for (var i = 0; i < tags.length; i++) {{
+    html += '<div class="modal-meta-row">' +
+      '<span class="modal-meta-key">' + tags[i].key + ':</span>' +
+      '<span class="modal-meta-val">' + tags[i].value + '</span>' +
+      '</div>';
+  }}
+  return html;
+}}
+
+// ============================
 // Feature Detail Modal
 // ============================
 function openModal(filePath, label) {{
@@ -3583,13 +3641,15 @@ function openModal(filePath, label) {{
   var title = document.getElementById('modal-title');
   var body = document.getElementById('modal-body');
   var tabs = document.getElementById('modal-tabs');
+  var metaArea = document.getElementById('modal-metadata');
 
   title.textContent = label || filePath;
   body.innerHTML = '<p style="color:#666">Loading...</p>';
+  metaArea.innerHTML = '';
   overlay.classList.add('visible');
 
   // Reset tab state
-  var currentModal = {{ file: filePath, specContent: null, implContent: null, hasImpl: false }};
+  var currentModal = {{ file: filePath, specContent: null, implContent: null, hasImpl: false, specMeta: null }};
   window._currentModal = currentModal;
 
   // Check if impl.md exists (derive path: features/foo.md -> features/foo.impl.md)
@@ -3611,7 +3671,9 @@ function openModal(filePath, label) {{
         .catch(function() {{ return null; }});
 
   Promise.all([specPromise, implPromise]).then(function(results) {{
-    currentModal.specContent = results[0];
+    var extracted = extractMetadata(results[0] || '');
+    currentModal.specContent = extracted.cleaned;
+    currentModal.specMeta = extracted.tags;
     currentModal.implContent = results[1];
     currentModal.hasImpl = !!results[1];
 
@@ -3625,7 +3687,10 @@ function openModal(filePath, label) {{
       tabs.style.display = 'none';
     }}
 
-    body.innerHTML = marked.parse(currentModal.specContent || '');
+    // Render metadata tags in dedicated area
+    metaArea.innerHTML = renderMetadata(currentModal.specMeta);
+
+    body.innerHTML = marked.parse(currentModal.specContent);
   }}).catch(function() {{
     body.innerHTML = '<p style="color:#FF4500">Could not load feature content.</p>';
   }});
@@ -3634,6 +3699,7 @@ function openModal(filePath, label) {{
 function switchModalTab(tab) {{
   var tabs = document.getElementById('modal-tabs');
   var body = document.getElementById('modal-body');
+  var metaArea = document.getElementById('modal-metadata');
   var m = window._currentModal;
   if (!m) return;
 
@@ -3643,8 +3709,10 @@ function switchModalTab(tab) {{
 
   if (tab === 'impl' && m.implContent) {{
     body.innerHTML = marked.parse(m.implContent);
+    metaArea.innerHTML = ''; // no metadata for impl tab
   }} else if (m.specContent) {{
     body.innerHTML = marked.parse(m.specContent);
+    metaArea.innerHTML = renderMetadata(m.specMeta);
   }}
 }}
 
@@ -3659,6 +3727,7 @@ function openTombstoneModal(filePath, label) {{
   title.style.color = 'var(--purlin-status-error)';
   content.style.borderColor = 'var(--purlin-status-error)';
   body.innerHTML = '<p style="color:var(--purlin-dim)">Loading...</p>';
+  document.getElementById('modal-metadata').innerHTML = '';
   tabs.style.display = 'none';
   overlay.classList.add('visible');
   window._tombstoneModal = true;
@@ -3681,6 +3750,7 @@ function openTombstoneModal(filePath, label) {{
 function closeModal() {{
   var overlay = document.getElementById('modal-overlay');
   overlay.classList.remove('visible');
+  document.getElementById('modal-metadata').innerHTML = '';
   if (window._tombstoneModal) {{
     document.getElementById('modal-title').style.color = '';
     document.querySelector('#modal-overlay .modal-content').style.borderColor = '';
