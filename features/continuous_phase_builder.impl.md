@@ -23,3 +23,11 @@ Parallel phases use manually created git worktrees (`git worktree add -b <branch
 ## Stop-on-Error Exit Code
 
 Non-success stop actions (INFEASIBLE, missing fixture, no progress) are tracked in the FAILURES array and cause non-zero exit. Success stops ("all phases complete") exit zero.
+
+## Dependency Validation (Defense in Depth)
+
+Plan validation against the dependency graph happens at two points: (1) at creation time when the Builder runs `/pl-delivery-plan`, the command instructs the Builder to read `dependency_graph.json` for phase assignment and run the phase analyzer before committing; (2) at bootstrap time when `--continuous` creates a plan, the launcher runs the analyzer as a post-bootstrap dry-run (Section 2.15). Both gates use `tools/delivery/phase_analyzer.py`. The creation-time gate prevents cycles from entering the plan; the bootstrap gate catches any that slip through (e.g., if the Builder creates a plan without using `/pl-delivery-plan`).
+
+## Removed: --max-budget-usd Pass-Through
+
+[DISCOVERY] (acknowledged) The `--max-budget-usd` pass-through flag was removed from the spec. Continuous mode runs until completion -- the user can Ctrl+C to stop. Budget exhaustion mid-phase creates a confusing failure mode where the phase stops partway through work.

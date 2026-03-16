@@ -15,9 +15,11 @@ If a delivery plan already exists at `.purlin/cache/delivery_plan.md`:
 If no delivery plan exists:
 
 - Run `tools/cdd/status.sh` to get current feature status.
+- Read `.purlin/cache/dependency_graph.json` and build a map of each feature's prerequisite features (direct and transitive). This gives you concrete data for phase assignment instead of relying on judgment alone.
 - Assess scope using the heuristics below.
 - Propose a phase breakdown grouped by dependency order, logical cohesion, and testability gates.
-- After user confirmation, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format below and commit it.
+- After user confirmation, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format below.
+- **Validation gate:** After writing `delivery_plan.md` but BEFORE committing, run `python3 tools/delivery/phase_analyzer.py` and check the output. If the output contains "cycle detected" or ordering warnings, fix the plan to resolve them (typically by moving the offending feature to a later phase). Only commit after the analyzer exits cleanly with a valid execution group output.
 
 **Scope Assessment Heuristics:**
 *   2+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).
@@ -33,11 +35,11 @@ If no delivery plan exists:
 
 If phasing is warranted, present the user with two options:
 1.  **All-in-one:** Implement everything in a single session (standard workflow).
-2.  **Phased delivery:** Split work into N phases, each producing a testable state. Present the proposed phase breakdown with features grouped by: (a) dependency order (foundations first), (b) logical cohesion (same subsystem together), (c) testability gate (every phase must produce verifiable output), (d) roughly balanced effort.
+2.  **Phased delivery:** Split work into N phases, each producing a testable state. Present the proposed phase breakdown with features grouped by: (a) dependency order (foundations first), (b) logical cohesion (same subsystem together), (c) testability gate (every phase must produce verifiable output), (d) roughly balanced effort, (e) interaction density -- features that share data, APIs, or components benefit from being in the same phase where B2 catches their cross-feature regressions, (f) dependency correctness -- a feature MUST be placed in a phase equal to or later than every phase containing any of its prerequisite features (direct or transitive per `dependency_graph.json`). Violating this creates a cycle that blocks `--continuous` execution. When a feature depends on features in multiple phases, it goes in or after the latest of those phases, (g) parallelization opportunity -- features with no mutual dependencies benefit from separate phases, enabling parallel execution in `--continuous` mode. When two features are independent, prefer putting them in separate phases over grouping them together.
 
-If the user approves phasing, create the delivery plan using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed.
+If the user approves phasing, create the delivery plan using the canonical format below, run the validation gate (see above), then commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed.
 
-**Interaction Density:** When grouping features into phases, also consider (e) interaction density -- features that share data, APIs, or components benefit from being in the same phase where B2 catches their cross-feature regressions. See `instructions/references/phased_delivery.md` Section 10.10 for the B1/B2/B3 sub-phase protocol.
+See `instructions/references/phased_delivery.md` Section 10.10 for the B1/B2/B3 sub-phase protocol and Section 10.12 for plan validation requirements.
 
 **Canonical `delivery_plan.md` format:**
 

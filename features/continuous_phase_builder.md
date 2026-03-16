@@ -21,7 +21,6 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - `pl-run-builder.sh` accepts `--continuous` as an optional flag.
 - When `--continuous` is absent, behavior is identical to the current launcher (single interactive session).
 - `--continuous` implies `-p` mode (print mode, non-interactive) for each phase invocation.
-- Optional pass-through flag: `--max-budget-usd N`, forwarded to each `claude -p` invocation.
 
 ### 2.2 Phase Analyzer Integration (Re-Analyze Loop)
 
@@ -373,11 +372,6 @@ or "ask the user."
     When the launcher detects the evaluator failure
     Then it falls back to checking whether the delivery plan file changed
     And continues if the delivery plan was modified, stops if unchanged
-
-#### Scenario: Pass-Through Flags Forwarded
-    Given pl-run-builder.sh is invoked with --continuous --max-budget-usd 10
-    When each phase Builder is invoked
-    Then --max-budget-usd 10 is passed to the claude -p invocation
 
 #### Scenario: System Prompt Overrides Injected
     Given --continuous is active

@@ -132,7 +132,6 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 - **Retry budget.** Maximum 2 consecutive retries per phase. If the retry limit is exceeded, the loop exits with an escalation message.
 - **Merge conflict escalation.** If merging parallel worktree branches produces a conflict, the loop stops immediately and directs the user to resolve manually.
 - **Evaluator fallback.** If the evaluator itself fails (Haiku unavailable), the launcher falls back to checking whether the delivery plan file changed since the last phase.
-- **Pass-through flags.** `--max-turns N` and `--max-budget-usd N` are forwarded to each Builder invocation.
 - **Auto-bootstrap with approval.** If no delivery plan exists, the launcher creates one via a bootstrap session, presents it for user approval, then enters the continuous loop. The bootstrap favors conservative phase sizing to keep each session within context budget.
 
 ### Logging
@@ -146,6 +145,16 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 - The orchestration loop re-runs the phase analyzer **before each execution group**, so plan amendments are automatically picked up without special "diff" logic.
 - Phase numbers need not be contiguous. The analyzer operates on whatever PENDING phases exist at analysis time.
 - **Parallel amendment protocol:** During parallel execution, Builders write structured amendment requests to `.purlin/runtime/plan_amendment_phase_<N>.json` instead of modifying the delivery plan directly. The orchestrator applies amendments centrally after worktree merges complete. This prevents Markdown merge conflicts on the delivery plan file.
+
+## 10.12 Plan Validation
+
+Every delivery plan MUST pass the phase analyzer (`tools/delivery/phase_analyzer.py`) before being committed. The analyzer validates that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
+
+**When the Builder creates a plan** (via `/pl-delivery-plan`): The Builder reads `dependency_graph.json` to inform phase assignment, then runs the analyzer after writing the plan file. If cycles are detected, the Builder fixes the plan before committing.
+
+**When the bootstrap creates a plan** (via `--continuous`): The launcher runs the analyzer as a post-bootstrap validation. If cycles are detected, the launcher exits with the plan committed for manual editing (see `features/continuous_phase_builder.md` Section 2.15).
+
+**Common cycle cause:** A feature placed in Phase N that depends on a feature in Phase M (where M > N). The fix is to move the dependent feature to Phase M or later.
 
 ### Cross-References
 
