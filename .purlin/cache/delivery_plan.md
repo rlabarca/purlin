@@ -6,9 +6,9 @@
 ## Summary
 16 features reset to TODO after spec updates (primarily AFT pattern introduction, verification effort reclassification, and CDD dashboard refinements). All features have existing implementations from prior delivery — this round is review-and-update. Phased by dependency order: foundation anchors first, then test infrastructure, then core tools, then CDD dashboard consumers.
 
-## Phase 1 -- Foundation Anchors [IN_PROGRESS]
+## Phase 1 -- Foundation Anchors [COMPLETE]
 **Features:** policy_critic.md, arch_automated_feedback_tests.md
-**Completion Commit:** --
+**Completion Commit:** 7ea10c7
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Test Infrastructure [PENDING]
