@@ -35,3 +35,19 @@ Plan validation against the dependency graph happens at two points: (1) at creat
 ## Output Streaming with tee and Exit Codes
 
 When using `cmd | tee file`, `$?` reflects tee's exit code, not the Builder's. In continuous mode this is safe because the evaluator (not exit code) drives all orchestration decisions. For additional robustness, `set -o pipefail` or `${PIPESTATUS[0]}` can be used to capture the Builder's actual exit code through the pipe if needed.
+
+## ANSI Cursor Control for Heartbeat
+
+The in-place heartbeat uses `\033[<N>A` (cursor up N lines) followed by `\033[J` (clear from cursor to end of screen) to overwrite the previous heartbeat block. The heartbeat function tracks the previous output line count so it knows how many lines to move up. On the first print, no cursor-up is emitted. When stderr is not a TTY (`! [ -t 2 ]`), skip all ANSI sequences and fall back to single-line append-only output.
+
+## Activity Extraction from Log Files
+
+Current Builder activity is extracted by tailing the last ~20 lines of each phase's log file and pattern-matching for common operations. Priority order: file write operations map to `editing <file>`, test invocations map to `running tests on <feature>`, shell commands map to `running <command>`, and the default fallback is `working...`. Output is truncated to ~50 characters. Use simple `grep -oE` patterns -- exact parsing is not critical since this is a progress hint, not a guarantee.
+
+## Graceful Stop via SIGINT Trap
+
+The launcher traps SIGINT with `trap graceful_stop INT`. The handler sets `STOP_REQUESTED=true`, then sends `SIGTERM` to tracked PIDs: `WT_PIDS` array for parallel builders, `BUILDER_PID` for sequential. After kills, falls through to the existing summary block. Immediately after the first handler fires, reset the trap to default (`trap - INT`) so a second Ctrl+C invokes the standard bash behavior (immediate termination) without running the handler again.
+
+## Per-Phase Tracking for Exit Summary
+
+Two approaches are viable: (1) a tracking file per phase at `$RUNTIME_DIR/phase_<N>_meta` recording start time, status, and feature list, which the summary reads at exit; or (2) in-memory bash arrays accumulated during the loop. Option (1) is more robust against mid-run crashes (the files survive even if the script is killed). The feature list per phase is extracted from the delivery plan at the start of each phase execution.

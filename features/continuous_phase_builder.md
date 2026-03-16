@@ -120,7 +120,7 @@ possible to avoid conflicts.
 - Each phase's full Builder output is written to `.purlin/runtime/continuous_build_phase_<N>.log`.
 - For parallel phases, log files include the worktree context: `.purlin/runtime/continuous_build_phase_<N>_worktree.log`.
 - Evaluator decisions are logged to stderr with timestamps.
-- At exit, the launcher prints a summary: phases completed, parallel groups used, any failures, retries consumed, total wall-clock duration.
+- At exit, the launcher prints a rich exit summary with per-phase details (see Section 2.16 exit summary format) and then runs a post-run status refresh (see Section 2.16 post-run status refresh).
 - Log files are always written identically regardless of whether output is also streamed to the terminal (see Section 2.16). The evaluator reads from log files, not terminal output.
 
 ### 2.10 Error Handling
@@ -220,8 +220,57 @@ or "ask the user."
 - **Sequential phases:** Builder output is streamed to the terminal (stdout) in real time via `2>&1 | tee "$LOG_FILE"`. For resumed sessions (evaluator `approve` action), use `tee -a` to append to the existing log file.
 - **Bootstrap session:** Same `tee` treatment as sequential phases. Output is streamed to the terminal and written to the bootstrap log file.
 - **Parallel phases:** Output stays in log files only (no terminal streaming). Interleaved output from multiple Builders is unreadable.
-- **Parallel heartbeat:** A background process prints a status line to stderr every 15 seconds with format: `[HH:MM:SS] Parallel group: Phase 3 (running, 45K), Phase 5 (running, 23K)`. The size value reflects log file growth. When an individual phase process exits, the heartbeat reflects this (e.g., `Phase 3 (done, 67K)`).
+- **Parallel heartbeat:** A background process prints a multi-line, in-place status display to stderr every 15 seconds. Format:
+
+```
+[19:34:58] Parallel group (3 phases):
+             Phase 2 -- Non-Critical Anchors A   running  2m 15s   45K  editing arch_automated_feedback_tests.md
+             Phase 3 -- Non-Critical Anchor B    running  2m 15s   23K  running aft-web on design_modal_standards.md
+             Phase 5 -- Core Coordination        done     1m 42s   67K
+```
+
+  - One phase per line, indented from the timestamp header.
+  - Phase labels extracted from delivery plan headings (`## Phase N -- Label`).
+  - Per-phase elapsed time, frozen at exit for completed phases.
+  - Per-phase log file size (e.g., `45K`).
+  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text truncated to ~50 characters.
+  - Status colors: yellow for running, green for done, red for done with 0K log size (diagnostic warning).
+  - In-place overwrite via ANSI cursor-up (`\033[<N>A`) and clear-to-end (`\033[J`). The heartbeat tracks the previous line count to overwrite correctly without scrolling.
+  - TTY fallback: when stderr is not a TTY (`! [ -t 2 ]`), the heartbeat uses single-line append-only output without ANSI escape sequences.
+
 - **Heartbeat lifecycle:** The heartbeat process is started when a parallel group begins and terminated immediately after all parallel Builders in the group complete (before merge).
+- **Graceful stop (Ctrl+C):**
+  - The launcher traps `SIGINT` to perform a graceful shutdown.
+  - On first `SIGINT`: set a stop flag, send `SIGTERM` to any running Builder processes (parallel worktree PIDs or sequential Builder PID), terminate the heartbeat process, wait for processes to exit, print the exit summary (see below), clean up worktrees, exit non-zero.
+  - The stop is immediate -- it does not wait for the current phase to finish. Builder processes are terminated, not allowed to complete.
+  - A second `SIGINT` during shutdown forces immediate exit. After the first `SIGINT` handler fires, the trap is reset to default (`trap - INT`) so standard bash behavior applies on the second signal.
+- **Exit summary:** Printed at the end of every continuous run (success, failure, or graceful stop). Format:
+
+```
+=== Continuous Build Summary ===
+Status: completed | stopped (user interrupt) | failed (<reason>)
+Duration: 12m 45s
+Phases: 4/6 completed
+
+  Phase 1 -- Critical Path Anchors      COMPLETE      3m 12s   features: policy_critic.md, design_visual_standards.md
+  Phase 2 -- Non-Critical Anchors A     COMPLETE      2m 45s   features: design_artifact_pipeline.md, arch_automated_feedback_tests.md
+  Phase 3 -- Non-Critical Anchor B      COMPLETE      1m 58s   features: design_modal_standards.md
+  Phase 4 -- Policy Chain               INTERRUPTED            features: policy_release.md, policy_branch_collab.md
+  Phase 5 -- Core Coordination          PENDING                features: impl_notes_companion.md
+  Phase 6 -- Session Resume             PENDING                features: pl_session_resume.md
+
+Retries: 1 (Phase 2)
+Parallel groups: 1
+Log files: .purlin/runtime/continuous_build_phase_*.log
+================================
+```
+
+  - Per-phase status: `COMPLETE`, `INTERRUPTED` (was running when stopped), `SKIPPED` (evaluator said stop), `PENDING` (never started).
+  - Per-phase duration for completed and interrupted phases.
+  - Per-phase feature list from the delivery plan.
+  - Retries called out by phase number.
+  - Log file location reminder.
+- **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The status refresh output is not suppressed -- the user sees the Critic run as confirmation that the dashboard is current.
 - **Log file integrity:** Log files are always written identically regardless of whether output is also streamed to the terminal. The evaluator reads from log files, not terminal output.
 - **Non-continuous mode:** Without `--continuous`, this section has no effect. Non-continuous mode is already interactive.
 
@@ -404,12 +453,16 @@ or "ask the user."
     When Phase 2 completes
     Then the full Builder output is written to .purlin/runtime/continuous_build_phase_2.log
 
-#### Scenario: Exit Summary
+#### Scenario: Exit Summary Lists Per-Phase Details
     Given --continuous is active
     And 4 phases complete across 3 execution groups with 1 parallel group
     When the orchestration loop exits
-    Then the summary reports: 4 phases completed, 3 groups (1 parallel), total duration
-    And any retries or failures are listed
+    Then the summary includes an overall status line (completed, stopped, or failed)
+    And the summary includes total wall-clock duration
+    And the summary includes a completed/total phase count
+    And the summary lists each phase with its label, status (COMPLETE/INTERRUPTED/SKIPPED/PENDING), duration, and feature list
+    And the summary lists retries by phase number
+    And the summary includes the log file location pattern
 
 #### Scenario: Worktree Cleanup on Error
     Given --continuous is active with parallel phases running in worktrees
@@ -561,9 +614,12 @@ or "ask the user."
     Given --continuous is active
     And the phase analyzer returns a parallel group with Phases 3 and 5
     When both parallel Builders are running
-    Then a background heartbeat process prints a status line to stderr every 15 seconds
-    And the status line includes elapsed time and per-phase log file size
-    And the format is "[HH:MM:SS] Parallel group: Phase 3 (running, <size>), Phase 5 (running, <size>)"
+    Then a background heartbeat process prints a multi-line status display to stderr every 15 seconds
+    And the display has a timestamp header line followed by one indented line per phase
+    And each phase line includes the phase label from the delivery plan heading
+    And each phase line includes the status (running or done), elapsed time, log file size, and current activity
+    And running phases show activity extracted from the log file tail (truncated to ~50 chars)
+    And status colors are applied: yellow for running, green for done, red for done with 0K log
 
 #### Scenario: Parallel Phase Output Not Streamed
     Given --continuous is active
@@ -588,6 +644,62 @@ or "ask the user."
     Then the resumed output is streamed to the terminal in real time
     And the resumed output is appended to the existing log file via tee -a
     And the log file contains both the initial and resumed output
+
+#### Scenario: Heartbeat Overwrites Previous Output In Place
+    Given --continuous is active with a parallel group running
+    And stderr is a TTY
+    When the heartbeat process prints a status update
+    Then it uses ANSI cursor-up and clear-to-end sequences to overwrite the previous heartbeat output
+    And the terminal does not scroll with each heartbeat update
+
+#### Scenario: Heartbeat Falls Back to Plain Output When Not a TTY
+    Given --continuous is active with a parallel group running
+    And stderr is not a TTY (e.g., piped to a file)
+    When the heartbeat process prints a status update
+    Then it uses single-line append-only output without ANSI escape sequences
+    And each update appends a new line rather than overwriting
+
+#### Scenario: Heartbeat Shows Current Builder Activity
+    Given --continuous is active with a parallel group running
+    And Phase 3 Builder is currently editing a file
+    When the heartbeat process reads the Phase 3 log file tail
+    Then the Phase 3 line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
+    And the activity text is truncated to ~50 characters if longer
+
+#### Scenario: Heartbeat Warns on Empty Log at Phase Completion
+    Given --continuous is active with a parallel group
+    And Phase 5 Builder process has exited
+    And the Phase 5 log file has 0K size
+    When the heartbeat displays the Phase 5 status
+    Then the Phase 5 line shows "done" with a red warning marker
+    And the 0K size is displayed to indicate the diagnostic condition
+
+#### Scenario: Graceful Stop on SIGINT
+    Given --continuous is active
+    And a Builder process is currently running (sequential or parallel)
+    When the user sends SIGINT (Ctrl+C)
+    Then the launcher sets a stop flag and sends SIGTERM to all running Builder processes
+    And the heartbeat process is terminated (if running)
+    And the launcher waits for processes to exit
+    And the exit summary is printed with status "stopped (user interrupt)"
+    And worktrees are cleaned up
+    And the launcher exits with non-zero status
+
+#### Scenario: Second SIGINT Forces Immediate Exit
+    Given --continuous is active
+    And a graceful stop is in progress (first SIGINT was received)
+    When the user sends a second SIGINT
+    Then the launcher exits immediately without printing a summary
+    And no cleanup is performed
+
+#### Scenario: Post-Run Status Refresh
+    Given --continuous is active
+    And the orchestration loop has exited (success, failure, or graceful stop)
+    And the exit summary has been printed
+    When the launcher performs post-run cleanup
+    Then it runs tools/cdd/status.sh to regenerate the Critic report
+    And the Critic output is visible to the user on stderr/stdout
+    And the CDD dashboard reflects the completed work from this run
 
 ### Manual Scenarios (Human Verification Required)
 None.
