@@ -41,9 +41,9 @@
 **Completion Commit:** 2533e23
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Agent Config & What's Different [PENDING]
+## Phase 8 -- Agent Config & What's Different [COMPLETE]
 **Features:** cdd_agent_configuration.md, collab_whats_different.md
-**Completion Commit:** --
+**Completion Commit:** 0981b54
 **QA Bugs Addressed:** --
 
 ## Phase 9 -- Release UI & QA Effort Display [PENDING]
