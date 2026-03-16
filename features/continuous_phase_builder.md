@@ -23,11 +23,16 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - `--continuous` implies `-p` mode (print mode, non-interactive) for each phase invocation.
 - Optional pass-through flags: `--max-turns N` and `--max-budget-usd N`, forwarded to each `claude -p` invocation.
 
-### 2.2 Phase Analyzer Integration
+### 2.2 Phase Analyzer Integration (Re-Analyze Loop)
 
-- Before the first phase, run `tools/delivery/phase_analyzer.py` to determine execution groups.
+- The orchestration loop re-runs `tools/delivery/phase_analyzer.py` **before each execution group**, not once at startup. The loop structure is:
+  1. Run the phase analyzer on the current delivery plan.
+  2. If no PENDING phases remain (empty groups), exit successfully.
+  3. Execute the **first** execution group returned by the analyzer.
+  4. Evaluate Builder output via the LLM evaluator.
+  5. If the evaluator returns `continue`, goto step 1 (re-analyze the potentially modified plan).
+- The launcher MUST NOT cache execution groups across iterations. Each iteration sees the freshest state of the delivery plan.
 - If the phase analyzer exits with an error (no delivery plan, no dependency graph), the launcher MUST print the error and exit.
-- The launcher iterates through execution groups in the order returned by the analyzer.
 
 ### 2.3 Sequential Phase Execution
 
@@ -125,6 +130,51 @@ possible to avoid conflicts.
 - Merge conflict during parallel merge: stop immediately, report conflicting files, exit non-zero.
 - Orphaned worktrees on error: clean up any worktrees created during the current run.
 - Retry limit exceeded: exit with message identifying the stuck phase and suggesting manual intervention.
+
+### 2.12 Dynamic Delivery Plan Handling
+
+- The Builder MAY amend the delivery plan during any phase (adding QA fix phases, splitting large phases, removing unnecessary phases). The orchestrator treats the delivery plan as a **live document**.
+- After each group completes and the evaluator returns `continue`, the loop re-runs the phase analyzer on the (potentially modified) delivery plan. New PENDING phases, reordered phases, and removed phases are all picked up automatically.
+- Phase numbers in the delivery plan are not assumed to be contiguous or sequential. The analyzer operates on whatever PENDING phase numbers exist at analysis time.
+- The orchestrator tracks completed phases by number across re-analyses. If the Builder adds Phase 7 during Phase 3, and the evaluator returns `continue`, the next re-analysis will include Phase 7 as PENDING and include it in the execution order.
+- Total phase count may increase or decrease during execution. The exit summary reports the final count, not the initial count.
+- The orchestrator MUST NOT cache or remember previous analysis results. Each re-analysis is independent.
+
+### 2.13 Parallel Phase Plan Amendments
+
+- During parallel execution, multiple Builders run in separate worktrees. If they all modify the delivery plan Markdown independently, the worktree merge will likely conflict.
+- **Parallel Builders MUST NOT modify the delivery plan directly.** Instead, if a parallel Builder needs to amend the plan (add a QA fix phase, split remaining work), it writes a structured JSON amendment request to `.purlin/runtime/plan_amendment_phase_<N>.json` where `<N>` is the phase number it was assigned.
+- The system prompt override for parallel phases must include: `"You are running in a parallel worktree. Do NOT modify the delivery plan directly. If you need to add, split, or remove phases, write a plan amendment request to .purlin/runtime/plan_amendment_phase_<N>.json instead."`
+- **Amendment request format:**
+
+```json
+{
+  "requesting_phase": 3,
+  "amendments": [
+    {
+      "action": "add",
+      "phase_number": 7,
+      "label": "QA fixes for Phase 3",
+      "features": ["feature_a.md", "feature_b.md"],
+      "reason": "B2 test failures require dedicated fix phase"
+    }
+  ]
+}
+```
+
+- After all parallel Builders complete and code merges succeed, the orchestrator reads all `plan_amendment_phase_*.json` files, applies them to the delivery plan on the main branch, and deletes the amendment files.
+- **Sequential Builders** (non-parallel) can still modify the delivery plan directly as they do today -- only parallel Builders use the amendment request mechanism.
+
+### 2.14 Evaluator: Plan Amendment Detection
+
+- The evaluator decision table includes additional signals for plan amendments:
+
+| Builder Output Signal | Evaluator Action |
+|---|---|
+| Builder amended the delivery plan (new/split/modified phases) + phase complete | `continue` |
+| Builder output mentions plan amendment but current phase not complete | `retry` |
+
+- The evaluator prompt must instruct Haiku to check whether the delivery plan was modified by comparing phase counts or looking for amendment markers in Builder output.
 
 ### 2.11 Default Behavior Preservation
 
@@ -269,6 +319,83 @@ possible to avoid conflicts.
     When all Builders in a parallel group complete
     Then the orchestrator updates the delivery plan to mark completed phases
     And individual Builders do not modify the delivery plan during parallel execution
+
+#### Scenario: Builder Adds QA Fix Phase Mid-Execution
+    Given --continuous is active with Phases 1, 2, 3 PENDING
+    And the Builder completes Phase 1 and adds Phase 4 (QA fixes) to the delivery plan
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And the analyzer returns groups that include the new Phase 4
+    And the loop proceeds with the next group from the fresh analysis
+
+#### Scenario: Builder Splits Phase Into Two
+    Given --continuous is active with Phases 1, 2 PENDING
+    And the Builder completes Phase 1 and splits Phase 2 into Phase 2a and Phase 2b
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And the analyzer processes Phases 2a and 2b as distinct PENDING phases
+    And both are included in subsequent execution groups
+
+#### Scenario: Builder Removes Remaining Phases
+    Given --continuous is active with Phases 1, 2, 3 PENDING
+    And the Builder completes Phase 1 and removes Phases 2 and 3 (scope collapsed)
+    When the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer
+    And the analyzer returns empty groups (no PENDING phases)
+    And the launcher exits successfully
+
+#### Scenario: New Phase Has Dependencies on Completed Work
+    Given --continuous is active
+    And the Builder completed Phase 1 and added Phase 4 which depends on Phase 1 features
+    When the evaluator returns "continue" and the analyzer runs
+    Then Phase 4 is included in the execution groups
+    And its dependency on Phase 1 (already COMPLETE) does not block it
+
+#### Scenario: New Phase Creates New Dependency Chain
+    Given --continuous is active with Phase 2 PENDING
+    And the Builder completed Phase 1 and added Phase 5 which Phase 2 depends on
+    When the evaluator returns "continue" and the analyzer runs
+    Then Phase 5 is ordered before Phase 2 in the execution groups
+    And the analyzer detects and respects the new dependency
+
+#### Scenario: Parallel Group Invalidated by Plan Amendment
+    Given --continuous is active
+    And the initial analysis grouped Phases 3 and 5 as parallel
+    And during Phase 2, the Builder adds Phase 6 which Phase 5 depends on
+    When Phase 2 completes and the analyzer re-runs
+    Then Phase 6 is ordered before Phase 5
+    And Phase 5 is no longer grouped with Phase 3 (dependency changed)
+
+#### Scenario: Parallel Builders Both Request Plan Amendments
+    Given --continuous is active with Phases 3 and 5 running in parallel worktrees
+    And Builder for Phase 3 writes a plan amendment request adding Phase 7 (QA fixes)
+    And Builder for Phase 5 writes a plan amendment request adding Phase 8 (QA fixes)
+    When both Builders complete and worktrees merge
+    Then the orchestrator reads all amendment request files from merged worktrees
+    And applies both amendments to the delivery plan on the main branch
+    And the next re-analysis includes both Phase 7 and Phase 8 as PENDING
+
+#### Scenario: Parallel Builder Amendment Requests Use Structured Files
+    Given --continuous is active with parallel Builders
+    When a parallel Builder needs to amend the delivery plan
+    Then it writes a JSON amendment request to .purlin/runtime/plan_amendment_phase_<N>.json
+    And it does NOT modify the delivery plan Markdown directly
+    And the orchestrator applies amendments centrally after merge
+
+#### Scenario: Phase Count Changes Reflected in Summary
+    Given --continuous is active starting with 3 PENDING phases
+    And the Builder adds 2 more phases during execution
+    When all phases complete
+    Then the exit summary reports 5 total phases completed
+    And notes that the plan was amended during execution
+
+#### Scenario: Re-Analysis After Retry
+    Given --continuous is active
+    And a phase fails and the evaluator returns "retry"
+    And during the retry the Builder amends the plan
+    When the retry completes and the evaluator returns "continue"
+    Then the launcher re-runs the phase analyzer on the amended plan
+    And picks up any changes made during the retry
 
 ### Manual Scenarios (Human Verification Required)
 None.

@@ -137,6 +137,13 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 - Each phase's full output is written to `.purlin/runtime/continuous_build_phase_<N>.log`.
 - At exit, a summary reports: phases completed, parallel groups used, any failures, retries consumed, and total wall-clock duration.
 
+### Dynamic Plan Handling
+
+- The delivery plan is a **live document**. The Builder may amend it during any phase (adding QA fix phases, splitting large phases, removing unnecessary phases).
+- The orchestration loop re-runs the phase analyzer **before each execution group**, so plan amendments are automatically picked up without special "diff" logic.
+- Phase numbers need not be contiguous. The analyzer operates on whatever PENDING phases exist at analysis time.
+- **Parallel amendment protocol:** During parallel execution, Builders write structured amendment requests to `.purlin/runtime/plan_amendment_phase_<N>.json` instead of modifying the delivery plan directly. The orchestrator applies amendments centrally after worktree merges complete. This prevents Markdown merge conflicts on the delivery plan file.
+
 ### Cross-References
 
 - Feature spec: `features/continuous_phase_builder.md`
