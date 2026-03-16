@@ -405,6 +405,7 @@ if __name__ == '__main__':
             'status': status,
             'passed': passed,
             'failed': failed,
-            'total': result.testsRun
+            'total': result.testsRun,
+            'test_file': 'tools/cdd/test_cdd_modal_base.py'
         }, f)
     print(f"\ntests.json: {status}")
