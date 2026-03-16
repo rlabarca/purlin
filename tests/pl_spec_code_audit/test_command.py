@@ -58,6 +58,15 @@ class TestRoleGateRejectsNonArchitectBuilder(unittest.TestCase):
         phase_pos = content.index('Phase 0')
         self.assertLess(gate_pos, phase_pos)
 
+    def test_role_gate_blocks_pm(self):
+        """PM agents are blocked by the role gate (spec 2.1)."""
+        content = _read_command()
+        # The gate says "not operating as ... Architect or ... Builder"
+        # which blocks QA and PM equally
+        self.assertIn('not operating as', content.lower())
+        self.assertIn('Architect or', content)
+        self.assertIn('Builder', content)
+
 
 class TestDefaultInvocationUsesTriageMode(unittest.TestCase):
     """Scenario: Default invocation uses triage mode"""
