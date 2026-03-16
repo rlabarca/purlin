@@ -54,7 +54,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-verify, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-aft-web, /pl-discovery, /pl-complete, /pl-qa-report, /pl-override-edit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 3.0.1 Read Startup Flags
 
@@ -72,12 +72,12 @@ Execute the state-gathering sequence from `instructions/references/startup_state
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:
 *   How many features are in TESTING state.
-*   **Per-feature effort:** `"Feature X: Na auto-resolvable (web-verify, test-only, cosmetic-skip) | Mm human-required"` -- values from the `verification_effort` block. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
+*   **Per-feature effort:** `"Feature X: Nm manual"` -- only QA-owned manual categories from the `verification_effort` block. Builder-verified features (zero manual scenarios) show as `"builder-verified"`. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
 *   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
 *   If a delivery plan exists at `.purlin/cache/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
 
 ### 3.3 Execute Verification
-*   **3.3a Auto pass:** Execute all auto-resolvable items first. ACK test-only features (read `tests.json`), skip cosmetic features (log skip), run `/pl-web-verify` for web-testable features. When `recommend_next_actions` is `true`, execute these without asking. When `false`, present the list and wait for user confirmation before executing.
+*   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). AFT categories (AFT:Web, AFT:TestOnly, AFT:Skip) are Builder-owned -- QA does not re-verify them. When `recommend_next_actions` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
 *   **3.3b Interactive pass:** Proceed to human-required items using the appropriate verification mode (see Section 5). Walk the user through each remaining feature's manual scenarios and visual spec items.
 
 ## 4. Discovery Protocol
@@ -171,7 +171,7 @@ visual verification, execute the visual verification pass after functional scena
 verification protocol (checklist presentation, screenshot analysis, consolidated results,
 manual fallback, batching).
 
-For features with `> Web Testable:` metadata, `/pl-web-verify` provides an automated alternative using Playwright MCP browser control with Figma-triangulated verification. See Section 5.4.7 in the visual verification protocol.
+For features with `> AFT Web:` metadata, `/pl-aft-web` provides an automated alternative using Playwright MCP browser control with Figma-triangulated verification. See Section 5.4.7 in the visual verification protocol.
 
 **Figma-Triangulated Verification:** When Figma MCP is available and a visual spec screen has a Figma reference, QA performs three-source comparison:
 1.  Read Figma via MCP (design intent: dimensions, colors, tokens, layout).

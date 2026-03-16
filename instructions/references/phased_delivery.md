@@ -35,11 +35,12 @@ When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays
 
 ## 10.8 Phase Sizing Guidance
 
-Phase sizing is driven by **testability** and **parallelism**, not by hard caps. The Builder uses judgment to create phases that:
+Phase sizing is driven by **testability**, **parallelism**, and **interaction density**, not by hard caps. The Builder uses judgment to create phases that:
 
-*   **Group related scenarios** -- features or scenario subsets that logically belong together for verification. A phase should produce a testable state where QA can meaningfully verify the delivered work.
+*   **Group related scenarios** -- features or scenario subsets that logically belong together for verification. A phase should produce a testable state where QA can meaningfully verify the delivered work. Features that share data models, APIs, or UI components benefit from being in the same phase -- B2 catches their cross-feature regressions.
 *   **Enable parallel delivery** -- when independent feature groups have no dependencies on each other, they can be placed in separate phases for concurrent agent work.
 *   **Keep large features focused** -- a single feature with many unimplemented scenarios (5+) benefits from a dedicated phase to keep the Builder focused and the QA verification cycle tight.
+*   **Interaction grouping** -- features that interact should be grouped together: features sharing data models or APIs in the same phase (B2 catches contract breaks), features sharing UI components or layout in the same phase (B2 web-verify catches visual regressions). Features with no interaction can be in separate phases (B2 will not find cross-phase regressions anyway).
 
 There are no hard per-phase feature caps. The Builder balances phase size against session productivity and verification granularity.
 
@@ -56,3 +57,53 @@ When the cumulative scope of a phase (specs to read + files to modify + tests to
 This factor is **subordinate** to testability (Section 10.8) and dependency order. A phase must still produce a testable state and respect dependency constraints, even if that means a larger context footprint. Context budget is a tiebreaker when multiple valid phase breakdowns exist.
 
 No hard token counting is required. This is qualitative judgment based on scope signals: number of features, spec length, estimated file count, and test complexity.
+
+B2 (Test Sub-Phase) re-runs all tests and AFTs for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. When a phase contains features with known interaction complexity, budget more generously.
+
+## 10.10 Phase Internal Structure (B1/B2/B3)
+
+Each delivery phase has an internal three-step structure that separates implementation from verification.
+
+### B1 (Build Sub-Phase)
+
+Existing per-feature implementation loop (Steps 0-3 in BUILDER_BASE). Each feature is implemented and locally tested including AFTs. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort). Fast iteration.
+
+### B2 (Test Sub-Phase)
+
+After B1 completes for all features in the phase, re-run the full test suite AND all applicable AFTs for every feature in the phase. This catches cross-feature regressions within the phase. Record which features/tests failed and which passed.
+
+**B2 Visual Design Verification:** During B2, the Builder's visual verification priority INVERTS from B1. Implementation is complete -- accuracy matters more than iteration speed. For features with a `## Visual Specification` section:
+
+1. **Reference images** (in `features/design/`): During B1, these are audit references, not Builder inputs. During B2, they become verification inputs. The Builder takes a Playwright screenshot and compares it against the reference image. This is fast (local, multimodal) and catches obvious visual drift.
+2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Builder uses the same three-source triangulated verification that `/pl-aft-web` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
+3. **Token Map + checklists**: Always verified, both in B1 and B2.
+
+This means `/pl-aft-web` is invoked with its full capability during B2 -- including Figma comparison and reference image comparison -- not the lighter-weight version used during B1 Step 3. The speed cost (~5-10 seconds per screen for Figma MCP) is acceptable in a dedicated verification phase.
+
+### B3 (Fix Sub-Phase) -- Analyze-First Protocol
+
+When B2 finds failures, the Builder does NOT blindly attempt a fix. Instead:
+
+1. **Diagnose:** For each failure, analyze the root cause:
+   - Is the test itself wrong? (test bug, not a code bug)
+   - Is the code wrong but fixable? (straightforward regression)
+   - Is the approach wrong? (the implementation strategy for Feature B conflicts with Feature A)
+   - Is the spec wrong or contradictory? (the requirements for two features are incompatible)
+   - Is the visual output drifted? (visual comparison shows mismatch with design reference)
+
+2. **Act based on diagnosis:**
+   - **Test bug or straightforward regression:** Fix it. Loop back to B2.
+   - **Approach conflict:** Record a `[DISCOVERY]` in the companion file with a detailed failure analysis (what broke, why, what the Builder tried). Use `[Ready for Verification]` and proceed. The Architect reviews the `[DISCOVERY]` and either updates the spec, provides approach guidance in the companion file, or acknowledges the Builder's fix in a subsequent session.
+   - **Spec contradiction:** Record `[INFEASIBLE]` if the feature cannot be implemented as specced. Or `[DEVIATION]` if the Builder chose a reasonable alternative. Both route to Architect.
+   - **Visual drift:** If the design reference and spec disagree, record `[DISCOVERY]` noting the discrepancy. If the code matches the spec but not the design, this routes to PM for design re-ingestion.
+
+3. **Iteration guidance:** There is no hard cap on B2-B3 iterations for straightforward fixes. The Builder should keep iterating as long as it is making progress (each iteration resolves at least one failure). When the Builder is NOT making progress (same failures persist, or fixes introduce new failures), it MUST stop iterating and escalate via `[DISCOVERY]` with the full diagnosis.
+
+4. **Status tags after B3:** Features with all-passing tests get `[Complete]` (if auto-only) or `[Ready for Verification]` (if manual scenarios exist). Features with unresolved `[DISCOVERY]` or `[INFEASIBLE]` tags stay in TODO -- no status tag. The Builder proceeds to the next feature or phase.
+
+**Single-feature phases:** B2 is a confirmation re-run. B3 is unlikely since the Builder just fixed issues in B1 Step 3.
+
+**Architect collaboration path:** When the Architect reviews a B3 `[DISCOVERY]`, they can:
+- Update the spec to resolve the contradiction (triggers lifecycle reset, Builder re-implements)
+- Add approach guidance to the companion file (Builder reads it next session)
+- Acknowledge the Builder's workaround (unblocks `[Complete]`)

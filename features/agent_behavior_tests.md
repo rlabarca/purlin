@@ -13,7 +13,7 @@
 
 A Purlin-internal test harness that automates verification of agent startup, resume, and help behavior using `claude --print` in single-turn mode against fixture repo states. The harness constructs system prompts using the same 4-layer concatenation as the launcher scripts, runs Claude against them, and asserts expected output patterns.
 
-This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not need to test framework-level agent behavior -- they benefit from the fixture repo and `/pl-web-verify` instead.
+This is Purlin-internal tooling (`dev/`, not `tools/`). Consumer projects do not need to test framework-level agent behavior -- they benefit from the fixture repo and `/pl-aft-web` instead.
 
 ---
 
@@ -99,7 +99,7 @@ The following manual scenarios are automated by this harness:
 The following scenarios are NOT covered by this harness because they require human judgment:
 
 - `pl_update_purlin.md` merge review scenarios -- require human assessment of merge correctness.
-- `cdd_startup_controls.md` dashboard toggle scenarios -- these are web UI scenarios, covered by `/pl-web-verify` instead.
+- `cdd_startup_controls.md` dashboard toggle scenarios -- these are web UI scenarios, covered by `/pl-aft-web` instead.
 
 ### 2.10 Fixture Tags Required
 

@@ -32,7 +32,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   Verification
   ──────
   /pl-verify <name>          Run interactive verification for a feature
-  /pl-web-verify [name]      Verify web-testable features via Playwright
+  /pl-aft-web [name]      Run AFT web verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
   /pl-fixture                Test fixture convention reference
@@ -77,7 +77,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   Verification
   ──────
   /pl-verify <name>          Run interactive verification for a feature
-  /pl-web-verify [name]      Verify web-testable features via Playwright
+  /pl-aft-web [name]      Run AFT web verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
   /pl-fixture                Test fixture convention reference

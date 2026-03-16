@@ -101,13 +101,13 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
    - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
-### 2.8 Integration with /pl-web-verify
+### 2.8 Integration with /pl-aft-web
 
 For CDD dashboard scenarios needing fixture state:
 
 1. Check out fixture tag into temp dir via `fixture checkout`.
 2. Start CDD server against it: `python3 tools/cdd/serve.py --project-root /tmp/fixture-xyz/`.
-3. `/pl-web-verify` runs against that server instance.
+3. `/pl-aft-web` runs against that server instance.
 4. Cleanup via `fixture cleanup`.
 
 ### 2.9 Integration with Agent Behavior Tests

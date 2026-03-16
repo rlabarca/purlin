@@ -4,9 +4,8 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/design_modal_standards.md
 > Prerequisite: features/design_visual_standards.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
-> Web Start: /pl-cdd
+> AFT Web: http://localhost:9086
+> AFT Start: /pl-cdd
 
 [TODO]
 

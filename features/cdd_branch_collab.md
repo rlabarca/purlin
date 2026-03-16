@@ -6,9 +6,8 @@
 > Prerequisite: features/cdd_status_monitor.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/test_fixture_repo.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
-> Web Start: /pl-cdd
+> AFT Web: http://localhost:9086
+> AFT Start: /pl-cdd
 
 [TODO] <!-- reset: Builder must implement HEAD-based sync, operation modals, --prune -->
 

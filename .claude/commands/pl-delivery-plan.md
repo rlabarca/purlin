@@ -37,6 +37,8 @@ If phasing is warranted, present the user with two options:
 
 If the user approves phasing, create the delivery plan using the canonical format below, commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed.
 
+**Interaction Density:** When grouping features into phases, also consider (e) interaction density -- features that share data, APIs, or components benefit from being in the same phase where B2 catches their cross-feature regressions. See `instructions/references/phased_delivery.md` Section 10.10 for the B1/B2/B3 sub-phase protocol.
+
 **Canonical `delivery_plan.md` format:**
 
 ```markdown

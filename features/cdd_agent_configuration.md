@@ -7,9 +7,8 @@
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/test_fixture_repo.md
-> Web Testable: http://localhost:9086
-> Web Port File: .purlin/runtime/cdd.port
-> Web Start: /pl-cdd
+> AFT Web: http://localhost:9086
+> AFT Start: /pl-cdd
 
 
 ## 1. Overview

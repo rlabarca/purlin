@@ -22,10 +22,16 @@
 **Removed: Isolated Teams**
 - The worktree-based isolated teams system (`/pl-isolated-push`, `/pl-isolated-pull`, CDD Isolated Teams panel, Handoff Checklist, and the Isolated Agent Collaboration policy) has been fully retired. Branch collaboration covers the same use cases with less complexity.
 
-**Web Verify (`/pl-web-verify`)**
+**Web Verify (`/pl-web-verify`)** *(renamed to `/pl-aft-web` -- see AFT below)*
 - New Playwright-based automated verification for features with web UIs. Any feature with a `> Web Testable: <url>` metadata tag can have its manual scenarios and visual specification checklist items verified automatically in a real browser.
 - Supports `> Web Port File:` for dynamic ports and `> Web Start:` for auto-starting servers.
 - Screenshots saved to `.purlin/runtime/web-verify/` for post-run review.
+
+**Automated Feedback Tests (AFT)**
+- Introduced the AFT pattern as an architectural anchor node (`arch_automated_feedback_tests.md`). AFTs are tools that script interactions with a target system, observe results, and report structured pass/fail with evidence.
+- `/pl-web-verify` renamed to `/pl-aft-web` as the first AFT implementation. Metadata tags renamed: `> Web Testable:` -> `> AFT Web:`, `> Web Start:` -> `> AFT Start:`, `> Web Port File:` removed (port resolution is now internal to the tool).
+- Builder now owns all automated verification (AFT:Web, AFT:TestOnly, AFT:Skip). QA only sees manual items.
+- New B1/B2/B3 sub-phase protocol for phased delivery: Build, Test (cross-feature regression), Fix (analyze-first).
 
 **Test Fixtures (`/pl-fixture`)**
 - New test fixture system for scenarios that need controlled project state (specific git history, config values, branch topologies). Each fixture is an immutable git tag in a dedicated fixture repo -- no complex setup code needed.

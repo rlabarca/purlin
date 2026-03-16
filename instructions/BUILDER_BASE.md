@@ -30,7 +30,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-verify, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-aft-web, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 2.0.1 Read Startup Flags
 
@@ -118,8 +118,8 @@ Before starting work on each feature from the approved plan:
     2.  **`brief.json`** (at `features/design/<feature_stem>/brief.json`) -- structured design data (dimensions, components, layout, token values). Read for layout and component details.
     3.  **Figma MCP** (read-only, via the Reference URL) -- consult ONLY when Token Map + `brief.json` are missing, ambiguous, or insufficient. This avoids expensive network round-trips during iterative development.
     4.  **Checklists** -- measurable acceptance criteria. These define what must be verified.
-*   Binary image/PDF artifacts in `features/design/` are audit references, not Builder inputs.
-*   **Figma Reference Guidance:** The Figma URL in a Visual Specification `- **Reference:**` line is the design authority. After implementation, the Builder SHOULD use `/pl-web-verify` to check visual output against the spec's checklist items. If the Builder discovers a discrepancy between the Token Map and the Figma design, file a `[DISCOVERY]` in the companion file noting the drift. The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
+*   During implementation (B1), binary image/PDF artifacts in `features/design/` are audit references, not Builder inputs. During the B2 Test Sub-Phase (see Step 4.E), they become verification inputs for visual comparison.
+*   **Figma Reference Guidance:** The Figma URL in a Visual Specification `- **Reference:**` line is the design authority. After implementation, the Builder SHOULD use `/pl-aft-web` to check visual output against the spec's checklist items. During B1, consult Figma ONLY when Token Map + `brief.json` are missing, ambiguous, or insufficient. During B2 verification, Figma MCP is used at full capability (three-source triangulated verification) regardless of Token Map/brief.json availability. If the Builder discovers a discrepancy between the Token Map and the Figma design, file a `[DISCOVERY]` in the companion file noting the drift. The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
 *   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
 *   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
 *   **Fixture Detection (MANDATORY):** Check whether the feature spec contains a fixture tag section (heading matching `### 2.x ... Fixture Tags`). If yes, run `/pl-fixture` for the full setup workflow: three-tier repo lookup, setup script creation, and tag verification.
@@ -146,21 +146,22 @@ Builder decisions use `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`, `[AUTONOMOUS
 **Chat is not a communication channel.** Use `/pl-propose` to record findings in Implementation Notes. The Critic routes them to the Architect.
 
 ### 3. Verify Locally
-*   **Testing (MANDATORY):**
+*   **Unit/Integration Testing (MANDATORY):**
     *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
     *   **Reporting Protocol:** Every DevOps test run MUST produce a `tests.json` in `tests/<feature_name>/` with `{"status": "PASS", ...}`.
     *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for unrelated tools.
     *   **Anti-Stub Mandate:** The Builder MUST NOT write `tests.json` by hand. The file MUST be produced by an actual test runner (pytest, bash test script, etc.) that executes real assertions against the feature's implementation. A `tests.json` reporting `"status": "PASS"` without having run any executable test code is a process violation. Required fields: `status`, `passed` (int), `failed` (int), `total` (int). `total` MUST be > 0 for any feature with automated scenarios. The Critic will reject `tests.json` files that have `total: 0`, are missing required fields, or have internal inconsistencies (e.g., `status: "PASS"` with `failed > 0`).
     *   **Test Depth Mandate:** Tests MUST verify behavioral outcomes, not just element presence. Endpoint tests MUST assert response field values and status codes. DOM tests MUST assert CSS classes and structural relationships. Interaction tests MUST verify state changes (enable/disable, show/hide, content updates). A test using only string containment (`assert X in Y`) without verifying specific values or state does not satisfy scenario coverage.
-*   **Web Verification (MANDATORY for web-testable features):** For features with `> Web Testable:` metadata, you MUST run `/pl-web-verify <name>` before committing the status tag. This catches visual and functional regressions in the live dashboard before handing off to QA. If `/pl-web-verify` reports failures, fix them before proceeding to Step 4. Features without `> Web Testable:` metadata skip this step.
+*   **Automated Feedback Testing (MANDATORY for AFT-eligible features):** For features with AFT metadata (`> AFT Web:`, `> AFT API:`, etc.), the Builder MUST run the corresponding AFT tool before the status tag commit. `/pl-aft-web` is the current implementation for `> AFT Web:` features; other AFT tools will be added as they are built. If the AFT reports failures, fix them before proceeding to Step 4. Features without any AFT metadata skip this step.
+*   **Self-Test Completeness Check (MANDATORY):** Before committing the status tag, the Builder reads its own `tests/<feature_name>/tests.json` and validates: required fields present (`status`, `passed`, `failed`, `total`), `total > 0`, no internal inconsistencies (`failed > 0` with `status: PASS`). This catches issues before the Critic does, avoiding wasted cycles.
 *   **If tests fail:** Fix the issue and repeat from Step 2. Do NOT proceed to Step 4 with failing tests.
 
 ### 4. Commit the Status Tag (SEPARATE COMMIT)
 This commit transitions the feature out of **TODO**. It MUST be a **separate commit** from the implementation work in Step 2 to ensure the status tag is the latest commit referencing this feature file.
 
 *   **A. Determine Status Tag:**
-    *   If the feature has manual scenarios requiring human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**). The QA Agent will mark `[Complete]` after clean verification.
-    *   If all verification is automated (no manual scenarios) and passing: `[Complete features/FILENAME.md]` (transitions to **COMPLETE**). **Note:** The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- the `[Verified]` tag is reserved for QA completions via `/pl-complete` and is used by the Critic to verify that QA actually ran the verification workflow.
+    *   If the feature has zero manual scenarios and all automated verification passes (unit tests + AFT): `[Complete features/FILENAME.md]` (transitions to **COMPLETE**). This is the terminal state -- QA does not re-verify automated-only features. **Note:** The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- the `[Verified]` tag is reserved for QA completions via `/pl-complete` and is used by the Critic to verify that QA actually ran the verification workflow.
+    *   If the feature has manual scenarios requiring human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**). Use `[Ready for Verification]` only when manual scenarios exist that require human verification. The QA Agent will mark `[Complete]` after clean verification.
 *   **B. Declare Change Scope:** Append a `[Scope: ...]` trailer to the status commit message to declare the impact scope of your change. This tells the Critic how to scope QA verification.
 
     | Scope | When to Use |
@@ -192,6 +193,12 @@ This commit transitions the feature out of **TODO**. It MUST be a **separate com
         Relaunch Builder (new session) to continue with Phase N+1.
         ```
         No exceptions.
+
+    **Phase Internal Structure (B1/B2/B3):** See `instructions/references/phased_delivery.md` Section 10.10 for the full protocol. Summary:
+    *   **B1 (Build):** Existing per-feature loop (Steps 0-3). Each feature implemented and locally tested including AFTs. Visual design read priority: Token Map -> brief.json -> Figma (last resort). Fast iteration.
+    *   **B2 (Test):** After B1 completes for all features in the phase, re-run the full test suite AND all applicable AFTs for every feature in the current phase. Visual design priority inverts: reference images + Figma MCP + Playwright = full three-source verification. This catches both cross-feature regressions and visual drift.
+    *   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction? visual drift?), then act: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]` when not making progress. No hard iteration cap -- keep iterating while making progress, stop and escalate when stuck.
+    *   Status tags only after B2 passes or B3 escalations are recorded.
 
 ## 6. Shutdown Protocol
 
