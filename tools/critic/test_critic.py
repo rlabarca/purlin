@@ -8425,12 +8425,12 @@ if __name__ == '__main__':
     }
     with open(status_file, 'w') as f:
         json.dump(report, f)
-    # Also write to qa_verification_effort (covered by TestVerificationEffort*
-    # classes in this same test suite)
-    qa_effort_dir = os.path.join(project_root, 'tests', 'qa_verification_effort')
-    os.makedirs(qa_effort_dir, exist_ok=True)
-    with open(os.path.join(qa_effort_dir, 'tests.json'), 'w') as f:
-        json.dump(report, f)
+    # Also write to features that share this test suite
+    for shared_feature in ('qa_verification_effort', 'policy_critic'):
+        shared_dir = os.path.join(project_root, 'tests', shared_feature)
+        os.makedirs(shared_dir, exist_ok=True)
+        with open(os.path.join(shared_dir, 'tests.json'), 'w') as f:
+            json.dump(report, f)
     print(f'\n{status_file}: {status}')
 
     sys.exit(0 if result.wasSuccessful() else 1)
