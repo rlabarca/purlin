@@ -17,6 +17,6 @@ Guide the user through classifying the finding:
 
 Ask the user to describe the observed behavior and expected behavior.
 
-Record the entry in the feature file's `## User Testing Discoveries` section using the canonical format.
+Record the entry in the feature's discovery sidecar file (`features/<name>.discoveries.md`), creating it if absent. Use the canonical format from `instructions/references/user_testing_protocol.md`.
 
 Commit: `git commit -m "qa(<scope>): [TYPE] - <brief title>"`.

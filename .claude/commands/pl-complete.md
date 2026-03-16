@@ -8,7 +8,7 @@ Given the feature name provided as an argument, gate completion on all requireme
 
 1. Confirm the feature is in TESTING state (run `tools/cdd/status.sh` if needed).
 2. Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
-3. Confirm there are zero OPEN or SPEC_UPDATED discoveries in the feature's `## User Testing Discoveries` section.
+3. Confirm there are zero OPEN or SPEC_UPDATED discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`). If the file is absent or empty, the gate passes.
 4. Check for an active delivery plan at `.purlin/cache/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete — inform the user it is deferred until all phases are delivered.
 5. If all gates pass, commit the Complete status tag with the `[Verified]` trailer:
    `git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"`
