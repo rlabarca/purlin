@@ -4,7 +4,7 @@
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/project_init.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
