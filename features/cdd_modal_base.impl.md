@@ -1,3 +1,5 @@
 # Implementation Notes: CDD Modal Base
 
-**[DISCOVERY]** Modal body base font size is 13px in `serve.py` (line ~2122), but `design_modal_standards.md` specifies 14px (inherited from `design_visual_standards.md` Section 2.3, Inter 14px). Title is 21px but should be 22px (14+8). All body heading offsets (+3/+1/-1/-2 from base) also need +1px adjustment. Tests in `test_cdd_modal_base.py` assert the current 13px/21px values and will need updating. (Severity: HIGH) **Acknowledged -- the design spec values (14px base, 22px title) are authoritative. Builder should align implementation to the spec.**
+Modal body base font size was originally 13px but `design_modal_standards.md` specifies 14px (inherited from `design_visual_standards.md` Section 2.3, Inter 14px). Title was 21px fixed but spec says 4pts above body = 18px. Corrected to: body 14px, title calc(18px + adjust), headings h1=17px/h2=15px/h3=13px/code=12px. All non-body elements (title, metadata, tabs) now scale with the --modal-font-adjust slider. Step Detail inline-styled content updated to use calc() for scaling.
+
+- traceability_override: "Close via Escape" -> test_escape_key_event_listener_registered
