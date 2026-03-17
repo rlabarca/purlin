@@ -318,23 +318,74 @@ REPORT
 commit_and_tag "main/cdd_startup_controls/guided-mode"
 
 # ===================================================================
-# Fixture 4: main/cdd_startup_controls/orient-only-mode
-# Config with find_work: true, auto_start: false
-# ===================================================================
-echo "Creating: main/cdd_startup_controls/orient-only-mode" >&2
-set_config true false
-commit_and_tag "main/cdd_startup_controls/orient-only-mode"
-
-# ===================================================================
-# Fixture 5: main/cdd_startup_controls/auto-mode
+# Fixture 4: main/cdd_startup_controls/auto-mode
 # Config with find_work: true, auto_start: true
 # ===================================================================
 echo "Creating: main/cdd_startup_controls/auto-mode" >&2
 set_config true true
+
+# Add a TODO feature so auto-mode has work to begin executing
+cat > features/todo_feature.md <<'FEAT'
+# Feature: Todo Feature
+
+> Label: "Todo Feature"
+> Category: "Test"
+> Prerequisite: features/policy_critic.md
+
+[TODO]
+
+## 1. Overview
+
+A feature in TODO state for testing auto mode.
+
+## 2. Requirements
+
+### 2.1 Basic
+
+- Implement something.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+None.
+
+### Manual Scenarios (Human Verification Required)
+
+None.
+FEAT
+
+# Update CRITIC_REPORT to show Builder action items
+cat > CRITIC_REPORT.md <<'REPORT'
+# Critic Quality Gate Report
+
+Generated: 2026-01-01T00:00:00Z
+
+## Summary
+
+| Feature | Spec Gate | Implementation Gate | User Testing |
+|---------|-----------|--------------------:|-------------|
+| features/todo_feature.md | PASS | FAIL | CLEAN |
+
+## Action Items by Role
+
+### Architect
+
+No action items.
+
+### Builder
+
+- **[HIGH]** (todo_feature): Review and implement spec changes for todo_feature
+
+### QA
+
+No action items.
+REPORT
+
 commit_and_tag "main/cdd_startup_controls/auto-mode"
 
 # ===================================================================
-# Fixture 6: main/pl_session_resume/builder-mid-feature
+# Fixture 5: main/pl_session_resume/builder-mid-feature
 # Checkpoint file showing builder at protocol step 2
 # ===================================================================
 echo "Creating: main/pl_session_resume/builder-mid-feature" >&2

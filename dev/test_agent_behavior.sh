@@ -304,28 +304,36 @@ scenario_guided_mode() {
     cleanup_fixture "$fixture_dir"
 }
 
-scenario_orient_only_mode() {
+scenario_auto_mode() {
     echo ""
-    echo "--- Scenario 4: Orient-Only Mode Skips Work Plan ---"
+    echo "--- Scenario 4: Auto Mode Begins Executing Immediately ---"
     local fixture_dir prompt_file output
 
-    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/orient-only-mode")
+    fixture_dir=$(checkout_fixture "main/cdd_startup_controls/auto-mode")
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 
     if assert_contains "$output" "━━━"; then
-        record_result "PASS" "Orient-Only Mode: command table present"
+        record_result "PASS" "Auto Mode: command table present"
     else
-        record_result "FAIL" "Orient-Only Mode: command table present" \
+        record_result "FAIL" "Auto Mode: command table present" \
             "Expected command table in output"
     fi
 
-    # Orient-only should gather state but not present a work plan
+    # Auto mode should begin executing immediately (no "Ready to go?" approval prompt)
     if assert_not_contains "$output" "Ready to go.*adjust the plan"; then
-        record_result "PASS" "Orient-Only Mode: no work plan prompt"
+        record_result "PASS" "Auto Mode: no approval prompt (begins immediately)"
     else
-        record_result "FAIL" "Orient-Only Mode: no work plan prompt" \
-            "Output should NOT contain 'Ready to go' prompt"
+        record_result "FAIL" "Auto Mode: no approval prompt (begins immediately)" \
+            "Output should NOT contain 'Ready to go' approval prompt"
+    fi
+
+    # Auto mode should show work activity (action items, implementing, etc.)
+    if assert_contains "$output" "action\|implement\|TODO\|feature\|work"; then
+        record_result "PASS" "Auto Mode: work activity present"
+    else
+        record_result "FAIL" "Auto Mode: work activity present" \
+            "Expected work activity content in output"
     fi
 
     rm -f "$prompt_file"
@@ -521,7 +529,7 @@ main() {
     scenario_startup_print_sequence
     scenario_expert_mode
     scenario_guided_mode
-    scenario_orient_only_mode
+    scenario_auto_mode
     scenario_builder_mid_feature_resume
     scenario_qa_mid_verification_resume
     scenario_full_reboot_resume

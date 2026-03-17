@@ -931,19 +931,19 @@ REPORT
 commit_and_tag "main/cdd_startup_controls/guided-mode" \
     "Config with find_work: true, auto_start: true"
 
-# orient-only-mode
+# auto-mode
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": false },
-        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": false },
-        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": false }
+        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
     }
 }
 EOF
-commit_and_tag "main/cdd_startup_controls/orient-only-mode" \
-    "Config with find_work: true, auto_start: false"
+commit_and_tag "main/cdd_startup_controls/auto-mode" \
+    "Config with find_work: true, auto_start: true"
 
 # =====================================================================
 echo ""
