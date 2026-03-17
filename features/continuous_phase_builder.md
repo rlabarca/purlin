@@ -39,14 +39,14 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - Each phase invocation uses a unique session ID: `continuous-phase-<phase_number>-<uuid>`.
 - The Builder is invoked with `claude -p --session-id <session_id>` plus all resolved config flags (model, effort, permissions) and the assembled system prompt.
 - The initial message includes phase-specific context: `"Begin Builder session. CONTINUOUS MODE -- proceed immediately with work plan, do not wait for approval."`.
-- Builder output is streamed to the terminal in real time (see Section 2.16).
+- Builder output is written to log files; the terminal shows the canvas display (see Section 2.16).
 
 ### 2.4 Parallel Phase Execution
 
 - For execution groups with multiple phases (`parallel: true`), launch each phase's Builder in a separate git worktree.
 - Each parallel Builder is invoked with `claude -p -w <worktree-name>` where the worktree name is `continuous-phase-<phase_number>`.
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
-- The launcher waits for all parallel Builders in the group to complete before proceeding. A background heartbeat process provides progress visibility (see Section 2.16).
+- The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.16).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
@@ -188,9 +188,31 @@ possible to avoid conflicts.
   - No plan file + exit code 0 -> Builder completed all work directly (phasing not warranted). Launcher exits successfully with summary.
   - No plan file + exit code non-zero -> bootstrap failed. Launcher exits with error directing the user to run an interactive session.
 - **Plan validation:** After bootstrap creates the plan and before the approval prompt, the launcher runs the phase analyzer as a dry-run validation. If the analyzer detects dependency cycles or structural errors, the launcher prints the error, notes that the plan has been committed for manual editing, and exits 0. The user fixes the plan and re-runs `--continuous` (which will skip bootstrap since the plan now exists).
-- **Approval checkpoint:** When bootstrap creates a valid delivery plan, the launcher prints a summary to stdout (phase count, features per phase, identified parallel groups) and prompts the user: `"Delivery plan created (N phases). Review at .purlin/cache/delivery_plan.md. Proceed? [Y/n]"`. If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
+- **Approval checkpoint:** When bootstrap creates a valid delivery plan, the canvas clears the spinner and renders a colored console table summarizing the plan. The table is rendered into the canvas area on stderr. Format:
+
+```
+=== Delivery Plan (N phases) ===
+
+  #   Label                        Features                                Complexity   Exec Group
+  --- ---------------------------- --------------------------------------- ------------ -------------------
+  1   Foundation Anchors           policy_critic, design_visual_standards  LOW+LOW      0 (sequential)
+  2   Policy Chain                 policy_release, policy_branch_collab    LOW+LOW      1 (parallel w/ 3)
+  ...
+
+Parallel groups: 2 (Phases 2+3, Phases 4+5+6)
+Review at .purlin/cache/delivery_plan.md
+================================
+Proceed? [Y/n]
+```
+
+  - Fixed-width columns with space alignment, no Markdown pipes.
+  - ANSI bold cyan (`\033[1;36m`) on header row, green (`\033[32m`) on separator lines.
+  - Phase labels from delivery plan headings, features/complexity/exec group from the analyzer.
+  - Cell content wraps or truncates (with `...`) to fit terminal width (`tput cols`, default 80).
+  - TTY fallback: plain uncolored text when stderr is not a TTY.
+  - If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
-- Bootstrap output is streamed to the terminal in real time (see Section 2.16).
+- Bootstrap output is written to log files only; the terminal shows the canvas spinner (see Section 2.16).
 - The bootstrap session does NOT receive the continuous phase override (Section 2.7) or server permission override (Section 2.8). It receives only the bootstrap-specific override.
 - Bootstrap override text:
 
@@ -215,12 +237,59 @@ This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 ```
 
-### 2.16 Builder Output Visibility
+### 2.16 Terminal Canvas
 
-- **Sequential phases:** Builder output is streamed to the terminal (stdout) in real time via `2>&1 | tee "$LOG_FILE"`. For resumed sessions (evaluator `approve` action), use `tee -a` to append to the existing log file.
-- **Bootstrap session:** Same `tee` treatment as sequential phases. Output is streamed to the terminal and written to the bootstrap log file.
-- **Parallel phases:** Output stays in log files only (no terminal streaming). Interleaved output from multiple Builders is unreadable.
-- **Parallel heartbeat:** A background process prints a multi-line, in-place status display to stderr every 15 seconds. Format:
+All continuous mode status output renders into an **in-place terminal canvas** on stderr. The canvas is a block of lines below the command that is continuously cleared and rewritten via ANSI cursor control. Only the final exit summary is permanent output.
+
+- **Canvas mechanics:** Each update uses cursor-up (`\033[<N>A`) + clear-to-end (`\033[J`) to overwrite the previous canvas content. The canvas tracks its own line count for accurate cursor positioning. On the first render, no cursor-up is emitted. All canvas output goes to stderr exclusively.
+
+- **Builder output routing:** In continuous mode, ALL Builder output (bootstrap, sequential, and parallel) goes to log files only. No Builder output streams to the terminal. The terminal is exclusively owned by the canvas. This eliminates stdout/stderr interleaving problems.
+
+- **Canvas refresh rate:** The canvas render loop runs at ~100ms for spinner frame animation. Heavier updates (log file size, activity extraction) run on 15-second intervals to avoid excessive I/O.
+
+- **Color palette:**
+  - Spinner: cyan (`\033[36m`)
+  - Headers/titles: bold cyan (`\033[1;36m`)
+  - Running/active: yellow (`\033[33m`)
+  - Done/complete: green (`\033[32m`)
+  - Error/warning/0K: red (`\033[31m`)
+  - Elapsed time/metadata: dim (`\033[2m`)
+  - Phase labels: bold white (`\033[1;37m`)
+  - Reset: `\033[0m`
+
+- **Spinner characters:** Braille animation sequence: `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`. Cycles at the canvas refresh rate (~100ms).
+
+- **Bootstrap phase canvas:** While the bootstrap Builder runs, the canvas shows a single in-place line with an animated spinner and elapsed time:
+
+```
+⠹ Starting bootstrap session... 45s
+```
+
+  Spinner cycles through braille characters at ~100ms. Elapsed time updates every second. The line overwrites itself in place. Once bootstrap completes, the canvas clears and transitions to the plan approval table (Section 2.15) or exit state.
+
+- **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.15 approval checkpoint for format). The table replaces the spinner content in the canvas area.
+
+- **Inter-phase canvas:** Between phases (evaluator running, re-analysis), the canvas shows a spinner line:
+
+```
+⠼ Evaluating phase 2 output... 3s
+```
+
+  or
+
+```
+⠧ Re-analyzing delivery plan... 1s
+```
+
+- **Sequential phase canvas:** During sequential phase execution, the canvas shows a single-phase version of the heartbeat display with spinner, elapsed time, log file size, and current activity:
+
+```
+⠹ Phase 2 -- Policy Chain   running  2m 15s   45K  editing policy_release.md
+```
+
+  Activity is extracted from the log file tail (same extraction logic as parallel heartbeat). Updated on 15-second intervals.
+
+- **Parallel phase canvas:** During parallel execution, the canvas shows the multi-line heartbeat display:
 
 ```
 [19:34:58] Parallel group (3 phases):
@@ -235,16 +304,17 @@ or "ask the user."
   - Per-phase log file size (e.g., `45K`).
   - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text truncated to ~50 characters.
   - Status colors: yellow for running, green for done, red for done with 0K log size (diagnostic warning).
-  - In-place overwrite via ANSI cursor-up (`\033[<N>A`) and clear-to-end (`\033[J`). The heartbeat tracks the previous line count to overwrite correctly without scrolling.
-  - TTY fallback: when stderr is not a TTY (`! [ -t 2 ]`), the heartbeat uses single-line append-only output without ANSI escape sequences.
+  - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
 
-- **Heartbeat lifecycle:** The heartbeat process is started when a parallel group begins and terminated immediately after all parallel Builders in the group complete (before merge).
+- **Canvas lifecycle:** The canvas render loop (background subshell) is started at the beginning of each phase and terminated when the phase or group completes. For parallel groups, the canvas runs for the duration of the group (started when the group begins, terminated before merge). The canvas PID is tracked alongside Builder PIDs for cleanup.
+
 - **Graceful stop (Ctrl+C):**
   - The launcher traps `SIGINT` to perform a graceful shutdown.
-  - On first `SIGINT`: set a stop flag, send `SIGTERM` to any running Builder processes (parallel worktree PIDs or sequential Builder PID), terminate the heartbeat process, wait for processes to exit, print the exit summary (see below), clean up worktrees, exit non-zero.
+  - On first `SIGINT`: set a stop flag, send `SIGTERM` to any running Builder processes (parallel worktree PIDs or sequential Builder PID), terminate the canvas render loop, wait for processes to exit, clear the canvas, print the exit summary (see below), clean up worktrees, exit non-zero.
   - The stop is immediate -- it does not wait for the current phase to finish. Builder processes are terminated, not allowed to complete.
   - A second `SIGINT` during shutdown forces immediate exit. After the first `SIGINT` handler fires, the trap is reset to default (`trap - INT`) so standard bash behavior applies on the second signal.
-- **Exit summary:** Printed at the end of every continuous run (success, failure, or graceful stop). Format:
+
+- **Exit summary:** The canvas is cleared one final time. The exit summary prints as **permanent output** (not in-place -- it stays on screen). This is the only output that persists after the command exits. Format:
 
 ```
 === Continuous Build Summary ===
@@ -270,9 +340,15 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
   - Per-phase feature list from the delivery plan.
   - Retries called out by phase number.
   - Log file location reminder.
-- **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The status refresh output is not suppressed -- the user sees the Critic run as confirmation that the dashboard is current.
-- **Log file integrity:** Log files are always written identically regardless of whether output is also streamed to the terminal. The evaluator reads from log files, not terminal output.
-- **Non-continuous mode:** Without `--continuous`, this section has no effect. Non-continuous mode is already interactive.
+  - Exit summary uses the same color palette: bold cyan header/footer, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED/failed, dim for durations.
+
+- **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The status refresh output is also permanent (not canvas).
+
+- **TTY fallback:** When stderr is not a TTY (`! [ -t 2 ]`), no canvas is rendered. Instead, print minimal milestone lines: `"Bootstrap started"`, `"Bootstrap complete"`, `"Phase N started"`, `"Phase N complete"`, etc. No spinner, no color, no ANSI. One line per event, append-only.
+
+- **Log file integrity:** Log files are always written identically regardless of canvas state. The evaluator reads from log files, not terminal output.
+
+- **Non-continuous mode:** Without `--continuous`, no canvas is rendered. Behavior is unchanged from the current interactive launcher.
 
 ### 2.11 Default Behavior Preservation
 
@@ -595,83 +671,123 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And Phase 3's dependency on the removed Phase 2 is no longer blocking
     And the analyzer includes Phase 3 in the execution groups
 
-#### Scenario: Sequential Phase Output Streamed to Terminal
-    Given --continuous is active
-    And the phase analyzer returns a sequential group for Phase 2
-    When the Builder runs Phase 2
-    Then the Builder's output is streamed to the terminal in real time via tee
-    And the full output is simultaneously written to .purlin/runtime/continuous_build_phase_2.log
-    And the log file content is identical to what was streamed
-
-#### Scenario: Bootstrap Output Streamed to Terminal
+#### Scenario: Bootstrap Canvas Shows Spinner During Initialization
     Given pl-run-builder.sh is invoked with --continuous
     And no delivery plan exists at .purlin/cache/delivery_plan.md
-    When the bootstrap session runs
-    Then the Builder's output is streamed to the terminal in real time via tee
-    And the full output is simultaneously written to .purlin/runtime/continuous_build_bootstrap.log
+    And stderr is a TTY
+    When the bootstrap session starts
+    Then the canvas shows a single in-place line with an animated braille spinner and elapsed time
+    And the spinner cycles through braille characters at ~100ms
+    And the elapsed time updates every second
+    And the line overwrites itself in place (no new rows appended)
+    And Builder output is written only to .purlin/runtime/continuous_build_bootstrap.log (not the terminal)
+    And when bootstrap completes the canvas clears and transitions to the plan approval table or exit state
 
-#### Scenario: Parallel Phase Heartbeat During Execution
+#### Scenario: Approval Checkpoint Renders Console Table
+    Given pl-run-builder.sh is invoked with --continuous
+    And the bootstrap session created a valid delivery plan
+    And stderr is a TTY
+    When the canvas transitions to the approval checkpoint
+    Then the canvas clears the spinner and renders a fixed-width console table
+    And the table has columns for phase number, label, features, complexity, and exec group
+    And the header row uses bold cyan ANSI coloring
+    And separator lines use green ANSI coloring
+    And cell content wraps or truncates with "..." to fit terminal width (tput cols)
+    And the table includes a parallel groups summary line
+    And the table includes a delivery plan file path reference
+    And the table ends with a "Proceed? [Y/n]" prompt
+
+#### Scenario: Sequential Phase Canvas During Execution
+    Given --continuous is active
+    And the phase analyzer returns a sequential group for Phase 2
+    And stderr is a TTY
+    When the Builder runs Phase 2
+    Then the canvas shows a single-phase display with spinner, elapsed time, log size, and current activity
+    And Builder output is written only to .purlin/runtime/continuous_build_phase_2.log (not the terminal)
+    And the canvas overwrites in place on each refresh
+    And activity is extracted from the log file tail on 15-second intervals
+
+#### Scenario: Parallel Phase Canvas During Execution
     Given --continuous is active
     And the phase analyzer returns a parallel group with Phases 3 and 5
+    And stderr is a TTY
     When both parallel Builders are running
-    Then a background heartbeat process prints a multi-line status display to stderr every 15 seconds
+    Then the canvas shows a multi-line heartbeat display on stderr
     And the display has a timestamp header line followed by one indented line per phase
     And each phase line includes the phase label from the delivery plan heading
     And each phase line includes the status (running or done), elapsed time, log file size, and current activity
     And running phases show activity extracted from the log file tail (truncated to ~50 chars)
     And status colors are applied: yellow for running, green for done, red for done with 0K log
+    And the canvas overwrites in place via ANSI cursor-up and clear-to-end sequences
 
-#### Scenario: Parallel Phase Output Not Streamed
+#### Scenario: All Builder Output Routes to Log Files in Continuous Mode
     Given --continuous is active
-    And the phase analyzer returns a parallel group with Phases 3 and 5
-    When both parallel Builders are running
-    Then Builder output is written only to log files
+    When any Builder runs (bootstrap, sequential, or parallel)
+    Then the Builder's stdout and stderr are written exclusively to the phase log file
     And no Builder output is streamed to the terminal
+    And the terminal is exclusively owned by the canvas
+    And the log file content is complete regardless of terminal rendering
 
-#### Scenario: Heartbeat Stops After Parallel Group Completes
+#### Scenario: Inter-Phase Canvas Shows Evaluator Status
     Given --continuous is active
-    And a parallel group with Phases 3 and 5 is running with an active heartbeat
-    When both parallel Builders complete
-    Then the heartbeat process is terminated immediately
-    And no further heartbeat lines are printed to stderr
-    And the termination occurs before worktree merge begins
+    And a phase has just completed
+    And stderr is a TTY
+    When the evaluator runs to classify the Builder output
+    Then the canvas shows a spinner line with "Evaluating phase N output..." and elapsed time
+    And when re-analysis runs the canvas shows "Re-analyzing delivery plan..." with elapsed time
+    And the spinner uses the same braille animation as the bootstrap canvas
 
-#### Scenario: Resume Session Output Streamed and Appended
+#### Scenario: Canvas Clears Before Final Summary
+    Given --continuous is active
+    And the orchestration loop is exiting (success, failure, or graceful stop)
+    And stderr is a TTY
+    When the exit summary is about to print
+    Then the canvas is cleared one final time via ANSI clear sequences
+    And the exit summary prints as permanent output (not in-place)
+    And the exit summary is the only continuous mode output that persists on screen after exit
+    And the exit summary uses colored output: bold cyan header, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED
+
+#### Scenario: Canvas Falls Back to Milestone Lines When Not a TTY
+    Given --continuous is active
+    And stderr is not a TTY (e.g., piped to a file)
+    When continuous mode phases execute
+    Then no canvas is rendered (no ANSI sequences, no spinner, no in-place overwriting)
+    And milestone lines are printed instead: "Bootstrap started", "Bootstrap complete", "Phase N started", "Phase N complete"
+    And each milestone is a single append-only line without color
+    And the approval checkpoint renders as plain uncolored text
+
+#### Scenario: Canvas Render Loop Lifecycle
+    Given --continuous is active
+    And stderr is a TTY
+    When a phase or parallel group begins execution
+    Then a background canvas render loop is started
+    And the render loop PID is tracked alongside Builder PIDs
+    And the render loop is terminated when the phase or group completes (before merge for parallel groups)
+    And no orphaned render loop processes remain after phase completion
+
+#### Scenario: Resume Session Log Appended
     Given --continuous is active
     And the evaluator returned "approve" for Phase 2
     And .purlin/runtime/continuous_build_phase_2.log already contains output from the initial run
     When the launcher resumes the session with "Approved. Proceed."
-    Then the resumed output is streamed to the terminal in real time
-    And the resumed output is appended to the existing log file via tee -a
+    Then the resumed output is appended to the existing log file
     And the log file contains both the initial and resumed output
+    And the canvas shows the phase spinner during the resumed session
 
-#### Scenario: Heartbeat Overwrites Previous Output In Place
-    Given --continuous is active with a parallel group running
+#### Scenario: Canvas Shows Current Builder Activity
+    Given --continuous is active with a phase running
     And stderr is a TTY
-    When the heartbeat process prints a status update
-    Then it uses ANSI cursor-up and clear-to-end sequences to overwrite the previous heartbeat output
-    And the terminal does not scroll with each heartbeat update
-
-#### Scenario: Heartbeat Falls Back to Plain Output When Not a TTY
-    Given --continuous is active with a parallel group running
-    And stderr is not a TTY (e.g., piped to a file)
-    When the heartbeat process prints a status update
-    Then it uses single-line append-only output without ANSI escape sequences
-    And each update appends a new line rather than overwriting
-
-#### Scenario: Heartbeat Shows Current Builder Activity
-    Given --continuous is active with a parallel group running
-    And Phase 3 Builder is currently editing a file
-    When the heartbeat process reads the Phase 3 log file tail
-    Then the Phase 3 line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
+    And the Builder is currently editing a file
+    When the canvas performs a 15-second activity refresh
+    Then the phase line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
     And the activity text is truncated to ~50 characters if longer
 
-#### Scenario: Heartbeat Warns on Empty Log at Phase Completion
-    Given --continuous is active with a parallel group
-    And Phase 5 Builder process has exited
-    And the Phase 5 log file has 0K size
-    When the heartbeat displays the Phase 5 status
-    Then the Phase 5 line shows "done" with a red warning marker
+#### Scenario: Canvas Warns on Empty Log at Phase Completion
+    Given --continuous is active
+    And a Builder process has exited
+    And the phase log file has 0K size
+    When the canvas displays the phase status
+    Then the phase line shows "done" with a red warning marker
     And the 0K size is displayed to indicate the diagnostic condition
 
 #### Scenario: Graceful Stop on SIGINT
@@ -679,8 +795,9 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And a Builder process is currently running (sequential or parallel)
     When the user sends SIGINT (Ctrl+C)
     Then the launcher sets a stop flag and sends SIGTERM to all running Builder processes
-    And the heartbeat process is terminated (if running)
+    And the canvas render loop is terminated (if running)
     And the launcher waits for processes to exit
+    And the canvas is cleared before the exit summary prints
     And the exit summary is printed with status "stopped (user interrupt)"
     And worktrees are cleaned up
     And the launcher exits with non-zero status
@@ -698,7 +815,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the exit summary has been printed
     When the launcher performs post-run cleanup
     Then it runs tools/cdd/status.sh to regenerate the Critic report
-    And the Critic output is visible to the user on stderr/stdout
+    And the status refresh output is permanent (not canvas)
     And the CDD dashboard reflects the completed work from this run
 
 ### Manual Scenarios (Human Verification Required)

@@ -32,13 +32,35 @@ Plan validation against the dependency graph happens at two points: (1) at creat
 
 [DISCOVERY] (acknowledged) The `--max-budget-usd` pass-through flag was removed from the spec. Continuous mode runs until completion -- the user can Ctrl+C to stop. Budget exhaustion mid-phase creates a confusing failure mode where the phase stops partway through work.
 
-## Output Streaming with tee and Exit Codes
+## Terminal Canvas Engine
 
-When using `cmd | tee file`, `$?` reflects tee's exit code, not the Builder's. In continuous mode this is safe because the evaluator (not exit code) drives all orchestration decisions. For additional robustness, `set -o pipefail` or `${PIPESTATUS[0]}` can be used to capture the Builder's actual exit code through the pipe if needed.
+Central rendering function that owns the cursor position on stderr. The canvas tracks the line count of its last render in a variable (e.g., `CANVAS_LINES`). Each update does:
 
-## ANSI Cursor Control for Heartbeat
+1. If `CANVAS_LINES > 0`, emit `\033[${CANVAS_LINES}A` (cursor up) + `\033[J` (clear to end of screen).
+2. Print the new content lines to stderr.
+3. Update `CANVAS_LINES` to the new count.
 
-The in-place heartbeat uses `\033[<N>A` (cursor up N lines) followed by `\033[J` (clear from cursor to end of screen) to overwrite the previous heartbeat block. The heartbeat function tracks the previous output line count so it knows how many lines to move up. On the first print, no cursor-up is emitted. When stderr is not a TTY (`! [ -t 2 ]`), skip all ANSI sequences and fall back to single-line append-only output.
+Spinner state is a global index (`SPINNER_IDX`) into the braille array `(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)`. The canvas render function accepts content lines as arguments and handles all ANSI mechanics. All intermediate status renders into this canvas; only the final exit summary is permanent.
+
+The render loop runs as a background subshell at ~100ms (`sleep 0.1`) for spinner animation. Heavier updates (log size via `wc -c`, activity extraction via `tail | grep`) happen on a 15-second counter within the loop. The render loop PID is stored in `CANVAS_PID` for cleanup.
+
+TTY guard: `[ -t 2 ]` at canvas startup. If false, the render loop is never started. Instead, a simple `canvas_milestone()` function prints single append-only lines without ANSI.
+
+## Bootstrap Progress Canvas
+
+Background subshell running the canvas render loop at ~100ms. Content is a single line: `"${SPINNER[SPINNER_IDX]} Starting bootstrap session... ${elapsed}s"`. Elapsed time derived from `$SECONDS` delta. Killed (`kill $CANVAS_PID`) when bootstrap exits. The bootstrap Builder's output goes to `> "$LOG_FILE" 2>&1` (no tee, no terminal streaming).
+
+## Console Plan Summary Rendering
+
+`printf`-based column alignment for the approval checkpoint table. Terminal width from `tput cols` (default 80). Column widths are computed proportionally from available width. Cell content that exceeds column width is truncated with `...`. ANSI sequences for header colors (`\033[1;36m` bold cyan for header, `\033[32m` green for separators) are applied only when `[ -t 2 ]`. Phase data (label, features, complexity, exec group) is read from the phase analyzer JSON output. The table is rendered via the canvas engine (replaces the spinner content).
+
+## Sequential Phase Canvas
+
+Same canvas engine as the parallel heartbeat but single-phase display. Content is one line: `"${SPINNER[SPINNER_IDX]} Phase N -- Label   running  Xm Ys   SIZE  activity"`. Replaces the previous `tee` streaming approach -- Builder output goes exclusively to the log file (`> "$LOG_FILE" 2>&1`), and the terminal shows only the canvas. Activity extraction and log size checks happen on 15-second intervals within the render loop.
+
+## Inter-Phase Canvas
+
+Between phases, the canvas shows evaluator/re-analysis status. Same render loop, different content: `"${SPINNER[SPINNER_IDX]} Evaluating phase N output... Xs"` or `"${SPINNER[SPINNER_IDX]} Re-analyzing delivery plan... Xs"`. Started before the evaluator invocation, killed after it returns.
 
 ## Activity Extraction from Log Files
 
@@ -46,8 +68,12 @@ Current Builder activity is extracted by tailing the last ~20 lines of each phas
 
 ## Graceful Stop via SIGINT Trap
 
-The launcher traps SIGINT with `trap graceful_stop INT`. The handler sets `STOP_REQUESTED=true`, then sends `SIGTERM` to tracked PIDs: `WT_PIDS` array for parallel builders, `BUILDER_PID` for sequential. After kills, falls through to the existing summary block. Immediately after the first handler fires, reset the trap to default (`trap - INT`) so a second Ctrl+C invokes the standard bash behavior (immediate termination) without running the handler again.
+The launcher traps SIGINT with `trap graceful_stop INT`. The handler sets `STOP_REQUESTED=true`, then sends `SIGTERM` to tracked PIDs: `WT_PIDS` array for parallel builders, `BUILDER_PID` for sequential. The canvas render loop is also terminated (`kill $CANVAS_PID 2>/dev/null`). After kills, the handler clears the canvas one final time (`canvas_clear`), then falls through to the existing summary block. Immediately after the first handler fires, reset the trap to default (`trap - INT`) so a second Ctrl+C invokes the standard bash behavior (immediate termination) without running the handler again.
 
 ## Per-Phase Tracking for Exit Summary
 
 Two approaches are viable: (1) a tracking file per phase at `$RUNTIME_DIR/phase_<N>_meta` recording start time, status, and feature list, which the summary reads at exit; or (2) in-memory bash arrays accumulated during the loop. Option (1) is more robust against mid-run crashes (the files survive even if the script is killed). The feature list per phase is extracted from the delivery plan at the start of each phase execution.
+
+## Builder Output Routing Change (Canvas Migration)
+
+[DISCOVERY] (acknowledged) Previous spec had sequential and bootstrap Builder output streamed to the terminal via `tee`. The terminal canvas model replaces this: ALL Builder output in continuous mode goes to log files only (`> "$LOG_FILE" 2>&1`). The terminal is exclusively owned by the canvas. This eliminates stdout/stderr interleaving issues and simplifies exit code handling (no `PIPESTATUS` needed since there is no pipe). The evaluator reads from log files as before -- no change to evaluator behavior.
