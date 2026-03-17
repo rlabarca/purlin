@@ -118,42 +118,45 @@ class TestFontSizeIncreaseScalesAllText(unittest.TestCase):
 
     def test_body_text_uses_calc_with_font_adjust(self):
         html = _generate_html()
-        # modal-body should use calc() with --modal-font-adjust
+        # modal-body should use calc() with --modal-font-adjust (14px base per design spec)
         self.assertRegex(
             html,
-            r'\.modal-body\s*\{[^}]*font-size:\s*calc\(13px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body\s*\{[^}]*font-size:\s*calc\(14px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_h1_uses_calc_with_font_adjust(self):
         html = _generate_html()
         self.assertRegex(
             html,
-            r'\.modal-body h1\s*\{[^}]*font-size:\s*calc\(16px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body h1\s*\{[^}]*font-size:\s*calc\(17px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_h2_uses_calc_with_font_adjust(self):
         html = _generate_html()
         self.assertRegex(
             html,
-            r'\.modal-body h2\s*\{[^}]*font-size:\s*calc\(14px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body h2\s*\{[^}]*font-size:\s*calc\(15px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_h3_uses_calc_with_font_adjust(self):
         html = _generate_html()
         self.assertRegex(
             html,
-            r'\.modal-body h3\s*\{[^}]*font-size:\s*calc\(12px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body h3\s*\{[^}]*font-size:\s*calc\(13px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_code_uses_calc_with_font_adjust(self):
         html = _generate_html()
         self.assertRegex(
             html,
-            r'\.modal-body code\s*\{[^}]*font-size:\s*calc\(11px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body code\s*\{[^}]*font-size:\s*calc\(12px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_relative_differences_preserved(self):
-        """All text elements offset by same var, preserving relative sizes."""
+        """All text elements offset by same var, preserving relative sizes.
+
+        With 14px body base: h1=17px (+3), h2=15px (+1), h3=13px (-1), code=12px (-2).
+        """
         html = _generate_html()
         # Extract the base sizes used in calc() for body, h1, h2, h3, code
         body_match = re.search(
@@ -175,11 +178,12 @@ class TestFontSizeIncreaseScalesAllText(unittest.TestCase):
         h3_base = int(h3_match.group(1))
         code_base = int(code_match.group(1))
 
-        # Verify relative differences: h1 > h2 > body, h3 <= body, code < body
-        self.assertGreater(h1_base, body_base)
-        self.assertGreater(h2_base, body_base)
-        self.assertLessEqual(h3_base, body_base)
-        self.assertLess(code_base, body_base)
+        # Verify exact offsets from 14px base per design spec
+        self.assertEqual(body_base, 14)
+        self.assertEqual(h1_base, 17)
+        self.assertEqual(h2_base, 15)
+        self.assertEqual(h3_base, 13)
+        self.assertEqual(code_base, 12)
 
 
 class TestFontSizeDecreaseScalesAllText(unittest.TestCase):
@@ -277,6 +281,67 @@ class TestCloseViaXButton(unittest.TestCase):
         self.assertIn("getElementById('modal-close').addEventListener('click'", html)
 
 
+class TestFontSizeScalesNonBodyModalElements(unittest.TestCase):
+    """Scenario: Font Size Scales Non-Body Modal Elements
+
+    Given the User has opened a text-based modal
+    When the User moves the font size slider to a non-default position
+    Then the modal title font size reflects the adjustment
+    And metadata rows, tab labels, and tag elements scale by the same adjustment
+    And consumer modals with inline-styled text also scale
+    """
+
+    def test_title_uses_calc_with_font_adjust(self):
+        """Modal title (.modal-header h2) scales with --modal-font-adjust."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\s*\{[^}]*font-size:\s*calc\(\d+px\s*\+\s*var\(--modal-font-adjust\)'
+        )
+
+    def test_metadata_uses_calc_with_font_adjust(self):
+        """Metadata rows (.modal-metadata) scale with --modal-font-adjust."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-metadata\s*\{[^}]*font-size:\s*calc\(\d+px\s*\+\s*var\(--modal-font-adjust\)'
+        )
+
+    def test_tabs_use_calc_with_font_adjust(self):
+        """Tab labels (.modal-tab) scale with --modal-font-adjust."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-tab\s*\{[^}]*font-size:\s*calc\(\d+px\s*\+\s*var\(--modal-font-adjust\)'
+        )
+
+    def test_step_detail_labels_use_calc_with_font_adjust(self):
+        """Step Detail section labels (inline-styled) scale with --modal-font-adjust."""
+        html = _generate_html()
+        # Step Detail JS builds section headers with inline font-size using calc()
+        self.assertRegex(
+            html,
+            r'font-size:calc\(10px \+ var\(--modal-font-adjust\) \* 1px\);font-weight:700;text-transform:uppercase;letter-spacing:0\.1em'
+        )
+
+    def test_step_detail_content_uses_calc_with_font_adjust(self):
+        """Step Detail content (inline-styled) scales with --modal-font-adjust."""
+        html = _generate_html()
+        # Step Detail JS builds content divs with inline font-size using calc()
+        self.assertRegex(
+            html,
+            r'font-size:calc\(12px \+ var\(--modal-font-adjust\) \* 1px\);line-height:1\.5'
+        )
+
+    def test_step_detail_source_badge_uses_calc(self):
+        """Step Detail source badge (inline-styled) scales with --modal-font-adjust."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'font-size:calc\(10px \+ var\(--modal-font-adjust\) \* 1px\);font-weight:700;text-transform:uppercase'
+        )
+
+
 class TestCloseViaEscape(unittest.TestCase):
     """Scenario: Close via Escape
 
@@ -285,16 +350,25 @@ class TestCloseViaEscape(unittest.TestCase):
     Then the modal closes
     """
 
-    def test_escape_handler_for_feature_modal(self):
+    def test_escape_key_event_listener_registered(self):
+        """A keydown event listener checks for the Escape key."""
         html = _generate_html()
+        self.assertIn("document.addEventListener('keydown'", html)
         self.assertIn("'Escape'", html)
-        self.assertIn('closeModal()', html)
 
-    def test_escape_handler_for_wd_modal(self):
+    def test_escape_closes_feature_modal(self):
+        """Escape key calls closeModal() for the feature detail modal overlay."""
+        html = _generate_html()
+        self.assertIn('closeModal()', html)
+        self.assertIn("getElementById('modal-overlay')", html)
+
+    def test_escape_closes_wd_modal(self):
+        """Escape key calls closeWdModal() for the What's Different modal overlay."""
         html = _generate_html()
         self.assertIn('closeWdModal()', html)
 
-    def test_escape_handler_for_step_modal(self):
+    def test_escape_closes_step_modal(self):
+        """Escape key calls closeStepModal() for the Step Detail modal overlay."""
         html = _generate_html()
         self.assertIn('closeStepModal()', html)
 
@@ -339,14 +413,14 @@ class TestTitleSizeLargerThanBodyText(unittest.TestCase):
 
     Given the User has opened a text-based modal
     When the modal is displayed with default font size settings
-    Then the modal title computed font size is 8 points larger than the default body font size
+    Then the modal title computed font size is 4 points larger than the default body font size
     """
 
-    def test_title_is_8pts_above_body_default(self):
+    def test_title_is_4pts_above_body_default(self):
         html = _generate_html()
-        # Body default is 13px, title should be 21px (13 + 8)
+        # Title now also uses calc() with --modal-font-adjust: 18px base (14 + 4)
         title_match = re.search(
-            r'\.modal-header h2\s*\{[^}]*font-size:\s*(\d+)px', html)
+            r'\.modal-header h2\s*\{[^}]*font-size:\s*calc\((\d+)px', html)
         body_match = re.search(
             r'\.modal-body\s*\{[^}]*font-size:\s*calc\((\d+)px', html)
 
@@ -355,8 +429,8 @@ class TestTitleSizeLargerThanBodyText(unittest.TestCase):
 
         title_size = int(title_match.group(1))
         body_default = int(body_match.group(1))
-        self.assertEqual(title_size - body_default, 8,
-                         f"Title ({title_size}px) should be exactly 8pts "
+        self.assertEqual(title_size - body_default, 4,
+                         f"Title ({title_size}px) should be exactly 4pts "
                          f"larger than body default ({body_default}px)")
 
     def test_title_uses_purlin_primary_color(self):

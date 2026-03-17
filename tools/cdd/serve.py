@@ -2078,7 +2078,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   padding:10px 14px;border-bottom:1px solid var(--purlin-border);flex-shrink:0;
   gap:10px;
 }}
-.modal-header h2{{font-size:21px;color:var(--purlin-primary);margin:0;border:0;padding:0}}
+.modal-header h2{{font-size:calc(18px + var(--modal-font-adjust) * 1px);color:var(--purlin-primary);margin:0;border:0;padding:0}}
 .modal-font-controls{{
   display:flex;align-items:center;gap:6px;flex-shrink:0;
 }}
@@ -2113,7 +2113,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   padding:0 14px;flex-shrink:0;
 }}
 .modal-tab{{
-  padding:6px 12px;font-size:11px;color:var(--purlin-dim);
+  padding:6px 12px;font-size:calc(11px + var(--modal-font-adjust) * 1px);color:var(--purlin-dim);
   cursor:pointer;border-bottom:2px solid transparent;
   font-family:inherit;background:none;border-top:0;border-left:0;border-right:0;
 }}
@@ -2121,7 +2121,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .modal-tab.active{{color:var(--purlin-accent);border-bottom-color:var(--purlin-accent)}}
 .modal-metadata{{
   padding:8px 14px 0;flex-shrink:0;
-  font-size:12px;font-family:var(--font-body);
+  font-size:calc(12px + var(--modal-font-adjust) * 1px);font-family:var(--font-body);
 }}
 .modal-metadata:empty{{display:none}}
 .modal-meta-row{{
@@ -2136,19 +2136,19 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .modal-body{{
   padding:14px;overflow-y:auto;overflow-x:hidden;flex:1;
   line-height:1.6;color:var(--purlin-muted);
-  font-size:calc(13px + var(--modal-font-adjust) * 1px);
+  font-size:calc(14px + var(--modal-font-adjust) * 1px);
   overflow-wrap:break-word;word-wrap:break-word;
 }}
 .modal-body h1,.modal-body h2,.modal-body h3{{color:var(--purlin-primary);margin:12px 0 6px}}
-.modal-body h1{{font-size:calc(16px + var(--modal-font-adjust) * 1px)}}
-.modal-body h2{{font-size:calc(14px + var(--modal-font-adjust) * 1px);border:0;padding:0}}
-.modal-body h3{{font-size:calc(12px + var(--modal-font-adjust) * 1px)}}
+.modal-body h1{{font-size:calc(17px + var(--modal-font-adjust) * 1px)}}
+.modal-body h2{{font-size:calc(15px + var(--modal-font-adjust) * 1px);border:0;padding:0}}
+.modal-body h3{{font-size:calc(13px + var(--modal-font-adjust) * 1px)}}
 .modal-body p{{margin:6px 0}}
 .modal-body ul,.modal-body ol{{margin:6px 0 6px 20px}}
 .modal-body li{{margin:2px 0}}
 .modal-body code{{
   background:var(--purlin-bg);padding:1px 4px;border-radius:2px;
-  font-size:calc(11px + var(--modal-font-adjust) * 1px);color:var(--purlin-accent);
+  font-size:calc(12px + var(--modal-font-adjust) * 1px);color:var(--purlin-accent);
 }}
 .modal-body pre{{background:var(--purlin-bg);padding:8px;border-radius:3px;overflow-x:auto;margin:6px 0}}
 .modal-body pre code{{padding:0;background:none}}
@@ -2875,22 +2875,22 @@ function openStepModal(stepId) {{
   var bodyEl = document.getElementById('step-modal-body');
   var source = (step.source || '').toUpperCase();
   var sourceBadge = source ? ('<span style="background:var(--purlin-tag-fill);border:1px solid var(--purlin-tag-outline);'
-    + 'font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;'
+    + 'font-family:var(--font-body);font-size:calc(10px + var(--modal-font-adjust) * 1px);font-weight:700;text-transform:uppercase;'
     + 'padding:0 4px;border-radius:2px;margin-left:8px;min-width:52px;text-align:center;display:inline-block">' + source + '</span>') : '';
   titleEl.innerHTML = step.friendly_name + sourceBadge;
 
   var html = '';
   if (step.description) {{
-    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">DESCRIPTION</div>';
-    html += '<div style="color:var(--purlin-primary);font-size:12px;line-height:1.5">' + step.description + '</div></div>';
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:calc(10px + var(--modal-font-adjust) * 1px);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">DESCRIPTION</div>';
+    html += '<div style="color:var(--purlin-primary);font-size:calc(12px + var(--modal-font-adjust) * 1px);line-height:1.5">' + step.description + '</div></div>';
   }}
   if (step.code !== null && step.code !== undefined) {{
-    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">CODE</div>';
-    html += '<pre style="background:var(--purlin-surface);padding:8px;border-radius:3px;border:1px solid var(--purlin-border);font-size:12px;color:var(--purlin-primary)">' + step.code + '</pre></div>';
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:calc(10px + var(--modal-font-adjust) * 1px);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">CODE</div>';
+    html += '<pre style="background:var(--purlin-surface);padding:8px;border-radius:3px;border:1px solid var(--purlin-border);font-size:calc(12px + var(--modal-font-adjust) * 1px);color:var(--purlin-primary)">' + step.code + '</pre></div>';
   }}
   if (step.agent_instructions !== null && step.agent_instructions !== undefined) {{
-    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">AGENT INSTRUCTIONS</div>';
-    html += '<div style="color:var(--purlin-primary);font-size:12px;line-height:1.5">' + step.agent_instructions + '</div></div>';
+    html += '<div style="margin-bottom:12px"><div style="font-family:var(--font-body);font-size:calc(10px + var(--modal-font-adjust) * 1px);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--purlin-muted);margin-bottom:4px">AGENT INSTRUCTIONS</div>';
+    html += '<div style="color:var(--purlin-primary);font-size:calc(12px + var(--modal-font-adjust) * 1px);line-height:1.5">' + step.agent_instructions + '</div></div>';
   }}
   bodyEl.innerHTML = html;
   document.getElementById('step-modal-overlay').classList.add('visible');
@@ -3764,7 +3764,7 @@ function openTombstoneModal(filePath, label) {{
       body.innerHTML =
         '<div style="background:var(--purlin-status-error);color:var(--purlin-surface);' +
         'padding:8px 14px;margin:-14px -14px 14px -14px;font-weight:bold;' +
-        'text-align:center;font-family:var(--font-body);font-size:13px;' +
+        'text-align:center;font-family:var(--font-body);font-size:calc(13px + var(--modal-font-adjust) * 1px);' +
         'letter-spacing:0.05em">READY FOR DELETION</div>' +
         marked.parse(md);
     }})
