@@ -345,7 +345,9 @@ All continuous mode status output renders into an **in-place terminal canvas** o
   - The stop is immediate -- it does not wait for the current phase to finish. Builder processes are terminated, not allowed to complete.
   - A second `SIGINT` during shutdown forces immediate exit. After the first `SIGINT` handler fires, the trap is reset to default (`trap - INT`) so standard bash behavior applies on the second signal.
 
-- **Exit summary:** The canvas is cleared one final time. The exit summary prints as **permanent output** (not in-place -- it stays on screen). This is the only output that persists after the command exits. Format:
+- **Exit summary:** The canvas is cleared one final time. The exit summary prints as **permanent output** (not in-place -- it stays on screen). This is the only output that persists after the command exits. The summary has two parts: the **phase table** (quick status overview) and the **work digest** (LLM-generated narrative summary).
+
+  **Part 1 — Phase table:**
 
 ```
 === Continuous Build Summary ===
@@ -362,8 +364,6 @@ Phases: 4/6 completed
 
 Retries: 1 (Phase 2)
 Parallel groups: 1
-Log files: .purlin/runtime/continuous_build_phase_*.log
-================================
 ```
 
   - Per-phase status: `COMPLETE`, `INTERRUPTED` (was running when stopped), `SKIPPED` (evaluator said stop), `PENDING` (never started).
@@ -371,8 +371,54 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
   - Per-phase feature list from the delivery plan.
   - Per-phase lines fit within and fill the detected terminal width. The feature list (last field) expands to consume all remaining width. When the feature list exceeds the available width, it wraps to a continuation line indented to the `features:` column position. Maximum 2 lines per phase; content exceeding 2 lines is truncated with `...`.
   - Retries called out by phase number.
-  - Log file location reminder.
   - Exit summary uses the same color palette: bold cyan header/footer, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED/failed, dim for durations.
+
+  **Part 2 — Work digest (LLM-summarized):**
+
+  After the phase table, the launcher calls Haiku to generate a concise narrative digest of what happened across all phases. This gives the user a human-readable understanding of the build without reading log files.
+
+  **Input:** For each completed/interrupted phase, extract the `result` field from the last JSON object with `"type": "result"` in the phase's log file. This is the Builder's own session-end summary. Collect all phase results plus the delivery plan into a single prompt.
+
+  **Prompt structure:**
+  ```
+  Summarize this continuous build run for a developer. Be concise (under 300 words).
+
+  Structure your response as:
+  1. **Overall:** One sentence — did it succeed, partially succeed, or fail?
+  2. **What was built:** Bullet list of the key changes across all phases (group related work, don't list every file).
+  3. **Issues:** Any problems, retries, escalations, INFEASIBLE tags, or DISCOVERY tags the Builders flagged. If none, say "None."
+  4. **Needs attention:** Anything that requires human action before the next run (manual scenarios awaiting QA, unresolved discoveries, features stuck in TODO). If none, say "None."
+
+  Do not include phase numbers or repeat the phase table. Focus on substance.
+  ```
+
+  **Invocation:** Same model and timeout as the evaluator (Haiku, 30-second timeout). On timeout or failure, skip the digest and print: `"(Work digest unavailable — see log files above)"`.
+
+  **Output format:** The digest prints below the phase table, separated by a blank line, with no header or box decoration. Plain text, no ANSI color. Followed by the log file location reminder and the closing `================================` line.
+
+  Example:
+
+```
+Overall: All 6 phases completed successfully. 8 features implemented, tested, and status-tagged.
+
+What was built:
+- Per-phase status updates during parallel execution (delivery plan updates in real time)
+- Port fallback logic for CDD server restarts
+- Aggregate report structural completeness tests for the Critic
+- Cytoscape edge click passthrough and theme-aware highlight colors in Spec Map
+- Startup control tests for auto-web scenario
+
+Issues:
+- Phase 2 retried once (context exhaustion mid-phase, succeeded on retry)
+- [DISCOVERY] fixture_repo_unavailable affecting 17+ features (environmental, not code)
+
+Needs attention:
+- cdd_agent_configuration.md has 1 manual scenario awaiting QA verification
+- Run QA to verify all completed features before next release
+
+Log files: .purlin/runtime/continuous_build_phase_*.log
+================================
+```
 
 - **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The status refresh output is also permanent (not canvas).
 
@@ -558,7 +604,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     When Phase 2 completes
     Then the full Builder output is written to .purlin/runtime/continuous_build_phase_2.log
 
-#### Scenario: Exit Summary Lists Per-Phase Details
+#### Scenario: Exit Summary Phase Table
     Given --continuous is active
     And 4 phases complete across 3 execution groups with 1 parallel group
     When the orchestration loop exits
@@ -567,7 +613,25 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the summary includes a completed/total phase count
     And the summary lists each phase with its label, status (COMPLETE/INTERRUPTED/SKIPPED/PENDING), duration, and feature list
     And the summary lists retries by phase number
-    And the summary includes the log file location pattern
+
+#### Scenario: Exit Summary Work Digest
+    Given --continuous is active
+    And phases have completed with log files containing Builder result messages
+    When the orchestration loop exits and the phase table has printed
+    Then the launcher extracts the result field from the last "type":"result" JSON object in each phase log
+    And sends all phase results plus the delivery plan to Haiku with the work digest prompt
+    And the digest prints below the phase table as plain text (no ANSI color, no box decoration)
+    And the digest contains sections: Overall, What was built, Issues, Needs attention
+    And the digest is under 300 words
+    And the log file location and closing line print after the digest
+
+#### Scenario: Work Digest Timeout Fallback
+    Given --continuous is active
+    And the Haiku digest call exceeds the 30-second timeout
+    When the exit summary prints
+    Then the phase table prints normally
+    And the digest is replaced with "(Work digest unavailable -- see log files above)"
+    And the log file location and closing line still print
 
 #### Scenario: Worktree Cleanup on Error
     Given --continuous is active with parallel phases running in worktrees
