@@ -63,7 +63,7 @@ The test suite uses `dev/setup_behavior_fixtures.sh` for test fixture preparatio
 - Assert patterns, not exact output. Claude may word things differently but the structural elements are deterministic:
   - Command table format (Unicode horizontal rules, command/description columns)
   - Presence/absence of work plan sections
-  - Specific phrases (e.g., "startup_sequence disabled -- awaiting instruction.")
+  - Specific phrases (e.g., "find_work disabled -- awaiting instruction.")
   - Checkpoint field echoing (feature name, protocol step number)
   - Correct command table variant (main vs collab)
 - Assertions use `grep -q` or `grep -c` against the JSON response text field.
@@ -91,7 +91,7 @@ The following manual scenarios are automated by this harness:
 1. Startup Print Sequence Appears First
 2. Expert Mode Bypasses Orientation
 3. Guided Mode Presents Work Plan
-4. Orient-Only Mode Skips Work Plan
+4. Auto Mode Begins Executing Immediately
 
 **From `pl_session_resume.md`:**
 5. Builder Mid-Feature Resume
@@ -116,10 +116,10 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/cdd_startup_controls/startup-print-sequence` | Default config (startup_sequence: true, recommend_next_actions: true) |
-| `main/cdd_startup_controls/expert-mode` | Config with startup_sequence: false, recommend_next_actions: false for builder |
-| `main/cdd_startup_controls/guided-mode` | Config with startup_sequence: true, recommend_next_actions: true for builder |
-| `main/cdd_startup_controls/orient-only-mode` | Config with startup_sequence: true, recommend_next_actions: false for builder |
+| `main/cdd_startup_controls/startup-print-sequence` | Default config (find_work: true, auto_start: false) |
+| `main/cdd_startup_controls/expert-mode` | Config with find_work: false, auto_start: false for builder |
+| `main/cdd_startup_controls/guided-mode` | Config with find_work: true, auto_start: false for builder |
+| `main/cdd_startup_controls/auto-mode` | Config with find_work: true, auto_start: true for builder |
 | `main/pl_session_resume/builder-mid-feature` | Checkpoint file showing builder at protocol step 2 for a feature |
 | `main/pl_session_resume/qa-mid-verification` | Checkpoint file showing QA at scenario 6 of 8 for a feature |
 | `main/pl_session_resume/full-reboot-no-launcher` | Project state with checkpoint but no system prompt (simulating non-launcher start) |
@@ -151,7 +151,7 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 
     Given the fixture tag "main/cdd_startup_controls/expert-mode" is checked out
     When claude --print is invoked with "Begin Builder session."
-    Then the output contains "startup_sequence disabled"
+    Then the output contains "find_work disabled"
     And the output does NOT contain a work plan or Critic report
 
 #### Scenario: Resume test echoes checkpoint fields

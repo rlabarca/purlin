@@ -22,14 +22,14 @@ The `/pl-agent-config` skill provides the ONLY sanctioned way for agents to modi
 ```
 
 - **role** (optional): `architect`, `builder`, or `qa`. If omitted, the current agent infers its own role from instruction context.
-- **key**: A dot-path key within the role's config block (e.g., `startup_sequence`, `model`, `effort`, `bypass_permissions`, `recommend_next_actions`).
+- **key**: A dot-path key within the role's config block (e.g., `find_work`, `model`, `effort`, `bypass_permissions`, `auto_start`).
 - **value**: The new value. Booleans are accepted as `true`/`false`. String values are accepted as-is.
 
 **Examples:**
 ```
-/pl-agent-config startup_sequence false           # sets for current role
+/pl-agent-config find_work false                   # sets for current role
 /pl-agent-config architect model claude-opus-4-6
-/pl-agent-config builder startup_sequence true
+/pl-agent-config builder auto_start true
 /pl-agent-config effort high                      # sets for current role
 ```
 
@@ -39,8 +39,8 @@ The skill MUST reject unknown keys with a clear error. Valid keys for any role a
 
 - `model` — must match an `id` in the `models` array in config
 - `effort` — must be one of `low`, `medium`, `high`
-- `startup_sequence` — must be `true` or `false`
-- `recommend_next_actions` — must be `true` or `false`
+- `find_work` — must be `true` or `false`
+- `auto_start` — must be `true` or `false`
 - `bypass_permissions` — must be `true` or `false`
 
 ### 2.3 Atomic Write
@@ -64,9 +64,9 @@ Because `config.local.json` is gitignored, no git commit is made after writing. 
 #### Scenario: Config Change Applied to Local Config
 
     Given the current branch is main
-    And .purlin/config.local.json has startup_sequence true for builder
-    When /pl-agent-config builder startup_sequence false is invoked
-    Then .purlin/config.local.json has startup_sequence false for builder
+    And .purlin/config.local.json has find_work true for builder
+    When /pl-agent-config builder find_work false is invoked
+    Then .purlin/config.local.json has find_work false for builder
     And .purlin/config.json is unchanged
     And no git commit is made
 

@@ -11,44 +11,44 @@
 
 ## 1. Overview
 
-Two per-agent boolean flags (`startup_sequence` and `recommend_next_actions`) control how much orientation an agent performs at session start. A startup print sequence (agent name + command vocabulary table) runs unconditionally at the beginning of every session, regardless of these flags.
+Two per-agent boolean flags (`find_work` and `auto_start`) control how much orientation an agent performs at session start. A startup print sequence (agent name + command vocabulary table) runs unconditionally at the beginning of every session, regardless of these flags.
 
-The flags allow expert users to bypass orientation and hand-holding while keeping new-project defaults fully guided.
+`find_work` controls whether the agent runs its full orientation and suggests a work plan. `auto_start` controls whether the agent begins executing immediately without waiting for user approval. The flags allow expert users to bypass orientation and hand-holding while keeping new-project defaults fully guided.
 
 
 ## 2. Requirements
 
 ### 2.1 Config Schema
 
-*   **New fields:** Each agent entry in `config.json` (`agents.architect`, `agents.builder`, `agents.qa`, `agents.pm`) gains two new boolean fields:
-    *   `startup_sequence` (boolean, default `true`): When `true`, the agent runs its full orientation at session start (status check, Critic report, dependency graph, triage). When `false`, the agent skips orientation and awaits a direct instruction.
-    *   `recommend_next_actions` (boolean, default `true`): When `true`, after orientation the agent presents a prioritized work plan and waits for approval before proceeding. When `false`, the agent orients silently and then awaits direction.
-*   **Invalid combination:** `startup_sequence: false` with `recommend_next_actions: true` is not meaningful. This combination MUST be rejected (see Section 2.3).
+*   **Fields:** Each agent entry in `config.json` (`agents.architect`, `agents.builder`, `agents.qa`, `agents.pm`) has two boolean fields:
+    *   `find_work` (boolean, default `true`): When `true`, the agent runs its full orientation at session start (status check, Critic report, dependency graph, triage) and presents a prioritized work plan. When `false`, the agent skips orientation and awaits a direct instruction.
+    *   `auto_start` (boolean, default `false`): When `true` (requires `find_work: true`), after presenting the work plan the agent begins executing immediately without waiting for user approval. When `false`, the agent waits for the user to approve or adjust the plan before proceeding.
+*   **Invalid combination:** `find_work: false` with `auto_start: true` is not meaningful. This combination MUST be rejected (see Section 2.3).
 *   **Valid combinations:**
 
-    | `startup_sequence` | `recommend_next_actions` | Behavior |
-    |--------------------|--------------------------|----------|
-    | `true` | `true` | Full guided session (default for new projects) |
-    | `true` | `false` | Agent orients, then awaits direction |
+    | `find_work` | `auto_start` | Behavior |
+    |-------------|--------------|----------|
+    | `true` | `false` | Guided session: orient, suggest work plan, wait for approval (default for new projects) |
+    | `true` | `true` | Auto mode: orient, suggest work plan, begin executing immediately |
     | `false` | `false` | Expert mode: print command table, await instruction |
     | `false` | `true` | **Invalid** |
 
-*   **Canonical schema extension** (both `config.json` and `purlin-config-sample/config.json` MUST be updated to add the new fields with defaults `true`):
+*   **Canonical schema extension** (both `config.json` and `purlin-config-sample/config.json` MUST be updated to include the new fields):
 
 ```json
 "agents": {
-    "pm":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": false, "recommend_next_actions": false },
-    "architect": { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
-    "builder":   { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true },
-    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "startup_sequence": true, "recommend_next_actions": true }
+    "pm":        { "model": "...", "effort": "...", "bypass_permissions": true, "find_work": true, "auto_start": false },
+    "architect": { "model": "...", "effort": "...", "bypass_permissions": true, "find_work": true, "auto_start": false },
+    "builder":   { "model": "...", "effort": "...", "bypass_permissions": true, "find_work": true, "auto_start": false },
+    "qa":        { "model": "...", "effort": "...", "bypass_permissions": true, "find_work": true, "auto_start": false }
 }
 ```
 
-*   **Fallback:** If either field is absent from `config.json`, the launcher MUST default both to `true`.
+*   **Fallback:** If either field is absent from `config.json`, the launcher MUST default `find_work` to `true` and `auto_start` to `false`.
 
 ### 2.2 Startup Print Sequence (Always-On)
 
-*   **Unconditional:** Every agent session begins by printing a command vocabulary table as its very first output, regardless of `startup_sequence` or `recommend_next_actions` values. This behavior is not configurable.
+*   **Unconditional:** Every agent session begins by printing a command vocabulary table as its very first output, regardless of `find_work` or `auto_start` values. This behavior is not configurable.
 *   **Format:** Agent name and status line, a Unicode horizontal rule, command rows (command left-aligned, description separated by consistent whitespace), a closing horizontal rule. Example for the Builder:
 
 ```
@@ -68,74 +68,74 @@ Purlin Builder — Ready
 
 ### 2.3 Launcher Validation
 
-*   Each launcher (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) MUST read `startup_sequence` and `recommend_next_actions` for its role from `config.json` at startup, before invoking Claude.
-*   **Invalid combination check:** When `startup_sequence` is `false` and `recommend_next_actions` is `true`, the launcher MUST print an error message to stderr describing the invalid combination and exit with status 1 without invoking Claude.
+*   Each launcher (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) MUST read `find_work` and `auto_start` for its role from `config.json` at startup, before invoking Claude.
+*   **Invalid combination check:** When `find_work` is `false` and `auto_start` is `true`, the launcher MUST print an error message to stderr describing the invalid combination and exit with status 1 without invoking Claude.
 *   **No behavioral injection:** The launchers do not conditionally modify the prompt or session message based on these flags. Actual conditional startup behavior is driven by the agent's instruction files (which read the flags from `config.json` directly).
 
 ### 2.4 Conditional Startup Behavior (Instruction-Driven)
 
-*   **How agents read their flags:** Each agent reads `startup_sequence` and `recommend_next_actions` from the resolved config (`config.local.json` if it exists, otherwise `config.json`) at session start using its standard Bash tool access, before executing any other startup step.
-*   **When `startup_sequence: true`:** Execute the full startup orientation sequence as currently specified in the role's instruction file (run `tools/cdd/status.sh`, read Critic report, check dependency graph, perform triage).
-*   **When `startup_sequence: false`:** Skip orientation entirely. After printing the command table, output a single line: `"startup_sequence disabled — awaiting instruction."` Then await user input.
-*   **When `recommend_next_actions: true` (requires `startup_sequence: true`):** After completing orientation, present the prioritized work plan and explicitly ask for confirmation or adjustment before proceeding.
-*   **When `recommend_next_actions: false` (with `startup_sequence: true`):** Complete orientation silently, then output a brief status summary (feature counts by status, open Critic items count), and await user direction without presenting a full work plan.
+*   **How agents read their flags:** Each agent reads `find_work` and `auto_start` from the resolved config (`config.local.json` if it exists, otherwise `config.json`) at session start using its standard Bash tool access, before executing any other startup step.
+*   **When `find_work: false`:** Skip orientation entirely. After printing the command table, output a single line: `"find_work disabled -- awaiting instruction."` Then await user input.
+*   **When `find_work: true` and `auto_start: false`:** Execute the full startup orientation sequence, present the prioritized work plan, and explicitly ask for confirmation or adjustment before proceeding.
+*   **When `find_work: true` and `auto_start: true`:** Execute the full startup orientation sequence, present the prioritized work plan, and begin executing the first item immediately without waiting for user approval.
 
 ### 2.5 Dashboard Toggle Controls
 
 *   **Location:** Within the existing Agents section (from `features/cdd_agent_configuration.md`), each agent row gains two checkbox controls appended to the right of the existing YOLO checkbox.
 *   **Controls per row:** Two checkboxes with no inline labels; each is identified by its column header in the section header row (see `cdd_agent_configuration.md` Section 2.1):
-    *   `startup_sequence` → column header **"Startup"** / **"Sequence"** (two lines)
-    *   `recommend_next_actions` → column header **"Suggest"** / **"Next"** (two lines)
-*   **Constraint enforcement:** When the user unchecks the Startup Sequence control, the Suggest Next checkbox for that agent MUST be simultaneously disabled and unchecked. Re-checking Startup Sequence re-enables Suggest Next to its previous state.
+    *   `find_work` -> column header **"Find"** / **"Work"** (two lines)
+    *   `auto_start` -> column header **"Auto"** / **"Start"** (two lines)
+*   **Constraint enforcement:** When the user unchecks the Find Work control, the Auto Start checkbox for that agent MUST be simultaneously disabled and unchecked. Re-checking Find Work re-enables Auto Start to its previous state.
 *   **Persistence:** Changes are written via `POST /config/agents` immediately, using the same debounce and pending-write-lock pattern as existing model/effort/YOLO controls (see `cdd_agent_configuration.md` Section 2.1).
 *   **Styling:** Native checkboxes using `accent-color: var(--purlin-accent)`. No inline label text is rendered beside the checkboxes in agent rows; column headers provide all identification.
-*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Startup/Sequence | Suggest/Next)`. Column alignment is consistent across all four agent rows per the grid rules in `cdd_agent_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
+*   **Grid layout:** The agent row grid extends by two columns: `(agent name | model | effort | YOLO | Find/Work | Auto/Start)`. Column alignment is consistent across all four agent rows per the grid rules in `cdd_agent_configuration.md` Section 2.1. Disabled controls use `opacity: 0.4` to signal unavailability; their column space is preserved.
 
 ### 2.6 API Extension
 
-*   **`POST /config/agents`:** The endpoint MUST accept `startup_sequence` and `recommend_next_actions` fields within each agent object. Validation rules:
+*   **`POST /config/agents`:** The endpoint MUST accept `find_work` and `auto_start` fields within each agent object. Validation rules:
     *   Both MUST be boolean if present.
-    *   The combination `startup_sequence: false` + `recommend_next_actions: true` for any agent MUST be rejected with HTTP 400.
-*   **`GET /status` (config portion):** The status endpoint response MUST include `startup_sequence` and `recommend_next_actions` in the agent config it returns, so the dashboard can restore checkbox state on load.
+    *   The combination `find_work: false` + `auto_start: true` for any agent MUST be rejected with HTTP 400.
+*   **`GET /status` (config portion):** The status endpoint response MUST include `find_work` and `auto_start` in the agent config it returns, so the dashboard can restore checkbox state on load.
 
 ### 2.7 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/cdd_startup_controls/all-disabled` | Project with startup_sequence false for all roles |
-| `main/cdd_startup_controls/expert-mode` | Project with both startup_sequence and recommend_next_actions disabled for all roles |
+| `main/cdd_startup_controls/all-disabled` | Project with find_work false for all roles |
+| `main/cdd_startup_controls/expert-mode` | Project with both find_work and auto_start disabled (false) for all roles |
+| `main/cdd_startup_controls/auto-mode` | Project with find_work true and auto_start true for all roles |
 
 ## 3. Scenarios
 
 ### Automated Scenarios
 
 #### Scenario: Launcher Rejects Invalid Flag Combination
-    Given config.json contains agents.builder with startup_sequence false and recommend_next_actions true
+    Given config.json contains agents.builder with find_work false and auto_start true
     When pl-run-builder.sh is executed
     Then the script prints an error message describing the invalid combination to stderr
     And exits with status 1
     And does not invoke the claude CLI
 
 #### Scenario: Launcher Accepts Valid Combinations Without Error
-    Given config.json contains agents.builder with startup_sequence true and recommend_next_actions false
+    Given config.json contains agents.builder with find_work true and auto_start false
     When pl-run-builder.sh is executed
     Then the script exits without an error related to startup controls
     And invokes the claude CLI normally
 
-#### Scenario: Launcher Defaults Missing Fields to True
-    Given config.json does not contain startup_sequence or recommend_next_actions for agents.architect
+#### Scenario: Launcher Defaults Missing Fields
+    Given config.json does not contain find_work or auto_start for agents.architect
     When pl-run-architect.sh reads agent config
-    Then AGENT_STARTUP defaults to true
-    And AGENT_RECOMMEND defaults to true
+    Then AGENT_FIND_WORK defaults to true
+    And AGENT_AUTO_START defaults to false
 
 #### Scenario: API Rejects Invalid Combination
-    Given a POST /config/agents request body where agents.qa has startup_sequence false and recommend_next_actions true
+    Given a POST /config/agents request body where agents.qa has find_work false and auto_start true
     When the endpoint processes the request
     Then it returns HTTP 400
     And config.json is not modified
 
 #### Scenario: API Accepts Valid Payload
-    Given a POST /config/agents request body with startup_sequence true and recommend_next_actions false for all agents
+    Given a POST /config/agents request body with find_work true and auto_start false for all agents
     When the endpoint processes the request
     Then it returns HTTP 200
     And config.json is updated with the new values
@@ -147,40 +147,39 @@ Purlin Builder — Ready
     And the table includes the shared commands and all role-specific commands
 
 #### Scenario: Expert Mode Bypasses Orientation (auto-test-only)
-    Given agents.builder has startup_sequence false and recommend_next_actions false in config.json
+    Given agents.builder has find_work false and auto_start false in config.json
     When the Builder is launched
     Then the command table is printed first
-    And the agent outputs "startup_sequence disabled — awaiting instruction."
+    And the agent outputs "find_work disabled -- awaiting instruction."
     And no status check, Critic report, or dependency graph analysis is performed
 
 #### Scenario: Guided Mode Presents Work Plan (auto-test-only)
-    Given agents.builder has startup_sequence true and recommend_next_actions true in config.json
+    Given agents.builder has find_work true and auto_start false in config.json
     When the Builder is launched
     Then orientation runs in full
     And a prioritized work plan is presented
     And the agent explicitly asks for confirmation or adjustment before beginning work
 
-#### Scenario: Orient-Only Mode Skips Work Plan (auto-test-only)
-    Given agents.builder has startup_sequence true and recommend_next_actions false in config.json
+#### Scenario: Auto Mode Begins Executing Immediately (auto-test-only)
+    Given agents.builder has find_work true and auto_start true in config.json
     When the Builder is launched
     Then orientation runs in full
-    And a brief status summary is output
-    And no work plan is presented; the agent awaits user direction
+    And a prioritized work plan is presented
+    And the agent begins executing the first item immediately without asking for approval
 
 #### Scenario: Dashboard Toggle Controls Render in Agents Section (auto-web)
     Given the CDD Dashboard is loaded and the Agents section is expanded
     When the user views any agent row
-    Then the Startup Sequence and Suggest Next checkboxes appear to the right of YOLO
+    Then the Find Work and Auto Start checkboxes appear to the right of YOLO
     And their column headers appear in the section header row on two lines each
     And their checked state matches the values in config.json
 
-#### Scenario: Suggest Next Disables When Startup Sequence Unchecked (auto-web)
+#### Scenario: Auto Start Disables When Find Work Unchecked (auto-web)
     Given the Agents section is expanded
-    When the user unchecks the Startup Sequence control for an agent
-    Then the Suggest Next checkbox for that agent is immediately disabled and unchecked
-    And POST /config/agents is called with startup_sequence false and recommend_next_actions false for that agent
+    When the user unchecks the Find Work control for an agent
+    Then the Auto Start checkbox for that agent is immediately disabled and unchecked
+    And POST /config/agents is called with find_work false and auto_start false for that agent
 
 ### Manual Scenarios (Human Verification Required)
 
 None.
-

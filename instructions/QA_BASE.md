@@ -42,7 +42,7 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 ### 3.0 Startup Print Sequence (Always-On)
 
-Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `find_work` or `auto_start` config values.
 
 **Step 1 — Detect branch state:**
 Run: `git rev-parse --abbrev-ref HEAD`
@@ -58,11 +58,11 @@ Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do 
 
 ### 3.0.1 Read Startup Flags
 
-After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `startup_sequence` and `recommend_next_actions` for the `qa` role. Default both to `true` if absent.
+After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `find_work` and `auto_start` for the `qa` role. Default `find_work` to `true` and `auto_start` to `false` if absent.
 
-*   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
-*   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 3.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full verification plan (skip steps 3.2–3.3).
-*   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 3.1–3.3 in full (default guided behavior).
+*   **If `find_work: false`:** Output `"find_work disabled -- awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
+*   **If `find_work: true` and `auto_start: false`:** Proceed with steps 3.1–3.3 in full (gather state, identify targets, wait for approval before executing verification).
+*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 3.1–3.2 (gather state, identify targets), then begin executing verification immediately without step 3.3 approval. The 3.3a auto-pass runs unconditionally under `find_work: true`.
 
 ### 3.1 Gather Project State
 Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:
@@ -77,7 +77,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   If a delivery plan exists at `.purlin/cache/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
 
 ### 3.3 Execute Verification
-*   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). AFT categories (AFT:Web, AFT:TestOnly, AFT:Skip) are Builder-owned -- QA does not re-verify them. When `recommend_next_actions` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
+*   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). AFT categories (AFT:Web, AFT:TestOnly, AFT:Skip) are Builder-owned -- QA does not re-verify them. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
 *   **3.3b Interactive pass:** Proceed to human-required items using the appropriate verification mode (see Section 5). Walk the user through each remaining feature's manual scenarios and visual spec items.
 
 ## 4. Discovery Protocol

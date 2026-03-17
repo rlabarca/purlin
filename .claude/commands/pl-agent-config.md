@@ -9,14 +9,14 @@ Modify agent configuration in `.purlin/config.local.json`. No git commit is made
 ```
 
 **role** (optional): `architect`, `builder`, `qa`, or `pm`. Defaults to the current agent's role.
-**key**: `model`, `effort`, `startup_sequence`, `recommend_next_actions`, or `bypass_permissions`.
+**key**: `model`, `effort`, `find_work`, `auto_start`, or `bypass_permissions`.
 **value**: The new value (booleans: `true`/`false`; model IDs as strings; effort as `low`/`medium`/`high`).
 
 **Examples:**
 ```
-/pl-agent-config startup_sequence false
+/pl-agent-config find_work false
 /pl-agent-config architect model claude-opus-4-6
-/pl-agent-config builder startup_sequence true
+/pl-agent-config builder auto_start true
 /pl-agent-config qa effort medium
 ```
 
@@ -43,13 +43,13 @@ Valid keys and their accepted values:
 |-----|----------------|
 | `model` | Any `id` from the `models` array in config |
 | `effort` | `low`, `medium`, `high` |
-| `startup_sequence` | `true`, `false` |
-| `recommend_next_actions` | `true`, `false` |
+| `find_work` | `true`, `false` |
+| `auto_start` | `true`, `false` |
 | `bypass_permissions` | `true`, `false` |
 
 If `<key>` is not in this list, abort:
 ```
-Error: Unknown key '<key>'. Valid keys: model, effort, startup_sequence, recommend_next_actions, bypass_permissions
+Error: Unknown key '<key>'. Valid keys: model, effort, find_work, auto_start, bypass_permissions
 ```
 
 For `model` values: read the `models` array from the resolved config and validate that `<value>` matches one of the `id` fields. If not, abort listing the valid model IDs.

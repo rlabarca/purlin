@@ -20,7 +20,7 @@ When you are launched, execute this sequence automatically (do not wait for the 
 
 ### 2.0 Startup Print Sequence (Always-On)
 
-Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `startup_sequence` or `recommend_next_actions` config values.
+Before executing any other step in this startup protocol, detect the current branch and print the appropriate command vocabulary table as your very first output. This runs regardless of `find_work` or `auto_start` config values.
 
 **Step 1 — Detect branch state:**
 Run: `git rev-parse --abbrev-ref HEAD`
@@ -34,11 +34,11 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 
 ### 2.0.1 Read Startup Flags
 
-After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `startup_sequence` and `recommend_next_actions` for the `builder` role. Default both to `true` if absent.
+After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `find_work` and `auto_start` for the `builder` role. Default `find_work` to `true` and `auto_start` to `false` if absent.
 
-*   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 2.1–2.3.
-*   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 2.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full work plan (skip steps 2.2–2.3).
-*   **If `startup_sequence: true` and `recommend_next_actions: true`:** Proceed with steps 2.1–2.3 in full (default guided behavior).
+*   **If `find_work: false`:** Output `"find_work disabled -- awaiting instruction."` and await user input. Do NOT proceed with steps 2.1–2.3.
+*   **If `find_work: true` and `auto_start: false`:** Proceed with steps 2.1–2.3 in full (gather state, propose work plan, wait for approval).
+*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing the first item immediately without step 2.3 approval.
 
 ### 2.1 Gather Project State
 Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:

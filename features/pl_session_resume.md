@@ -184,10 +184,10 @@ Execute the state-gathering sequence defined in `instructions/references/startup
 - Skip Cold-Start Extensions. The checkpoint's work plan already incorporates this context. Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
 
 **Startup flag handling (cold start only):**
-When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `startup_sequence` and `recommend_next_actions` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
-- `startup_sequence: false` -- output `"startup_sequence disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
-- `recommend_next_actions: false` -- present only a brief status summary (feature counts, open Critic items) instead of a full work plan. Await user direction.
-- Both `true` (default) -- proceed with full work plan generation.
+When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `find_work` and `auto_start` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
+- `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
+- `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
+- `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
 
 When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
 
@@ -379,11 +379,10 @@ Uncommitted:    [none | summary]
 #### Scenario: Cold Start Respects Startup Flags
 
     Given .purlin/cache/session_checkpoint_builder.md does not exist
-    And .purlin/config.json sets recommend_next_actions to false for the builder role
+    And .purlin/config.json sets find_work to false for the builder role
     When the agent invokes /pl-resume builder
     Then the core state-gathering sequence runs
-    And the cold-start extensions run
-    And the recovery summary displays a brief status summary
+    And the recovery summary displays "find_work disabled -- awaiting instruction."
     And the agent does not auto-generate a full work plan
     And the agent awaits user direction
 
