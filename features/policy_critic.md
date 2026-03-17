@@ -208,7 +208,7 @@ A lifecycle reset to TODO occurs when the feature spec is modified after the las
 **Detection:** When computing `qa_status` and `lifecycle_state == 'complete'`, the Critic MUST:
 1.  Parse the feature's scenarios and count manual scenarios.
 2.  If manual scenarios > 0, determine the most recent lifecycle reset point: the timestamp of the latest spec-modifying commit that post-dates the previous `[Complete]` or `[Testing]` status commit. If no status commit exists, the reset point is epoch zero (all TESTING-phase commits qualify).
-3.  Search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` whose timestamp is **after** the reset point determined in step 2.
+3.  Search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` whose timestamp is **at or after** the reset point determined in step 2.
 4.  If no such post-reset TESTING-phase commit exists, set `qa_status = 'TODO'`.
 5.  If a post-reset TESTING-phase commit IS found, additionally check that the most recent post-reset `[Complete]` commit for this feature contains the `[Verified]` tag.
 6.  If the `[Complete]` commit lacks `[Verified]`, set `qa_status = 'TODO'`.
