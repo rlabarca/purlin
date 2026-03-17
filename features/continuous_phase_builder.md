@@ -52,7 +52,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
-- **Post-group status update:** The orchestrator updates the delivery plan centrally after each group completes (not per-Builder), marking completed phases as `[COMPLETE]`.
+- **Per-phase status update:** The orchestrator monitors each parallel Builder process. As soon as an individual Builder exits successfully (exit code 0), the orchestrator immediately updates the delivery plan on the main branch to mark that phase as `[COMPLETE]` and commits the change. This happens while other Builders in the group are still running — the orchestrator does not wait for the full group to finish. This keeps CDD metrics (`K DONE | N RUNNING`) accurate in real time. The delivery plan file lives on the main branch and is not modified by worktree Builders (they use amendment files), so the orchestrator can safely write to it at any time. For Builders that exit non-zero, the phase remains `[IN_PROGRESS]` until the evaluator decides to retry or stop.
 
 ### 2.5 LLM Evaluator
 
@@ -590,11 +590,13 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the phase analyzer includes Phase 2 in execution planning
     And the CDD dashboard shows 0 RUNNING (not 1)
 
-#### Scenario: Delivery Plan Updated Centrally After Group
-    Given --continuous is active with parallel phases
-    When all Builders in a parallel group complete
-    Then the orchestrator updates the delivery plan to mark completed phases as COMPLETE
-    And individual Builders do not modify the delivery plan during parallel execution
+#### Scenario: Per-Phase Status Update During Parallel Execution
+    Given --continuous is active with Phases 2 and 3 running in parallel
+    When Phase 2 Builder exits successfully while Phase 3 is still running
+    Then the orchestrator immediately marks Phase 2 as COMPLETE in the delivery plan
+    And commits the delivery plan update to git
+    And CDD metrics reflect 1 DONE and 1 RUNNING (not 0 DONE and 2 RUNNING)
+    And individual Builders do not modify the delivery plan during parallel execution (amendment files only)
 
 #### Scenario: Builder Adds QA Fix Phase Mid-Execution
     Given --continuous is active with Phases 1, 2, 3 PENDING
