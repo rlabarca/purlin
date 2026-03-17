@@ -508,6 +508,30 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
         self.assertIn('agent-chk-lbl', html)
         self.assertIn('.agent-chk-lbl.disabled', html)
 
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_suggest_next_disables_when_startup_sequence_unchecked(self, mock_run, mock_status):
+        """Suggest Next checkbox disables when Startup Sequence is unchecked.
+
+        Verifies the dashboard JS contains disable logic: when the startup
+        sequence checkbox is unchecked, the suggest-next (recommend) checkbox
+        must be set to disabled=true and checked=false.
+        """
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # Verify JS contains the disable logic for recommend when startup unchecked
+        self.assertIn('recommendChk.disabled = true', html,
+                       'Missing JS to disable suggest-next when startup unchecked')
+        self.assertIn('recommendChk.checked = false', html,
+                       'Missing JS to uncheck suggest-next when startup unchecked')
+        # Verify re-enable logic when startup is re-checked
+        self.assertIn('recommendChk.disabled = false', html,
+                       'Missing JS to re-enable suggest-next when startup re-checked')
+        # Verify the disabled class is applied for visual feedback
+        self.assertIn("classList.add('disabled')", html,
+                       'Missing disabled class toggle for suggest-next label')
+
 
 class TestConfigSchemaDefaults(unittest.TestCase):
     """Verify the config files include startup control defaults."""
