@@ -1,5 +1,49 @@
 # Release Notes
 
+### v0.8.2 — 2026-03-17
+
+**PM Agent Role**
+- Full PM role with launcher, Critic/CDD column, command routing, and PM-first agent ordering
+
+**Figma Design Pipeline**
+- Figma MCP integration for design ingest and audit with Token Map + brief.json pipeline
+- Identity token auto-detection and annotation extraction during ingestion
+- Code Connect and Dev Mode lifecycle integration
+
+**Continuous Phase Builder**
+- Terminal canvas engine with width-aware rendering and SIGWINCH resize
+- Stale IN_PROGRESS reset on startup, log tail activity display, macOS line buffering fallback
+- Graceful SIGINT stop, bootstrap session without delivery plan, dynamic plan handling
+- Stacked approval table for narrow terminals
+
+**CDD Dashboard**
+- Shared text-based modal infrastructure with metadata tag extraction
+- PM as fourth role column, delivery phase API with parallel/dynamic phase awareness
+
+**Automated Feedback Tests (AFT)**
+- New AFT pattern; `pl-web-verify` renamed to `pl-aft-web`
+
+**Tools**
+- Phase Analyzer for delivery plan processing
+- `pl-update-purlin` diff-tree speed optimization
+- `pl-session-resume` PM support and startup flag awareness
+- Per-role launcher specs split with shared common spec
+
+**Fixes**
+- Critic: NameError fix, circular prerequisite fix, requirements-section change detection
+- CDD: JS/Python f-string escaping, PM-first column alignment, modal overflow fix
+- Instructions: strengthened zero-code mandates, fixed PM sidecar contradiction
+- Overrides: updated stale submodule reference paths
+
+**Builder Quality**
+- Critic now enforces that tests must break when the behavior they cover is removed -- tests that pass without their implementation are flagged
+
+**Architecture**
+- Unified role status model in `critic_role_status.md`
+- Deep spec-code audit: remediated 11 features and 7 anchors
+- SPEC_DISPUTE routing with PM/Architect handoff
+- Owner metadata tag for feature routing
+
 ### v0.8.1 — 2026-03-09
 
 **Discovery Sidecar Files**

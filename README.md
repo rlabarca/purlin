@@ -2,7 +2,7 @@
 
 ![Purlin Logo](assets/purlin-logo.svg)
 
-## Current Release: v0.8.1 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
+## Current Release: v0.8.2 &mdash; [RELEASE NOTES](RELEASE_NOTES.md)
 
 **Collaborative Design-Driven Agentic Development Framework**
 
