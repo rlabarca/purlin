@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 68 automated scenarios.
+"""Tests for continuous phase builder — exercises all 70 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -1279,11 +1279,11 @@ def test_logging_per_phase():
 
 
 # ============================================================
-# Scenario: Exit Summary Lists Per-Phase Details
+# Scenario: Exit Summary Phase Table
 # ============================================================
-def test_exit_summary_per_phase_details():
-    """Exit summary includes status line, duration, phase count, per-phase details,
-    retries, parallel groups, and log file location."""
+def test_exit_summary_phase_table():
+    """Exit summary includes status line, duration, phase count, per-phase details
+    with dynamic column widths that fill terminal width, retries, and parallel groups."""
     tmpdir = tempfile.mkdtemp()
     try:
         plan = make_plan([
@@ -1313,7 +1313,7 @@ def test_exit_summary_per_phase_details():
         ok = (has_status_line and has_duration and has_phase_count and
               has_per_phase and has_retries and has_parallel and has_log_files and
               has_complete_status and has_features)
-        record("Exit Summary Lists Per-Phase Details", ok,
+        record("Exit Summary Phase Table", ok,
                f"status={has_status_line}, dur={has_duration}, count={has_phase_count}, "
                f"per_phase={has_per_phase}, retries={has_retries}, parallel={has_parallel}, "
                f"logs={has_log_files}, complete={has_complete_status}, feats={has_features}, "
@@ -1323,14 +1323,96 @@ def test_exit_summary_per_phase_details():
 
 
 # ============================================================
+# Scenario: Exit Summary Work Digest
+# ============================================================
+def test_exit_summary_work_digest():
+    """Exit summary includes an LLM-generated work digest below the phase table.
+    Extracts 'result' from phase log stream-json, sends to Haiku, prints as plain text."""
+    source = read_launcher()
+
+    # Verify the work digest generation function exists
+    has_digest_fn = 'generate_work_digest' in source
+    # Verify it extracts result from stream-json logs
+    has_result_extraction = '"type":"result"' in source or "'type':'result'" in source
+    # Verify it calls Haiku (uses HAIKU_MODEL variable)
+    has_haiku_call = 'HAIKU_MODEL' in source and 'claude --print --model' in source
+    # Verify digest prompt contains required sections
+    has_prompt_sections = all(s in source for s in [
+        'Overall:', 'What was built:', 'Issues:', 'Needs attention:'
+    ])
+    # Verify digest prints after phase table and before closing line
+    # Footer uses dynamic width: printf ... tr ' ' '='
+    has_correct_ordering = bool(re.search(
+        r'generate_work_digest.*?Log files:.*?tr .* =',
+        source,
+        re.DOTALL
+    ))
+    # Verify plain text output (no ANSI in digest)
+    has_plain_text_note = 'no ANSI color' in source.lower() or 'plain text' in source.lower()
+
+    ok = (has_digest_fn and has_result_extraction and has_haiku_call and
+          has_prompt_sections and has_correct_ordering)
+    record("Exit Summary Work Digest", ok,
+           f"fn={has_digest_fn}, result_extract={has_result_extraction}, "
+           f"haiku={has_haiku_call}, sections={has_prompt_sections}, "
+           f"ordering={has_correct_ordering}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Work Digest Timeout Fallback
+# ============================================================
+def test_work_digest_timeout_fallback():
+    """When the Haiku digest call exceeds 30s timeout, the phase table prints normally
+    and the digest is replaced with a fallback message."""
+    source = read_launcher()
+
+    # Verify timeout handling exists for the digest call
+    has_timeout_handling = bool(re.search(
+        r'timeout\s+30.*?claude.*?HAIKU_MODEL.*?digest|'
+        r'gtimeout\s+30.*?claude.*?digest|'
+        r'dwaited.*?30.*?digest',
+        source,
+        re.DOTALL | re.IGNORECASE
+    ))
+
+    # Verify the 30-second timeout with fallback chain (timeout/gtimeout/manual)
+    has_timeout_chain = ('timeout 30' in source or 'gtimeout 30' in source) and 'dwaited' in source
+
+    # Verify fallback message when digest fails
+    has_fallback_msg = 'Work digest unavailable' in source
+
+    # Verify log file location still prints after fallback
+    has_log_after_fallback = bool(re.search(
+        r'Work digest unavailable.*?Log files:',
+        source,
+        re.DOTALL
+    ))
+
+    # Verify closing line still prints (footer uses dynamic width: tr ' ' '=')
+    has_closing_after_fallback = bool(re.search(
+        r'Log files:.*?tr .* =',
+        source,
+        re.DOTALL
+    ))
+
+    ok = (has_timeout_chain and has_fallback_msg and
+          has_log_after_fallback and has_closing_after_fallback)
+    record("Work Digest Timeout Fallback", ok,
+           f"timeout_chain={has_timeout_chain}, fallback={has_fallback_msg}, "
+           f"log_after={has_log_after_fallback}, closing={has_closing_after_fallback}"
+           if not ok else "")
+
+
+# ============================================================
 # Scenario: Worktree Cleanup on Error
 # ============================================================
 def test_worktree_cleanup():
     """On error during parallel group, all worktrees are cleaned up."""
     source = read_launcher()
 
-    # Verify cleanup logic exists in the trap handler
-    has_trap_cleanup = 'trap cleanup EXIT' in source
+    # Verify cleanup logic exists in trap handlers (original + fallback)
+    has_trap_cleanup = ('trap cleanup EXIT' in source or
+                        'trap print_fallback_summary EXIT' in source)
     has_worktree_cleanup = 'worktree remove' in source
 
     # Verify cleanup after merge failure
@@ -1985,15 +2067,17 @@ exit 0
 
         proc = run_launcher(tmpdir, mock_bin_dir, ['--continuous'])
 
-        # Check that amendments were applied to the delivery plan
+        # Check that amendments were applied — either in the plan file (if it still exists)
+        # or evidenced by phases 7/8 running (visible in stderr).
+        # The plan may be deleted at end-of-run if all phases complete successfully.
         plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
         plan_content = ""
         if os.path.exists(plan_path):
             with open(plan_path) as f:
                 plan_content = f.read()
 
-        has_phase_7 = 'Phase 7' in plan_content
-        has_phase_8 = 'Phase 8' in plan_content
+        has_phase_7 = 'Phase 7' in plan_content or 'Phases 7' in proc.stderr
+        has_phase_8 = 'Phase 8' in plan_content or 'Phases 7 8' in proc.stderr or 'Phases 8' in proc.stderr
 
         ok = has_phase_7 and has_phase_8
         record("Parallel Builders Both Request Plan Amendments", ok,
@@ -2962,7 +3046,7 @@ def test_canvas_clears_before_final_summary():
     has_canvas_clear = 'canvas_clear' in summary_section
     # canvas_clear should come before the summary header
     clear_pos = summary_section.find('canvas_clear')
-    header_pos = summary_section.find('=== Continuous Build Summary ===')
+    header_pos = summary_section.find('=== Continuous Build Summary')
     has_clear_before_header = (clear_pos >= 0 and header_pos >= 0 and clear_pos < header_pos)
     # Verify exit summary uses colored output
     has_colored_header = 'C_BOLD_CYAN' in summary_section
@@ -3489,6 +3573,8 @@ exit 0
             with open(plan_path) as f:
                 plan_content = f.read()
 
+        # Plan may be deleted at end-of-run if all phases complete. Check plan OR
+        # git commit log for evidence of per-phase COMPLETE updates.
         has_phase_2_complete = bool(re.search(r'## Phase 2 -- .+? \[COMPLETE\]', plan_content))
         has_phase_3_complete = bool(re.search(r'## Phase 3 -- .+? \[COMPLETE\]', plan_content))
 
@@ -3500,6 +3586,12 @@ exit 0
                 git_log = f.read()
         has_phase_2_commit = 'mark phase 2 as COMPLETE' in git_log
         has_phase_3_commit = 'mark phase 3 as COMPLETE' in git_log
+
+        # If plan was deleted (all phases complete), commits prove the phases were marked
+        if not has_phase_2_complete:
+            has_phase_2_complete = has_phase_2_commit
+        if not has_phase_3_complete:
+            has_phase_3_complete = has_phase_3_commit
 
         # Verify the monitoring loop exists (per-phase update before merge)
         source = read_launcher()
@@ -4088,7 +4180,9 @@ if __name__ == '__main__':
     test_system_prompt_overrides()
     test_phase_specific_assignment()
     test_logging_per_phase()
-    test_exit_summary_per_phase_details()
+    test_exit_summary_phase_table()
+    test_exit_summary_work_digest()
+    test_work_digest_timeout_fallback()
     test_worktree_cleanup()
 
     # Dynamic Delivery Plan Handling (Section 2.13) (8)

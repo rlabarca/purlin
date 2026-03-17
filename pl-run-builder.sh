@@ -189,6 +189,35 @@ purge_stale_runtime_artifacts() {
 }
 purge_stale_runtime_artifacts
 
+# --- Helper: check if all delivery plan phases are COMPLETE ---
+all_phases_complete() {
+    [ -f "$DELIVERY_PLAN" ] || return 1
+    local total complete
+    total=$(python3 -c "
+import re
+with open('$DELIVERY_PLAN') as f:
+    content = f.read()
+print(len(re.findall(r'## Phase \d+ -- .+? \[(PENDING|IN_PROGRESS|COMPLETE)\]', content)))
+" 2>/dev/null || echo "0")
+    complete=$(python3 -c "
+import re
+with open('$DELIVERY_PLAN') as f:
+    content = f.read()
+print(len(re.findall(r'## Phase \d+ -- .+? \[COMPLETE\]', content)))
+" 2>/dev/null || echo "0")
+    [ "$total" -gt 0 ] && [ "$total" = "$complete" ]
+}
+
+# --- Startup cleanup: remove stale all-COMPLETE delivery plan ---
+# If every phase is COMPLETE, the previous run failed to clean up.
+# Delete the plan so bootstrap can create a fresh one if needed.
+if all_phases_complete; then
+    echo "Removing fully-completed delivery plan from previous run." >&2
+    rm -f "$DELIVERY_PLAN"
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+    git -C "$SCRIPT_DIR" commit -m "chore: remove stale delivery plan (all phases already complete)" 2>/dev/null
+fi
+
 # Evaluator JSON schema
 EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","stop"]},"reason":{"type":"string"}},"required":["action","reason"]}'
 
@@ -1009,10 +1038,10 @@ else:
             return [line1, rest]
         return [line1, rest[:max(width - 3, 0)] + '...']
 
-    hdr = '  {:<4s} {:<{}s} {:<{}s} {}'.format('#', 'Label', label_w, 'Features', feat_w, 'Exec Group')
-    out.append('{0}{1}{2}'.format(BOLD_CYAN, hdr[:cols], RESET))
-    sep = '  {:<4s} {:<{}s} {:<{}s} {}'.format('---', '-' * label_w, label_w, '-' * feat_w, feat_w, '-' * exec_w)
-    out.append('{0}{1}{2}'.format(GREEN, sep[:cols], RESET))
+    hdr = '  {:<4s} {:<{}s} {:<{}s} {:<{}s}'.format('#', 'Label', label_w, 'Features', feat_w, 'Exec Group', exec_w)
+    out.append('{0}{1}{2}'.format(BOLD_CYAN, hdr[:cols].ljust(cols), RESET))
+    sep = '  {:<4s} {:<{}s} {:<{}s} {:<{}s}'.format('---', '-' * label_w, label_w, '-' * feat_w, feat_w, '-' * exec_w, exec_w)
+    out.append('{0}{1}{2}'.format(GREEN, sep[:cols].ljust(cols), RESET))
 
     for pnum in sorted(phases_info.keys()):
         info = phases_info[pnum]
@@ -1039,17 +1068,17 @@ else:
             f = feat_lines[row] if row < len(feat_lines) else ''
             e = exec_lines[row] if row < len(exec_lines) else ''
             if row == 0:
-                line = '  {:<4d} {:<{}s} {:<{}s} {}'.format(pnum, l, label_w, f, feat_w, e)
+                line = '  {:<4d} {:<{}s} {:<{}s} {:<{}s}'.format(pnum, l, label_w, f, feat_w, e, exec_w)
             else:
-                line = '  {:<4s} {:<{}s} {:<{}s} {}'.format('', l, label_w, f, feat_w, e)
-            out.append(line[:cols])
+                line = '  {:<4s} {:<{}s} {:<{}s} {:<{}s}'.format('', l, label_w, f, feat_w, e, exec_w)
+            out.append(line[:cols].ljust(cols))
 
 out.append('')
 if parallel_groups:
     pg_strs = ['+'.join(str(p) for p in pg) for pg in parallel_groups]
-    out.append('Parallel groups: {0} (Phases {1})'.format(len(parallel_groups), ', Phases '.join(pg_strs)))
-out.append('Review at .purlin/cache/delivery_plan.md')
-out.append('{0}================================{1}'.format(BOLD_CYAN, RESET))
+    out.append('Parallel groups: {0} (Phases {1})'.format(len(parallel_groups), ', Phases '.join(pg_strs)).ljust(cols))
+out.append('Review at .purlin/cache/delivery_plan.md'.ljust(cols))
+out.append('{0}{1}{2}'.format(BOLD_CYAN, '=' * cols, RESET))
 
 print('\n'.join(out), file=sys.stderr)
 
@@ -1568,9 +1597,52 @@ while [ "$OUTER_BREAK" = "false" ]; do
     fi
 done
 
+# --- End-of-run cleanup: delete delivery plan when all phases COMPLETE ---
+# Prevents stale all-COMPLETE plans from blocking the next --continuous run.
+if [ "$STOP_REQUESTED" = "false" ] && [ ${#FAILURES[@]} -eq 0 ] && all_phases_complete; then
+    rm -f "$DELIVERY_PLAN"
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+    git -C "$SCRIPT_DIR" commit -m "chore: remove delivery plan (all phases complete)" 2>/dev/null
+fi
+
 # ================================================================
 # Exit Summary (Section 2.17)
 # ================================================================
+
+EXIT_SUMMARY_PRINTED=false
+
+# Safety trap: if the script dies before reaching the exit summary (unexpected
+# error, unhandled signal), print a minimal fallback summary so the user knows
+# what happened and where to look.
+print_fallback_summary() {
+    local exit_code=$?
+    # Always run the original cleanup (temp files, worktrees)
+    cleanup 2>/dev/null
+    # Skip summary if the normal exit path already printed it
+    [ "$EXIT_SUMMARY_PRINTED" = "true" ] && return
+    stop_canvas 2>/dev/null
+    echo "" >&2
+    echo "=== Continuous Build — Unexpected Exit (code $exit_code) ===" >&2
+    echo "" >&2
+    echo "The continuous builder exited before printing a full summary." >&2
+    echo "Phases completed: ${PHASES_COMPLETED:-0}/${INITIAL_PENDING_COUNT:-?}" >&2
+    if [ ${#FAILURES[@]:-0} -gt 0 ]; then
+        echo "Failures: ${FAILURES[*]}" >&2
+    fi
+    echo "" >&2
+    echo "What to do next:" >&2
+    echo "  1. Check log files: .purlin/runtime/continuous_build_phase_*.log" >&2
+    echo "  2. Run /pl-status to see current feature states" >&2
+    echo "  3. Re-run ./pl-run-builder.sh --continuous to resume" >&2
+    echo "" >&2
+    # Clean up runtime artifacts
+    rm -f "${RUNTIME_DIR}"/phase_*_meta "${RUNTIME_DIR}"/canvas_frozen_* \
+          "${RUNTIME_DIR}"/retry_count_* "${RUNTIME_DIR}"/plan_amendment_phase_*.json \
+          "${RUNTIME_DIR}/approval_table_lines" "${RUNTIME_DIR}/canvas_state" 2>/dev/null
+    # Reset stale IN_PROGRESS phases so next run doesn't skip them
+    reset_stale_in_progress 2>/dev/null
+}
+trap print_fallback_summary EXIT
 
 # Canvas clear before exit summary (permanent output)
 canvas_clear
@@ -1605,14 +1677,18 @@ else
     C_RESET=''
 fi
 
+update_term_width  # Refresh terminal width before rendering
+
 echo "" >&2
-printf "${C_BOLD_CYAN}=== Continuous Build Summary ===${C_RESET}\n" >&2
+SUMMARY_TITLE="=== Continuous Build Summary "
+SUMMARY_PAD=$(printf '%*s' "$((PURLIN_TERM_COLS - ${#SUMMARY_TITLE}))" '' | tr ' ' '=')
+printf "${C_BOLD_CYAN}%s${C_RESET}\n" "${SUMMARY_TITLE}${SUMMARY_PAD}" >&2
 echo "Status: $OVERALL_STATUS" >&2
 printf "Duration: ${C_DIM}${DURATION_STR}${C_RESET}\n" >&2
 echo "Phases: ${PHASES_COMPLETED}/${INITIAL_PENDING_COUNT} completed" >&2
 echo "" >&2
 
-# Per-phase details from metadata files and delivery plan
+# Per-phase details from metadata files and delivery plan (dynamic column widths)
 python3 -c "
 import os, re, sys, glob
 
@@ -1620,11 +1696,16 @@ runtime_dir = sys.argv[1]
 plan_path = sys.argv[2]
 is_tty = sys.argv[3] == 'true'
 
-# Terminal width for line wrapping (read from env var set by main process)
+# Read terminal width from shared file (same as canvas engine)
+term_width_file = os.path.join(runtime_dir, 'term_width')
 try:
-    cols = int(os.environ.get('PURLIN_TERM_COLS', '80'))
-except (ValueError, TypeError):
-    cols = 80
+    with open(term_width_file) as f:
+        cols = int(f.read().strip())
+except Exception:
+    try:
+        cols = int(os.environ.get('PURLIN_TERM_COLS', '80'))
+    except (ValueError, TypeError):
+        cols = 80
 
 # ANSI colors
 GREEN = '\033[32m' if is_tty else ''
@@ -1660,6 +1741,12 @@ if not phases:
                         meta[k] = v
             phases.append((pnum, meta.get('LABEL', ''), meta.get('FEATURES', '--')))
 
+if not phases:
+    print('  (no phase data available)', file=sys.stderr)
+    sys.exit(0)
+
+# Collect phase data with status and duration
+phase_data = []
 for pnum, label, features in sorted(phases):
     meta_file = os.path.join(runtime_dir, 'phase_{}_meta'.format(pnum))
     status = 'PENDING'
@@ -1682,8 +1769,32 @@ for pnum, label, features in sorted(phases):
                 dur_str = '{}m {}s'.format(mins, rem) if mins > 0 else '{}s'.format(secs)
             except ValueError:
                 pass
+    phase_data.append((pnum, label, status, dur_str, features))
 
-    # Color based on status
+# Compute dynamic column widths based on actual content
+max_pnum_w = max(len(str(p[0])) for p in phase_data)
+max_label_w = max(len(p[1]) for p in phase_data)
+max_status_w = max(len(p[2]) for p in phase_data)
+max_dur_w = max(len(p[3]) for p in phase_data) if any(p[3] for p in phase_data) else 0
+
+# Fixed structure: '  Phase N -- LABEL   STATUS   DURATION   features: FEATURES'
+# prefix = '  Phase ' + pnum + ' -- '
+prefix_w = 2 + 6 + max_pnum_w + 4  # '  Phase N -- '
+separator_w = 3 + max_status_w + 3 + max(max_dur_w, 1) + 3 + 10  # '   STATUS   DUR   features: '
+avail_for_label_and_feat = cols - prefix_w - separator_w
+
+# Cap label width so features get at least 15 chars
+if max_label_w > avail_for_label_and_feat - 15:
+    eff_label_w = max(avail_for_label_and_feat - 15, 8)
+else:
+    eff_label_w = max_label_w
+
+feat_start_col = prefix_w + eff_label_w + 3 + max_status_w + 3 + max(max_dur_w, 1) + 3 + 10
+avail_feat = cols - feat_start_col
+if avail_feat < 5:
+    avail_feat = 5
+
+for pnum, label, status, dur_str, features in phase_data:
     if status == 'COMPLETE':
         color = GREEN
     elif status == 'INTERRUPTED':
@@ -1693,32 +1804,33 @@ for pnum, label, features in sorted(phases):
     else:
         color = DIM
 
-    # Build line prefix and features, wrapping to fit terminal width
-    prefix = '  Phase {} -- '.format(pnum)
-    mid = '{:<14s} {:<10s} features: '.format(status, dur_str)
-    prefix_w = len(prefix) + 30 + 1  # label field + space
-    feat_start = len(prefix) + len(label) + len(mid) + 2
-    avail_feat = cols - feat_start
-    if avail_feat < 0:
-        avail_feat = 10
+    disp_label = label[:eff_label_w]
+    disp_feat = features
 
-    if len(features) <= avail_feat or avail_feat <= 3:
-        line = '  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
-            color, pnum, label[:30], status, dur_str, features[:max(avail_feat, len(features))], RESET)
-        print(line[:cols + len(color) + len(RESET)], file=sys.stderr)
+    # First line
+    visible = '  Phase {:<{}} -- {:<{}}   {:<{}}   {:<{}}   features: {}'.format(
+        pnum, max_pnum_w, disp_label, eff_label_w,
+        status, max_status_w, dur_str, max(max_dur_w, 1), disp_feat)
+
+    if len(visible) <= cols:
+        # Pad to fill terminal width
+        padded = visible.ljust(cols)
+        print('{}{}{}'.format(color, padded, RESET), file=sys.stderr)
     else:
-        # Wrap features to continuation line
-        feat_line1 = features[:avail_feat]
-        feat_rest = features[avail_feat:]
-        line1 = '  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
-            color, pnum, label[:30], status, dur_str, feat_line1, RESET)
-        print(line1[:cols + len(color) + len(RESET)], file=sys.stderr)
-        # Continuation indented to features: column
-        indent = ' ' * feat_start
-        if len(feat_rest) > cols - feat_start:
-            feat_rest = feat_rest[:max(cols - feat_start - 3, 0)] + '...'
-        line2 = '{}{}{}{}'.format(color, indent, feat_rest, RESET)
-        print(line2[:cols + len(color) + len(RESET)], file=sys.stderr)
+        # Truncate features to fit, with continuation line
+        first_feat = disp_feat[:avail_feat]
+        rest_feat = disp_feat[avail_feat:]
+        line1_visible = '  Phase {:<{}} -- {:<{}}   {:<{}}   {:<{}}   features: {}'.format(
+            pnum, max_pnum_w, disp_label, eff_label_w,
+            status, max_status_w, dur_str, max(max_dur_w, 1), first_feat)
+        print('{}{}{}'.format(color, line1_visible.ljust(cols)[:cols], RESET), file=sys.stderr)
+        # Continuation line indented to features column
+        if rest_feat:
+            indent = ' ' * feat_start_col
+            if len(rest_feat) > avail_feat:
+                rest_feat = rest_feat[:max(avail_feat - 3, 0)] + '...'
+            line2_visible = indent + rest_feat
+            print('{}{}{}'.format(color, line2_visible.ljust(cols)[:cols], RESET), file=sys.stderr)
 " "$RUNTIME_DIR" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" >&2
 
 echo "" >&2
@@ -1740,8 +1852,107 @@ echo "Parallel groups: $PARALLEL_GROUPS_USED" >&2
 if [ "$PLAN_AMENDED" = "true" ]; then
     echo "Note: delivery plan was amended during execution" >&2
 fi
+
+# --- Part 2: Work digest (LLM-summarized via Haiku) ---
+generate_work_digest() {
+    # Collect result summaries from each phase log file
+    local digest_input=""
+    for log_file in "$RUNTIME_DIR"/continuous_build_phase_*.log; do
+        [ -f "$log_file" ] || continue
+        local phase_id
+        phase_id=$(echo "$log_file" | grep -oE 'phase_[0-9]+')
+        # Extract the last "result" JSON object from stream-json output
+        local result_text
+        result_text=$(grep '"type":"result"' "$log_file" 2>/dev/null | tail -1 | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(data.get('result', data.get('content', '')))
+except Exception:
+    pass
+" 2>/dev/null)
+        if [ -n "$result_text" ]; then
+            digest_input="${digest_input}
+--- ${phase_id} ---
+${result_text}
+"
+        fi
+    done
+
+    if [ -z "$digest_input" ]; then
+        echo "(Work digest unavailable — no phase results found. See log files below)" >&2
+        return
+    fi
+
+    local plan_content=""
+    [ -f "$DELIVERY_PLAN" ] && plan_content=$(cat "$DELIVERY_PLAN")
+
+    local digest_prompt_file
+    digest_prompt_file=$(mktemp)
+    cat > "$digest_prompt_file" << DIGEST_EOF
+Summarize this continuous build run for a developer. Be concise (under 300 words).
+
+Structure your response as:
+1. **Overall:** One sentence — did it succeed, partially succeed, or fail?
+2. **What was built:** Bullet list of the key changes across all phases (group related work, don't list every file).
+3. **Issues:** Any problems, retries, escalations, INFEASIBLE tags, or DISCOVERY tags the Builders flagged. If none, say "None."
+4. **Needs attention:** Anything that requires human action before the next run (manual scenarios awaiting QA, unresolved discoveries, features stuck in TODO). If none, say "None."
+
+Do not include phase numbers or repeat the phase table. Focus on substance.
+
+## Phase Results:
+${digest_input}
+
+## Delivery Plan:
+${plan_content:-"(Plan was deleted — all phases completed)"}
+DIGEST_EOF
+
+    local digest_result digest_rc
+    if command -v timeout >/dev/null 2>&1; then
+        digest_result=$(timeout 30 claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" 2>/dev/null)
+        digest_rc=$?
+    elif command -v gtimeout >/dev/null 2>&1; then
+        digest_result=$(gtimeout 30 claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" 2>/dev/null)
+        digest_rc=$?
+    else
+        claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" > "${digest_prompt_file}.out" 2>/dev/null &
+        local dpid=$!
+        local dwaited=0
+        while kill -0 "$dpid" 2>/dev/null && [ "$dwaited" -lt 30 ]; do
+            sleep 1
+            dwaited=$((dwaited + 1))
+        done
+        if kill -0 "$dpid" 2>/dev/null; then
+            kill "$dpid" 2>/dev/null
+            wait "$dpid" 2>/dev/null
+            digest_rc=124
+            digest_result=""
+        else
+            wait "$dpid" 2>/dev/null
+            digest_rc=$?
+            digest_result=$(cat "${digest_prompt_file}.out" 2>/dev/null)
+        fi
+        rm -f "${digest_prompt_file}.out" 2>/dev/null
+    fi
+    rm -f "$digest_prompt_file"
+
+    echo "" >&2
+    if [ $digest_rc -ne 0 ] || [ -z "$digest_result" ]; then
+        echo "(Work digest unavailable — see log files below)" >&2
+    else
+        # Print digest as plain text (no ANSI color per spec)
+        echo "$digest_result" >&2
+    fi
+}
+
+generate_work_digest
+
+echo "" >&2
 echo "Log files: .purlin/runtime/continuous_build_phase_*.log" >&2
-printf "${C_BOLD_CYAN}================================${C_RESET}\n" >&2
+printf "${C_BOLD_CYAN}%s${C_RESET}\n" "$(printf '%*s' "$PURLIN_TERM_COLS" '' | tr ' ' '=')" >&2
+
+# Mark that the full exit summary was printed (disables fallback trap)
+EXIT_SUMMARY_PRINTED=true
 
 # Post-run status refresh (Section 2.17)
 if [ -f "$CDD_STATUS" ]; then
@@ -1757,6 +1968,10 @@ rm -f "${RUNTIME_DIR}"/retry_count_* 2>/dev/null
 rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json 2>/dev/null
 rm -f "${RUNTIME_DIR}/approval_table_lines" 2>/dev/null
 rm -f "${RUNTIME_DIR}/canvas_state" 2>/dev/null
+
+# Disable the fallback summary trap and run original cleanup (temp files, worktrees)
+trap - EXIT
+cleanup 2>/dev/null
 
 if [ ${#FAILURES[@]} -gt 0 ] || [ "$STOP_REQUESTED" = "true" ]; then
     exit 1

@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 68,
+  "passed": 70,
   "failed": 0,
-  "total": 68,
+  "total": 70,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -98,7 +98,15 @@
       "status": "PASS"
     },
     {
-      "name": "Exit Summary Lists Per-Phase Details",
+      "name": "Exit Summary Phase Table",
+      "status": "PASS"
+    },
+    {
+      "name": "Exit Summary Work Digest",
+      "status": "PASS"
+    },
+    {
+      "name": "Work Digest Timeout Fallback",
       "status": "PASS"
     },
     {
