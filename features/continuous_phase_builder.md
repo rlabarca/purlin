@@ -8,6 +8,10 @@
 
 [TODO]
 
+## Summary
+
+Adds `--continuous` mode to the Builder launcher for fully autonomous multi-phase delivery. The orchestrator re-analyzes the delivery plan before each execution group, launches parallel Builders in git worktrees when phases are independent, uses a Haiku evaluator to classify exit states (continue/retry/approve/stop), and renders real-time progress via an in-place terminal canvas. The canvas engine reads terminal width from a shared file (not `tput cols` in subshells), supports resize adaptation via SIGWINCH, and shows per-phase status with aligned columns that fill the full terminal width. Includes bootstrap mode for plan creation, graceful SIGINT handling, plan amendment support for parallel Builders, and a rich exit summary with LLM-generated work digest.
+
 ## 1. Overview
 
 An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-builder.sh`) that automatically progresses through all delivery plan phases without human intervention. Uses the phase analyzer for dependency-aware ordering and parallelization, an LLM evaluator (Haiku) to classify Builder exit states, and system prompt overrides to enable autonomous operation. When `--continuous` is not passed, the launcher behaves identically to today.
@@ -873,7 +877,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the display has a timestamp header line followed by one indented line per phase
     And each phase line includes the phase label from the delivery plan heading
     And each phase line includes the status (running or done), elapsed time, log file size, and current activity
-    And running phases show activity extracted from the log file tail (truncated to ~50 chars)
+    And running phases show activity extracted from the log file tail (truncated to fit remaining terminal width)
     And status colors are applied: orange for running, green for done (successful), red for done with non-zero exit or 0K log
     And the canvas overwrites in place via ANSI cursor-up and clear-to-end sequences
     And no phase line exceeds the terminal width (tput cols)
@@ -952,7 +956,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the Builder is currently editing a file
     When the canvas performs a 15-second activity refresh
     Then the phase line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
-    And the activity text is truncated to ~50 characters if longer
+    And the activity text is truncated to fit the remaining terminal width after aligned columns
 
 #### Scenario: Canvas Shows Latest Log Line as Activity
     Given --continuous is active with a running Builder

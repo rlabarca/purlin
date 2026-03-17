@@ -2636,8 +2636,8 @@ def test_approval_checkpoint_renders_table():
     has_parallel_groups = 'Parallel groups:' in source
     has_review_path = 'Review at .purlin/cache/delivery_plan.md' in source
 
-    # Verify dynamic column widths from tput cols
-    has_tput_cols = 'tput cols' in source
+    # Verify dynamic column widths from terminal width (env var or tput cols)
+    has_tput_cols = 'PURLIN_TERM_COLS' in source or 'tput cols' in source
     # Verify proportional column width computation (30%, 45%, 25%)
     has_proportional = '0.30' in source and '0.45' in source
     # Verify cell wrapping (max 2 lines per cell)
@@ -2670,8 +2670,8 @@ def test_approval_table_respects_narrow_terminal():
     render_fn_start = source.find('render_approval_table()')
     render_fn = source[render_fn_start:source.find('\n}', render_fn_start) + 2] if render_fn_start >= 0 else ""
 
-    # Dynamic column widths from tput cols
-    has_tput_cols = 'tput cols' in render_fn
+    # Dynamic column widths from terminal width (env var or tput cols)
+    has_tput_cols = 'PURLIN_TERM_COLS' in render_fn or 'tput cols' in render_fn
     # Proportional allocation: ~30% label, ~45% features, ~25% exec group
     has_proportional = '0.30' in render_fn and '0.45' in render_fn
     # Column widths computed from remaining space
@@ -2730,8 +2730,8 @@ def test_approval_table_rerenders_on_resize():
 
     # Verify SIGWINCH trap is set before the read during approval
     has_sigwinch_trap = 'trap rerender_on_resize SIGWINCH' in source
-    # Verify SIGWINCH trap is removed after the read
-    has_trap_cleanup = 'trap - SIGWINCH' in source
+    # Verify SIGWINCH trap is restored after the read (general handler or removed)
+    has_trap_cleanup = 'trap - SIGWINCH' in source or 'trap update_term_width WINCH' in source
     # Verify rerender_on_resize function exists
     has_rerender_fn = 'rerender_on_resize()' in source
     # Verify rerender function clears via cursor-up and clear-to-end
@@ -2779,8 +2779,8 @@ def test_sequential_phase_canvas():
     has_activity_extraction = 'extract_activity' in canvas_fn
     has_log_size = 'wc -c' in canvas_fn
 
-    # Terminal width constraint: reads tput cols each cycle, truncates activity first
-    has_term_cols = 'tput cols' in canvas_fn
+    # Terminal width constraint: reads shared file each cycle (not tput cols — Section 2.17)
+    has_term_cols = 'TERM_WIDTH_FILE' in canvas_fn
     has_activity_truncation = 'disp_activity' in canvas_fn or 'act_avail' in canvas_fn
     has_label_truncation = 'disp_label' in canvas_fn
 
@@ -2847,8 +2847,8 @@ def test_parallel_phase_canvas():
     has_clear = '\\033[J' in canvas_fn
     has_log_size = 'wc -c' in canvas_fn
 
-    # Terminal width constraint: reads tput cols each cycle, adapts field widths
-    has_term_cols = 'tput cols' in canvas_fn
+    # Terminal width constraint: reads shared file each cycle (not tput cols — Section 2.17)
+    has_term_cols = 'TERM_WIDTH_FILE' in canvas_fn
     has_activity_truncation = 'DISP_ACT' in canvas_fn or 'act_avail' in canvas_fn
     has_label_truncation = 'LABEL_PADDED' in canvas_fn
 
@@ -2969,8 +2969,8 @@ def test_canvas_clears_before_final_summary():
     has_colored_phases = 'C_GREEN' in summary_section or 'GREEN' in summary_section
     has_colored_footer = 'C_BOLD_CYAN' in summary_section
 
-    # Terminal width constraint: exit summary respects tput cols
-    has_tput_cols = 'tput cols' in summary_section
+    # Terminal width constraint: exit summary respects terminal width (env var)
+    has_tput_cols = 'PURLIN_TERM_COLS' in summary_section or 'tput cols' in summary_section
     # Feature list wrapping to continuation line
     has_feat_wrap = 'feat_rest' in summary_section or 'avail_feat' in summary_section
 
@@ -3153,8 +3153,9 @@ def test_canvas_shows_current_builder_activity():
     # Verify activity is called from canvas functions
     has_activity_in_sequential = 'extract_activity' in source[source.find('start_sequential_canvas'):] if 'start_sequential_canvas' in source else False
     has_activity_in_parallel = 'extract_activity' in source[source.find('start_parallel_canvas'):] if 'start_parallel_canvas' in source else False
-    # Verify truncation to ~50 chars
-    has_truncation = '%.50s' in source
+    # Verify activity is dynamically truncated by canvas width logic (not hard-coded)
+    # Canvas uses ACT_AVAIL / act_avail for terminal-width-aware truncation
+    has_truncation = 'ACT_AVAIL' in source or 'act_avail' in source
 
     ok = (has_extract_fn and has_tail and has_editing and
           has_activity_in_sequential and has_activity_in_parallel and has_truncation)
@@ -3715,8 +3716,8 @@ def test_canvas_shows_latest_log_line_as_activity():
     tail5_pos = fn_body.find('tail -5')
     has_working_after_fallback = (working_pos >= 0 and tail5_pos >= 0 and
                                   working_pos > tail5_pos)
-    # Verify truncation of the fallback line
-    has_truncation = '%.50s' in fn_body
+    # Verify activity text is output (no hard-coded truncation — canvas handles width)
+    has_truncation = 'printf' in fn_body and 'last_line' in fn_body
 
     ok = (has_extract_fn and has_ansi_strip and has_tail_5 and
           has_nonblank_filter and has_working_after_fallback and has_truncation)

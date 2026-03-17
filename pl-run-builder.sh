@@ -156,6 +156,28 @@ PLAN_AMENDED=false
 INITIAL_PENDING_COUNT=0
 START_TIME=$(date +%s)
 
+# --- Terminal width detection (Section 2.17) ---
+# Main process captures width and writes to shared file. Background subshells
+# read from the file instead of calling tput cols (which returns 80 in bg).
+TERM_WIDTH_FILE="${RUNTIME_DIR}/term_width"
+mkdir -p "$RUNTIME_DIR" 2>/dev/null
+if [ -t 2 ]; then
+    PURLIN_TERM_COLS=$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")
+else
+    PURLIN_TERM_COLS="${COLUMNS:-80}"
+fi
+echo "$PURLIN_TERM_COLS" > "$TERM_WIDTH_FILE"
+export PURLIN_TERM_COLS
+
+update_term_width() {
+    if [ -t 2 ]; then
+        PURLIN_TERM_COLS=$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")
+        echo "$PURLIN_TERM_COLS" > "$TERM_WIDTH_FILE"
+        export PURLIN_TERM_COLS
+    fi
+}
+trap update_term_width WINCH
+
 # --- Startup purge: delete stale runtime artifacts from previous run (Section 2.11) ---
 purge_stale_runtime_artifacts() {
     rm -f "${RUNTIME_DIR}"/phase_*_meta 2>/dev/null
@@ -325,20 +347,20 @@ extract_activity() {
     local fname
     fname=$(echo "$tail_content" | grep -oE '[a-zA-Z0-9_.-]+\.(md|py|sh|js|ts|json|html|css)' | tail -1)
     if [ -n "$fname" ]; then
-        printf "editing %.50s" "$fname"
+        printf "editing %s" "$fname"
         return
     fi
     local cmd_match
     cmd_match=$(echo "$tail_content" | grep -oE 'running [a-zA-Z0-9_ -]+' | tail -1)
     if [ -n "$cmd_match" ]; then
-        printf "%.50s" "$cmd_match"
+        printf "%s" "$cmd_match"
         return
     fi
     # Log tail fallback: last non-empty, non-whitespace-only line, stripped of ANSI codes
     local last_line
     last_line=$(tail -5 "$log_file" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | grep -v '^[[:space:]]*$' | tail -1)
     if [ -n "$last_line" ]; then
-        printf "%.50s" "$last_line"
+        printf "%s" "$last_line"
         return
     fi
     echo "working..."
@@ -552,7 +574,8 @@ canvas_clear() {
         local lines
         lines=$(cat "$CANVAS_STATE_FILE" 2>/dev/null)
         if [ -n "$lines" ] && [ "$lines" -gt 0 ] 2>/dev/null; then
-            printf '\033[%dA\033[J' "$lines" >&2
+            # \r ensures cursor is at column 0 (safe if killed mid-line)
+            printf '\r\033[%dA\033[J' "$lines" >&2
         fi
     fi
     rm -f "$CANVAS_STATE_FILE" 2>/dev/null
@@ -635,7 +658,8 @@ start_sequential_canvas() {
             fi
 
             # Terminal width constraint: truncate activity first, then label
-            term_cols=$(tput cols 2>/dev/null || echo 80)
+            # Read from shared file — tput cols returns 80 in background subshells
+            term_cols=$(cat "$TERM_WIDTH_FILE" 2>/dev/null || echo "${PURLIN_TERM_COLS:-80}")
             disp_label="$phase_label"
             disp_activity="$activity"
             prefix_part="Phase ${phase_num} -- "
@@ -738,7 +762,8 @@ start_parallel_canvas() {
             s="${SPINNER[$((idx % 10))]}"
 
             # Read terminal width each cycle for resize adaptation
-            term_cols=$(tput cols 2>/dev/null || echo 80)
+            # Read from shared file — tput cols returns 80 in background subshells
+            term_cols=$(cat "$TERM_WIDTH_FILE" 2>/dev/null || echo "${PURLIN_TERM_COLS:-80}")
 
             # Heavier updates every 15 seconds (~150 iterations)
             heavy_counter=$((heavy_counter + 1))
@@ -825,37 +850,51 @@ start_parallel_canvas() {
                 [ ${#R_STATUS[$i]} -gt $MAX_STATUS_W ] && MAX_STATUS_W=${#R_STATUS[$i]}
             done
 
+            # --- Compute effective column widths to fit terminal (Section 2.17) ---
+            # 2-space indent per spec (not 13 — avoids wasting horizontal space)
+            prefix_w=$((2 + 6 + MAX_PNUM_W + 4))
+            status_w=$((3 + MAX_STATUS_W + 2 + MAX_ELAPSED_W + 3 + MAX_FSIZE_W + 2))
+            avail=$((term_cols - prefix_w - status_w))
+            # Cap label width so padded fields + label fit within term_cols
+            EFF_LABEL_W=$MAX_LABEL_W
+            if [ "$EFF_LABEL_W" -gt "$avail" ]; then
+                [ "$avail" -ge 0 ] && EFF_LABEL_W=$avail || EFF_LABEL_W=0
+            fi
+            ACT_AVAIL=$((avail - EFF_LABEL_W))
+            [ "$ACT_AVAIL" -lt 0 ] && ACT_AVAIL=0
+
             # --- Pass 2: render with aligned columns ---
             OUTPUT="[$TIMESTAMP] Parallel group (${#P_PHASES[@]} phases):"$'\n'
             LINE_COUNT=1
 
             for i in "${!P_PHASES[@]}"; do
-                # Build aligned line: indent + "Phase N -- " + label + "   " + status + "  " + elapsed + "   " + fsize + "  " + activity
                 PNUM_PADDED=$(printf "%-${MAX_PNUM_W}s" "${R_PNUM_STR[$i]}")
-                LABEL_PADDED=$(printf "%-${MAX_LABEL_W}s" "${R_LABEL[$i]}")
                 STATUS_PADDED=$(printf "%-${MAX_STATUS_W}s" "${R_STATUS[$i]}")
                 ELAPSED_PADDED=$(printf "%-${MAX_ELAPSED_W}s" "${R_ELAPSED[$i]}")
                 FSIZE_PADDED=$(printf "%-${MAX_FSIZE_W}s" "${R_FSIZE[$i]}")
 
-                DISP_ACT="${R_ACT[$i]}"
+                # Label: truncate to EFF_LABEL_W, then pad
+                LBL="${R_LABEL[$i]}"
+                if [ ${#LBL} -gt "$EFF_LABEL_W" ] && [ "$EFF_LABEL_W" -ge 4 ]; then
+                    LBL="${LBL:0:$((EFF_LABEL_W - 3))}..."
+                elif [ ${#LBL} -gt "$EFF_LABEL_W" ]; then
+                    LBL="${LBL:0:$EFF_LABEL_W}"
+                fi
+                LABEL_PADDED=$(printf "%-${EFF_LABEL_W}s" "$LBL")
 
-                # Terminal width constraint: truncate activity first, then label
-                prefix_w=$((13 + 6 + MAX_PNUM_W + 4))
-                status_w=$((3 + MAX_STATUS_W + 2 + MAX_ELAPSED_W + 3 + MAX_FSIZE_W + 2))
-                avail=$((term_cols - prefix_w - status_w))
-                if [ $((MAX_LABEL_W + ${#DISP_ACT})) -gt "$avail" ]; then
-                    act_avail=$((avail - MAX_LABEL_W))
-                    if [ "$act_avail" -ge 4 ]; then
-                        DISP_ACT="${DISP_ACT:0:$((act_avail - 3))}..."
+                # Activity: truncate to ACT_AVAIL (fills remaining terminal width)
+                DISP_ACT="${R_ACT[$i]}"
+                if [ ${#DISP_ACT} -gt "$ACT_AVAIL" ]; then
+                    if [ "$ACT_AVAIL" -ge 4 ]; then
+                        DISP_ACT="${DISP_ACT:0:$((ACT_AVAIL - 3))}..."
+                    elif [ "$ACT_AVAIL" -gt 0 ]; then
+                        DISP_ACT="${DISP_ACT:0:$ACT_AVAIL}"
                     else
                         DISP_ACT=""
-                        if [ "$avail" -ge 4 ] && [ "$avail" -lt "$MAX_LABEL_W" ]; then
-                            LABEL_PADDED=$(printf "%-${MAX_LABEL_W}s" "${R_LABEL[$i]:0:$((avail - 3))}...")
-                        fi
                     fi
                 fi
 
-                OUTPUT+="             ${R_COLOR[$i]}Phase ${PNUM_PADDED} -- ${LABEL_PADDED}   ${STATUS_PADDED}  ${ELAPSED_PADDED}   ${FSIZE_PADDED}  ${DISP_ACT}\033[0m"$'\n'
+                OUTPUT+="  ${R_COLOR[$i]}Phase ${PNUM_PADDED} -- ${LABEL_PADDED}   ${STATUS_PADDED}  ${ELAPSED_PADDED}   ${FSIZE_PADDED}  ${DISP_ACT}\033[0m"$'\n'
                 LINE_COUNT=$((LINE_COUNT + 1))
             done
 
@@ -911,8 +950,8 @@ for gi, group in enumerate(analyzer.get('groups', [])):
         group_map[p] = (gi, group.get('parallel', False))
 
 try:
-    cols = int(os.popen('tput cols 2>/dev/null').read().strip() or 80)
-except Exception:
+    cols = int(os.environ.get('PURLIN_TERM_COLS', '80'))
+except (ValueError, TypeError):
     cols = 80
 
 total_phases = len(phases_info)
@@ -1021,6 +1060,7 @@ with open(lines_file, 'w') as f:
 
 # --- SIGWINCH handler: re-render approval table on terminal resize ---
 rerender_on_resize() {
+    update_term_width
     local lines
     lines=$(cat "$APPROVAL_TABLE_LINES_FILE" 2>/dev/null || echo 0)
     # +1 for the "Proceed? [Y/n]" prompt line
@@ -1115,7 +1155,7 @@ BOOTSTRAP_OVERRIDE
         fi
         read -r APPROVAL 2>/dev/null || APPROVAL=""
         if [ -t 2 ]; then
-            trap - SIGWINCH
+            trap update_term_width WINCH
         fi
 
         if [ -n "$APPROVAL" ] && ! echo "$APPROVAL" | grep -qi '^y'; then
@@ -1580,10 +1620,10 @@ runtime_dir = sys.argv[1]
 plan_path = sys.argv[2]
 is_tty = sys.argv[3] == 'true'
 
-# Terminal width for line wrapping
+# Terminal width for line wrapping (read from env var set by main process)
 try:
-    cols = int(os.popen('tput cols 2>/dev/null').read().strip() or 80)
-except Exception:
+    cols = int(os.environ.get('PURLIN_TERM_COLS', '80'))
+except (ValueError, TypeError):
     cols = 80
 
 # ANSI colors
