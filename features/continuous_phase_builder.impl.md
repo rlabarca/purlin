@@ -1,5 +1,9 @@
 # Implementation Notes: Continuous Phase Builder
 
+## Traceability Overrides
+
+- traceability_override: "Bootstrap Failure" -> test_bootstrap_failure
+
 ## CLI Flag Mapping
 
 [DISCOVERY] (acknowledged) The spec references `claude -p -n <session_name>` for named sessions, but the real Claude Code CLI uses `--session-id <uuid>` instead. Implementation uses `--session-id` with `uuidgen`-generated UUIDs. Spec updated: Section 2.3 now uses `--session-id <session_id>`.
