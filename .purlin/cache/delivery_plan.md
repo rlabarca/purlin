@@ -41,9 +41,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Startup Controls [IN_PROGRESS]
+## Phase 8 -- Startup Controls [COMPLETE]
 **Features:** cdd_startup_controls.md
-**Completion Commit:** --
+**Completion Commit:** a3456e9
 **QA Bugs Addressed:** --
 
 ## Phase 9 -- Agent Behavior Tests [IN_PROGRESS]
