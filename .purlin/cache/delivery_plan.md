@@ -6,22 +6,22 @@
 ## Summary
 Five features reset to TODO after spec updates. Four are independent (parallelizable); one (agent_behavior_tests) depends on cdd_startup_controls. Phases are maximally split (1 feature each) to enable parallel execution and prevent context exhaustion.
 
-## Phase 1 -- Startup Controls [PENDING]
+## Phase 1 -- Startup Controls [IN_PROGRESS]
 **Features:** cdd_startup_controls.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Spec Map [PENDING]
+## Phase 2 -- Spec Map [IN_PROGRESS]
 **Features:** cdd_spec_map.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Branch Collaboration [PENDING]
+## Phase 3 -- Branch Collaboration [IN_PROGRESS]
 **Features:** cdd_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Continuous Builder [PENDING]
+## Phase 4 -- Continuous Builder [IN_PROGRESS]
 **Features:** continuous_phase_builder.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
