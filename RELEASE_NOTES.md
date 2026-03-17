@@ -10,7 +10,7 @@
 - Identity token auto-detection and annotation extraction during ingestion
 - Code Connect and Dev Mode lifecycle integration
 
-**Continuous Phase Builder**
+**Continuous Phase Builder (initial implementation -- needs testing and improvement)**
 - Terminal canvas engine with width-aware rendering and SIGWINCH resize
 - Stale IN_PROGRESS reset on startup, log tail activity display, macOS line buffering fallback
 - Graceful SIGINT stop, bootstrap session without delivery plan, dynamic plan handling
