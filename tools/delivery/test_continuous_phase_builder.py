@@ -104,9 +104,9 @@ def make_mock_claude(tmpdir, behavior="phase_complete", phase_count=1, exit_code
     - infeasible: outputs INFEASIBLE escalation
     - noop: outputs nothing meaningful
 
-    eval_responses: list of (action, reason) strings for evaluator calls.
+    eval_responses: list of (action, success_bool, reason) tuples for evaluator calls.
     Each evaluator call pops the next response in order.
-    Defaults to [("continue", "Phase completed")] if None.
+    Defaults to [("continue", False, "Phase completed")] if None.
     """
     bin_dir = os.path.join(tmpdir, 'mock_bin')
     os.makedirs(bin_dir, exist_ok=True)
@@ -114,10 +114,11 @@ def make_mock_claude(tmpdir, behavior="phase_complete", phase_count=1, exit_code
     # Write evaluator response sequence to a file
     eval_seq_file = os.path.join(tmpdir, '.purlin', 'runtime', 'eval_responses')
     if eval_responses is None:
-        eval_responses = [("continue", "Phase completed successfully")]
+        eval_responses = [("continue", False, "Phase completed successfully")]
     with open(eval_seq_file, 'w') as f:
-        for action, reason in eval_responses:
-            f.write(f"{action}|{reason}\n")
+        for action, success, reason in eval_responses:
+            success_str = "true" if success else "false"
+            f.write(f"{action}|{success_str}|{reason}\n")
 
     mock_script = os.path.join(bin_dir, 'claude')
     with open(mock_script, 'w') as f:
@@ -145,11 +146,13 @@ if echo "$@" | grep -q "json-schema"; then
     RESPONSE=$(sed -n "${{IDX}}p" "$SEQ_FILE")
     if [ -z "$RESPONSE" ]; then
         # If we've run out of responses, return stop
-        echo '{{"action": "stop", "reason": "Sequence exhausted"}}'
+        echo '{{"action": "stop", "success": false, "reason": "Sequence exhausted"}}'
     else
         ACTION="${{RESPONSE%%|*}}"
-        REASON="${{RESPONSE#*|}}"
-        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+        REMAINDER="${{RESPONSE#*|}}"
+        SUCCESS="${{REMAINDER%%|*}}"
+        REASON="${{REMAINDER#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"success\\": $SUCCESS, \\"reason\\": \\"$REASON\\"}}"
     fi
     exit 0
 fi
@@ -409,9 +412,9 @@ def test_sequential_completion():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=3,
                                    eval_responses=[
-                                       ("continue", "Phase 1 done"),
-                                       ("continue", "Phase 2 done"),
-                                       ("stop", "All phases complete successfully"),
+                                       ("continue", False, "Phase 1 done"),
+                                       ("continue", False, "Phase 2 done"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -448,8 +451,8 @@ def test_parallel_execution():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=3,
                                    eval_responses=[
-                                       ("continue", "Parallel group done"),
-                                       ("stop", "All phases complete successfully"),
+                                       ("continue", False, "Parallel group done"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -484,7 +487,7 @@ def test_parallel_merge_conflict():
 
         # Create mock git that fails on merge
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
+                                   eval_responses=[("continue", False, "done")])
         mock_git = os.path.join(mock_bin, 'git')
         with open(mock_git, 'w') as f:
             f.write(f'''#!/bin/bash
@@ -561,9 +564,9 @@ if echo "$@" | grep -q "json-schema"; then
     echo "$ECOUNT" > "$EVAL_STATE"
 
     if [ "$ECOUNT" -eq 1 ]; then
-        echo '{{"action": "approve", "reason": "Builder waiting for approval"}}'
+        echo '{{"action": "approve", "success": false, "reason": "Builder waiting for approval"}}'
     else
-        echo '{{"action": "stop", "reason": "All phases complete successfully"}}'
+        echo '{{"action": "stop", "success": true, "reason": "All phases complete successfully"}}'
     fi
     exit 0
 fi
@@ -641,11 +644,11 @@ echo "$@" >> "$INVOCATION_LOG"
 if echo "$@" | grep -q "json-schema"; then
     INPUT=$(cat)
     if echo "$INPUT" | grep -q "context exhaustion"; then
-        echo '{{"action": "retry", "reason": "Context exhausted mid-phase"}}'
+        echo '{{"action": "retry", "success": false, "reason": "Context exhausted mid-phase"}}'
     elif echo "$INPUT" | grep -q "Phase .* of .* complete"; then
-        echo '{{"action": "stop", "reason": "All phases complete successfully"}}'
+        echo '{{"action": "stop", "success": true, "reason": "All phases complete successfully"}}'
     else
-        echo '{{"action": "stop", "reason": "done"}}'
+        echo '{{"action": "stop", "success": false, "reason": "done"}}'
     fi
     exit 0
 fi
@@ -716,7 +719,7 @@ echo "$@" >> "$INVOCATION_LOG"
 
 if echo "$@" | grep -q "json-schema"; then
     INPUT=$(cat)
-    echo '{{"action": "retry", "reason": "Context exhausted mid-phase"}}'
+    echo '{{"action": "retry", "success": false, "reason": "Context exhausted mid-phase"}}'
     exit 0
 fi
 
@@ -766,7 +769,7 @@ def test_evaluator_stop_on_error():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "infeasible",
                                    eval_responses=[
-                                       ("stop", "Error requiring human intervention"),
+                                       ("stop", False, "Error requiring human intervention"),
                                    ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -790,7 +793,7 @@ def test_all_phases_complete():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "all_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -827,10 +830,11 @@ def make_bootstrap_mock_claude(tmpdir, creates_plan=True, exit_code=0,
 
     eval_seq_file = os.path.join(tmpdir, '.purlin', 'runtime', 'eval_responses')
     if eval_responses is None:
-        eval_responses = [("stop", "All phases complete successfully")]
+        eval_responses = [("stop", True, "All phases complete successfully")]
     with open(eval_seq_file, 'w') as f:
-        for action, reason in eval_responses:
-            f.write(f"{action}|{reason}\n")
+        for action, success, reason in eval_responses:
+            success_str = "true" if success else "false"
+            f.write(f"{action}|{success_str}|{reason}\n")
 
     mock_script = os.path.join(mock_bin_dir, 'claude')
     with open(mock_script, 'w') as f:
@@ -849,11 +853,13 @@ if echo "$@" | grep -q "json-schema"; then
     echo "$IDX" > "$COUNTER_FILE"
     RESPONSE=$(sed -n "${{IDX}}p" "$SEQ_FILE")
     if [ -z "$RESPONSE" ]; then
-        echo '{{"action": "stop", "reason": "Sequence exhausted"}}'
+        echo '{{"action": "stop", "success": false, "reason": "Sequence exhausted"}}'
     else
         ACTION="${{RESPONSE%%|*}}"
-        REASON="${{RESPONSE#*|}}"
-        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+        REMAINDER="${{RESPONSE#*|}}"
+        SUCCESS="${{REMAINDER%%|*}}"
+        REASON="${{REMAINDER#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"success\\": $SUCCESS, \\"reason\\": \\"$REASON\\"}}"
     fi
     exit 0
 fi
@@ -923,7 +929,7 @@ def test_bootstrap_creates_delivery_plan():
         make_mock_project(tmpdir, None, graph)
         mock_bin = make_bootstrap_mock_claude(
             tmpdir, creates_plan=True,
-            eval_responses=[("stop", "All phases complete successfully")]
+            eval_responses=[("stop", True, "All phases complete successfully")]
         )
 
         # Default stdin (empty) -> approval defaults to yes
@@ -950,7 +956,7 @@ def test_bootstrap_plan_approved():
         make_mock_project(tmpdir, None, graph)
         mock_bin = make_bootstrap_mock_claude(
             tmpdir, creates_plan=True,
-            eval_responses=[("stop", "All phases complete successfully")]
+            eval_responses=[("stop", True, "All phases complete successfully")]
         )
 
         # Approve the plan via stdin
@@ -1250,7 +1256,7 @@ def test_logging_per_phase():
         graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
+                                   eval_responses=[("continue", False, "done")])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
@@ -1294,8 +1300,8 @@ def test_exit_summary_phase_table():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=2,
                                    eval_responses=[
-                                       ("continue", "Phase 1 done"),
-                                       ("continue", "Phase 2 done"),
+                                       ("continue", False, "Phase 1 done"),
+                                       ("continue", False, "Phase 2 done"),
                                    ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1334,8 +1340,8 @@ def test_exit_summary_work_digest():
     has_digest_fn = 'generate_work_digest' in source
     # Verify it extracts result from stream-json logs
     has_result_extraction = '"type":"result"' in source or "'type':'result'" in source
-    # Verify it calls Haiku (uses HAIKU_MODEL variable)
-    has_haiku_call = 'HAIKU_MODEL' in source and 'claude --print --model' in source
+    # Verify it calls the evaluator model (uses EVALUATOR_MODEL variable)
+    has_haiku_call = 'EVALUATOR_MODEL' in source and 'claude --print --model' in source
     # Verify digest prompt contains required sections
     has_prompt_sections = all(s in source for s in [
         'Overall:', 'What was built:', 'Issues:', 'Needs attention:'
@@ -1368,7 +1374,7 @@ def test_work_digest_timeout_fallback():
 
     # Verify timeout handling exists for the digest call
     has_timeout_handling = bool(re.search(
-        r'timeout\s+30.*?claude.*?HAIKU_MODEL.*?digest|'
+        r'timeout\s+30.*?claude.*?EVALUATOR_MODEL.*?digest|'
         r'gtimeout\s+30.*?claude.*?digest|'
         r'dwaited.*?30.*?digest',
         source,
@@ -1438,7 +1444,7 @@ def make_plan_modifying_mock(tmpdir, modifications, eval_responses):
 
     modifications: dict mapping call_number -> callable(plan_path, tmpdir)
         The callable modifies the delivery plan file on that call number.
-    eval_responses: list of (action, reason) for evaluator calls.
+    eval_responses: list of (action, success_bool, reason) for evaluator calls.
     """
     mock_bin_dir = os.path.join(tmpdir, 'mock_bin')
     os.makedirs(mock_bin_dir, exist_ok=True)
@@ -1446,8 +1452,9 @@ def make_plan_modifying_mock(tmpdir, modifications, eval_responses):
     # Write eval responses
     eval_seq_file = os.path.join(tmpdir, '.purlin', 'runtime', 'eval_responses')
     with open(eval_seq_file, 'w') as f:
-        for action, reason in eval_responses:
-            f.write(f"{action}|{reason}\n")
+        for action, success, reason in eval_responses:
+            success_str = "true" if success else "false"
+            f.write(f"{action}|{success_str}|{reason}\n")
 
     # Write modification scripts as separate files
     for call_num, mod_fn in modifications.items():
@@ -1475,11 +1482,13 @@ if echo "$@" | grep -q "json-schema"; then
     echo "$IDX" > "$COUNTER_FILE"
     RESPONSE=$(sed -n "${{IDX}}p" "$SEQ_FILE")
     if [ -z "$RESPONSE" ]; then
-        echo '{{"action": "stop", "reason": "Sequence exhausted"}}'
+        echo '{{"action": "stop", "success": false, "reason": "Sequence exhausted"}}'
     else
         ACTION="${{RESPONSE%%|*}}"
-        REASON="${{RESPONSE#*|}}"
-        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+        REMAINDER="${{RESPONSE#*|}}"
+        SUCCESS="${{REMAINDER%%|*}}"
+        REASON="${{REMAINDER#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"success\\": $SUCCESS, \\"reason\\": \\"$REASON\\"}}"
     fi
     exit 0
 fi
@@ -1592,10 +1601,10 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic, 4: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done, plan amended"),
-                ("continue", "Phase 2 done"),
-                ("continue", "Phase 3 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done, plan amended"),
+                ("continue", False, "Phase 2 done"),
+                ("continue", False, "Phase 3 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1672,9 +1681,9 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done, plan split"),
-                ("continue", "Phase 4 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done, plan split"),
+                ("continue", False, "Phase 4 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1729,7 +1738,7 @@ with open(plan_path, 'w') as f:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1},
             eval_responses=[
-                ("continue", "Phase 1 done, remaining removed"),
+                ("continue", False, "Phase 1 done, remaining removed"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1796,9 +1805,9 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1865,9 +1874,9 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 5 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 5 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1945,11 +1954,11 @@ with open(plan_path, 'w') as f:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_generic, 2: mod_2, 3: mod_generic, 4: mod_generic, 5: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done, added Phase 6"),
-                ("continue", "Phase done"),
-                ("continue", "Phase done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done, added Phase 6"),
+                ("continue", False, "Phase done"),
+                ("continue", False, "Phase done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -1985,8 +1994,8 @@ def test_parallel_both_request_amendments():
 
         eval_seq_file = os.path.join(tmpdir, '.purlin', 'runtime', 'eval_responses')
         with open(eval_seq_file, 'w') as f:
-            f.write("continue|Parallel group done\n")
-            f.write("stop|All phases complete successfully\n")
+            f.write("continue|false|Parallel group done\n")
+            f.write("stop|true|All phases complete successfully\n")
 
         runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
 
@@ -2006,11 +2015,13 @@ if echo "$@" | grep -q "json-schema"; then
     echo "$IDX" > "$COUNTER_FILE"
     RESPONSE=$(sed -n "${{IDX}}p" "$SEQ_FILE")
     if [ -z "$RESPONSE" ]; then
-        echo '{{"action": "stop", "reason": "done"}}'
+        echo '{{"action": "stop", "success": false, "reason": "done"}}'
     else
         ACTION="${{RESPONSE%%|*}}"
-        REASON="${{RESPONSE#*|}}"
-        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+        REMAINDER="${{RESPONSE#*|}}"
+        SUCCESS="${{REMAINDER%%|*}}"
+        REASON="${{REMAINDER#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"success\\": $SUCCESS, \\"reason\\": \\"$REASON\\"}}"
     fi
     exit 0
 fi
@@ -2159,11 +2170,11 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic, 4: mod_generic, 5: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done"),
-                ("continue", "Phase 3 done"),
-                ("continue", "Phase 4 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done"),
+                ("continue", False, "Phase 3 done"),
+                ("continue", False, "Phase 4 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2231,10 +2242,10 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={2: mod_2, 3: mod_generic, 4: mod_generic},
             eval_responses=[
-                ("retry", "Context exhausted"),
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done"),
-                ("stop", "All phases complete successfully"),
+                ("retry", False, "Context exhausted"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2303,9 +2314,9 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done"),
-                ("stop", "All phases complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done"),
+                ("stop", True, "All phases complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2372,10 +2383,10 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic, 4: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase done"),
-                ("continue", "Phase done"),
-                ("stop", "All complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase done"),
+                ("continue", False, "Phase done"),
+                ("stop", True, "All complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2411,8 +2422,8 @@ def test_amendment_files_cleaned_up():
 
         eval_seq_file = os.path.join(runtime_dir, 'eval_responses')
         with open(eval_seq_file, 'w') as f:
-            f.write("continue|Parallel done\n")
-            f.write("stop|All complete successfully\n")
+            f.write("continue|false|Parallel done\n")
+            f.write("stop|true|All complete successfully\n")
 
         mock_script = os.path.join(mock_bin_dir, 'claude')
         with open(mock_script, 'w') as f:
@@ -2429,11 +2440,13 @@ if echo "$@" | grep -q "json-schema"; then
     echo "$IDX" > "$COUNTER_FILE"
     RESPONSE=$(sed -n "${{IDX}}p" "{eval_seq_file}")
     if [ -z "$RESPONSE" ]; then
-        echo '{{"action": "stop", "reason": "done"}}'
+        echo '{{"action": "stop", "success": false, "reason": "done"}}'
     else
         ACTION="${{RESPONSE%%|*}}"
-        REASON="${{RESPONSE#*|}}"
-        echo "{{\\"action\\": \\"$ACTION\\", \\"reason\\": \\"$REASON\\"}}"
+        REMAINDER="${{RESPONSE#*|}}"
+        SUCCESS="${{REMAINDER%%|*}}"
+        REASON="${{REMAINDER#*|}}"
+        echo "{{\\"action\\": \\"$ACTION\\", \\"success\\": $SUCCESS, \\"reason\\": \\"$REASON\\"}}"
     fi
     exit 0
 fi
@@ -2536,9 +2549,9 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic, 3: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("continue", "Phase 2 done"),
-                ("stop", "All complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("continue", False, "Phase 2 done"),
+                ("stop", True, "All complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2615,8 +2628,8 @@ if pending:
         mock_bin = make_plan_modifying_mock(tmpdir,
             modifications={1: mod_1, 2: mod_generic},
             eval_responses=[
-                ("continue", "Phase 1 done"),
-                ("stop", "All complete successfully"),
+                ("continue", False, "Phase 1 done"),
+                ("stop", True, "All complete successfully"),
             ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2672,7 +2685,7 @@ def test_bootstrap_canvas_shows_spinner():
         make_mock_project(tmpdir, None, graph)
         mock_bin = make_bootstrap_mock_claude(
             tmpdir, creates_plan=True,
-            eval_responses=[("stop", "All phases complete successfully")]
+            eval_responses=[("stop", True, "All phases complete successfully")]
         )
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
@@ -2875,7 +2888,7 @@ def test_sequential_phase_canvas():
         graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
+                                   eval_responses=[("continue", False, "done")])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
@@ -2992,7 +3005,7 @@ def test_all_builder_output_routes_to_log_files():
         graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
+                                   eval_responses=[("continue", False, "done")])
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
         stdout_clean = "Phase 1 of" not in proc.stdout
 
@@ -3165,9 +3178,9 @@ if echo "$@" | grep -q "json-schema"; then
     ECOUNT=$((ECOUNT + 1))
     echo "$ECOUNT" > "$EVAL_STATE"
     if [ "$ECOUNT" -eq 1 ]; then
-        echo '{{"action": "approve", "reason": "Builder waiting for approval"}}'
+        echo '{{"action": "approve", "success": false, "reason": "Builder waiting for approval"}}'
     else
-        echo '{{"action": "stop", "reason": "All phases complete successfully"}}'
+        echo '{{"action": "stop", "success": true, "reason": "All phases complete successfully"}}'
     fi
     exit 0
 fi
@@ -3403,7 +3416,7 @@ def test_phases_marked_in_progress_before_launch():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         # Enhance mock git to log add/commit calls
@@ -3478,7 +3491,7 @@ def test_sequential_phase_marked_in_progress():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         # Enhance mock git to log add/commit calls
@@ -3545,7 +3558,7 @@ def test_per_phase_status_update_during_parallel_execution():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         # Mock git with add/commit support that logs per-phase commits
@@ -3725,7 +3738,7 @@ def test_stale_in_progress_phases_reset_on_startup():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         # Enhance mock git to log commits
@@ -3976,7 +3989,7 @@ def test_startup_purge_of_stale_runtime_artifacts():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All complete successfully"),
+                                       ("stop", True, "All complete successfully"),
                                    ])
 
         # Create mock git
@@ -4080,7 +4093,7 @@ def test_exit_cleanup_of_transient_artifacts():
         make_mock_project(tmpdir, plan, graph)
         mock_bin = make_mock_claude(tmpdir, "phase_complete",
                                    eval_responses=[
-                                       ("stop", "All phases complete successfully"),
+                                       ("stop", True, "All phases complete successfully"),
                                    ])
 
         mock_git = os.path.join(mock_bin, 'git')

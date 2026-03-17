@@ -126,6 +126,14 @@ Replaced the simple `wait $pid` loop (which blocked until ALL builders completed
 
 Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.
 
+## Configurable Evaluator Model & Success Boolean (2026-03-17)
+
+The evaluator model is now resolved from `continuous_evaluator_model` in config (`.purlin/config.local.json` first, then `.purlin/config.json`). Defaults to Haiku if absent. The same model is used for both the evaluator and the work digest (per spec: "Same model and timeout as the evaluator").
+
+The evaluator JSON schema now includes a `success` boolean field. The stop-action handler uses `EVAL_SUCCESS` variable (parsed from the evaluator's `success` field) instead of the previous `grep -qi "success\|complete\|all phases"` keyword matching on the reason string. The evaluator fallback (hash check) always returns `success: false` since it can't determine completion status.
+
+The output format from `run_evaluator` changed from `action|reason` to `action|success|reason` (pipe-delimited). Both sequential and parallel eval output parsing updated to extract the middle field.
+
 ## [DISCOVERY] (acknowledged) JSON Leaking to Terminal During Parallel Execution (2026-03-17)
 
 **Problem:** During the first `--continuous` run with parallel phases (1, 2, 3), raw NDJSON output from the `--verbose --output-format stream-json` builders leaked to the terminal, flooding it with JSON instead of showing the canvas. The parallel group completed successfully (all 3 phases merged) but the evaluator then hung for 646+ seconds (pre-timeout-fix) and the orchestrator never advanced to phase 4.

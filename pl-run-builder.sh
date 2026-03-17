@@ -144,7 +144,27 @@ fi
 RUNTIME_DIR="$SCRIPT_DIR/.purlin/runtime"
 DELIVERY_PLAN="$SCRIPT_DIR/.purlin/cache/delivery_plan.md"
 PHASE_ANALYZER="$CORE_DIR/tools/delivery/phase_analyzer.py"
+# Evaluator model: configurable via continuous_evaluator_model in config, defaults to Haiku
 HAIKU_MODEL="claude-haiku-4-5-20251001"
+EVALUATOR_MODEL="$HAIKU_MODEL"
+for cfg_file in "$SCRIPT_DIR/.purlin/config.local.json" "$SCRIPT_DIR/.purlin/config.json"; do
+    if [ -f "$cfg_file" ]; then
+        _configured_model=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('$cfg_file'))
+    m = data.get('continuous_evaluator_model', '')
+    if m:
+        print(m)
+except (json.JSONDecodeError, IOError, OSError):
+    pass
+" 2>/dev/null)
+        if [ -n "$_configured_model" ]; then
+            EVALUATOR_MODEL="$_configured_model"
+        fi
+        break
+    fi
+done
 
 # Tracking variables (file-based retry counts for bash 3 compat)
 PHASES_COMPLETED=0
@@ -219,7 +239,7 @@ if all_phases_complete; then
 fi
 
 # Evaluator JSON schema
-EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","stop"]},"reason":{"type":"string"}},"required":["action","reason"]}'
+EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","stop"]},"success":{"type":"boolean"},"reason":{"type":"string"}},"required":["action","success","reason"]}'
 
 # --- Helper: log evaluator decision with timestamp ---
 log_eval() {
@@ -259,30 +279,32 @@ ${tail_output}
 ${plan_content}
 
 ## Classification Rules:
-- "Phase N of M complete" + delivery plan updated -> action: "continue"
-- Builder amended the delivery plan (new/split/modified phases) + phase complete -> action: "continue"
-- "Ready to go?" / "Ready to resume?" (approval prompt) -> action: "approve"
-- Context exhaustion / checkpoint saved mid-phase -> action: "retry"
-- Partial progress (features done but phase incomplete) -> action: "retry"
-- Builder output mentions plan amendment but current phase not complete -> action: "retry"
-- Error requiring human input (INFEASIBLE, missing fixture) -> action: "stop"
-- All phases complete / delivery plan deleted -> action: "stop" (with success reason)
-- No meaningful progress detected -> action: "stop"
+- "Phase N of M complete" + delivery plan updated -> action: "continue", success: false
+- Builder amended the delivery plan (new/split/modified phases) + phase complete -> action: "continue", success: false
+- "Ready to go?" / "Ready to resume?" (approval prompt) -> action: "approve", success: false
+- Context exhaustion / checkpoint saved mid-phase -> action: "retry", success: false
+- Partial progress (features done but phase incomplete) -> action: "retry", success: false
+- Builder output mentions plan amendment but current phase not complete -> action: "retry", success: false
+- Error requiring human input (INFEASIBLE, missing fixture) -> action: "stop", success: false
+- All phases complete / delivery plan deleted -> action: "stop", success: true
+- No meaningful progress detected -> action: "stop", success: false
 
-Return a JSON object with "action" and "reason" fields.
+The "success" field MUST be true ONLY when action is "stop" AND all work completed successfully. For all other cases, success MUST be false.
+
+Return a JSON object with "action", "success", and "reason" fields.
 EVAL_EOF
 
     local eval_result eval_rc
     # 30-second timeout (Section 2.5): platform-aware fallback
     if command -v timeout >/dev/null 2>&1; then
-        eval_result=$(timeout 30 claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
+        eval_result=$(timeout 30 claude --print --model "$EVALUATOR_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
         eval_rc=$?
     elif command -v gtimeout >/dev/null 2>&1; then
-        eval_result=$(gtimeout 30 claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
+        eval_result=$(gtimeout 30 claude --print --model "$EVALUATOR_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
         eval_rc=$?
     else
         # macOS fallback: background process with kill after 30s
-        claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" > "${eval_msg_file}.out" 2>/dev/null &
+        claude --print --model "$EVALUATOR_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" > "${eval_msg_file}.out" 2>/dev/null &
         local eval_pid=$!
         local waited=0
         while kill -0 "$eval_pid" 2>/dev/null && [ "$waited" -lt 30 ]; do
@@ -312,7 +334,8 @@ EVAL_EOF
 import json, sys
 try:
     data = json.load(sys.stdin)
-    print(data['action'] + '|' + data['reason'])
+    success = 'true' if data.get('success', False) else 'false'
+    print(data['action'] + '|' + success + '|' + data['reason'])
 except (json.JSONDecodeError, KeyError):
     sys.exit(1)
 " 2>/dev/null) || return 1
@@ -328,9 +351,9 @@ evaluator_fallback() {
     plan_hash_after=$(get_plan_hash)
 
     if [ "$plan_hash_before" != "$plan_hash_after" ]; then
-        echo "continue|evaluator fallback: delivery plan changed"
+        echo "continue|false|evaluator fallback: delivery plan changed"
     else
-        echo "stop|evaluator fallback: delivery plan unchanged"
+        echo "stop|false|evaluator fallback: delivery plan unchanged"
     fi
 }
 
@@ -1454,8 +1477,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
         stop_canvas
 
         ACTION="${EVAL_OUTPUT%%|*}"
-        REASON="${EVAL_OUTPUT#*|}"
-        log_eval "Parallel group — Action: $ACTION — $REASON"
+        _remainder="${EVAL_OUTPUT#*|}"
+        EVAL_SUCCESS="${_remainder%%|*}"
+        REASON="${_remainder#*|}"
+        log_eval "Parallel group — Action: $ACTION (success=$EVAL_SUCCESS) — $REASON"
 
         case "$ACTION" in
             continue)
@@ -1543,8 +1568,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
             stop_canvas
 
             ACTION="${EVAL_OUTPUT%%|*}"
-            REASON="${EVAL_OUTPUT#*|}"
-            log_eval "Phase $PHASE_NUM — Action: $ACTION — $REASON"
+            _remainder="${EVAL_OUTPUT#*|}"
+            EVAL_SUCCESS="${_remainder%%|*}"
+            REASON="${_remainder#*|}"
+            log_eval "Phase $PHASE_NUM — Action: $ACTION (success=$EVAL_SUCCESS) — $REASON"
 
             case "$ACTION" in
                 continue)
@@ -1577,7 +1604,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     RUN_ACTION="retry"
                     ;;
                 stop)
-                    if echo "$REASON" | grep -qi "success\|complete\|all phases"; then
+                    if [ "$EVAL_SUCCESS" = "true" ]; then
                         record_phase_end "$PHASE_NUM" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
                     else
@@ -1909,13 +1936,13 @@ DIGEST_EOF
 
     local digest_result digest_rc
     if command -v timeout >/dev/null 2>&1; then
-        digest_result=$(timeout 30 claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" 2>/dev/null)
+        digest_result=$(timeout 30 claude --print --model "$EVALUATOR_MODEL" < "$digest_prompt_file" 2>/dev/null)
         digest_rc=$?
     elif command -v gtimeout >/dev/null 2>&1; then
-        digest_result=$(gtimeout 30 claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" 2>/dev/null)
+        digest_result=$(gtimeout 30 claude --print --model "$EVALUATOR_MODEL" < "$digest_prompt_file" 2>/dev/null)
         digest_rc=$?
     else
-        claude --print --model "$HAIKU_MODEL" < "$digest_prompt_file" > "${digest_prompt_file}.out" 2>/dev/null &
+        claude --print --model "$EVALUATOR_MODEL" < "$digest_prompt_file" > "${digest_prompt_file}.out" 2>/dev/null &
         local dpid=$!
         local dwaited=0
         while kill -0 "$dpid" 2>/dev/null && [ "$dwaited" -lt 30 ]; do
