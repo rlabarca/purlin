@@ -208,7 +208,8 @@ Proceed? [Y/n]
   - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from terminal width (`tput cols`, default 80):
     - `#` column: 4 characters (fixed).
     - Remaining width distributed proportionally: `Label` ~30%, `Features` ~45%, `Exec Group` ~25%.
-    - **Minimum width floor:** If terminal width is below 60 columns, the table switches to a stacked single-column layout (one field per line, labeled) instead of the proportional column layout. This prevents unreadable truncation in narrow terminals or piped contexts.
+    - **Full-width fill:** The table MUST consume the entire terminal width at any size. The proportional columns expand to fill all available space after the fixed `#` column. Separator lines span the full terminal width. No trailing whitespace gap between the last column edge and the terminal boundary.
+    - **Minimum width floor:** If terminal width is below 60 columns, the table switches to a stacked single-column layout (one field per line, labeled) instead of the proportional column layout. This prevents unreadable truncation in narrow terminals or piped contexts. In stacked mode, field values are padded/wrapped to the full terminal width.
     - Headers and separator lines use the same computed widths as data rows.
   - ANSI bold cyan (`\033[1;36m`) on header row, green (`\033[32m`) on separator lines.
   - Phase labels and features from delivery plan headings, exec group from the analyzer.
