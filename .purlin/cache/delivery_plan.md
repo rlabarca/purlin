@@ -26,27 +26,27 @@
 **Completion Commit:** 4f4814d
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Agent Config & Release Checklist [PENDING]
+## Phase 5 -- Agent Config & Release Checklist [IN_PROGRESS]
 **Features:** cdd_agent_configuration.md, release_checklist_ui.md
-**Completion Commit:** --
+**Completion Commit:** 62ce39d
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Branch Collaboration [PENDING]
+## Phase 6 -- Branch Collaboration [IN_PROGRESS]
 **Features:** cdd_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Spec Map [PENDING]
+## Phase 7 -- Spec Map [IN_PROGRESS]
 **Features:** cdd_spec_map.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Startup Controls [PENDING]
+## Phase 8 -- Startup Controls [IN_PROGRESS]
 **Features:** cdd_startup_controls.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Agent Behavior Tests [PENDING]
+## Phase 9 -- Agent Behavior Tests [IN_PROGRESS]
 **Features:** agent_behavior_tests.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
