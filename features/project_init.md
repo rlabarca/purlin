@@ -45,7 +45,8 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
-12. **Summary Output:** Print a concise summary (Section 2.7).
+12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
+13. **Summary Output:** Print a concise summary (Section 2.7).
 
 ### 2.4 Refresh Mode
 
@@ -60,7 +61,8 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
 5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
-6.  **Refresh Summary:** Print a concise summary (Section 2.8).
+6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
+7.  **Refresh Summary:** Print a concise summary (Section 2.8).
 
 ### 2.4.1 Refresh Mode Exclusions
 
@@ -197,6 +199,13 @@ The test script MUST include assertions for all of the following. Each test MUST
 26. **`--quiet` still completes:** After `--quiet` run, assert `.purlin/.upstream_sha` was updated (refresh completed).
 27. **Refresh removes stale launchers:** Create stale `run_architect.sh`, `run_builder.sh`, `run_qa.sh` (old naming convention). Run `init.sh`. Assert stale launchers are removed. Assert only `pl-run-*.sh` launchers remain.
 
+**Claude Code Hook Tests:**
+
+32. **Full init creates hook:** Run `init.sh` in a clean sandbox. Assert `.claude/settings.json` exists, is valid JSON, and contains a `hooks.SessionStart` entry with `matcher: "clear"`.
+33. **Hook merges into existing settings:** Create `.claude/settings.json` with an existing `PreToolUse` hook before running `init.sh`. Assert the `SessionStart` clear hook is present AND the `PreToolUse` hook is preserved.
+34. **Hook idempotent on refresh:** Run `init.sh` twice. Assert `.claude/settings.json` contains exactly one `SessionStart` entry with `matcher: "clear"` (not duplicated).
+35. **Hook preserves existing SessionStart entries:** Create `.claude/settings.json` with an existing `SessionStart` hook using a different matcher (e.g., `"matcher": "custom"`). Run `init.sh`. Assert both the existing and Purlin hooks are present in the `SessionStart` array.
+
 **Standalone Guard Tests:**
 
 29. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
@@ -219,6 +228,38 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
 *   **Detection:** After computing `PROJECT_ROOT` (the parent of `SUBMODULE_DIR`), check whether `$PROJECT_ROOT` is a git repository (e.g., `git -C "$PROJECT_ROOT" rev-parse --git-dir`). In a consumer project, the parent directory IS the consumer's git repo root. In standalone mode, the Purlin repo's parent is NOT a git repository, so the check fails. If `$PROJECT_ROOT` is not a git repository, print an error and exit non-zero.
 *   **Error Message:** The error MUST be printed to stderr and explain that `init.sh` is for consumer projects only, not for the Purlin repository itself.
 *   **No Side Effects:** The guard MUST fire before any file creation or modification. No files outside the Purlin repo may be created or modified.
+
+### 2.15 Claude Code Session Recovery Hook
+
+On both full init and refresh, the script MUST ensure that `.claude/settings.json` at the project root contains the Purlin session-recovery hook. This hook enables automatic context restoration after `/clear` by injecting a system reminder that instructs the agent to run `/pl-resume`.
+
+**Hook definition (to be installed inside `hooks.SessionStart` array):**
+
+```json
+{
+  "matcher": "clear",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "echo 'IMPORTANT: Context was cleared. Run /pl-resume immediately to restore session context.'"
+    }
+  ]
+}
+```
+
+**Merge strategy (idempotent):**
+
+1.  If `.claude/settings.json` does not exist: create it with `{"hooks": {"SessionStart": [<hook>]}}`.
+2.  If `.claude/settings.json` exists but has no `hooks` key: add the `hooks` key with the `SessionStart` array.
+3.  If `hooks` exists but has no `SessionStart` key: add the `SessionStart` array containing the hook.
+4.  If `hooks.SessionStart` exists but no entry has `"matcher": "clear"`: append the hook entry to the array.
+5.  If an entry with `"matcher": "clear"` already exists: leave it unchanged.
+
+**Constraints:**
+
+*   MUST NOT modify or remove any existing hooks, settings, or configuration in the file.
+*   MUST validate the result is valid JSON before writing.
+*   The merge logic SHOULD be implemented in Python (consistent with `resolve_config.py` for JSON manipulation).
 
 ### 2.14 Integration Test Fixture Tags
 
@@ -398,6 +439,30 @@ The script MUST detect when it is being run inside the standalone Purlin repo (w
     And .claude/commands/ contains pl-*.md files
     And CDD convenience symlinks exist
     And the collaborator environment matches a normal full init
+
+#### Scenario: Full Init Installs Session Recovery Hook
+
+    Given Purlin is added as a submodule at "purlin/"
+    And no .claude/settings.json exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/settings.json exists and is valid JSON
+    And it contains a SessionStart hook with matcher "clear"
+    And the hook command echoes the pl-resume recovery instruction
+
+#### Scenario: Hook Merges Into Existing Settings
+
+    Given .purlin/ already exists at the project root
+    And .claude/settings.json exists with custom hooks (e.g., a PreToolUse hook)
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/settings.json contains the Purlin SessionStart clear hook
+    And the pre-existing PreToolUse hook is unchanged
+
+#### Scenario: Hook Installation Is Idempotent
+
+    Given .purlin/ already exists at the project root
+    And .claude/settings.json already contains the Purlin SessionStart clear hook
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/settings.json is unchanged (no duplicate entries)
 
 ### Manual Scenarios (Human Verification Required)
 
