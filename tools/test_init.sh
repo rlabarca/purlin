@@ -212,7 +212,7 @@ cleanup_sandbox
 
 # --- Test 10: Shim contains metadata ---
 echo ""
-echo "[Test 10] Shim contains metadata"
+echo "[Scenario] Shim Contains Repo URL, SHA, and Version"
 setup_sandbox
 "$INIT_SH" > /dev/null 2>&1
 
