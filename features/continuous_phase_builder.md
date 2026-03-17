@@ -359,6 +359,8 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
 
 - **Log file integrity:** Log files are always written identically regardless of canvas state. The evaluator reads from log files, not terminal output.
 
+- **Log file buffering:** Builder output MUST be line-buffered when redirected to log files. Without this, the OS defaults to full buffering (~4-8KB blocks) when stdout is not a TTY, causing the canvas to show `0K` log size until the process exits or the buffer fills. The launcher MUST use `stdbuf -oL` (or equivalent, e.g., `script -q /dev/null` on macOS where `stdbuf` may not be available) to force line-buffered output. This applies to all Builder invocations: sequential phases, parallel worktree phases, and bootstrap. The evaluator and canvas both depend on log files growing incrementally during execution.
+
 - **Non-continuous mode:** Without `--continuous`, no canvas is rendered. Behavior is unchanged from the current interactive launcher.
 
 ### 2.11 Default Behavior Preservation
@@ -849,6 +851,14 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     When the canvas performs a 15-second activity refresh
     Then the phase line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
     And the activity text is truncated to ~50 characters if longer
+
+#### Scenario: Log Files Grow Incrementally During Execution
+    Given --continuous is active
+    And a Builder process is running for Phase 2
+    When the Builder produces output
+    Then the log file at .purlin/runtime/continuous_build_phase_2.log grows incrementally
+    And the canvas heavy-update cycle (every 15 seconds) reads a non-zero file size
+    And the Builder invocation uses line-buffered output (stdbuf -oL or equivalent)
 
 #### Scenario: Canvas Warns on Empty Log at Phase Completion
     Given --continuous is active
