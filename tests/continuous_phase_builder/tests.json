@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 47,
+  "passed": 54,
   "failed": 0,
-  "total": 47,
+  "total": 54,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -98,7 +98,7 @@
       "status": "PASS"
     },
     {
-      "name": "Exit Summary",
+      "name": "Exit Summary Lists Per-Phase Details",
       "status": "PASS"
     },
     {
@@ -191,6 +191,34 @@
     },
     {
       "name": "Resume Session Output Streamed and Appended",
+      "status": "PASS"
+    },
+    {
+      "name": "Heartbeat Overwrites Previous Output In Place",
+      "status": "PASS"
+    },
+    {
+      "name": "Heartbeat Falls Back to Plain Output When Not a TTY",
+      "status": "PASS"
+    },
+    {
+      "name": "Heartbeat Shows Current Builder Activity",
+      "status": "PASS"
+    },
+    {
+      "name": "Heartbeat Warns on Empty Log at Phase Completion",
+      "status": "PASS"
+    },
+    {
+      "name": "Graceful Stop on SIGINT",
+      "status": "PASS"
+    },
+    {
+      "name": "Second SIGINT Forces Immediate Exit",
+      "status": "PASS"
+    },
+    {
+      "name": "Post-Run Status Refresh",
       "status": "PASS"
     }
   ]

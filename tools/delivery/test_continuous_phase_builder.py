@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 47 automated scenarios.
+"""Tests for continuous phase builder — exercises all 54 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -402,10 +402,11 @@ def test_sequential_completion():
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
-        # Check summary reports phases completed
+        # Check summary reports phases completed (new format: "Phases: N/M completed")
         ok = (
             proc.returncode == 0
-            and "Phases completed:" in proc.stderr
+            and "Phases:" in proc.stderr
+            and "completed" in proc.stderr
         )
         record("Sequential Phase Completion", ok,
                f"rc={proc.returncode}, stderr={proc.stderr[:500]}" if not ok else "")
@@ -775,7 +776,8 @@ def test_all_phases_complete():
 
         ok = (
             proc.returncode == 0
-            and "Phases completed:" in proc.stderr
+            and "Phases:" in proc.stderr
+            and "completed" in proc.stderr
         )
         record("All Phases Complete", ok,
                f"rc={proc.returncode}, stderr={proc.stderr[:300]}" if not ok else "")
@@ -1227,29 +1229,45 @@ def test_logging_per_phase():
 
 
 # ============================================================
-# Scenario: Exit Summary
+# Scenario: Exit Summary Lists Per-Phase Details
 # ============================================================
-def test_exit_summary():
-    """Exit summary reports phases completed, groups, parallel groups, duration."""
+def test_exit_summary_per_phase_details():
+    """Exit summary includes status line, duration, phase count, per-phase details,
+    retries, parallel groups, and log file location."""
     tmpdir = tempfile.mkdtemp()
     try:
-        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
-        graph = make_graph([("a.md", [])])
+        plan = make_plan([
+            (1, "Alpha", "PENDING", ["a.md"]),
+            (2, "Beta", "PENDING", ["b.md"]),
+        ])
+        graph = make_graph([("a.md", []), ("b.md", ["a.md"])])
         make_mock_project(tmpdir, plan, graph)
-        mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
+        mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=2,
+                                   eval_responses=[
+                                       ("continue", "Phase 1 done"),
+                                       ("continue", "Phase 2 done"),
+                                   ])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
-        has_phases = "Phases completed:" in proc.stderr
-        has_groups = "Execution groups:" in proc.stderr
-        has_retries = "Retries consumed:" in proc.stderr
-        has_duration = "Total duration:" in proc.stderr
+        has_status_line = "Status: completed" in proc.stderr
+        has_duration = "Duration:" in proc.stderr
+        has_phase_count = "Phases:" in proc.stderr and "completed" in proc.stderr
+        has_per_phase = "Phase 1 -- Alpha" in proc.stderr
+        has_retries = "Retries:" in proc.stderr
+        has_parallel = "Parallel groups:" in proc.stderr
+        has_log_files = "Log files:" in proc.stderr
+        has_complete_status = "COMPLETE" in proc.stderr
+        has_features = "features:" in proc.stderr
 
-        ok = has_phases and has_groups and has_retries and has_duration
-        record("Exit Summary", ok,
-               f"phases={has_phases}, groups={has_groups}, retries={has_retries}, "
-               f"duration={has_duration}, stderr={proc.stderr[-500:]}" if not ok else "")
+        ok = (has_status_line and has_duration and has_phase_count and
+              has_per_phase and has_retries and has_parallel and has_log_files and
+              has_complete_status and has_features)
+        record("Exit Summary Lists Per-Phase Details", ok,
+               f"status={has_status_line}, dur={has_duration}, count={has_phase_count}, "
+               f"per_phase={has_per_phase}, retries={has_retries}, parallel={has_parallel}, "
+               f"logs={has_log_files}, complete={has_complete_status}, feats={has_features}, "
+               f"stderr={proc.stderr[-800:]}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -2032,9 +2050,9 @@ if pending:
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
-        # Summary should mention amendment
+        # Summary should mention amendment and show phase count
         has_amended = "amended" in proc.stderr.lower()
-        has_phases = "Phases completed:" in proc.stderr
+        has_phases = "Phases:" in proc.stderr and "completed" in proc.stderr
 
         ok = (
             proc.returncode == 0
@@ -2612,7 +2630,7 @@ def test_parallel_heartbeat_during_execution():
 
     # Verify heartbeat process is started
     has_heartbeat_loop = 'sleep 15' in parallel_section
-    has_heartbeat_output = 'Parallel group:' in parallel_section
+    has_heartbeat_output = 'Parallel group (' in parallel_section
     has_stderr_output = '>&2' in parallel_section
     has_log_size = 'wc -c' in parallel_section
     has_running_status = '(running,' in parallel_section
@@ -2815,6 +2833,198 @@ exit 0
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Enhanced Heartbeat & Graceful Stop (Section 2.16) (7)
+# ============================================================
+
+def test_heartbeat_overwrites_previous_output():
+    """Heartbeat uses ANSI cursor-up and clear-to-end for in-place overwrite when TTY."""
+    source = read_launcher()
+
+    parallel_start = source.find('# Start enhanced heartbeat')
+    assert parallel_start != -1, "Could not find enhanced heartbeat section"
+    heartbeat_section = source[parallel_start:source.find('HEARTBEAT_PID=$!', parallel_start) + 20]
+
+    # Verify ANSI cursor-up sequence
+    has_cursor_up = '\\033[%dA' in heartbeat_section
+    # Verify clear-to-end sequence
+    has_clear = '\\033[J' in heartbeat_section
+    # Verify previous line count tracking
+    has_prev_lines = 'PREV_LINES=' in heartbeat_section
+    # Verify TTY check gates ANSI usage
+    has_tty_check = '[ -t 2 ]' in heartbeat_section
+
+    ok = has_cursor_up and has_clear and has_prev_lines and has_tty_check
+    record("Heartbeat Overwrites Previous Output In Place", ok,
+           f"cursor_up={has_cursor_up}, clear={has_clear}, prev_lines={has_prev_lines}, "
+           f"tty_check={has_tty_check}" if not ok else "")
+
+
+def test_heartbeat_falls_back_plain_output():
+    """Heartbeat uses single-line append-only output without ANSI when not TTY."""
+    source = read_launcher()
+
+    parallel_start = source.find('# Start enhanced heartbeat')
+    assert parallel_start != -1
+    heartbeat_section = source[parallel_start:source.find('HEARTBEAT_PID=$!', parallel_start) + 20]
+
+    # Verify non-TTY fallback path exists
+    has_non_tty_branch = 'else' in heartbeat_section
+    # Non-TTY path uses compact single-line format
+    has_compact_parts = 'COMPACT_PARTS' in heartbeat_section
+    # Non-TTY path does not use ANSI in the else branch
+    # Find the else branch after TTY check
+    else_idx = heartbeat_section.rfind('else')
+    else_block = heartbeat_section[else_idx:] if else_idx >= 0 else ""
+    has_no_ansi_in_else = '\\033[' not in else_block.split('done')[0] if 'done' in else_block else True
+
+    ok = has_non_tty_branch and has_compact_parts and has_no_ansi_in_else
+    record("Heartbeat Falls Back to Plain Output When Not a TTY", ok,
+           f"non_tty={has_non_tty_branch}, compact={has_compact_parts}, "
+           f"no_ansi={has_no_ansi_in_else}" if not ok else "")
+
+
+def test_heartbeat_shows_current_activity():
+    """Heartbeat extracts current activity from log file tail for running phases."""
+    source = read_launcher()
+
+    # Verify extract_activity function exists
+    has_extract_fn = 'extract_activity()' in source
+    # Verify it reads log tail
+    has_tail = 'tail -20' in source
+    # Verify it detects file editing
+    has_editing = 'editing' in source
+    # Verify activity is called from heartbeat
+    heartbeat_start = source.find('# Start enhanced heartbeat')
+    heartbeat_section = source[heartbeat_start:source.find('HEARTBEAT_PID=$!', heartbeat_start) + 20]
+    has_activity_call = 'extract_activity' in heartbeat_section
+    # Verify truncation to ~50 chars
+    has_truncation = '%.50s' in source
+
+    ok = has_extract_fn and has_tail and has_editing and has_activity_call and has_truncation
+    record("Heartbeat Shows Current Builder Activity", ok,
+           f"fn={has_extract_fn}, tail={has_tail}, editing={has_editing}, "
+           f"call={has_activity_call}, trunc={has_truncation}" if not ok else "")
+
+
+def test_heartbeat_warns_empty_log():
+    """Heartbeat shows red warning for completed phases with 0K log size."""
+    source = read_launcher()
+
+    heartbeat_start = source.find('# Start enhanced heartbeat')
+    assert heartbeat_start != -1
+    heartbeat_section = source[heartbeat_start:source.find('HEARTBEAT_PID=$!', heartbeat_start) + 20]
+
+    # Verify 0K check exists
+    has_zero_k_check = '"$FSIZE" = "0K"' in heartbeat_section
+    # Verify red color for 0K (ANSI red: \033[31m)
+    has_red_color = '\\033[31m' in heartbeat_section
+    # Verify green color for normal done (ANSI green: \033[32m)
+    has_green_color = '\\033[32m' in heartbeat_section
+    # Verify yellow for running (ANSI yellow: \033[33m)
+    has_yellow_color = '\\033[33m' in heartbeat_section
+
+    ok = has_zero_k_check and has_red_color and has_green_color and has_yellow_color
+    record("Heartbeat Warns on Empty Log at Phase Completion", ok,
+           f"zero_k={has_zero_k_check}, red={has_red_color}, "
+           f"green={has_green_color}, yellow={has_yellow_color}" if not ok else "")
+
+
+def test_graceful_stop_on_sigint():
+    """SIGINT trap sets stop flag, kills builders and heartbeat, exits non-zero."""
+    source = read_launcher()
+
+    # Verify graceful_stop function exists
+    has_handler = 'graceful_stop()' in source
+    # Verify it sets STOP_REQUESTED
+    has_stop_flag = 'STOP_REQUESTED=true' in source
+    # Verify trap is set
+    has_trap = 'trap graceful_stop INT' in source
+    # Verify it kills parallel builder PIDs
+    has_kill_pids = 'kill "$pid"' in source
+    # Verify it kills heartbeat
+    handler_start = source.find('graceful_stop() {')
+    handler_end = source.find('\ntrap graceful_stop INT')
+    handler_body = source[handler_start:handler_end] if handler_start >= 0 else ""
+    has_kill_heartbeat = 'HEARTBEAT_PID' in handler_body
+    # Verify trap reset for second SIGINT
+    has_trap_reset = 'trap - INT' in handler_body
+    # Verify STOP_REQUESTED check in loop causes break
+    has_stop_check = '[ "$STOP_REQUESTED" = "true" ]' in source
+    # Verify interrupted phases are recorded
+    has_interrupted = '"INTERRUPTED"' in source
+
+    ok = (has_handler and has_stop_flag and has_trap and has_kill_pids and
+          has_kill_heartbeat and has_trap_reset and has_stop_check and has_interrupted)
+    record("Graceful Stop on SIGINT", ok,
+           f"handler={has_handler}, flag={has_stop_flag}, trap={has_trap}, "
+           f"kill_pids={has_kill_pids}, kill_hb={has_kill_heartbeat}, "
+           f"reset={has_trap_reset}, check={has_stop_check}, "
+           f"interrupted={has_interrupted}" if not ok else "")
+
+
+def test_second_sigint_forces_exit():
+    """After first SIGINT, trap resets to default so second SIGINT terminates immediately."""
+    source = read_launcher()
+
+    # Find the graceful_stop handler
+    handler_start = source.find('graceful_stop() {')
+    assert handler_start != -1, "Could not find graceful_stop handler"
+    # Find the closing brace of the function
+    handler_section = source[handler_start:]
+    brace_count = 0
+    handler_end = handler_start
+    for i, ch in enumerate(handler_section):
+        if ch == '{':
+            brace_count += 1
+        elif ch == '}':
+            brace_count -= 1
+            if brace_count == 0:
+                handler_end = i
+                break
+    handler_body = handler_section[:handler_end + 1]
+
+    # Verify trap - INT is inside the handler (resets to default)
+    has_trap_reset_in_handler = 'trap - INT' in handler_body
+    # Verify STOP_REQUESTED is set (first action)
+    has_stop_flag = 'STOP_REQUESTED=true' in handler_body
+    # Verify the exit summary checks STOP_REQUESTED for "stopped" status
+    has_stopped_status = 'stopped (user interrupt)' in source
+
+    ok = has_trap_reset_in_handler and has_stop_flag and has_stopped_status
+    record("Second SIGINT Forces Immediate Exit", ok,
+           f"reset_in_handler={has_trap_reset_in_handler}, "
+           f"stop_flag={has_stop_flag}, "
+           f"stopped_status={has_stopped_status}" if not ok else "")
+
+
+def test_post_run_status_refresh():
+    """After exit summary, launcher runs tools/cdd/status.sh."""
+    source = read_launcher()
+
+    # Find exit summary section
+    summary_start = source.find('# Exit Summary (Section 2.16)')
+    assert summary_start != -1, "Could not find exit summary section"
+    post_summary = source[summary_start:]
+
+    # Verify CDD_STATUS variable is defined
+    has_cdd_var = 'CDD_STATUS=' in source
+    # Verify status.sh is invoked after the summary
+    has_status_call = 'bash "$CDD_STATUS"' in post_summary
+    # Verify it checks for file existence first
+    has_file_check = '[ -f "$CDD_STATUS" ]' in post_summary
+    # Verify it runs after the summary banner
+    summary_end_pos = post_summary.find('================================')
+    status_call_pos = post_summary.find('bash "$CDD_STATUS"')
+    has_after_summary = (summary_end_pos >= 0 and status_call_pos >= 0 and
+                        status_call_pos > summary_end_pos)
+
+    ok = has_cdd_var and has_status_call and has_file_check and has_after_summary
+    record("Post-Run Status Refresh", ok,
+           f"var={has_cdd_var}, call={has_status_call}, "
+           f"check={has_file_check}, after={has_after_summary}" if not ok else "")
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -2872,7 +3082,7 @@ if __name__ == '__main__':
     test_system_prompt_overrides()
     test_phase_specific_assignment()
     test_logging_per_phase()
-    test_exit_summary()
+    test_exit_summary_per_phase_details()
     test_worktree_cleanup()
     test_delivery_plan_central_update()
 
@@ -2904,6 +3114,15 @@ if __name__ == '__main__':
     test_parallel_output_not_streamed()
     test_heartbeat_stops_after_parallel_complete()
     test_resume_session_output_streamed_and_appended()
+
+    # Enhanced Heartbeat & Graceful Stop (Section 2.16) (7)
+    test_heartbeat_overwrites_previous_output()
+    test_heartbeat_falls_back_plain_output()
+    test_heartbeat_shows_current_activity()
+    test_heartbeat_warns_empty_log()
+    test_graceful_stop_on_sigint()
+    test_second_sigint_forces_exit()
+    test_post_run_status_refresh()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

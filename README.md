@@ -254,7 +254,7 @@ Open **http://localhost:8086** (or your chosen port). Two views:
 git submodule update --remote purlin   # fetch latest
 ./purlin/pl-init.sh                    # refresh launchers and commands
 rm -f run_architect.sh run_builder.sh run_qa.sh   # remove old launcher names
-git add -A && git commit -m "chore: upgrade purlin to v0.8.0"
+git add -A && git commit -m "chore: upgrade purlin to v0.8.1"
 ```
 
 The init script creates the new `pl-run-*.sh` launchers but does not auto-delete old `run_*.sh` names.

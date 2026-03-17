@@ -242,6 +242,94 @@ evaluator_fallback() {
     fi
 }
 
+# --- Helper: format seconds as Xm Ys ---
+format_duration() {
+    local secs="$1"
+    local mins=$((secs / 60))
+    local rem=$((secs % 60))
+    if [ "$mins" -gt 0 ]; then
+        echo "${mins}m ${rem}s"
+    else
+        echo "${secs}s"
+    fi
+}
+
+# --- Helper: extract phase label from delivery plan ---
+extract_phase_label() {
+    local phase_num="$1"
+    sed -n "s/## Phase ${phase_num} -- \(.*\) \[.*/\1/p" "$DELIVERY_PLAN" 2>/dev/null | head -1
+}
+
+# --- Helper: extract phase features from delivery plan ---
+extract_phase_features() {
+    local phase_num="$1"
+    python3 -c "
+import re, sys
+try:
+    with open(sys.argv[1]) as f:
+        content = f.read()
+    m = re.search(r'## Phase ' + sys.argv[2] + r' -- .*?\n\*\*Features:\*\* (.*?)(?:\n|\$)', content)
+    print(m.group(1).strip() if m else '--')
+except Exception:
+    print('--')
+" "$DELIVERY_PLAN" "$phase_num" 2>/dev/null || echo "--"
+}
+
+# --- Helper: extract current activity from log file tail ---
+extract_activity() {
+    local log_file="$1"
+    [ -f "$log_file" ] || { echo "working..."; return; }
+    local tail_content
+    tail_content=$(tail -20 "$log_file" 2>/dev/null) || { echo "working..."; return; }
+    local fname
+    fname=$(echo "$tail_content" | grep -oE '[a-zA-Z0-9_.-]+\.(md|py|sh|js|ts|json|html|css)' | tail -1)
+    if [ -n "$fname" ]; then
+        printf "editing %.50s" "$fname"
+        return
+    fi
+    local cmd_match
+    cmd_match=$(echo "$tail_content" | grep -oE 'running [a-zA-Z0-9_ -]+' | tail -1)
+    if [ -n "$cmd_match" ]; then
+        printf "%.50s" "$cmd_match"
+        return
+    fi
+    echo "working..."
+}
+
+# --- Helper: record phase start metadata ---
+record_phase_start() {
+    local phase_num="$1"
+    local label features
+    label=$(extract_phase_label "$phase_num")
+    features=$(extract_phase_features "$phase_num")
+    cat > "${RUNTIME_DIR}/phase_${phase_num}_meta" << META_EOF
+LABEL=${label}
+FEATURES=${features}
+STATUS=RUNNING
+START_TIME=$(date +%s)
+END_TIME=
+META_EOF
+}
+
+# --- Helper: record phase end metadata ---
+record_phase_end() {
+    local phase_num="$1"
+    local status="$2"
+    local meta_file="${RUNTIME_DIR}/phase_${phase_num}_meta"
+    [ -f "$meta_file" ] || return
+    local label features start_time
+    label=$(grep '^LABEL=' "$meta_file" | cut -d= -f2-)
+    features=$(grep '^FEATURES=' "$meta_file" | cut -d= -f2-)
+    start_time=$(grep '^START_TIME=' "$meta_file" | cut -d= -f2-)
+    cat > "$meta_file" << META_EOF
+LABEL=${label}
+FEATURES=${features}
+STATUS=${status}
+START_TIME=${start_time}
+END_TIME=$(date +%s)
+META_EOF
+}
+
 # --- Helper: update delivery plan phase status after parallel group ---
 update_plan_phase_status() {
     local phase_num="$1"
@@ -437,6 +525,26 @@ with open('$DELIVERY_PLAN') as f:
 print(len(re.findall(r'## Phase \d+ -- .+? \[PENDING\]', content)))
 " 2>/dev/null || echo "0")
 
+CDD_STATUS="$CORE_DIR/tools/cdd/status.sh"
+
+# --- Graceful stop handler (SIGINT/Ctrl+C) ---
+STOP_REQUESTED=false
+
+graceful_stop() {
+    STOP_REQUESTED=true
+    # Send SIGTERM to parallel builders
+    for pid in "${WT_PIDS[@]}"; do
+        kill "$pid" 2>/dev/null
+    done
+    # Kill heartbeat
+    if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
+        kill "$HEARTBEAT_PID" 2>/dev/null
+    fi
+    # Reset trap so second SIGINT forces immediate exit
+    trap - INT
+}
+trap graceful_stop INT
+
 # ================================================================
 # Main orchestration loop (re-analyzes before each execution group)
 # ================================================================
@@ -496,6 +604,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             LOG_FILE="${RUNTIME_DIR}/continuous_build_phase_${PHASE_NUM}_worktree.log"
 
             git -C "$SCRIPT_DIR" worktree add -b "$WT_BRANCH" "$WT_DIR" HEAD 2>/dev/null
+            record_phase_start "$PHASE_NUM"
 
             INITIAL_MSG="Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase ${PHASE_NUM} ONLY. Work exclusively on Phase ${PHASE_NUM} features. Do not wait for approval."
 
@@ -514,31 +623,103 @@ while [ "$OUTER_BREAK" = "false" ]; do
             WT_PHASES+=("$PHASE_NUM")
         done
 
-        # Start heartbeat process for parallel group visibility (Section 2.16)
+        # Start enhanced heartbeat process for parallel group visibility (Section 2.16)
         HEARTBEAT_PID=""
         (
+            PREV_LINES=0
+            # Initialize frozen end time files (bash 3 compat)
+            for i in "${!WT_PHASES[@]}"; do
+                rm -f "${RUNTIME_DIR}/heartbeat_frozen_${WT_PHASES[$i]}" 2>/dev/null
+            done
+
             while true; do
                 sleep 15
-                STATUS_PARTS=()
-                for i in "${!WT_PHASES[@]}"; do
-                    PNUM="${WT_PHASES[$i]}"
-                    LFILE="${WT_LOGS[$i]}"
-                    PID_VAL="${WT_PIDS[$i]}"
-                    FSIZE="0K"
-                    if [ -f "$LFILE" ]; then
-                        BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
-                        FSIZE="$((BYTES / 1024))K"
-                    fi
-                    if kill -0 "$PID_VAL" 2>/dev/null; then
-                        STATUS_PARTS+=("Phase $PNUM (running, $FSIZE)")
-                    else
-                        STATUS_PARTS+=("Phase $PNUM (done, $FSIZE)")
-                    fi
-                done
                 TIMESTAMP=$(date +%H:%M:%S)
-                IFS=', '
-                echo "[$TIMESTAMP] Parallel group: ${STATUS_PARTS[*]}" >&2
-                unset IFS
+
+                if [ -t 2 ]; then
+                    # TTY mode: multi-line in-place display with ANSI cursor control
+                    OUTPUT="[$TIMESTAMP] Parallel group (${#WT_PHASES[@]} phases):"$'\n'
+                    LINE_COUNT=1
+
+                    for i in "${!WT_PHASES[@]}"; do
+                        PNUM="${WT_PHASES[$i]}"
+                        LFILE="${WT_LOGS[$i]}"
+                        PID_VAL="${WT_PIDS[$i]}"
+
+                        PLABEL=$(sed -n "s/## Phase ${PNUM} -- \(.*\) \[.*/\1/p" "$DELIVERY_PLAN" 2>/dev/null | head -1)
+                        [ -z "$PLABEL" ] && PLABEL="Phase ${PNUM}"
+
+                        FSIZE="0K"
+                        if [ -f "$LFILE" ]; then
+                            BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
+                            FSIZE="$((BYTES / 1024))K"
+                        fi
+
+                        ELAPSED=""
+                        PSTART=""
+                        META_FILE="${RUNTIME_DIR}/phase_${PNUM}_meta"
+                        [ -f "$META_FILE" ] && PSTART=$(grep '^START_TIME=' "$META_FILE" | cut -d= -f2-)
+                        if [ -n "$PSTART" ]; then
+                            NOW_TS=$(date +%s)
+                            if kill -0 "$PID_VAL" 2>/dev/null; then
+                                SECS=$((NOW_TS - PSTART))
+                            else
+                                FROZEN_FILE="${RUNTIME_DIR}/heartbeat_frozen_${PNUM}"
+                                if [ ! -f "$FROZEN_FILE" ]; then
+                                    echo "$NOW_TS" > "$FROZEN_FILE"
+                                    FEND=$NOW_TS
+                                else
+                                    FEND=$(cat "$FROZEN_FILE")
+                                fi
+                                SECS=$((FEND - PSTART))
+                            fi
+                            MINS=$((SECS / 60))
+                            REM=$((SECS % 60))
+                            [ "$MINS" -gt 0 ] && ELAPSED="${MINS}m ${REM}s" || ELAPSED="${SECS}s"
+                        fi
+
+                        if kill -0 "$PID_VAL" 2>/dev/null; then
+                            ACTIVITY=$(extract_activity "$LFILE")
+                            OUTPUT+="             \033[33mPhase ${PNUM} -- ${PLABEL}   running  ${ELAPSED}   ${FSIZE}  ${ACTIVITY}\033[0m"$'\n'
+                        else
+                            if [ "$FSIZE" = "0K" ]; then
+                                OUTPUT+="             \033[31mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                            else
+                                OUTPUT+="             \033[32mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                            fi
+                        fi
+                        LINE_COUNT=$((LINE_COUNT + 1))
+                    done
+
+                    # In-place overwrite via cursor-up and clear
+                    if [ "$PREV_LINES" -gt 0 ]; then
+                        printf '\033[%dA\033[J' "$PREV_LINES" >&2
+                    fi
+                    printf '%b' "$OUTPUT" >&2
+                    PREV_LINES=$LINE_COUNT
+                else
+                    # Non-TTY: single-line append-only output without ANSI
+                    COMPACT_PARTS=""
+                    for i in "${!WT_PHASES[@]}"; do
+                        PNUM="${WT_PHASES[$i]}"
+                        LFILE="${WT_LOGS[$i]}"
+                        PID_VAL="${WT_PIDS[$i]}"
+
+                        FSIZE="0K"
+                        if [ -f "$LFILE" ]; then
+                            BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
+                            FSIZE="$((BYTES / 1024))K"
+                        fi
+
+                        [ -n "$COMPACT_PARTS" ] && COMPACT_PARTS+=", "
+                        if kill -0 "$PID_VAL" 2>/dev/null; then
+                            COMPACT_PARTS+="Phase ${PNUM} (running, ${FSIZE})"
+                        else
+                            COMPACT_PARTS+="Phase ${PNUM} (done, ${FSIZE})"
+                        fi
+                    done
+                    echo "[$TIMESTAMP] Phases: ${COMPACT_PARTS}" >&2
+                fi
             done
         ) &
         HEARTBEAT_PID=$!
@@ -547,6 +728,21 @@ while [ "$OUTER_BREAK" = "false" ]; do
         for pid in "${WT_PIDS[@]}"; do
             wait "$pid" 2>/dev/null
         done
+
+        # Check for graceful stop before merge
+        if [ "$STOP_REQUESTED" = "true" ]; then
+            # Kill heartbeat if still alive
+            if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
+                kill "$HEARTBEAT_PID" 2>/dev/null
+                wait "$HEARTBEAT_PID" 2>/dev/null
+            fi
+            HEARTBEAT_PID=""
+            for PHASE_NUM in $PHASE_LIST; do
+                record_phase_end "$PHASE_NUM" "INTERRUPTED"
+            done
+            OUTER_BREAK=true
+            continue
+        fi
 
         # Terminate heartbeat before merge (Section 2.16)
         if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
@@ -599,6 +795,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # Update delivery plan centrally for each phase in the group
         for PHASE_NUM in $PHASE_LIST; do
             update_plan_phase_status "$PHASE_NUM"
+            record_phase_end "$PHASE_NUM" "COMPLETE"
             PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
         done
 
@@ -620,6 +817,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # ============================================================
         PHASE_NUM=$(echo "$PHASE_LIST" | awk '{print $1}')
         echo "Executing sequential Phase $PHASE_NUM..." >&2
+        record_phase_start "$PHASE_NUM"
 
         SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
         LOG_FILE="${RUNTIME_DIR}/continuous_build_phase_${PHASE_NUM}.log"
@@ -645,6 +843,13 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     ;;
             esac
 
+            # Check for graceful stop
+            if [ "$STOP_REQUESTED" = "true" ]; then
+                record_phase_end "$PHASE_NUM" "INTERRUPTED"
+                OUTER_BREAK=true
+                break
+            fi
+
             # Detect plan amendments by sequential Builder
             PLAN_HASH_AFTER=$(get_plan_hash)
             if [ "$PLAN_HASH_BEFORE" != "$PLAN_HASH_AFTER" ]; then
@@ -666,6 +871,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             case "$ACTION" in
                 continue)
                     update_plan_phase_status "$PHASE_NUM"
+                    record_phase_end "$PHASE_NUM" "COMPLETE"
                     PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
                     break  # Exit inner loop; outer loop re-analyzes
                     ;;
@@ -694,8 +900,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     ;;
                 stop)
                     if echo "$REASON" | grep -qi "success\|complete\|all phases"; then
+                        record_phase_end "$PHASE_NUM" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
                     else
+                        record_phase_end "$PHASE_NUM" "SKIPPED"
                         FAILURES+=("stop_phase_${PHASE_NUM}")
                     fi
                     OUTER_BREAK=true
@@ -712,27 +920,118 @@ while [ "$OUTER_BREAK" = "false" ]; do
 done
 
 # ================================================================
-# Exit Summary
+# Exit Summary (Section 2.16)
 # ================================================================
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
+DURATION_STR=$(format_duration "$DURATION")
+
+# Determine overall status
+if [ "$STOP_REQUESTED" = "true" ]; then
+    OVERALL_STATUS="stopped (user interrupt)"
+elif [ ${#FAILURES[@]} -gt 0 ]; then
+    OVERALL_STATUS="failed (${FAILURES[0]})"
+else
+    OVERALL_STATUS="completed"
+fi
 
 echo "" >&2
 echo "=== Continuous Build Summary ===" >&2
-echo "Phases completed: $PHASES_COMPLETED" >&2
-echo "Execution groups: $GROUPS_EXECUTED ($PARALLEL_GROUPS_USED parallel)" >&2
-echo "Retries consumed: $TOTAL_RETRIES" >&2
+echo "Status: $OVERALL_STATUS" >&2
+echo "Duration: $DURATION_STR" >&2
+echo "Phases: ${PHASES_COMPLETED}/${INITIAL_PENDING_COUNT} completed" >&2
+echo "" >&2
+
+# Per-phase details from metadata files and delivery plan
+python3 -c "
+import os, re, sys, glob
+
+runtime_dir = sys.argv[1]
+plan_path = sys.argv[2]
+
+phases = []
+
+# From delivery plan (if exists)
+if os.path.exists(plan_path):
+    with open(plan_path) as f:
+        content = f.read()
+    for m in re.finditer(r'## Phase (\d+) -- (.+?) \[', content):
+        pnum = int(m.group(1))
+        label = m.group(2).strip()
+        feat_m = re.search(r'## Phase {} -- .*?\n\*\*Features:\*\* (.*?)(?:\n|$)'.format(pnum), content)
+        features = feat_m.group(1).strip() if feat_m else '--'
+        phases.append((pnum, label, features))
+
+# If no plan, use metadata files only
+if not phases:
+    for mf in sorted(glob.glob(os.path.join(runtime_dir, 'phase_*_meta'))):
+        m_f = re.search(r'phase_(\d+)_meta', mf)
+        if m_f:
+            pnum = int(m_f.group(1))
+            meta = {}
+            with open(mf) as f:
+                for line in f:
+                    if '=' in line:
+                        k, v = line.strip().split('=', 1)
+                        meta[k] = v
+            phases.append((pnum, meta.get('LABEL', ''), meta.get('FEATURES', '--')))
+
+for pnum, label, features in sorted(phases):
+    meta_file = os.path.join(runtime_dir, 'phase_{}_meta'.format(pnum))
+    status = 'PENDING'
+    dur_str = ''
+    if os.path.exists(meta_file):
+        meta = {}
+        with open(meta_file) as f:
+            for line in f:
+                if '=' in line:
+                    k, v = line.strip().split('=', 1)
+                    meta[k] = v
+        status = meta.get('STATUS', 'PENDING')
+        start_t = meta.get('START_TIME', '')
+        end_t = meta.get('END_TIME', '')
+        if start_t and end_t:
+            try:
+                secs = int(end_t) - int(start_t)
+                mins = secs // 60
+                rem = secs % 60
+                dur_str = '{}m {}s'.format(mins, rem) if mins > 0 else '{}s'.format(secs)
+            except ValueError:
+                pass
+    print('  Phase {} -- {:<30s} {:<14s} {:<10s} features: {}'.format(
+        pnum, label, status, dur_str, features))
+" "$RUNTIME_DIR" "$DELIVERY_PLAN" >&2
+
+echo "" >&2
+
+# Retries
+RETRY_INFO=""
+for retry_file in "$RUNTIME_DIR"/retry_count_*; do
+    [ -f "$retry_file" ] || continue
+    RP=$(echo "$retry_file" | grep -oE '[0-9]+$')
+    RC=$(cat "$retry_file")
+    if [ -n "$RETRY_INFO" ]; then
+        RETRY_INFO="${RETRY_INFO}, Phase ${RP}"
+    else
+        RETRY_INFO="${RC} (Phase ${RP})"
+    fi
+done
+echo "Retries: ${RETRY_INFO:-0}" >&2
+echo "Parallel groups: $PARALLEL_GROUPS_USED" >&2
 if [ "$PLAN_AMENDED" = "true" ]; then
     echo "Note: delivery plan was amended during execution" >&2
 fi
-if [ ${#FAILURES[@]} -gt 0 ]; then
-    echo "Failures: ${FAILURES[*]}" >&2
-fi
-echo "Total duration: ${DURATION}s" >&2
+echo "Log files: .purlin/runtime/continuous_build_phase_*.log" >&2
 echo "================================" >&2
 
-if [ ${#FAILURES[@]} -gt 0 ]; then
+# Post-run status refresh (Section 2.16)
+if [ -f "$CDD_STATUS" ]; then
+    echo "" >&2
+    bash "$CDD_STATUS" 2>&1
+fi
+
+if [ ${#FAILURES[@]} -gt 0 ] || [ "$STOP_REQUESTED" = "true" ]; then
     exit 1
 fi
 exit 0

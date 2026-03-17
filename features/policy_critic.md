@@ -103,7 +103,7 @@ Feature files MAY contain a `## Visual Specification` section for features with 
 
 **Constraints:**
 *   The section is **optional** -- only present when the feature has a visual/UI component.
-*   The section is **Architect-owned** (like the rest of the spec), not QA-owned.
+*   The section is **spec-owned** (Architect-authored, or PM-authored when a PM agent is active), not QA-owned.
 *   Visual specification items are **exempt from Gherkin traceability**. They do not require automated scenarios or test functions.
 *   The Critic MUST detect `## Visual Specification` sections and count visual checklist items per feature.
 *   The Critic MUST generate separate QA action items for visual verification, distinct from functional scenario verification.
