@@ -61,7 +61,8 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 ### 2.5 LLM Evaluator
 
 - After each Builder exit (whether sequential or parallel), pipe the Builder's output to a lightweight LLM evaluator.
-- The evaluator is invoked via `claude -p --model <haiku-model> --json-schema <schema>` with Haiku.
+- **Model:** The evaluator model is configurable via `continuous_evaluator_model` in `.purlin/config.json` (or `.purlin/config.local.json`). If absent, defaults to Haiku. Acceptable values are any model ID from the `models` array in config (e.g., `"claude-haiku-4-5-20251001"`, `"claude-sonnet-4-6"`). Use Sonnet when evaluator misclassifications are observed; use Haiku for cost efficiency.
+- The evaluator is invoked via `claude -p --model <resolved-model> --json-schema <schema>`.
 - **Timeout:** The evaluator invocation MUST have a 30-second timeout (e.g., `timeout 30 claude ...`). If the call exceeds 30 seconds, kill it and fall back to the delivery plan hash check (Section 2.10). A Haiku classification call should complete in under 5 seconds — anything longer indicates a hung connection or overloaded endpoint, not a legitimate processing delay.
 - The evaluator receives: the tail of the Builder's output (last 200 lines), the current delivery plan contents (if the file still exists), and classification instructions.
 - The evaluator returns structured JSON:
@@ -69,28 +70,32 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 ```json
 {
   "action": "continue | retry | approve | stop",
+  "success": true | false,
   "reason": "Brief explanation"
 }
 ```
 
+- **`success` field:** The evaluator MUST explicitly set `success: true` when the stop action indicates all work completed successfully, and `success: false` for error/stall stops. The orchestrator MUST use this boolean to determine exit status for stop actions -- NOT keyword matching on the reason string. This eliminates false negatives from reason phrasing variation.
+- For non-stop actions (`continue`, `retry`, `approve`), the `success` field MUST be `false` (it is only meaningful for `stop`).
+
 - **Decision mapping:**
 
-| Builder Output Signal | Evaluator Action |
-|---|---|
-| "Phase N of M complete" + delivery plan updated | `continue` |
-| "Ready to go?" / "Ready to resume?" (approval prompt) | `approve` |
-| Context exhaustion / checkpoint saved mid-phase | `retry` |
-| Partial progress (features done but phase incomplete) | `retry` |
-| Error requiring human input (INFEASIBLE, missing fixture) | `stop` |
-| All phases complete / delivery plan deleted | `stop` (success) |
-| No meaningful progress detected | `stop` |
+| Builder Output Signal | Evaluator Action | success |
+|---|---|---|
+| "Phase N of M complete" + delivery plan updated | `continue` | `false` |
+| "Ready to go?" / "Ready to resume?" (approval prompt) | `approve` | `false` |
+| Context exhaustion / checkpoint saved mid-phase | `retry` | `false` |
+| Partial progress (features done but phase incomplete) | `retry` | `false` |
+| Error requiring human input (INFEASIBLE, missing fixture) | `stop` | `false` |
+| All phases complete / delivery plan deleted | `stop` | `true` |
+| No meaningful progress detected | `stop` | `false` |
 
 ### 2.6 Evaluator Actions
 
 - **`continue`:** Proceed to the next phase or execution group. Start a new session.
 - **`approve`:** The Builder paused for approval despite the auto-proceed override. Resume the same session via `claude -r <session-name> -p "Approved. Proceed."`. After the resumed run completes, re-evaluate with the new output.
 - **`retry`:** Relaunch the same phase in a new session (fresh context). Maximum 2 consecutive retries per phase. If the retry limit is exceeded, exit with an escalation message.
-- **`stop`:** Exit the orchestration loop. Print the reason from the evaluator. If the reason indicates success (all phases complete), exit with zero status. Otherwise, exit with non-zero status.
+- **`stop`:** Exit the orchestration loop. Print the reason from the evaluator. If `success` is `true`, record the phase as `COMPLETE` and exit with zero status. If `success` is `false`, record the phase as `SKIPPED` and exit with non-zero status.
 
 ### 2.7 Approval Bypass (Auto-Proceed Override)
 
@@ -460,7 +465,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then the launcher starts a new session for Phase 2
     And after Phase 2 the evaluator returns "continue"
     And the launcher starts a new session for Phase 3
-    And after Phase 3 the evaluator returns "stop" with success reason
+    And after Phase 3 the evaluator returns "stop" with success: true
     Then the launcher exits with zero status
 
 #### Scenario: Parallel Phase Execution
@@ -505,14 +510,14 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Given --continuous is active
     And the Builder outputs an INFEASIBLE escalation
     When the evaluator classifies the output
-    Then it returns action "stop" with the error reason
+    Then it returns action "stop" with success: false
     And the launcher exits with non-zero status
 
 #### Scenario: All Phases Complete
     Given --continuous is active
     And the Builder deletes the delivery plan after the final phase
     When the evaluator classifies the output
-    Then it returns action "stop" with a success reason
+    Then it returns action "stop" with success: true
     And the launcher exits with zero status
     And the summary reports all phases completed successfully
 

@@ -26,7 +26,7 @@ Parallel phases use manually created git worktrees (`git worktree add -b <branch
 
 ## Stop-on-Error Exit Code
 
-Non-success stop actions (INFEASIBLE, missing fixture, no progress) are tracked in the FAILURES array and cause non-zero exit. Success stops ("all phases complete") exit zero.
+Stop-action exit status is determined by the evaluator's `success` boolean field, not keyword matching on the reason string. When `success: true`, the phase is recorded COMPLETE and the launcher exits zero. When `success: false`, the phase is recorded SKIPPED, added to the FAILURES array, and exits non-zero. The earlier keyword-grep approach (`grep -qi "success\|complete\|all phases"`) was replaced because Haiku's reason phrasing varied enough to cause false negatives (e.g., "the agent has finished its work" doesn't match those keywords).
 
 ## Dependency Validation (Defense in Depth)
 
