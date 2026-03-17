@@ -328,6 +328,64 @@ create_cdd_symlinks() {
     fi
 }
 
+# Install the Purlin session-recovery hook into .claude/settings.json (§2.15).
+# Idempotent: creates/merges without touching existing hooks or settings.
+install_session_hook() {
+    local SETTINGS_FILE="$PROJECT_ROOT/.claude/settings.json"
+    mkdir -p "$PROJECT_ROOT/.claude"
+
+    "$PYTHON_EXE" -c "
+import json, os, sys
+
+settings_path = sys.argv[1]
+
+hook_entry = {
+    'matcher': 'clear',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': \"echo 'IMPORTANT: Context was cleared. Run /pl-resume immediately to restore session context.'\"
+        }
+    ]
+}
+
+# Read existing settings or start fresh
+settings = {}
+if os.path.exists(settings_path):
+    try:
+        with open(settings_path, 'r') as f:
+            settings = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        settings = {}
+
+# Ensure hooks.SessionStart exists
+if 'hooks' not in settings:
+    settings['hooks'] = {}
+if 'SessionStart' not in settings['hooks']:
+    settings['hooks']['SessionStart'] = []
+
+# Check if a 'clear' matcher already exists
+has_clear = any(
+    entry.get('matcher') == 'clear'
+    for entry in settings['hooks']['SessionStart']
+    if isinstance(entry, dict)
+)
+
+if not has_clear:
+    settings['hooks']['SessionStart'].append(hook_entry)
+
+# Validate and write atomically
+result = json.dumps(settings, indent=4)
+json.loads(result)  # validate round-trip
+
+tmp_path = settings_path + '.tmp'
+with open(tmp_path, 'w') as f:
+    f.write(result)
+    f.write('\n')
+os.replace(tmp_path, settings_path)
+" "$SETTINGS_FILE"
+}
+
 ###############################################################################
 # 3. Full Init Mode
 ###############################################################################
@@ -484,7 +542,10 @@ else:
         VENV_MSG="(Optional) python3 -m venv .venv && .venv/bin/pip install -r $SUBMODULE_NAME/requirements-optional.txt"
     fi
 
-    # 3.12 Summary Output
+    # 3.12 Claude Code Hook Installation (project_init.md §2.15)
+    install_session_hook
+
+    # 3.13 Summary Output
     say ""
     say "Purlin initialized."
     say ""
@@ -559,6 +620,9 @@ else
         rm -f "$PROJECT_ROOT/$stale"
     done
 
-    # 4.6 Refresh Summary
+    # 4.6 Claude Code Hook Installation (project_init.md §2.15)
+    install_session_hook
+
+    # 4.7 Refresh Summary
     say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}"
 fi
