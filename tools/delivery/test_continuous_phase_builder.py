@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 58 automated scenarios.
+"""Tests for continuous phase builder — exercises all 64 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -1474,10 +1474,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -1545,10 +1545,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -1678,10 +1678,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -1747,10 +1747,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -1811,10 +1811,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -1824,10 +1824,10 @@ plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
 # Mark first PENDING as COMPLETE
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
 # Add Phase 6
 new_phase = "\\n## Phase 6 -- F [PENDING]\\n**Features:** f.md\\n**Completion Commit:** --\\n**QA Bugs Addressed:** --\\n"
 content = content.replace("## Plan Amendments", new_phase + "## Plan Amendments")
@@ -2037,10 +2037,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2109,10 +2109,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2181,10 +2181,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2250,10 +2250,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2412,10 +2412,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2491,10 +2491,10 @@ import re, sys
 plan_path = sys.argv[1]
 with open(plan_path) as f:
     content = f.read()
-pending = re.findall(r'## Phase (\\d+) -- .+? \\[PENDING\\]', content)
+pending = re.findall(r'## Phase (\\d+) -- .+? \\[(?:PENDING|IN_PROGRESS)\\]', content)
 if pending:
     pnum = pending[0]
-    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[PENDING\\]', r'\\1 [COMPLETE]', content)
+    content = re.sub(r'(## Phase ' + pnum + r' -- .+?) \\[(?:PENDING|IN_PROGRESS)\\]', r'\\1 [COMPLETE]', content)
     with open(plan_path, 'w') as f:
         f.write(content)
 '''
@@ -2820,7 +2820,7 @@ def test_parallel_phase_canvas():
     # Terminal width constraint: reads tput cols each cycle, adapts field widths
     has_term_cols = 'tput cols' in canvas_fn
     has_activity_truncation = 'DISP_ACT' in canvas_fn or 'act_avail' in canvas_fn
-    has_label_truncation = 'DISP_LABEL' in canvas_fn
+    has_label_truncation = 'LABEL_PADDED' in canvas_fn
 
     ok = (has_canvas_fn and has_canvas_call and has_canvas_pid and
           has_timestamp and has_per_phase and has_running and has_done and
@@ -3137,14 +3137,14 @@ def test_canvas_warns_on_empty_log():
     if next_fn > 0:
         canvas_fn = canvas_fn[:next_fn]
 
-    # Verify 0K check exists
-    has_zero_k_check = '"$FSIZE" = "0K"' in canvas_fn
+    # Verify 0K check exists (uses array variable P_FSIZE after column-alignment refactor)
+    has_zero_k_check = '"${P_FSIZE[$i]}" = "0K"' in canvas_fn or '"$FSIZE" = "0K"' in canvas_fn
     # Verify red color for 0K (ANSI red: \033[31m)
     has_red_color = '\\033[31m' in canvas_fn
     # Verify green color for normal done (ANSI green: \033[32m)
     has_green_color = '\\033[32m' in canvas_fn
-    # Verify yellow for running (ANSI yellow: \033[33m)
-    has_yellow_color = '\\033[33m' in canvas_fn
+    # Verify orange for running (ANSI orange: \033[38;5;208m)
+    has_yellow_color = '\\033[38;5;208m' in canvas_fn or '\\033[33m' in canvas_fn
 
     ok = has_zero_k_check and has_red_color and has_green_color and has_yellow_color
     record("Canvas Warns on Empty Log at Phase Completion", ok,
@@ -3253,6 +3253,299 @@ def test_post_run_status_refresh():
            f"check={has_file_check}, after={has_after_summary}" if not ok else "")
 
 
+# ============================================================
+# Scenario: Phases Marked IN_PROGRESS Before Launch (Section 2.4)
+# ============================================================
+def test_phases_marked_in_progress_before_launch():
+    """Before launching parallel Builders, the orchestrator marks ALL phases
+    in the group as IN_PROGRESS on the main branch, committed before any
+    worktree Builder starts."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (2, "Design", "PENDING", ["a.md"]),
+            (3, "Update", "PENDING", ["b.md"]),
+        ])
+        graph = make_graph([
+            ("a.md", []),
+            ("b.md", []),
+        ])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All phases complete successfully"),
+                                   ])
+
+        # Enhance mock git to log add/commit calls
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+GIT_LOG="{tmpdir}/.purlin/runtime/git_invocations.log"
+echo "$@" >> "$GIT_LOG"
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
+    merge|branch|diff|add) ;;
+    commit) ;;
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # After the run, check that the delivery plan has IN_PROGRESS or COMPLETE
+        # (the mark_phases_in_progress function changes PENDING -> IN_PROGRESS,
+        # and update_plan_phase_status changes it to COMPLETE after group completes)
+        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_content = ""
+        if os.path.exists(plan_path):
+            with open(plan_path) as f:
+                plan_content = f.read()
+
+        # Check git log for the IN_PROGRESS commit
+        git_log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'git_invocations.log')
+        git_log = ""
+        if os.path.exists(git_log_path):
+            with open(git_log_path) as f:
+                git_log = f.read()
+
+        has_in_progress_commit = 'IN_PROGRESS' in git_log
+        # Plan should have been updated (either IN_PROGRESS or COMPLETE after the run)
+        no_pending = 'PENDING' not in plan_content
+
+        # Verify source code structure: mark_phases_in_progress called before worktree loop
+        source = read_launcher()
+        parallel_section = source[source.find('PARALLEL EXECUTION'):]
+        parallel_section = parallel_section[:parallel_section.find('SEQUENTIAL EXECUTION')]
+        mark_before_worktree = 'mark_phases_in_progress' in parallel_section
+        mark_pos = parallel_section.find('mark_phases_in_progress')
+        worktree_pos = parallel_section.find('worktree add')
+        has_order = mark_pos >= 0 and worktree_pos >= 0 and mark_pos < worktree_pos
+
+        ok = has_in_progress_commit and no_pending and mark_before_worktree and has_order
+        record("Phases Marked IN_PROGRESS Before Launch", ok,
+               f"commit={has_in_progress_commit}, no_pending={no_pending}, "
+               f"mark_before_wt={mark_before_worktree}, order={has_order}, "
+               f"plan={plan_content[:200]}, git_log={git_log[:300]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Sequential Phase Marked IN_PROGRESS Before Launch (Section 2.4)
+# ============================================================
+def test_sequential_phase_marked_in_progress():
+    """Before launching a sequential Builder, the orchestrator marks the phase
+    as IN_PROGRESS before the Builder launches."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (4, "Sequential", "PENDING", ["a.md"]),
+        ])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All phases complete successfully"),
+                                   ])
+
+        # Enhance mock git to log add/commit calls
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+GIT_LOG="{tmpdir}/.purlin/runtime/git_invocations.log"
+echo "$@" >> "$GIT_LOG"
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
+    merge|branch|diff|add) ;;
+    commit) ;;
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Check git log for the IN_PROGRESS commit
+        git_log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'git_invocations.log')
+        git_log = ""
+        if os.path.exists(git_log_path):
+            with open(git_log_path) as f:
+                git_log = f.read()
+
+        has_in_progress_commit = 'IN_PROGRESS' in git_log
+
+        # Verify source code: mark_phases_in_progress before sequential Builder launch
+        source = read_launcher()
+        seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
+        mark_pos = seq_section.find('mark_phases_in_progress')
+        builder_pos = seq_section.find('run_line_buffered claude')
+        has_order = mark_pos >= 0 and builder_pos >= 0 and mark_pos < builder_pos
+
+        ok = has_in_progress_commit and has_order
+        record("Sequential Phase Marked IN_PROGRESS Before Launch", ok,
+               f"commit={has_in_progress_commit}, order={has_order}, "
+               f"git_log={git_log[:300]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Delivery Plan Updated Centrally After Group (Section 2.4)
+# ============================================================
+def test_delivery_plan_updated_centrally_after_group():
+    """After all parallel Builders complete, the orchestrator updates the delivery
+    plan centrally, marking completed phases as COMPLETE. Individual Builders do not
+    modify the plan during parallel execution."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (2, "Design", "PENDING", ["a.md"]),
+            (3, "Update", "PENDING", ["b.md"]),
+        ])
+        graph = make_graph([
+            ("a.md", []),
+            ("b.md", []),
+        ])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All phases complete successfully"),
+                                   ])
+
+        # Mock git with add/commit support
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+GIT_LOG="{tmpdir}/.purlin/runtime/git_invocations.log"
+echo "$@" >> "$GIT_LOG"
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
+    merge|branch|diff|add|commit) ;;
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Verify delivery plan was updated with COMPLETE status
+        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_content = ""
+        if os.path.exists(plan_path):
+            with open(plan_path) as f:
+                plan_content = f.read()
+
+        has_phase_2_complete = bool(re.search(r'## Phase 2 -- .+? \[COMPLETE\]', plan_content))
+        has_phase_3_complete = bool(re.search(r'## Phase 3 -- .+? \[COMPLETE\]', plan_content))
+
+        # Verify parallel Builders are told not to modify the plan
+        source = read_launcher()
+        has_no_modify = 'Do NOT modify the delivery plan directly' in source
+
+        # Verify update happens after merge (in source structure)
+        parallel_section = source[source.find('PARALLEL EXECUTION'):]
+        parallel_section = parallel_section[:parallel_section.find('SEQUENTIAL EXECUTION')]
+        merge_pos = parallel_section.find('merge')
+        update_pos = parallel_section.find('update_plan_phase_status')
+        has_update_after_merge = merge_pos >= 0 and update_pos >= 0 and update_pos > merge_pos
+
+        ok = (has_phase_2_complete and has_phase_3_complete and
+              has_no_modify and has_update_after_merge)
+        record("Delivery Plan Updated Centrally After Group", ok,
+               f"p2_complete={has_phase_2_complete}, p3_complete={has_phase_3_complete}, "
+               f"no_modify={has_no_modify}, after_merge={has_update_after_merge}, "
+               f"plan={plan_content[:300]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Parallel Canvas Columns Align Across Phase Lines (Section 2.16)
+# ============================================================
+def test_parallel_canvas_columns_align():
+    """All phase lines in a parallel group use aligned columns. The renderer
+    computes max width of each field across phases and pads to column width."""
+    source = read_launcher()
+
+    # Find the parallel canvas function
+    canvas_start = source.find('start_parallel_canvas()')
+    assert canvas_start != -1
+    canvas_fn = source[canvas_start:]
+    next_fn = canvas_fn.find('\n# ---', 10)
+    if next_fn > 0:
+        canvas_fn = canvas_fn[:next_fn]
+
+    # Verify two-pass approach: max width computation
+    has_max_label_w = 'MAX_LABEL_W' in canvas_fn
+    has_max_status_w = 'MAX_STATUS_W' in canvas_fn
+    has_max_elapsed_w = 'MAX_ELAPSED_W' in canvas_fn
+    has_max_fsize_w = 'MAX_FSIZE_W' in canvas_fn
+    has_max_pnum_w = 'MAX_PNUM_W' in canvas_fn
+
+    # Verify padded rendering with printf alignment
+    has_label_pad = 'LABEL_PADDED' in canvas_fn
+    has_status_pad = 'STATUS_PADDED' in canvas_fn
+    has_elapsed_pad = 'ELAPSED_PADDED' in canvas_fn
+    has_fsize_pad = 'FSIZE_PADDED' in canvas_fn
+
+    # Verify max width comparison across phases
+    has_max_comparison = '-gt $MAX_LABEL_W' in canvas_fn
+
+    ok = (has_max_label_w and has_max_status_w and has_max_elapsed_w and
+          has_max_fsize_w and has_max_pnum_w and
+          has_label_pad and has_status_pad and has_elapsed_pad and has_fsize_pad and
+          has_max_comparison)
+    record("Parallel Canvas Columns Align Across Phase Lines", ok,
+           f"max_label={has_max_label_w}, max_status={has_max_status_w}, "
+           f"max_elapsed={has_max_elapsed_w}, max_fsize={has_max_fsize_w}, "
+           f"max_pnum={has_max_pnum_w}, label_pad={has_label_pad}, "
+           f"status_pad={has_status_pad}, elapsed_pad={has_elapsed_pad}, "
+           f"fsize_pad={has_fsize_pad}, comparison={has_max_comparison}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Log Files Grow Incrementally During Execution (Section 2.16)
+# ============================================================
+def test_log_files_grow_incrementally():
+    """Builder output uses line-buffered output (stdbuf -oL or equivalent) to
+    ensure log files grow incrementally during execution, not in blocks."""
+    source = read_launcher()
+
+    # Verify run_line_buffered function exists
+    has_fn = 'run_line_buffered()' in source
+    # Verify it tries stdbuf
+    has_stdbuf = 'stdbuf -oL' in source
+    # Verify fallback
+    has_fallback = 'command -v stdbuf' in source
+
+    # Verify run_line_buffered is used for all Builder invocations
+    # Sequential
+    seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
+    has_seq_buffered = 'run_line_buffered claude' in seq_section
+
+    # Parallel (in worktree subshell)
+    parallel_section = source[source.find('PARALLEL EXECUTION'):source.find('SEQUENTIAL EXECUTION')]
+    has_par_buffered = 'run_line_buffered claude' in parallel_section
+
+    # Bootstrap
+    bootstrap_section = source[source.find('Bootstrap session when no delivery plan'):source.find('Track initial')]
+    has_bootstrap_buffered = 'run_line_buffered claude' in bootstrap_section
+
+    ok = (has_fn and has_stdbuf and has_fallback and
+          has_seq_buffered and has_par_buffered and has_bootstrap_buffered)
+    record("Log Files Grow Incrementally During Execution", ok,
+           f"fn={has_fn}, stdbuf={has_stdbuf}, fallback={has_fallback}, "
+           f"seq={has_seq_buffered}, par={has_par_buffered}, "
+           f"bootstrap={has_bootstrap_buffered}" if not ok else "")
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -3352,10 +3645,21 @@ if __name__ == '__main__':
     test_canvas_shows_current_builder_activity()
     test_canvas_warns_on_empty_log()
 
+    # Canvas & Graceful Stop (Section 2.16) (5)
+
     # Graceful Stop & Post-Run (Section 2.16) (3)
     test_graceful_stop_on_sigint()
     test_second_sigint_forces_exit()
     test_post_run_status_refresh()
+
+    # New scenarios: Pre-launch IN_PROGRESS & Central Update (Section 2.4) (3)
+    test_phases_marked_in_progress_before_launch()
+    test_sequential_phase_marked_in_progress()
+    test_delivery_plan_updated_centrally_after_group()
+
+    # New scenarios: Column Alignment & Line Buffering (Section 2.16) (2)
+    test_parallel_canvas_columns_align()
+    test_log_files_grow_incrementally()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

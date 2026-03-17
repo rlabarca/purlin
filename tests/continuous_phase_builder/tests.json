@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 59,
+  "passed": 64,
   "failed": 0,
-  "total": 59,
+  "total": 64,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -239,6 +239,26 @@
     },
     {
       "name": "Post-Run Status Refresh",
+      "status": "PASS"
+    },
+    {
+      "name": "Phases Marked IN_PROGRESS Before Launch",
+      "status": "PASS"
+    },
+    {
+      "name": "Sequential Phase Marked IN_PROGRESS Before Launch",
+      "status": "PASS"
+    },
+    {
+      "name": "Delivery Plan Updated Centrally After Group",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Canvas Columns Align Across Phase Lines",
+      "status": "PASS"
+    },
+    {
+      "name": "Log Files Grow Incrementally During Execution",
       "status": "PASS"
     }
   ]

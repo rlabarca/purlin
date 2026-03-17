@@ -334,6 +334,37 @@ END_TIME=$(date +%s)
 META_EOF
 }
 
+# --- Helper: mark phases as IN_PROGRESS before launching Builders ---
+mark_phases_in_progress() {
+    [ -f "$DELIVERY_PLAN" ] || return 0
+    local phases=("$@")
+    python3 -c "
+import re, sys
+phases = sys.argv[1:]
+with open('$DELIVERY_PLAN', 'r') as f:
+    content = f.read()
+for p in phases:
+    content = re.sub(
+        r'(## Phase ' + p + r' -- .+?) \[PENDING\]',
+        r'\1 [IN_PROGRESS]',
+        content
+    )
+with open('$DELIVERY_PLAN', 'w') as f:
+    f.write(content)
+" "${phases[@]}" 2>/dev/null
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+    git -C "$SCRIPT_DIR" commit -m "chore: mark phases ${phases[*]} as IN_PROGRESS" 2>/dev/null
+}
+
+# --- Helper: run a command with line-buffered stdout ---
+run_line_buffered() {
+    if command -v stdbuf >/dev/null 2>&1; then
+        stdbuf -oL "$@"
+    else
+        "$@"
+    fi
+}
+
 # --- Helper: update delivery plan phase status after parallel group ---
 update_plan_phase_status() {
     local phase_num="$1"
@@ -634,16 +665,26 @@ start_parallel_canvas() {
                 do_heavy=true
             fi
 
-            OUTPUT="[$TIMESTAMP] Parallel group (${#P_PHASES[@]} phases):"$'\n'
-            LINE_COUNT=1
+            # --- Pass 1: collect data and compute max widths for column alignment ---
+            declare -a R_LABEL R_STATUS R_ELAPSED R_FSIZE R_ACT R_COLOR R_PNUM_STR
+            MAX_LABEL_W=0
+            MAX_STATUS_W=0
+            MAX_ELAPSED_W=0
+            MAX_FSIZE_W=0
+            MAX_PNUM_W=0
 
             for i in "${!P_PHASES[@]}"; do
                 PNUM="${P_PHASES[$i]}"
                 LFILE="${P_LOGS[$i]}"
                 PID_VAL="${P_PIDS[$i]}"
 
+                R_PNUM_STR[$i]="$PNUM"
+                [ ${#PNUM} -gt $MAX_PNUM_W ] && MAX_PNUM_W=${#PNUM}
+
                 PLABEL=$(sed -n "s/## Phase ${PNUM} -- \(.*\) \[.*/\1/p" "$DELIVERY_PLAN" 2>/dev/null | head -1)
                 [ -z "$PLABEL" ] && PLABEL="Phase ${PNUM}"
+                R_LABEL[$i]="$PLABEL"
+                [ ${#PLABEL} -gt $MAX_LABEL_W ] && MAX_LABEL_W=${#PLABEL}
 
                 # Update heavy data on interval
                 if [ "$do_heavy" = "true" ]; then
@@ -655,8 +696,10 @@ start_parallel_canvas() {
                         P_ACTIVITY[$i]=$(extract_activity "$LFILE")
                     fi
                 fi
-                FSIZE="${P_FSIZE[$i]}"
+                R_FSIZE[$i]="${P_FSIZE[$i]}"
+                [ ${#P_FSIZE[$i]} -gt $MAX_FSIZE_W ] && MAX_FSIZE_W=${#P_FSIZE[$i]}
 
+                # Compute elapsed
                 ELAPSED=""
                 PSTART=""
                 META_FILE="${RUNTIME_DIR}/phase_${PNUM}_meta"
@@ -679,41 +722,57 @@ start_parallel_canvas() {
                     REM=$((SECS % 60))
                     [ "$MINS" -gt 0 ] && ELAPSED="${MINS}m ${REM}s" || ELAPSED="${SECS}s"
                 fi
+                R_ELAPSED[$i]="$ELAPSED"
+                [ ${#ELAPSED} -gt $MAX_ELAPSED_W ] && MAX_ELAPSED_W=${#ELAPSED}
+
+                # Compute status and color
+                if kill -0 "$PID_VAL" 2>/dev/null; then
+                    R_STATUS[$i]="running"
+                    R_COLOR[$i]="\033[38;5;208m"
+                    R_ACT[$i]="${P_ACTIVITY[$i]}"
+                else
+                    R_STATUS[$i]="done"
+                    R_ACT[$i]=""
+                    if [ "${P_FSIZE[$i]}" = "0K" ]; then
+                        R_COLOR[$i]="\033[31m"
+                    else
+                        R_COLOR[$i]="\033[32m"
+                    fi
+                fi
+                [ ${#R_STATUS[$i]} -gt $MAX_STATUS_W ] && MAX_STATUS_W=${#R_STATUS[$i]}
+            done
+
+            # --- Pass 2: render with aligned columns ---
+            OUTPUT="[$TIMESTAMP] Parallel group (${#P_PHASES[@]} phases):"$'\n'
+            LINE_COUNT=1
+
+            for i in "${!P_PHASES[@]}"; do
+                # Build aligned line: indent + "Phase N -- " + label + "   " + status + "  " + elapsed + "   " + fsize + "  " + activity
+                PNUM_PADDED=$(printf "%-${MAX_PNUM_W}s" "${R_PNUM_STR[$i]}")
+                LABEL_PADDED=$(printf "%-${MAX_LABEL_W}s" "${R_LABEL[$i]}")
+                STATUS_PADDED=$(printf "%-${MAX_STATUS_W}s" "${R_STATUS[$i]}")
+                ELAPSED_PADDED=$(printf "%-${MAX_ELAPSED_W}s" "${R_ELAPSED[$i]}")
+                FSIZE_PADDED=$(printf "%-${MAX_FSIZE_W}s" "${R_FSIZE[$i]}")
+
+                DISP_ACT="${R_ACT[$i]}"
 
                 # Terminal width constraint: truncate activity first, then label
-                DISP_LABEL="$PLABEL"
-                DISP_ACT="${P_ACTIVITY[$i]}"
-                # Indent(13) + "Phase N -- " + label + "   status  " + elapsed + "   " + fsize + "  " + activity
-                prefix_w=$((13 + 6 + ${#PNUM} + 4))
-                if kill -0 "$PID_VAL" 2>/dev/null; then
-                    status_w=$((3 + 7 + 2 + ${#ELAPSED} + 3 + ${#FSIZE} + 2))
-                else
-                    status_w=$((3 + 4 + 5 + ${#ELAPSED} + 3 + ${#FSIZE}))
-                fi
+                prefix_w=$((13 + 6 + MAX_PNUM_W + 4))
+                status_w=$((3 + MAX_STATUS_W + 2 + MAX_ELAPSED_W + 3 + MAX_FSIZE_W + 2))
                 avail=$((term_cols - prefix_w - status_w))
-                if [ $((${#DISP_LABEL} + ${#DISP_ACT})) -gt "$avail" ]; then
-                    act_avail=$((avail - ${#DISP_LABEL}))
+                if [ $((MAX_LABEL_W + ${#DISP_ACT})) -gt "$avail" ]; then
+                    act_avail=$((avail - MAX_LABEL_W))
                     if [ "$act_avail" -ge 4 ]; then
                         DISP_ACT="${DISP_ACT:0:$((act_avail - 3))}..."
                     else
                         DISP_ACT=""
-                        if [ "$avail" -ge 4 ]; then
-                            DISP_LABEL="${DISP_LABEL:0:$((avail - 3))}..."
-                        elif [ "$avail" -ge 0 ]; then
-                            DISP_LABEL="${DISP_LABEL:0:$avail}"
+                        if [ "$avail" -ge 4 ] && [ "$avail" -lt "$MAX_LABEL_W" ]; then
+                            LABEL_PADDED=$(printf "%-${MAX_LABEL_W}s" "${R_LABEL[$i]:0:$((avail - 3))}...")
                         fi
                     fi
                 fi
 
-                if kill -0 "$PID_VAL" 2>/dev/null; then
-                    OUTPUT+="             \033[33mPhase ${PNUM} -- ${DISP_LABEL}   running  ${ELAPSED}   ${FSIZE}  ${DISP_ACT}\033[0m"$'\n'
-                else
-                    if [ "$FSIZE" = "0K" ]; then
-                        OUTPUT+="             \033[31mPhase ${PNUM} -- ${DISP_LABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
-                    else
-                        OUTPUT+="             \033[32mPhase ${PNUM} -- ${DISP_LABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
-                    fi
-                fi
+                OUTPUT+="             ${R_COLOR[$i]}Phase ${PNUM_PADDED} -- ${LABEL_PADDED}   ${STATUS_PADDED}  ${ELAPSED_PADDED}   ${FSIZE_PADDED}  ${DISP_ACT}\033[0m"$'\n'
                 LINE_COUNT=$((LINE_COUNT + 1))
             done
 
@@ -934,7 +993,7 @@ BOOTSTRAP_OVERRIDE
     start_bootstrap_canvas
 
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-    claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
+    run_line_buffered claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
         "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
         "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
@@ -1076,6 +1135,9 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # ============================================================
         PARALLEL_GROUPS_USED=$((PARALLEL_GROUPS_USED + 1))
 
+        # Pre-launch: mark all phases in this group as IN_PROGRESS (Section 2.4)
+        mark_phases_in_progress $PHASE_LIST
+
         WT_PIDS=()
         WT_DIRS=()
         WT_BRANCHES=()
@@ -1095,7 +1157,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             (
                 cd "$WT_DIR" || exit 1
                 export PURLIN_PROJECT_ROOT="$WT_DIR"
-                claude --print "${CLI_ARGS[@]}" \
+                run_line_buffered claude --print "${CLI_ARGS[@]}" \
                     --append-system-prompt-file "$PARALLEL_PROMPT_FILE" \
                     "$INITIAL_MSG" > "$LOG_FILE" 2>&1
             ) &
@@ -1201,6 +1263,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # SEQUENTIAL EXECUTION
         # ============================================================
         PHASE_NUM=$(echo "$PHASE_LIST" | awk '{print $1}')
+
+        # Pre-launch: mark phase as IN_PROGRESS (Section 2.4)
+        mark_phases_in_progress "$PHASE_NUM"
+
         record_phase_start "$PHASE_NUM"
 
         SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
@@ -1218,7 +1284,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             # Execute Builder based on action type
             case "$RUN_ACTION" in
                 run|retry)
-                    claude --print --session-id "$SESSION_ID" \
+                    run_line_buffered claude --print --session-id "$SESSION_ID" \
                         "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
                         "$INITIAL_MSG" > "$LOG_FILE" 2>&1 &
@@ -1227,7 +1293,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     BUILDER_PID=""
                     ;;
                 resume)
-                    claude --resume "$SESSION_ID" --print \
+                    run_line_buffered claude --resume "$SESSION_ID" --print \
                         "${CLI_ARGS[@]}" \
                         "Approved. Proceed." >> "$LOG_FILE" 2>&1 &
                     BUILDER_PID=$!
