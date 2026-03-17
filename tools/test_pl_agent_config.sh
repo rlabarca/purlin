@@ -47,22 +47,22 @@ setup_sandbox() {
             "model": "claude-sonnet-4-6",
             "effort": "high",
             "bypass_permissions": true,
-            "startup_sequence": false,
-            "recommend_next_actions": false
+            "find_work": false,
+            "auto_start": false
         },
         "builder": {
             "model": "claude-opus-4-6",
             "effort": "high",
             "bypass_permissions": true,
-            "startup_sequence": true,
-            "recommend_next_actions": true
+            "find_work": true,
+            "auto_start": false
         },
         "qa": {
             "model": "claude-sonnet-4-6",
             "effort": "medium",
             "bypass_permissions": true,
-            "startup_sequence": false,
-            "recommend_next_actions": false
+            "find_work": false,
+            "auto_start": false
         }
     }
 }
@@ -118,7 +118,7 @@ os.rename(tmp_path, config_path)
 validate_key() {
     local key="$1"
     case "$key" in
-        model|effort|startup_sequence|recommend_next_actions|bypass_permissions)
+        model|effort|find_work|auto_start|bypass_permissions)
             return 0 ;;
         *)
             return 1 ;;
@@ -147,12 +147,12 @@ echo ""
 echo "[Scenario] Config Change Applied to MAIN in Non-Isolated Session"
 setup_sandbox
 
-# Verify initial state: builder.startup_sequence is true
-INITIAL=$(python3 -c "import json; c=json.load(open('$SANDBOX/.purlin/config.json')); print(c['agents']['builder']['startup_sequence'])")
+# Verify initial state: builder.find_work is true
+INITIAL=$(python3 -c "import json; c=json.load(open('$SANDBOX/.purlin/config.json')); print(c['agents']['builder']['find_work'])")
 if [ "$INITIAL" = "True" ]; then
-    log_pass "Initial config has startup_sequence=true for builder"
+    log_pass "Initial config has find_work=true for builder"
 else
-    log_fail "Initial config startup_sequence is not true (got: $INITIAL)"
+    log_fail "Initial config find_work is not true (got: $INITIAL)"
 fi
 
 # Branch is main (non-isolated)
@@ -163,22 +163,22 @@ else
     log_fail "Expected branch main, got: $BRANCH"
 fi
 
-# Apply change: builder.startup_sequence = false
-apply_config_change "$SANDBOX/.purlin/config.json" "builder" "startup_sequence" "false"
+# Apply change: builder.find_work = false
+apply_config_change "$SANDBOX/.purlin/config.json" "builder" "find_work" "false"
 
 # Verify the change
-UPDATED=$(python3 -c "import json; c=json.load(open('$SANDBOX/.purlin/config.json')); print(c['agents']['builder']['startup_sequence'])")
+UPDATED=$(python3 -c "import json; c=json.load(open('$SANDBOX/.purlin/config.json')); print(c['agents']['builder']['find_work'])")
 if [ "$UPDATED" = "False" ]; then
-    log_pass "Config updated: builder.startup_sequence=false"
+    log_pass "Config updated: builder.find_work=false"
 else
     log_fail "Config not updated correctly (got: $UPDATED)"
 fi
 
 # Verify commit works (simulating Step 7)
 git -C "$SANDBOX" add .purlin/config.json
-git -C "$SANDBOX" commit -q -m "config: set builder.startup_sequence = false"
+git -C "$SANDBOX" commit -q -m "config: set builder.find_work = false"
 LAST_MSG=$(git -C "$SANDBOX" log -1 --format='%s')
-if [ "$LAST_MSG" = "config: set builder.startup_sequence = false" ]; then
+if [ "$LAST_MSG" = "config: set builder.find_work = false" ]; then
     log_pass "Commit message follows the required format"
 else
     log_fail "Commit message wrong (got: $LAST_MSG)"
@@ -240,29 +240,29 @@ else
 fi
 
 # Apply change to MAIN config (not worktree config)
-apply_config_change "$MAIN_ROOT/.purlin/config.json" "builder" "startup_sequence" "false"
+apply_config_change "$MAIN_ROOT/.purlin/config.json" "builder" "find_work" "false"
 
 # Verify MAIN config changed
-MAIN_VAL=$(python3 -c "import json; c=json.load(open('$MAIN_ROOT/.purlin/config.json')); print(c['agents']['builder']['startup_sequence'])")
+MAIN_VAL=$(python3 -c "import json; c=json.load(open('$MAIN_ROOT/.purlin/config.json')); print(c['agents']['builder']['find_work'])")
 if [ "$MAIN_VAL" = "False" ]; then
-    log_pass "MAIN config updated: builder.startup_sequence=false"
+    log_pass "MAIN config updated: builder.find_work=false"
 else
     log_fail "MAIN config not updated (got: $MAIN_VAL)"
 fi
 
 # Verify worktree config UNCHANGED
-WT_VAL=$(python3 -c "import json; c=json.load(open('$SANDBOX/.worktrees/feat1/.purlin/config.json')); print(c['agents']['builder']['startup_sequence'])")
+WT_VAL=$(python3 -c "import json; c=json.load(open('$SANDBOX/.worktrees/feat1/.purlin/config.json')); print(c['agents']['builder']['find_work'])")
 if [ "$WT_VAL" = "True" ]; then
-    log_pass "Worktree config unchanged (still startup_sequence=true)"
+    log_pass "Worktree config unchanged (still find_work=true)"
 else
     log_fail "Worktree config was modified unexpectedly (got: $WT_VAL)"
 fi
 
 # Commit in MAIN checkout
 git -C "$MAIN_ROOT" add .purlin/config.json
-git -C "$MAIN_ROOT" commit -q -m "config: set builder.startup_sequence = false"
+git -C "$MAIN_ROOT" commit -q -m "config: set builder.find_work = false"
 LAST_MSG=$(git -C "$MAIN_ROOT" log -1 --format='%s')
-if [ "$LAST_MSG" = "config: set builder.startup_sequence = false" ]; then
+if [ "$LAST_MSG" = "config: set builder.find_work = false" ]; then
     log_pass "Commit made in MAIN checkout"
 else
     log_fail "Commit not in MAIN checkout (got: $LAST_MSG)"
@@ -311,7 +311,7 @@ echo "[Scenario] Invalid Key Rejected"
 setup_sandbox
 
 # Test valid keys
-for KEY in model effort startup_sequence recommend_next_actions bypass_permissions; do
+for KEY in model effort find_work auto_start bypass_permissions; do
     if validate_key "$KEY"; then
         log_pass "Key '$KEY' accepted as valid"
     else

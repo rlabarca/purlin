@@ -153,8 +153,8 @@ class TestCLIRole(ResolverTestBase):
                     "model": "claude-opus-4-6",
                     "effort": "high",
                     "bypass_permissions": True,
-                    "startup_sequence": False,
-                    "recommend_next_actions": False
+                    "find_work": False,
+                    "auto_start": False
                 }
             }
         })
@@ -170,8 +170,8 @@ class TestCLIRole(ResolverTestBase):
         self.assertIn('AGENT_MODEL="claude-opus-4-6"', output)
         self.assertIn('AGENT_EFFORT="high"', output)
         self.assertIn('AGENT_BYPASS="true"', output)
-        self.assertIn('AGENT_STARTUP="false"', output)
-        self.assertIn('AGENT_RECOMMEND="false"', output)
+        self.assertIn('AGENT_FIND_WORK="false"', output)
+        self.assertIn('AGENT_AUTO_START="false"', output)
 
 
 class TestAgentConfigWritesToLocal(ResolverTestBase):
@@ -279,8 +279,8 @@ class TestShellConsumerReadsViaCLI(ResolverTestBase):
                     "model": "claude-opus-4-6",
                     "effort": "high",
                     "bypass_permissions": True,
-                    "startup_sequence": False,
-                    "recommend_next_actions": False
+                    "find_work": False,
+                    "auto_start": False
                 }
             }
         })

@@ -1,6 +1,6 @@
 """Tests for CDD Startup Controls (cdd_startup_controls.md).
 
-Tests launcher validation of startup_sequence / recommend_next_actions flags,
+Tests launcher validation of find_work / auto_start flags,
 API validation in POST /config/agents, and config schema defaults.
 Produces tests/cdd_startup_controls/tests.json.
 """
@@ -22,8 +22,8 @@ import serve
 class TestLauncherRejectsInvalidFlagCombination(unittest.TestCase):
     """Scenario: Launcher Rejects Invalid Flag Combination
 
-    Given config.json contains agents.builder with startup_sequence false
-    and recommend_next_actions true, when pl-run-builder.sh is executed,
+    Given config.json contains agents.builder with find_work false
+    and auto_start true, when pl-run-builder.sh is executed,
     the script prints an error to stderr and exits with status 1.
     """
 
@@ -59,22 +59,22 @@ cat > "$CONFIG_FILE" << 'CFGEOF'
 {config_json}
 CFGEOF
 AGENT_ROLE="{role}"
-AGENT_STARTUP="true"
-AGENT_RECOMMEND="true"
+AGENT_FIND_WORK="true"
+AGENT_AUTO_START="false"
 eval "$(python3 -c "
 import json
 try:
     c = json.load(open('$CONFIG_FILE'))
     a = c.get('agents', {{}}).get('$AGENT_ROLE', {{}})
-    ss = 'true' if a.get('startup_sequence', True) else 'false'
-    print(f'AGENT_STARTUP=\\\"{{ss}}\\\"')
-    rn = 'true' if a.get('recommend_next_actions', True) else 'false'
-    print(f'AGENT_RECOMMEND=\\\"{{rn}}\\\"')
+    ss = 'true' if a.get('find_work', True) else 'false'
+    print(f'AGENT_FIND_WORK=\\\"{{ss}}\\\"')
+    rn = 'true' if a.get('auto_start', False) else 'false'
+    print(f'AGENT_AUTO_START=\\\"{{rn}}\\\"')
 except: pass
 " 2>/dev/null)"
 rm -f "$CONFIG_FILE"
-if [ "$AGENT_STARTUP" = "false" ] && [ "$AGENT_RECOMMEND" = "true" ]; then
-    echo "Error: Invalid startup controls for $AGENT_ROLE: startup_sequence=false with recommend_next_actions=true is not a valid combination." >&2
+if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
+    echo "Error: Invalid startup controls for $AGENT_ROLE: find_work=false with auto_start=true is not a valid combination." >&2
     exit 1
 fi
 exit 0
@@ -86,21 +86,21 @@ exit 0
         return result
 
     def test_rejects_invalid_combination(self):
-        """startup_sequence=false + recommend_next_actions=true -> exit 1 + stderr error."""
+        """find_work=false + auto_start=true -> exit 1 + stderr error."""
         result = self._run_launcher_validation('builder', {
-            'startup_sequence': False,
-            'recommend_next_actions': True
+            'find_work': False,
+            'auto_start': True
         })
         self.assertEqual(result.returncode, 1,
                          f"Expected exit 1, got {result.returncode}. stderr={result.stderr}")
         self.assertIn('Invalid startup controls', result.stderr)
-        self.assertIn('startup_sequence', result.stderr)
+        self.assertIn('find_work', result.stderr)
 
     def test_rejects_invalid_for_architect(self):
         """Invalid combination rejected for architect role too."""
         result = self._run_launcher_validation('architect', {
-            'startup_sequence': False,
-            'recommend_next_actions': True
+            'find_work': False,
+            'auto_start': True
         })
         self.assertEqual(result.returncode, 1)
         self.assertIn('Invalid startup controls', result.stderr)
@@ -108,8 +108,8 @@ exit 0
     def test_rejects_invalid_for_qa(self):
         """Invalid combination rejected for qa role too."""
         result = self._run_launcher_validation('qa', {
-            'startup_sequence': False,
-            'recommend_next_actions': True
+            'find_work': False,
+            'auto_start': True
         })
         self.assertEqual(result.returncode, 1)
         self.assertIn('Invalid startup controls', result.stderr)
@@ -131,21 +131,21 @@ cat > "$CONFIG_FILE" << 'CFGEOF'
 {config_json}
 CFGEOF
 AGENT_ROLE="{role}"
-AGENT_STARTUP="true"
-AGENT_RECOMMEND="true"
+AGENT_FIND_WORK="true"
+AGENT_AUTO_START="false"
 eval "$(python3 -c "
 import json
 try:
     c = json.load(open('$CONFIG_FILE'))
     a = c.get('agents', {{}}).get('$AGENT_ROLE', {{}})
-    ss = 'true' if a.get('startup_sequence', True) else 'false'
-    print(f'AGENT_STARTUP=\\\"{{ss}}\\\"')
-    rn = 'true' if a.get('recommend_next_actions', True) else 'false'
-    print(f'AGENT_RECOMMEND=\\\"{{rn}}\\\"')
+    ss = 'true' if a.get('find_work', True) else 'false'
+    print(f'AGENT_FIND_WORK=\\\"{{ss}}\\\"')
+    rn = 'true' if a.get('auto_start', False) else 'false'
+    print(f'AGENT_AUTO_START=\\\"{{rn}}\\\"')
 except: pass
 " 2>/dev/null)"
 rm -f "$CONFIG_FILE"
-if [ "$AGENT_STARTUP" = "false" ] && [ "$AGENT_RECOMMEND" = "true" ]; then
+if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
     echo "Error: Invalid startup controls" >&2
     exit 1
 fi
@@ -157,36 +157,36 @@ exit 0
         )
 
     def test_accepts_true_true(self):
-        """startup_sequence=true + recommend_next_actions=true -> exit 0."""
+        """find_work=true + auto_start=true -> exit 0."""
         result = self._run_launcher_validation('builder', {
-            'startup_sequence': True,
-            'recommend_next_actions': True
+            'find_work': True,
+            'auto_start': True
         })
         self.assertEqual(result.returncode, 0)
         self.assertNotIn('Invalid startup controls', result.stderr)
 
     def test_accepts_true_false(self):
-        """startup_sequence=true + recommend_next_actions=false -> exit 0."""
+        """find_work=true + auto_start=false -> exit 0."""
         result = self._run_launcher_validation('builder', {
-            'startup_sequence': True,
-            'recommend_next_actions': False
+            'find_work': True,
+            'auto_start': False
         })
         self.assertEqual(result.returncode, 0)
 
     def test_accepts_false_false(self):
-        """startup_sequence=false + recommend_next_actions=false -> exit 0 (expert mode)."""
+        """find_work=false + auto_start=false -> exit 0 (expert mode)."""
         result = self._run_launcher_validation('builder', {
-            'startup_sequence': False,
-            'recommend_next_actions': False
+            'find_work': False,
+            'auto_start': False
         })
         self.assertEqual(result.returncode, 0)
 
 
 class TestLauncherDefaultsMissingFields(unittest.TestCase):
-    """Scenario: Launcher Defaults Missing Fields to True
+    """Scenario: Launcher Defaults Missing Fields
 
-    Given config.json does not contain startup_sequence or
-    recommend_next_actions, both default to true.
+    Given config.json does not contain find_work or
+    auto_start, find_work defaults to true and auto_start defaults to false.
     """
 
     def _run_extraction(self, role, agent_config):
@@ -198,51 +198,51 @@ cat > "$CONFIG_FILE" << 'CFGEOF'
 {config_json}
 CFGEOF
 AGENT_ROLE="{role}"
-AGENT_STARTUP="true"
-AGENT_RECOMMEND="true"
+AGENT_FIND_WORK="true"
+AGENT_AUTO_START="false"
 eval "$(python3 -c "
 import json
 try:
     c = json.load(open('$CONFIG_FILE'))
     a = c.get('agents', {{}}).get('$AGENT_ROLE', {{}})
-    ss = 'true' if a.get('startup_sequence', True) else 'false'
-    print(f'AGENT_STARTUP=\\\"{{ss}}\\\"')
-    rn = 'true' if a.get('recommend_next_actions', True) else 'false'
-    print(f'AGENT_RECOMMEND=\\\"{{rn}}\\\"')
+    ss = 'true' if a.get('find_work', True) else 'false'
+    print(f'AGENT_FIND_WORK=\\\"{{ss}}\\\"')
+    rn = 'true' if a.get('auto_start', False) else 'false'
+    print(f'AGENT_AUTO_START=\\\"{{rn}}\\\"')
 except: pass
 " 2>/dev/null)"
 rm -f "$CONFIG_FILE"
-echo "AGENT_STARTUP=$AGENT_STARTUP"
-echo "AGENT_RECOMMEND=$AGENT_RECOMMEND"
+echo "AGENT_FIND_WORK=$AGENT_FIND_WORK"
+echo "AGENT_AUTO_START=$AGENT_AUTO_START"
 '''
         return subprocess.run(
             ['bash', '-c', script],
             capture_output=True, text=True, timeout=10
         )
 
-    def test_defaults_to_true_when_absent(self):
-        """Missing fields default to true for architect."""
+    def test_defaults_when_absent(self):
+        """Missing fields: find_work defaults to true, auto_start to false."""
         result = self._run_extraction('architect', {
             'model': 'claude-sonnet-4-6',
             'effort': 'high'
         })
         self.assertEqual(result.returncode, 0)
-        self.assertIn('AGENT_STARTUP=true', result.stdout)
-        self.assertIn('AGENT_RECOMMEND=true', result.stdout)
+        self.assertIn('AGENT_FIND_WORK=true', result.stdout)
+        self.assertIn('AGENT_AUTO_START=false', result.stdout)
 
     def test_defaults_when_agent_entry_empty(self):
-        """Empty agent object -> both default to true."""
+        """Empty agent object -> find_work true, auto_start false."""
         result = self._run_extraction('builder', {})
         self.assertEqual(result.returncode, 0)
-        self.assertIn('AGENT_STARTUP=true', result.stdout)
-        self.assertIn('AGENT_RECOMMEND=true', result.stdout)
+        self.assertIn('AGENT_FIND_WORK=true', result.stdout)
+        self.assertIn('AGENT_AUTO_START=false', result.stdout)
 
 
 class TestApiRejectsInvalidCombination(unittest.TestCase):
     """Scenario: API Rejects Invalid Combination
 
     Given a POST /config/agents request body where agents.qa has
-    startup_sequence false and recommend_next_actions true,
+    find_work false and auto_start true,
     the endpoint returns HTTP 400 and config.json is not modified.
     """
 
@@ -257,20 +257,20 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
             'agents': {
                 'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                               'bypass_permissions': True,
-                              'startup_sequence': True,
-                              'recommend_next_actions': True},
+                              'find_work': True,
+                              'auto_start': True},
                 'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                             'bypass_permissions': True,
-                            'startup_sequence': True,
-                            'recommend_next_actions': True},
+                            'find_work': True,
+                            'auto_start': True},
                 'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                        'bypass_permissions': True,
-                       'startup_sequence': True,
-                       'recommend_next_actions': True},
+                       'find_work': True,
+                       'auto_start': True},
                 'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                        'bypass_permissions': True,
-                       'startup_sequence': False,
-                       'recommend_next_actions': False}
+                       'find_work': False,
+                       'auto_start': False}
             }
         }
         with open(self.config_path, 'w') as f:
@@ -294,24 +294,24 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
         return handler
 
     def test_rejects_invalid_combination_qa(self):
-        """startup_sequence=false + recommend=true for qa -> HTTP 400."""
+        """find_work=false + auto_start=true for qa -> HTTP 400."""
         payload = {
             'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                           'bypass_permissions': True,
-                          'startup_sequence': True,
-                          'recommend_next_actions': True},
+                          'find_work': True,
+                          'auto_start': True},
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                         'bypass_permissions': True,
-                        'startup_sequence': True,
-                        'recommend_next_actions': True},
+                        'find_work': True,
+                        'auto_start': True},
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
-                   'startup_sequence': False,
-                   'recommend_next_actions': True},
+                   'find_work': False,
+                   'auto_start': True},
             'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                    'bypass_permissions': True,
-                   'startup_sequence': False,
-                   'recommend_next_actions': False}
+                   'find_work': False,
+                   'auto_start': False}
         }
         handler = self._make_handler(payload)
         handler._send_json.assert_called_once()
@@ -325,20 +325,20 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
         """Config file remains unchanged after rejected request."""
         payload = {
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
-                   'startup_sequence': False,
-                   'recommend_next_actions': True}
+                   'find_work': False,
+                   'auto_start': True}
         }
         self._make_handler(payload)
         with open(self.config_path) as f:
             current = json.load(f)
         self.assertEqual(current, self.original_config)
 
-    def test_rejects_non_boolean_startup_sequence(self):
-        """startup_sequence as string -> HTTP 400."""
+    def test_rejects_non_boolean_find_work(self):
+        """find_work as string -> HTTP 400."""
         payload = {
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
-                        'startup_sequence': 'false',
-                        'recommend_next_actions': True}
+                        'find_work': 'false',
+                        'auto_start': True}
         }
         handler = self._make_handler(payload)
         status_code = handler._send_json.call_args[0][0]
@@ -348,8 +348,8 @@ class TestApiRejectsInvalidCombination(unittest.TestCase):
 class TestApiAcceptsValidPayload(unittest.TestCase):
     """Scenario: API Accepts Valid Payload
 
-    Given a POST /config/agents request body with startup_sequence true
-    and recommend_next_actions false for all agents, the endpoint
+    Given a POST /config/agents request body with find_work true
+    and auto_start false for all agents, the endpoint
     returns HTTP 200 and config.json is updated.
     """
 
@@ -364,20 +364,20 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
             'agents': {
                 'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                               'bypass_permissions': True,
-                              'startup_sequence': True,
-                              'recommend_next_actions': True},
+                              'find_work': True,
+                              'auto_start': True},
                 'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                             'bypass_permissions': True,
-                            'startup_sequence': True,
-                            'recommend_next_actions': True},
+                            'find_work': True,
+                            'auto_start': True},
                 'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                        'bypass_permissions': True,
-                       'startup_sequence': True,
-                       'recommend_next_actions': True},
+                       'find_work': True,
+                       'auto_start': True},
                 'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                        'bypass_permissions': True,
-                       'startup_sequence': False,
-                       'recommend_next_actions': False}
+                       'find_work': False,
+                       'auto_start': False}
             }
         }
         with open(self.config_path, 'w') as f:
@@ -399,24 +399,24 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
         return handler
 
     def test_accepts_valid_payload(self):
-        """All agents with startup=true, recommend=false -> HTTP 200."""
+        """All agents with find_work=true, auto_start=false -> HTTP 200."""
         payload = {
             'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                           'bypass_permissions': True,
-                          'startup_sequence': True,
-                          'recommend_next_actions': False},
+                          'find_work': True,
+                          'auto_start': False},
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                         'bypass_permissions': True,
-                        'startup_sequence': True,
-                        'recommend_next_actions': False},
+                        'find_work': True,
+                        'auto_start': False},
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
-                   'startup_sequence': True,
-                   'recommend_next_actions': False},
+                   'find_work': True,
+                   'auto_start': False},
             'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                    'bypass_permissions': True,
-                   'startup_sequence': False,
-                   'recommend_next_actions': False}
+                   'find_work': False,
+                   'auto_start': False}
         }
         handler = self._make_handler(payload)
         status_code = handler._send_json.call_args[0][0]
@@ -427,48 +427,48 @@ class TestApiAcceptsValidPayload(unittest.TestCase):
         payload = {
             'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                           'bypass_permissions': True,
-                          'startup_sequence': True,
-                          'recommend_next_actions': False},
+                          'find_work': True,
+                          'auto_start': False},
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                         'bypass_permissions': True,
-                        'startup_sequence': False,
-                        'recommend_next_actions': False},
+                        'find_work': False,
+                        'auto_start': False},
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
-                   'startup_sequence': True,
-                   'recommend_next_actions': False},
+                   'find_work': True,
+                   'auto_start': False},
             'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                    'bypass_permissions': True,
-                   'startup_sequence': False,
-                   'recommend_next_actions': False}
+                   'find_work': False,
+                   'auto_start': False}
         }
         self._make_handler(payload)
         with open(self.config_path) as f:
             updated = json.load(f)
-        self.assertFalse(updated['agents']['builder']['startup_sequence'])
-        self.assertFalse(updated['agents']['builder']['recommend_next_actions'])
-        self.assertTrue(updated['agents']['architect']['startup_sequence'])
-        self.assertFalse(updated['agents']['architect']['recommend_next_actions'])
+        self.assertFalse(updated['agents']['builder']['find_work'])
+        self.assertFalse(updated['agents']['builder']['auto_start'])
+        self.assertTrue(updated['agents']['architect']['find_work'])
+        self.assertFalse(updated['agents']['architect']['auto_start'])
 
     def test_accepts_expert_mode(self):
-        """startup=false + recommend=false (expert mode) -> HTTP 200."""
+        """find_work=false + auto_start=false (expert mode) -> HTTP 200."""
         payload = {
             'architect': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                           'bypass_permissions': True,
-                          'startup_sequence': True,
-                          'recommend_next_actions': False},
+                          'find_work': True,
+                          'auto_start': False},
             'builder': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                         'bypass_permissions': True,
-                        'startup_sequence': False,
-                        'recommend_next_actions': False},
+                        'find_work': False,
+                        'auto_start': False},
             'qa': {'model': 'claude-sonnet-4-6', 'effort': 'high',
                    'bypass_permissions': True,
-                   'startup_sequence': True,
-                   'recommend_next_actions': False},
+                   'find_work': True,
+                   'auto_start': False},
             'pm': {'model': 'claude-sonnet-4-6', 'effort': 'medium',
                    'bypass_permissions': True,
-                   'startup_sequence': False,
-                   'recommend_next_actions': False}
+                   'find_work': False,
+                   'auto_start': False}
         }
         handler = self._make_handler(payload)
         status_code = handler._send_json.call_args[0][0]
@@ -485,11 +485,11 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
         mock_run.return_value = ""
         html = serve.generate_html()
         # Check for startup control elements in the generated HTML
-        self.assertIn('agent-startup-', html)
-        self.assertIn('agent-recommend-', html)
+        self.assertIn('agent-findwork-', html)
+        self.assertIn('agent-autostart-', html)
         # Column headers use two-line text (no inline labels in agent rows)
-        self.assertIn('Startup', html)
-        self.assertIn('Suggest', html)
+        self.assertIn('Find', html)
+        self.assertIn('Auto', html)
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -510,34 +510,34 @@ class TestDashboardHtmlStartupControls(unittest.TestCase):
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_suggest_next_disables_when_startup_sequence_unchecked(self, mock_run, mock_status):
-        """Suggest Next checkbox disables when Startup Sequence is unchecked.
+    def test_auto_start_disables_when_find_work_unchecked(self, mock_run, mock_status):
+        """Auto Start checkbox disables when Find Work is unchecked.
 
-        Verifies the dashboard JS contains disable logic: when the startup
-        sequence checkbox is unchecked, the suggest-next (recommend) checkbox
-        must be set to disabled=true and checked=false.
+        Verifies the dashboard JS contains disable logic: when the find work
+        checkbox is unchecked, the auto start checkbox must be set to
+        disabled=true and checked=false.
         """
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
-        # Verify JS contains the disable logic for recommend when startup unchecked
-        self.assertIn('recommendChk.disabled = true', html,
-                       'Missing JS to disable suggest-next when startup unchecked')
-        self.assertIn('recommendChk.checked = false', html,
-                       'Missing JS to uncheck suggest-next when startup unchecked')
-        # Verify re-enable logic when startup is re-checked
-        self.assertIn('recommendChk.disabled = false', html,
-                       'Missing JS to re-enable suggest-next when startup re-checked')
+        # Verify JS contains the disable logic for auto start when find work unchecked
+        self.assertIn('autoStartChk.disabled = true', html,
+                       'Missing JS to disable auto-start when find-work unchecked')
+        self.assertIn('autoStartChk.checked = false', html,
+                       'Missing JS to uncheck auto-start when find-work unchecked')
+        # Verify re-enable logic when find work is re-checked
+        self.assertIn('autoStartChk.disabled = false', html,
+                       'Missing JS to re-enable auto-start when find-work re-checked')
         # Verify the disabled class is applied for visual feedback
         self.assertIn("classList.add('disabled')", html,
-                       'Missing disabled class toggle for suggest-next label')
+                       'Missing disabled class toggle for auto-start label')
 
 
 class TestConfigSchemaDefaults(unittest.TestCase):
     """Verify the config files include startup control defaults."""
 
     def test_live_config_has_startup_fields(self):
-        """config.json includes startup_sequence and recommend_next_actions."""
+        """config.json includes find_work and auto_start."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.environ.get(
             'PURLIN_PROJECT_ROOT',
@@ -548,12 +548,12 @@ class TestConfigSchemaDefaults(unittest.TestCase):
             config = json.load(f)
         for role in ('architect', 'builder', 'qa', 'pm'):
             agent = config['agents'][role]
-            self.assertIn('startup_sequence', agent,
-                          f'{role} missing startup_sequence')
-            self.assertIn('recommend_next_actions', agent,
-                          f'{role} missing recommend_next_actions')
-            self.assertIsInstance(agent['startup_sequence'], bool)
-            self.assertIsInstance(agent['recommend_next_actions'], bool)
+            self.assertIn('find_work', agent,
+                          f'{role} missing find_work')
+            self.assertIn('auto_start', agent,
+                          f'{role} missing auto_start')
+            self.assertIsInstance(agent['find_work'], bool)
+            self.assertIsInstance(agent['auto_start'], bool)
 
     def test_sample_config_has_startup_fields(self):
         """purlin-config-sample/config.json includes startup fields."""
@@ -567,8 +567,8 @@ class TestConfigSchemaDefaults(unittest.TestCase):
             config = json.load(f)
         for role in ('architect', 'builder', 'qa', 'pm'):
             agent = config['agents'][role]
-            self.assertIn('startup_sequence', agent)
-            self.assertIn('recommend_next_actions', agent)
+            self.assertIn('find_work', agent)
+            self.assertIn('auto_start', agent)
 
 
 # =============================================================================

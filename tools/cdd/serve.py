@@ -4527,11 +4527,11 @@ function applyPendingWrites() {{
     }} else if (field === 'bypass_permissions') {{
       var chk = document.getElementById('agent-bypass-' + role);
       if (chk) chk.checked = val;
-    }} else if (field === 'startup_sequence') {{
-      var chk = document.getElementById('agent-startup-' + role);
+    }} else if (field === 'find_work') {{
+      var chk = document.getElementById('agent-findwork-' + role);
       if (chk) chk.checked = val;
-    }} else if (field === 'recommend_next_actions') {{
-      var chk = document.getElementById('agent-recommend-' + role);
+    }} else if (field === 'auto_start') {{
+      var chk = document.getElementById('agent-autostart-' + role);
       if (chk) chk.checked = val;
     }}
   }});
@@ -4574,8 +4574,8 @@ function renderAgentsRows(cfg) {{
     '<span class="agent-hdr-cell">MODEL</span>' +
     '<span class="agent-hdr-cell">EFFORT</span>' +
     '<span class="agent-hdr-cell center">YOLO</span>' +
-    '<span class="agent-hdr-cell center">Startup<br>Sequence</span>' +
-    '<span class="agent-hdr-cell center">Suggest<br>Next</span>' +
+    '<span class="agent-hdr-cell center">Find<br>Work</span>' +
+    '<span class="agent-hdr-cell center">Auto<br>Start</span>' +
   '</div>';
   roles.forEach(function(role) {{
     html += buildAgentRowHtml(role, agents[role] || {{}});
@@ -4598,30 +4598,30 @@ function renderAgentsRows(cfg) {{
       pendingWrites.set(role + '.bypass_permissions', bypassChk.checked);
       scheduleAgentSave();
     }});
-    var startupChk = document.getElementById('agent-startup-' + role);
-    var recommendChk = document.getElementById('agent-recommend-' + role);
-    if (startupChk) startupChk.addEventListener('change', function() {{
-      pendingWrites.set(role + '.startup_sequence', startupChk.checked);
-      var recLbl = document.getElementById('agent-recommend-lbl-' + role);
-      if (!startupChk.checked) {{
-        if (recommendChk && recommendChk.checked) {{
-          recommendChk.dataset.prevState = 'true';
+    var findWorkChk = document.getElementById('agent-findwork-' + role);
+    var autoStartChk = document.getElementById('agent-autostart-' + role);
+    if (findWorkChk) findWorkChk.addEventListener('change', function() {{
+      pendingWrites.set(role + '.find_work', findWorkChk.checked);
+      var autoLbl = document.getElementById('agent-autostart-lbl-' + role);
+      if (!findWorkChk.checked) {{
+        if (autoStartChk && autoStartChk.checked) {{
+          autoStartChk.dataset.prevState = 'true';
         }}
-        if (recommendChk) {{ recommendChk.checked = false; recommendChk.disabled = true; }}
-        if (recLbl) recLbl.classList.add('disabled');
-        pendingWrites.set(role + '.recommend_next_actions', false);
+        if (autoStartChk) {{ autoStartChk.checked = false; autoStartChk.disabled = true; }}
+        if (autoLbl) autoLbl.classList.add('disabled');
+        pendingWrites.set(role + '.auto_start', false);
       }} else {{
-        if (recommendChk) {{
-          recommendChk.disabled = false;
-          if (recommendChk.dataset.prevState === 'true') recommendChk.checked = true;
+        if (autoStartChk) {{
+          autoStartChk.disabled = false;
+          if (autoStartChk.dataset.prevState === 'true') autoStartChk.checked = true;
         }}
-        if (recLbl) recLbl.classList.remove('disabled');
-        pendingWrites.set(role + '.recommend_next_actions', recommendChk ? recommendChk.checked : true);
+        if (autoLbl) autoLbl.classList.remove('disabled');
+        pendingWrites.set(role + '.auto_start', autoStartChk ? autoStartChk.checked : false);
       }}
       scheduleAgentSave();
     }});
-    if (recommendChk) recommendChk.addEventListener('change', function() {{
-      pendingWrites.set(role + '.recommend_next_actions', recommendChk.checked);
+    if (autoStartChk) autoStartChk.addEventListener('change', function() {{
+      pendingWrites.set(role + '.auto_start', autoStartChk.checked);
       scheduleAgentSave();
     }});
     syncCapabilityControls(role);
@@ -4643,21 +4643,21 @@ function diffUpdateAgentRows(cfg) {{
     if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
     var yoloMode = acfg.bypass_permissions === true;
     if (bypassChk && !pendingWrites.has(role + '.bypass_permissions') && bypassChk.checked !== yoloMode) bypassChk.checked = yoloMode;
-    var startupChk = document.getElementById('agent-startup-' + role);
-    var recommendChk = document.getElementById('agent-recommend-' + role);
-    var recLbl = document.getElementById('agent-recommend-lbl-' + role);
-    var startupVal = acfg.startup_sequence !== false;
-    var recommendVal = acfg.recommend_next_actions !== false;
-    if (startupChk && !pendingWrites.has(role + '.startup_sequence') && startupChk.checked !== startupVal) startupChk.checked = startupVal;
-    if (recommendChk && !pendingWrites.has(role + '.recommend_next_actions')) {{
-      var shouldDisable = !startupVal;
-      recommendChk.disabled = shouldDisable;
+    var findWorkChk = document.getElementById('agent-findwork-' + role);
+    var autoStartChk = document.getElementById('agent-autostart-' + role);
+    var autoLbl = document.getElementById('agent-autostart-lbl-' + role);
+    var findWorkVal = acfg.find_work !== false;
+    var autoStartVal = acfg.auto_start === true;
+    if (findWorkChk && !pendingWrites.has(role + '.find_work') && findWorkChk.checked !== findWorkVal) findWorkChk.checked = findWorkVal;
+    if (autoStartChk && !pendingWrites.has(role + '.auto_start')) {{
+      var shouldDisable = !findWorkVal;
+      autoStartChk.disabled = shouldDisable;
       if (shouldDisable) {{
-        recommendChk.checked = false;
-        if (recLbl) recLbl.classList.add('disabled');
+        autoStartChk.checked = false;
+        if (autoLbl) autoLbl.classList.add('disabled');
       }} else {{
-        if (recommendChk.checked !== recommendVal) recommendChk.checked = recommendVal;
-        if (recLbl) recLbl.classList.remove('disabled');
+        if (autoStartChk.checked !== autoStartVal) autoStartChk.checked = autoStartVal;
+        if (autoLbl) autoLbl.classList.remove('disabled');
       }}
     }}
     syncCapabilityControls(role);
@@ -4668,9 +4668,9 @@ function buildAgentRowHtml(role, agentCfg) {{
   var currentModel = agentCfg.model || '';
   var currentEffort = agentCfg.effort || 'high';
   var yoloMode = agentCfg.bypass_permissions === true;
-  var startupSeq = agentCfg.startup_sequence !== false;
-  var suggestNext = agentCfg.recommend_next_actions !== false;
-  var suggestDisabled = !startupSeq;
+  var findWork = agentCfg.find_work !== false;
+  var autoStart = agentCfg.auto_start === true;
+  var autoDisabled = !findWork;
   var modelsList = (agentsConfig && agentsConfig.models) || [];
   var modOptions = modelsList.map(function(m) {{
     return '<option value="' + m.id + '"' + (m.id === currentModel ? ' selected' : '') + '>' + m.label + '</option>';
@@ -4686,11 +4686,11 @@ function buildAgentRowHtml(role, agentCfg) {{
     '<label class="agent-chk-lbl" id="agent-bypass-lbl-' + role + '" style="visibility:hidden">' +
       '<input type="checkbox" id="agent-bypass-' + role + '" style="accent-color:var(--purlin-accent)"' + (yoloMode ? ' checked' : '') + '>' +
     '</label>' +
-    '<label class="agent-chk-lbl" id="agent-startup-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-startup-' + role + '" style="accent-color:var(--purlin-accent)"' + (startupSeq ? ' checked' : '') + '>' +
+    '<label class="agent-chk-lbl" id="agent-findwork-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-findwork-' + role + '" style="accent-color:var(--purlin-accent)"' + (findWork ? ' checked' : '') + '>' +
     '</label>' +
-    '<label class="agent-chk-lbl' + (suggestDisabled ? ' disabled' : '') + '" id="agent-recommend-lbl-' + role + '" style="visibility:hidden">' +
-      '<input type="checkbox" id="agent-recommend-' + role + '" style="accent-color:var(--purlin-accent)"' + (suggestNext && !suggestDisabled ? ' checked' : '') + (suggestDisabled ? ' disabled' : '') + '>' +
+    '<label class="agent-chk-lbl' + (autoDisabled ? ' disabled' : '') + '" id="agent-autostart-lbl-' + role + '" style="visibility:hidden">' +
+      '<input type="checkbox" id="agent-autostart-' + role + '" style="accent-color:var(--purlin-accent)"' + (autoStart && !autoDisabled ? ' checked' : '') + (autoDisabled ? ' disabled' : '') + '>' +
     '</label>' +
   '</div>';
 }}
@@ -4715,12 +4715,12 @@ function syncCapabilityControls(role) {{
   var caps = (modelObj || {{}}).capabilities || {{}};
   var effSel = document.getElementById('agent-effort-' + role);
   var bypassLbl = document.getElementById('agent-bypass-lbl-' + role);
-  var startupLbl = document.getElementById('agent-startup-lbl-' + role);
-  var recommendLbl = document.getElementById('agent-recommend-lbl-' + role);
+  var findWorkLbl = document.getElementById('agent-findwork-lbl-' + role);
+  var autoStartLbl = document.getElementById('agent-autostart-lbl-' + role);
   if (effSel) effSel.style.visibility = caps.effort ? 'visible' : 'hidden';
   if (bypassLbl) bypassLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
-  if (startupLbl) startupLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
-  if (recommendLbl) recommendLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
+  if (findWorkLbl) findWorkLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
+  if (autoStartLbl) autoStartLbl.style.visibility = caps.permissions ? 'visible' : 'hidden';
 }}
 
 function updateAgentsBadge(cfg) {{
@@ -4757,15 +4757,15 @@ function saveAgentConfig() {{
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
-    var startupChk = document.getElementById('agent-startup-' + role);
-    var recommendChk = document.getElementById('agent-recommend-' + role);
+    var findWorkChk = document.getElementById('agent-findwork-' + role);
+    var autoStartChk = document.getElementById('agent-autostart-' + role);
     if (!modSel) return;
     agentsPayload[role] = {{
       model: modSel.value,
       effort: effSel ? effSel.value : 'high',
       bypass_permissions: bypassChk ? bypassChk.checked : false,
-      startup_sequence: startupChk ? startupChk.checked : true,
-      recommend_next_actions: recommendChk ? recommendChk.checked : true
+      find_work: findWorkChk ? findWorkChk.checked : true,
+      auto_start: autoStartChk ? autoStartChk.checked : false
     }};
   }});
   // Snapshot pending keys included in this request (per-request lock association)
@@ -5148,13 +5148,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if model and model not in all_model_ids:
                 errors.append(f'{role}: unknown model "{model}"')
             # Validate startup controls
-            for bool_field in ('startup_sequence', 'recommend_next_actions'):
+            for bool_field in ('find_work', 'auto_start'):
                 if bool_field in cfg and not isinstance(cfg[bool_field], bool):
                     errors.append(f'{role}: {bool_field} must be a boolean')
-            ss = cfg.get('startup_sequence', True)
-            rna = cfg.get('recommend_next_actions', True)
-            if ss is False and rna is True:
-                errors.append(f'{role}: startup_sequence=false with recommend_next_actions=true is invalid')
+            fw = cfg.get('find_work', True)
+            as_ = cfg.get('auto_start', False)
+            if fw is False and as_ is True:
+                errors.append(f'{role}: find_work=false with auto_start=true is invalid')
 
         if errors:
             self._send_json(400, {'error': '; '.join(errors)})

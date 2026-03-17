@@ -258,11 +258,11 @@ scenario_expert_mode() {
     prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
     output=$(run_claude_test "$prompt_file" "Begin Builder session." "$fixture_dir")
 
-    if assert_contains "$output" "startup_sequence disabled"; then
+    if assert_contains "$output" "find_work disabled"; then
         record_result "PASS" "Expert Mode: disabled message present"
     else
         record_result "FAIL" "Expert Mode: disabled message present" \
-            "Expected 'startup_sequence disabled' in output"
+            "Expected 'find_work disabled' in output"
     fi
 
     if assert_not_contains "$output" "Action Items\|Work Plan\|Feature Queue"; then

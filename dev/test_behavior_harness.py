@@ -138,8 +138,8 @@ class TestFixtureCheckoutAndPromptConstruction(unittest.TestCase):
                     "tools_root": "tools",
                     "agents": {
                         "builder": {
-                            "startup_sequence": False,
-                            "recommend_next_actions": False,
+                            "find_work": False,
+                            "auto_start": False,
                         }
                     }
                 }),
@@ -306,9 +306,9 @@ class TestExpertModeOutput(unittest.TestCase):
     """Scenario: Expert mode outputs correct message
 
     Given the fixture tag "main/cdd_startup_controls/expert-mode" is checked out
-    And the config has startup_sequence: false
+    And the config has find_work: false
     When claude --print is invoked with "Begin Builder session."
-    Then the output contains "startup_sequence disabled"
+    Then the output contains "find_work disabled"
     And the output does NOT contain a work plan or Critic report
 
     Note: This tests the assertion logic against expected output patterns.
@@ -317,7 +317,7 @@ class TestExpertModeOutput(unittest.TestCase):
     """
 
     def test_expert_mode_outputs_correct_disabled_message(self):
-        """Expert mode outputs the correct startup_sequence disabled message."""
+        """Expert mode outputs the correct find_work disabled message."""
         # Simulate the expected output from expert mode
         expected_output = (
             "Purlin Builder — Ready\n"
@@ -325,11 +325,11 @@ class TestExpertModeOutput(unittest.TestCase):
             "...\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "\n"
-            "startup_sequence disabled — awaiting instruction.\n"
+            "find_work disabled — awaiting instruction.\n"
         )
         import re
         self.assertTrue(
-            bool(re.search(r"startup_sequence disabled", expected_output)),
+            bool(re.search(r"find_work disabled", expected_output)),
             "Should detect disabled message",
         )
         self.assertFalse(

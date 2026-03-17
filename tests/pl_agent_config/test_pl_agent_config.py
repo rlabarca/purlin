@@ -58,8 +58,8 @@ class TestSkillFileContract(unittest.TestCase):
 
     def test_valid_keys_listed(self):
         """All five valid config keys must be listed."""
-        for key in ['model', 'effort', 'startup_sequence',
-                     'recommend_next_actions', 'bypass_permissions']:
+        for key in ['model', 'effort', 'find_work',
+                     'auto_start', 'bypass_permissions']:
             self.assertIn(key, self.content)
 
     def test_copy_on_first_access(self):
@@ -106,15 +106,15 @@ class TestConfigChangeAppliedToLocalConfig(ConfigWriteTestBase):
 
     def test_local_updated_shared_unchanged(self):
         shared = {
-            "agents": {"builder": {"startup_sequence": True, "model": "claude-sonnet-4-6"}},
+            "agents": {"builder": {"find_work": True, "model": "claude-sonnet-4-6"}},
             "models": [{"id": "claude-sonnet-4-6"}]
         }
         self.write_shared(shared)
         self.write_local(shared.copy())
 
-        # Simulate /pl-agent-config builder startup_sequence false
+        # Simulate /pl-agent-config builder find_work false
         local = self.read_local()
-        local["agents"]["builder"]["startup_sequence"] = False
+        local["agents"]["builder"]["find_work"] = False
         tmp_path = self.local_path + '.tmp'
         with open(tmp_path, 'w') as f:
             json.dump(local, f, indent=4)
@@ -122,12 +122,12 @@ class TestConfigChangeAppliedToLocalConfig(ConfigWriteTestBase):
 
         # Verify local was updated
         result = resolve_config(self.tmpdir)
-        self.assertFalse(result["agents"]["builder"]["startup_sequence"])
+        self.assertFalse(result["agents"]["builder"]["find_work"])
 
         # Verify shared is unchanged
         with open(self.shared_path) as f:
             s = json.load(f)
-        self.assertTrue(s["agents"]["builder"]["startup_sequence"])
+        self.assertTrue(s["agents"]["builder"]["find_work"])
 
 
 class TestInvalidKeyRejected(unittest.TestCase):

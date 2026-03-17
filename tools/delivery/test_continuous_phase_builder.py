@@ -88,8 +88,8 @@ def make_mock_project(tmpdir, plan_text=None, graph_data=None):
         f.write('print("AGENT_MODEL=\\"\\"")\n')
         f.write('print("AGENT_EFFORT=\\"\\"")\n')
         f.write('print("AGENT_BYPASS=\\"false\\"")\n')
-        f.write('print("AGENT_STARTUP=\\"true\\"")\n')
-        f.write('print("AGENT_RECOMMEND=\\"true\\"")\n')
+        f.write('print("AGENT_FIND_WORK=\\"true\\"")\n')
+        f.write('print("AGENT_AUTO_START=\\"false\\"")\n')
 
     return tmpdir
 

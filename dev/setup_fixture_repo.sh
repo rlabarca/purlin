@@ -73,9 +73,9 @@ create_base_project() {
     "tools_root": "tools",
     "critic_llm_enabled": false,
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": true },
-        "builder": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": true },
-        "qa": { "model": "claude-sonnet-4-6", "startup_sequence": true, "recommend_next_actions": true }
+        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
     }
 }
 EOF
@@ -348,24 +348,24 @@ cat > .purlin/config.json <<'EOF'
             "model": "claude-opus-4-6",
             "effort": "high",
             "bypass_permissions": true,
-            "startup_sequence": true,
-            "recommend_next_actions": true,
+            "find_work": true,
+            "auto_start": true,
             "context_guard": true
         },
         "builder": {
             "model": "claude-sonnet-4-6",
             "effort": "medium",
             "bypass_permissions": false,
-            "startup_sequence": true,
-            "recommend_next_actions": false,
+            "find_work": true,
+            "auto_start": false,
             "context_guard": true
         },
         "qa": {
             "model": "claude-haiku-4-5-20251001",
             "effort": "low",
             "bypass_permissions": true,
-            "startup_sequence": false,
-            "recommend_next_actions": false,
+            "find_work": false,
+            "auto_start": false,
             "context_guard": false
         }
     },
@@ -844,44 +844,58 @@ fi
 
 # startup-print-sequence (default config)
 commit_and_tag "main/cdd_startup_controls/startup-print-sequence" \
-    "Default config (startup_sequence: true, recommend_next_actions: true)"
+    "Default config (find_work: true, auto_start: true)"
 
 # all-disabled
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "startup_sequence": false, "recommend_next_actions": false },
-        "builder": { "model": "claude-opus-4-6", "startup_sequence": false, "recommend_next_actions": false },
-        "qa": { "model": "claude-sonnet-4-6", "startup_sequence": false, "recommend_next_actions": false }
+        "architect": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
+        "builder": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": false, "auto_start": false }
     }
 }
 EOF
 commit_and_tag "main/cdd_startup_controls/all-disabled" \
-    "Project with startup_sequence false for all roles"
+    "Project with find_work false for all roles"
 
 # expert-mode
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "startup_sequence": false, "recommend_next_actions": false },
-        "builder": { "model": "claude-opus-4-6", "startup_sequence": false, "recommend_next_actions": false },
-        "qa": { "model": "claude-sonnet-4-6", "startup_sequence": false, "recommend_next_actions": false }
+        "architect": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
+        "builder": { "model": "claude-opus-4-6", "find_work": false, "auto_start": false },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": false, "auto_start": false }
     }
 }
 EOF
 commit_and_tag "main/cdd_startup_controls/expert-mode" \
-    "Config with startup_sequence: false, recommend_next_actions: false"
+    "Config with find_work: false, auto_start: false"
+
+# auto-mode
+cat > .purlin/config.json <<'EOF'
+{
+    "tools_root": "tools",
+    "agents": {
+        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
+    }
+}
+EOF
+commit_and_tag "main/cdd_startup_controls/auto-mode" \
+    "Project with find_work true and auto_start true for all roles"
 
 # guided-mode
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": true },
-        "builder": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": true },
-        "qa": { "model": "claude-sonnet-4-6", "startup_sequence": true, "recommend_next_actions": true }
+        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": true },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": true }
     }
 }
 EOF
@@ -915,21 +929,21 @@ No action items.
 REPORT
 
 commit_and_tag "main/cdd_startup_controls/guided-mode" \
-    "Config with startup_sequence: true, recommend_next_actions: true"
+    "Config with find_work: true, auto_start: true"
 
 # orient-only-mode
 cat > .purlin/config.json <<'EOF'
 {
     "tools_root": "tools",
     "agents": {
-        "architect": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": false },
-        "builder": { "model": "claude-opus-4-6", "startup_sequence": true, "recommend_next_actions": false },
-        "qa": { "model": "claude-sonnet-4-6", "startup_sequence": true, "recommend_next_actions": false }
+        "architect": { "model": "claude-opus-4-6", "find_work": true, "auto_start": false },
+        "builder": { "model": "claude-opus-4-6", "find_work": true, "auto_start": false },
+        "qa": { "model": "claude-sonnet-4-6", "find_work": true, "auto_start": false }
     }
 }
 EOF
 commit_and_tag "main/cdd_startup_controls/orient-only-mode" \
-    "Config with startup_sequence: true, recommend_next_actions: false"
+    "Config with find_work: true, auto_start: false"
 
 # =====================================================================
 echo ""

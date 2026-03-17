@@ -26,7 +26,7 @@ These tests verify the underlying behaviors that the command depends on:
 - Argument validation (save, architect, builder, qa, pm, invalid)
 - PM-specific checkpoint fields (Spec Drafts, Figma Context, Probing Round)
 - Cold-start extension behaviors (tombstones, anchors, verification effort)
-- Startup flag handling (startup_sequence, recommend_next_actions)
+- Startup flag handling (find_work, auto_start)
 """
 import json
 import os
@@ -1190,7 +1190,7 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
     """Scenario: Cold Start Respects Startup Flags
 
     Given .purlin/cache/session_checkpoint_builder.md does not exist
-    And .purlin/config.json sets recommend_next_actions to false for builder
+    And .purlin/config.json sets auto_start to false for builder
     When the agent invokes /pl-resume builder
     Then the core state-gathering sequence runs
     And the cold-start extensions run
@@ -1199,33 +1199,33 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
     And the agent awaits user direction
     """
 
-    def test_config_json_has_startup_sequence_field(self):
-        """config.json contains startup_sequence for builder."""
+    def test_config_json_has_find_work_field(self):
+        """config.json contains find_work for builder."""
         config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
         builder_cfg = config.get('agents', {}).get('builder', {})
-        self.assertIn('startup_sequence', builder_cfg)
+        self.assertIn('find_work', builder_cfg)
 
-    def test_config_json_has_recommend_next_actions_field(self):
-        """config.json contains recommend_next_actions for builder."""
+    def test_config_json_has_auto_start_field(self):
+        """config.json contains auto_start for builder."""
         config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
         builder_cfg = config.get('agents', {}).get('builder', {})
-        self.assertIn('recommend_next_actions', builder_cfg)
+        self.assertIn('auto_start', builder_cfg)
 
     def test_all_roles_have_startup_flags(self):
-        """All four roles have startup_sequence and recommend_next_actions."""
+        """All four roles have find_work and auto_start."""
         config_path = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
         with open(config_path) as f:
             config = json.load(f)
         for role in ('pm', 'architect', 'builder', 'qa'):
             role_cfg = config.get('agents', {}).get(role, {})
-            self.assertIn('startup_sequence', role_cfg,
-                          f'{role} missing startup_sequence')
-            self.assertIn('recommend_next_actions', role_cfg,
-                          f'{role} missing recommend_next_actions')
+            self.assertIn('find_work', role_cfg,
+                          f'{role} missing find_work')
+            self.assertIn('auto_start', role_cfg,
+                          f'{role} missing auto_start')
 
     def test_startup_flags_are_boolean(self):
         """Startup flags are boolean values."""
@@ -1234,24 +1234,24 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
             config = json.load(f)
         for role in ('pm', 'architect', 'builder', 'qa'):
             role_cfg = config.get('agents', {}).get(role, {})
-            self.assertIsInstance(role_cfg['startup_sequence'], bool,
-                                 f'{role} startup_sequence not bool')
-            self.assertIsInstance(role_cfg['recommend_next_actions'], bool,
-                                 f'{role} recommend_next_actions not bool')
+            self.assertIsInstance(role_cfg['find_work'], bool,
+                                 f'{role} find_work not bool')
+            self.assertIsInstance(role_cfg['auto_start'], bool,
+                                 f'{role} auto_start not bool')
 
     def test_command_file_references_startup_flags(self):
         """Command file Step 5 references startup flag handling."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('startup_sequence', content)
-        self.assertIn('recommend_next_actions', content)
+        self.assertIn('find_work', content)
+        self.assertIn('auto_start', content)
 
     def test_command_file_has_startup_disabled_message(self):
-        """Command file includes the startup_sequence disabled message."""
+        """Command file includes the find_work disabled message."""
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn(
-            'startup_sequence disabled -- awaiting instruction', content)
+            'find_work disabled -- awaiting instruction', content)
 
     def test_command_file_references_resolved_config(self):
         """Command file references resolved config (config.local.json first)."""
@@ -1267,8 +1267,8 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
         # Simulate missing fields -- default should be True
         empty_config = {'agents': {'builder': {}}}
         builder_cfg = empty_config['agents']['builder']
-        startup = builder_cfg.get('startup_sequence', True)
-        recommend = builder_cfg.get('recommend_next_actions', True)
+        startup = builder_cfg.get('find_work', True)
+        recommend = builder_cfg.get('auto_start', True)
         self.assertTrue(startup)
         self.assertTrue(recommend)
 

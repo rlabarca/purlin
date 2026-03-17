@@ -186,8 +186,8 @@ GRAPH
 
 # --- Helper: set config ---
 set_config() {
-    local startup_sequence="${1:-true}"
-    local recommend_next_actions="${2:-true}"
+    local find_work="${1:-true}"
+    local auto_start="${2:-false}"
 
     cat > .purlin/config.json <<CONFIG
 {
@@ -195,18 +195,18 @@ set_config() {
     "agents": {
         "architect": {
             "model": "claude-haiku-4-5-20251001",
-            "startup_sequence": ${startup_sequence},
-            "recommend_next_actions": ${recommend_next_actions}
+            "find_work": ${find_work},
+            "auto_start": ${auto_start}
         },
         "builder": {
             "model": "claude-haiku-4-5-20251001",
-            "startup_sequence": ${startup_sequence},
-            "recommend_next_actions": ${recommend_next_actions}
+            "find_work": ${find_work},
+            "auto_start": ${auto_start}
         },
         "qa": {
             "model": "claude-haiku-4-5-20251001",
-            "startup_sequence": ${startup_sequence},
-            "recommend_next_actions": ${recommend_next_actions}
+            "find_work": ${find_work},
+            "auto_start": ${auto_start}
         }
     }
 }
@@ -234,7 +234,7 @@ commit_and_tag() {
 
 # ===================================================================
 # Fixture 1: main/cdd_startup_controls/startup-print-sequence
-# Default config (startup_sequence: true, recommend_next_actions: true)
+# Default config (find_work: true, auto_start: false)
 # ===================================================================
 echo "Creating: main/cdd_startup_controls/startup-print-sequence" >&2
 rm -rf ./* .purlin 2>/dev/null || true
@@ -244,7 +244,7 @@ commit_and_tag "main/cdd_startup_controls/startup-print-sequence"
 
 # ===================================================================
 # Fixture 2: main/cdd_startup_controls/expert-mode
-# Config with startup_sequence: false
+# Config with find_work: false
 # ===================================================================
 echo "Creating: main/cdd_startup_controls/expert-mode" >&2
 set_config false false
@@ -252,7 +252,7 @@ commit_and_tag "main/cdd_startup_controls/expert-mode"
 
 # ===================================================================
 # Fixture 3: main/cdd_startup_controls/guided-mode
-# Config with startup_sequence: true, recommend_next_actions: true
+# Config with find_work: true, auto_start: true
 # ===================================================================
 echo "Creating: main/cdd_startup_controls/guided-mode" >&2
 set_config true true
@@ -319,14 +319,22 @@ commit_and_tag "main/cdd_startup_controls/guided-mode"
 
 # ===================================================================
 # Fixture 4: main/cdd_startup_controls/orient-only-mode
-# Config with startup_sequence: true, recommend_next_actions: false
+# Config with find_work: true, auto_start: false
 # ===================================================================
 echo "Creating: main/cdd_startup_controls/orient-only-mode" >&2
 set_config true false
 commit_and_tag "main/cdd_startup_controls/orient-only-mode"
 
 # ===================================================================
-# Fixture 5: main/pl_session_resume/builder-mid-feature
+# Fixture 5: main/cdd_startup_controls/auto-mode
+# Config with find_work: true, auto_start: true
+# ===================================================================
+echo "Creating: main/cdd_startup_controls/auto-mode" >&2
+set_config true true
+commit_and_tag "main/cdd_startup_controls/auto-mode"
+
+# ===================================================================
+# Fixture 6: main/pl_session_resume/builder-mid-feature
 # Checkpoint file showing builder at protocol step 2
 # ===================================================================
 echo "Creating: main/pl_session_resume/builder-mid-feature" >&2

@@ -208,13 +208,13 @@ def _cli_role(project_root, role):
     model = agent.get('model', '')
     effort = agent.get('effort', '')
     bp = 'true' if agent.get('bypass_permissions', False) else 'false'
-    ss = 'true' if agent.get('startup_sequence', True) else 'false'
-    rn = 'true' if agent.get('recommend_next_actions', True) else 'false'
+    fw = 'true' if agent.get('find_work', True) else 'false'
+    as_ = 'true' if agent.get('auto_start', False) else 'false'
     print(f'AGENT_MODEL="{model}"')
     print(f'AGENT_EFFORT="{effort}"')
     print(f'AGENT_BYPASS="{bp}"')
-    print(f'AGENT_STARTUP="{ss}"')
-    print(f'AGENT_RECOMMEND="{rn}"')
+    print(f'AGENT_FIND_WORK="{fw}"')
+    print(f'AGENT_AUTO_START="{as_}"')
 
 
 def main():

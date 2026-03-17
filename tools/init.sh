@@ -144,8 +144,8 @@ LAUNCHER_EOF
 AGENT_MODEL=""
 AGENT_EFFORT=""
 AGENT_BYPASS="false"
-AGENT_STARTUP="true"
-AGENT_RECOMMEND="true"
+AGENT_FIND_WORK="true"
+AGENT_AUTO_START="false"
 
 if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
@@ -170,8 +170,8 @@ LAUNCHER_EOF
     cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 
 # --- Validate startup controls ---
-if [ "$AGENT_STARTUP" = "false" ] && [ "$AGENT_RECOMMEND" = "true" ]; then
-    echo "Error: Invalid startup controls for $AGENT_ROLE: startup_sequence=false with recommend_next_actions=true is not a valid combination. Set recommend_next_actions to false or enable startup_sequence." >&2
+if [ "$AGENT_FIND_WORK" = "false" ] && [ "$AGENT_AUTO_START" = "true" ]; then
+    echo "Error: Invalid startup controls for $AGENT_ROLE: find_work=false with auto_start=true is not a valid combination. Set auto_start to false or enable find_work." >&2
     exit 1
 fi
 
