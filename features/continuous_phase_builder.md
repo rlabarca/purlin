@@ -313,7 +313,7 @@ All continuous mode status output renders into an **in-place terminal canvas** o
   - Per-phase elapsed time, frozen at exit for completed phases.
   - Per-phase log file size (e.g., `45K`).
   - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text is truncated to fit within the remaining width after the aligned columns. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated (but column alignment is preserved for the remaining fields).
-  - Status colors: yellow for running, green for done, red for done with 0K log size (diagnostic warning).
+  - Status colors: orange (`\033[38;5;208m`) for running, green (`\033[32m`) for done (successful), red (`\033[31m`) for done with non-zero exit code or 0K log size (diagnostic warning). Orange distinguishes actively running phases from the yellow used for TODO badges and approval table elements.
   - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
   - Each phase line fits within `tput cols` characters. The renderer reads terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
 
@@ -784,7 +784,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And each phase line includes the phase label from the delivery plan heading
     And each phase line includes the status (running or done), elapsed time, log file size, and current activity
     And running phases show activity extracted from the log file tail (truncated to ~50 chars)
-    And status colors are applied: yellow for running, green for done, red for done with 0K log
+    And status colors are applied: orange for running, green for done (successful), red for done with non-zero exit or 0K log
     And the canvas overwrites in place via ANSI cursor-up and clear-to-end sequences
     And no phase line exceeds the terminal width (tput cols)
     And the canvas adapts field widths when the terminal is resized
