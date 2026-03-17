@@ -302,16 +302,17 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 ```
 [19:34:58] Parallel group (3 phases):
-             Phase 2 -- Non-Critical Anchors A   running  2m 15s   45K  editing arch_automated_feedback_tests.md
-             Phase 3 -- Non-Critical Anchor B    running  2m 15s   23K  running aft-web on design_modal_standards.md
-             Phase 5 -- Core Coordination        done     1m 42s   67K
+             Phase 2 -- Non-Critical Anchors A   running   2m 15s   45K  editing arch_automated_feedback_tests.md
+             Phase 3 -- Non-Critical Anchor B   running   2m 15s   23K  running aft-web on design_modal_standards.md
+             Phase 5 -- Core Coordination       done      1m 42s   67K
 ```
 
   - One phase per line, indented from the timestamp header.
   - Phase labels extracted from delivery plan headings (`## Phase N -- Label`).
+  - **Column alignment:** All phase lines in a parallel group MUST use aligned columns. The renderer computes the maximum width of each field across all phases in the group (phase prefix `Phase N -- `, label, status, elapsed, log size) and pads each field to its column width. This ensures status, elapsed time, log size, and activity fields line up vertically across all phase lines regardless of label length. Column widths are recomputed on each render cycle (terminal resize may change available space).
   - Per-phase elapsed time, frozen at exit for completed phases.
   - Per-phase log file size (e.g., `45K`).
-  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text is truncated to fit within the remaining width after the phase label, status, elapsed time, and log size fields. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated.
+  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text is truncated to fit within the remaining width after the aligned columns. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated (but column alignment is preserved for the remaining fields).
   - Status colors: yellow for running, green for done, red for done with 0K log size (diagnostic warning).
   - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
   - Each phase line fits within `tput cols` characters. The renderer reads terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
@@ -787,6 +788,17 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the canvas overwrites in place via ANSI cursor-up and clear-to-end sequences
     And no phase line exceeds the terminal width (tput cols)
     And the canvas adapts field widths when the terminal is resized
+
+#### Scenario: Parallel Canvas Columns Align Across Phase Lines
+    Given --continuous is active with parallel phases
+    And Phase 2 has label "Design & Release Policy" (22 chars)
+    And Phase 3 has label "Intelligent Update" (18 chars)
+    When the canvas renders the parallel group
+    Then the status column ("running"/"done") starts at the same character position on both lines
+    And the elapsed time column starts at the same character position on both lines
+    And the log size column starts at the same character position on both lines
+    And the activity column starts at the same character position on both lines
+    And shorter labels are right-padded to match the longest label width
 
 #### Scenario: All Builder Output Routes to Log Files in Continuous Mode
     Given --continuous is active
