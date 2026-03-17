@@ -1395,7 +1395,7 @@ def _branch_collab_section_html(active_branch, sync_data, branches,
                 name_esc = b['name'].replace("'", "\\'")
                 bs = b.get('sync_state', '')
                 if bs == 'EMPTY':
-                    state_html = '<span style="color:var(--purlin-primary)">EMPTY</span>'
+                    state_html = '<span style="color:var(--purlin-text)">EMPTY</span>'
                 elif bs == 'SAME':
                     state_html = '<span class="st-good">SAME</span>'
                 elif bs in ('AHEAD', 'BEHIND'):
@@ -1439,7 +1439,7 @@ def _branch_collab_section_html(active_branch, sync_data, branches,
                         '(check out main to enable sync tracking)</span>')
     elif sync_state == 'EMPTY':
         # No commits relative to main — plain text, no badge background
-        sync_badge = ('<span style="color:var(--purlin-primary);font-weight:bold">'
+        sync_badge = ('<span style="color:var(--purlin-text);font-weight:bold">'
                       'EMPTY</span>')
     elif sync_state == 'AHEAD':
         # Local is ahead -> remote is behind
@@ -1911,7 +1911,7 @@ def generate_html(cache=None):
   --purlin-accent:#38BDF8;--purlin-muted:#94A3B8;--purlin-border:#1E293B;
   --purlin-status-good:#34D399;--purlin-status-auto:#A3E635;--purlin-status-todo:#FCD34D;
   --purlin-status-warning:#FB923C;--purlin-status-error:#F87171;
-  --purlin-dim:#8B9DB0;--purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
+  --purlin-text:#E2E8F0;--purlin-dim:#8B9DB0;--purlin-tag-fill:#1E293B;--purlin-tag-outline:#334155;
   --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
 [data-theme='light']{{
@@ -1919,7 +1919,7 @@ def generate_html(cache=None):
   --purlin-accent:#0284C7;--purlin-muted:#64748B;--purlin-border:#E2E8F0;
   --purlin-status-good:#059669;--purlin-status-auto:#65A30D;--purlin-status-todo:#D97706;
   --purlin-status-warning:#EA580C;--purlin-status-error:#DC2626;
-  --purlin-dim:#94A3B8;--purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
+  --purlin-text:#0C2637;--purlin-dim:#94A3B8;--purlin-tag-fill:#F1F5F9;--purlin-tag-outline:#CBD5E1;
   --font-display:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;
 }}
 input[type=number]{{color-scheme:dark}}
@@ -2050,7 +2050,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-auto{{color:var(--purlin-status-auto);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
 .effort-breakdown{{cursor:help;position:relative}}
-.effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-fg);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
+.effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-text);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
 /* Branch Collaboration Operation Modal Spinner */
 @keyframes bc-spin{{ from{{transform:rotate(0deg)}} to{{transform:rotate(360deg)}} }}
 .bc-op-spinner{{
