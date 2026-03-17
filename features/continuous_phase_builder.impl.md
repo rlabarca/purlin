@@ -126,15 +126,12 @@ Replaced the simple `wait $pid` loop (which blocked until ALL builders completed
 
 Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.
 
-## [DISCOVERY] JSON Leaking to Terminal During Parallel Execution (2026-03-17)
+## [DISCOVERY] (acknowledged) JSON Leaking to Terminal During Parallel Execution (2026-03-17)
 
 **Problem:** During the first `--continuous` run with parallel phases (1, 2, 3), raw NDJSON output from the `--verbose --output-format stream-json` builders leaked to the terminal, flooding it with JSON instead of showing the canvas. The parallel group completed successfully (all 3 phases merged) but the evaluator then hung for 646+ seconds (pre-timeout-fix) and the orchestrator never advanced to phase 4.
 
-**Root cause (suspected):** The `run_line_buffered` function uses macOS `script -q /dev/null` to force line buffering. When combined with `> "$LOG_FILE" 2>&1` redirection inside a `( ... ) &` subshell, `script` may still write to the controlling terminal via the pseudo-TTY master, bypassing the stdout redirect. This is a known macOS `script` quirk — it was designed for terminal recording, not output containment.
+**Root cause:** macOS `script -q /dev/null` creates a pseudo-TTY whose master can leak output to the controlling terminal (`/dev/tty`), bypassing stdout redirects. This occurs specifically in `( ... ) &` parallel subshells where multiple `script` processes run concurrently.
 
-**Reproduction:** Run `./pl-run-builder.sh --continuous` with a delivery plan that has parallel phases. Observe terminal output during the parallel execution phase — raw NDJSON lines appear instead of (or interleaved with) the canvas display.
-
-**What to investigate:**
-1. Test whether `script -q /dev/null claude ... > logfile 2>&1` actually contains all output on macOS, or if the PTY master leaks to `/dev/tty`.
-2. If `script` leaks, consider alternatives: `unbuffer` (from `expect`), direct PTY management, or accepting full-buffered output and adjusting the canvas to tolerate delayed log growth.
-3. The spec (Section 2.17) says "ALL Builder output goes to log files only. No Builder output streams to the terminal." This invariant was violated.
+**Fix:** Two-part approach:
+1. Refactored `run_line_buffered` → `run_to_log` with log file as first parameter. The function handles all redirect logic internally (stdbuf path: `> logfile 2>&1`; script path: `> logfile 2>&1`; fallback: `> logfile 2>&1`). Append mode via `--append` flag.
+2. Added output containment at the parallel call site: `( ... ) > /dev/null 2>&1 &`. The outer redirect catches any PTY master leakage that bypasses the inner redirect inside `run_to_log`. Sequential and bootstrap invocations don't need containment (no concurrent PTY interaction).

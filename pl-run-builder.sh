@@ -400,19 +400,45 @@ with open('$DELIVERY_PLAN', 'w') as f:
     git -C "$SCRIPT_DIR" commit -m "chore: mark phases ${phases[*]} as IN_PROGRESS" 2>/dev/null
 }
 
-# --- Helper: run a command with line-buffered stdout ---
+# --- Helper: run a command with line-buffered output to a log file ---
+# Usage: run_to_log <logfile> [--append] <command> [args...]
 # Fallback chain: stdbuf -oL (Linux) -> script -q /dev/null (macOS) -> unbuffered with warning
-run_line_buffered() {
+#
+# macOS: script(1) creates a pseudo-TTY that forces line buffering. Output
+# flows through script's stdout (redirected to the log file). The typescript
+# file arg is /dev/null (discarded) to avoid duplication.
+#
+# IMPORTANT: In parallel subshells, the PTY master may leak to the
+# controlling terminal. Callers MUST wrap parallel invocations in
+# `) > /dev/null 2>&1 &` to contain any leakage (see Section 2.4).
+run_to_log() {
+    local LOG_FILE="$1"; shift
+    local APPEND=false
+    if [ "$1" = "--append" ]; then
+        APPEND=true; shift
+    fi
+
     if command -v stdbuf >/dev/null 2>&1; then
-        stdbuf -oL "$@"
+        if [ "$APPEND" = "true" ]; then
+            stdbuf -oL "$@" >> "$LOG_FILE" 2>&1
+        else
+            stdbuf -oL "$@" > "$LOG_FILE" 2>&1
+        fi
     elif command -v script >/dev/null 2>&1; then
-        # macOS: script forces a pseudo-TTY which triggers line buffering
-        # Redirect stdin from /dev/null to prevent script from consuming
-        # parent stdin (all continuous mode Builders are non-interactive)
-        script -q /dev/null "$@" </dev/null
+        # macOS: script forces pseudo-TTY line buffering. stdin from /dev/null
+        # prevents script consuming parent stdin (all builders are non-interactive).
+        if [ "$APPEND" = "true" ]; then
+            script -q /dev/null "$@" </dev/null >> "$LOG_FILE" 2>&1
+        else
+            script -q /dev/null "$@" </dev/null > "$LOG_FILE" 2>&1
+        fi
     else
         echo "Warning: Neither stdbuf nor script available. Log monitoring will be degraded (full buffering)." >&2
-        "$@"
+        if [ "$APPEND" = "true" ]; then
+            "$@" >> "$LOG_FILE" 2>&1
+        else
+            "$@" > "$LOG_FILE" 2>&1
+        fi
     fi
 }
 
@@ -1050,10 +1076,10 @@ BOOTSTRAP_OVERRIDE
     start_bootstrap_canvas
 
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-    run_line_buffered claude --print --verbose --output-format stream-json --session-id "$BOOTSTRAP_SESSION_ID" \
+    run_to_log "$BOOTSTRAP_LOG" claude --print --verbose --output-format stream-json --session-id "$BOOTSTRAP_SESSION_ID" \
         "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
-        "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
+        "Begin Builder session."
     BOOTSTRAP_RC=$?
 
     # Stop the bootstrap canvas
@@ -1242,10 +1268,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
             (
                 cd "$WT_DIR" || exit 1
                 export PURLIN_PROJECT_ROOT="$WT_DIR"
-                run_line_buffered claude --print --verbose --output-format stream-json "${CLI_ARGS[@]}" \
+                run_to_log "$LOG_FILE" claude --print --verbose --output-format stream-json "${CLI_ARGS[@]}" \
                     --append-system-prompt-file "$PARALLEL_PROMPT_FILE" \
-                    "$INITIAL_MSG" > "$LOG_FILE" 2>&1
-            ) &
+                    "$INITIAL_MSG"
+            ) > /dev/null 2>&1 &
 
             WT_PIDS+=($!)
             WT_DIRS+=("$WT_DIR")
@@ -1400,18 +1426,18 @@ while [ "$OUTER_BREAK" = "false" ]; do
             # Execute Builder based on action type
             case "$RUN_ACTION" in
                 run|retry)
-                    run_line_buffered claude --print --verbose --output-format stream-json --session-id "$SESSION_ID" \
+                    run_to_log "$LOG_FILE" claude --print --verbose --output-format stream-json --session-id "$SESSION_ID" \
                         "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
-                        "$INITIAL_MSG" > "$LOG_FILE" 2>&1 &
+                        "$INITIAL_MSG" &
                     BUILDER_PID=$!
                     wait "$BUILDER_PID" 2>/dev/null
                     BUILDER_PID=""
                     ;;
                 resume)
-                    run_line_buffered claude --resume "$SESSION_ID" --print --verbose --output-format stream-json \
+                    run_to_log "$LOG_FILE" --append claude --resume "$SESSION_ID" --print --verbose --output-format stream-json \
                         "${CLI_ARGS[@]}" \
-                        "Approved. Proceed." >> "$LOG_FILE" 2>&1 &
+                        "Approved. Proceed." &
                     BUILDER_PID=$!
                     wait "$BUILDER_PID" 2>/dev/null
                     BUILDER_PID=""

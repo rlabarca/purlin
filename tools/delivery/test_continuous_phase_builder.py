@@ -2570,12 +2570,12 @@ def test_bootstrap_canvas_shows_spinner():
     # Verify elapsed time display
     has_elapsed = 'Bootstrapping for continuous delivery...' in source
 
-    # Verify bootstrap invocation uses redirect (not tee)
+    # Verify bootstrap invocation routes to log via run_to_log (not tee)
     bootstrap_start = source.find('# --- Bootstrap session')
     assert bootstrap_start != -1, "Could not find bootstrap section"
     bootstrap_section = source[bootstrap_start:]
     bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial') if '# --- Track initial' in bootstrap_section else len(bootstrap_section)]
-    has_redirect = '> "$BOOTSTRAP_LOG" 2>&1' in bootstrap_section
+    has_redirect = 'run_to_log "$BOOTSTRAP_LOG" claude' in bootstrap_section
     has_no_tee = 'tee "$BOOTSTRAP_LOG"' not in bootstrap_section
     has_no_pipestatus = 'PIPESTATUS' not in bootstrap_section
     # Verify canvas is stopped after bootstrap
@@ -2769,8 +2769,8 @@ def test_sequential_phase_canvas():
     has_canvas_call = 'start_sequential_canvas' in seq_section
     # Verify no tee in sequential section
     has_no_tee = 'tee "$LOG_FILE"' not in seq_section
-    # Verify redirect to log file only
-    has_redirect = '> "$LOG_FILE" 2>&1' in seq_section
+    # Verify run_to_log routes to log file
+    has_redirect = 'run_to_log "$LOG_FILE"' in seq_section
 
     # Verify canvas shows phase label, spinner, elapsed, log size, activity
     canvas_fn_start = source.find('start_sequential_canvas()')
@@ -2878,24 +2878,24 @@ def test_all_builder_output_routes_to_log_files():
     # No tee in any builder invocation in continuous mode
     has_no_tee = 'tee' not in continuous_section
 
-    # Verify redirect patterns exist for bootstrap, sequential, and parallel
+    # Verify run_to_log routes output to log files for bootstrap, sequential, and parallel
     bootstrap_start = source.find('# --- Bootstrap session')
     bootstrap_section = source[bootstrap_start:]
     bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial') if '# --- Track initial' in bootstrap_section else len(bootstrap_section)]
-    has_bootstrap_redirect = '> "$BOOTSTRAP_LOG" 2>&1' in bootstrap_section
+    has_bootstrap_redirect = 'run_to_log "$BOOTSTRAP_LOG" claude' in bootstrap_section
     has_bootstrap_stream = '--output-format stream-json' in bootstrap_section
 
     seq_start = source.find('# SEQUENTIAL EXECUTION')
     seq_section = source[seq_start:]
     seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
-    has_seq_redirect = '> "$LOG_FILE" 2>&1' in seq_section
-    has_seq_append = '>> "$LOG_FILE" 2>&1' in seq_section
+    has_seq_redirect = 'run_to_log "$LOG_FILE" claude' in seq_section
+    has_seq_append = 'run_to_log "$LOG_FILE" --append claude' in seq_section
     has_seq_stream = '--output-format stream-json' in seq_section
 
     parallel_start = source.find('# PARALLEL EXECUTION')
     parallel_section = source[parallel_start:]
     parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
-    has_par_redirect = '> "$LOG_FILE" 2>&1' in parallel_section
+    has_par_redirect = 'run_to_log "$LOG_FILE" claude' in parallel_section
     has_par_stream = '--output-format stream-json' in parallel_section
 
     # All claude invocations must use stream-json for real log content
@@ -3050,8 +3050,8 @@ def test_resume_session_log_appended():
     seq_section = source[seq_start:]
     seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
 
-    # The resume path should use >> (append mode), not > (overwrite)
-    has_append = '>>' in seq_section and '$LOG_FILE' in seq_section
+    # The resume path should use --append flag for run_to_log
+    has_append = 'run_to_log "$LOG_FILE" --append claude' in seq_section
 
     # Integration test: verify both initial and resumed output in log
     tmpdir = tempfile.mkdtemp()
@@ -3428,7 +3428,7 @@ exit 0
         source = read_launcher()
         seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
         mark_pos = seq_section.find('mark_phases_in_progress')
-        builder_pos = seq_section.find('run_line_buffered claude')
+        builder_pos = seq_section.find('run_to_log')
         has_order = mark_pos >= 0 and builder_pos >= 0 and mark_pos < builder_pos
 
         ok = has_in_progress_commit and has_order
@@ -3581,25 +3581,25 @@ def test_log_files_grow_incrementally():
     ensure log files grow incrementally during execution, not in blocks."""
     source = read_launcher()
 
-    # Verify run_line_buffered function exists
-    has_fn = 'run_line_buffered()' in source
+    # Verify run_to_log function exists
+    has_fn = 'run_to_log()' in source
     # Verify it tries stdbuf
     has_stdbuf = 'stdbuf -oL' in source
     # Verify fallback
     has_fallback = 'command -v stdbuf' in source
 
-    # Verify run_line_buffered is used for all Builder invocations
+    # Verify run_to_log is used for all Builder invocations
     # Sequential
     seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
-    has_seq_buffered = 'run_line_buffered claude' in seq_section
+    has_seq_buffered = 'run_to_log "$LOG_FILE" claude' in seq_section or 'run_to_log "$LOG_FILE" --append claude' in seq_section
 
     # Parallel (in worktree subshell)
     parallel_section = source[source.find('PARALLEL EXECUTION'):source.find('SEQUENTIAL EXECUTION')]
-    has_par_buffered = 'run_line_buffered claude' in parallel_section
+    has_par_buffered = 'run_to_log "$LOG_FILE" claude' in parallel_section
 
     # Bootstrap
     bootstrap_section = source[source.find('Bootstrap session when no delivery plan'):source.find('Track initial')]
-    has_bootstrap_buffered = 'run_line_buffered claude' in bootstrap_section
+    has_bootstrap_buffered = 'run_to_log "$BOOTSTRAP_LOG" claude' in bootstrap_section
 
     ok = (has_fn and has_stdbuf and has_fallback and
           has_seq_buffered and has_par_buffered and has_bootstrap_buffered)
@@ -3730,23 +3730,26 @@ def test_canvas_shows_latest_log_line_as_activity():
 # Scenario: Line Buffering Fallback on macOS (Section 2.17)
 # ============================================================
 def test_line_buffering_fallback_on_macos():
-    """Functional test: run_line_buffered routes subprocess output to the log
-    file via > redirect, both during execution (incremental) and at completion.
+    """Functional test: run_to_log routes subprocess output to the log file
+    via script's typescript mechanism, both during execution (incremental)
+    and at completion.
 
-    On macOS, script(1) tees output to both its file arg AND stdout.
-    The file arg MUST be /dev/null (discarded), so only the stdout copy
-    reaches the log file redirect. Using /dev/stdout would cause duplication
-    (every line appears twice) because both destinations are the same fd."""
+    On macOS, script(1) creates a pseudo-TTY that forces line buffering.
+    run_to_log routes script's stdout to the log file via redirect; the
+    typescript file arg is /dev/null (discarded). For parallel subshells,
+    callers wrap in `) > /dev/null 2>&1 &` to contain any PTY leakage."""
     source = read_launcher()
 
     # --- Part 1: Source structure ---
-    has_fn = 'run_line_buffered()' in source
-    fn_start = source.find('run_line_buffered()')
+    has_fn = 'run_to_log()' in source
+    fn_start = source.find('run_to_log()')
     fn_end = source.find('\n}', fn_start)
     fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    # script -q /dev/null with stdout redirected to log file
     has_script_fallback = 'script -q /dev/null' in fn_body
-    # /dev/stdout causes duplication — must NOT be present
-    no_dev_stdout = 'script -q /dev/stdout' not in fn_body
+    # Parallel containment: subshell stdout/stderr to /dev/null
+    parallel_section = source[source.find('PARALLEL EXECUTION'):source.find('SEQUENTIAL EXECUTION')]
+    has_parallel_containment = ') > /dev/null 2>&1 &' in parallel_section
 
     # --- Part 2: Functional test with a slow subprocess ---
     # Verifies: (a) content appears DURING execution, (b) no duplication,
@@ -3768,7 +3771,7 @@ def test_line_buffering_fallback_on_macos():
         os.chmod(test_cmd, os.stat(test_cmd).st_mode | stat.S_IEXEC)
 
         # Extract the actual function from the launcher
-        fn_start_idx = source.find('run_line_buffered()')
+        fn_start_idx = source.find('run_to_log()')
         fn_end_idx = source.find('\n}', fn_start_idx) + 2
         fn_source = source[fn_start_idx:fn_end_idx]
 
@@ -3786,8 +3789,8 @@ def test_line_buffering_fallback_on_macos():
             f.write(f'export PATH="{tmpdir}:$CLEAN_PATH"\n')
             # Embed the extracted function
             f.write(fn_source + '\n')
-            # Run backgrounded with redirect — exactly how the launcher does it
-            f.write(f'run_line_buffered "{test_cmd}" > "{log_file}" 2>&1 &\n')
+            # Run backgrounded — run_to_log routes output to the log file
+            f.write(f'run_to_log "{log_file}" "{test_cmd}" &\n')
             f.write('PID=$!\n')
             # Snapshot mid-execution (after first echo, before second)
             f.write('sleep 0.5\n')
@@ -3826,13 +3829,13 @@ def test_line_buffering_fallback_on_macos():
         line_two_count = final_section.count("LINE_TWO_DELAYED")
         no_duplication = (marker_count == 1 and line_two_count == 1)
 
-        ok = (has_fn and has_script_fallback and no_dev_stdout and
+        ok = (has_fn and has_script_fallback and has_parallel_containment and
               mid_has_marker and final_has_marker and
               final_has_line_two and final_has_line_three and
               no_duplication)
         record("Line Buffering Fallback on macOS", ok,
                f"fn={has_fn}, script=/dev/null={has_script_fallback}, "
-               f"no_/dev/stdout={no_dev_stdout}, "
+               f"parallel_containment={has_parallel_containment}, "
                f"mid_marker={mid_has_marker}, final_marker={final_has_marker}, "
                f"line2={final_has_line_two}, line3={final_has_line_three}, "
                f"no_dup={no_duplication}(marker_x{marker_count},line2_x{line_two_count}), "
