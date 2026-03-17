@@ -344,7 +344,7 @@ except (json.JSONDecodeError, KeyError):
     return 0
 }
 
-# --- Helper: evaluator fallback (delivery plan hash check) ---
+# --- Helper: evaluator fallback (delivery plan hash check + pending phase check) ---
 evaluator_fallback() {
     local plan_hash_before="$1"
     local plan_hash_after
@@ -352,9 +352,22 @@ evaluator_fallback() {
 
     if [ "$plan_hash_before" != "$plan_hash_after" ]; then
         echo "continue|false|evaluator fallback: delivery plan changed"
-    else
-        echo "stop|false|evaluator fallback: delivery plan unchanged"
+        return 0
     fi
+
+    # Hash unchanged does NOT mean work is done — the orchestrator may have
+    # already committed plan updates before the fallback runs (parallel groups).
+    # Check whether PENDING phases remain as a second signal.
+    if [ -f "$DELIVERY_PLAN" ]; then
+        local pending_count
+        pending_count=$(grep -c '\[PENDING\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+        if [ "$pending_count" -gt 0 ]; then
+            echo "continue|false|evaluator fallback: $pending_count PENDING phase(s) remain"
+            return 0
+        fi
+    fi
+
+    echo "stop|false|evaluator fallback: delivery plan unchanged and no PENDING phases"
 }
 
 # --- Helper: format seconds as Xm Ys ---
@@ -1338,6 +1351,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # ============================================================
         PARALLEL_GROUPS_USED=$((PARALLEL_GROUPS_USED + 1))
 
+        # Capture plan hash BEFORE any phase status changes so the evaluator
+        # fallback can detect whether the plan was modified during execution.
+        PLAN_HASH_BEFORE=$(get_plan_hash)
+
         # Pre-launch: mark all phases in this group as IN_PROGRESS (Section 2.4)
         mark_phases_in_progress $PHASE_LIST
 
@@ -1466,7 +1483,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Evaluate using the last parallel log
         start_interphase_canvas "Evaluating parallel group output..."
-        PLAN_HASH_BEFORE=$(get_plan_hash)
         LAST_LOG="${WT_LOGS[${#WT_LOGS[@]}-1]}"
         EVAL_OUTPUT=$(run_evaluator "$LAST_LOG")
 
@@ -1487,7 +1503,20 @@ while [ "$OUTER_BREAK" = "false" ]; do
                 # Loop back to re-analyze (fresh ordering)
                 ;;
             stop)
-                OUTER_BREAK=true
+                if [ "$EVAL_SUCCESS" = "true" ]; then
+                    # All work done — exit cleanly
+                    OUTER_BREAK=true
+                else
+                    # Evaluator says stop on error — but check if PENDING phases
+                    # remain before giving up (guards against false-negative fallback)
+                    local pending_remaining=0
+                    [ -f "$DELIVERY_PLAN" ] && pending_remaining=$(grep -c '\[PENDING\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+                    if [ "$pending_remaining" -gt 0 ]; then
+                        log_eval "stop(success=false) overridden: $pending_remaining PENDING phase(s) remain — continuing"
+                    else
+                        OUTER_BREAK=true
+                    fi
+                fi
                 ;;
             *)
                 # Loop back to re-analyze
