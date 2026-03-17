@@ -397,6 +397,10 @@ class TestHoverHighlighting(unittest.TestCase):
         self.assertIn('.dimmed', self.content)
         self.assertIn('.highlighted', self.content)
 
+    def test_neighborhood_used_for_prerequisites_and_dependents(self):
+        """Hover uses neighborhood() to find direct prerequisites and dependents."""
+        self.assertIn('.neighborhood()', self.content)
+
 
 class TestInactivityTimeoutRedrawsGraph(unittest.TestCase):
     """Scenario: Inactivity Timeout Redraws Graph and Resets Zoom
@@ -551,18 +555,24 @@ class TestSearchDimsNonMatchingNodes(unittest.TestCase):
 class TestClicksOnEdgesPassThrough(unittest.TestCase):
     """Scenario: Clicks on Edges Pass Through
 
-    Given the user clicks on an edge (prerequisite arrow)
-    When the click event fires
-    Then no modal or detail panel opens
-    And the click passes through to the background
+    Given the user clicks or double-clicks on an edge
+    When the event fires
+    Then the event passes through to the element below (canvas background or category bounding box)
+    And no edge selection, tooltip, or modal is triggered
+    And double-clicking an edge over a category bounding box triggers the category zoom
+    And edge hover highlighting during node hover still functions normally
 
-    Test: Verifies serve.py registers tap events only on feature
-    nodes, not on edges.
+    Test: Verifies edges have events disabled so clicks and double-clicks
+    pass through to nodes or background underneath.
     """
 
     def setUp(self):
         with open(SERVE_PY) as f:
             self.content = f.read()
+
+    def test_edge_events_disabled(self):
+        """Edge style sets events to 'no' for click/double-click pass-through."""
+        self.assertIn("'events': 'no'", self.content)
 
     def test_tap_only_on_nodes(self):
         """Tap event registered only for feature nodes, not edges."""
@@ -572,9 +582,17 @@ class TestClicksOnEdgesPassThrough(unittest.TestCase):
         """No tap event handler registered for edges."""
         self.assertNotIn("'tap', 'edge'", self.content)
 
+    def test_no_edge_dbltap_handler(self):
+        """No dbltap event handler registered for edges."""
+        self.assertNotIn("'dbltap', 'edge'", self.content)
+
     def test_node_tap_opens_modal(self):
         """Node tap opens feature detail modal."""
         self.assertIn('openModal', self.content)
+
+    def test_category_dbltap_receives_passthrough(self):
+        """Category dbltap handler exists to receive passed-through double-clicks."""
+        self.assertIn("'dbltap', 'node[?isCategory]'", self.content)
 
 
 class TestDoubleClickCategoryZoomsToFit(unittest.TestCase):
