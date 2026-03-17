@@ -1,9 +1,12 @@
 """Policy adherence scanner: FORBIDDEN pattern detection.
 
 Discovers FORBIDDEN patterns from anchor node files (arch_*.md, design_*.md,
-policy_*.md) and scans implementation files for violations.
+policy_*.md) and scans implementation files for violations. Supports both
+inline FORBIDDEN: markers and structured FORBIDDEN Patterns sections with
+Grepable pattern and Scan scope sub-fields.
 """
 
+import glob as glob_module
 import os
 import re
 
@@ -15,9 +18,14 @@ def _is_anchor_node(fname):
 
 
 def discover_forbidden_patterns(features_dir):
-    """Scan anchor node files for FORBIDDEN: lines.
+    """Scan anchor node files for FORBIDDEN patterns.
 
-    Returns dict: {anchor_file: [{"pattern": str, "line": int}]}
+    Supports two formats:
+    1. Inline: ``FORBIDDEN: some_pattern`` on a single line
+    2. Structured section: ``### FORBIDDEN Patterns`` heading with
+       ``**Grepable pattern:**`` and ``**Scan scope:**`` sub-fields
+
+    Returns dict: {anchor_file: [{"pattern": str, "line": int, "scope": str|None}]}
     """
     patterns = {}
 
@@ -33,28 +41,95 @@ def discover_forbidden_patterns(features_dir):
 
         try:
             with open(filepath, 'r') as f:
-                for line_num, line in enumerate(f, 1):
-                    stripped = line.strip()
-                    # Match lines like: FORBIDDEN: some_pattern
-                    # or: `FORBIDDEN: some_pattern`
-                    # or within list items: * FORBIDDEN: some_pattern
-                    match = re.search(r'FORBIDDEN:\s*(.+)', stripped)
-                    if match:
-                        pattern_text = match.group(1).strip()
-                        # Remove trailing markdown formatting
-                        pattern_text = pattern_text.rstrip('`').strip()
-                        if pattern_text:
-                            file_patterns.append({
-                                'pattern': pattern_text,
-                                'line': line_num,
-                            })
+                lines = list(f)
         except (IOError, OSError):
             continue
+
+        in_forbidden_section = False
+        current_scope = None
+
+        for line_num, line in enumerate(lines, 1):
+            stripped = line.strip()
+
+            # Format 1: Inline FORBIDDEN: markers
+            inline_match = re.search(r'FORBIDDEN:\s*(.+)', stripped)
+            if inline_match and not re.match(r'^#{2,4}\s+', stripped):
+                pattern_text = inline_match.group(1).strip()
+                pattern_text = pattern_text.rstrip('`').strip()
+                if pattern_text:
+                    file_patterns.append({
+                        'pattern': pattern_text,
+                        'line': line_num,
+                        'scope': None,
+                    })
+                continue
+
+            # Format 2: Structured FORBIDDEN Patterns section
+            if re.match(r'^#{2,4}\s+.*FORBIDDEN\s+Patterns', stripped):
+                in_forbidden_section = True
+                current_scope = None
+                continue
+
+            if in_forbidden_section:
+                # End of section: next heading at same or higher level
+                if re.match(r'^#{2,4}\s+', stripped) and 'FORBIDDEN' not in stripped:
+                    in_forbidden_section = False
+                    current_scope = None
+                    continue
+
+                # Grepable pattern sub-field
+                grepable = re.search(
+                    r'\*\*Grepable pattern:\*\*.*?`([^`]+)`', stripped)
+                if grepable:
+                    pattern_text = grepable.group(1)
+                    # Always None here; the following Scan scope line fills it
+                    file_patterns.append({
+                        'pattern': pattern_text,
+                        'line': line_num,
+                        'scope': None,
+                    })
+                    current_scope = None
+                    continue
+
+                # Scan scope sub-field
+                scope_match = re.search(
+                    r'\*\*Scan scope:\*\*.*?`([^`]+)`', stripped)
+                if scope_match:
+                    current_scope = scope_match.group(1)
+                    # Attach scope to the most recent pattern
+                    if file_patterns and file_patterns[-1]['scope'] is None:
+                        file_patterns[-1]['scope'] = current_scope
+                    continue
 
         if file_patterns:
             patterns[fname] = file_patterns
 
     return patterns
+
+
+def resolve_scan_scope(project_root, scope_glob):
+    """Resolve a scan scope glob pattern to absolute file paths.
+
+    Args:
+        project_root: absolute path to project root
+        scope_glob: glob pattern like 'tools/**/*.{py,html,css,js}'
+
+    Returns list of absolute file paths matching the glob.
+    """
+    # Expand brace patterns (glob doesn't support {a,b} natively)
+    brace_match = re.search(r'\{([^}]+)\}', scope_glob)
+    if brace_match:
+        extensions = brace_match.group(1).split(',')
+        base = scope_glob[:brace_match.start()]
+        suffix = scope_glob[brace_match.end():]
+        all_files = []
+        for ext in extensions:
+            pattern = os.path.join(project_root, base + ext.strip() + suffix)
+            all_files.extend(glob_module.glob(pattern, recursive=True))
+        return sorted(set(all_files))
+
+    pattern = os.path.join(project_root, scope_glob)
+    return sorted(glob_module.glob(pattern, recursive=True))
 
 
 def get_feature_prerequisites(feature_content):
@@ -184,39 +259,61 @@ def run_policy_check(feature_content, project_root, feature_stem,
 
     # Get FORBIDDEN patterns from referenced policies
     all_patterns = discover_forbidden_patterns(features_dir)
-    relevant_patterns = []
+    relevant_entries = []
     for prereq_file in prereqs:
         if prereq_file in all_patterns:
-            for p in all_patterns[prereq_file]:
-                relevant_patterns.append(p['pattern'])
+            relevant_entries.extend(all_patterns[prereq_file])
 
-    if not relevant_patterns:
+    if not relevant_entries:
         return {
             'status': 'PASS',
             'violations': [],
             'detail': 'No FORBIDDEN patterns in referenced policies.',
         }
 
-    # Discover implementation files
-    impl_files = discover_implementation_files(
-        project_root, feature_stem, tools_root
-    )
+    # Group patterns by scope for efficient scanning
+    # Patterns with a scope use that scope; patterns without scope use
+    # the feature's discovered implementation files.
+    scoped_patterns = {}  # scope_glob -> [pattern_str]
+    unscoped_patterns = []
+    for entry in relevant_entries:
+        if entry.get('scope'):
+            scoped_patterns.setdefault(entry['scope'], []).append(
+                entry['pattern'])
+        else:
+            unscoped_patterns.append(entry['pattern'])
 
-    if not impl_files:
+    all_violations = []
+    files_scanned = set()
+
+    # Scan scoped patterns against their declared file scope
+    for scope_glob, patterns in scoped_patterns.items():
+        scope_files = resolve_scan_scope(project_root, scope_glob)
+        for fpath in scope_files:
+            files_scanned.add(fpath)
+            violations = scan_file_for_violations(fpath, patterns)
+            for v in violations:
+                v['file'] = os.path.relpath(v['file'], project_root)
+            all_violations.extend(violations)
+
+    # Scan unscoped patterns against discovered implementation files
+    if unscoped_patterns:
+        impl_files = discover_implementation_files(
+            project_root, feature_stem, tools_root
+        )
+        for fpath in impl_files:
+            files_scanned.add(fpath)
+            violations = scan_file_for_violations(fpath, unscoped_patterns)
+            for v in violations:
+                v['file'] = os.path.relpath(v['file'], project_root)
+            all_violations.extend(violations)
+
+    if not files_scanned:
         return {
             'status': 'PASS',
             'violations': [],
             'detail': 'No implementation files found to scan.',
         }
-
-    # Scan for violations
-    all_violations = []
-    for fpath in impl_files:
-        violations = scan_file_for_violations(fpath, relevant_patterns)
-        # Store relative paths for readability
-        for v in violations:
-            v['file'] = os.path.relpath(v['file'], project_root)
-        all_violations.extend(violations)
 
     if all_violations:
         detail = f'{len(all_violations)} FORBIDDEN violation(s) detected'
@@ -229,5 +326,5 @@ def run_policy_check(feature_content, project_root, feature_stem,
     return {
         'status': 'PASS',
         'violations': [],
-        'detail': f'Scanned {len(impl_files)} file(s), no violations.',
+        'detail': f'Scanned {len(files_scanned)} file(s), no violations.',
     }

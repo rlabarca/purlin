@@ -118,7 +118,9 @@ class TestTraceabilityMatching(unittest.TestCase):
         keywords = {'bootstrap', 'consumer', 'project'}
         functions = [{'name': 'test_bootstrap_consumer_project', 'body': ''}]
         matches = match_scenario_to_tests(keywords, functions)
-        self.assertEqual(matches, ['test_bootstrap_consumer_project'])
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]['name'], 'test_bootstrap_consumer_project')
+        self.assertEqual(matches[0]['overlap'], 3)
 
     def test_no_match_below_threshold(self):
         keywords = {'bootstrap', 'consumer', 'project'}
@@ -133,7 +135,32 @@ class TestTraceabilityMatching(unittest.TestCase):
             'body': 'def test_something(): bootstrap consumer check',
         }]
         matches = match_scenario_to_tests(keywords, functions)
-        self.assertEqual(matches, ['test_something'])
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]['name'], 'test_something')
+        self.assertEqual(matches[0]['overlap'], 2)
+
+    def test_strong_vs_weak_match_threshold(self):
+        """Matches with 3+ keywords are strong; 2 keywords are weak."""
+        from traceability import STRONG_MATCH_THRESHOLD
+        keywords_strong = {'bootstrap', 'consumer', 'project'}
+        keywords_weak = {'bootstrap', 'consumer'}
+        functions = [{'name': 'test_bootstrap_consumer_project', 'body': ''}]
+        strong = match_scenario_to_tests(keywords_strong, functions)
+        weak = match_scenario_to_tests(keywords_weak, functions)
+        self.assertGreaterEqual(strong[0]['overlap'], STRONG_MATCH_THRESHOLD)
+        self.assertLess(weak[0]['overlap'], STRONG_MATCH_THRESHOLD)
+
+    def test_gherkin_stop_words_excluded(self):
+        """Gherkin keywords (when, given, then) are excluded from keywords."""
+        from traceability import extract_keywords
+        kw = extract_keywords('Given Theme Toggle When Active Then Display')
+        self.assertNotIn('given', kw)
+        self.assertNotIn('when', kw)
+        self.assertNotIn('then', kw)
+        self.assertIn('theme', kw)
+        self.assertIn('toggle', kw)
+        self.assertIn('active', kw)
+        self.assertIn('display', kw)
 
 
 class TestTraceabilityOverrides(unittest.TestCase):
@@ -222,6 +249,38 @@ class TestRunTraceability(unittest.TestCase):
         self.assertIn(result['status'], ('WARN', 'FAIL'))
         self.assertGreater(len(result['unmatched']), 0)
 
+    def test_weak_matches_identified(self):
+        """Matches with <3 keywords appear in weak_matches."""
+        # Create a test that matches on only 2 keywords
+        test_dir = os.path.join(self.root, 'tests', 'my_feature')
+        with open(os.path.join(test_dir, 'test_two.py'), 'w') as f:
+            f.write(
+                'def test_spec_gate():\n'
+                '    assert True\n'
+            )
+        scenarios = [
+            {'title': 'Spec Gate Check', 'is_manual': False},
+        ]
+        result = run_traceability(
+            scenarios, self.root, 'my_feature', tools_root='tools'
+        )
+        # 'spec' and 'gate' match (2 keywords), below STRONG_MATCH_THRESHOLD
+        self.assertGreater(len(result['weak_matches']), 0)
+        self.assertEqual(result['weak_matches'][0]['scenario'], 'Spec Gate Check')
+
+    def test_strong_matches_not_in_weak(self):
+        """Matches with 3+ keywords do not appear in weak_matches."""
+        scenarios = [
+            {'title': 'Spec Gate Section Completeness Check', 'is_manual': False},
+        ]
+        result = run_traceability(
+            scenarios, self.root, 'my_feature', tools_root='tools'
+        )
+        # This scenario has 'spec', 'gate', 'section', 'completeness' -> 4 keywords
+        # matching test_spec_gate_section_completeness -> strong match
+        weak_titles = [w['scenario'] for w in result['weak_matches']]
+        self.assertNotIn('Spec Gate Section Completeness Check', weak_titles)
+
 
 # ===================================================================
 # Policy Check Tests
@@ -241,6 +300,7 @@ class TestForbiddenPatternDiscovery(unittest.TestCase):
         patterns = discover_forbidden_patterns(self.features_dir)
         self.assertIn('arch_test.md', patterns)
         self.assertEqual(patterns['arch_test.md'][0]['pattern'], 'hardcoded_port')
+        self.assertIsNone(patterns['arch_test.md'][0]['scope'])
 
     def test_skips_non_arch_files(self):
         path = os.path.join(self.features_dir, 'regular_feature.md')
@@ -252,6 +312,52 @@ class TestForbiddenPatternDiscovery(unittest.TestCase):
     def test_empty_dir(self):
         patterns = discover_forbidden_patterns(self.features_dir)
         self.assertEqual(patterns, {})
+
+    def test_structured_forbidden_section(self):
+        """Discovers patterns from structured FORBIDDEN Patterns section."""
+        path = os.path.join(self.features_dir, 'design_test.md')
+        with open(path, 'w') as f:
+            f.write(
+                '# Design Anchor\n\n'
+                '### 2.7 FORBIDDEN Patterns\n\n'
+                '*   Hardcoded hex colors.\n'
+                '    *   **Grepable pattern:** `#[0-9a-fA-F]{3,8}`\n'
+                '    *   **Scan scope:** `tools/**/*.py`\n'
+                '*   Inline styles.\n'
+                '    *   **Grepable pattern:** `style=`\n'
+                '    *   **Scan scope:** `tools/**/*.html`\n'
+                '\n### 2.8 Next Section\n'
+            )
+        patterns = discover_forbidden_patterns(self.features_dir)
+        self.assertIn('design_test.md', patterns)
+        entries = patterns['design_test.md']
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(entries[0]['pattern'], '#[0-9a-fA-F]{3,8}')
+        self.assertEqual(entries[0]['scope'], 'tools/**/*.py')
+        self.assertEqual(entries[1]['pattern'], 'style=')
+        self.assertEqual(entries[1]['scope'], 'tools/**/*.html')
+
+    def test_structured_and_inline_coexist(self):
+        """Both inline FORBIDDEN: and structured section are discovered."""
+        path = os.path.join(self.features_dir, 'arch_mixed.md')
+        with open(path, 'w') as f:
+            f.write(
+                '# Policy\n\n'
+                'FORBIDDEN: eval_call\n\n'
+                '### FORBIDDEN Patterns\n\n'
+                '*   Hex colors.\n'
+                '    *   **Grepable pattern:** `#[0-9a-f]+`\n'
+                '    *   **Scan scope:** `src/**/*.css`\n'
+            )
+        patterns = discover_forbidden_patterns(self.features_dir)
+        entries = patterns['arch_mixed.md']
+        self.assertEqual(len(entries), 2)
+        # Inline pattern has no scope
+        self.assertEqual(entries[0]['pattern'], 'eval_call')
+        self.assertIsNone(entries[0]['scope'])
+        # Structured pattern has scope
+        self.assertEqual(entries[1]['pattern'], '#[0-9a-f]+')
+        self.assertEqual(entries[1]['scope'], 'src/**/*.css')
 
 
 class TestPrerequisiteParsing(unittest.TestCase):

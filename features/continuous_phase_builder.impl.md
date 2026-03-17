@@ -90,6 +90,12 @@ Added stacked single-column layout for terminal widths below 60 columns (Section
 
 The macOS `script -q /dev/null` fallback in `run_line_buffered()` uses `</dev/null` to prevent `script` from consuming parent stdin. Without this, `script` connects its stdin to the pseudo-TTY and steals input meant for later `read` commands (e.g., the approval checkpoint prompt). All continuous mode Builders are non-interactive (`-p` mode) so they never need stdin.
 
+## Line Buffering: script output routing bug (2026-03-17)
+
+[DISCOVERY] The current `script -q /dev/null "$@"` invocation is broken for log file capture. macOS `script` writes the session transcript to its **file argument** (`/dev/null` in this case), not to stdout. So when the call site does `run_line_buffered claude ... > "$LOG_FILE" 2>&1`, the `> "$LOG_FILE"` redirect captures nothing meaningful -- only `script`'s control characters (`^D` + backspaces, 4 bytes total). The actual Builder output goes to `/dev/null` and is lost.
+
+Fix: use `script -q /dev/stdout "$@"` instead of `script -q /dev/null "$@"`. The `/dev/stdout` file argument tells `script` to write the transcript to stdout, which then flows through the `> "$LOG_FILE"` redirect as intended. Alternatively, a named pipe or process substitution could work, but `/dev/stdout` is the simplest fix and is available on macOS.
+
 ## Stale IN_PROGRESS Recovery
 
 The `reset_stale_in_progress()` function runs both at startup (before the main orchestration loop) and during graceful stop (inside the `graceful_stop` SIGINT handler). At startup, it catches orphans from a previous interrupted run. During graceful stop, it resets phases that were marked IN_PROGRESS during the current run but not completed before the interrupt.

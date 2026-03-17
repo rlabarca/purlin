@@ -1,7 +1,9 @@
 """Traceability engine: Gherkin scenario-to-test keyword matching.
 
 Extracts keywords from automated scenario titles, discovers test files,
-and matches scenarios to test functions using a 2+ keyword threshold.
+and matches scenarios to test functions using keyword thresholds.
+Strong matches require 3+ keywords; weak matches (2 keywords) generate
+MEDIUM-priority traceability warnings.
 """
 
 import os
@@ -15,10 +17,15 @@ STOP_WORDS = frozenset({
     'in', 'on', 'at', 'to', 'for', 'of', 'by', 'with', 'from', 'via',
     # Conjunctions
     'and', 'or', 'but',
+    # Gherkin keywords
+    'when', 'given', 'then',
 })
 
-# Minimum keyword overlap for a match
+# Minimum keyword overlap for any match
 MATCH_THRESHOLD = 2
+
+# Minimum keyword overlap for a strong match (Section 2.12 of policy_critic)
+STRONG_MATCH_THRESHOLD = 3
 
 
 def extract_keywords(scenario_title):
@@ -183,9 +190,10 @@ def extract_test_entries(filepath):
 def match_scenario_to_tests(scenario_keywords, test_functions):
     """Match a scenario's keywords against test functions.
 
-    Returns list of matching test function names. A match requires
-    MATCH_THRESHOLD or more keywords present in the test function name
-    or body.
+    Returns list of dicts: [{"name": str, "overlap": int}].
+    A match requires MATCH_THRESHOLD or more keywords present in the
+    test function name or body. The overlap count indicates match
+    strength: >= STRONG_MATCH_THRESHOLD is a strong match, otherwise weak.
     """
     matches = []
     for func in test_functions:
@@ -199,7 +207,7 @@ def match_scenario_to_tests(scenario_keywords, test_functions):
 
         overlap = scenario_keywords & func_words
         if len(overlap) >= MATCH_THRESHOLD:
-            matches.append(func['name'])
+            matches.append({'name': func['name'], 'overlap': len(overlap)})
 
     return matches
 
@@ -277,10 +285,13 @@ def run_traceability(scenarios, project_root, feature_stem,
 
         test_matches = match_scenario_to_tests(keywords, all_test_functions)
         if test_matches:
+            test_names = [m['name'] for m in test_matches]
+            max_overlap = max(m['overlap'] for m in test_matches)
             matched.append({
                 'scenario': title,
-                'tests': test_matches,
+                'tests': test_names,
                 'via': 'keyword',
+                'max_overlap': max_overlap,
             })
         else:
             unmatched.append({
@@ -300,6 +311,13 @@ def run_traceability(scenarios, project_root, feature_stem,
     else:
         status = 'FAIL'
 
+    # Identify keyword-count weak matches (overlap < STRONG_MATCH_THRESHOLD)
+    weak_matches = [
+        m for m in matched
+        if m.get('via') == 'keyword'
+        and m.get('max_overlap', 0) < STRONG_MATCH_THRESHOLD
+    ]
+
     detail_parts = [f'{matched_count}/{total} automated scenarios traced']
     if unmatched:
         detail_parts.append(
@@ -312,4 +330,5 @@ def run_traceability(scenarios, project_root, feature_stem,
         'detail': '. '.join(detail_parts),
         'matched': matched,
         'unmatched': unmatched,
+        'weak_matches': weak_matches,
     }

@@ -1289,6 +1289,7 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
             'coverage': traceability_result['coverage'],
             'detail': traceability_result['detail'],
             '_matched': traceability_result.get('matched', []),
+            '_weak_matches': traceability_result.get('weak_matches', []),
         },
         'policy_adherence': policy_result,
         'structural_completeness': check_structural_completeness(feature_stem, scenarios),
@@ -1687,6 +1688,20 @@ def generate_action_items(feature_result, cdd_status=None):
             'description': (
                 f'Write tests for {feature_name}: '
                 f'{trace.get("detail", "coverage gap")}'
+            ),
+        })
+
+    # Keyword-count weak matches -> MEDIUM (Section 2.12 of policy_critic)
+    # Matches with <3 keyword overlap are weak and warrant a warning.
+    weak_keyword_matches = trace.get('_weak_matches', [])
+    for wm in weak_keyword_matches:
+        builder_items.append({
+            'priority': 'MEDIUM',
+            'category': 'weak_keyword_match',
+            'feature': feature_name,
+            'description': (
+                f"Scenario '{wm['scenario']}' has weak traceability "
+                f"({wm.get('max_overlap', 0)} keyword(s), needs 3+)"
             ),
         })
 
@@ -3194,6 +3209,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     impl_checks = result.get('implementation_gate', {}).get('checks', {})
     if 'traceability' in impl_checks:
         impl_checks['traceability'].pop('_matched', None)
+        impl_checks['traceability'].pop('_weak_matches', None)
 
     return result
 
