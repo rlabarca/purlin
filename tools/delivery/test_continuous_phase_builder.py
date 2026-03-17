@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 56 automated scenarios.
+"""Tests for continuous phase builder — exercises all 58 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -2538,7 +2538,7 @@ def test_bootstrap_canvas_shows_spinner():
     # Verify spinner cycles at ~100ms
     has_sleep_01 = 'sleep 0.1' in source
     # Verify elapsed time display
-    has_elapsed = 'Starting bootstrap session...' in source
+    has_elapsed = 'Bootstrapping for continuous delivery...' in source
 
     # Verify bootstrap invocation uses redirect (not tee)
     bootstrap_start = source.find('# --- Bootstrap session')
@@ -2590,7 +2590,7 @@ def test_bootstrap_canvas_shows_spinner():
 
 
 def test_approval_checkpoint_renders_table():
-    """Approval checkpoint renders a colored console table with columns for plan details."""
+    """Approval checkpoint renders a space-aligned console table sized to terminal width."""
     source = read_launcher()
 
     # Verify render_approval_table function exists
@@ -2598,7 +2598,7 @@ def test_approval_checkpoint_renders_table():
     # Verify it's called during bootstrap plan approval
     has_render_call = 'render_approval_table' in source
 
-    # Verify table structure: columns, header coloring, separator, prompt
+    # Verify table structure: columns (no Complexity), header coloring, separator, prompt
     has_header_cols = 'Label' in source and 'Features' in source and 'Exec Group' in source
     has_bold_cyan = '1;36m' in source  # Bold cyan for headers
     has_green_sep = '32m' in source  # Green for separators
@@ -2606,14 +2606,96 @@ def test_approval_checkpoint_renders_table():
     has_parallel_groups = 'Parallel groups:' in source
     has_review_path = 'Review at .purlin/cache/delivery_plan.md' in source
 
+    # Verify dynamic column widths from tput cols
+    has_tput_cols = 'tput cols' in source
+    # Verify proportional column width computation (30%, 45%, 25%)
+    has_proportional = '0.30' in source and '0.45' in source
+    # Verify cell wrapping (max 2 lines per cell)
+    has_wrap_cell = 'wrap_cell' in source
+    # Verify lines fit within terminal width (truncation with [:cols])
+    has_line_truncation = '[:cols]' in source
+    # Verify line count tracking for SIGWINCH
+    has_lines_file = 'approval_table_lines' in source
+
     ok = (has_render_fn and has_render_call and has_header_cols and
           has_bold_cyan and has_green_sep and has_proceed and
-          has_parallel_groups and has_review_path)
+          has_parallel_groups and has_review_path and
+          has_tput_cols and has_proportional and has_wrap_cell and
+          has_line_truncation and has_lines_file)
     record("Approval Checkpoint Renders Console Table", ok,
            f"fn={has_render_fn}, call={has_render_call}, "
            f"cols={has_header_cols}, cyan={has_bold_cyan}, "
            f"green={has_green_sep}, proceed={has_proceed}, "
-           f"parallel={has_parallel_groups}, path={has_review_path}" if not ok else "")
+           f"parallel={has_parallel_groups}, path={has_review_path}, "
+           f"tput={has_tput_cols}, proportional={has_proportional}, "
+           f"wrap={has_wrap_cell}, truncate={has_line_truncation}, "
+           f"lines_file={has_lines_file}" if not ok else "")
+
+
+def test_approval_table_respects_narrow_terminal():
+    """Approval table renders within narrow terminal width with cell wrapping."""
+    source = read_launcher()
+
+    # Verify render_approval_table has dynamic column width computation
+    render_fn_start = source.find('render_approval_table()')
+    render_fn = source[render_fn_start:source.find('\n}', render_fn_start) + 2] if render_fn_start >= 0 else ""
+
+    # Dynamic column widths from tput cols
+    has_tput_cols = 'tput cols' in render_fn
+    # Proportional allocation: ~30% label, ~45% features, ~25% exec group
+    has_proportional = '0.30' in render_fn and '0.45' in render_fn
+    # Column widths computed from remaining space
+    has_remaining_calc = 'remaining' in render_fn and 'fixed_overhead' in render_fn
+    # Cell wrapping function (max 2 lines per cell)
+    has_wrap_fn = 'def wrap_cell' in render_fn
+    has_max_2_lines = 'row_lines > 2' in render_fn or 'max_lines > 2' in render_fn
+    # Continuation line padded to column start (uses same format with empty # column)
+    has_continuation_padding = "''," in render_fn and 'label_w' in render_fn
+    # Lines truncated to terminal width
+    has_cols_truncation = '[:cols]' in render_fn
+    # No Complexity column in header
+    has_no_complexity = 'Complexity' not in render_fn
+
+    ok = (has_tput_cols and has_proportional and has_remaining_calc and
+          has_wrap_fn and has_max_2_lines and has_continuation_padding and
+          has_cols_truncation and has_no_complexity)
+    record("Approval Table Respects Narrow Terminal", ok,
+           f"tput={has_tput_cols}, proportional={has_proportional}, "
+           f"remaining={has_remaining_calc}, wrap_fn={has_wrap_fn}, "
+           f"max_2={has_max_2_lines}, padding={has_continuation_padding}, "
+           f"truncate={has_cols_truncation}, "
+           f"no_complexity={has_no_complexity}" if not ok else "")
+
+
+def test_approval_table_rerenders_on_resize():
+    """Approval table re-renders on SIGWINCH with recomputed column widths."""
+    source = read_launcher()
+
+    # Verify SIGWINCH trap is set before the read during approval
+    has_sigwinch_trap = 'trap rerender_on_resize SIGWINCH' in source
+    # Verify SIGWINCH trap is removed after the read
+    has_trap_cleanup = 'trap - SIGWINCH' in source
+    # Verify rerender_on_resize function exists
+    has_rerender_fn = 'rerender_on_resize()' in source
+    # Verify rerender function clears via cursor-up and clear-to-end
+    rerender_start = source.find('rerender_on_resize()')
+    rerender_fn = source[rerender_start:source.find('\n}', rerender_start) + 2] if rerender_start >= 0 else ""
+    has_cursor_up_clear = '\\033[%dA' in rerender_fn and '\\033[J' in rerender_fn
+    # Verify rerender function re-reads terminal width (via render_approval_table which calls tput cols)
+    has_re_render_call = 'render_approval_table' in rerender_fn
+    # Verify rerender function re-displays the prompt
+    has_re_prompt = 'Proceed? [Y/n]' in rerender_fn
+    # Verify line count file is used for cursor math
+    has_lines_file = 'APPROVAL_TABLE_LINES_FILE' in rerender_fn
+
+    ok = (has_sigwinch_trap and has_trap_cleanup and has_rerender_fn and
+          has_cursor_up_clear and has_re_render_call and has_re_prompt and
+          has_lines_file)
+    record("Approval Table Re-Renders on Terminal Resize", ok,
+           f"trap={has_sigwinch_trap}, cleanup={has_trap_cleanup}, "
+           f"fn={has_rerender_fn}, ansi={has_cursor_up_clear}, "
+           f"re_render={has_re_render_call}, prompt={has_re_prompt}, "
+           f"lines_file={has_lines_file}" if not ok else "")
 
 
 def test_sequential_phase_canvas():
@@ -2640,6 +2722,11 @@ def test_sequential_phase_canvas():
     has_activity_extraction = 'extract_activity' in canvas_fn
     has_log_size = 'wc -c' in canvas_fn
 
+    # Terminal width constraint: reads tput cols each cycle, truncates activity first
+    has_term_cols = 'tput cols' in canvas_fn
+    has_activity_truncation = 'disp_activity' in canvas_fn or 'act_avail' in canvas_fn
+    has_label_truncation = 'disp_label' in canvas_fn
+
     # Integration: verify log file exists and stdout clean
     tmpdir = tempfile.mkdtemp()
     try:
@@ -2663,13 +2750,16 @@ def test_sequential_phase_canvas():
 
         ok = (has_canvas_fn and has_canvas_call and has_no_tee and has_redirect and
               has_phase_label and has_activity_extraction and has_log_size and
+              has_term_cols and has_activity_truncation and has_label_truncation and
               log_exists and log_has_output and stdout_clean)
         record("Sequential Phase Canvas During Execution", ok,
                f"fn={has_canvas_fn}, call={has_canvas_call}, "
                f"no_tee={has_no_tee}, redirect={has_redirect}, "
                f"label={has_phase_label}, activity={has_activity_extraction}, "
-               f"log_size={has_log_size}, log={log_exists}, "
-               f"log_output={log_has_output}, stdout_clean={stdout_clean}" if not ok else "")
+               f"log_size={has_log_size}, term_cols={has_term_cols}, "
+               f"act_trunc={has_activity_truncation}, lbl_trunc={has_label_truncation}, "
+               f"log={log_exists}, log_output={log_has_output}, "
+               f"stdout_clean={stdout_clean}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -2700,15 +2790,23 @@ def test_parallel_phase_canvas():
     has_clear = '\\033[J' in canvas_fn
     has_log_size = 'wc -c' in canvas_fn
 
+    # Terminal width constraint: reads tput cols each cycle, adapts field widths
+    has_term_cols = 'tput cols' in canvas_fn
+    has_activity_truncation = 'DISP_ACT' in canvas_fn or 'act_avail' in canvas_fn
+    has_label_truncation = 'DISP_LABEL' in canvas_fn
+
     ok = (has_canvas_fn and has_canvas_call and has_canvas_pid and
           has_timestamp and has_per_phase and has_running and has_done and
-          has_cursor_up and has_clear and has_log_size)
+          has_cursor_up and has_clear and has_log_size and
+          has_term_cols and has_activity_truncation and has_label_truncation)
     record("Parallel Phase Canvas During Execution", ok,
            f"fn={has_canvas_fn}, call={has_canvas_call}, pid={has_canvas_pid}, "
            f"timestamp={has_timestamp}, per_phase={has_per_phase}, "
            f"running={has_running}, done={has_done}, "
            f"cursor_up={has_cursor_up}, clear={has_clear}, "
-           f"log_size={has_log_size}" if not ok else "")
+           f"log_size={has_log_size}, term_cols={has_term_cols}, "
+           f"act_trunc={has_activity_truncation}, "
+           f"lbl_trunc={has_label_truncation}" if not ok else "")
 
 
 def test_all_builder_output_routes_to_log_files():
@@ -2806,12 +2904,19 @@ def test_canvas_clears_before_final_summary():
     has_colored_phases = 'C_GREEN' in summary_section or 'GREEN' in summary_section
     has_colored_footer = 'C_BOLD_CYAN' in summary_section
 
+    # Terminal width constraint: exit summary respects tput cols
+    has_tput_cols = 'tput cols' in summary_section
+    # Feature list wrapping to continuation line
+    has_feat_wrap = 'feat_rest' in summary_section or 'avail_feat' in summary_section
+
     ok = (has_canvas_clear and has_clear_before_header and
-          has_colored_header and has_colored_phases and has_colored_footer)
+          has_colored_header and has_colored_phases and has_colored_footer and
+          has_tput_cols and has_feat_wrap)
     record("Canvas Clears Before Final Summary", ok,
            f"clear={has_canvas_clear}, before_header={has_clear_before_header}, "
            f"colored_header={has_colored_header}, colored_phases={has_colored_phases}, "
-           f"colored_footer={has_colored_footer}" if not ok else "")
+           f"colored_footer={has_colored_footer}, tput={has_tput_cols}, "
+           f"feat_wrap={has_feat_wrap}" if not ok else "")
 
 
 def test_canvas_falls_back_to_milestone_lines():
@@ -3203,9 +3308,11 @@ if __name__ == '__main__':
     test_phase_count_changes_in_summary()
     test_reanalysis_after_retry()
 
-    # Terminal Canvas Engine (Section 2.16) (12)
+    # Terminal Canvas Engine (Section 2.16) (14)
     test_bootstrap_canvas_shows_spinner()
     test_approval_checkpoint_renders_table()
+    test_approval_table_respects_narrow_terminal()
+    test_approval_table_rerenders_on_resize()
     test_sequential_phase_canvas()
     test_parallel_phase_canvas()
     test_all_builder_output_routes_to_log_files()

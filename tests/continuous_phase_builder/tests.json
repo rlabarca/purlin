@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 56,
+  "passed": 58,
   "failed": 0,
-  "total": 56,
+  "total": 58,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -175,6 +175,14 @@
     },
     {
       "name": "Approval Checkpoint Renders Console Table",
+      "status": "PASS"
+    },
+    {
+      "name": "Approval Table Respects Narrow Terminal",
+      "status": "PASS"
+    },
+    {
+      "name": "Approval Table Re-Renders on Terminal Resize",
       "status": "PASS"
     },
     {

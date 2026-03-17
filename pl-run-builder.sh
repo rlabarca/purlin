@@ -476,7 +476,7 @@ start_bootstrap_canvas() {
             if [ "$prev_lines" -gt 0 ]; then
                 printf '\033[%dA\033[J' "$prev_lines" >&2
             fi
-            printf '\033[36m%s\033[0m Starting bootstrap session... \033[2m%ss\033[0m\n' "$s" "$elapsed" >&2
+            printf '\033[36m%s\033[0m Bootstrapping for continuous delivery... \033[2m%ss\033[0m\n' "$s" "$elapsed" >&2
             prev_lines=1
             echo "$prev_lines" > "$CANVAS_STATE_FILE"
             idx=$((idx + 1))
@@ -520,11 +520,33 @@ start_sequential_canvas() {
                 activity=$(extract_activity "$log_file")
             fi
 
+            # Terminal width constraint: truncate activity first, then label
+            term_cols=$(tput cols 2>/dev/null || echo 80)
+            disp_label="$phase_label"
+            disp_activity="$activity"
+            prefix_part="Phase ${phase_num} -- "
+            status_part="   running  ${elapsed_str}   ${fsize}  "
+            fixed_w=$((2 + ${#prefix_part} + ${#status_part}))
+            avail=$((term_cols - fixed_w))
+            if [ $((${#disp_label} + ${#disp_activity})) -gt "$avail" ]; then
+                act_avail=$((avail - ${#disp_label}))
+                if [ "$act_avail" -ge 4 ]; then
+                    disp_activity="${disp_activity:0:$((act_avail - 3))}..."
+                else
+                    disp_activity=""
+                    if [ "$avail" -ge 4 ]; then
+                        disp_label="${disp_label:0:$((avail - 3))}..."
+                    elif [ "$avail" -ge 0 ]; then
+                        disp_label="${disp_label:0:$avail}"
+                    fi
+                fi
+            fi
+
             if [ "$prev_lines" -gt 0 ]; then
                 printf '\033[%dA\033[J' "$prev_lines" >&2
             fi
             printf '\033[36m%s\033[0m \033[1;37mPhase %s -- %s\033[0m   \033[33mrunning\033[0m  \033[2m%s\033[0m   %s  %s\n' \
-                "$s" "$phase_num" "$phase_label" "$elapsed_str" "$fsize" "$activity" >&2
+                "$s" "$phase_num" "$disp_label" "$elapsed_str" "$fsize" "$disp_activity" >&2
             prev_lines=1
             echo "$prev_lines" > "$CANVAS_STATE_FILE"
             idx=$((idx + 1))
@@ -601,6 +623,9 @@ start_parallel_canvas() {
             TIMESTAMP=$(date +%H:%M:%S)
             s="${SPINNER[$((idx % 10))]}"
 
+            # Read terminal width each cycle for resize adaptation
+            term_cols=$(tput cols 2>/dev/null || echo 80)
+
             # Heavier updates every 15 seconds (~150 iterations)
             heavy_counter=$((heavy_counter + 1))
             do_heavy=false
@@ -655,13 +680,38 @@ start_parallel_canvas() {
                     [ "$MINS" -gt 0 ] && ELAPSED="${MINS}m ${REM}s" || ELAPSED="${SECS}s"
                 fi
 
+                # Terminal width constraint: truncate activity first, then label
+                DISP_LABEL="$PLABEL"
+                DISP_ACT="${P_ACTIVITY[$i]}"
+                # Indent(13) + "Phase N -- " + label + "   status  " + elapsed + "   " + fsize + "  " + activity
+                prefix_w=$((13 + 6 + ${#PNUM} + 4))
                 if kill -0 "$PID_VAL" 2>/dev/null; then
-                    OUTPUT+="             \033[33mPhase ${PNUM} -- ${PLABEL}   running  ${ELAPSED}   ${FSIZE}  ${P_ACTIVITY[$i]}\033[0m"$'\n'
+                    status_w=$((3 + 7 + 2 + ${#ELAPSED} + 3 + ${#FSIZE} + 2))
+                else
+                    status_w=$((3 + 4 + 5 + ${#ELAPSED} + 3 + ${#FSIZE}))
+                fi
+                avail=$((term_cols - prefix_w - status_w))
+                if [ $((${#DISP_LABEL} + ${#DISP_ACT})) -gt "$avail" ]; then
+                    act_avail=$((avail - ${#DISP_LABEL}))
+                    if [ "$act_avail" -ge 4 ]; then
+                        DISP_ACT="${DISP_ACT:0:$((act_avail - 3))}..."
+                    else
+                        DISP_ACT=""
+                        if [ "$avail" -ge 4 ]; then
+                            DISP_LABEL="${DISP_LABEL:0:$((avail - 3))}..."
+                        elif [ "$avail" -ge 0 ]; then
+                            DISP_LABEL="${DISP_LABEL:0:$avail}"
+                        fi
+                    fi
+                fi
+
+                if kill -0 "$PID_VAL" 2>/dev/null; then
+                    OUTPUT+="             \033[33mPhase ${PNUM} -- ${DISP_LABEL}   running  ${ELAPSED}   ${FSIZE}  ${DISP_ACT}\033[0m"$'\n'
                 else
                     if [ "$FSIZE" = "0K" ]; then
-                        OUTPUT+="             \033[31mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                        OUTPUT+="             \033[31mPhase ${PNUM} -- ${DISP_LABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
                     else
-                        OUTPUT+="             \033[32mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                        OUTPUT+="             \033[32mPhase ${PNUM} -- ${DISP_LABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
                     fi
                 fi
                 LINE_COUNT=$((LINE_COUNT + 1))
@@ -682,9 +732,11 @@ start_parallel_canvas() {
 }
 
 # --- Canvas: render approval checkpoint table ---
+# Renders with dynamic column widths and cell wrapping (max 2 lines per cell).
+# Writes rendered line count to APPROVAL_TABLE_LINES_FILE for SIGWINCH re-render.
+APPROVAL_TABLE_LINES_FILE="${RUNTIME_DIR}/approval_table_lines"
+
 render_approval_table() {
-    # Renders the delivery plan summary table for the approval checkpoint.
-    # Uses phase analyzer JSON output for structured data.
     local analyzer_json
     analyzer_json=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
 
@@ -693,13 +745,13 @@ import json, re, sys, os
 
 plan_path = sys.argv[1]
 is_tty = sys.argv[2] == 'true'
+lines_file = sys.argv[3]
 
 try:
-    analyzer = json.loads(sys.argv[3])
+    analyzer = json.loads(sys.argv[4])
 except (json.JSONDecodeError, IndexError):
     analyzer = {'groups': []}
 
-# Read delivery plan for labels and features
 with open(plan_path) as f:
     plan_content = f.read()
 
@@ -711,13 +763,11 @@ for m in re.finditer(r'## Phase (\d+) -- (.+?) \[(PENDING|IN_PROGRESS|COMPLETE)\
     features = feat_m.group(1).strip() if feat_m else '--'
     phases_info[pnum] = {'label': label, 'features': features}
 
-# Build group index: phase_num -> (group_idx, parallel flag)
 group_map = {}
 for gi, group in enumerate(analyzer.get('groups', [])):
     for p in group.get('phases', []):
         group_map[p] = (gi, group.get('parallel', False))
 
-# Terminal width
 try:
     cols = int(os.popen('tput cols 2>/dev/null').read().strip() or 80)
 except Exception:
@@ -731,45 +781,91 @@ for gi, group in enumerate(analyzer.get('groups', [])):
         seen_groups.add(gi)
         parallel_groups.append(group['phases'])
 
-# ANSI helpers
 BOLD_CYAN = '\033[1;36m' if is_tty else ''
 GREEN = '\033[32m' if is_tty else ''
 RESET = '\033[0m' if is_tty else ''
 
+# Dynamic column widths: # = 4 fixed, remaining split proportionally
+# 2 leading spaces + 3 inter-column spaces
+fixed_overhead = 2 + 4 + 3
+remaining = max(cols - fixed_overhead, 30)
+label_w = max(int(remaining * 0.30), 8)
+feat_w = max(int(remaining * 0.45), 10)
+exec_w = max(remaining - label_w - feat_w, 8)
+
+def wrap_cell(text, width):
+    if len(text) <= width:
+        return [text]
+    line1 = text[:width]
+    rest = text[width:]
+    if len(rest) <= width:
+        return [line1, rest]
+    return [line1, rest[:max(width - 3, 0)] + '...']
+
 out = []
-out.append(f'{BOLD_CYAN}=== Delivery Plan ({total_phases} phases) ==={RESET}')
+out.append('{0}=== Delivery Plan ({1} phases) ==={2}'.format(BOLD_CYAN, total_phases, RESET))
 out.append('')
 
-# Header
-hdr = f'  {\"#\":<4s} {\"Label\":<29s} {\"Features\":<40s} {\"Complexity\":<13s} {\"Exec Group\"}'
-out.append(f'{BOLD_CYAN}{hdr}{RESET}')
-sep = f'  {\"---\":<4s} {\"----------------------------\":<29s} {\"---------------------------------------\":<40s} {\"------------\":<13s} {\"-------------------\"}'
-out.append(f'{GREEN}{sep}{RESET}')
+hdr = '  {:<4s} {:<{}s} {:<{}s} {}'.format('#', 'Label', label_w, 'Features', feat_w, 'Exec Group')
+out.append('{0}{1}{2}'.format(BOLD_CYAN, hdr[:cols], RESET))
+sep = '  {:<4s} {:<{}s} {:<{}s} {}'.format('---', '-' * label_w, label_w, '-' * feat_w, feat_w, '-' * exec_w)
+out.append('{0}{1}{2}'.format(GREEN, sep[:cols], RESET))
 
 for pnum in sorted(phases_info.keys()):
     info = phases_info[pnum]
-    label = info['label'][:28]
-    features = info['features'][:39]
-    complexity = '--'
+    label = info['label']
+    features = info['features']
     exec_group = '--'
     if pnum in group_map:
         gi, par = group_map[pnum]
         if par:
             others = [str(p) for p in analyzer['groups'][gi]['phases'] if p != pnum]
-            exec_group = f'{gi} (parallel w/ {\", \".join(others)})'
+            exec_group = '{0} (parallel w/ {1})'.format(gi, ', '.join(others))
         else:
-            exec_group = f'{gi} (sequential)'
-    out.append(f'  {pnum:<4d} {label:<29s} {features:<40s} {complexity:<13s} {exec_group}')
+            exec_group = '{0} (sequential)'.format(gi)
+
+    label_lines = wrap_cell(label, label_w)
+    feat_lines = wrap_cell(features, feat_w)
+    exec_lines = wrap_cell(exec_group, exec_w)
+    row_lines = max(len(label_lines), len(feat_lines), len(exec_lines))
+    if row_lines > 2:
+        row_lines = 2
+
+    for row in range(row_lines):
+        l = label_lines[row] if row < len(label_lines) else ''
+        f = feat_lines[row] if row < len(feat_lines) else ''
+        e = exec_lines[row] if row < len(exec_lines) else ''
+        if row == 0:
+            line = '  {:<4d} {:<{}s} {:<{}s} {}'.format(pnum, l, label_w, f, feat_w, e)
+        else:
+            line = '  {:<4s} {:<{}s} {:<{}s} {}'.format('', l, label_w, f, feat_w, e)
+        out.append(line[:cols])
 
 out.append('')
 if parallel_groups:
     pg_strs = ['+'.join(str(p) for p in pg) for pg in parallel_groups]
-    out.append(f'Parallel groups: {len(parallel_groups)} (Phases {(\", Phases \").join(pg_strs)})')
-out.append(f'Review at .purlin/cache/delivery_plan.md')
-out.append(f'{BOLD_CYAN}================================{RESET}')
+    out.append('Parallel groups: {0} (Phases {1})'.format(len(parallel_groups), ', Phases '.join(pg_strs)))
+out.append('Review at .purlin/cache/delivery_plan.md')
+out.append('{0}================================{1}'.format(BOLD_CYAN, RESET))
 
 print('\n'.join(out), file=sys.stderr)
-" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" "$analyzer_json"
+
+with open(lines_file, 'w') as f:
+    f.write(str(len(out)))
+" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" "$APPROVAL_TABLE_LINES_FILE" "$analyzer_json"
+}
+
+# --- SIGWINCH handler: re-render approval table on terminal resize ---
+rerender_on_resize() {
+    local lines
+    lines=$(cat "$APPROVAL_TABLE_LINES_FILE" 2>/dev/null || echo 0)
+    # +1 for the "Proceed? [Y/n]" prompt line
+    lines=$((lines + 1))
+    if [ "$lines" -gt 0 ] && [ -t 2 ]; then
+        printf '\033[%dA\033[J' "$lines" >&2
+    fi
+    render_approval_table
+    printf "Proceed? [Y/n] " >&2
 }
 
 # --- Bootstrap session when no delivery plan exists (Section 2.15) ---
@@ -848,7 +944,15 @@ BOOTSTRAP_OVERRIDE
         # Render the approval checkpoint table (Section 2.15)
         render_approval_table
         printf "Proceed? [Y/n] " >&2
+
+        # Live resize: trap SIGWINCH to re-render table on terminal resize
+        if [ -t 2 ]; then
+            trap rerender_on_resize SIGWINCH
+        fi
         read -r APPROVAL 2>/dev/null || APPROVAL=""
+        if [ -t 2 ]; then
+            trap - SIGWINCH
+        fi
 
         if [ -n "$APPROVAL" ] && ! echo "$APPROVAL" | grep -qi '^y'; then
             echo "Plan declined. The plan remains committed to git for editing." >&2
@@ -1246,6 +1350,12 @@ runtime_dir = sys.argv[1]
 plan_path = sys.argv[2]
 is_tty = sys.argv[3] == 'true'
 
+# Terminal width for line wrapping
+try:
+    cols = int(os.popen('tput cols 2>/dev/null').read().strip() or 80)
+except Exception:
+    cols = 80
+
 # ANSI colors
 GREEN = '\033[32m' if is_tty else ''
 YELLOW = '\033[33m' if is_tty else ''
@@ -1313,8 +1423,32 @@ for pnum, label, features in sorted(phases):
     else:
         color = DIM
 
-    print('  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
-        color, pnum, label, status, dur_str, features, RESET))
+    # Build line prefix and features, wrapping to fit terminal width
+    prefix = '  Phase {} -- '.format(pnum)
+    mid = '{:<14s} {:<10s} features: '.format(status, dur_str)
+    prefix_w = len(prefix) + 30 + 1  # label field + space
+    feat_start = len(prefix) + len(label) + len(mid) + 2
+    avail_feat = cols - feat_start
+    if avail_feat < 0:
+        avail_feat = 10
+
+    if len(features) <= avail_feat or avail_feat <= 3:
+        line = '  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
+            color, pnum, label[:30], status, dur_str, features[:max(avail_feat, len(features))], RESET)
+        print(line[:cols + len(color) + len(RESET)], file=sys.stderr)
+    else:
+        # Wrap features to continuation line
+        feat_line1 = features[:avail_feat]
+        feat_rest = features[avail_feat:]
+        line1 = '  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
+            color, pnum, label[:30], status, dur_str, feat_line1, RESET)
+        print(line1[:cols + len(color) + len(RESET)], file=sys.stderr)
+        # Continuation indented to features: column
+        indent = ' ' * feat_start
+        if len(feat_rest) > cols - feat_start:
+            feat_rest = feat_rest[:max(cols - feat_start - 3, 0)] + '...'
+        line2 = '{}{}{}{}'.format(color, indent, feat_rest, RESET)
+        print(line2[:cols + len(color) + len(RESET)], file=sys.stderr)
 " "$RUNTIME_DIR" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" >&2
 
 echo "" >&2
