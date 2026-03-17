@@ -26,14 +26,14 @@
 **Completion Commit:** 4f4814d
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Agent Config & Release Checklist [IN_PROGRESS]
+## Phase 5 -- Agent Config & Release Checklist [COMPLETE]
 **Features:** cdd_agent_configuration.md, release_checklist_ui.md
 **Completion Commit:** 62ce39d
 **QA Bugs Addressed:** --
 
 ## Phase 6 -- Branch Collaboration [IN_PROGRESS]
 **Features:** cdd_branch_collab.md
-**Completion Commit:** --
+**Completion Commit:** c2277f1
 **QA Bugs Addressed:** --
 
 ## Phase 7 -- Spec Map [COMPLETE]
