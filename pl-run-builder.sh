@@ -181,20 +181,33 @@ START_TIME=$(date +%s)
 # read from the file instead of calling tput cols (which returns 80 in bg).
 TERM_WIDTH_FILE="${RUNTIME_DIR}/term_width"
 mkdir -p "$RUNTIME_DIR" 2>/dev/null
-if [ -t 2 ]; then
-    PURLIN_TERM_COLS=$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")
+
+detect_term_cols() {
+    local cols
+    # 1. Query kernel TTY driver directly — most reliable on macOS
+    cols=$(stty size </dev/tty 2>/dev/null | awk '{print $2}')
+    if [ -n "$cols" ] && [ "$cols" -gt 0 ] 2>/dev/null; then echo "$cols"; return; fi
+    # 2. terminfo-based fallback
+    cols=$(tput cols 2>/dev/null)
+    if [ -n "$cols" ] && [ "$cols" -gt 0 ] 2>/dev/null; then echo "$cols"; return; fi
+    # 3. Shell variable (rarely exported but worth trying)
+    if [ -n "$COLUMNS" ] && [ "$COLUMNS" -gt 0 ] 2>/dev/null; then echo "$COLUMNS"; return; fi
+    # 4. Last resort
+    echo 80
+}
+
+if [ -n "$PURLIN_TERM_COLS" ] && [ "$PURLIN_TERM_COLS" -gt 0 ] 2>/dev/null; then
+    : # Respect explicit user override
 else
-    PURLIN_TERM_COLS="${COLUMNS:-80}"
+    PURLIN_TERM_COLS=$(detect_term_cols)
 fi
 echo "$PURLIN_TERM_COLS" > "$TERM_WIDTH_FILE"
 export PURLIN_TERM_COLS
 
 update_term_width() {
-    if [ -t 2 ]; then
-        PURLIN_TERM_COLS=$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")
-        echo "$PURLIN_TERM_COLS" > "$TERM_WIDTH_FILE"
-        export PURLIN_TERM_COLS
-    fi
+    PURLIN_TERM_COLS=$(detect_term_cols)
+    echo "$PURLIN_TERM_COLS" > "$TERM_WIDTH_FILE"
+    export PURLIN_TERM_COLS
 }
 trap update_term_width WINCH
 
