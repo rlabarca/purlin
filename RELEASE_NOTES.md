@@ -28,6 +28,7 @@
 - `pl-update-purlin` diff-tree speed optimization
 - `pl-session-resume` PM support and startup flag awareness
 - Per-role launcher specs split with shared common spec
+- Claude Code hook on `/clear` event reminds the agent to run `/pl-resume` on next prompt
 
 **Fixes**
 - Critic: NameError fix, circular prerequisite fix, requirements-section change detection
