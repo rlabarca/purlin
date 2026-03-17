@@ -125,3 +125,16 @@ Exit cleanup runs after the exit summary and status refresh, deleting transient 
 Replaced the simple `wait $pid` loop (which blocked until ALL builders completed, then batch-updated all phases) with a polling monitor that detects individual builder exits via `kill -0`. As soon as a builder exits with code 0, the orchestrator immediately calls `update_plan_phase_status` and commits the delivery plan update on the main branch. This keeps CDD metrics accurate in real time (e.g., "1 DONE | 1 RUNNING" instead of "0 DONE | 2 RUNNING").
 
 Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.
+
+## [DISCOVERY] JSON Leaking to Terminal During Parallel Execution (2026-03-17)
+
+**Problem:** During the first `--continuous` run with parallel phases (1, 2, 3), raw NDJSON output from the `--verbose --output-format stream-json` builders leaked to the terminal, flooding it with JSON instead of showing the canvas. The parallel group completed successfully (all 3 phases merged) but the evaluator then hung for 646+ seconds (pre-timeout-fix) and the orchestrator never advanced to phase 4.
+
+**Root cause (suspected):** The `run_line_buffered` function uses macOS `script -q /dev/null` to force line buffering. When combined with `> "$LOG_FILE" 2>&1` redirection inside a `( ... ) &` subshell, `script` may still write to the controlling terminal via the pseudo-TTY master, bypassing the stdout redirect. This is a known macOS `script` quirk — it was designed for terminal recording, not output containment.
+
+**Reproduction:** Run `./pl-run-builder.sh --continuous` with a delivery plan that has parallel phases. Observe terminal output during the parallel execution phase — raw NDJSON lines appear instead of (or interleaved with) the canvas display.
+
+**What to investigate:**
+1. Test whether `script -q /dev/null claude ... > logfile 2>&1` actually contains all output on macOS, or if the PTY master leaks to `/dev/tty`.
+2. If `script` leaks, consider alternatives: `unbuffer` (from `expect`), direct PTY management, or accepting full-buffered output and adjusting the canvas to tolerate delayed log growth.
+3. The spec (Section 2.17) says "ALL Builder output goes to log files only. No Builder output streams to the terminal." This invariant was violated.
