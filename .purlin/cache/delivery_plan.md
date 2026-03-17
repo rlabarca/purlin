@@ -16,9 +16,9 @@ Five features need Builder work following recent spec updates. cdd_startup_contr
 **Completion Commit:** 9a075e8
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Session Resume & Behavior Tests [PENDING]
+## Phase 3 -- Session Resume & Behavior Tests [COMPLETE]
 **Features:** pl_session_resume.md, agent_behavior_tests.md
-**Completion Commit:** --
+**Completion Commit:** d0c96a5
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
