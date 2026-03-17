@@ -16,8 +16,8 @@ Defines the visual and behavioral constraints for all text-based (content-readin
 
 ### Title
 
-- Modal titles MUST render 8 points larger than the modal's default body font size.
-- The default body font size is inherited from the project's design anchor (for Purlin: `design_visual_standards.md` Section 2.3, Inter 14px). With a 14px base, titles render at 22px.
+- Modal titles MUST render 4 points larger than the modal's default body font size.
+- The default body font size is inherited from the project's design anchor (for Purlin: `design_visual_standards.md` Section 2.3, Inter 14px). With a 14px base, titles render at 18px.
 
 ### Font Size Control
 
@@ -26,7 +26,7 @@ Defines the visual and behavioral constraints for all text-based (content-readin
 
 ### Relative Scaling Invariant
 
-- All text within the modal body (headings, paragraphs, lists, code blocks, metadata, tags) MUST scale together when the font size control is adjusted, preserving relative size differences between text elements.
+- All text within the modal (title, metadata rows, tabs, headings, paragraphs, lists, code blocks, tags, and inline-styled content in consumer modals) MUST scale together when the font size control is adjusted, preserving relative size differences between text elements.
 
 ### Text Wrapping
 

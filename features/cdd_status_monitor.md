@@ -637,7 +637,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Title Size Matches Spec (auto-web)
     Given the User has opened a feature detail modal
     When the modal is displayed
-    Then the modal title computed font size is 8 points larger than the default body font size
+    Then the modal title computed font size is 4 points larger than the default body font size
 
 #### Scenario: Server Start/Stop Lifecycle (auto-web)
     Given the CDD server is not running
@@ -736,4 +736,4 @@ None.
 - [ ] Each metadata tag on its own row with tag name in highlight color
 - [ ] Multiple Prerequisites displayed on separate rows
 - [ ] No duplicate metadata blockquotes in rendered markdown body
-- [ ] Modal title is 8pts larger than body text default
+- [ ] Modal title is 4pts larger than body text default

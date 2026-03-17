@@ -26,7 +26,7 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 
 ### 2.2 Modal Title
 
-- Title renders 8 points larger than the modal's default body font size.
+- Title renders 4 points larger than the modal's default body font size.
 - Title uses `var(--purlin-primary)` color.
 
 ### 2.3 Font Size Control
@@ -34,7 +34,7 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 - Control positioned in the modal header area (between title and close button, or in a dedicated controls row).
 - Layout: decrease button (minus sign), horizontal slider, increase button (plus sign).
 - Range: -4 to +30 points relative to the default body font size.
-- All modal body text scales together preserving relative size differences between elements.
+- All text within the modal scales together preserving relative size differences between elements. This includes the title, metadata rows, tabs, body content (headings, paragraphs, lists, code, pre blocks), tags, and any inline-styled text in consumer modals (e.g., Step Detail section labels, source badges, content values).
 - Text wraps correctly at all slider positions without horizontal overflow or clipping.
 - Selected size persists for the browser session (reopening any text-based modal retains the last setting). Uses `sessionStorage` or equivalent browser-session-scoped mechanism.
 
@@ -76,8 +76,16 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 
     Given the User has opened a text-based modal
     When the User moves the font size slider to the maximum position (+30)
-    Then all text elements in the modal body (h1, h2, h3, p, li, code, pre) are larger than their default size
+    Then all text elements in the modal (title, metadata, tabs, body h1/h2/h3/p/li/code/pre, tags, inline-styled content) are larger than their default size
     And the relative size differences between text elements are preserved
+
+#### Scenario: Font Size Scales Non-Body Modal Elements
+
+    Given the User has opened a text-based modal
+    When the User moves the font size slider to a non-default position
+    Then the modal title font size reflects the adjustment
+    And metadata rows, tab labels, and tag elements scale by the same adjustment
+    And consumer modals with inline-styled text (e.g., Step Detail labels and content) also scale
 
 #### Scenario: Font Size Decrease Scales All Text
 
@@ -129,7 +137,7 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 
     Given the User has opened a text-based modal
     When the modal is displayed with default font size settings
-    Then the modal title computed font size is 8 points larger than the default body font size
+    Then the modal title computed font size is 4 points larger than the default body font size
 
 ### Manual Scenarios (Human Verification Required)
 
@@ -146,12 +154,12 @@ None.
 - **Processed:** N/A
 - [ ] Modal occupies 70% viewport width (not fixed pixel width)
 - [ ] Modal falls back to 90% width on viewports narrower than 500px
-- [ ] Modal title is 8pts larger than body text default
+- [ ] Modal title is 4pts larger than body text default
 - [ ] Modal title uses `var(--purlin-primary)` color
 - [ ] Font size control (minus button, slider, plus button) visible in modal header
 - [ ] Slider at min (-4pts): text slightly smaller but fully legible
 - [ ] Slider at max (+30pts): text substantially larger, wraps correctly, no horizontal overflow
-- [ ] All text elements scale together preserving relative size differences
+- [ ] All text elements in the modal (title, metadata, tabs, body content, tags) scale together preserving relative size differences
 - [ ] Font size persists when closing and reopening a modal
 - [ ] X button visible in header for close
 - [ ] Escape key closes modal

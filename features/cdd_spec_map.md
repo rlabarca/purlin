@@ -300,9 +300,10 @@ These scenarios are validated by the Builder's automated test suite.
 
 #### Scenario: Clicks on Edges Pass Through
     Given the User is viewing the Spec Map view
-    When the User clicks on an edge (line or arrow between nodes)
-    Then the click passes through to the layer below
+    When the User clicks or double-clicks on an edge (line or arrow between nodes)
+    Then the event passes through to the element below (canvas background or category bounding box)
     And no edge selection, tooltip, or modal is triggered
+    And double-clicking an edge over a category bounding box triggers the category zoom
     And edge hover highlighting during node hover still functions normally
 
 #### Scenario: Font Size Persists Across Node Clicks (auto-web)
