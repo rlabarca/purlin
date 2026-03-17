@@ -6,17 +6,17 @@
 ## Summary
 10 features with builder=TODO (5 HIGH-complexity, 5 MEDIUM-complexity). Phasing maximizes parallelization across independent features while respecting the cdd_status_monitor critical path and the cdd_agent_configuration → cdd_startup_controls → agent_behavior_tests dependency chain.
 
-## Phase 1 -- Continuous Phase Builder [PENDING]
+## Phase 1 -- Continuous Phase Builder [IN_PROGRESS]
 **Features:** continuous_phase_builder.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- CDD Lifecycle [PENDING]
+## Phase 2 -- CDD Lifecycle [IN_PROGRESS]
 **Features:** cdd_lifecycle.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Critic Tool [PENDING]
+## Phase 3 -- Critic Tool [IN_PROGRESS]
 **Features:** critic_tool.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
