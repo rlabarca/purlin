@@ -24,6 +24,17 @@ Defines the visual and behavioral constraints for all text-based (content-readin
 - All text-based modals MUST include a font size adjustment control in the header area: a decrease button (minus sign), horizontal slider, and increase button (plus sign).
 - Range: 4 points below the default body font size to 30 points above the default body font size.
 
+### Font Control Position Stability
+
+- The font size control widget (buttons and slider) MUST occupy a fixed position in the modal header that does NOT shift horizontally or vertically when the font size adjustment value changes.
+- The modal title MUST be constrained (e.g., truncated with ellipsis, or given a fixed flex allocation) so that title size changes do not displace the font controls or close button.
+
+### Smooth Scaling
+
+- Dragging the slider MUST produce visually smooth, continuous transitions. Individual step increments MUST NOT be perceptible as discrete jumps during a continuous drag operation.
+- The slider MUST use sub-integer step granularity (step <= 0.5) so that the number of discrete positions across the slider's physical width is sufficient for smooth visual feedback.
+- Button clicks MUST produce visually distinct, sequential increments. Rapid clicking MUST NOT cause batched or skipped visual updates -- each click MUST result in one visible increment before the next click takes effect.
+
 ### Relative Scaling Invariant
 
 - All text within the modal (title, metadata rows, tabs, headings, paragraphs, lists, code blocks, tags, and inline-styled content in consumer modals) MUST scale together when the font size control is adjusted, preserving relative size differences between text elements.

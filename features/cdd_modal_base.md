@@ -38,6 +38,21 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 - Text wraps correctly at all slider positions without horizontal overflow or clipping.
 - Selected size persists for the browser session (reopening any text-based modal retains the last setting). Uses `sessionStorage` or equivalent browser-session-scoped mechanism.
 
+### 2.3.1 Font Control Position Stability
+
+- The font size control widget (buttons and slider) MUST maintain a fixed position in the modal header regardless of the current font size adjustment value.
+- The modal title MUST be constrained so that changes to the title's rendered size do not displace the font controls or close button. The title truncates with ellipsis if it would otherwise overflow its allocated space.
+
+### 2.3.2 Smooth Slider Scaling
+
+- The slider MUST use sub-integer step granularity (step <= 0.5) so that dragging produces visually smooth, continuous scaling without perceptible discrete jumps.
+- The `--modal-font-adjust` custom property MUST accept fractional values and all `calc()` expressions using it MUST produce correct results with fractional inputs.
+
+### 2.3.3 Rapid Button Click Stability
+
+- Each button click increments or decrements by exactly 1 unit.
+- Rapid clicking MUST produce sequential, visually distinct increments. Each click MUST result in one visible repaint before the next increment takes effect. Visual batching (where multiple clicks appear as a single large jump) MUST NOT occur.
+
 ### 2.4 Close Behavior
 
 - X button in the modal header.
@@ -101,6 +116,35 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
     Then no horizontal overflow occurs in the modal body
     And all text wraps correctly within the modal width
 
+#### Scenario: Font Controls Position Stable During Adjustment
+
+    Given the User has opened a text-based modal
+    When the User moves the font size slider from the minimum to the maximum position
+    Then the font size control widget (buttons and slider) remains at the same screen coordinates throughout the drag
+    And the close button remains at the same screen coordinates
+
+#### Scenario: Slider Drag Produces Smooth Scaling
+
+    Given the User has opened a text-based modal
+    When the User drags the font size slider continuously from one end to the other
+    Then the text scales smoothly without perceptible discrete jumps between positions
+    And the slider step granularity is 0.5 or finer
+
+#### Scenario: Rapid Button Clicks Produce Sequential Increments
+
+    Given the User has opened a text-based modal at the default font size (0)
+    When the User clicks the increase button 5 times in rapid succession
+    Then the font size adjustment value is exactly 5
+    And each click produces a visible repaint before the next increment
+    And the final state matches the result of 5 sequential single clicks
+
+#### Scenario: Title Truncation Prevents Layout Shift
+
+    Given the User has opened a text-based modal with a long title
+    When the User adjusts the font size to the maximum position
+    Then the title truncates with an ellipsis rather than overflowing
+    And the font controls and close button remain in their original positions
+
 #### Scenario: Font Size Persists Across Modal Opens
 
     Given the User has opened a text-based modal and adjusted the font size slider
@@ -157,6 +201,10 @@ None.
 - [ ] Modal title is 4pts larger than body text default
 - [ ] Modal title uses `var(--purlin-primary)` color
 - [ ] Font size control (minus button, slider, plus button) visible in modal header
+- [ ] Font controls and close button remain at fixed screen position during font adjustment (no layout shift)
+- [ ] Title truncates with ellipsis when enlarged, never displaces controls
+- [ ] Slider drag produces visually smooth continuous scaling (no discrete jumps)
+- [ ] Rapid button clicks produce sequential increments (no batched jumps)
 - [ ] Slider at min (-4pts): text slightly smaller but fully legible
 - [ ] Slider at max (+30pts): text substantially larger, wraps correctly, no horizontal overflow
 - [ ] All text elements in the modal (title, metadata, tabs, body content, tags) scale together preserving relative size differences
