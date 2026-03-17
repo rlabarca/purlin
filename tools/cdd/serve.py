@@ -4276,6 +4276,7 @@ function createCytoscape(elements, colors) {{
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
           'arrow-scale': 0.8,
+          'events': 'no',
         }}
       }},
       {{
