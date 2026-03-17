@@ -1422,7 +1422,7 @@ class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
     Given an active branch "feature/empty" is set
     And feature/empty has zero commits relative to main
     When the dashboard HTML is generated
-    Then the sync state position shows "EMPTY" in normal text color (--purlin-primary)
+    Then the sync state position shows "EMPTY" in normal text color (--purlin-text)
     And the text does not use a badge class (no st-good, st-todo, st-disputed)
     """
 
@@ -1437,7 +1437,7 @@ class TestEmptyBadgeRenderedWithoutBadgeBackground(unittest.TestCase):
             has_remote=True
         )
         self.assertIn('EMPTY', html)
-        self.assertIn('--purlin-primary', html)
+        self.assertIn('--purlin-text', html)
         # Verify no badge classes are used for the EMPTY state
         # Find the EMPTY span and check it doesn't have badge classes
         import re
@@ -2140,8 +2140,8 @@ class TestJoinBranchModalPhase2SyncBadgeColors(unittest.TestCase):
         self.assertIn('st-todo', html)
         # DIVERGED = orange (st-disputed)
         self.assertIn('st-disputed', html)
-        # EMPTY = normal text (--purlin-primary, no badge class)
-        self.assertIn('--purlin-primary', html)
+        # EMPTY = normal text (--purlin-text, no badge class)
+        self.assertIn('--purlin-text', html)
 
 
 # ── New scenario tests: HEAD-relative + local-vs-remote join assessment ──
@@ -3139,7 +3139,7 @@ class TestSyncBadgeColorsMatchDesignSpec(unittest.TestCase):
     And AHEAD uses st-todo class (yellow)
     And BEHIND uses st-todo class (yellow)
     And DIVERGED uses st-disputed class (orange)
-    And EMPTY uses no badge class (plain text with --purlin-primary)
+    And EMPTY uses no badge class (plain text with --purlin-text)
     """
 
     def test_same_badge_green(self):
@@ -3199,7 +3199,7 @@ class TestSyncBadgeColorsMatchDesignSpec(unittest.TestCase):
             self.assertNotIn('st-good', span)
             self.assertNotIn('st-todo', span)
             self.assertNotIn('st-disputed', span)
-        self.assertIn('--purlin-primary', html)
+        self.assertIn('--purlin-text', html)
 
 
 class TestJoinConfirmUpdateToHeadPushesAndChecksOut(unittest.TestCase):
