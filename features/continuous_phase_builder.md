@@ -39,7 +39,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - Each phase invocation uses a unique session ID: `continuous-phase-<phase_number>-<uuid>`.
 - The Builder is invoked with `claude -p --session-id <session_id>` plus all resolved config flags (model, effort, permissions) and the assembled system prompt.
 - The initial message includes phase-specific context: `"Begin Builder session. CONTINUOUS MODE -- proceed immediately with work plan, do not wait for approval."`.
-- Builder output is written to log files; the terminal shows the canvas display (see Section 2.16).
+- Builder output is written to log files; the terminal shows the canvas display (see Section 2.17).
 
 ### 2.4 Parallel Phase Execution
 
@@ -48,7 +48,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
 - **Startup recovery:** Before entering the main orchestration loop, the launcher MUST scan the delivery plan for any phases with `[IN_PROGRESS]` status and reset them to `[PENDING]`. These are orphans from a previous interrupted run -- no Builder is actively working on them. The reset is committed to git with message `"chore: reset stale IN_PROGRESS phases to PENDING"`. This ensures the phase analyzer includes them in execution planning and the CDD dashboard does not inflate the "RUNNING" count. The reset runs once, before the first `run_analyzer` call.
 - **Pre-launch status update:** Before launching any Builders in an execution group, the orchestrator MUST update the delivery plan on the main branch to mark ALL phases in the group as `[IN_PROGRESS]`. For a parallel group with Phases 2 and 3, both headings are changed from `[PENDING]` to `[IN_PROGRESS]` before either worktree Builder starts. For sequential groups (single phase), the phase is marked `[IN_PROGRESS]` before the Builder launches. This commit is made on the main branch so the CDD dashboard correctly reflects the running phase count.
-- The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.16).
+- The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.17).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
@@ -122,19 +122,34 @@ possible to avoid conflicts.
 - Each phase's full Builder output is written to `.purlin/runtime/continuous_build_phase_<N>.log`.
 - For parallel phases, log files include the worktree context: `.purlin/runtime/continuous_build_phase_<N>_worktree.log`.
 - Evaluator decisions are logged to stderr with timestamps.
-- At exit, the launcher prints a rich exit summary with per-phase details (see Section 2.16 exit summary format) and then runs a post-run status refresh (see Section 2.16 post-run status refresh).
-- Log files are always written identically regardless of whether output is also streamed to the terminal (see Section 2.16). The evaluator reads from log files, not terminal output.
+- At exit, the launcher prints a rich exit summary with per-phase details (see Section 2.17 exit summary format) and then runs a post-run status refresh (see Section 2.17 post-run status refresh).
+- Log files are always written identically regardless of whether output is also streamed to the terminal (see Section 2.17). The evaluator reads from log files, not terminal output.
 
 ### 2.10 Error Handling
 
-- No delivery plan at launch: run bootstrap session (see Section 2.15). If bootstrap fails, print error and exit non-zero.
+- No delivery plan at launch: run bootstrap session (see Section 2.16). If bootstrap fails, print error and exit non-zero.
 - Phase analyzer failure: print error, exit non-zero.
 - Evaluator invocation failure (Haiku unavailable, malformed JSON): fall back to delivery plan hash check. If the delivery plan file changed since the last phase, treat as `continue`. If unchanged and Builder exited, treat as `stop`.
 - Merge conflict during parallel merge: stop immediately, report conflicting files, exit non-zero.
 - Orphaned worktrees on error: clean up any worktrees created during the current run.
 - Retry limit exceeded: exit with message identifying the stuck phase and suggesting manual intervention.
 
-### 2.12 Dynamic Delivery Plan Handling
+### 2.11 Runtime Artifact Cleanup
+
+During execution, the continuous builder creates transient runtime artifacts in `.purlin/runtime/` that are consumed by the canvas, exit summary, and evaluator. These MUST be cleaned up at two points:
+
+- **Startup purge:** Before entering the orchestration loop (after bootstrap, before the first phase), delete all stale artifacts from a previous run: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`. This prevents phantom phases in the exit summary, inflated retry counts, and stale amendment files from confusing the current run. Log files (`continuous_build_*.log`) are also deleted at startup — they are diagnostic artifacts for the most recent run, not a persistent history.
+
+- **Exit cleanup:** After the exit summary prints (which is the last consumer of these files), delete all transient artifacts: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`, and `canvas_state`. Log files are preserved after exit — the exit summary references their paths, and the user may want to inspect them. The next startup purge will delete them.
+
+**Not cleaned up (intentional):** Log files are preserved after exit but purged on the next startup. The `agent_role` file and `term_width` file (Section 2.17) persist across runs by design.
+
+### 2.12 Default Behavior Preservation
+
+- Without `--continuous`, `pl-run-builder.sh` MUST behave identically to its current implementation.
+- The `--continuous` flag is entirely additive. No existing flags or behaviors change.
+
+### 2.13 Dynamic Delivery Plan Handling
 
 - The Builder MAY amend the delivery plan during any phase (adding QA fix phases, splitting large phases, removing unnecessary phases). The orchestrator treats the delivery plan as a **live document**.
 - After each group completes and the evaluator returns `continue`, the loop re-runs the phase analyzer on the (potentially modified) delivery plan. New PENDING phases, reordered phases, and removed phases are all picked up automatically.
@@ -143,7 +158,7 @@ possible to avoid conflicts.
 - Total phase count may increase or decrease during execution. The exit summary reports the final count, not the initial count.
 - The orchestrator MUST NOT cache or remember previous analysis results. Each re-analysis is independent.
 
-### 2.13 Parallel Phase Plan Amendments
+### 2.14 Parallel Phase Plan Amendments
 
 - During parallel execution, multiple Builders run in separate worktrees. If they all modify the delivery plan Markdown independently, the worktree merge will likely conflict.
 - **Parallel Builders MUST NOT modify the delivery plan directly.** Instead, if a parallel Builder needs to amend the plan (add a QA fix phase, split remaining work), it writes a structured JSON amendment request to `.purlin/runtime/plan_amendment_phase_<N>.json` where `<N>` is the phase number it was assigned.
@@ -168,7 +183,7 @@ possible to avoid conflicts.
 - After all parallel Builders complete and code merges succeed, the orchestrator reads all `plan_amendment_phase_*.json` files, applies them to the delivery plan on the main branch, and deletes the amendment files.
 - **Sequential Builders** (non-parallel) can still modify the delivery plan directly as they do today -- only parallel Builders use the amendment request mechanism.
 
-### 2.14 Evaluator: Plan Amendment Detection
+### 2.15 Evaluator: Plan Amendment Detection
 
 - The evaluator decision table includes additional signals for plan amendments:
 
@@ -179,7 +194,7 @@ possible to avoid conflicts.
 
 - The evaluator prompt must instruct Haiku to check whether the delivery plan was modified by comparing phase counts or looking for amendment markers in Builder output.
 
-### 2.15 Bootstrap Session
+### 2.16 Bootstrap Session
 
 - When `--continuous` is active and no delivery plan exists at `.purlin/cache/delivery_plan.md`, the launcher runs a bootstrap Builder session before entering the orchestration loop.
 - The bootstrap session uses `-p` mode with a bootstrap-specific system prompt override (distinct from the continuous phase override in 2.7 and the server override in 2.8).
@@ -207,7 +222,7 @@ Review at .purlin/cache/delivery_plan.md
 Proceed? [Y/n]
 ```
 
-  - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from the detected terminal width (see Section 2.16 Terminal width detection — do NOT call `tput cols` from the Python renderer):
+  - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from the detected terminal width (see Section 2.17 Terminal width detection — do NOT call `tput cols` from the Python renderer):
     - `#` column: 4 characters (fixed).
     - Remaining width distributed proportionally: `Label` ~30%, `Features` ~45%, `Exec Group` ~25%.
     - **Full-width fill:** The table MUST consume the entire terminal width at any size. The proportional columns expand to fill all available space after the fixed `#` column. Every data row, header, and separator line spans the full terminal width. The last column (`Exec Group`) MUST be padded to its computed width — not left unpadded. No trailing whitespace gap between the last column edge and the terminal boundary.
@@ -220,7 +235,7 @@ Proceed? [Y/n]
   - TTY fallback: plain uncolored text when stderr is not a TTY.
   - If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
-- Bootstrap output is written to log files only; the terminal shows the canvas spinner (see Section 2.16).
+- Bootstrap output is written to log files only; the terminal shows the canvas spinner (see Section 2.17).
 - The bootstrap session does NOT receive the continuous phase override (Section 2.7) or server permission override (Section 2.8). It receives only the bootstrap-specific override.
 - Bootstrap override text:
 
@@ -245,7 +260,7 @@ This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 ```
 
-### 2.16 Terminal Canvas
+### 2.17 Terminal Canvas
 
 All continuous mode status output renders into an **in-place terminal canvas** on stderr. The canvas is a block of lines below the command that is continuously cleared and rewritten via ANSI cursor control. Only the final exit summary is permanent output.
 
@@ -277,9 +292,9 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 ⠹ Bootstrapping for continuous delivery... 45s
 ```
 
-  Spinner cycles through braille characters at ~100ms. Elapsed time updates every second. The line overwrites itself in place. Once bootstrap completes, the canvas clears and transitions to the plan approval table (Section 2.15) or exit state.
+  Spinner cycles through braille characters at ~100ms. Elapsed time updates every second. The line overwrites itself in place. Once bootstrap completes, the canvas clears and transitions to the plan approval table (Section 2.16) or exit state.
 
-- **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.15 approval checkpoint for format). The table replaces the spinner content in the canvas area. The table re-renders on terminal resize (SIGWINCH) while the approval prompt is active, recomputing column widths from the new terminal width.
+- **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.16 approval checkpoint for format). The table replaces the spinner content in the canvas area. The table re-renders on terminal resize (SIGWINCH) while the approval prompt is active, recomputing column widths from the new terminal width.
 
 - **Inter-phase canvas:** Between phases (evaluator running, re-analysis), the canvas shows a spinner line:
 
@@ -367,11 +382,6 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
 - **Log file buffering:** Builder output MUST be line-buffered when redirected to log files. Without this, the OS defaults to full buffering (~4-8KB blocks) when stdout is not a TTY, causing the canvas to show `0K` log size until the process exits or the buffer fills. The launcher MUST use a platform-aware buffering wrapper with a defined fallback chain: (1) `stdbuf -oL` (Linux/GNU coreutils), (2) `script -q /dev/null` pipe (macOS -- `script` forces a pseudo-TTY, which triggers line buffering), (3) if neither is available, log a warning to stderr and proceed unbuffered. The current fallback (silent no-op) is a bug -- it MUST at minimum warn the user that log monitoring will be degraded. This applies to all Builder invocations: sequential phases, parallel worktree phases, and bootstrap. The evaluator and canvas both depend on log files growing incrementally during execution.
 
 - **Non-continuous mode:** Without `--continuous`, no canvas is rendered. Behavior is unchanged from the current interactive launcher.
-
-### 2.11 Default Behavior Preservation
-
-- Without `--continuous`, `pl-run-builder.sh` MUST behave identically to its current implementation.
-- The `--continuous` flag is entirely additive. No existing flags or behaviors change.
 
 ---
 
@@ -942,6 +952,30 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then it runs tools/cdd/status.sh to regenerate the Critic report
     And the status refresh output is permanent (not canvas)
     And the CDD dashboard reflects the completed work from this run
+
+#### Scenario: Startup Purge of Stale Runtime Artifacts
+    Given --continuous is active
+    And .purlin/runtime/ contains stale artifacts from a previous run (phase_1_meta, canvas_frozen_1, retry_count_2, continuous_build_phase_1.log)
+    When the launcher enters the orchestration loop (after bootstrap, before the first phase)
+    Then it deletes all phase_*_meta files from .purlin/runtime/
+    And it deletes all canvas_frozen_* files
+    And it deletes all retry_count_* files
+    And it deletes all plan_amendment_phase_*.json files
+    And it deletes the approval_table_lines file
+    And it deletes all continuous_build_*.log files
+    And the exit summary at the end of this run does not contain phantom phases from the previous run
+
+#### Scenario: Exit Cleanup of Transient Artifacts
+    Given --continuous is active
+    And the orchestration loop has completed (success or failure)
+    And the exit summary has been printed
+    When the launcher performs exit cleanup
+    Then it deletes all phase_*_meta files from .purlin/runtime/
+    And it deletes all canvas_frozen_* files
+    And it deletes all retry_count_* files
+    And it deletes all plan_amendment_phase_*.json files
+    And it deletes the approval_table_lines and canvas_state files
+    And log files (continuous_build_*.log) are preserved for user inspection
 
 ### Manual Scenarios (Human Verification Required)
 None.
