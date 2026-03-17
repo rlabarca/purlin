@@ -175,12 +175,12 @@ class TestYoloCheckbox(unittest.TestCase):
         self.assertNotIn('!bypassChk.checked', html)
 
 
-class TestVisibilityHiddenForCapabilityGating(unittest.TestCase):
-    """Scenario: Capability-Aware Control Visibility"""
+class TestCapabilityGatedControlsHiddenInHTML(unittest.TestCase):
+    """Scenario: Capability-Gated Controls Hidden in HTML When Capabilities Are False"""
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_visibility_hidden_in_js(self, mock_run, mock_status):
+    def test_capability_gated_controls_use_visibility_hidden(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
@@ -190,7 +190,7 @@ class TestVisibilityHiddenForCapabilityGating(unittest.TestCase):
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
-    def test_initial_html_uses_visibility_hidden(self, mock_run, mock_status):
+    def test_capability_false_hides_controls_in_initial_html(self, mock_run, mock_status):
         mock_status.return_value = ([], [], [])
         mock_run.return_value = ""
         html = serve.generate_html()
@@ -499,7 +499,7 @@ class TestFourAgentRowsInSpecOrder(unittest.TestCase):
 
 
 class TestSectionVisualSeparation(unittest.TestCase):
-    """Scenario: Models Section is Visually Separated from Workspace"""
+    """Scenario: Agents Section Has Visual Separator in HTML"""
 
     @patch('serve.get_feature_status')
     @patch('serve.run_command')
@@ -512,6 +512,20 @@ class TestSectionVisualSeparation(unittest.TestCase):
         h3_rule = re.search(r'\.section-hdr h3\{[^}]+\}', html)
         self.assertIsNotNone(h3_rule)
         self.assertIn('border-bottom', h3_rule.group())
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_agents_section_has_16px_gap_from_workspace(self, mock_run, mock_status):
+        """Visual gap of at least 16px separates Workspace from Agents section."""
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        import re
+        # Find the ctx div wrapping the agents section
+        match = re.search(r'<div class="ctx" style="margin-top:(\d+)px">\s*<div class="section-hdr" onclick="toggleSection\(\'agents-section\'\)">', html)
+        self.assertIsNotNone(match, "Agents section wrapper not found")
+        gap_px = int(match.group(1))
+        self.assertGreaterEqual(gap_px, 16, f"Gap is {gap_px}px, expected at least 16px")
 
 
 # =============================================================================
