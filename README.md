@@ -225,6 +225,16 @@ When a team member clones your repository, a single command handles everything:
 
 This initializes the submodule if needed, then creates or repairs launchers, commands, and symlinks without touching project-specific config.
 
+### Updating the Submodule After a Pull
+
+If `git pull` advances the Purlin submodule pointer (you'll see `purlin` in `git status` as modified), sync it with:
+
+```bash
+git submodule update --init purlin
+```
+
+This checks out the exact commit your project pins. No agent session or `/pl-update-purlin` needed.
+
 ### 4. Launch Agents
 
 ```bash
