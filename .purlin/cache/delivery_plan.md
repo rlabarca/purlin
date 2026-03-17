@@ -26,7 +26,7 @@ Five features reset to TODO after spec updates. Four are independent (paralleliz
 **Completion Commit:** 1c8974b
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Agent Behavior Tests [IN_PROGRESS]
+## Phase 5 -- Agent Behavior Tests [PENDING]
 **Features:** agent_behavior_tests.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
