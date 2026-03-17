@@ -6,17 +6,17 @@
 ## Summary
 13 TODO features spanning CDD Dashboard, Coordination, Agent Skills, and Init tooling. Phased by dependency order with 5 parallel execution groups. Phases 1-4 are independent (Level 0), Phase 5 builds on the modal foundation, Phases 6-9 build on the status monitor, and Phases 10-11 complete the dependency chain.
 
-## Phase 1 -- Cosmetic Foundations [IN_PROGRESS]
+## Phase 1 -- Cosmetic Foundations [PENDING]
 **Features:** project_init.md, policy_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Modal Base [IN_PROGRESS]
+## Phase 2 -- Modal Base [PENDING]
 **Features:** cdd_modal_base.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Session Resume [IN_PROGRESS]
+## Phase 3 -- Session Resume [PENDING]
 **Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
