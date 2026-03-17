@@ -158,7 +158,7 @@ Execute the core state-gathering sequence (always, both cases):
 - **PM:** Check for Figma MCP tools in the current session. If not available, inform the user and provide setup instructions.
 
 **Startup flag handling (cold start only):**
-When no checkpoint exists, check `startup_sequence` and `recommend_next_actions` from `.purlin/config.json` for the detected role:
+When no checkpoint exists, check `startup_sequence` and `recommend_next_actions` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
 - `startup_sequence: false` -- output `"startup_sequence disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
 - `recommend_next_actions: false` -- present only a brief status summary (feature counts, open Critic items) instead of a full work plan. Await user direction.
 - Both `true` (default) -- proceed with full work plan generation.

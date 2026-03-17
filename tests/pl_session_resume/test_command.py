@@ -1253,6 +1253,15 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
         self.assertIn(
             'startup_sequence disabled -- awaiting instruction', content)
 
+    def test_command_file_references_resolved_config(self):
+        """Command file references resolved config (config.local.json first)."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('config.local.json', content,
+                      'Command file must reference config.local.json for '
+                      'resolved config pattern')
+        self.assertIn('config.json', content)
+
     def test_flags_default_to_true(self):
         """Startup flags default to true when absent from config."""
         # Simulate missing fields -- default should be True
