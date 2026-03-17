@@ -46,11 +46,12 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - For execution groups with multiple phases (`parallel: true`), launch each phase's Builder in a separate git worktree.
 - Each parallel Builder is invoked with `claude -p -w <worktree-name>` where the worktree name is `continuous-phase-<phase_number>`.
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
+- **Pre-launch status update:** Before launching any Builders in an execution group, the orchestrator MUST update the delivery plan on the main branch to mark ALL phases in the group as `[IN_PROGRESS]`. For a parallel group with Phases 2 and 3, both headings are changed from `[PENDING]` to `[IN_PROGRESS]` before either worktree Builder starts. For sequential groups (single phase), the phase is marked `[IN_PROGRESS]` before the Builder launches. This commit is made on the main branch so the CDD dashboard correctly reflects the running phase count.
 - The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.16).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
-- The orchestrator updates the delivery plan centrally after each group completes (not per-Builder).
+- **Post-group status update:** The orchestrator updates the delivery plan centrally after each group completes (not per-Builder), marking completed phases as `[COMPLETE]`.
 
 ### 2.5 LLM Evaluator
 
@@ -556,10 +557,27 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then all worktrees created for that group are cleaned up
     And no orphaned worktree directories remain
 
-#### Scenario: Delivery Plan Updated Centrally
+#### Scenario: Phases Marked IN_PROGRESS Before Launch
+    Given --continuous is active
+    And the phase analyzer returns a parallel group with Phases 2 and 3
+    And the delivery plan has Phases 2 and 3 as PENDING
+    When the orchestrator begins the parallel group
+    Then the orchestrator updates the delivery plan on the main branch to mark Phase 2 as IN_PROGRESS
+    And the orchestrator updates the delivery plan on the main branch to mark Phase 3 as IN_PROGRESS
+    And both status changes are committed before any worktree Builder is launched
+    And the CDD dashboard shows 2 RUNNING in the phase annotation
+
+#### Scenario: Sequential Phase Marked IN_PROGRESS Before Launch
+    Given --continuous is active
+    And the phase analyzer returns a sequential group with Phase 4
+    And the delivery plan has Phase 4 as PENDING
+    When the orchestrator begins the sequential group
+    Then the orchestrator updates the delivery plan to mark Phase 4 as IN_PROGRESS before launching the Builder
+
+#### Scenario: Delivery Plan Updated Centrally After Group
     Given --continuous is active with parallel phases
     When all Builders in a parallel group complete
-    Then the orchestrator updates the delivery plan to mark completed phases
+    Then the orchestrator updates the delivery plan to mark completed phases as COMPLETE
     And individual Builders do not modify the delivery plan during parallel execution
 
 #### Scenario: Builder Adds QA Fix Phase Mid-Execution
