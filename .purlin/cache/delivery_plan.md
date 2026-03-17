@@ -6,12 +6,12 @@
 ## Summary
 Three Builder TODO features: an anchor node review (design_modal_standards), new session-recovery hook scenarios (project_init), and new modal UI behavior scenarios (cdd_modal_base). Phases 1 and 2 are independent and can run in parallel. Phase 3 depends on Phase 1 (prerequisite link).
 
-## Phase 1 -- Modal Standards Anchor Review [PENDING]
+## Phase 1 -- Modal Standards Anchor Review [IN_PROGRESS]
 **Features:** design_modal_standards.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Session Recovery Hook [PENDING]
+## Phase 2 -- Session Recovery Hook [IN_PROGRESS]
 **Features:** project_init.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
