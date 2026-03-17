@@ -46,6 +46,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - For execution groups with multiple phases (`parallel: true`), launch each phase's Builder in a separate git worktree.
 - Each parallel Builder is invoked with `claude -p -w <worktree-name>` where the worktree name is `continuous-phase-<phase_number>`.
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
+- **Startup recovery:** Before entering the main orchestration loop, the launcher MUST scan the delivery plan for any phases with `[IN_PROGRESS]` status and reset them to `[PENDING]`. These are orphans from a previous interrupted run -- no Builder is actively working on them. The reset is committed to git with message `"chore: reset stale IN_PROGRESS phases to PENDING"`. This ensures the phase analyzer includes them in execution planning and the CDD dashboard does not inflate the "RUNNING" count. The reset runs once, before the first `run_analyzer` call.
 - **Pre-launch status update:** Before launching any Builders in an execution group, the orchestrator MUST update the delivery plan on the main branch to mark ALL phases in the group as `[IN_PROGRESS]`. For a parallel group with Phases 2 and 3, both headings are changed from `[PENDING]` to `[IN_PROGRESS]` before either worktree Builder starts. For sequential groups (single phase), the phase is marked `[IN_PROGRESS]` before the Builder launches. This commit is made on the main branch so the CDD dashboard correctly reflects the running phase count.
 - The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.16).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
@@ -312,7 +313,7 @@ All continuous mode status output renders into an **in-place terminal canvas** o
   - **Column alignment:** All phase lines in a parallel group MUST use aligned columns. The renderer computes the maximum width of each field across all phases in the group (phase prefix `Phase N -- `, label, status, elapsed, log size) and pads each field to its column width. This ensures status, elapsed time, log size, and activity fields line up vertically across all phase lines regardless of label length. Column widths are recomputed on each render cycle (terminal resize may change available space).
   - Per-phase elapsed time, frozen at exit for completed phases.
   - Per-phase log file size (e.g., `45K`).
-  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text is truncated to fit within the remaining width after the aligned columns. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated (but column alignment is preserved for the remaining fields).
+  - Current activity for running phases, extracted from log file tail. The extractor uses a priority chain: (1) file operations matching a filename pattern -> `editing <file>`, (2) test/command runs matching "running" -> `running <command>`, (3) **log tail fallback** -> the last non-empty, non-whitespace-only line from `tail -5` of the log file, stripped of ANSI escape codes and truncated to the available column width. This gives the user real-time visibility into what the agent is doing (e.g., tool calls, commit messages, status output) rather than the uninformative `"working..."`. The `"working..."` string is used ONLY when the log file does not exist or is empty. Activity text is truncated to fit within the remaining width after the aligned columns. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated (but column alignment is preserved for the remaining fields).
   - Status colors: orange (`\033[38;5;208m`) for running, green (`\033[32m`) for done (successful), red (`\033[31m`) for done with non-zero exit code or 0K log size (diagnostic warning). Orange distinguishes actively running phases from the yellow used for TODO badges and approval table elements.
   - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
   - Each phase line fits within `tput cols` characters. The renderer reads terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
@@ -322,6 +323,7 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 - **Graceful stop (Ctrl+C):**
   - The launcher traps `SIGINT` to perform a graceful shutdown.
   - On first `SIGINT`: set a stop flag, send `SIGTERM` to any running Builder processes (parallel worktree PIDs or sequential Builder PID), terminate the canvas render loop, wait for processes to exit, clear the canvas, print the exit summary (see below), clean up worktrees, exit non-zero.
+  - **Phase status cleanup on stop:** After terminating Builder processes and before printing the exit summary, the graceful stop handler MUST update the delivery plan to mark any IN_PROGRESS phases as `PENDING` (not COMPLETE -- they were interrupted, not finished). This prevents orphaned IN_PROGRESS phases from inflating the CDD "RUNNING" count in subsequent sessions. The update is committed to git.
   - The stop is immediate -- it does not wait for the current phase to finish. Builder processes are terminated, not allowed to complete.
   - A second `SIGINT` during shutdown forces immediate exit. After the first `SIGINT` handler fires, the trap is reset to default (`trap - INT`) so standard bash behavior applies on the second signal.
 
@@ -360,7 +362,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
 
 - **Log file integrity:** Log files are always written identically regardless of canvas state. The evaluator reads from log files, not terminal output.
 
-- **Log file buffering:** Builder output MUST be line-buffered when redirected to log files. Without this, the OS defaults to full buffering (~4-8KB blocks) when stdout is not a TTY, causing the canvas to show `0K` log size until the process exits or the buffer fills. The launcher MUST use `stdbuf -oL` (or equivalent, e.g., `script -q /dev/null` on macOS where `stdbuf` may not be available) to force line-buffered output. This applies to all Builder invocations: sequential phases, parallel worktree phases, and bootstrap. The evaluator and canvas both depend on log files growing incrementally during execution.
+- **Log file buffering:** Builder output MUST be line-buffered when redirected to log files. Without this, the OS defaults to full buffering (~4-8KB blocks) when stdout is not a TTY, causing the canvas to show `0K` log size until the process exits or the buffer fills. The launcher MUST use a platform-aware buffering wrapper with a defined fallback chain: (1) `stdbuf -oL` (Linux/GNU coreutils), (2) `script -q /dev/null` pipe (macOS -- `script` forces a pseudo-TTY, which triggers line buffering), (3) if neither is available, log a warning to stderr and proceed unbuffered. The current fallback (silent no-op) is a bug -- it MUST at minimum warn the user that log monitoring will be degraded. This applies to all Builder invocations: sequential phases, parallel worktree phases, and bootstrap. The evaluator and canvas both depend on log files growing incrementally during execution.
 
 - **Non-continuous mode:** Without `--continuous`, no canvas is rendered. Behavior is unchanged from the current interactive launcher.
 
@@ -576,6 +578,15 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the delivery plan has Phase 4 as PENDING
     When the orchestrator begins the sequential group
     Then the orchestrator updates the delivery plan to mark Phase 4 as IN_PROGRESS before launching the Builder
+
+#### Scenario: Stale IN_PROGRESS Phases Reset on Startup
+    Given a delivery plan exists with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
+    And no Builder process is currently running for Phase 2
+    When pl-run-builder.sh is invoked with --continuous
+    Then the launcher resets Phase 2 from IN_PROGRESS to PENDING before entering the loop
+    And the reset is committed to git
+    And the phase analyzer includes Phase 2 in execution planning
+    And the CDD dashboard shows 0 RUNNING (not 1)
 
 #### Scenario: Delivery Plan Updated Centrally After Group
     Given --continuous is active with parallel phases
@@ -864,6 +875,16 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then the phase line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
     And the activity text is truncated to ~50 characters if longer
 
+#### Scenario: Canvas Shows Latest Log Line as Activity
+    Given --continuous is active with a running Builder
+    And the log file contains output lines from the Builder
+    And no line matches the "editing" or "running" patterns
+    When the canvas performs a heavy-update cycle
+    Then the activity field shows the last non-empty line from the log tail
+    And ANSI escape codes are stripped from the displayed line
+    And the line is truncated to fit the available column width
+    And the fallback "working..." is not displayed
+
 #### Scenario: Log Files Grow Incrementally During Execution
     Given --continuous is active
     And a Builder process is running for Phase 2
@@ -871,6 +892,14 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then the log file at .purlin/runtime/continuous_build_phase_2.log grows incrementally
     And the canvas heavy-update cycle (every 15 seconds) reads a non-zero file size
     And the Builder invocation uses line-buffered output (stdbuf -oL or equivalent)
+
+#### Scenario: Line Buffering Fallback on macOS
+    Given pl-run-builder.sh is invoked with --continuous
+    And stdbuf is not available on the system
+    When a Builder process is launched
+    Then the launcher uses script -q /dev/null to force pseudo-TTY line buffering
+    And log files grow incrementally during Builder execution
+    And the canvas shows non-zero log file sizes on heavy-update cycles
 
 #### Scenario: Canvas Warns on Empty Log at Phase Completion
     Given --continuous is active
@@ -887,6 +916,8 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     Then the launcher sets a stop flag and sends SIGTERM to all running Builder processes
     And the canvas render loop is terminated (if running)
     And the launcher waits for processes to exit
+    And the delivery plan is updated to reset any IN_PROGRESS phases to PENDING
+    And the reset is committed to git
     And the canvas is cleared before the exit summary prints
     And the exit summary is printed with status "stopped (user interrupt)"
     And worktrees are cleaned up
