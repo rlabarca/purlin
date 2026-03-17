@@ -19,6 +19,16 @@ Covers automated scenarios from features/pl_update_purlin.md:
 - Modified Deleted-Upstream Command Requires Confirmation
 - Standalone Mode Guard Prevents Update in Purlin Repo
 - Fast Path Completes Without Conflict Analysis
+- Diff-Tree Early Exit Skips Per-File Scan
+- Diff-Tree Narrows Per-File Scan
+- Go-Deeper Offered After Summary
+- Go-Deeper Skipped When Declined
+- Go-Deeper Skipped With Auto-Approve
+- Go-Deeper Detects Override Header Drift
+- Go-Deeper Detects Orphaned Config Keys
+- Go-Deeper Summarizes Skipped Command Changes
+- Go-Deeper Available in Dry-Run Mode
+- Go-Deeper Reports No Impacts When Clean
 
 The agent command is a Claude skill defined in .claude/commands/pl-update-purlin.md.
 These tests verify the command file structure, referenced infrastructure,
@@ -487,6 +497,289 @@ class TestFastPathCompletesWithoutConflictAnalysis(unittest.TestCase):
         """Fast path still runs init refresh and shows summary."""
         content = _get_command_content()
         self.assertIn('Init refresh completed', content)
+
+
+class TestDiffTreeEarlyExitSkipsPerFileScan(unittest.TestCase):
+    """Scenario: Diff-Tree Early Exit Skips Per-File Scan
+
+    Given the submodule is behind by 2 commits
+    And upstream changed zero files in .claude/commands/ and zero launcher-relevant paths
+    When /pl-update-purlin runs the pre-update conflict scan
+    Then git diff-tree is invoked once
+    And no per-file git show comparisons are executed
+    And the conflict scan completes with zero flagged files
+    """
+
+    def test_command_references_diff_tree(self):
+        """Command instructs using git diff-tree for upstream change detection."""
+        content = _get_command_content()
+        self.assertIn('diff-tree', content)
+
+    def test_command_references_name_status_flag(self):
+        """Command references --name-status flag for diff-tree."""
+        content = _get_command_content()
+        self.assertIn('--name-status', content)
+
+    def test_command_skips_scan_when_no_upstream_changes(self):
+        """Command instructs skipping per-file scan when diff-tree shows no changes."""
+        content = _get_command_content()
+        self.assertIn(
+            'no command files or launcher scripts changed upstream, '
+            'skip the remainder of this step',
+            content.lower())
+
+    def test_command_references_commands_path_in_diff_tree(self):
+        """Command scopes diff-tree to .claude/commands/ path."""
+        content = _get_command_content()
+        self.assertIn('.claude/commands/', content)
+
+
+class TestDiffTreeNarrowsPerFileScan(unittest.TestCase):
+    """Scenario: Diff-Tree Narrows Per-File Scan
+
+    Given the submodule is behind by 5 commits
+    And upstream changed 2 of 30 command files
+    And the consumer has locally modified 3 command files
+    When /pl-update-purlin runs the pre-update conflict scan
+    Then only the 2 upstream-changed files are checked for local modifications
+    And the remaining 28 command files are not compared
+    """
+
+    def test_command_checks_only_diff_tree_output_files(self):
+        """Command instructs checking only files that appear in diff-tree output."""
+        content = _get_command_content()
+        self.assertIn(
+            'files that appear in both the consumer project and the diff-tree output',
+            content.lower())
+
+    def test_command_compares_against_old_upstream_version(self):
+        """Command instructs comparing local file against old upstream via git show."""
+        content = _get_command_content()
+        self.assertIn('git -C <submodule> show <old_sha>', content)
+
+    def test_command_flags_locally_modified_files(self):
+        """Command instructs flagging files that differ as locally modified."""
+        content = _get_command_content()
+        self.assertIn('flag as "locally modified"', content.lower())
+
+
+class TestGoDeeperOfferedAfterSummary(unittest.TestCase):
+    """Scenario: Go-Deeper Offered After Summary
+
+    Given the update completed successfully
+    And the summary report has been displayed
+    When the skill reaches the customization impact check
+    Then it prompts: "Would you like me to check if this update affects
+    your customizations?"
+    """
+
+    def test_command_has_customization_impact_section(self):
+        """Command includes a customization impact check section."""
+        content = _get_command_content()
+        self.assertIn('Customization Impact Check', content)
+
+    def test_command_contains_go_deeper_prompt(self):
+        """Command contains the exact go-deeper prompt text."""
+        content = _get_command_content()
+        self.assertIn(
+            'Would you like me to check if this update affects your customizations?',
+            content)
+
+    def test_go_deeper_is_after_summary(self):
+        """Go-deeper section appears after the summary section in the command."""
+        content = _get_command_content()
+        summary_pos = content.find('**Summary:**')
+        impact_pos = content.find('Customization Impact Check')
+        self.assertGreater(summary_pos, -1, 'Summary section not found')
+        self.assertGreater(impact_pos, -1, 'Impact check section not found')
+        self.assertGreater(impact_pos, summary_pos,
+                           'Impact check should appear after summary')
+
+
+class TestGoDeeperSkippedWhenDeclined(unittest.TestCase):
+    """Scenario: Go-Deeper Skipped When Declined
+
+    Given the update completed successfully
+    And the go-deeper prompt is displayed
+    When the user declines
+    Then no override, config, command, or template analysis is performed
+    And the skill exits
+    """
+
+    def test_command_documents_decline_behavior(self):
+        """Command states that declining skips the analysis."""
+        content = _get_command_content()
+        self.assertIn('If declined, exit', content)
+
+    def test_command_has_all_four_sub_steps(self):
+        """Command documents all four analysis dimensions that are skipped on decline."""
+        content = _get_command_content()
+        self.assertIn('Override Header Drift', content)
+        self.assertIn('Config Key Drift', content)
+        self.assertIn('Command Behavioral Changes', content)
+        self.assertIn('Feature Template Format Changes', content)
+
+
+class TestGoDeeperSkippedWithAutoApprove(unittest.TestCase):
+    """Scenario: Go-Deeper Skipped With Auto-Approve
+
+    Given /pl-update-purlin is invoked with --auto-approve
+    And the update completed successfully
+    When the skill reaches the customization impact check
+    Then the go-deeper prompt is not displayed
+    And no impact analysis is performed
+    """
+
+    def test_command_skips_go_deeper_with_auto_approve(self):
+        """Command explicitly states --auto-approve skips the impact check."""
+        content = _get_command_content()
+        self.assertIn('Skip entirely if `--auto-approve`', content)
+
+    def test_auto_approve_does_not_analyze(self):
+        """Command states no analysis runs under --auto-approve."""
+        content = _get_command_content()
+        # The command says "Skip entirely if --auto-approve -- do not prompt or analyze."
+        self.assertIn('do not prompt or analyze', content.lower())
+
+
+class TestGoDeeperDetectsOverrideHeaderDrift(unittest.TestCase):
+    """Scenario: Go-Deeper Detects Override Header Drift
+
+    Given upstream renamed a heading in a base file
+    And the consumer's override file references the old heading
+    When the user accepts the go-deeper analysis
+    Then the report includes a stale reference warning
+    And identifies the renamed heading
+    """
+
+    def test_command_documents_override_to_base_mapping(self):
+        """Command documents the mapping from override files to upstream base files."""
+        content = _get_command_content()
+        self.assertIn('HOW_WE_WORK_OVERRIDES.md', content)
+        self.assertIn('HOW_WE_WORK_BASE.md', content)
+        self.assertIn('ARCHITECT_OVERRIDES.md', content)
+        self.assertIn('ARCHITECT_BASE.md', content)
+        self.assertIn('BUILDER_OVERRIDES.md', content)
+        self.assertIn('BUILDER_BASE.md', content)
+        self.assertIn('QA_OVERRIDES.md', content)
+        self.assertIn('QA_BASE.md', content)
+        self.assertIn('PM_OVERRIDES.md', content)
+        self.assertIn('PM_BASE.md', content)
+
+    def test_command_extracts_section_headers(self):
+        """Command instructs extracting ## headers from base files."""
+        content = _get_command_content()
+        # The command references extracting `## ` headers
+        self.assertIn('`## ` headers', content)
+
+    def test_command_compares_old_and_new_base_versions(self):
+        """Command instructs comparing old and new upstream base file versions."""
+        content = _get_command_content()
+        self.assertIn('old and new upstream base files', content.lower())
+
+    def test_command_reports_stale_references(self):
+        """Command instructs reporting stale references."""
+        content = _get_command_content()
+        self.assertIn('stale references', content.lower())
+
+
+class TestGoDeeperDetectsOrphanedConfigKeys(unittest.TestCase):
+    """Scenario: Go-Deeper Detects Orphaned Config Keys
+
+    Given upstream removed a key from purlin-config-sample/config.json
+    And the consumer's config.local.json still has that key
+    When the user accepts the go-deeper analysis
+    Then the report flags the key as orphaned
+    """
+
+    def test_command_references_config_sample_comparison(self):
+        """Command instructs comparing old vs new upstream config.json."""
+        content = _get_command_content()
+        self.assertIn('purlin-config-sample/config.json', content)
+
+    def test_command_detects_orphaned_keys(self):
+        """Command instructs detecting orphaned keys in local config."""
+        content = _get_command_content()
+        self.assertIn('orphaned keys', content.lower())
+
+    def test_command_cross_references_local_config(self):
+        """Command instructs cross-referencing against consumer config.local.json."""
+        content = _get_command_content()
+        # The go-deeper section references checking consumer's config.local.json
+        self.assertIn('config.local.json', content)
+
+    def test_command_notes_changed_defaults(self):
+        """Command instructs noting changed default values."""
+        content = _get_command_content()
+        self.assertIn('changed defaults', content.lower())
+
+
+class TestGoDeeperSummarizesSkippedCommandChanges(unittest.TestCase):
+    """Scenario: Go-Deeper Summarizes Skipped Command Changes
+
+    Given the consumer kept their local version of a command file
+    And upstream changed that file between old and new SHA
+    When the user accepts the go-deeper analysis
+    Then the report includes an informational summary of upstream changes
+    """
+
+    def test_command_documents_command_behavioral_changes(self):
+        """Command documents the command behavioral changes dimension."""
+        content = _get_command_content()
+        self.assertIn('Command Behavioral Changes', content)
+
+    def test_command_summarizes_upstream_diffs(self):
+        """Command instructs summarizing upstream changes for kept files."""
+        content = _get_command_content()
+        self.assertIn('summarize what changed upstream', content.lower())
+
+    def test_command_is_informational_only(self):
+        """Command states this dimension is informational only."""
+        content = _get_command_content()
+        self.assertIn('Informational only', content)
+
+
+class TestGoDeeperAvailableInDryRunMode(unittest.TestCase):
+    """Scenario: Go-Deeper Available in Dry-Run Mode
+
+    Given /pl-update-purlin is invoked with --dry-run
+    And the dry-run summary has been displayed
+    When the skill reaches the customization impact check
+    Then it prompts the user for go-deeper analysis
+    And analysis runs read-only if accepted
+    """
+
+    def test_command_allows_go_deeper_in_dry_run(self):
+        """Command states go-deeper is safe in --dry-run mode."""
+        content = _get_command_content()
+        self.assertIn('safe in `--dry-run` mode', content.lower())
+
+    def test_command_states_read_only_analysis(self):
+        """Command states analysis is read-only."""
+        content = _get_command_content()
+        self.assertIn('read-only', content.lower())
+
+
+class TestGoDeeperReportsNoImpactsWhenClean(unittest.TestCase):
+    """Scenario: Go-Deeper Reports No Impacts When Clean
+
+    Given no overrides reference changed headers
+    And no config keys were removed or renamed upstream
+    And no command files were skipped or kept locally
+    And the feature template format did not change
+    When the user accepts the go-deeper analysis
+    Then the report shows: "No customization impacts detected."
+    """
+
+    def test_command_has_no_impacts_message(self):
+        """Command includes the 'No customization impacts detected' message."""
+        content = _get_command_content()
+        self.assertIn('No customization impacts detected', content)
+
+    def test_command_omits_clean_categories(self):
+        """Command instructs omitting categories with no issues."""
+        content = _get_command_content()
+        self.assertIn('Omit categories with no issues', content)
 
 
 if __name__ == '__main__':
