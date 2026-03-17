@@ -921,6 +921,217 @@ rm -rf "$MOCK_DIR2"
 cleanup_sandbox
 
 ###############################################################################
+echo ""
+echo "=== Claude Code Hook Tests ==="
+###############################################################################
+
+# --- Scenario: Full Init Installs Session Recovery Hook ---
+echo ""
+echo "[Scenario] Full Init Installs Session Recovery Hook"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+SETTINGS_FILE="$PROJECT/.claude/settings.json"
+
+if [ -f "$SETTINGS_FILE" ]; then
+    log_pass ".claude/settings.json exists after full init"
+else
+    log_fail ".claude/settings.json missing after full init"
+fi
+
+# Validate JSON
+if python3 -c "import json; json.load(open('$SETTINGS_FILE'))" 2>/dev/null; then
+    log_pass "settings.json is valid JSON"
+else
+    log_fail "settings.json is NOT valid JSON"
+fi
+
+# Check for SessionStart hook with matcher "clear"
+if python3 -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+found = any(e.get('matcher') == 'clear' for e in hooks if isinstance(e, dict))
+sys.exit(0 if found else 1)
+" 2>/dev/null; then
+    log_pass "SessionStart hook with matcher 'clear' present"
+else
+    log_fail "SessionStart hook with matcher 'clear' NOT found"
+fi
+
+# Check hook command contains pl-resume
+if python3 -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+for entry in hooks:
+    if isinstance(entry, dict) and entry.get('matcher') == 'clear':
+        for h in entry.get('hooks', []):
+            if 'pl-resume' in h.get('command', ''):
+                sys.exit(0)
+sys.exit(1)
+" 2>/dev/null; then
+    log_pass "Hook command echoes pl-resume recovery instruction"
+else
+    log_fail "Hook command does NOT contain pl-resume"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Hook Merges Into Existing Settings ---
+echo ""
+echo "[Scenario] Hook Merges Into Existing Settings"
+setup_sandbox
+
+# Create existing settings.json with a custom PreToolUse hook BEFORE init
+mkdir -p "$PROJECT/.claude"
+cat > "$PROJECT/.claude/settings.json" << 'HOOK_EOF'
+{
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "custom_tool",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "echo custom pre-tool hook"
+                    }
+                ]
+            }
+        ]
+    },
+    "customSetting": true
+}
+HOOK_EOF
+
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that the Purlin SessionStart hook is present
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+found = any(e.get('matcher') == 'clear' for e in hooks if isinstance(e, dict))
+sys.exit(0 if found else 1)
+" 2>/dev/null; then
+    log_pass "Purlin SessionStart clear hook added"
+else
+    log_fail "Purlin SessionStart clear hook NOT added"
+fi
+
+# Check that the PreToolUse hook is preserved
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+pre_hooks = s.get('hooks', {}).get('PreToolUse', [])
+found = any(e.get('matcher') == 'custom_tool' for e in pre_hooks if isinstance(e, dict))
+sys.exit(0 if found else 1)
+" 2>/dev/null; then
+    log_pass "Pre-existing PreToolUse hook preserved"
+else
+    log_fail "Pre-existing PreToolUse hook was lost"
+fi
+
+# Check that customSetting is preserved
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+sys.exit(0 if s.get('customSetting') is True else 1)
+" 2>/dev/null; then
+    log_pass "Existing customSetting preserved"
+else
+    log_fail "Existing customSetting was lost"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Hook Installation Is Idempotent ---
+echo ""
+echo "[Scenario] Hook Installation Is Idempotent"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Record settings.json content after first run
+FIRST_CONTENT="$(cat "$PROJECT/.claude/settings.json")"
+
+# Run again (refresh mode)
+"$INIT_SH" > /dev/null 2>&1
+
+SECOND_CONTENT="$(cat "$PROJECT/.claude/settings.json")"
+
+if [ "$FIRST_CONTENT" = "$SECOND_CONTENT" ]; then
+    log_pass "settings.json unchanged after second run (idempotent)"
+else
+    log_fail "settings.json changed after second run (not idempotent)"
+fi
+
+# Verify exactly one SessionStart entry with matcher "clear"
+CLEAR_COUNT=$(python3 -c "
+import json
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+print(sum(1 for e in hooks if isinstance(e, dict) and e.get('matcher') == 'clear'))
+" 2>/dev/null)
+
+if [ "$CLEAR_COUNT" = "1" ]; then
+    log_pass "Exactly one SessionStart clear hook entry (no duplicates)"
+else
+    log_fail "Expected 1 SessionStart clear hook, found $CLEAR_COUNT"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Hook Preserves Existing SessionStart Entries ---
+echo ""
+echo "[Scenario] Hook Preserves Existing SessionStart Entries"
+setup_sandbox
+
+# Create settings.json with an existing SessionStart hook using a different matcher
+mkdir -p "$PROJECT/.claude"
+cat > "$PROJECT/.claude/settings.json" << 'HOOK_EOF2'
+{
+    "hooks": {
+        "SessionStart": [
+            {
+                "matcher": "custom",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "echo custom session hook"
+                    }
+                ]
+            }
+        ]
+    }
+}
+HOOK_EOF2
+
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that both hooks are present
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+has_custom = any(e.get('matcher') == 'custom' for e in hooks if isinstance(e, dict))
+has_clear = any(e.get('matcher') == 'clear' for e in hooks if isinstance(e, dict))
+sys.exit(0 if has_custom and has_clear else 1)
+" 2>/dev/null; then
+    log_pass "Both existing 'custom' and Purlin 'clear' hooks present"
+else
+    log_fail "Missing either 'custom' or 'clear' hook in SessionStart"
+fi
+
+cleanup_sandbox
+
+###############################################################################
 # Results
 ###############################################################################
 echo ""
