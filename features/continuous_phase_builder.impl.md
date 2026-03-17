@@ -74,6 +74,10 @@ The launcher traps SIGINT with `trap graceful_stop INT`. The handler sets `STOP_
 
 Two approaches are viable: (1) a tracking file per phase at `$RUNTIME_DIR/phase_<N>_meta` recording start time, status, and feature list, which the summary reads at exit; or (2) in-memory bash arrays accumulated during the loop. Option (1) is more robust against mid-run crashes (the files survive even if the script is killed). The feature list per phase is extracted from the delivery plan at the start of each phase execution.
 
+## Stacked Approval Table Layout (2026-03-16)
+
+Added stacked single-column layout for terminal widths below 60 columns (Section 2.15 minimum width floor). When `cols < STACKED_THRESHOLD (60)`, `render_approval_table()` renders each phase as labeled fields (`Label:`, `Features:`, `Exec Group:`) on separate lines instead of proportional columns. Lines are truncated to terminal width. The threshold check is in the embedded Python block; if a SIGWINCH resize crosses the 60-column boundary, the layout mode switches on re-render.
+
 ## Builder Output Routing Change (Canvas Migration)
 
 [DISCOVERY] (acknowledged) Previous spec had sequential and bootstrap Builder output streamed to the terminal via `tee`. The terminal canvas model replaces this: ALL Builder output in continuous mode goes to log files only (`> "$LOG_FILE" 2>&1`). The terminal is exclusively owned by the canvas. This eliminates stdout/stderr interleaving issues and simplifies exit code handling (no `PIPESTATUS` needed since there is no pipe). The evaluator reads from log files as before -- no change to evaluator behavior.

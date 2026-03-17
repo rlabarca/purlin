@@ -785,61 +785,83 @@ BOLD_CYAN = '\033[1;36m' if is_tty else ''
 GREEN = '\033[32m' if is_tty else ''
 RESET = '\033[0m' if is_tty else ''
 
-# Dynamic column widths: # = 4 fixed, remaining split proportionally
-# 2 leading spaces + 3 inter-column spaces
-fixed_overhead = 2 + 4 + 3
-remaining = max(cols - fixed_overhead, 30)
-label_w = max(int(remaining * 0.30), 8)
-feat_w = max(int(remaining * 0.45), 10)
-exec_w = max(remaining - label_w - feat_w, 8)
-
-def wrap_cell(text, width):
-    if len(text) <= width:
-        return [text]
-    line1 = text[:width]
-    rest = text[width:]
-    if len(rest) <= width:
-        return [line1, rest]
-    return [line1, rest[:max(width - 3, 0)] + '...']
+STACKED_THRESHOLD = 60
 
 out = []
-out.append('{0}=== Delivery Plan ({1} phases) ==={2}'.format(BOLD_CYAN, total_phases, RESET))
+out.append('{0}=== Delivery Plan ({1} phases) ==={2}'.format(BOLD_CYAN, total_phases, RESET)[:cols])
 out.append('')
 
-hdr = '  {:<4s} {:<{}s} {:<{}s} {}'.format('#', 'Label', label_w, 'Features', feat_w, 'Exec Group')
-out.append('{0}{1}{2}'.format(BOLD_CYAN, hdr[:cols], RESET))
-sep = '  {:<4s} {:<{}s} {:<{}s} {}'.format('---', '-' * label_w, label_w, '-' * feat_w, feat_w, '-' * exec_w)
-out.append('{0}{1}{2}'.format(GREEN, sep[:cols], RESET))
+if cols < STACKED_THRESHOLD:
+    # Stacked single-column layout for narrow terminals (Section 2.15)
+    val_indent = 2
+    for pnum in sorted(phases_info.keys()):
+        info = phases_info[pnum]
+        exec_group = '--'
+        if pnum in group_map:
+            gi, par = group_map[pnum]
+            if par:
+                others = [str(p) for p in analyzer['groups'][gi]['phases'] if p != pnum]
+                exec_group = '{0} (parallel w/ {1})'.format(gi, ', '.join(others))
+            else:
+                exec_group = '{0} (sequential)'.format(gi)
+        hdr_line = BOLD_CYAN + 'Phase ' + str(pnum) + RESET
+        out.append(hdr_line[:cols + len(BOLD_CYAN) + len(RESET)])
+        for field_name, field_val in [('Label', info['label']), ('Features', info['features']), ('Exec Group', exec_group)]:
+            line = '{0}{1}: {2}'.format(' ' * val_indent, field_name, field_val)
+            out.append(line[:cols])
+        out.append('')
+else:
+    # Dynamic column widths: # = 4 fixed, remaining split proportionally
+    # 2 leading spaces + 3 inter-column spaces
+    fixed_overhead = 2 + 4 + 3
+    remaining = max(cols - fixed_overhead, 30)
+    label_w = max(int(remaining * 0.30), 8)
+    feat_w = max(int(remaining * 0.45), 10)
+    exec_w = max(remaining - label_w - feat_w, 8)
 
-for pnum in sorted(phases_info.keys()):
-    info = phases_info[pnum]
-    label = info['label']
-    features = info['features']
-    exec_group = '--'
-    if pnum in group_map:
-        gi, par = group_map[pnum]
-        if par:
-            others = [str(p) for p in analyzer['groups'][gi]['phases'] if p != pnum]
-            exec_group = '{0} (parallel w/ {1})'.format(gi, ', '.join(others))
-        else:
-            exec_group = '{0} (sequential)'.format(gi)
+    def wrap_cell(text, width):
+        if len(text) <= width:
+            return [text]
+        line1 = text[:width]
+        rest = text[width:]
+        if len(rest) <= width:
+            return [line1, rest]
+        return [line1, rest[:max(width - 3, 0)] + '...']
 
-    label_lines = wrap_cell(label, label_w)
-    feat_lines = wrap_cell(features, feat_w)
-    exec_lines = wrap_cell(exec_group, exec_w)
-    row_lines = max(len(label_lines), len(feat_lines), len(exec_lines))
-    if row_lines > 2:
-        row_lines = 2
+    hdr = '  {:<4s} {:<{}s} {:<{}s} {}'.format('#', 'Label', label_w, 'Features', feat_w, 'Exec Group')
+    out.append('{0}{1}{2}'.format(BOLD_CYAN, hdr[:cols], RESET))
+    sep = '  {:<4s} {:<{}s} {:<{}s} {}'.format('---', '-' * label_w, label_w, '-' * feat_w, feat_w, '-' * exec_w)
+    out.append('{0}{1}{2}'.format(GREEN, sep[:cols], RESET))
 
-    for row in range(row_lines):
-        l = label_lines[row] if row < len(label_lines) else ''
-        f = feat_lines[row] if row < len(feat_lines) else ''
-        e = exec_lines[row] if row < len(exec_lines) else ''
-        if row == 0:
-            line = '  {:<4d} {:<{}s} {:<{}s} {}'.format(pnum, l, label_w, f, feat_w, e)
-        else:
-            line = '  {:<4s} {:<{}s} {:<{}s} {}'.format('', l, label_w, f, feat_w, e)
-        out.append(line[:cols])
+    for pnum in sorted(phases_info.keys()):
+        info = phases_info[pnum]
+        label = info['label']
+        features = info['features']
+        exec_group = '--'
+        if pnum in group_map:
+            gi, par = group_map[pnum]
+            if par:
+                others = [str(p) for p in analyzer['groups'][gi]['phases'] if p != pnum]
+                exec_group = '{0} (parallel w/ {1})'.format(gi, ', '.join(others))
+            else:
+                exec_group = '{0} (sequential)'.format(gi)
+
+        label_lines = wrap_cell(label, label_w)
+        feat_lines = wrap_cell(features, feat_w)
+        exec_lines = wrap_cell(exec_group, exec_w)
+        row_lines = max(len(label_lines), len(feat_lines), len(exec_lines))
+        if row_lines > 2:
+            row_lines = 2
+
+        for row in range(row_lines):
+            l = label_lines[row] if row < len(label_lines) else ''
+            f = feat_lines[row] if row < len(feat_lines) else ''
+            e = exec_lines[row] if row < len(exec_lines) else ''
+            if row == 0:
+                line = '  {:<4d} {:<{}s} {:<{}s} {}'.format(pnum, l, label_w, f, feat_w, e)
+            else:
+                line = '  {:<4s} {:<{}s} {:<{}s} {}'.format('', l, label_w, f, feat_w, e)
+            out.append(line[:cols])
 
 out.append('')
 if parallel_groups:

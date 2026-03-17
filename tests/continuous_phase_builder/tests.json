@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 58,
+  "passed": 59,
   "failed": 0,
-  "total": 58,
+  "total": 59,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -179,6 +179,10 @@
     },
     {
       "name": "Approval Table Respects Narrow Terminal",
+      "status": "PASS"
+    },
+    {
+      "name": "Approval Table Uses Stacked Layout Below 60 Columns",
       "status": "PASS"
     },
     {

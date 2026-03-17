@@ -2667,6 +2667,33 @@ def test_approval_table_respects_narrow_terminal():
            f"no_complexity={has_no_complexity}" if not ok else "")
 
 
+def test_approval_table_stacked_below_60():
+    """Approval table uses stacked single-column layout when terminal < 60 cols."""
+    source = read_launcher()
+
+    # Find the render_approval_table function
+    render_fn_start = source.find('render_approval_table()')
+    render_fn = source[render_fn_start:source.find('\n}', render_fn_start) + 2] if render_fn_start >= 0 else ""
+
+    # Stacked threshold constant (60 columns)
+    has_stacked_threshold = 'STACKED_THRESHOLD' in render_fn and '60' in render_fn
+    # Branch on cols < threshold
+    has_stacked_branch = 'cols < STACKED_THRESHOLD' in render_fn
+    # Stacked layout uses labeled fields (one per line)
+    has_labeled_fields = "'Label'" in render_fn and "'Features'" in render_fn and "'Exec Group'" in render_fn
+    # Lines truncated to cols in stacked mode
+    has_stacked_truncation = '[:cols]' in render_fn
+    # Phase header in stacked mode
+    has_phase_header = "'Phase '" in render_fn or '"Phase "' in render_fn
+
+    ok = (has_stacked_threshold and has_stacked_branch and
+          has_labeled_fields and has_stacked_truncation and has_phase_header)
+    record("Approval Table Uses Stacked Layout Below 60 Columns", ok,
+           f"threshold={has_stacked_threshold}, branch={has_stacked_branch}, "
+           f"labels={has_labeled_fields}, truncate={has_stacked_truncation}, "
+           f"header={has_phase_header}" if not ok else "")
+
+
 def test_approval_table_rerenders_on_resize():
     """Approval table re-renders on SIGWINCH with recomputed column widths."""
     source = read_launcher()
@@ -3312,6 +3339,7 @@ if __name__ == '__main__':
     test_bootstrap_canvas_shows_spinner()
     test_approval_checkpoint_renders_table()
     test_approval_table_respects_narrow_terminal()
+    test_approval_table_stacked_below_60()
     test_approval_table_rerenders_on_resize()
     test_sequential_phase_canvas()
     test_parallel_phase_canvas()
