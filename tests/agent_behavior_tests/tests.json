@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 19,
+  "passed": 23,
   "failed": 0,
-  "total": 19,
+  "total": 23,
   "test_file": "dev/test_behavior_harness.py",
   "details": [
     {
@@ -10,7 +10,23 @@
       "status": "PASS"
     },
     {
+      "test": "test_setup_script_is_idempotent (__main__.TestAutoCreateFixtures.test_setup_script_is_idempotent)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_setup_script_outputs_tags_to_stdout (__main__.TestAutoCreateFixtures.test_setup_script_outputs_tags_to_stdout)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_setup_script_sends_status_to_stderr (__main__.TestAutoCreateFixtures.test_setup_script_sends_status_to_stderr)",
+      "status": "PASS"
+    },
+    {
       "test": "test_test_runner_has_auto_creation_logic (__main__.TestAutoCreateFixtures.test_test_runner_has_auto_creation_logic)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_test_runner_uses_jq_with_fallback (__main__.TestAutoCreateFixtures.test_test_runner_uses_jq_with_fallback)",
       "status": "PASS"
     },
     {
@@ -30,7 +46,7 @@
       "status": "PASS"
     },
     {
-      "test": "test_expected_output_pattern_detected (__main__.TestExpertModeOutput.test_expected_output_pattern_detected)",
+      "test": "test_expert_mode_outputs_correct_disabled_message (__main__.TestExpertModeOutput.test_expert_mode_outputs_correct_disabled_message)",
       "status": "PASS"
     },
     {
@@ -62,7 +78,7 @@
       "status": "PASS"
     },
     {
-      "test": "test_checkpoint_fields_are_parseable (__main__.TestResumeCheckpointEcho.test_checkpoint_fields_are_parseable)",
+      "test": "test_resume_echoes_checkpoint_fields_correctly (__main__.TestResumeCheckpointEcho.test_resume_echoes_checkpoint_fields_correctly)",
       "status": "PASS"
     },
     {

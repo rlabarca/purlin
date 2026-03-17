@@ -17,26 +17,49 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Default output location
 OUTPUT_DIR="${1:-/tmp/purlin-behavior-fixtures}"
 
-echo "Setting up behavior test fixtures at: $OUTPUT_DIR"
+echo "Setting up behavior test fixtures at: $OUTPUT_DIR" >&2
 
-# Clean previous if exists
+# Collect existing tags for idempotency check
+EXISTING_TAGS=""
 if [[ -d "$OUTPUT_DIR" ]]; then
-    echo "Removing existing fixture repo..."
-    rm -rf "$OUTPUT_DIR"
+    EXISTING_TAGS=$(git -C "$OUTPUT_DIR" tag 2>/dev/null || true)
 fi
 
-# Create bare repo and working directory
+# Track created tags for stdout output
+CREATED_TAGS=()
+
+tag_exists() {
+    # Check if a tag already exists in the repo
+    local tag="$1"
+    echo "$EXISTING_TAGS" | grep -qx "$tag" 2>/dev/null
+}
+
+# Create bare repo if it doesn't exist
 BARE_DIR="$OUTPUT_DIR"
+if [[ ! -d "$BARE_DIR" ]]; then
+    git init --bare "$BARE_DIR" >/dev/null 2>&1
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
-
-git init --bare "$BARE_DIR" >/dev/null 2>&1
 
 cd "$WORK_DIR"
 git init >/dev/null 2>&1
 git remote add origin "$BARE_DIR"
 git config user.email "fixture@purlin.dev"
 git config user.name "Purlin Fixture Builder"
+
+# Seed the work dir from existing bare repo, or create initial commit
+if git ls-remote --exit-code origin HEAD >/dev/null 2>&1; then
+    git fetch origin >/dev/null 2>&1
+    git fetch origin --tags >/dev/null 2>&1
+    git checkout -b main origin/main >/dev/null 2>&1 || git checkout -b main >/dev/null 2>&1
+else
+    # Fresh bare repo — create initial commit
+    echo "# Purlin Behavior Test Fixtures" > README.md
+    git add README.md >/dev/null 2>&1
+    git commit -m "initial" >/dev/null 2>&1
+fi
 
 # --- Helper: create a base project structure ---
 create_base_project() {
@@ -195,16 +218,25 @@ commit_and_tag() {
     local tag="$1"
     local message="${2:-State for $tag}"
 
+    if tag_exists "$tag"; then
+        echo "  Skipping (already exists): $tag" >&2
+        # Reset working tree for next fixture
+        git checkout -- . >/dev/null 2>&1 || true
+        git clean -fd >/dev/null 2>&1 || true
+        return 0
+    fi
+
     git add -A >/dev/null 2>&1
     git commit -m "$message" --allow-empty >/dev/null 2>&1
     git tag "$tag" >/dev/null 2>&1
+    CREATED_TAGS+=("$tag")
 }
 
 # ===================================================================
 # Fixture 1: main/cdd_startup_controls/startup-print-sequence
 # Default config (startup_sequence: true, recommend_next_actions: true)
 # ===================================================================
-echo "Creating: main/cdd_startup_controls/startup-print-sequence"
+echo "Creating: main/cdd_startup_controls/startup-print-sequence" >&2
 rm -rf ./* .purlin 2>/dev/null || true
 create_base_project
 set_config true true
@@ -214,7 +246,7 @@ commit_and_tag "main/cdd_startup_controls/startup-print-sequence"
 # Fixture 2: main/cdd_startup_controls/expert-mode
 # Config with startup_sequence: false
 # ===================================================================
-echo "Creating: main/cdd_startup_controls/expert-mode"
+echo "Creating: main/cdd_startup_controls/expert-mode" >&2
 set_config false false
 commit_and_tag "main/cdd_startup_controls/expert-mode"
 
@@ -222,7 +254,7 @@ commit_and_tag "main/cdd_startup_controls/expert-mode"
 # Fixture 3: main/cdd_startup_controls/guided-mode
 # Config with startup_sequence: true, recommend_next_actions: true
 # ===================================================================
-echo "Creating: main/cdd_startup_controls/guided-mode"
+echo "Creating: main/cdd_startup_controls/guided-mode" >&2
 set_config true true
 
 # Add a TODO feature so the work plan has something to show
@@ -289,7 +321,7 @@ commit_and_tag "main/cdd_startup_controls/guided-mode"
 # Fixture 4: main/cdd_startup_controls/orient-only-mode
 # Config with startup_sequence: true, recommend_next_actions: false
 # ===================================================================
-echo "Creating: main/cdd_startup_controls/orient-only-mode"
+echo "Creating: main/cdd_startup_controls/orient-only-mode" >&2
 set_config true false
 commit_and_tag "main/cdd_startup_controls/orient-only-mode"
 
@@ -297,7 +329,7 @@ commit_and_tag "main/cdd_startup_controls/orient-only-mode"
 # Fixture 5: main/pl_session_resume/builder-mid-feature
 # Checkpoint file showing builder at protocol step 2
 # ===================================================================
-echo "Creating: main/pl_session_resume/builder-mid-feature"
+echo "Creating: main/pl_session_resume/builder-mid-feature" >&2
 set_config true true
 
 cat > .purlin/cache/session_checkpoint.md <<'CHECKPOINT'
@@ -341,7 +373,7 @@ commit_and_tag "main/pl_session_resume/builder-mid-feature"
 # Fixture 6: main/pl_session_resume/qa-mid-verification
 # Checkpoint file showing QA at scenario 6 of 8
 # ===================================================================
-echo "Creating: main/pl_session_resume/qa-mid-verification"
+echo "Creating: main/pl_session_resume/qa-mid-verification" >&2
 
 cat > .purlin/cache/session_checkpoint.md <<'CHECKPOINT'
 # Session Checkpoint
@@ -385,7 +417,7 @@ commit_and_tag "main/pl_session_resume/qa-mid-verification"
 # Fixture 7: main/pl_session_resume/full-reboot-no-launcher
 # Checkpoint exists but simulates non-launcher start
 # ===================================================================
-echo "Creating: main/pl_session_resume/full-reboot-no-launcher"
+echo "Creating: main/pl_session_resume/full-reboot-no-launcher" >&2
 
 # Keep the checkpoint from previous fixture
 # The "no launcher" aspect is handled by the test runner
@@ -397,7 +429,7 @@ commit_and_tag "main/pl_session_resume/full-reboot-no-launcher"
 # Fixture 8: main/pl_help/architect-main-branch
 # Project on main branch, default config
 # ===================================================================
-echo "Creating: main/pl_help/architect-main-branch"
+echo "Creating: main/pl_help/architect-main-branch" >&2
 
 # Remove checkpoint (not relevant for help tests)
 rm -f .purlin/cache/session_checkpoint.md
@@ -411,7 +443,7 @@ commit_and_tag "main/pl_help/architect-main-branch"
 # Fixture 9: main/pl_help/builder-collab-branch
 # Project with active_branch file for builder collab variant
 # ===================================================================
-echo "Creating: main/pl_help/builder-collab-branch"
+echo "Creating: main/pl_help/builder-collab-branch" >&2
 
 echo "collab/v2" > .purlin/runtime/active_branch
 commit_and_tag "main/pl_help/builder-collab-branch"
@@ -420,22 +452,25 @@ commit_and_tag "main/pl_help/builder-collab-branch"
 # Fixture 10: main/pl_help/qa-collab-branch
 # Project with active_branch file
 # ===================================================================
-echo "Creating: main/pl_help/qa-collab-branch"
+echo "Creating: main/pl_help/qa-collab-branch" >&2
 
 echo "collab/v2" > .purlin/runtime/active_branch
 commit_and_tag "main/pl_help/qa-collab-branch"
 
 # --- Push everything to bare repo ---
-echo ""
-echo "Pushing to bare repo..."
-git push origin --all >/dev/null 2>&1
-git push origin --tags >/dev/null 2>&1
+if [[ ${#CREATED_TAGS[@]} -gt 0 ]]; then
+    echo "Pushing to bare repo..." >&2
+    git push origin --all >/dev/null 2>&1
+    git push origin --tags >/dev/null 2>&1
+else
+    echo "No new tags created (all already exist)." >&2
+fi
 
-echo ""
-echo "Fixture repo created at: $BARE_DIR"
-echo ""
-echo "Tags created:"
-git tag | sort
-echo ""
-echo "Usage:"
-echo "  ./dev/test_agent_behavior.sh --fixture-repo $BARE_DIR"
+echo "" >&2
+echo "Fixture repo at: $BARE_DIR" >&2
+echo "Total tags: $(git -C "$BARE_DIR" tag 2>/dev/null | wc -l | tr -d ' ')" >&2
+
+# Output created tag names to stdout (one per line) per 2.2.1 contract
+for tag in "${CREATED_TAGS[@]}"; do
+    echo "$tag"
+done
