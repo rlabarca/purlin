@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 67 automated scenarios.
+"""Tests for continuous phase builder — exercises all 69 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -807,7 +807,7 @@ def test_all_phases_complete():
 
 
 # ============================================================
-# Bootstrap Scenarios (Section 2.15)
+# Bootstrap Scenarios (Section 2.16)
 # ============================================================
 
 def make_bootstrap_mock_claude(tmpdir, creates_plan=True, exit_code=0,
@@ -2574,7 +2574,7 @@ if pending:
 
 
 # ============================================================
-# Builder Output Visibility (Section 2.16) (6)
+# Builder Output Visibility (Section 2.17) (6)
 # ============================================================
 
 def test_bootstrap_canvas_shows_spinner():
@@ -2974,7 +2974,7 @@ def test_canvas_clears_before_final_summary():
     source = read_launcher()
 
     # Find exit summary section
-    summary_start = source.find('# Exit Summary (Section 2.16)')
+    summary_start = source.find('# Exit Summary (Section 2.17)')
     assert summary_start != -1
     summary_section = source[summary_start:]
 
@@ -3157,7 +3157,7 @@ exit 0
 
 
 # ============================================================
-# Canvas & Graceful Stop (Section 2.16) (5)
+# Canvas & Graceful Stop (Section 2.17) (5)
 # ============================================================
 
 def test_canvas_shows_current_builder_activity():
@@ -3296,7 +3296,7 @@ def test_post_run_status_refresh():
     source = read_launcher()
 
     # Find exit summary section
-    summary_start = source.find('# Exit Summary (Section 2.16)')
+    summary_start = source.find('# Exit Summary (Section 2.17)')
     assert summary_start != -1, "Could not find exit summary section"
     post_summary = source[summary_start:]
 
@@ -3532,7 +3532,7 @@ exit 0
 
 
 # ============================================================
-# Scenario: Parallel Canvas Columns Align Across Phase Lines (Section 2.16)
+# Scenario: Parallel Canvas Columns Align Across Phase Lines (Section 2.17)
 # ============================================================
 def test_parallel_canvas_columns_align():
     """All phase lines in a parallel group use aligned columns. The renderer
@@ -3576,7 +3576,7 @@ def test_parallel_canvas_columns_align():
 
 
 # ============================================================
-# Scenario: Log Files Grow Incrementally During Execution (Section 2.16)
+# Scenario: Log Files Grow Incrementally During Execution (Section 2.17)
 # ============================================================
 def test_log_files_grow_incrementally():
     """Builder output uses line-buffered output (stdbuf -oL or equivalent) to
@@ -3688,7 +3688,7 @@ exit 0
 
 
 # ============================================================
-# Scenario: Canvas Shows Latest Log Line as Activity (Section 2.16)
+# Scenario: Canvas Shows Latest Log Line as Activity (Section 2.17)
 # ============================================================
 def test_canvas_shows_latest_log_line_as_activity():
     """When no 'editing' or 'running' pattern matches in log tail, the
@@ -3729,7 +3729,7 @@ def test_canvas_shows_latest_log_line_as_activity():
 
 
 # ============================================================
-# Scenario: Line Buffering Fallback on macOS (Section 2.16)
+# Scenario: Line Buffering Fallback on macOS (Section 2.17)
 # ============================================================
 def test_line_buffering_fallback_on_macos():
     """Functional test: run_line_buffered routes subprocess output to the log
@@ -3843,6 +3843,192 @@ def test_line_buffering_fallback_on_macos():
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Scenario: Startup Purge of Stale Runtime Artifacts (Section 2.11)
+# ============================================================
+def test_startup_purge_of_stale_runtime_artifacts():
+    """Before entering the orchestration loop, the launcher deletes stale
+    runtime artifacts from a previous run: phase_*_meta, canvas_frozen_*,
+    retry_count_*, plan_amendment_phase_*.json, approval_table_lines,
+    and continuous_build_*.log files."""
+    source = read_launcher()
+
+    # Verify source structure: purge function exists and is called before the loop
+    has_purge_fn = 'purge_stale_runtime_artifacts()' in source
+    purge_call_pos = source.find('purge_stale_runtime_artifacts\n')
+    loop_pos = source.find('while [ "$OUTER_BREAK" = "false" ]')
+    has_purge_before_loop = (purge_call_pos >= 0 and loop_pos >= 0
+                             and purge_call_pos < loop_pos)
+
+    # Verify the purge function deletes all required artifact patterns
+    fn_start = source.find('purge_stale_runtime_artifacts()')
+    fn_end = source.find('\n}', fn_start)
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    deletes_phase_meta = 'phase_*_meta' in fn_body
+    deletes_canvas_frozen = 'canvas_frozen_*' in fn_body
+    deletes_retry_count = 'retry_count_*' in fn_body
+    deletes_amendments = 'plan_amendment_phase_*.json' in fn_body
+    deletes_approval_lines = 'approval_table_lines' in fn_body
+    deletes_logs = 'continuous_build_*.log' in fn_body
+
+    # Functional test: create stale artifacts and verify they're cleaned up
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (1, "Test Phase", "PENDING", ["a.md"]),
+        ])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All complete successfully"),
+                                   ])
+
+        # Create mock git
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
+
+        # Plant stale artifacts from a "previous run"
+        stale_files = [
+            'phase_1_meta', 'phase_2_meta',
+            'canvas_frozen_1', 'canvas_frozen_2',
+            'retry_count_3',
+            'plan_amendment_phase_1.json',
+            'approval_table_lines',
+            'continuous_build_phase_1.log',
+            'continuous_build_bootstrap.log',
+        ]
+        for sf in stale_files:
+            with open(os.path.join(runtime_dir, sf), 'w') as f:
+                f.write('stale data\n')
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Check that stale artifacts were cleaned up
+        # phase_*_meta might be recreated by the current run, but the stale
+        # phase_2_meta should be gone (Phase 2 doesn't exist in this plan)
+        stale_phase2_meta = os.path.exists(os.path.join(runtime_dir, 'phase_2_meta'))
+        stale_canvas_frozen = os.path.exists(os.path.join(runtime_dir, 'canvas_frozen_2'))
+        stale_retry = os.path.exists(os.path.join(runtime_dir, 'retry_count_3'))
+        stale_amendment = os.path.exists(os.path.join(runtime_dir, 'plan_amendment_phase_1.json'))
+        # Log files are purged at startup
+        stale_bootstrap_log = os.path.exists(os.path.join(runtime_dir, 'continuous_build_bootstrap.log'))
+
+        artifacts_purged = (not stale_phase2_meta and not stale_canvas_frozen
+                           and not stale_retry and not stale_amendment)
+
+        ok = (has_purge_fn and has_purge_before_loop and
+              deletes_phase_meta and deletes_canvas_frozen and
+              deletes_retry_count and deletes_amendments and
+              deletes_approval_lines and deletes_logs and
+              artifacts_purged)
+        record("Startup Purge of Stale Runtime Artifacts", ok,
+               f"fn={has_purge_fn}, before_loop={has_purge_before_loop}, "
+               f"del_meta={deletes_phase_meta}, del_frozen={deletes_canvas_frozen}, "
+               f"del_retry={deletes_retry_count}, del_amend={deletes_amendments}, "
+               f"del_approval={deletes_approval_lines}, del_logs={deletes_logs}, "
+               f"purged={artifacts_purged}, stale2meta={stale_phase2_meta}, "
+               f"frozen2={stale_canvas_frozen}, retry3={stale_retry}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Exit Cleanup of Transient Artifacts (Section 2.11)
+# ============================================================
+def test_exit_cleanup_of_transient_artifacts():
+    """After the exit summary prints, the launcher deletes transient runtime
+    artifacts (phase_*_meta, canvas_frozen_*, retry_count_*,
+    plan_amendment_phase_*.json, approval_table_lines, canvas_state)
+    but preserves log files for user inspection."""
+    source = read_launcher()
+
+    # Find exit cleanup section — should be after exit summary and before final exit
+    exit_summary_pos = source.find('Exit Summary')
+    final_exit_pos = source.rfind('exit 0')
+
+    exit_section = source[exit_summary_pos:final_exit_pos] if (
+        exit_summary_pos >= 0 and final_exit_pos >= 0) else ""
+
+    # Verify cleanup commands exist after exit summary
+    has_meta_cleanup = 'rm -f "${RUNTIME_DIR}"/phase_*_meta' in exit_section
+    has_frozen_cleanup = 'rm -f "${RUNTIME_DIR}"/canvas_frozen_*' in exit_section
+    has_retry_cleanup = 'rm -f "${RUNTIME_DIR}"/retry_count_*' in exit_section
+    has_amendment_cleanup = 'rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json' in exit_section
+    has_approval_cleanup = 'approval_table_lines' in exit_section
+    has_canvas_state_cleanup = 'canvas_state' in exit_section
+
+    # Verify log files are NOT deleted in exit cleanup
+    # The exit cleanup should not contain continuous_build_*.log deletion
+    # (Only the startup purge deletes logs)
+    exit_cleanup_start = exit_section.find('Exit cleanup')
+    exit_cleanup_section = exit_section[exit_cleanup_start:] if exit_cleanup_start >= 0 else ""
+    preserves_logs = 'continuous_build_*.log' not in exit_cleanup_section
+
+    # Functional test: run the launcher and verify cleanup
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (1, "Test Phase", "PENDING", ["a.md"]),
+        ])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All phases complete successfully"),
+                                   ])
+
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
+
+        # After exit, transient artifacts should be cleaned up
+        # canvas_state should not exist
+        canvas_state_exists = os.path.exists(os.path.join(runtime_dir, 'canvas_state'))
+        # approval_table_lines should not exist
+        approval_exists = os.path.exists(os.path.join(runtime_dir, 'approval_table_lines'))
+
+        # Log files SHOULD be preserved (created during this run)
+        # Note: log may or may not exist depending on mock behavior, but the
+        # cleanup code should not delete them. Check source structure instead.
+
+        cleanup_correct = not canvas_state_exists and not approval_exists
+
+        ok = (has_meta_cleanup and has_frozen_cleanup and has_retry_cleanup
+              and has_amendment_cleanup and has_approval_cleanup
+              and has_canvas_state_cleanup and preserves_logs
+              and cleanup_correct)
+        record("Exit Cleanup of Transient Artifacts", ok,
+               f"meta={has_meta_cleanup}, frozen={has_frozen_cleanup}, "
+               f"retry={has_retry_cleanup}, amend={has_amendment_cleanup}, "
+               f"approval={has_approval_cleanup}, canvas={has_canvas_state_cleanup}, "
+               f"logs_preserved={preserves_logs}, cleanup={cleanup_correct}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -3884,7 +4070,7 @@ if __name__ == '__main__':
     test_evaluator_stop_on_error()
     test_all_phases_complete()
 
-    # Bootstrap scenarios (Section 2.15) (9)
+    # Bootstrap scenarios (Section 2.16) (9)
     test_bootstrap_creates_delivery_plan()
     test_bootstrap_plan_approved()
     test_bootstrap_plan_declined()
@@ -3904,7 +4090,7 @@ if __name__ == '__main__':
     test_worktree_cleanup()
     test_delivery_plan_central_update()
 
-    # Dynamic Delivery Plan Handling (Section 2.12) (8)
+    # Dynamic Delivery Plan Handling (Section 2.13) (8)
     test_builder_adds_qa_fix_phase()
     test_builder_splits_phase()
     test_builder_removes_remaining_phases()
@@ -3914,18 +4100,18 @@ if __name__ == '__main__':
     test_non_contiguous_phase_numbers()
     test_removed_phase_had_dependents()
 
-    # Parallel Plan Amendments (Section 2.13) (4)
+    # Parallel Plan Amendments (Section 2.14) (4)
     test_parallel_both_request_amendments()
     test_parallel_amendment_structured_files()
     test_amendment_files_cleaned_up()
     test_sequential_builder_modifies_plan_directly()
 
-    # Evaluator Amendment Detection (Section 2.14) (3)
+    # Evaluator Amendment Detection (Section 2.15) (3)
     test_parallel_group_invalidated()
     test_phase_count_changes_in_summary()
     test_reanalysis_after_retry()
 
-    # Terminal Canvas Engine (Section 2.16) (14)
+    # Terminal Canvas Engine (Section 2.17) (14)
     test_bootstrap_canvas_shows_spinner()
     test_approval_checkpoint_renders_table()
     test_approval_table_respects_narrow_terminal()
@@ -3942,9 +4128,9 @@ if __name__ == '__main__':
     test_canvas_shows_current_builder_activity()
     test_canvas_warns_on_empty_log()
 
-    # Canvas & Graceful Stop (Section 2.16) (5)
+    # Canvas & Graceful Stop (Section 2.17) (5)
 
-    # Graceful Stop & Post-Run (Section 2.16) (3)
+    # Graceful Stop & Post-Run (Section 2.17) (3)
     test_graceful_stop_on_sigint()
     test_second_sigint_forces_exit()
     test_post_run_status_refresh()
@@ -3954,7 +4140,7 @@ if __name__ == '__main__':
     test_sequential_phase_marked_in_progress()
     test_delivery_plan_updated_centrally_after_group()
 
-    # New scenarios: Column Alignment & Line Buffering (Section 2.16) (2)
+    # New scenarios: Column Alignment & Line Buffering (Section 2.17) (2)
     test_parallel_canvas_columns_align()
     test_log_files_grow_incrementally()
 
@@ -3962,6 +4148,10 @@ if __name__ == '__main__':
     test_stale_in_progress_phases_reset_on_startup()
     test_canvas_shows_latest_log_line_as_activity()
     test_line_buffering_fallback_on_macos()
+
+    # Runtime Artifact Cleanup (Section 2.11) (2)
+    test_startup_purge_of_stale_runtime_artifacts()
+    test_exit_cleanup_of_transient_artifacts()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

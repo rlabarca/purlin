@@ -156,6 +156,17 @@ PLAN_AMENDED=false
 INITIAL_PENDING_COUNT=0
 START_TIME=$(date +%s)
 
+# --- Startup purge: delete stale runtime artifacts from previous run (Section 2.11) ---
+purge_stale_runtime_artifacts() {
+    rm -f "${RUNTIME_DIR}"/phase_*_meta 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/canvas_frozen_* 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/retry_count_* 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json 2>/dev/null
+    rm -f "${RUNTIME_DIR}/approval_table_lines" 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/continuous_build_*.log 2>/dev/null
+}
+purge_stale_runtime_artifacts
+
 # Evaluator JSON schema
 EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","stop"]},"reason":{"type":"string"}},"required":["action","reason"]}'
 
@@ -210,9 +221,35 @@ ${plan_content}
 Return a JSON object with "action" and "reason" fields.
 EVAL_EOF
 
-    local eval_result
-    eval_result=$(claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
-    local eval_rc=$?
+    local eval_result eval_rc
+    # 30-second timeout (Section 2.5): platform-aware fallback
+    if command -v timeout >/dev/null 2>&1; then
+        eval_result=$(timeout 30 claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
+        eval_rc=$?
+    elif command -v gtimeout >/dev/null 2>&1; then
+        eval_result=$(gtimeout 30 claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" 2>/dev/null)
+        eval_rc=$?
+    else
+        # macOS fallback: background process with kill after 30s
+        claude --print --model "$HAIKU_MODEL" --json-schema "$EVALUATOR_SCHEMA" < "$eval_msg_file" > "${eval_msg_file}.out" 2>/dev/null &
+        local eval_pid=$!
+        local waited=0
+        while kill -0 "$eval_pid" 2>/dev/null && [ "$waited" -lt 30 ]; do
+            sleep 1
+            waited=$((waited + 1))
+        done
+        if kill -0 "$eval_pid" 2>/dev/null; then
+            kill "$eval_pid" 2>/dev/null
+            wait "$eval_pid" 2>/dev/null
+            eval_rc=124  # same as timeout exit code
+            eval_result=""
+        else
+            wait "$eval_pid" 2>/dev/null
+            eval_rc=$?
+            eval_result=$(cat "${eval_msg_file}.out" 2>/dev/null)
+        fi
+        rm -f "${eval_msg_file}.out" 2>/dev/null
+    fi
     rm -f "$eval_msg_file"
 
     if [ $eval_rc -ne 0 ] || [ -z "$eval_result" ]; then
@@ -469,7 +506,7 @@ with open('$DELIVERY_PLAN', 'w') as f:
 }
 
 # ================================================================
-# Terminal Canvas Engine (Section 2.16)
+# Terminal Canvas Engine (Section 2.17)
 # ================================================================
 # All continuous mode status output renders into an in-place terminal
 # canvas on stderr. The canvas is cleared and rewritten via ANSI cursor
@@ -865,7 +902,7 @@ out.append('{0}=== Delivery Plan ({1} phases) ==={2}'.format(BOLD_CYAN, total_ph
 out.append('')
 
 if cols < STACKED_THRESHOLD:
-    # Stacked single-column layout for narrow terminals (Section 2.15)
+    # Stacked single-column layout for narrow terminals (Section 2.16)
     val_indent = 2
     for pnum in sorted(phases_info.keys()):
         info = phases_info[pnum]
@@ -963,7 +1000,7 @@ rerender_on_resize() {
     printf "Proceed? [Y/n] " >&2
 }
 
-# --- Bootstrap session when no delivery plan exists (Section 2.15) ---
+# --- Bootstrap session when no delivery plan exists (Section 2.16) ---
 if [ ! -f "$DELIVERY_PLAN" ]; then
     BOOTSTRAP_LOG="${RUNTIME_DIR}/continuous_build_bootstrap.log"
 
@@ -1036,7 +1073,7 @@ BOOTSTRAP_OVERRIDE
             exit 0
         fi
 
-        # Render the approval checkpoint table (Section 2.15)
+        # Render the approval checkpoint table (Section 2.16)
         render_approval_table
         printf "Proceed? [Y/n] " >&2
 
@@ -1072,7 +1109,8 @@ fi
 reset_stale_in_progress() {
     [ -f "$DELIVERY_PLAN" ] || return 0
     local has_stale
-    has_stale=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null || echo 0)
+    has_stale=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null)
+    has_stale=${has_stale:-0}
     if [ "$has_stale" -gt 0 ]; then
         python3 -c "
 import re
@@ -1120,7 +1158,7 @@ graceful_stop() {
     if [ -n "$CANVAS_PID" ] && kill -0 "$CANVAS_PID" 2>/dev/null; then
         kill "$CANVAS_PID" 2>/dev/null
     fi
-    # Phase status cleanup: reset IN_PROGRESS phases to PENDING (Section 2.16)
+    # Phase status cleanup: reset IN_PROGRESS phases to PENDING (Section 2.17)
     reset_stale_in_progress
     # Reset trap so second SIGINT forces immediate exit
     trap - INT
@@ -1210,7 +1248,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             WT_PHASES+=("$PHASE_NUM")
         done
 
-        # Start canvas for parallel group visibility (Section 2.16)
+        # Start canvas for parallel group visibility (Section 2.17)
         start_parallel_canvas "${WT_PHASES[*]}" "${WT_LOGS[*]}" "${WT_PIDS[*]}"
 
         # Wait for all parallel builders to complete
@@ -1228,7 +1266,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             continue
         fi
 
-        # Stop canvas before merge (Section 2.16)
+        # Stop canvas before merge (Section 2.17)
         stop_canvas
         if ! [ -t 2 ]; then
             for PHASE_NUM in $PHASE_LIST; do
@@ -1428,7 +1466,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
 done
 
 # ================================================================
-# Exit Summary (Section 2.16)
+# Exit Summary (Section 2.17)
 # ================================================================
 
 # Canvas clear before exit summary (permanent output)
@@ -1602,11 +1640,20 @@ fi
 echo "Log files: .purlin/runtime/continuous_build_phase_*.log" >&2
 printf "${C_BOLD_CYAN}================================${C_RESET}\n" >&2
 
-# Post-run status refresh (Section 2.16)
+# Post-run status refresh (Section 2.17)
 if [ -f "$CDD_STATUS" ]; then
     echo "" >&2
     bash "$CDD_STATUS" 2>&1
 fi
+
+# --- Exit cleanup: delete transient runtime artifacts (Section 2.11) ---
+# Log files are preserved for user inspection; purged on next startup.
+rm -f "${RUNTIME_DIR}"/phase_*_meta 2>/dev/null
+rm -f "${RUNTIME_DIR}"/canvas_frozen_* 2>/dev/null
+rm -f "${RUNTIME_DIR}"/retry_count_* 2>/dev/null
+rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json 2>/dev/null
+rm -f "${RUNTIME_DIR}/approval_table_lines" 2>/dev/null
+rm -f "${RUNTIME_DIR}/canvas_state" 2>/dev/null
 
 if [ ${#FAILURES[@]} -gt 0 ] || [ "$STOP_REQUESTED" = "true" ]; then
     exit 1

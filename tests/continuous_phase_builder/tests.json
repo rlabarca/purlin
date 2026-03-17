@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 67,
+  "passed": 69,
   "failed": 0,
-  "total": 67,
+  "total": 69,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -271,6 +271,14 @@
     },
     {
       "name": "Line Buffering Fallback on macOS",
+      "status": "PASS"
+    },
+    {
+      "name": "Startup Purge of Stale Runtime Artifacts",
+      "status": "PASS"
+    },
+    {
+      "name": "Exit Cleanup of Transient Artifacts",
       "status": "PASS"
     }
   ]

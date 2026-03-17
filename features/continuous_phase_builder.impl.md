@@ -105,3 +105,17 @@ The `extract_activity` function's filename regex (`grep -oE '[a-zA-Z0-9_.-]+\.(m
 ## Stale IN_PROGRESS Recovery
 
 The `reset_stale_in_progress()` function runs both at startup (before the main orchestration loop) and during graceful stop (inside the `graceful_stop` SIGINT handler). At startup, it catches orphans from a previous interrupted run. During graceful stop, it resets phases that were marked IN_PROGRESS during the current run but not completed before the interrupt.
+
+## Evaluator Timeout (Section 2.5)
+
+The 30-second evaluator timeout uses a platform-aware fallback chain: `timeout 30` (Linux/GNU), `gtimeout 30` (macOS with coreutils), or a background-process-with-kill pattern as final fallback. macOS does not ship `timeout` by default; the background fallback polls with 1-second sleeps and sends SIGTERM after 30 iterations, returning exit code 124 (same as GNU timeout).
+
+## Runtime Artifact Cleanup (Section 2.11)
+
+The startup purge (`purge_stale_runtime_artifacts`) runs at the very beginning of continuous mode, BEFORE the bootstrap check. This is earlier than the spec's "after bootstrap, before the first phase" placement to avoid deleting the current run's bootstrap log. The functional effect is the same: stale artifacts from a previous run are purged before any current-run work begins.
+
+Exit cleanup runs after the exit summary and status refresh, deleting transient artifacts (phase_*_meta, canvas_frozen_*, retry_count_*, plan_amendment_phase_*.json, approval_table_lines, canvas_state) while preserving log files for user inspection.
+
+## grep -c Exit Code Fix
+
+`grep -c` returns exit code 1 when the count is 0 (no matches). Using `|| echo 0` would append a second "0" line, causing bash `[` integer comparison to fail with "integer expression expected". Fixed by using `${var:-0}` default expansion instead.
