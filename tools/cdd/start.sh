@@ -38,6 +38,8 @@ if [ -n "$OVERRIDE_PORT" ]; then
         exit 1
     fi
 fi
+# Track user-specified port (vs restart-inherited) for fallback logic (§2.9)
+USER_PORT="$OVERRIDE_PORT"
 
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
 mkdir -p "$RUNTIME_DIR"
@@ -98,6 +100,23 @@ done
 
 # Verify server started
 VERIFY_PID=$(find_cdd_pid)
+
+# Port fallback (§2.9): if restart with inherited port failed, retry with auto-select
+if { [ -z "$VERIFY_PID" ] || [ ! -f "$PORT_FILE" ]; } && \
+   [ "$RESTARTING" = true ] && [ -z "$USER_PORT" ] && [ -n "$OVERRIDE_PORT" ]; then
+    rm -f "$PORT_FILE"
+    FAILED_PID=$(find_cdd_pid)
+    [ -n "$FAILED_PID" ] && kill "$FAILED_PID" 2>/dev/null && sleep 0.2
+    nohup "$PYTHON_EXE" "$DIR/serve.py" --project-root "$PROJECT_ROOT" \
+        > "$RUNTIME_DIR/cdd.log" 2>&1 &
+    for i in $(seq 1 20); do
+        if [ -f "$PORT_FILE" ]; then
+            break
+        fi
+        sleep 0.1
+    done
+    VERIFY_PID=$(find_cdd_pid)
+fi
 
 if [ -n "$VERIFY_PID" ] && [ -f "$PORT_FILE" ]; then
     PORT=$(cat "$PORT_FILE")

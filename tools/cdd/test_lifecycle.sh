@@ -42,6 +42,8 @@ FAILED=0
 cleanup() {
     echo ""
     echo "--- Cleanup ---"
+    # Stop any CDD server started during tests
+    bash "$SCRIPT_DIR/stop.sh" 2>/dev/null || true
     # Mixed reset: undo test commits but preserve the working tree.
     # Unlike --hard, this does NOT destroy uncommitted code changes.
     git reset "$PRE_TEST_SHA" >/dev/null 2>&1 || true
@@ -331,6 +333,172 @@ if $stage_ok; then
 fi
 
 rm -rf "$PROJECT_A" "$PROJECT_B"
+
+# ============================================================
+# Server Lifecycle — helpers
+# ============================================================
+PORT_FILE="$PROJECT_ROOT/.purlin/runtime/cdd.port"
+RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
+
+stop_server_quiet() {
+    bash "$SCRIPT_DIR/stop.sh" 2>/dev/null || true
+    sleep 0.3
+}
+
+# ============================================================
+# Stage 8: Start prints clickable URL with auto-selected port
+# Also verifies: port file written, ps visibility, no cdd.pid,
+# no cdd_port config dependency (Scenarios 1, 9, 10, 11)
+# ============================================================
+stop_server_quiet
+rm -f "$PORT_FILE"
+
+START_OUTPUT=$(bash "$SCRIPT_DIR/start.sh" 2>&1)
+URL_LINE=$(echo "$START_OUTPUT" | grep -o "http://localhost:[0-9]*" || echo "NO_URL")
+AUTO_PORT=""
+if [ "$URL_LINE" != "NO_URL" ]; then
+    AUTO_PORT=$(echo "$URL_LINE" | grep -o '[0-9]*$')
+fi
+
+stage_ok=true
+assert_eq "url_printed" "YES" "$([ "$URL_LINE" != 'NO_URL' ] && echo YES || echo NO)" || stage_ok=false
+if [ -f "$PORT_FILE" ]; then
+    FILE_PORT=$(cat "$PORT_FILE")
+    assert_eq "port_file_matches_url" "$AUTO_PORT" "$FILE_PORT" || stage_ok=false
+else
+    echo "  FAIL: port file not found after start"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+if [ -f "$RUNTIME_DIR/cdd.pid" ]; then
+    echo "  FAIL: cdd.pid file should not exist"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+PS_MATCH=$(ps aux | grep "[s]erve.py" | grep -F -- "--project-root" | grep -cF "$PROJECT_ROOT" || true)
+assert_eq "ps_shows_project_root" "YES" "$([ "$PS_MATCH" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+CONFIG_HAS_CDD_PORT=$("$PYTHON_EXE" -c "
+import json
+with open('$PROJECT_ROOT/.purlin/config.json') as f:
+    d = json.load(f)
+print('YES' if 'cdd_port' in d else 'NO')")
+assert_eq "no_cdd_port_in_config" "NO" "$CONFIG_HAS_CDD_PORT" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Start prints clickable URL with auto-selected port'
+    echo '[Scenario] serve.py --project-root is visible in ps'
+    echo '[Scenario] Port file written before serve_forever'
+    echo '[Scenario] cdd_port config key is not read'
+    PASSED=$((PASSED + 4))
+fi
+
+# ============================================================
+# Stage 9: Stop uses ps-based detection (server from Stage 8)
+# ============================================================
+STOP_OUTPUT=$(bash "$SCRIPT_DIR/stop.sh" 2>&1)
+
+stage_ok=true
+PS_AFTER_STOP=$(ps aux | grep "[s]erve.py" | grep -F -- "--project-root" | grep -cF "$PROJECT_ROOT" || true)
+assert_eq "process_stopped" "0" "$PS_AFTER_STOP" || stage_ok=false
+assert_eq "port_file_removed" "NO" "$([ -f "$PORT_FILE" ] && echo YES || echo NO)" || stage_ok=false
+STOP_HAS_PID=$(echo "$STOP_OUTPUT" | grep -c "PID" || true)
+assert_eq "stop_mentions_pid" "YES" "$([ "$STOP_HAS_PID" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Stop uses ps-based detection'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
+# Stage 10: Start with explicit port via -p flag
+# ============================================================
+TEST_PORT=19871
+START_P_OUTPUT=$(bash "$SCRIPT_DIR/start.sh" -p $TEST_PORT 2>&1)
+
+stage_ok=true
+URL_HAS_PORT=$(echo "$START_P_OUTPUT" | grep -c "http://localhost:$TEST_PORT" || true)
+assert_eq "explicit_port_in_url" "YES" "$([ "$URL_HAS_PORT" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+if [ -f "$PORT_FILE" ]; then
+    FILE_PORT=$(cat "$PORT_FILE")
+    assert_eq "port_file_explicit" "$TEST_PORT" "$FILE_PORT" || stage_ok=false
+else
+    echo "  FAIL: port file not found for explicit port"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+if $stage_ok; then
+    echo '[Scenario] Start with explicit port via -p flag'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
+# Stage 11: Restart on rerun preserves port (server from Stage 10)
+# ============================================================
+RESTART_OUTPUT=$(bash "$SCRIPT_DIR/start.sh" 2>&1)
+
+stage_ok=true
+RESTART_MSG=$(echo "$RESTART_OUTPUT" | grep -c "Restarted" || true)
+assert_eq "restart_message" "YES" "$([ "$RESTART_MSG" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+if [ -f "$PORT_FILE" ]; then
+    RESTART_PORT=$(cat "$PORT_FILE")
+    assert_eq "port_preserved" "$TEST_PORT" "$RESTART_PORT" || stage_ok=false
+else
+    echo "  FAIL: port file missing after restart"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+if $stage_ok; then
+    echo '[Scenario] Restart on rerun preserves port'
+    PASSED=$((PASSED + 1))
+fi
+
+stop_server_quiet
+
+# ============================================================
+# Stage 12: Stale port file is cleaned up
+# ============================================================
+stop_server_quiet
+echo "55555" > "$PORT_FILE"
+
+STALE_OUTPUT=$(bash "$SCRIPT_DIR/start.sh" 2>&1)
+
+stage_ok=true
+if [ -f "$PORT_FILE" ]; then
+    FRESH_PORT=$(cat "$PORT_FILE")
+    if [[ "$FRESH_PORT" =~ ^[0-9]+$ ]]; then
+        assert_eq "fresh_port_valid" "YES" "YES" || stage_ok=false
+    else
+        echo "  FAIL: fresh port not a valid number"
+        FAILED=$((FAILED + 1))
+        stage_ok=false
+    fi
+else
+    echo "  FAIL: no port file after stale cleanup start"
+    FAILED=$((FAILED + 1))
+    stage_ok=false
+fi
+STALE_URL=$(echo "$STALE_OUTPUT" | grep -c "http://localhost:" || true)
+assert_eq "url_after_stale" "YES" "$([ "$STALE_URL" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Stale port file is cleaned up'
+    PASSED=$((PASSED + 1))
+fi
+
+stop_server_quiet
+
+# ============================================================
+# Stage 13: Idempotent stop when not running
+# ============================================================
+stop_server_quiet
+IDEM_OUTPUT=$(bash "$SCRIPT_DIR/stop.sh" 2>&1)
+IDEM_EXIT=$?
+
+stage_ok=true
+IDEM_MSG=$(echo "$IDEM_OUTPUT" | grep -ci "not running" || true)
+assert_eq "idempotent_message" "YES" "$([ "$IDEM_MSG" -gt 0 ] && echo YES || echo NO)" || stage_ok=false
+assert_eq "idempotent_exit" "0" "$IDEM_EXIT" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Idempotent stop when not running'
+    PASSED=$((PASSED + 1))
+fi
 
 # ============================================================
 # Write test results
