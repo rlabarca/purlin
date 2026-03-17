@@ -11,9 +11,9 @@ Three Builder TODO features: an anchor node review (design_modal_standards), new
 **Completion Commit:** e4ab8f0
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Session Recovery Hook [IN_PROGRESS]
+## Phase 2 -- Session Recovery Hook [COMPLETE]
 **Features:** project_init.md
-**Completion Commit:** --
+**Completion Commit:** 4067c27
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Modal Base UI Scenarios [PENDING]
