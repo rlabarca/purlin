@@ -26,7 +26,7 @@
 
 ### Traceability Overrides
 
-- traceability_override: "Hover Highlighting" -> TestHoverHighlighting
+- traceability_override: "Hover Highlighting" -> test_mouseover_event_registered
 
 ### Audit Finding -- 2026-03-16
 
