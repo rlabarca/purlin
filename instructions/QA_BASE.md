@@ -58,7 +58,7 @@ Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do 
 
 ### 3.0.1 Read Startup Flags
 
-After printing the command table, read `.purlin/config.json` and extract `startup_sequence` and `recommend_next_actions` for the `qa` role. Default both to `true` if absent.
+After printing the command table, read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) and extract `startup_sequence` and `recommend_next_actions` for the `qa` role. Default both to `true` if absent.
 
 *   **If `startup_sequence: false`:** Output `"startup_sequence disabled — awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
 *   **If `startup_sequence: true` and `recommend_next_actions: false`:** Proceed with step 3.1 (gather state). After gathering, output a brief status summary (feature counts by status: TODO/TESTING/COMPLETE, open Critic items count) and await user direction. Do NOT present a full verification plan (skip steps 3.2–3.3).

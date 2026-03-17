@@ -74,7 +74,7 @@ Purlin Builder — Ready
 
 ### 2.4 Conditional Startup Behavior (Instruction-Driven)
 
-*   **How agents read their flags:** Each agent reads `startup_sequence` and `recommend_next_actions` from `config.json` at session start using its standard Bash tool access, before executing any other startup step.
+*   **How agents read their flags:** Each agent reads `startup_sequence` and `recommend_next_actions` from the resolved config (`config.local.json` if it exists, otherwise `config.json`) at session start using its standard Bash tool access, before executing any other startup step.
 *   **When `startup_sequence: true`:** Execute the full startup orientation sequence as currently specified in the role's instruction file (run `tools/cdd/status.sh`, read Critic report, check dependency graph, perform triage).
 *   **When `startup_sequence: false`:** Skip orientation entirely. After printing the command table, output a single line: `"startup_sequence disabled — awaiting instruction."` Then await user input.
 *   **When `recommend_next_actions: true` (requires `startup_sequence: true`):** After completing orientation, present the prioritized work plan and explicitly ask for confirmation or adjustment before proceeding.

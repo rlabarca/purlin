@@ -184,7 +184,7 @@ Execute the state-gathering sequence defined in `instructions/references/startup
 - Skip Cold-Start Extensions. The checkpoint's work plan already incorporates this context. Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
 
 **Startup flag handling (cold start only):**
-When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `startup_sequence` and `recommend_next_actions` from `.purlin/config.json` for the detected role:
+When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `startup_sequence` and `recommend_next_actions` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
 - `startup_sequence: false` -- output `"startup_sequence disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
 - `recommend_next_actions: false` -- present only a brief status summary (feature counts, open Critic items) instead of a full work plan. Await user direction.
 - Both `true` (default) -- proceed with full work plan generation.

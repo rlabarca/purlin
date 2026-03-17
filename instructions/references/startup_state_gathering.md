@@ -8,7 +8,7 @@
 
 These steps run on every session start -- full startup, pl-resume cold start, and pl-resume warm resume. **PM skips this section entirely** (PM does not run Critic analysis).
 
-1. Read `.purlin/config.json` for role-specific settings.
+1. Read the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for role-specific settings.
 2. Run `tools/cdd/status.sh` to regenerate the Critic report and get feature status. Do NOT re-parse the raw JSON -- use `CRITIC_REPORT.md` as the sole source for action items.
 3. Read `CRITIC_REPORT.md` -- the role-specific subsection under **Action Items by Role**.
 4. Check `git status` for uncommitted changes.
