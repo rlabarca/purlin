@@ -129,8 +129,16 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
       "generated_at": "<ISO 8601 timestamp>",
       "critic_last_run": "<ISO 8601 timestamp>",
       "delivery_phase": {
-        "current": 2,
-        "total": 3
+        "completed": 1,
+        "in_progress": 1,
+        "pending": 1,
+        "removed": 0,
+        "total": 3,
+        "phases": [
+          {"number": 1, "label": "Foundation", "status": "COMPLETE"},
+          {"number": 2, "label": "Core", "status": "IN_PROGRESS"},
+          {"number": 3, "label": "Polish", "status": "PENDING"}
+        ]
       },
       "features": [
         {
@@ -152,7 +160,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     *   Role fields (`architect`, `builder`, `qa`, `pm`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
     *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`, `"pm": "N/A"`. No `change_scope` field is present on tombstone entries.
-    *   `delivery_phase` is present ONLY when `.purlin/cache/delivery_plan.md` exists and has at least one non-COMPLETE phase. `current` = the phase number of the first PENDING or IN_PROGRESS phase. `total` = total number of phases in the plan. When all phases are COMPLETE or no delivery plan exists, the `delivery_phase` field is omitted entirely.
+    *   `delivery_phase` is present ONLY when `.purlin/cache/delivery_plan.md` exists and has at least one non-COMPLETE, non-REMOVED phase. Fields: `completed` = count of COMPLETE phases; `in_progress` = count of IN_PROGRESS phases; `pending` = count of PENDING phases; `removed` = count of REMOVED phases; `total` = total number of phase headings in the plan (sum of all statuses). `phases` = array of objects sorted by phase number, each with `number` (int), `label` (string, the phase label from the heading), and `status` (string, one of `COMPLETE`, `IN_PROGRESS`, `PENDING`, `REMOVED`). When all phases are COMPLETE/REMOVED or no delivery plan exists, the `delivery_phase` field is omitted entirely. Multiple phases MAY have `IN_PROGRESS` status simultaneously during parallel execution.
     *   Array sorted by file path (deterministic).
 *   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.purlin/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
 *   **API Endpoint (`/feature?file=<path>`):** Serves the raw content of the specified feature file. The `file` query parameter is the relative path (e.g., `features/cdd_status_monitor.md`). Returns 200 with `Content-Type: text/plain` on success, 404 if the file does not exist. Path traversal outside the project root MUST be rejected.
@@ -266,7 +274,7 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 *   **Static Elements (rendered once on initial page load, never re-created or replaced):**
     *   Page header structure (logo, title, project name).
     *   Theme toggle, search input, and Run Critic button.
-    *   Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") and table column headers.
+    *   Section headings ("ACTIVE", "COMPLETE", "WORKSPACE") and table column headers. Note: the ACTIVE heading includes dynamic inline annotations (feature count, phase progress) that update on each refresh cycle; the heading structure itself is static.
     *   Google Fonts CDN `<link>` tags.
 *   **Font Stability:** Because the page never fully reloads, fonts remain cached in the browser and do not trigger re-layout or FOUT (Flash of Unstyled Text) on refresh cycles.
 *   **No Scroll Reset:** If the user has scrolled down, a data refresh MUST NOT reset the scroll position.
@@ -274,11 +282,16 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 
 ### 2.11 Delivery Phase Indicator
 
-*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/cache/delivery_plan.md`, the ACTIVE section heading displays the current phase progress: `ACTIVE (<feature_count>) [PHASE (<current>/<total>)]`. Example: `ACTIVE (5) [PHASE (2/3)]`.
-*   **Parsing:** The CDD tool reads the delivery plan file, counts phases by `### Phase N:` headings, and determines the current phase (first phase with Status `PENDING`, or the phase with Status `IN_PROGRESS`). If all phases are `COMPLETE` or no delivery plan exists, the phase annotation is omitted.
-*   **Styling:** The `[PHASE (X/Y)]` text is styled with the same color as a `TODO` badge (yellow: `--purlin-warn`). It appears inline after the feature count, separated by a space.
-*   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [PHASE (2/3)] TODO`.
-*   **Disappears When Complete:** When the delivery plan is deleted (all phases complete) or does not exist, the phase annotation is not rendered. Only the standard `ACTIVE (<count>)` heading appears.
+*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/cache/delivery_plan.md` and has at least one non-COMPLETE, non-REMOVED phase, the ACTIVE section heading displays phase progress: `ACTIVE (<feature_count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. Examples:
+    *   Serial execution: `ACTIVE (5) [4/10 DONE | 1 RUNNING]`
+    *   Parallel execution: `ACTIVE (5) [4/10 DONE | 3 RUNNING]`
+    *   No phases running yet: `ACTIVE (5) [0/10 DONE]`
+*   **Zero Running Omission:** When `in_progress` is 0 (no phases currently running), the `| <N> RUNNING` segment is omitted. The annotation reads `[<completed>/<total> DONE]`.
+*   **Parsing:** The CDD tool reads the delivery plan file, matches `## Phase N -- Label [STATUS]` headings (same regex as the phase analyzer), and counts phases by status (COMPLETE, IN_PROGRESS, PENDING, REMOVED). All four statuses are recognized.
+*   **Styling:** The annotation text is styled with `--purlin-warn` (yellow) color, consistent with TODO badge styling. It appears inline after the feature count, separated by a space. Font weight is normal (not bold) to distinguish it from the heading text.
+*   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [4/10 DONE | 2 RUNNING] TODO`.
+*   **Disappears When Complete:** When the delivery plan does not exist, or all phases are COMPLETE or REMOVED, the phase annotation is not rendered. Only the standard `ACTIVE (<count>)` heading appears.
+*   **Dynamic Total:** The `total` in the annotation reflects the current phase count in the delivery plan file, which may increase during execution due to plan amendments (QA fix phases). The annotation updates on each 5-second refresh cycle.
 *   **No Per-Feature Changes:** Individual feature status badges (DONE, TODO, FAIL, etc.) are unchanged. The phase indicator is purely a section-level annotation.
 
 ### 2.12 Runtime Port Override
@@ -301,6 +314,7 @@ The following fixture tags provide deterministic project states for web-verify t
 | `main/cdd_status_monitor/mixed-states` | Features in TODO, DONE, FAIL, and CLEAN states for verifying badge colors, section sorting, and search filtering |
 | `main/cdd_status_monitor/tombstone-present` | A tombstone file exists at features/tombstones/ for testing red styling and deletion modal |
 | `main/cdd_status_monitor/empty-active` | All features complete, Active section empty for verifying empty-state badge behavior |
+| `main/cdd_status_monitor/parallel-phases` | Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED for verifying parallel phase annotation and API response |
 
 ## 3. Scenarios
 
@@ -481,12 +495,40 @@ These scenarios are validated by the Builder's automated test suite.
     Given a delivery plan exists at .purlin/cache/delivery_plan.md
     And the plan has 3 phases with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
     When an agent calls GET /status.json
-    Then the response includes delivery_phase with current 2 and total 3
+    Then the response includes delivery_phase with completed 1, in_progress 1, pending 1, removed 0, total 3
+    And the phases array contains 3 entries sorted by number
+    And each entry has number, label, and status fields
+    And Phase 2 has status IN_PROGRESS
 
 #### Scenario: Delivery Phase Omitted When No Plan
     Given no delivery plan exists at .purlin/cache/delivery_plan.md
     When an agent calls GET /status.json
     Then the response does not include a delivery_phase field
+
+#### Scenario: Delivery Phase with Parallel Execution
+    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    And the plan has Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 IN_PROGRESS, Phase 4 PENDING
+    When an agent calls GET /status.json
+    Then the response includes delivery_phase with completed 1, in_progress 2, pending 1, removed 0, total 4
+    And the phases array shows Phase 2 and Phase 3 both with status IN_PROGRESS
+
+#### Scenario: Delivery Phase with Removed Phase
+    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    And the plan has Phase 1 COMPLETE, Phase 2 REMOVED, Phase 3 IN_PROGRESS
+    When an agent calls GET /status.json
+    Then the response includes delivery_phase with completed 1, in_progress 1, pending 0, removed 1, total 3
+
+#### Scenario: Delivery Phase Omitted When All Complete or Removed
+    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    And the plan has Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 REMOVED
+    When an agent calls GET /status.json
+    Then the response does not include a delivery_phase field
+
+#### Scenario: Delivery Phase Labels from Plan Headings
+    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    And Phase 1 heading is "## Phase 1 -- Design Token Foundation [COMPLETE]"
+    When an agent calls GET /status.json
+    Then the phases array entry for Phase 1 has label "Design Token Foundation"
 
 #### Scenario: Tombstone Entry in API Response
     Given a tombstone file exists at features/tombstones/some_retired_feature.md
@@ -718,10 +760,13 @@ None.
 - [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns
 - [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
-- [ ] When a delivery plan is active, ACTIVE header shows [PHASE (X/Y)] annotation after the feature count
-- [ ] Phase annotation uses TODO/yellow color (--purlin-warn)
+- [ ] When a delivery plan is active with one phase running, ACTIVE header shows `[4/10 DONE | 1 RUNNING]` format
+- [ ] When a delivery plan is active with multiple phases running, annotation shows the correct running count (e.g., `3 RUNNING`)
+- [ ] When no phases are currently running (all PENDING or COMPLETE), the `| N RUNNING` segment is omitted
+- [ ] Phase annotation uses TODO/yellow color (--purlin-warn) with normal font weight
 - [ ] Phase annotation visible in both expanded and collapsed ACTIVE section states
-- [ ] Phase annotation disappears when no delivery plan exists
+- [ ] Phase annotation disappears when no delivery plan exists or all phases are COMPLETE/REMOVED
+- [ ] Phase annotation total updates dynamically when phases are added via plan amendments
 - [ ] Tombstone entries appear in the Active section with feature name text color `--purlin-status-error` (red)
 - [ ] Tombstone entry names include a `[TOMBSTONE]` suffix
 - [ ] Tombstone entries display Architect=DONE, Builder=TODO, QA=N/A, PM=N/A badges

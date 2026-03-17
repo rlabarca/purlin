@@ -31,7 +31,7 @@ Phased delivery is never automatic. The Builder proposes phasing based on scope 
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
 
 ## 10.7 CDD Dashboard Integration
-When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays the current phase progress as an inline annotation: `ACTIVE (<count>) [PHASE (<current>/<total>)]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with `current` and `total` values. When all phases are COMPLETE or no delivery plan exists, the phase annotation and API field are omitted.
+When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays phase progress as an inline annotation: `ACTIVE (<count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with aggregate status counts and a per-phase array. When all phases are COMPLETE/REMOVED or no delivery plan exists, the phase annotation and API field are omitted.
 
 ## 10.8 Phase Sizing Guidance
 
