@@ -92,6 +92,8 @@ Each role can read everything but only writes to its own domain. The Purlin subm
 | `/pl-whats-different` | Compare current branch to main (main checkout only) |
 | `/pl-fixture` | Manage test fixture repos for reproducible scenario state |
 
+`/pl-cdd`, `/pl-remote-push`, `/pl-remote-pull`, `/pl-whats-different`, and `/pl-fixture` are available to Architect, Builder, and QA only (the PM role does not use these).
+
 ---
 
 ### The PM
