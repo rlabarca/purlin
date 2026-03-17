@@ -11,7 +11,7 @@
 **Completion Commit:** e31b78f
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Policy & Modal Foundation [PENDING]
+## Phase 2 -- Policy & Modal Foundation [IN_PROGRESS]
 **Features:** policy_branch_collab.md, cdd_modal_base.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
