@@ -2242,7 +2242,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
         {bc_section_html}
       </div>
     </div>
-    <div class="ctx" style="margin-top:10px">
+    <div class="ctx" style="margin-top:16px">
       <div class="section-hdr" onclick="toggleSection('agents-section')">
         <span class="chevron" id="agents-section-chevron">&#9654;</span>
         <h3>{agents_heading}</h3>

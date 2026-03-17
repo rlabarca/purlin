@@ -423,6 +423,46 @@ class TestStepDetailModalWidthAndFontSlider(unittest.TestCase):
         self.assertIn('adjustModalFont(1)', step_html)
 
 
+class TestStepDetailModalTitleFontSize(unittest.TestCase):
+    """Scenario: Step Detail Modal title follows design_modal_standards sizing.
+
+    The design_modal_standards anchor specifies that modal titles render 4pt
+    larger than the default body font size (14px body -> 18px title).
+    """
+
+    def setUp(self):
+        with open(os.path.join(SERVE_DIR, 'serve.py')) as f:
+            self.content = f.read()
+
+    def test_modal_title_base_size_is_18px(self):
+        """Modal header h2 uses 18px base (14px body + 4pt per design_modal_standards)."""
+        import re
+        match = re.search(r'\.modal-header h2\{[^}]*font-size:\s*calc\((\d+)px', self.content)
+        self.assertIsNotNone(match, "modal-header h2 font-size rule not found")
+        title_base = int(match.group(1))
+        self.assertEqual(title_base, 18, f"Title base is {title_base}px, expected 18px")
+
+    def test_modal_body_base_size_is_14px(self):
+        """Modal body uses 14px base font size."""
+        import re
+        match = re.search(r'\.modal-body\{[^}]*font-size:\s*calc\((\d+)px', self.content)
+        self.assertIsNotNone(match, "modal-body font-size rule not found")
+        body_base = int(match.group(1))
+        self.assertEqual(body_base, 14, f"Body base is {body_base}px, expected 14px")
+
+    def test_title_is_4pt_larger_than_body(self):
+        """Title font size is exactly 4pt larger than body per design_modal_standards."""
+        import re
+        title_match = re.search(r'\.modal-header h2\{[^}]*font-size:\s*calc\((\d+)px', self.content)
+        body_match = re.search(r'\.modal-body\{[^}]*font-size:\s*calc\((\d+)px', self.content)
+        self.assertIsNotNone(title_match)
+        self.assertIsNotNone(body_match)
+        title_base = int(title_match.group(1))
+        body_base = int(body_match.group(1))
+        diff = title_base - body_base
+        self.assertEqual(diff, 4, f"Title-body difference is {diff}pt, expected 4pt per design_modal_standards")
+
+
 if __name__ == '__main__':
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
