@@ -20,10 +20,13 @@ Update the Purlin submodule to the latest version with automatic artifact refres
 
 2. **Pre-Update Conflict Scan:**
    - Read old SHA from `.purlin/.upstream_sha`
-   - For each `.claude/commands/pl-*.md` in consumer project (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
+   - First, run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/` to identify which command files changed upstream (single invocation). Also check launcher-relevant paths (e.g., `tools/init.sh`).
+   - **If no command files or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict.
+   - For files that appear in BOTH the consumer project AND the diff-tree output (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
    - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
+     - Only check if launcher-relevant paths appeared in the diff-tree output
      - If file content differs from what init.sh would have generated at the old version, flag as "locally modified"
    - **IMPORTANT: `pl-cdd-start.sh` and `pl-cdd-stop.sh` are SYMLINKS managed exclusively by init.sh. NEVER read, compare, copy, or modify these files. They are refreshed automatically by the init step (step 4).**
 
@@ -64,6 +67,17 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    * Init refresh completed
    * Config sync: <result>
    ```
+
+9. **Customization Impact Check (Optional):**
+   - **Skip entirely if `--auto-approve`** -- do not prompt or analyze.
+   - Prompt: "Would you like me to check if this update affects your customizations?"
+   - If declined, exit. If accepted, run all four sub-steps:
+   - **(a) Override Header Drift:** For each `.purlin/*_OVERRIDES.md`, extract `## ` headers referenced in the override content. Compare against the old and new upstream base files (mapping: `HOW_WE_WORK_OVERRIDES.md` -> `instructions/HOW_WE_WORK_BASE.md`, `ARCHITECT_OVERRIDES.md` -> `instructions/ARCHITECT_BASE.md`, `BUILDER_OVERRIDES.md` -> `instructions/BUILDER_BASE.md`, `QA_OVERRIDES.md` -> `instructions/QA_BASE.md`, `PM_OVERRIDES.md` -> `instructions/PM_BASE.md`). Report stale references where headings were renamed or removed upstream.
+   - **(b) Config Key Drift:** Compare old vs new upstream `purlin-config-sample/config.json`. Report keys removed/renamed upstream that still exist in consumer's `.purlin/config.local.json` (orphaned keys). Note changed defaults.
+   - **(c) Command Behavioral Changes:** For locally modified command files where the user chose "Keep current" (or where upstream changed without conflict), summarize what changed upstream. Informational only -- no re-merge offered.
+   - **(d) Feature Template Format Changes:** If Section 10 ("Feature File Format") in `instructions/ARCHITECT_BASE.md` changed between old and new SHA, report what shifted.
+   - **Output:** Group findings by category (a-d). Omit categories with no issues. If all clean: "No customization impacts detected."
+   - This step is safe in `--dry-run` mode (read-only analysis).
 
 **Options:**
 - `--dry-run`: Show what would change without modifying files
