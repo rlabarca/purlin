@@ -98,7 +98,7 @@ The functional test verifies: (a) content appears in the log file during executi
 
 ## Stream-JSON Output Format (2026-03-17)
 
-All `claude --print` invocations in continuous mode use `--output-format stream-json` to produce NDJSON (newline-delimited JSON) output. Without this flag, `--print` in text mode only emits the assistant's final text responses — tool calls, file reads, edits, and intermediate reasoning are silent. With `stream-json`, every message, tool_use, tool_result, and result event is emitted as a JSON line, giving the log files real content for activity monitoring and evaluator analysis.
+All `claude --print` invocations in continuous mode use `--verbose --output-format stream-json` to produce NDJSON (newline-delimited JSON) output. The `--verbose` flag is required by the Claude CLI when combining `--print` with `--output-format stream-json` (added as a CLI requirement circa 2026-03). Without these flags, `--print` in text mode only emits the assistant's final text responses — tool calls, file reads, edits, and intermediate reasoning are silent. With `--verbose --output-format stream-json`, every message, tool_use, tool_result, and result event is emitted as a JSON line, giving the log files real content for activity monitoring and evaluator analysis.
 
 The `extract_activity` function's filename regex (`grep -oE '[a-zA-Z0-9_.-]+\.(md|py|sh|...)'`) still matches file paths embedded in JSON values like `"file_path":"foo.py"`, so activity extraction works without changes.
 
