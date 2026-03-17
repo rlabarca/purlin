@@ -2078,7 +2078,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   padding:10px 14px;border-bottom:1px solid var(--purlin-border);flex-shrink:0;
   gap:10px;
 }}
-.modal-header h2{{font-size:calc(18px + var(--modal-font-adjust) * 1px);color:var(--purlin-primary);margin:0;border:0;padding:0}}
+.modal-header h2{{font-size:calc(18px + var(--modal-font-adjust) * 1px);color:var(--purlin-primary);margin:0;border:0;padding:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .modal-font-controls{{
   display:flex;align-items:center;gap:6px;flex-shrink:0;
 }}
@@ -2105,7 +2105,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   background:none;border:1px solid var(--purlin-border);color:var(--purlin-muted);
   cursor:pointer;font-size:14px;width:24px;height:24px;
   border-radius:3px;display:flex;align-items:center;
-  justify-content:center;line-height:1;
+  justify-content:center;line-height:1;flex-shrink:0;
 }}
 .modal-close:hover{{background:var(--purlin-tag-fill);color:var(--purlin-primary);border-color:var(--purlin-muted)}}
 .modal-tabs{{
@@ -2279,7 +2279,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <h2 id="modal-title">Feature</h2>
       <div class="modal-font-controls">
         <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
-        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" step="0.5" oninput="setModalFont(parseFloat(this.value))">
         <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
       </div>
       <button class="modal-close" id="modal-close" title="Close">X</button>
@@ -2318,7 +2318,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <h2 id="wd-modal-title">What's Different?</h2>
       <div class="modal-font-controls">
         <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
-        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" step="0.5" oninput="setModalFont(parseFloat(this.value))">
         <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
       </div>
       <button class="modal-close" onclick="closeWdModal()" title="Close">X</button>
@@ -2352,7 +2352,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
       <h2 id="step-modal-title">Step</h2>
       <div class="modal-font-controls">
         <button class="modal-font-btn" onclick="adjustModalFont(-1)" title="Decrease font size">&minus;</button>
-        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" oninput="setModalFont(parseInt(this.value))">
+        <input type="range" class="modal-font-slider" min="-4" max="30" value="0" step="0.5" oninput="setModalFont(parseFloat(this.value))">
         <button class="modal-font-btn" onclick="adjustModalFont(1)" title="Increase font size">+</button>
       </div>
       <button class="modal-close" onclick="closeStepModal()" title="Close">X</button>
@@ -2369,7 +2369,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 // Modal Font Size Control (shared base per design_modal_standards)
 // ============================
 var MODAL_FONT_STORAGE_KEY = 'purlin-modal-font-adjust';
-var _modalFontAdjust = parseInt(sessionStorage.getItem(MODAL_FONT_STORAGE_KEY) || '0', 10);
+var _modalFontAdjust = parseFloat(sessionStorage.getItem(MODAL_FONT_STORAGE_KEY) || '0');
 // Clamp to valid range on load
 if (isNaN(_modalFontAdjust) || _modalFontAdjust < -4) _modalFontAdjust = 0;
 if (_modalFontAdjust > 30) _modalFontAdjust = 30;
@@ -2389,7 +2389,10 @@ function setModalFont(value) {{
 }}
 
 function adjustModalFont(delta) {{
-  setModalFont(_modalFontAdjust + delta);
+  // Each click produces a visible repaint before the next increment
+  requestAnimationFrame(function() {{
+    setModalFont(_modalFontAdjust + delta);
+  }});
 }}
 
 // Initialize font adjustment on page load

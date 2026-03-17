@@ -470,6 +470,179 @@ class TestFontControlJavaScript(unittest.TestCase):
         self.assertIn("querySelectorAll('.modal-font-slider')", html)
 
 
+class TestFontControlsPositionStableDuringAdjustment(unittest.TestCase):
+    """Scenario: Font Controls Position Stable During Adjustment
+
+    Given the User has opened a text-based modal
+    When the User moves the font size slider from the minimum to the maximum position
+    Then the font size control widget remains at the same screen coordinates
+    And the close button remains at the same screen coordinates
+    """
+
+    def test_title_has_flex_1_min_width_0(self):
+        """Title uses flex:1;min-width:0 to absorb available space without
+        pushing controls when it grows."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\{[^}]*flex:1[^}]*min-width:0'
+        )
+
+    def test_title_overflow_hidden(self):
+        """Title overflow:hidden prevents layout expansion."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\{[^}]*overflow:hidden'
+        )
+
+    def test_font_controls_flex_shrink_0(self):
+        """Font controls have flex-shrink:0 so they never compress."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-font-controls\{[^}]*flex-shrink:0'
+        )
+
+    def test_close_button_flex_shrink_0(self):
+        """Close button has flex-shrink:0 so it stays in place."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-close\{[^}]*flex-shrink:0'
+        )
+
+
+class TestSliderDragProducesSmoothScaling(unittest.TestCase):
+    """Scenario: Slider Drag Produces Smooth Scaling
+
+    Given the User has opened a text-based modal
+    When the User drags the font size slider continuously
+    Then the text scales smoothly without discrete jumps
+    And the slider step granularity is 0.5 or finer
+    """
+
+    def test_slider_step_is_half_point_or_finer(self):
+        """All sliders use step='0.5' for sub-integer granularity."""
+        html = _generate_html()
+        # Every modal-font-slider must have step="0.5"
+        slider_count = html.count('class="modal-font-slider"')
+        step_count = html.count('step="0.5"')
+        self.assertGreater(slider_count, 0)
+        self.assertEqual(slider_count, step_count,
+                         f"Found {slider_count} sliders but {step_count} step attributes")
+
+    def test_oninput_uses_parseFloat(self):
+        """Slider oninput uses parseFloat (not parseInt) to preserve fractional values."""
+        html = _generate_html()
+        self.assertIn('parseFloat(this.value)', html)
+        # parseInt should NOT appear in slider oninput
+        self.assertNotIn('parseInt(this.value)', html)
+
+    def test_session_storage_load_uses_parseFloat(self):
+        """Initial load from sessionStorage uses parseFloat to restore fractional values."""
+        html = _generate_html()
+        self.assertIn("parseFloat(sessionStorage.getItem", html)
+
+    def test_css_variable_accepts_fractional_values(self):
+        """The --modal-font-adjust CSS variable is multiplied by 1px in calc(),
+        which correctly handles fractional inputs like 2.5."""
+        html = _generate_html()
+        # calc(14px + var(--modal-font-adjust) * 1px) works with fractional adjust
+        self.assertRegex(
+            html,
+            r'calc\(\d+px\s*\+\s*var\(--modal-font-adjust\)\s*\*\s*1px\)'
+        )
+
+
+class TestRapidButtonClicksProduceSequentialIncrements(unittest.TestCase):
+    """Scenario: Rapid Button Clicks Produce Sequential Increments
+
+    Given the User has opened a text-based modal at the default font size (0)
+    When the User clicks the increase button 5 times in rapid succession
+    Then the font size adjustment value is exactly 5
+    And each click produces a visible repaint before the next increment
+    """
+
+    def test_adjust_uses_request_animation_frame(self):
+        """adjustModalFont wraps setModalFont in requestAnimationFrame
+        so each click produces a visible repaint before the next."""
+        html = _generate_html()
+        self.assertIn('requestAnimationFrame', html)
+        # The rAF should be inside adjustModalFont
+        adjust_fn_match = re.search(
+            r'function adjustModalFont\(delta\)\s*\{(.*?)\}', html, re.DOTALL)
+        self.assertIsNotNone(adjust_fn_match, "adjustModalFont function not found")
+        fn_body = adjust_fn_match.group(1)
+        self.assertIn('requestAnimationFrame', fn_body)
+        self.assertIn('setModalFont', fn_body)
+
+    def test_button_onclick_calls_adjust_with_delta_1(self):
+        """Each button click calls adjustModalFont with delta 1 or -1 (integer step)."""
+        html = _generate_html()
+        increase_count = html.count('adjustModalFont(1)')
+        decrease_count = html.count('adjustModalFont(-1)')
+        # 3 modals × 1 increase button each
+        self.assertEqual(increase_count, 3,
+                         f"Expected 3 increase buttons, found {increase_count}")
+        self.assertEqual(decrease_count, 3,
+                         f"Expected 3 decrease buttons, found {decrease_count}")
+
+    def test_set_modal_font_applies_immediately(self):
+        """setModalFont updates _modalFontAdjust and applies CSS property synchronously,
+        so rAF-queued calls execute sequentially."""
+        html = _generate_html()
+        set_fn_match = re.search(
+            r'function setModalFont\(value\)\s*\{(.*?)\n\}', html, re.DOTALL)
+        self.assertIsNotNone(set_fn_match, "setModalFont function not found")
+        fn_body = set_fn_match.group(1)
+        self.assertIn('_modalFontAdjust = value', fn_body)
+        self.assertIn("setProperty('--modal-font-adjust'", fn_body)
+
+
+class TestTitleTruncationPreventsLayoutShift(unittest.TestCase):
+    """Scenario: Title Truncation Prevents Layout Shift
+
+    Given the User has opened a text-based modal with a long title
+    When the User adjusts the font size to the maximum position
+    Then the title truncates with an ellipsis rather than overflowing
+    And the font controls and close button remain in their original positions
+    """
+
+    def test_title_has_text_overflow_ellipsis(self):
+        """Title uses text-overflow:ellipsis to truncate long text."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\{[^}]*text-overflow:ellipsis'
+        )
+
+    def test_title_has_white_space_nowrap(self):
+        """Title uses white-space:nowrap to prevent wrapping before truncation."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\{[^}]*white-space:nowrap'
+        )
+
+    def test_title_overflow_hidden_for_truncation(self):
+        """Title overflow:hidden is required for text-overflow:ellipsis to work."""
+        html = _generate_html()
+        self.assertRegex(
+            html,
+            r'\.modal-header h2\{[^}]*overflow:hidden'
+        )
+
+    def test_header_layout_prevents_title_pushing_controls(self):
+        """Header uses flex layout with title flex:1 and controls flex-shrink:0,
+        so enlarging font size causes the title to truncate rather than displacing controls."""
+        html = _generate_html()
+        # Title takes available space (flex:1)
+        self.assertRegex(html, r'\.modal-header h2\{[^}]*flex:1')
+        # Controls stay fixed (flex-shrink:0)
+        self.assertRegex(html, r'\.modal-font-controls\{[^}]*flex-shrink:0')
+
+
 # =============================================================================
 # Test runner: writes results to tests/cdd_modal_base/tests.json
 # =============================================================================
