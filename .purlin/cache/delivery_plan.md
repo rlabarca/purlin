@@ -31,7 +31,7 @@
 **Completion Commit:** 62ce39d
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Branch Collaboration [IN_PROGRESS]
+## Phase 6 -- Branch Collaboration [COMPLETE]
 **Features:** cdd_branch_collab.md
 **Completion Commit:** c2277f1
 **QA Bugs Addressed:** --
