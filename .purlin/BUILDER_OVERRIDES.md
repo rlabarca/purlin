@@ -12,7 +12,7 @@ Before committing ANY change to Python tools, shell scripts, or file-generation 
 5.  **JSON Modification Safety:** If any shell script modifies JSON via `sed`, does the regex preserve trailing commas and structural characters? Is there a `python3 json.load()` validation step?
 6.  **Test Coverage:** Do tests exercise both standalone AND submodule directory layouts? Tests MUST create a simulated submodule environment (temporary directory with consumer project structure and a cloned submodule) to verify path resolution.
 
-If ANY item fails, fix it before committing. Reference `features/submodule_bootstrap.md` Sections 2.10-2.14 for the full specification.
+If ANY item fails, fix it before committing. Reference `features/release_submodule_safety_audit.md` Section 2.2 for the full check categories.
 
 **Exemption:** Scripts located in `dev/` are Purlin-dev-specific and are exempt from this checklist. They are never run in a consumer project's submodule context. Apply normal quality standards but skip submodule-specific verification items.
 
