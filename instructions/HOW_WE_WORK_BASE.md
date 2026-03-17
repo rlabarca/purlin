@@ -54,7 +54,7 @@ Specifications are not static blueprints written once and handed off. They are c
 *   **Duty:** Providing high-level goals, performing final verification (e.g., Hardware-in-the-Loop), and managing the Agentic Evolution.
 
 ### Commit Discipline (All Roles)
-Agents MUST commit immediately after completing each discrete change -- not at session end, not in batches. Commits are cheap, fully reversible, and provide save points the user can inspect or revert. Uncommitted work is invisible and unrecoverable. When in doubt, commit.
+Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream Critic regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `tools/cdd/status.sh`. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
 1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
