@@ -208,11 +208,12 @@ Proceed? [Y/n]
   - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from terminal width (`tput cols`, default 80):
     - `#` column: 4 characters (fixed).
     - Remaining width distributed proportionally: `Label` ~30%, `Features` ~45%, `Exec Group` ~25%.
+    - **Minimum width floor:** If terminal width is below 60 columns, the table switches to a stacked single-column layout (one field per line, labeled) instead of the proportional column layout. This prevents unreadable truncation in narrow terminals or piped contexts.
     - Headers and separator lines use the same computed widths as data rows.
   - ANSI bold cyan (`\033[1;36m`) on header row, green (`\033[32m`) on separator lines.
   - Phase labels and features from delivery plan headings, exec group from the analyzer.
   - Cell content that exceeds its column width wraps to a continuation line. The continuation line is padded so wrapped text aligns with the column's left edge. Maximum 2 lines per cell; content exceeding 2 lines is truncated with `...` on the second line. When any cell in a row wraps, the entire row occupies 2 terminal lines.
-  - **Live resize:** While the `Proceed? [Y/n]` prompt is active, the launcher traps `SIGWINCH`. On terminal resize, it clears the table (cursor-up + clear), re-reads `tput cols`, recomputes column widths, and re-renders. The SIGWINCH trap is removed after the user responds.
+  - **Live resize:** While the `Proceed? [Y/n]` prompt is active, the launcher traps `SIGWINCH`. On terminal resize, it clears the table (cursor-up + clear), re-reads `tput cols`, recomputes column widths, and re-renders. If resize crosses the 60-column threshold, the layout mode switches between columnar and stacked. The SIGWINCH trap is removed after the user responds.
   - TTY fallback: plain uncolored text when stderr is not a TTY.
   - If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
@@ -718,6 +719,16 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the features cell wraps to a continuation line padded to the Features column start
     And the row occupies exactly 2 terminal lines
     And column alignment is preserved across all rows including wrapped ones
+
+#### Scenario: Approval Table Uses Stacked Layout Below 60 Columns
+    Given pl-run-builder.sh is invoked with --continuous
+    And the bootstrap session created a valid delivery plan
+    And stderr is a TTY with terminal width 50
+    When the approval table renders
+    Then the table uses a stacked single-column layout instead of proportional columns
+    And each phase renders as labeled fields (one per line) instead of a columnar row
+    And no output line exceeds 50 characters
+    And the "Proceed? [Y/n]" prompt is displayed after the stacked table
 
 #### Scenario: Approval Table Re-Renders on Terminal Resize
     Given the approval table is displayed with the "Proceed? [Y/n]" prompt active
