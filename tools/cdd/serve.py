@@ -201,7 +201,7 @@ def build_status_commit_cache():
             cache[fpath] = {
                 'complete_ts': 0, 'complete_hash': '',
                 'testing_ts': 0, 'testing_hash': '',
-                'scope': None, '_best_ts': 0,
+                'scope': None, '_best_ts': 0, '_best_hash': '',
             }
 
         info = cache[fpath]
@@ -213,15 +213,19 @@ def build_status_commit_cache():
             info[ts_key] = ts
             info[hash_key] = commit_hash
 
-        # Scope comes from the most recent status commit of either type
-        if ts > info['_best_ts']:
+        # Scope comes from the most recent status commit of either type.
+        # Use >= with hash tiebreaker for deterministic results when
+        # two status commits share the same Unix timestamp.
+        if ts > info['_best_ts'] or (ts == info['_best_ts'] and commit_hash > info['_best_hash']):
             info['_best_ts'] = ts
+            info['_best_hash'] = commit_hash
             sm = scope_re.search(subject)
             info['scope'] = sm.group(1).strip() if sm else None
 
-    # Clean up internal tracking field
+    # Clean up internal tracking fields
     for info in cache.values():
         del info['_best_ts']
+        del info['_best_hash']
 
     return cache
 
@@ -301,18 +305,20 @@ def get_feature_status(features_rel, features_abs, cache=None):
 
         status = "TODO"
         if complete_ts > test_ts:
-            if file_mod_ts <= complete_ts:
+            if file_mod_ts < complete_ts:
+                # Strictly earlier mtime — fast path, no content verification needed
                 status = "COMPLETE"
             else:
-                # File modified after status commit — check if only Discoveries changed
+                # Same-second or later mtime — verify content hasn't changed
                 commit_hash = info.get('complete_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
                     status = "COMPLETE"
         elif test_ts > 0:
-            if file_mod_ts <= test_ts:
+            if file_mod_ts < test_ts:
+                # Strictly earlier mtime — fast path, no content verification needed
                 status = "TESTING"
             else:
-                # File modified after status commit — check if only Discoveries changed
+                # Same-second or later mtime — verify content hasn't changed
                 commit_hash = info.get('testing_hash', '')
                 if commit_hash and spec_content_unchanged(f_path, commit_hash):
                     status = "TESTING"

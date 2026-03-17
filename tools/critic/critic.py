@@ -2240,7 +2240,7 @@ def _has_testing_phase_commit(feature_file, project_root=None):
         if result.returncode != 0 or not result.stdout.strip():
             return False
         # Step 3: Check each matching commit -- must reference this feature
-        # AND have a timestamp strictly after the reset point.
+        # AND have a timestamp at or after the reset point.
         for line in result.stdout.strip().split('\n'):
             if feature_ref not in line:
                 continue
@@ -2249,7 +2249,7 @@ def _has_testing_phase_commit(feature_file, project_root=None):
                 commit_ts = int(parts[0])
             except (ValueError, IndexError):
                 continue
-            if commit_ts > reset_timestamp:
+            if commit_ts >= reset_timestamp:
                 return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
@@ -2297,7 +2297,7 @@ def _has_verified_complete_commit(feature_file, project_root=None):
         if result.returncode != 0 or not result.stdout.strip():
             return False
         # Step 3: Check each matching commit -- must reference this feature
-        # AND have a timestamp strictly after the reset point
+        # AND have a timestamp at or after the reset point
         # AND contain the [Verified] tag.
         for line in result.stdout.strip().split('\n'):
             if feature_ref not in line:
@@ -2307,7 +2307,7 @@ def _has_verified_complete_commit(feature_file, project_root=None):
                 commit_ts = int(parts[0])
             except (ValueError, IndexError):
                 continue
-            if commit_ts > reset_timestamp and '[Verified]' in line:
+            if commit_ts >= reset_timestamp and '[Verified]' in line:
                 return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
