@@ -1025,15 +1025,14 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
 
     def test_includes_delivery_phase_when_plan_exists(self):
         """Given a delivery plan with Phase 1 COMPLETE, Phase 2 IN_PROGRESS,
-        Phase 3 PENDING, the response includes delivery_phase with current 2
-        and total 3."""
+        Phase 3 PENDING, the response includes delivery_phase with expanded format."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "## Phase 1 — Foundation [COMPLETE]\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n"
             "**Features:** feat_a\n\n"
-            "## Phase 2 — Core [IN_PROGRESS]\n"
+            "## Phase 2 -- Core [IN_PROGRESS]\n"
             "**Features:** feat_b\n\n"
-            "## Phase 3 — Polish [PENDING]\n"
+            "## Phase 3 -- Polish [PENDING]\n"
             "**Features:** feat_c\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
@@ -1045,18 +1044,30 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         try:
             result = get_delivery_phase()
             self.assertIsNotNone(result)
-            self.assertEqual(result["current"], 2)
+            self.assertEqual(result["completed"], 1)
+            self.assertEqual(result["in_progress"], 1)
+            self.assertEqual(result["pending"], 1)
+            self.assertEqual(result["removed"], 0)
             self.assertEqual(result["total"], 3)
+            self.assertEqual(len(result["phases"]), 3)
+            # Phases sorted by number
+            self.assertEqual(result["phases"][0]["number"], 1)
+            self.assertEqual(result["phases"][0]["label"], "Foundation")
+            self.assertEqual(result["phases"][0]["status"], "COMPLETE")
+            self.assertEqual(result["phases"][1]["number"], 2)
+            self.assertEqual(result["phases"][1]["status"], "IN_PROGRESS")
+            self.assertEqual(result["phases"][2]["number"], 3)
+            self.assertEqual(result["phases"][2]["status"], "PENDING")
         finally:
             serve.CACHE_DIR = orig_cache
 
     def test_delivery_phase_in_full_api_response(self):
-        """Integration: delivery_phase appears in generate_api_status_json."""
+        """Integration: delivery_phase appears in generate_api_status_json with expanded format."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "## Phase 1 — Foundation [COMPLETE]\n\n"
-            "## Phase 2 — Core [IN_PROGRESS]\n\n"
-            "## Phase 3 — Polish [PENDING]\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [IN_PROGRESS]\n\n"
+            "## Phase 3 -- Polish [PENDING]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -1079,19 +1090,25 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         try:
             data = generate_api_status_json()
             self.assertIn("delivery_phase", data)
-            self.assertEqual(data["delivery_phase"]["current"], 2)
-            self.assertEqual(data["delivery_phase"]["total"], 3)
+            dp = data["delivery_phase"]
+            self.assertEqual(dp["completed"], 1)
+            self.assertEqual(dp["in_progress"], 1)
+            self.assertEqual(dp["pending"], 1)
+            self.assertEqual(dp["removed"], 0)
+            self.assertEqual(dp["total"], 3)
+            self.assertEqual(len(dp["phases"]), 3)
+            self.assertEqual(dp["phases"][1]["status"], "IN_PROGRESS")
         finally:
             serve.CACHE_DIR = orig_cache
             serve.FEATURES_ABS = orig_abs
             serve.TESTS_DIR = orig_tests
 
     def test_first_pending_is_current(self):
-        """When Phase 1 COMPLETE and Phase 2 PENDING, current = 2."""
+        """When Phase 1 COMPLETE and Phase 2 PENDING, pending = 1."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "## Phase 1 — Foundation [COMPLETE]\n\n"
-            "## Phase 2 — Core [PENDING]\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [PENDING]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -1102,7 +1119,9 @@ class TestDeliveryPhaseInApiResponse(unittest.TestCase):
         try:
             result = get_delivery_phase()
             self.assertIsNotNone(result)
-            self.assertEqual(result["current"], 2)
+            self.assertEqual(result["completed"], 1)
+            self.assertEqual(result["pending"], 1)
+            self.assertEqual(result["in_progress"], 0)
             self.assertEqual(result["total"], 2)
         finally:
             serve.CACHE_DIR = orig_cache
@@ -1159,8 +1178,8 @@ class TestDeliveryPhaseOmittedWhenNoPlan(unittest.TestCase):
         """All phases COMPLETE -> delivery_phase omitted."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "## Phase 1 — Foundation [COMPLETE]\n\n"
-            "## Phase 2 — Core [COMPLETE]\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [COMPLETE]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -1195,12 +1214,12 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
     @patch('serve.get_last_commit', return_value='abc1234 test (1 min ago)')
     @patch('serve.get_release_checklist', return_value=([], [], []))
     def test_active_heading_includes_phase_annotation(self, *mocks):
-        """ACTIVE heading shows [PHASE (2/3)] when delivery plan has active phase."""
+        """ACTIVE heading shows [1/3 DONE | 1 RUNNING] when delivery plan has active phase."""
         plan_content = (
             "# Delivery Plan\n\n"
-            "## Phase 1 — Foundation [COMPLETE]\n\n"
-            "## Phase 2 — Core [IN_PROGRESS]\n\n"
-            "## Phase 3 — Polish [PENDING]\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [IN_PROGRESS]\n\n"
+            "## Phase 3 -- Polish [PENDING]\n"
         )
         with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
             f.write(plan_content)
@@ -1223,8 +1242,8 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
         serve.PROJECT_ROOT = self.test_dir
         try:
             html = serve.generate_html()
-            self.assertIn('[PHASE (2/3)]', html,
-                          "ACTIVE heading must include [PHASE (2/3)] annotation")
+            self.assertIn('[1/3 DONE | 1 RUNNING]', html,
+                          "ACTIVE heading must include [1/3 DONE | 1 RUNNING] annotation")
         finally:
             serve.CACHE_DIR = orig_cache
             serve.FEATURES_ABS = orig_abs
@@ -1254,13 +1273,204 @@ class TestDeliveryPhaseHTMLAnnotation(unittest.TestCase):
         serve.PROJECT_ROOT = self.test_dir
         try:
             html = serve.generate_html()
-            self.assertNotIn('[PHASE', html,
-                             "ACTIVE heading must NOT include [PHASE] when no plan")
+            self.assertNotIn('DONE]', html,
+                             "ACTIVE heading must NOT include phase annotation when no plan")
         finally:
             serve.CACHE_DIR = orig_cache
             serve.FEATURES_ABS = orig_abs
             serve.TESTS_DIR = orig_tests
             serve.PROJECT_ROOT = orig_root
+
+
+class TestDeliveryPhaseWithParallelExecution(unittest.TestCase):
+    """Scenario: Delivery Phase with Parallel Execution"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_parallel_in_progress_phases(self):
+        """Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 IN_PROGRESS,
+        Phase 4 PENDING -> completed 1, in_progress 2, pending 1, total 4."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [IN_PROGRESS]\n\n"
+            "## Phase 3 -- UI [IN_PROGRESS]\n\n"
+            "## Phase 4 -- Polish [PENDING]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["completed"], 1)
+            self.assertEqual(result["in_progress"], 2)
+            self.assertEqual(result["pending"], 1)
+            self.assertEqual(result["removed"], 0)
+            self.assertEqual(result["total"], 4)
+            # Phase 2 and Phase 3 both IN_PROGRESS
+            ip_phases = [p for p in result["phases"] if p["status"] == "IN_PROGRESS"]
+            self.assertEqual(len(ip_phases), 2)
+            self.assertEqual(ip_phases[0]["number"], 2)
+            self.assertEqual(ip_phases[1]["number"], 3)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+
+class TestDeliveryPhaseWithRemovedPhase(unittest.TestCase):
+    """Scenario: Delivery Phase with Removed Phase"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_removed_phase_counted(self):
+        """Phase 1 COMPLETE, Phase 2 REMOVED, Phase 3 IN_PROGRESS ->
+        completed 1, in_progress 1, pending 0, removed 1, total 3."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Legacy [REMOVED]\n\n"
+            "## Phase 3 -- Core [IN_PROGRESS]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["completed"], 1)
+            self.assertEqual(result["in_progress"], 1)
+            self.assertEqual(result["pending"], 0)
+            self.assertEqual(result["removed"], 1)
+            self.assertEqual(result["total"], 3)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+
+class TestDeliveryPhaseOmittedWhenAllCompleteOrRemoved(unittest.TestCase):
+    """Scenario: Delivery Phase Omitted When All Complete or Removed"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_all_complete_and_removed_returns_none(self):
+        """Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 REMOVED ->
+        delivery_phase omitted (returns None)."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 -- Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Core [COMPLETE]\n\n"
+            "## Phase 3 -- Legacy [REMOVED]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNone(result)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+    def test_all_removed_returns_none(self):
+        """All phases REMOVED -> delivery_phase omitted."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 -- Old [REMOVED]\n\n"
+            "## Phase 2 -- Also Old [REMOVED]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNone(result)
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+
+class TestDeliveryPhaseLabelsFromPlanHeadings(unittest.TestCase):
+    """Scenario: Delivery Phase Labels from Plan Headings"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.cache_dir = os.path.join(self.test_dir, ".purlin", "cache")
+        os.makedirs(self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_labels_extracted_from_headings(self):
+        """Phase heading '## Phase 1 -- Design Token Foundation [COMPLETE]'
+        produces label 'Design Token Foundation'."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 -- Design Token Foundation [COMPLETE]\n\n"
+            "## Phase 2 -- Critic Policy Enforcement [IN_PROGRESS]\n\n"
+            "## Phase 3 -- CDD Status Monitor [PENDING]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["phases"][0]["label"], "Design Token Foundation")
+            self.assertEqual(result["phases"][1]["label"], "Critic Policy Enforcement")
+            self.assertEqual(result["phases"][2]["label"], "CDD Status Monitor")
+        finally:
+            serve.CACHE_DIR = orig_cache
+
+    def test_labels_with_em_dash_separator(self):
+        """Labels work with em dash separator too."""
+        plan_content = (
+            "# Delivery Plan\n\n"
+            "## Phase 1 \u2014 Foundation [COMPLETE]\n\n"
+            "## Phase 2 \u2014 Core [IN_PROGRESS]\n"
+        )
+        with open(os.path.join(self.cache_dir, "delivery_plan.md"), "w") as f:
+            f.write(plan_content)
+
+        import serve
+        orig_cache = serve.CACHE_DIR
+        serve.CACHE_DIR = self.cache_dir
+        try:
+            result = get_delivery_phase()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["phases"][0]["label"], "Foundation")
+            self.assertEqual(result["phases"][1]["label"], "Core")
+        finally:
+            serve.CACHE_DIR = orig_cache
 
 
 # ===================================================================

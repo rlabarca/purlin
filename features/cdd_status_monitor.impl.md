@@ -72,9 +72,6 @@
 
 ### Audit Finding -- 2026-03-16
 
-[DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN — **ACKNOWLEDGED**
+[DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN — **ACKNOWLEDGED** — RESOLVED 2026-03-16. Replaced `#FFF` with `var(--purlin-surface)`, `#666` with `var(--purlin-muted)`, `#FF4500` with `var(--purlin-status-error)`, `#fff` with `var(--purlin-surface)`.
 
-**Source:** /pl-spec-code-audit --deep
-**Severity:** HIGH
-**Details:** serve.py:1956 `color:#FFF`, :3656 `color:#666`, :3704 `color:#FF4500`, :3748 `color:#fff`. All bypass the `var(--purlin-*)` token system.
-**Suggested fix:** Replace with `var(--purlin-surface)`, `var(--purlin-muted)`, `var(--purlin-status-error)`, `var(--purlin-surface)` respectively.
+*   **Delivery Phase Expanded API Format (2026-03-16):** Updated `get_delivery_phase()` from old `{"current": N, "total": N}` format to expanded format per spec Section 2.4: `{"completed": N, "in_progress": N, "pending": N, "removed": N, "total": N, "phases": [...]}`. Regex updated to capture phase labels from `## Phase N -- Label [STATUS]` headings (supports `--`, `—`, `–` separators). Now recognizes all 4 statuses: COMPLETE, IN_PROGRESS, PENDING, REMOVED. Returns None when all phases are COMPLETE or REMOVED (previously only COMPLETE). HTML annotation updated from `[PHASE (N/M)]` to `[N/M DONE | N RUNNING]` per Section 2.11.

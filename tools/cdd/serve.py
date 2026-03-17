@@ -382,15 +382,16 @@ def aggregate_test_statuses(statuses):
 
 
 def get_delivery_phase():
-    """Parse the delivery plan and return the current phase info.
+    """Parse the delivery plan and return phase summary info.
 
-    Reads `.purlin/cache/delivery_plan.md`, counts phase headings,
-    and finds the first PENDING or IN_PROGRESS phase.
+    Reads `.purlin/cache/delivery_plan.md`, parses phase headings,
+    and returns counts by status plus per-phase detail.
 
-    Supports the canonical format: `## Phase N — Label [STATUS]`
+    Supports the canonical format: `## Phase N -- Label [STATUS]`
 
-    Returns {"current": int, "total": int} or None if no plan exists
-    or all phases are COMPLETE.
+    Returns a dict with completed, in_progress, pending, removed, total,
+    and phases array — or None if no plan exists or all phases are
+    COMPLETE/REMOVED.
     """
     plan_path = os.path.join(CACHE_DIR, "delivery_plan.md")
     if not os.path.isfile(plan_path):
@@ -404,32 +405,44 @@ def get_delivery_phase():
               file=sys.stderr)
         return None
 
-    # Match canonical format: ## Phase N — Label [STATUS]
+    # Match canonical format: ## Phase N -- Label [STATUS]
+    # Supports -- (double hyphen), — (em dash), – (en dash)
     phase_pattern = re.compile(
-        r'^##\s+Phase\s+(\d+)\s.*?\[(\w+)\]',
+        r'^##\s+Phase\s+(\d+)\s+[-–—]+\s+(.+?)\s*\[(\w+)\]',
         re.MULTILINE
     )
     matches = phase_pattern.findall(content)
     if not matches:
         print(f"Warning: delivery plan exists at {plan_path} but no phase "
-              f"headings matched (expected '## Phase N — Label [STATUS]')",
+              f"headings matched (expected '## Phase N -- Label [STATUS]')",
               file=sys.stderr)
         return None
 
-    total = len(matches)
+    # Count by status
+    counts = {"COMPLETE": 0, "IN_PROGRESS": 0, "PENDING": 0, "REMOVED": 0}
+    phases = []
+    for phase_num_str, label, status in matches:
+        s = status.upper()
+        if s in counts:
+            counts[s] += 1
+        phases.append({
+            "number": int(phase_num_str),
+            "label": label.strip(),
+            "status": s,
+        })
 
-    # Find the first phase with PENDING or IN_PROGRESS status
-    current = None
-    for phase_num_str, status in matches:
-        if status.upper() in ('PENDING', 'IN_PROGRESS'):
-            current = int(phase_num_str)
-            break
-
-    if current is None:
-        # All phases are COMPLETE — omit delivery_phase
+    # Omit when all phases are COMPLETE or REMOVED
+    if counts["IN_PROGRESS"] == 0 and counts["PENDING"] == 0:
         return None
 
-    return {"current": current, "total": total}
+    return {
+        "completed": counts["COMPLETE"],
+        "in_progress": counts["IN_PROGRESS"],
+        "pending": counts["PENDING"],
+        "removed": counts["REMOVED"],
+        "total": len(matches),
+        "phases": sorted(phases, key=lambda p: p["number"]),
+    }
 
 
 def get_change_scope(f_path, cache=None):
@@ -1760,13 +1773,17 @@ def generate_html(cache=None):
     # critic_last_run for Run Critic button annotation (Section 2.7)
     critic_last_run_ts = api_data.get("critic_last_run", "")
 
-    # Delivery phase annotation for ACTIVE heading
+    # Delivery phase annotation for ACTIVE heading (Section 2.11)
     delivery_phase = get_delivery_phase()
     phase_annotation = ""
     if delivery_phase:
+        done = delivery_phase["completed"]
+        total = delivery_phase["total"]
+        running = delivery_phase["in_progress"]
+        running_seg = f' | {running} RUNNING' if running > 0 else ''
         phase_annotation = (
-            f' <span class="st-todo" style="font-weight:normal">'
-            f'[PHASE ({delivery_phase["current"]}/{delivery_phase["total"]})]'
+            f' <span style="color:var(--purlin-status-todo);font-weight:normal">'
+            f'[{done}/{total} DONE{running_seg}]'
             f'</span>'
         )
 
@@ -1953,7 +1970,7 @@ body{{
 }}
 .view-btn:hover{{background:var(--purlin-border);color:var(--purlin-primary)}}
 .view-btn.active{{
-  background:var(--purlin-accent);color:#FFF;
+  background:var(--purlin-accent);color:var(--purlin-surface);
   border-color:var(--purlin-accent);
 }}
 .btn-critic{{
@@ -3653,7 +3670,7 @@ function openModal(filePath, label) {{
   var metaArea = document.getElementById('modal-metadata');
 
   title.textContent = label || filePath;
-  body.innerHTML = '<p style="color:#666">Loading...</p>';
+  body.innerHTML = '<p style="color:var(--purlin-muted)">Loading...</p>';
   metaArea.innerHTML = '';
   overlay.classList.add('visible');
 
@@ -3701,7 +3718,7 @@ function openModal(filePath, label) {{
 
     body.innerHTML = marked.parse(currentModal.specContent);
   }}).catch(function() {{
-    body.innerHTML = '<p style="color:#FF4500">Could not load feature content.</p>';
+    body.innerHTML = '<p style="color:var(--purlin-status-error)">Could not load feature content.</p>';
   }});
 }}
 
@@ -3745,7 +3762,7 @@ function openTombstoneModal(filePath, label) {{
     .then(function(r) {{ if (!r.ok) throw new Error('Failed'); return r.text(); }})
     .then(function(md) {{
       body.innerHTML =
-        '<div style="background:var(--purlin-status-error);color:#fff;' +
+        '<div style="background:var(--purlin-status-error);color:var(--purlin-surface);' +
         'padding:8px 14px;margin:-14px -14px 14px -14px;font-weight:bold;' +
         'text-align:center;font-family:var(--font-body);font-size:13px;' +
         'letter-spacing:0.05em">READY FOR DELETION</div>' +
