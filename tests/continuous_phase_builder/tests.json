@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 54,
+  "passed": 56,
   "failed": 0,
-  "total": 54,
+  "total": 56,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -170,43 +170,51 @@
       "status": "PASS"
     },
     {
-      "name": "Sequential Phase Output Streamed to Terminal",
+      "name": "Bootstrap Canvas Shows Spinner During Initialization",
       "status": "PASS"
     },
     {
-      "name": "Bootstrap Output Streamed to Terminal",
+      "name": "Approval Checkpoint Renders Console Table",
       "status": "PASS"
     },
     {
-      "name": "Parallel Phase Heartbeat During Execution",
+      "name": "Sequential Phase Canvas During Execution",
       "status": "PASS"
     },
     {
-      "name": "Parallel Phase Output Not Streamed",
+      "name": "Parallel Phase Canvas During Execution",
       "status": "PASS"
     },
     {
-      "name": "Heartbeat Stops After Parallel Group Completes",
+      "name": "All Builder Output Routes to Log Files in Continuous Mode",
       "status": "PASS"
     },
     {
-      "name": "Resume Session Output Streamed and Appended",
+      "name": "Inter-Phase Canvas Shows Evaluator Status",
       "status": "PASS"
     },
     {
-      "name": "Heartbeat Overwrites Previous Output In Place",
+      "name": "Canvas Clears Before Final Summary",
       "status": "PASS"
     },
     {
-      "name": "Heartbeat Falls Back to Plain Output When Not a TTY",
+      "name": "Canvas Falls Back to Milestone Lines When Not a TTY",
       "status": "PASS"
     },
     {
-      "name": "Heartbeat Shows Current Builder Activity",
+      "name": "Canvas Render Loop Lifecycle",
       "status": "PASS"
     },
     {
-      "name": "Heartbeat Warns on Empty Log at Phase Completion",
+      "name": "Resume Session Log Appended",
+      "status": "PASS"
+    },
+    {
+      "name": "Canvas Shows Current Builder Activity",
+      "status": "PASS"
+    },
+    {
+      "name": "Canvas Warns on Empty Log at Phase Completion",
       "status": "PASS"
     },
     {

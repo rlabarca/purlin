@@ -22,13 +22,17 @@ done
 PROMPT_FILE=$(mktemp)
 PARALLEL_PROMPT_FILE=""
 BOOTSTRAP_PROMPT_FILE=""
-HEARTBEAT_PID=""
+CANVAS_PID=""
+CANVAS_STATE_FILE=""
 cleanup() {
     rm -f "$PROMPT_FILE"
     [ -n "$PARALLEL_PROMPT_FILE" ] && rm -f "$PARALLEL_PROMPT_FILE"
     [ -n "$BOOTSTRAP_PROMPT_FILE" ] && rm -f "$BOOTSTRAP_PROMPT_FILE"
-    # Kill any active heartbeat process
-    [ -n "$HEARTBEAT_PID" ] && kill "$HEARTBEAT_PID" 2>/dev/null
+    # Kill any active canvas render loop
+    if [ -n "$CANVAS_PID" ] && kill -0 "$CANVAS_PID" 2>/dev/null; then
+        kill "$CANVAS_PID" 2>/dev/null
+    fi
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
     # Clean up any orphaned continuous-mode worktrees
     if [ "$CONTINUOUS" = "true" ]; then
         for wt_dir in "$SCRIPT_DIR"/continuous-phase-*; do
@@ -419,9 +423,357 @@ with open('$DELIVERY_PLAN', 'w') as f:
     fi
 }
 
+# ================================================================
+# Terminal Canvas Engine (Section 2.16)
+# ================================================================
+# All continuous mode status output renders into an in-place terminal
+# canvas on stderr. The canvas is cleared and rewritten via ANSI cursor
+# control. Only the final exit summary is permanent output.
+
+SPINNER=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+
+# --- Canvas: clear the canvas from the parent process ---
+canvas_clear() {
+    if [ -t 2 ] && [ -n "$CANVAS_STATE_FILE" ] && [ -f "$CANVAS_STATE_FILE" ]; then
+        local lines
+        lines=$(cat "$CANVAS_STATE_FILE" 2>/dev/null)
+        if [ -n "$lines" ] && [ "$lines" -gt 0 ] 2>/dev/null; then
+            printf '\033[%dA\033[J' "$lines" >&2
+        fi
+    fi
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
+}
+
+# --- Canvas: stop the render loop and clear ---
+stop_canvas() {
+    if [ -n "$CANVAS_PID" ] && kill -0 "$CANVAS_PID" 2>/dev/null; then
+        kill "$CANVAS_PID" 2>/dev/null
+        wait "$CANVAS_PID" 2>/dev/null
+    fi
+    canvas_clear
+    CANVAS_PID=""
+}
+
+# --- Canvas: non-TTY fallback milestone line ---
+canvas_milestone() {
+    echo "$1" >&2
+}
+
+# --- Canvas: start bootstrap spinner ---
+start_bootstrap_canvas() {
+    CANVAS_STATE_FILE="${RUNTIME_DIR}/canvas_state"
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
+    if ! [ -t 2 ]; then
+        canvas_milestone "Bootstrap started"
+        return
+    fi
+    local start_secs=$SECONDS
+    (
+        idx=0; prev_lines=0
+        while true; do
+            elapsed=$((SECONDS - start_secs))
+            s="${SPINNER[$((idx % 10))]}"
+            if [ "$prev_lines" -gt 0 ]; then
+                printf '\033[%dA\033[J' "$prev_lines" >&2
+            fi
+            printf '\033[36m%s\033[0m Starting bootstrap session... \033[2m%ss\033[0m\n' "$s" "$elapsed" >&2
+            prev_lines=1
+            echo "$prev_lines" > "$CANVAS_STATE_FILE"
+            idx=$((idx + 1))
+            sleep 0.1
+        done
+    ) &
+    CANVAS_PID=$!
+}
+
+# --- Canvas: start sequential phase spinner ---
+start_sequential_canvas() {
+    local phase_num="$1"
+    local log_file="$2"
+    CANVAS_STATE_FILE="${RUNTIME_DIR}/canvas_state"
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
+    if ! [ -t 2 ]; then
+        canvas_milestone "Phase $phase_num started"
+        return
+    fi
+    local phase_label
+    phase_label=$(extract_phase_label "$phase_num")
+    [ -z "$phase_label" ] && phase_label="Phase $phase_num"
+    local start_secs=$SECONDS
+    (
+        idx=0; prev_lines=0; heavy_counter=0
+        activity="working..."
+        fsize="0K"
+        while true; do
+            elapsed=$((SECONDS - start_secs))
+            elapsed_str=$(format_duration "$elapsed")
+            s="${SPINNER[$((idx % 10))]}"
+
+            # Heavier updates every 15 seconds (~150 iterations)
+            heavy_counter=$((heavy_counter + 1))
+            if [ "$heavy_counter" -ge 150 ]; then
+                heavy_counter=0
+                if [ -f "$log_file" ]; then
+                    bytes=$(wc -c < "$log_file" 2>/dev/null | tr -d ' ')
+                    fsize="$((bytes / 1024))K"
+                fi
+                activity=$(extract_activity "$log_file")
+            fi
+
+            if [ "$prev_lines" -gt 0 ]; then
+                printf '\033[%dA\033[J' "$prev_lines" >&2
+            fi
+            printf '\033[36m%s\033[0m \033[1;37mPhase %s -- %s\033[0m   \033[33mrunning\033[0m  \033[2m%s\033[0m   %s  %s\n' \
+                "$s" "$phase_num" "$phase_label" "$elapsed_str" "$fsize" "$activity" >&2
+            prev_lines=1
+            echo "$prev_lines" > "$CANVAS_STATE_FILE"
+            idx=$((idx + 1))
+            sleep 0.1
+        done
+    ) &
+    CANVAS_PID=$!
+}
+
+# --- Canvas: start inter-phase spinner (evaluator/re-analysis) ---
+start_interphase_canvas() {
+    local message="$1"
+    CANVAS_STATE_FILE="${RUNTIME_DIR}/canvas_state"
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
+    if ! [ -t 2 ]; then
+        return
+    fi
+    local start_secs=$SECONDS
+    (
+        idx=0; prev_lines=0
+        while true; do
+            elapsed=$((SECONDS - start_secs))
+            s="${SPINNER[$((idx % 10))]}"
+            if [ "$prev_lines" -gt 0 ]; then
+                printf '\033[%dA\033[J' "$prev_lines" >&2
+            fi
+            printf '\033[36m%s\033[0m %s \033[2m%ss\033[0m\n' "$s" "$message" "$elapsed" >&2
+            prev_lines=1
+            echo "$prev_lines" > "$CANVAS_STATE_FILE"
+            idx=$((idx + 1))
+            sleep 0.1
+        done
+    ) &
+    CANVAS_PID=$!
+}
+
+# --- Canvas: start parallel group canvas ---
+start_parallel_canvas() {
+    # Args: WT_PHASES_STR WT_LOGS_STR WT_PIDS_STR (space-separated)
+    local phases_str="$1"
+    local logs_str="$2"
+    local pids_str="$3"
+    CANVAS_STATE_FILE="${RUNTIME_DIR}/canvas_state"
+    rm -f "$CANVAS_STATE_FILE" 2>/dev/null
+
+    if ! [ -t 2 ]; then
+        canvas_milestone "Parallel group started: Phases $phases_str"
+        return
+    fi
+
+    # Initialize frozen end time files (bash 3 compat)
+    for pnum in $phases_str; do
+        rm -f "${RUNTIME_DIR}/canvas_frozen_${pnum}" 2>/dev/null
+    done
+
+    local start_secs=$SECONDS
+    (
+        # Convert space-separated strings to arrays inside the subshell
+        read -ra P_PHASES <<< "$phases_str"
+        read -ra P_LOGS <<< "$logs_str"
+        read -ra P_PIDS <<< "$pids_str"
+
+        idx=0; prev_lines=0; heavy_counter=0
+
+        # Arrays for cached heavy data (indexed same as P_PHASES)
+        declare -a P_FSIZE
+        declare -a P_ACTIVITY
+        for i in "${!P_PHASES[@]}"; do
+            P_FSIZE[$i]="0K"
+            P_ACTIVITY[$i]="working..."
+        done
+
+        while true; do
+            TIMESTAMP=$(date +%H:%M:%S)
+            s="${SPINNER[$((idx % 10))]}"
+
+            # Heavier updates every 15 seconds (~150 iterations)
+            heavy_counter=$((heavy_counter + 1))
+            do_heavy=false
+            if [ "$heavy_counter" -ge 150 ]; then
+                heavy_counter=0
+                do_heavy=true
+            fi
+
+            OUTPUT="[$TIMESTAMP] Parallel group (${#P_PHASES[@]} phases):"$'\n'
+            LINE_COUNT=1
+
+            for i in "${!P_PHASES[@]}"; do
+                PNUM="${P_PHASES[$i]}"
+                LFILE="${P_LOGS[$i]}"
+                PID_VAL="${P_PIDS[$i]}"
+
+                PLABEL=$(sed -n "s/## Phase ${PNUM} -- \(.*\) \[.*/\1/p" "$DELIVERY_PLAN" 2>/dev/null | head -1)
+                [ -z "$PLABEL" ] && PLABEL="Phase ${PNUM}"
+
+                # Update heavy data on interval
+                if [ "$do_heavy" = "true" ]; then
+                    if [ -f "$LFILE" ]; then
+                        BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
+                        P_FSIZE[$i]="$((BYTES / 1024))K"
+                    fi
+                    if kill -0 "$PID_VAL" 2>/dev/null; then
+                        P_ACTIVITY[$i]=$(extract_activity "$LFILE")
+                    fi
+                fi
+                FSIZE="${P_FSIZE[$i]}"
+
+                ELAPSED=""
+                PSTART=""
+                META_FILE="${RUNTIME_DIR}/phase_${PNUM}_meta"
+                [ -f "$META_FILE" ] && PSTART=$(grep '^START_TIME=' "$META_FILE" | cut -d= -f2-)
+                if [ -n "$PSTART" ]; then
+                    NOW_TS=$(date +%s)
+                    if kill -0 "$PID_VAL" 2>/dev/null; then
+                        SECS=$((NOW_TS - PSTART))
+                    else
+                        FROZEN_FILE="${RUNTIME_DIR}/canvas_frozen_${PNUM}"
+                        if [ ! -f "$FROZEN_FILE" ]; then
+                            echo "$NOW_TS" > "$FROZEN_FILE"
+                            FEND=$NOW_TS
+                        else
+                            FEND=$(cat "$FROZEN_FILE")
+                        fi
+                        SECS=$((FEND - PSTART))
+                    fi
+                    MINS=$((SECS / 60))
+                    REM=$((SECS % 60))
+                    [ "$MINS" -gt 0 ] && ELAPSED="${MINS}m ${REM}s" || ELAPSED="${SECS}s"
+                fi
+
+                if kill -0 "$PID_VAL" 2>/dev/null; then
+                    OUTPUT+="             \033[33mPhase ${PNUM} -- ${PLABEL}   running  ${ELAPSED}   ${FSIZE}  ${P_ACTIVITY[$i]}\033[0m"$'\n'
+                else
+                    if [ "$FSIZE" = "0K" ]; then
+                        OUTPUT+="             \033[31mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                    else
+                        OUTPUT+="             \033[32mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
+                    fi
+                fi
+                LINE_COUNT=$((LINE_COUNT + 1))
+            done
+
+            # In-place overwrite via cursor-up and clear
+            if [ "$prev_lines" -gt 0 ]; then
+                printf '\033[%dA\033[J' "$prev_lines" >&2
+            fi
+            printf '%b' "$OUTPUT" >&2
+            prev_lines=$LINE_COUNT
+            echo "$prev_lines" > "$CANVAS_STATE_FILE"
+            idx=$((idx + 1))
+            sleep 0.1
+        done
+    ) &
+    CANVAS_PID=$!
+}
+
+# --- Canvas: render approval checkpoint table ---
+render_approval_table() {
+    # Renders the delivery plan summary table for the approval checkpoint.
+    # Uses phase analyzer JSON output for structured data.
+    local analyzer_json
+    analyzer_json=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
+
+    python3 -c "
+import json, re, sys, os
+
+plan_path = sys.argv[1]
+is_tty = sys.argv[2] == 'true'
+
+try:
+    analyzer = json.loads(sys.argv[3])
+except (json.JSONDecodeError, IndexError):
+    analyzer = {'groups': []}
+
+# Read delivery plan for labels and features
+with open(plan_path) as f:
+    plan_content = f.read()
+
+phases_info = {}
+for m in re.finditer(r'## Phase (\d+) -- (.+?) \[(PENDING|IN_PROGRESS|COMPLETE)\]', plan_content):
+    pnum = int(m.group(1))
+    label = m.group(2).strip()
+    feat_m = re.search(r'## Phase {} -- .*?\n\*\*Features:\*\* (.*?)(?:\n|\$)'.format(pnum), plan_content)
+    features = feat_m.group(1).strip() if feat_m else '--'
+    phases_info[pnum] = {'label': label, 'features': features}
+
+# Build group index: phase_num -> (group_idx, parallel flag)
+group_map = {}
+for gi, group in enumerate(analyzer.get('groups', [])):
+    for p in group.get('phases', []):
+        group_map[p] = (gi, group.get('parallel', False))
+
+# Terminal width
+try:
+    cols = int(os.popen('tput cols 2>/dev/null').read().strip() or 80)
+except Exception:
+    cols = 80
+
+total_phases = len(phases_info)
+parallel_groups = []
+seen_groups = set()
+for gi, group in enumerate(analyzer.get('groups', [])):
+    if group.get('parallel', False) and gi not in seen_groups:
+        seen_groups.add(gi)
+        parallel_groups.append(group['phases'])
+
+# ANSI helpers
+BOLD_CYAN = '\033[1;36m' if is_tty else ''
+GREEN = '\033[32m' if is_tty else ''
+RESET = '\033[0m' if is_tty else ''
+
+out = []
+out.append(f'{BOLD_CYAN}=== Delivery Plan ({total_phases} phases) ==={RESET}')
+out.append('')
+
+# Header
+hdr = f'  {\"#\":<4s} {\"Label\":<29s} {\"Features\":<40s} {\"Complexity\":<13s} {\"Exec Group\"}'
+out.append(f'{BOLD_CYAN}{hdr}{RESET}')
+sep = f'  {\"---\":<4s} {\"----------------------------\":<29s} {\"---------------------------------------\":<40s} {\"------------\":<13s} {\"-------------------\"}'
+out.append(f'{GREEN}{sep}{RESET}')
+
+for pnum in sorted(phases_info.keys()):
+    info = phases_info[pnum]
+    label = info['label'][:28]
+    features = info['features'][:39]
+    complexity = '--'
+    exec_group = '--'
+    if pnum in group_map:
+        gi, par = group_map[pnum]
+        if par:
+            others = [str(p) for p in analyzer['groups'][gi]['phases'] if p != pnum]
+            exec_group = f'{gi} (parallel w/ {\", \".join(others)})'
+        else:
+            exec_group = f'{gi} (sequential)'
+    out.append(f'  {pnum:<4d} {label:<29s} {features:<40s} {complexity:<13s} {exec_group}')
+
+out.append('')
+if parallel_groups:
+    pg_strs = ['+'.join(str(p) for p in pg) for pg in parallel_groups]
+    out.append(f'Parallel groups: {len(parallel_groups)} (Phases {(\", Phases \").join(pg_strs)})')
+out.append(f'Review at .purlin/cache/delivery_plan.md')
+out.append(f'{BOLD_CYAN}================================{RESET}')
+
+print('\n'.join(out), file=sys.stderr)
+" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" "$analyzer_json"
+}
+
 # --- Bootstrap session when no delivery plan exists (Section 2.15) ---
 if [ ! -f "$DELIVERY_PLAN" ]; then
-    echo "No delivery plan found. Starting bootstrap session..." >&2
     BOOTSTRAP_LOG="${RUNTIME_DIR}/continuous_build_bootstrap.log"
 
     # Create bootstrap-specific prompt file (distinct from continuous/server overrides)
@@ -460,19 +812,28 @@ This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 BOOTSTRAP_OVERRIDE
 
+    # Start bootstrap canvas spinner
+    start_bootstrap_canvas
+
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
     claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
         "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
-        "Begin Builder session." 2>&1 | tee "$BOOTSTRAP_LOG"
-    BOOTSTRAP_RC=${PIPESTATUS[0]}
+        "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
+    BOOTSTRAP_RC=$?
+
+    # Stop the bootstrap canvas
+    stop_canvas
+    if ! [ -t 2 ]; then
+        canvas_milestone "Bootstrap complete"
+    fi
+
     rm -f "$BOOTSTRAP_PROMPT_FILE"
     BOOTSTRAP_PROMPT_FILE=""
 
     # Outcome detection via file-existence checking, not output parsing
     if [ -f "$DELIVERY_PLAN" ]; then
         # Plan created -> validate with phase analyzer dry-run
-        echo "Bootstrap created a delivery plan. Validating..." >&2
         VALIDATE_OUTPUT=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>&1)
         VALIDATE_RC=$?
 
@@ -484,18 +845,8 @@ BOOTSTRAP_OVERRIDE
             exit 0
         fi
 
-        # Print plan summary and prompt for approval
-        PHASE_SUMMARY=$(python3 -c "
-import re
-with open('$DELIVERY_PLAN') as f:
-    content = f.read()
-phases = re.findall(r'## Phase \d+ -- .+? \[(PENDING|IN_PROGRESS|COMPLETE)\]', content)
-pending = sum(1 for s in phases if s == 'PENDING')
-print(f'{len(phases)} phases ({pending} pending)')
-" 2>/dev/null || echo "unknown")
-
-        echo "" >&2
-        echo "Delivery plan created ($PHASE_SUMMARY). Review at .purlin/cache/delivery_plan.md." >&2
+        # Render the approval checkpoint table (Section 2.15)
+        render_approval_table
         printf "Proceed? [Y/n] " >&2
         read -r APPROVAL 2>/dev/null || APPROVAL=""
 
@@ -529,16 +880,21 @@ CDD_STATUS="$CORE_DIR/tools/cdd/status.sh"
 
 # --- Graceful stop handler (SIGINT/Ctrl+C) ---
 STOP_REQUESTED=false
+BUILDER_PID=""
 
 graceful_stop() {
     STOP_REQUESTED=true
+    # Send SIGTERM to sequential Builder
+    if [ -n "$BUILDER_PID" ] && kill -0 "$BUILDER_PID" 2>/dev/null; then
+        kill "$BUILDER_PID" 2>/dev/null
+    fi
     # Send SIGTERM to parallel builders
     for pid in "${WT_PIDS[@]}"; do
         kill "$pid" 2>/dev/null
     done
-    # Kill heartbeat
-    if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
-        kill "$HEARTBEAT_PID" 2>/dev/null
+    # Stop canvas render loop
+    if [ -n "$CANVAS_PID" ] && kill -0 "$CANVAS_PID" 2>/dev/null; then
+        kill "$CANVAS_PID" 2>/dev/null
     fi
     # Reset trap so second SIGINT forces immediate exit
     trap - INT
@@ -554,9 +910,10 @@ OUTER_BREAK=false
 while [ "$OUTER_BREAK" = "false" ]; do
 
     # Re-run phase analyzer before each execution group
-    echo "Running phase analyzer..." >&2
+    start_interphase_canvas "Re-analyzing delivery plan..."
     ANALYZER_JSON=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
     ANALYZER_RC=$?
+    stop_canvas
 
     if [ $ANALYZER_RC -ne 0 ]; then
         echo "Error: Phase analyzer failed (exit code $ANALYZER_RC)." >&2
@@ -575,7 +932,9 @@ while [ "$OUTER_BREAK" = "false" ]; do
     GROUPS_COUNT=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['groups']))")
 
     if [ "$GROUPS_COUNT" = "0" ]; then
-        echo "No pending phases to execute." >&2
+        if ! [ -t 2 ]; then
+            canvas_milestone "No pending phases to execute"
+        fi
         break
     fi
 
@@ -590,7 +949,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # PARALLEL EXECUTION
         # ============================================================
         PARALLEL_GROUPS_USED=$((PARALLEL_GROUPS_USED + 1))
-        echo "Executing parallel group: Phases $PHASE_LIST" >&2
 
         WT_PIDS=()
         WT_DIRS=()
@@ -623,106 +981,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
             WT_PHASES+=("$PHASE_NUM")
         done
 
-        # Start enhanced heartbeat process for parallel group visibility (Section 2.16)
-        HEARTBEAT_PID=""
-        (
-            PREV_LINES=0
-            # Initialize frozen end time files (bash 3 compat)
-            for i in "${!WT_PHASES[@]}"; do
-                rm -f "${RUNTIME_DIR}/heartbeat_frozen_${WT_PHASES[$i]}" 2>/dev/null
-            done
-
-            while true; do
-                sleep 15
-                TIMESTAMP=$(date +%H:%M:%S)
-
-                if [ -t 2 ]; then
-                    # TTY mode: multi-line in-place display with ANSI cursor control
-                    OUTPUT="[$TIMESTAMP] Parallel group (${#WT_PHASES[@]} phases):"$'\n'
-                    LINE_COUNT=1
-
-                    for i in "${!WT_PHASES[@]}"; do
-                        PNUM="${WT_PHASES[$i]}"
-                        LFILE="${WT_LOGS[$i]}"
-                        PID_VAL="${WT_PIDS[$i]}"
-
-                        PLABEL=$(sed -n "s/## Phase ${PNUM} -- \(.*\) \[.*/\1/p" "$DELIVERY_PLAN" 2>/dev/null | head -1)
-                        [ -z "$PLABEL" ] && PLABEL="Phase ${PNUM}"
-
-                        FSIZE="0K"
-                        if [ -f "$LFILE" ]; then
-                            BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
-                            FSIZE="$((BYTES / 1024))K"
-                        fi
-
-                        ELAPSED=""
-                        PSTART=""
-                        META_FILE="${RUNTIME_DIR}/phase_${PNUM}_meta"
-                        [ -f "$META_FILE" ] && PSTART=$(grep '^START_TIME=' "$META_FILE" | cut -d= -f2-)
-                        if [ -n "$PSTART" ]; then
-                            NOW_TS=$(date +%s)
-                            if kill -0 "$PID_VAL" 2>/dev/null; then
-                                SECS=$((NOW_TS - PSTART))
-                            else
-                                FROZEN_FILE="${RUNTIME_DIR}/heartbeat_frozen_${PNUM}"
-                                if [ ! -f "$FROZEN_FILE" ]; then
-                                    echo "$NOW_TS" > "$FROZEN_FILE"
-                                    FEND=$NOW_TS
-                                else
-                                    FEND=$(cat "$FROZEN_FILE")
-                                fi
-                                SECS=$((FEND - PSTART))
-                            fi
-                            MINS=$((SECS / 60))
-                            REM=$((SECS % 60))
-                            [ "$MINS" -gt 0 ] && ELAPSED="${MINS}m ${REM}s" || ELAPSED="${SECS}s"
-                        fi
-
-                        if kill -0 "$PID_VAL" 2>/dev/null; then
-                            ACTIVITY=$(extract_activity "$LFILE")
-                            OUTPUT+="             \033[33mPhase ${PNUM} -- ${PLABEL}   running  ${ELAPSED}   ${FSIZE}  ${ACTIVITY}\033[0m"$'\n'
-                        else
-                            if [ "$FSIZE" = "0K" ]; then
-                                OUTPUT+="             \033[31mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
-                            else
-                                OUTPUT+="             \033[32mPhase ${PNUM} -- ${PLABEL}   done     ${ELAPSED}   ${FSIZE}\033[0m"$'\n'
-                            fi
-                        fi
-                        LINE_COUNT=$((LINE_COUNT + 1))
-                    done
-
-                    # In-place overwrite via cursor-up and clear
-                    if [ "$PREV_LINES" -gt 0 ]; then
-                        printf '\033[%dA\033[J' "$PREV_LINES" >&2
-                    fi
-                    printf '%b' "$OUTPUT" >&2
-                    PREV_LINES=$LINE_COUNT
-                else
-                    # Non-TTY: single-line append-only output without ANSI
-                    COMPACT_PARTS=""
-                    for i in "${!WT_PHASES[@]}"; do
-                        PNUM="${WT_PHASES[$i]}"
-                        LFILE="${WT_LOGS[$i]}"
-                        PID_VAL="${WT_PIDS[$i]}"
-
-                        FSIZE="0K"
-                        if [ -f "$LFILE" ]; then
-                            BYTES=$(wc -c < "$LFILE" 2>/dev/null | tr -d ' ')
-                            FSIZE="$((BYTES / 1024))K"
-                        fi
-
-                        [ -n "$COMPACT_PARTS" ] && COMPACT_PARTS+=", "
-                        if kill -0 "$PID_VAL" 2>/dev/null; then
-                            COMPACT_PARTS+="Phase ${PNUM} (running, ${FSIZE})"
-                        else
-                            COMPACT_PARTS+="Phase ${PNUM} (done, ${FSIZE})"
-                        fi
-                    done
-                    echo "[$TIMESTAMP] Phases: ${COMPACT_PARTS}" >&2
-                fi
-            done
-        ) &
-        HEARTBEAT_PID=$!
+        # Start canvas for parallel group visibility (Section 2.16)
+        start_parallel_canvas "${WT_PHASES[*]}" "${WT_LOGS[*]}" "${WT_PIDS[*]}"
 
         # Wait for all parallel builders to complete
         for pid in "${WT_PIDS[@]}"; do
@@ -731,12 +991,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Check for graceful stop before merge
         if [ "$STOP_REQUESTED" = "true" ]; then
-            # Kill heartbeat if still alive
-            if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
-                kill "$HEARTBEAT_PID" 2>/dev/null
-                wait "$HEARTBEAT_PID" 2>/dev/null
-            fi
-            HEARTBEAT_PID=""
+            stop_canvas
             for PHASE_NUM in $PHASE_LIST; do
                 record_phase_end "$PHASE_NUM" "INTERRUPTED"
             done
@@ -744,10 +999,12 @@ while [ "$OUTER_BREAK" = "false" ]; do
             continue
         fi
 
-        # Terminate heartbeat before merge (Section 2.16)
-        if [ -n "$HEARTBEAT_PID" ] && kill -0 "$HEARTBEAT_PID" 2>/dev/null; then
-            kill "$HEARTBEAT_PID" 2>/dev/null
-            wait "$HEARTBEAT_PID" 2>/dev/null
+        # Stop canvas before merge (Section 2.16)
+        stop_canvas
+        if ! [ -t 2 ]; then
+            for PHASE_NUM in $PHASE_LIST; do
+                canvas_milestone "Phase $PHASE_NUM complete"
+            done
         fi
 
         # Merge each worktree branch back to main
@@ -779,6 +1036,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
         apply_plan_amendments
 
         # Evaluate using the last parallel log
+        start_interphase_canvas "Evaluating parallel group output..."
         PLAN_HASH_BEFORE=$(get_plan_hash)
         LAST_LOG="${WT_LOGS[${#WT_LOGS[@]}-1]}"
         EVAL_OUTPUT=$(run_evaluator "$LAST_LOG")
@@ -787,6 +1045,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             log_eval "Evaluator failed, using fallback"
             EVAL_OUTPUT=$(evaluator_fallback "$PLAN_HASH_BEFORE")
         fi
+        stop_canvas
 
         ACTION="${EVAL_OUTPUT%%|*}"
         REASON="${EVAL_OUTPUT#*|}"
@@ -816,7 +1075,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # SEQUENTIAL EXECUTION
         # ============================================================
         PHASE_NUM=$(echo "$PHASE_LIST" | awk '{print $1}')
-        echo "Executing sequential Phase $PHASE_NUM..." >&2
         record_phase_start "$PHASE_NUM"
 
         SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
@@ -828,20 +1086,35 @@ while [ "$OUTER_BREAK" = "false" ]; do
         while true; do
             PLAN_HASH_BEFORE=$(get_plan_hash)
 
+            # Start sequential canvas for this phase
+            start_sequential_canvas "$PHASE_NUM" "$LOG_FILE"
+
             # Execute Builder based on action type
             case "$RUN_ACTION" in
                 run|retry)
                     claude --print --session-id "$SESSION_ID" \
                         "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
-                        "$INITIAL_MSG" 2>&1 | tee "$LOG_FILE"
+                        "$INITIAL_MSG" > "$LOG_FILE" 2>&1 &
+                    BUILDER_PID=$!
+                    wait "$BUILDER_PID" 2>/dev/null
+                    BUILDER_PID=""
                     ;;
                 resume)
                     claude --resume "$SESSION_ID" --print \
                         "${CLI_ARGS[@]}" \
-                        "Approved. Proceed." 2>&1 | tee -a "$LOG_FILE"
+                        "Approved. Proceed." >> "$LOG_FILE" 2>&1 &
+                    BUILDER_PID=$!
+                    wait "$BUILDER_PID" 2>/dev/null
+                    BUILDER_PID=""
                     ;;
             esac
+
+            # Stop the sequential canvas
+            stop_canvas
+            if ! [ -t 2 ]; then
+                canvas_milestone "Phase $PHASE_NUM complete"
+            fi
 
             # Check for graceful stop
             if [ "$STOP_REQUESTED" = "true" ]; then
@@ -856,13 +1129,15 @@ while [ "$OUTER_BREAK" = "false" ]; do
                 PLAN_AMENDED=true
             fi
 
-            # Run evaluator
+            # Run evaluator with inter-phase canvas
+            start_interphase_canvas "Evaluating phase $PHASE_NUM output..."
             EVAL_OUTPUT=$(run_evaluator "$LOG_FILE")
 
             if [ $? -ne 0 ] || [ -z "$EVAL_OUTPUT" ]; then
                 log_eval "Evaluator failed for Phase $PHASE_NUM, using fallback"
                 EVAL_OUTPUT=$(evaluator_fallback "$PLAN_HASH_BEFORE")
             fi
+            stop_canvas
 
             ACTION="${EVAL_OUTPUT%%|*}"
             REASON="${EVAL_OUTPUT#*|}"
@@ -923,6 +1198,9 @@ done
 # Exit Summary (Section 2.16)
 # ================================================================
 
+# Canvas clear before exit summary (permanent output)
+canvas_clear
+
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 DURATION_STR=$(format_duration "$DURATION")
@@ -936,10 +1214,27 @@ else
     OVERALL_STATUS="completed"
 fi
 
+# ANSI color helpers for exit summary
+if [ -t 2 ]; then
+    C_BOLD_CYAN='\033[1;36m'
+    C_GREEN='\033[32m'
+    C_YELLOW='\033[33m'
+    C_RED='\033[31m'
+    C_DIM='\033[2m'
+    C_RESET='\033[0m'
+else
+    C_BOLD_CYAN=''
+    C_GREEN=''
+    C_YELLOW=''
+    C_RED=''
+    C_DIM=''
+    C_RESET=''
+fi
+
 echo "" >&2
-echo "=== Continuous Build Summary ===" >&2
+printf "${C_BOLD_CYAN}=== Continuous Build Summary ===${C_RESET}\n" >&2
 echo "Status: $OVERALL_STATUS" >&2
-echo "Duration: $DURATION_STR" >&2
+printf "Duration: ${C_DIM}${DURATION_STR}${C_RESET}\n" >&2
 echo "Phases: ${PHASES_COMPLETED}/${INITIAL_PENDING_COUNT} completed" >&2
 echo "" >&2
 
@@ -949,6 +1244,14 @@ import os, re, sys, glob
 
 runtime_dir = sys.argv[1]
 plan_path = sys.argv[2]
+is_tty = sys.argv[3] == 'true'
+
+# ANSI colors
+GREEN = '\033[32m' if is_tty else ''
+YELLOW = '\033[33m' if is_tty else ''
+RED = '\033[31m' if is_tty else ''
+DIM = '\033[2m' if is_tty else ''
+RESET = '\033[0m' if is_tty else ''
 
 phases = []
 
@@ -999,9 +1302,20 @@ for pnum, label, features in sorted(phases):
                 dur_str = '{}m {}s'.format(mins, rem) if mins > 0 else '{}s'.format(secs)
             except ValueError:
                 pass
-    print('  Phase {} -- {:<30s} {:<14s} {:<10s} features: {}'.format(
-        pnum, label, status, dur_str, features))
-" "$RUNTIME_DIR" "$DELIVERY_PLAN" >&2
+
+    # Color based on status
+    if status == 'COMPLETE':
+        color = GREEN
+    elif status == 'INTERRUPTED':
+        color = YELLOW
+    elif status in ('SKIPPED', 'FAILED'):
+        color = RED
+    else:
+        color = DIM
+
+    print('  {}Phase {} -- {:<30s} {:<14s} {:<10s} features: {}{}'.format(
+        color, pnum, label, status, dur_str, features, RESET))
+" "$RUNTIME_DIR" "$DELIVERY_PLAN" "$([ -t 2 ] && echo true || echo false)" >&2
 
 echo "" >&2
 
@@ -1023,7 +1337,7 @@ if [ "$PLAN_AMENDED" = "true" ]; then
     echo "Note: delivery plan was amended during execution" >&2
 fi
 echo "Log files: .purlin/runtime/continuous_build_phase_*.log" >&2
-echo "================================" >&2
+printf "${C_BOLD_CYAN}================================${C_RESET}\n" >&2
 
 # Post-run status refresh (Section 2.16)
 if [ -f "$CDD_STATUS" ]; then

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 54 automated scenarios.
+"""Tests for continuous phase builder — exercises all 56 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -907,7 +907,7 @@ def test_bootstrap_creates_delivery_plan():
         bootstrap_log = os.path.join(tmpdir, '.purlin', 'runtime',
                                      'continuous_build_bootstrap.log')
         log_exists = os.path.exists(bootstrap_log)
-        has_summary = "Delivery plan created" in proc.stderr
+        has_summary = "=== Delivery Plan" in proc.stderr
 
         ok = log_exists and has_summary
         record("Bootstrap Creates Delivery Plan", ok,
@@ -1052,7 +1052,6 @@ def test_bootstrap_plan_validated_before_approval():
 
     # Verify the validation step exists between plan creation check and approval prompt
     # The pattern: check plan exists -> run analyzer -> check result -> prompt
-    has_validate_msg = 'Validating' in source
     has_analyzer_call = 'PHASE_ANALYZER' in source
 
     # More structural: the bootstrap block runs the analyzer after detecting plan exists
@@ -1061,10 +1060,17 @@ def test_bootstrap_plan_validated_before_approval():
     has_validate_in_bootstrap = ('VALIDATE_RC' in bootstrap_section and
                                  'PHASE_ANALYZER' in bootstrap_section)
 
-    ok = has_validate_msg and has_analyzer_call and has_validate_in_bootstrap
+    # Verify approval prompt appears AFTER validation in the bootstrap section
+    validate_pos = bootstrap_section.find('VALIDATE_RC')
+    approval_pos = bootstrap_section.find('Proceed? [Y/n]')
+    has_order = (validate_pos >= 0 and approval_pos >= 0 and
+                 validate_pos < approval_pos)
+
+    ok = has_analyzer_call and has_validate_in_bootstrap and has_order
     record("Bootstrap Plan Validated Before Approval", ok,
-           f"validate={has_validate_msg}, analyzer={has_analyzer_call}, "
-           f"in_bootstrap={has_validate_in_bootstrap}" if not ok else "")
+           f"analyzer={has_analyzer_call}, "
+           f"in_bootstrap={has_validate_in_bootstrap}, "
+           f"order={has_order}" if not ok else "")
 
 
 def test_bootstrap_plan_has_dependency_cycle():
@@ -2521,70 +2527,31 @@ if pending:
 # Builder Output Visibility (Section 2.16) (6)
 # ============================================================
 
-def test_sequential_phase_output_streamed():
-    """Sequential phase output is streamed to terminal via tee AND written to log file.
-    Verifies that sequential execution uses '| tee' (not just > redirect)."""
+def test_bootstrap_canvas_shows_spinner():
+    """Bootstrap canvas shows an animated braille spinner and elapsed time on stderr."""
     source = read_launcher()
 
-    # Find the sequential execution section (after "SEQUENTIAL EXECUTION" comment)
-    seq_section_start = source.find('# SEQUENTIAL EXECUTION')
-    assert seq_section_start != -1, "Could not find SEQUENTIAL EXECUTION section"
-    seq_section = source[seq_section_start:]
-    # Limit to the sequential block (before the closing 'fi' of the parallel/sequential branch)
-    seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
+    # Verify start_bootstrap_canvas function exists
+    has_bootstrap_canvas = 'start_bootstrap_canvas()' in source
+    # Verify spinner array with braille characters
+    has_spinner = 'SPINNER=' in source and '⠋' in source
+    # Verify spinner cycles at ~100ms
+    has_sleep_01 = 'sleep 0.1' in source
+    # Verify elapsed time display
+    has_elapsed = 'Starting bootstrap session...' in source
 
-    # Check that the run/retry path uses tee (not just > redirect)
-    has_tee_run = bool(re.search(r'tee "\$LOG_FILE"', seq_section))
+    # Verify bootstrap invocation uses redirect (not tee)
+    bootstrap_start = source.find('# --- Bootstrap session')
+    assert bootstrap_start != -1, "Could not find bootstrap section"
+    bootstrap_section = source[bootstrap_start:]
+    bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial') if '# --- Track initial' in bootstrap_section else len(bootstrap_section)]
+    has_redirect = '> "$BOOTSTRAP_LOG" 2>&1' in bootstrap_section
+    has_no_tee = 'tee "$BOOTSTRAP_LOG"' not in bootstrap_section
+    has_no_pipestatus = 'PIPESTATUS' not in bootstrap_section
+    # Verify canvas is stopped after bootstrap
+    has_stop_canvas = 'stop_canvas' in bootstrap_section
 
-    # Also verify the log file is written (tee writes to both stdout and file)
-    # Verify via an integration test
-    tmpdir = tempfile.mkdtemp()
-    try:
-        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
-        graph = make_graph([("a.md", [])])
-        make_mock_project(tmpdir, plan, graph)
-        mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[("continue", "done")])
-
-        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
-
-        log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'continuous_build_phase_1.log')
-        log_exists = os.path.exists(log_path)
-        log_content = ""
-        if log_exists:
-            with open(log_path) as f:
-                log_content = f.read()
-
-        # With tee, output goes to both stdout and log file
-        # stdout should have the builder output (streamed via tee)
-        stdout_has_output = "Phase 1 of" in proc.stdout
-        log_has_output = "Phase 1 of" in log_content
-        # Log and stdout should match
-        log_matches_stdout = log_content.strip() == proc.stdout.strip() if log_content else False
-
-        ok = has_tee_run and log_exists and stdout_has_output and log_has_output and log_matches_stdout
-        record("Sequential Phase Output Streamed to Terminal", ok,
-               f"tee_in_source={has_tee_run}, log={log_exists}, "
-               f"stdout_output={stdout_has_output}, log_output={log_has_output}, "
-               f"content_match={log_matches_stdout}" if not ok else "")
-    finally:
-        shutil.rmtree(tmpdir)
-
-
-def test_bootstrap_output_streamed():
-    """Bootstrap output is streamed to terminal via tee AND written to bootstrap log."""
-    source = read_launcher()
-
-    # Verify bootstrap uses tee for output streaming
-    bootstrap_section_start = source.find('# --- Bootstrap session')
-    assert bootstrap_section_start != -1, "Could not find bootstrap section"
-    bootstrap_section = source[bootstrap_section_start:]
-    bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial')]
-
-    has_tee_bootstrap = bool(re.search(r'tee "\$BOOTSTRAP_LOG"', bootstrap_section))
-    has_pipestatus = 'PIPESTATUS' in bootstrap_section
-
-    # Integration test
+    # Integration: verify bootstrap log is written and output NOT on stdout
     tmpdir = tempfile.mkdtemp()
     try:
         graph = make_graph([("a.md", [])])
@@ -2604,147 +2571,317 @@ def test_bootstrap_output_streamed():
             with open(bootstrap_log) as f:
                 log_content = f.read()
 
-        # Bootstrap output should be in both stdout (streamed) and log file
-        stdout_has_output = "Bootstrap session complete" in proc.stdout
         log_has_output = "Bootstrap session complete" in log_content
+        # Builder output should NOT be on stdout (log-file only)
+        stdout_clean = "Bootstrap session complete" not in proc.stdout
 
-        ok = has_tee_bootstrap and has_pipestatus and log_exists and stdout_has_output and log_has_output
-        record("Bootstrap Output Streamed to Terminal", ok,
-               f"tee={has_tee_bootstrap}, pipestatus={has_pipestatus}, "
-               f"log={log_exists}, stdout={stdout_has_output}, "
-               f"log_output={log_has_output}" if not ok else "")
+        ok = (has_bootstrap_canvas and has_spinner and has_sleep_01 and has_elapsed and
+              has_redirect and has_no_tee and has_no_pipestatus and has_stop_canvas and
+              log_exists and log_has_output and stdout_clean)
+        record("Bootstrap Canvas Shows Spinner During Initialization", ok,
+               f"canvas_fn={has_bootstrap_canvas}, spinner={has_spinner}, "
+               f"sleep={has_sleep_01}, elapsed={has_elapsed}, "
+               f"redirect={has_redirect}, no_tee={has_no_tee}, "
+               f"no_pipestatus={has_no_pipestatus}, stop={has_stop_canvas}, "
+               f"log={log_exists}, log_output={log_has_output}, "
+               f"stdout_clean={stdout_clean}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
 
-def test_parallel_heartbeat_during_execution():
-    """Parallel group has a background heartbeat printing status to stderr every 15 seconds."""
+def test_approval_checkpoint_renders_table():
+    """Approval checkpoint renders a colored console table with columns for plan details."""
     source = read_launcher()
 
-    # Find the parallel execution section
-    parallel_section_start = source.find('# PARALLEL EXECUTION')
-    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
-    parallel_section = source[parallel_section_start:]
-    # Limit scope
-    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+    # Verify render_approval_table function exists
+    has_render_fn = 'render_approval_table()' in source
+    # Verify it's called during bootstrap plan approval
+    has_render_call = 'render_approval_table' in source
 
-    # Verify heartbeat process is started
-    has_heartbeat_loop = 'sleep 15' in parallel_section
-    has_heartbeat_output = 'Parallel group (' in parallel_section
-    has_stderr_output = '>&2' in parallel_section
-    has_log_size = 'wc -c' in parallel_section
-    has_running_status = '(running,' in parallel_section
-    has_done_status = '(done,' in parallel_section
-    has_timestamp = 'date +%H:%M:%S' in parallel_section
-    has_heartbeat_bg = 'HEARTBEAT_PID=$!' in parallel_section
+    # Verify table structure: columns, header coloring, separator, prompt
+    has_header_cols = 'Label' in source and 'Features' in source and 'Exec Group' in source
+    has_bold_cyan = '1;36m' in source  # Bold cyan for headers
+    has_green_sep = '32m' in source  # Green for separators
+    has_proceed = 'Proceed? [Y/n]' in source
+    has_parallel_groups = 'Parallel groups:' in source
+    has_review_path = 'Review at .purlin/cache/delivery_plan.md' in source
 
-    ok = (has_heartbeat_loop and has_heartbeat_output and has_stderr_output and
-          has_log_size and has_running_status and has_done_status and
-          has_timestamp and has_heartbeat_bg)
-    record("Parallel Phase Heartbeat During Execution", ok,
-           f"loop={has_heartbeat_loop}, output={has_heartbeat_output}, "
-           f"stderr={has_stderr_output}, size={has_log_size}, "
-           f"running={has_running_status}, done={has_done_status}, "
-           f"timestamp={has_timestamp}, bg={has_heartbeat_bg}" if not ok else "")
+    ok = (has_render_fn and has_render_call and has_header_cols and
+          has_bold_cyan and has_green_sep and has_proceed and
+          has_parallel_groups and has_review_path)
+    record("Approval Checkpoint Renders Console Table", ok,
+           f"fn={has_render_fn}, call={has_render_call}, "
+           f"cols={has_header_cols}, cyan={has_bold_cyan}, "
+           f"green={has_green_sep}, proceed={has_proceed}, "
+           f"parallel={has_parallel_groups}, path={has_review_path}" if not ok else "")
 
 
-def test_parallel_output_not_streamed():
-    """Parallel Builder output stays in log files only — not streamed to terminal."""
+def test_sequential_phase_canvas():
+    """Sequential phase canvas shows spinner, elapsed time, log size, and activity."""
     source = read_launcher()
 
-    # Find the parallel builder invocation
-    parallel_section_start = source.find('# PARALLEL EXECUTION')
-    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
-    parallel_section = source[parallel_section_start:]
-    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+    # Verify start_sequential_canvas function exists
+    has_canvas_fn = 'start_sequential_canvas()' in source
+    # Verify sequential section calls it
+    seq_start = source.find('# SEQUENTIAL EXECUTION')
+    assert seq_start != -1
+    seq_section = source[seq_start:]
+    seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
+    has_canvas_call = 'start_sequential_canvas' in seq_section
+    # Verify no tee in sequential section
+    has_no_tee = 'tee "$LOG_FILE"' not in seq_section
+    # Verify redirect to log file only
+    has_redirect = '> "$LOG_FILE" 2>&1' in seq_section
 
-    # The parallel claude call should use > redirect (NOT tee)
-    # The invocation spans multiple lines with \ continuations, so use DOTALL
-    has_redirect_only = bool(re.search(
-        r'claude --print.*?> "\$LOG_FILE" 2>&1',
-        parallel_section,
-        re.DOTALL
-    ))
-    # Should NOT have tee in the parallel builder invocation subshell
-    # Extract the subshell block (between '(' and ') &')
-    subshell_start = parallel_section.find('(\n                cd "$WT_DIR"')
-    subshell_end = parallel_section.find(') &', subshell_start) if subshell_start >= 0 else -1
-    builder_subshell = parallel_section[subshell_start:subshell_end] if subshell_start >= 0 else ""
-    has_no_tee_for_builder = 'tee' not in builder_subshell
+    # Verify canvas shows phase label, spinner, elapsed, log size, activity
+    canvas_fn_start = source.find('start_sequential_canvas()')
+    canvas_fn = source[canvas_fn_start:source.find('\n}', canvas_fn_start) + 2] if canvas_fn_start >= 0 else ""
+    has_phase_label = 'extract_phase_label' in canvas_fn
+    has_activity_extraction = 'extract_activity' in canvas_fn
+    has_log_size = 'wc -c' in canvas_fn
 
-    # Integration: verify parallel output does NOT appear on stdout
+    # Integration: verify log file exists and stdout clean
     tmpdir = tempfile.mkdtemp()
     try:
-        plan = make_plan([
-            (1, "A", "PENDING", ["a.md"]),
-            (2, "B", "PENDING", ["b.md"]),
-        ])
-        graph = make_graph([("a.md", []), ("b.md", [])])
+        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
+        graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, plan, graph)
-        mock_bin = make_mock_claude(tmpdir, "phase_complete", phase_count=2,
-                                   eval_responses=[("continue", "Parallel group done")])
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[("continue", "done")])
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
-        # Parallel builder output should NOT be in stdout
+        log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'continuous_build_phase_1.log')
+        log_exists = os.path.exists(log_path)
+        log_content = ""
+        if log_exists:
+            with open(log_path) as f:
+                log_content = f.read()
+        log_has_output = "Phase 1 of" in log_content
+        # stdout should NOT have builder output (canvas model)
         stdout_clean = "Phase 1 of" not in proc.stdout
 
-        ok = has_redirect_only and has_no_tee_for_builder and stdout_clean
-        record("Parallel Phase Output Not Streamed", ok,
-               f"redirect={has_redirect_only}, no_tee={has_no_tee_for_builder}, "
-               f"stdout_clean={stdout_clean}, stdout={proc.stdout[:200]}" if not ok else "")
+        ok = (has_canvas_fn and has_canvas_call and has_no_tee and has_redirect and
+              has_phase_label and has_activity_extraction and has_log_size and
+              log_exists and log_has_output and stdout_clean)
+        record("Sequential Phase Canvas During Execution", ok,
+               f"fn={has_canvas_fn}, call={has_canvas_call}, "
+               f"no_tee={has_no_tee}, redirect={has_redirect}, "
+               f"label={has_phase_label}, activity={has_activity_extraction}, "
+               f"log_size={has_log_size}, log={log_exists}, "
+               f"log_output={log_has_output}, stdout_clean={stdout_clean}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
 
-def test_heartbeat_stops_after_parallel_complete():
-    """Heartbeat process is terminated immediately after all parallel Builders complete,
-    before worktree merge begins."""
+def test_parallel_phase_canvas():
+    """Parallel phase canvas shows multi-line heartbeat display with per-phase details."""
     source = read_launcher()
 
-    # Find the parallel execution section
-    parallel_section_start = source.find('# PARALLEL EXECUTION')
-    assert parallel_section_start != -1, "Could not find PARALLEL EXECUTION section"
-    parallel_section = source[parallel_section_start:]
+    # Verify start_parallel_canvas function exists
+    has_canvas_fn = 'start_parallel_canvas()' in source
+    # Verify it's called in the parallel section
+    parallel_start = source.find('# PARALLEL EXECUTION')
+    assert parallel_start != -1
+    parallel_section = source[parallel_start:]
     parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+    has_canvas_call = 'start_parallel_canvas' in parallel_section
+    # Verify canvas PID tracked
+    has_canvas_pid = 'CANVAS_PID=$!' in source
 
-    # Verify heartbeat kill is after wait and before merge
-    wait_pos = parallel_section.find('# Wait for all parallel builders')
-    heartbeat_kill_pos = parallel_section.find('# Terminate heartbeat before merge')
-    merge_pos = parallel_section.find('# Merge each worktree branch')
+    # Verify multi-line display in the canvas function
+    canvas_fn_start = source.find('start_parallel_canvas()')
+    canvas_fn = source[canvas_fn_start:source.find('\n}\n', canvas_fn_start) + 3] if canvas_fn_start >= 0 else ""
+    has_timestamp = 'date +%H:%M:%S' in canvas_fn
+    has_per_phase = 'Parallel group (' in canvas_fn
+    has_running = 'running' in canvas_fn
+    has_done = 'done' in canvas_fn
+    has_cursor_up = '\\033[%dA' in canvas_fn
+    has_clear = '\\033[J' in canvas_fn
+    has_log_size = 'wc -c' in canvas_fn
 
-    has_kill_after_wait = wait_pos < heartbeat_kill_pos if (wait_pos >= 0 and heartbeat_kill_pos >= 0) else False
-    has_kill_before_merge = heartbeat_kill_pos < merge_pos if (heartbeat_kill_pos >= 0 and merge_pos >= 0) else False
-
-    # Verify the kill command targets the heartbeat PID
-    has_kill_cmd = 'kill "$HEARTBEAT_PID"' in parallel_section
-    # Verify it waits for the heartbeat to actually terminate
-    has_wait_heartbeat = 'wait "$HEARTBEAT_PID"' in parallel_section
-
-    # Also verify cleanup function kills heartbeat on unexpected exit
-    cleanup_section = source[source.find('cleanup()'):source.find('trap cleanup')]
-    has_cleanup_kill = 'HEARTBEAT_PID' in cleanup_section
-
-    ok = (has_kill_after_wait and has_kill_before_merge and
-          has_kill_cmd and has_wait_heartbeat and has_cleanup_kill)
-    record("Heartbeat Stops After Parallel Group Completes", ok,
-           f"after_wait={has_kill_after_wait}, before_merge={has_kill_before_merge}, "
-           f"kill_cmd={has_kill_cmd}, wait_hb={has_wait_heartbeat}, "
-           f"cleanup={has_cleanup_kill}" if not ok else "")
+    ok = (has_canvas_fn and has_canvas_call and has_canvas_pid and
+          has_timestamp and has_per_phase and has_running and has_done and
+          has_cursor_up and has_clear and has_log_size)
+    record("Parallel Phase Canvas During Execution", ok,
+           f"fn={has_canvas_fn}, call={has_canvas_call}, pid={has_canvas_pid}, "
+           f"timestamp={has_timestamp}, per_phase={has_per_phase}, "
+           f"running={has_running}, done={has_done}, "
+           f"cursor_up={has_cursor_up}, clear={has_clear}, "
+           f"log_size={has_log_size}" if not ok else "")
 
 
-def test_resume_session_output_streamed_and_appended():
-    """Resume session output is streamed via tee -a to append to existing log file."""
+def test_all_builder_output_routes_to_log_files():
+    """ALL Builder output in continuous mode goes to log files only — no tee."""
+    source = read_launcher()
+
+    # Continuous mode section only
+    cont_start = source.find('# CONTINUOUS MODE')
+    assert cont_start != -1
+    continuous_section = source[cont_start:]
+
+    # No tee in any builder invocation in continuous mode
+    has_no_tee = 'tee' not in continuous_section
+
+    # Verify redirect patterns exist for bootstrap, sequential, and parallel
+    bootstrap_start = source.find('# --- Bootstrap session')
+    bootstrap_section = source[bootstrap_start:]
+    bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial') if '# --- Track initial' in bootstrap_section else len(bootstrap_section)]
+    has_bootstrap_redirect = '> "$BOOTSTRAP_LOG" 2>&1' in bootstrap_section
+
+    seq_start = source.find('# SEQUENTIAL EXECUTION')
+    seq_section = source[seq_start:]
+    seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
+    has_seq_redirect = '> "$LOG_FILE" 2>&1' in seq_section
+    has_seq_append = '>> "$LOG_FILE" 2>&1' in seq_section
+
+    parallel_start = source.find('# PARALLEL EXECUTION')
+    parallel_section = source[parallel_start:]
+    parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
+    has_par_redirect = '> "$LOG_FILE" 2>&1' in parallel_section
+
+    # Integration: verify no builder output on stdout
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([(1, "Only", "PENDING", ["a.md"])])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[("continue", "done")])
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+        stdout_clean = "Phase 1 of" not in proc.stdout
+
+        ok = (has_no_tee and has_bootstrap_redirect and has_seq_redirect and
+              has_seq_append and has_par_redirect and stdout_clean)
+        record("All Builder Output Routes to Log Files in Continuous Mode", ok,
+               f"no_tee={has_no_tee}, boot_redir={has_bootstrap_redirect}, "
+               f"seq_redir={has_seq_redirect}, seq_append={has_seq_append}, "
+               f"par_redir={has_par_redirect}, stdout_clean={stdout_clean}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_interphase_canvas_shows_evaluator_status():
+    """Inter-phase canvas shows spinner with evaluator/re-analysis status."""
+    source = read_launcher()
+
+    # Verify start_interphase_canvas function exists
+    has_interphase_fn = 'start_interphase_canvas()' in source
+    # Verify evaluator status message
+    has_eval_msg = 'Evaluating phase' in source or 'Evaluating parallel group' in source
+    # Verify re-analysis message
+    has_reanalyze_msg = 'Re-analyzing delivery plan...' in source
+    # Verify it's called before evaluator and before re-analysis
+    has_eval_call = bool(re.search(r'start_interphase_canvas.*Evaluating', source, re.DOTALL))
+    has_reanalyze_call = bool(re.search(r'start_interphase_canvas.*Re-analyzing', source, re.DOTALL))
+    # Verify stop_canvas is called after evaluator
+    has_stop_after_eval = 'stop_canvas' in source
+
+    ok = (has_interphase_fn and has_eval_msg and has_reanalyze_msg and
+          has_eval_call and has_reanalyze_call and has_stop_after_eval)
+    record("Inter-Phase Canvas Shows Evaluator Status", ok,
+           f"fn={has_interphase_fn}, eval_msg={has_eval_msg}, "
+           f"reanalyze_msg={has_reanalyze_msg}, eval_call={has_eval_call}, "
+           f"reanalyze_call={has_reanalyze_call}, "
+           f"stop={has_stop_after_eval}" if not ok else "")
+
+
+def test_canvas_clears_before_final_summary():
+    """Canvas is cleared one final time before the permanent exit summary."""
+    source = read_launcher()
+
+    # Find exit summary section
+    summary_start = source.find('# Exit Summary (Section 2.16)')
+    assert summary_start != -1
+    summary_section = source[summary_start:]
+
+    # Verify canvas_clear is called before exit summary output
+    has_canvas_clear = 'canvas_clear' in summary_section
+    # canvas_clear should come before the summary header
+    clear_pos = summary_section.find('canvas_clear')
+    header_pos = summary_section.find('=== Continuous Build Summary ===')
+    has_clear_before_header = (clear_pos >= 0 and header_pos >= 0 and clear_pos < header_pos)
+    # Verify exit summary uses colored output
+    has_colored_header = 'C_BOLD_CYAN' in summary_section
+    has_colored_phases = 'C_GREEN' in summary_section or 'GREEN' in summary_section
+    has_colored_footer = 'C_BOLD_CYAN' in summary_section
+
+    ok = (has_canvas_clear and has_clear_before_header and
+          has_colored_header and has_colored_phases and has_colored_footer)
+    record("Canvas Clears Before Final Summary", ok,
+           f"clear={has_canvas_clear}, before_header={has_clear_before_header}, "
+           f"colored_header={has_colored_header}, colored_phases={has_colored_phases}, "
+           f"colored_footer={has_colored_footer}" if not ok else "")
+
+
+def test_canvas_falls_back_to_milestone_lines():
+    """When stderr is not a TTY, no canvas — only milestone lines, no ANSI."""
+    source = read_launcher()
+
+    # Verify canvas_milestone function exists
+    has_milestone_fn = 'canvas_milestone()' in source
+    # Verify milestone is used in non-TTY paths
+    has_bootstrap_milestone = bool(re.search(r'canvas_milestone.*Bootstrap', source))
+    has_phase_milestone = bool(re.search(r'canvas_milestone.*Phase', source))
+    # Verify TTY guard in canvas start functions
+    has_tty_guard_bootstrap = '[ -t 2 ]' in source
+    # Verify no ANSI in milestone function
+    milestone_start = source.find('canvas_milestone()')
+    milestone_fn = source[milestone_start:source.find('\n}', milestone_start) + 2] if milestone_start >= 0 else ""
+    has_no_ansi_milestone = '\\033[' not in milestone_fn
+
+    ok = (has_milestone_fn and has_bootstrap_milestone and has_phase_milestone and
+          has_tty_guard_bootstrap and has_no_ansi_milestone)
+    record("Canvas Falls Back to Milestone Lines When Not a TTY", ok,
+           f"fn={has_milestone_fn}, boot_ms={has_bootstrap_milestone}, "
+           f"phase_ms={has_phase_milestone}, tty_guard={has_tty_guard_bootstrap}, "
+           f"no_ansi={has_no_ansi_milestone}" if not ok else "")
+
+
+def test_canvas_render_loop_lifecycle():
+    """Canvas render loop PID is tracked and terminated when phase completes."""
+    source = read_launcher()
+
+    # Verify CANVAS_PID variable is used (not HEARTBEAT_PID)
+    has_canvas_pid = 'CANVAS_PID=' in source
+    has_no_heartbeat_pid = 'HEARTBEAT_PID' not in source
+    # Verify stop_canvas function exists and kills + waits
+    has_stop_fn = 'stop_canvas()' in source
+    stop_fn_start = source.find('stop_canvas()')
+    stop_fn = source[stop_fn_start:source.find('\n}', stop_fn_start) + 2] if stop_fn_start >= 0 else ""
+    has_kill_in_stop = 'kill "$CANVAS_PID"' in stop_fn
+    has_wait_in_stop = 'wait "$CANVAS_PID"' in stop_fn
+    has_clear_in_stop = 'canvas_clear' in stop_fn
+    # Verify cleanup function references CANVAS_PID
+    cleanup_start = source.find('cleanup()')
+    cleanup_end = source.find('trap cleanup')
+    cleanup_fn = source[cleanup_start:cleanup_end] if cleanup_start >= 0 else ""
+    has_cleanup_canvas = 'CANVAS_PID' in cleanup_fn
+    # Verify stop_canvas is called at phase boundaries
+    has_stop_calls = source.count('stop_canvas') >= 3  # bootstrap, parallel, sequential
+
+    ok = (has_canvas_pid and has_no_heartbeat_pid and has_stop_fn and
+          has_kill_in_stop and has_wait_in_stop and has_clear_in_stop and
+          has_cleanup_canvas and has_stop_calls)
+    record("Canvas Render Loop Lifecycle", ok,
+           f"pid={has_canvas_pid}, no_hb={has_no_heartbeat_pid}, "
+           f"stop_fn={has_stop_fn}, kill={has_kill_in_stop}, "
+           f"wait={has_wait_in_stop}, clear={has_clear_in_stop}, "
+           f"cleanup={has_cleanup_canvas}, stops={has_stop_calls}" if not ok else "")
+
+
+def test_resume_session_log_appended():
+    """Resume session output is appended to existing log file (not overwritten)."""
     source = read_launcher()
 
     # Find the sequential execution section
-    seq_section_start = source.find('# SEQUENTIAL EXECUTION')
-    assert seq_section_start != -1, "Could not find SEQUENTIAL EXECUTION section"
-    seq_section = source[seq_section_start:]
+    seq_start = source.find('# SEQUENTIAL EXECUTION')
+    assert seq_start != -1
+    seq_section = source[seq_start:]
     seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
 
-    # The resume path should use tee -a (append mode)
-    has_tee_append = bool(re.search(r'tee -a "\$LOG_FILE"', seq_section))
+    # The resume path should use >> (append mode), not > (overwrite)
+    has_append = '>>' in seq_section and '$LOG_FILE' in seq_section
 
     # Integration test: verify both initial and resumed output in log
     tmpdir = tempfile.mkdtemp()
@@ -2753,7 +2890,6 @@ def test_resume_session_output_streamed_and_appended():
         graph = make_graph([("a.md", [])])
         make_mock_project(tmpdir, plan, graph)
 
-        # Custom mock: first call outputs approval prompt, resume outputs completion
         mock_bin_dir = os.path.join(tmpdir, 'mock_bin')
         os.makedirs(mock_bin_dir, exist_ok=True)
 
@@ -2816,76 +2952,24 @@ exit 0
             with open(log_path) as f:
                 log_content = f.read()
 
-        # Log should contain both initial and resumed output (tee -a appends)
+        # Log should contain both initial and resumed output (>> appends)
         has_initial = "INITIAL_RUN_OUTPUT" in log_content
         has_resumed = "RESUMED_RUN_OUTPUT" in log_content
-        # stdout should have both outputs (streamed via tee)
-        stdout_has_initial = "INITIAL_RUN_OUTPUT" in proc.stdout
-        stdout_has_resumed = "RESUMED_RUN_OUTPUT" in proc.stdout
 
-        ok = (has_tee_append and has_initial and has_resumed and
-              stdout_has_initial and stdout_has_resumed)
-        record("Resume Session Output Streamed and Appended", ok,
-               f"tee_append={has_tee_append}, log_initial={has_initial}, "
-               f"log_resumed={has_resumed}, stdout_initial={stdout_has_initial}, "
-               f"stdout_resumed={stdout_has_resumed}" if not ok else "")
+        ok = has_append and has_initial and has_resumed
+        record("Resume Session Log Appended", ok,
+               f"append={has_append}, log_initial={has_initial}, "
+               f"log_resumed={has_resumed}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
 
 # ============================================================
-# Enhanced Heartbeat & Graceful Stop (Section 2.16) (7)
+# Canvas & Graceful Stop (Section 2.16) (5)
 # ============================================================
 
-def test_heartbeat_overwrites_previous_output():
-    """Heartbeat uses ANSI cursor-up and clear-to-end for in-place overwrite when TTY."""
-    source = read_launcher()
-
-    parallel_start = source.find('# Start enhanced heartbeat')
-    assert parallel_start != -1, "Could not find enhanced heartbeat section"
-    heartbeat_section = source[parallel_start:source.find('HEARTBEAT_PID=$!', parallel_start) + 20]
-
-    # Verify ANSI cursor-up sequence
-    has_cursor_up = '\\033[%dA' in heartbeat_section
-    # Verify clear-to-end sequence
-    has_clear = '\\033[J' in heartbeat_section
-    # Verify previous line count tracking
-    has_prev_lines = 'PREV_LINES=' in heartbeat_section
-    # Verify TTY check gates ANSI usage
-    has_tty_check = '[ -t 2 ]' in heartbeat_section
-
-    ok = has_cursor_up and has_clear and has_prev_lines and has_tty_check
-    record("Heartbeat Overwrites Previous Output In Place", ok,
-           f"cursor_up={has_cursor_up}, clear={has_clear}, prev_lines={has_prev_lines}, "
-           f"tty_check={has_tty_check}" if not ok else "")
-
-
-def test_heartbeat_falls_back_plain_output():
-    """Heartbeat uses single-line append-only output without ANSI when not TTY."""
-    source = read_launcher()
-
-    parallel_start = source.find('# Start enhanced heartbeat')
-    assert parallel_start != -1
-    heartbeat_section = source[parallel_start:source.find('HEARTBEAT_PID=$!', parallel_start) + 20]
-
-    # Verify non-TTY fallback path exists
-    has_non_tty_branch = 'else' in heartbeat_section
-    # Non-TTY path uses compact single-line format
-    has_compact_parts = 'COMPACT_PARTS' in heartbeat_section
-    # Non-TTY path does not use ANSI in the else branch
-    # Find the else branch after TTY check
-    else_idx = heartbeat_section.rfind('else')
-    else_block = heartbeat_section[else_idx:] if else_idx >= 0 else ""
-    has_no_ansi_in_else = '\\033[' not in else_block.split('done')[0] if 'done' in else_block else True
-
-    ok = has_non_tty_branch and has_compact_parts and has_no_ansi_in_else
-    record("Heartbeat Falls Back to Plain Output When Not a TTY", ok,
-           f"non_tty={has_non_tty_branch}, compact={has_compact_parts}, "
-           f"no_ansi={has_no_ansi_in_else}" if not ok else "")
-
-
-def test_heartbeat_shows_current_activity():
-    """Heartbeat extracts current activity from log file tail for running phases."""
+def test_canvas_shows_current_builder_activity():
+    """Canvas extracts current activity from log file tail for running phases."""
     source = read_launcher()
 
     # Verify extract_activity function exists
@@ -2894,44 +2978,50 @@ def test_heartbeat_shows_current_activity():
     has_tail = 'tail -20' in source
     # Verify it detects file editing
     has_editing = 'editing' in source
-    # Verify activity is called from heartbeat
-    heartbeat_start = source.find('# Start enhanced heartbeat')
-    heartbeat_section = source[heartbeat_start:source.find('HEARTBEAT_PID=$!', heartbeat_start) + 20]
-    has_activity_call = 'extract_activity' in heartbeat_section
+    # Verify activity is called from canvas functions
+    has_activity_in_sequential = 'extract_activity' in source[source.find('start_sequential_canvas'):] if 'start_sequential_canvas' in source else False
+    has_activity_in_parallel = 'extract_activity' in source[source.find('start_parallel_canvas'):] if 'start_parallel_canvas' in source else False
     # Verify truncation to ~50 chars
     has_truncation = '%.50s' in source
 
-    ok = has_extract_fn and has_tail and has_editing and has_activity_call and has_truncation
-    record("Heartbeat Shows Current Builder Activity", ok,
+    ok = (has_extract_fn and has_tail and has_editing and
+          has_activity_in_sequential and has_activity_in_parallel and has_truncation)
+    record("Canvas Shows Current Builder Activity", ok,
            f"fn={has_extract_fn}, tail={has_tail}, editing={has_editing}, "
-           f"call={has_activity_call}, trunc={has_truncation}" if not ok else "")
+           f"seq_call={has_activity_in_sequential}, par_call={has_activity_in_parallel}, "
+           f"trunc={has_truncation}" if not ok else "")
 
 
-def test_heartbeat_warns_empty_log():
-    """Heartbeat shows red warning for completed phases with 0K log size."""
+def test_canvas_warns_on_empty_log():
+    """Canvas shows red warning for completed phases with 0K log size."""
     source = read_launcher()
 
-    heartbeat_start = source.find('# Start enhanced heartbeat')
-    assert heartbeat_start != -1
-    heartbeat_section = source[heartbeat_start:source.find('HEARTBEAT_PID=$!', heartbeat_start) + 20]
+    # Find the parallel canvas function
+    canvas_start = source.find('start_parallel_canvas()')
+    assert canvas_start != -1
+    canvas_fn = source[canvas_start:]
+    # Find the end of the function (next top-level function)
+    next_fn = canvas_fn.find('\n# ---', 10)
+    if next_fn > 0:
+        canvas_fn = canvas_fn[:next_fn]
 
     # Verify 0K check exists
-    has_zero_k_check = '"$FSIZE" = "0K"' in heartbeat_section
+    has_zero_k_check = '"$FSIZE" = "0K"' in canvas_fn
     # Verify red color for 0K (ANSI red: \033[31m)
-    has_red_color = '\\033[31m' in heartbeat_section
+    has_red_color = '\\033[31m' in canvas_fn
     # Verify green color for normal done (ANSI green: \033[32m)
-    has_green_color = '\\033[32m' in heartbeat_section
+    has_green_color = '\\033[32m' in canvas_fn
     # Verify yellow for running (ANSI yellow: \033[33m)
-    has_yellow_color = '\\033[33m' in heartbeat_section
+    has_yellow_color = '\\033[33m' in canvas_fn
 
     ok = has_zero_k_check and has_red_color and has_green_color and has_yellow_color
-    record("Heartbeat Warns on Empty Log at Phase Completion", ok,
+    record("Canvas Warns on Empty Log at Phase Completion", ok,
            f"zero_k={has_zero_k_check}, red={has_red_color}, "
            f"green={has_green_color}, yellow={has_yellow_color}" if not ok else "")
 
 
 def test_graceful_stop_on_sigint():
-    """SIGINT trap sets stop flag, kills builders and heartbeat, exits non-zero."""
+    """SIGINT trap sets stop flag, kills builders and canvas, exits non-zero."""
     source = read_launcher()
 
     # Verify graceful_stop function exists
@@ -2942,25 +3032,31 @@ def test_graceful_stop_on_sigint():
     has_trap = 'trap graceful_stop INT' in source
     # Verify it kills parallel builder PIDs
     has_kill_pids = 'kill "$pid"' in source
-    # Verify it kills heartbeat
+    # Verify it kills canvas render loop
     handler_start = source.find('graceful_stop() {')
     handler_end = source.find('\ntrap graceful_stop INT')
     handler_body = source[handler_start:handler_end] if handler_start >= 0 else ""
-    has_kill_heartbeat = 'HEARTBEAT_PID' in handler_body
+    has_kill_canvas = 'CANVAS_PID' in handler_body
+    # Verify it kills sequential builder
+    has_kill_builder = 'BUILDER_PID' in handler_body
     # Verify trap reset for second SIGINT
     has_trap_reset = 'trap - INT' in handler_body
     # Verify STOP_REQUESTED check in loop causes break
     has_stop_check = '[ "$STOP_REQUESTED" = "true" ]' in source
     # Verify interrupted phases are recorded
     has_interrupted = '"INTERRUPTED"' in source
+    # Verify canvas is cleared before exit summary
+    has_canvas_clear = 'canvas_clear' in source
 
     ok = (has_handler and has_stop_flag and has_trap and has_kill_pids and
-          has_kill_heartbeat and has_trap_reset and has_stop_check and has_interrupted)
+          has_kill_canvas and has_kill_builder and has_trap_reset and
+          has_stop_check and has_interrupted and has_canvas_clear)
     record("Graceful Stop on SIGINT", ok,
            f"handler={has_handler}, flag={has_stop_flag}, trap={has_trap}, "
-           f"kill_pids={has_kill_pids}, kill_hb={has_kill_heartbeat}, "
-           f"reset={has_trap_reset}, check={has_stop_check}, "
-           f"interrupted={has_interrupted}" if not ok else "")
+           f"kill_pids={has_kill_pids}, kill_canvas={has_kill_canvas}, "
+           f"kill_builder={has_kill_builder}, reset={has_trap_reset}, "
+           f"check={has_stop_check}, interrupted={has_interrupted}, "
+           f"canvas_clear={has_canvas_clear}" if not ok else "")
 
 
 def test_second_sigint_forces_exit():
@@ -3107,19 +3203,21 @@ if __name__ == '__main__':
     test_phase_count_changes_in_summary()
     test_reanalysis_after_retry()
 
-    # Builder Output Visibility (Section 2.16) (6)
-    test_sequential_phase_output_streamed()
-    test_bootstrap_output_streamed()
-    test_parallel_heartbeat_during_execution()
-    test_parallel_output_not_streamed()
-    test_heartbeat_stops_after_parallel_complete()
-    test_resume_session_output_streamed_and_appended()
+    # Terminal Canvas Engine (Section 2.16) (12)
+    test_bootstrap_canvas_shows_spinner()
+    test_approval_checkpoint_renders_table()
+    test_sequential_phase_canvas()
+    test_parallel_phase_canvas()
+    test_all_builder_output_routes_to_log_files()
+    test_interphase_canvas_shows_evaluator_status()
+    test_canvas_clears_before_final_summary()
+    test_canvas_falls_back_to_milestone_lines()
+    test_canvas_render_loop_lifecycle()
+    test_resume_session_log_appended()
+    test_canvas_shows_current_builder_activity()
+    test_canvas_warns_on_empty_log()
 
-    # Enhanced Heartbeat & Graceful Stop (Section 2.16) (7)
-    test_heartbeat_overwrites_previous_output()
-    test_heartbeat_falls_back_plain_output()
-    test_heartbeat_shows_current_activity()
-    test_heartbeat_warns_empty_log()
+    # Graceful Stop & Post-Run (Section 2.16) (3)
     test_graceful_stop_on_sigint()
     test_second_sigint_forces_exit()
     test_post_run_status_refresh()
