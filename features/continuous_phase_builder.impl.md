@@ -90,11 +90,17 @@ Added stacked single-column layout for terminal widths below 60 columns (Section
 
 The macOS `script -q /dev/null` fallback in `run_line_buffered()` uses `</dev/null` to prevent `script` from consuming parent stdin. Without this, `script` connects its stdin to the pseudo-TTY and steals input meant for later `read` commands (e.g., the approval checkpoint prompt). All continuous mode Builders are non-interactive (`-p` mode) so they never need stdin.
 
-## Line Buffering: script output routing bug (2026-03-17)
+## Line Buffering: script output routing (2026-03-17)
 
-[DISCOVERY] The current `script -q /dev/null "$@"` invocation is broken for log file capture. macOS `script` writes the session transcript to its **file argument** (`/dev/null` in this case), not to stdout. So when the call site does `run_line_buffered claude ... > "$LOG_FILE" 2>&1`, the `> "$LOG_FILE"` redirect captures nothing meaningful -- only `script`'s control characters (`^D` + backspaces, 4 bytes total). The actual Builder output goes to `/dev/null` and is lost.
+macOS `script` tees output to BOTH its file argument AND stdout. The file argument MUST be `/dev/null` (not `/dev/stdout`). Using `/dev/stdout` causes every line to appear twice in the log file because both the transcript and stdout resolve to the same fd when stdout is redirected (`> "$LOG_FILE"`). With `/dev/null`, the transcript copy is discarded and only the stdout copy reaches the log redirect — clean, no duplication.
 
-Fix: use `script -q /dev/stdout "$@"` instead of `script -q /dev/null "$@"`. The `/dev/stdout` file argument tells `script` to write the transcript to stdout, which then flows through the `> "$LOG_FILE"` redirect as intended. Alternatively, a named pipe or process substitution could work, but `/dev/stdout` is the simplest fix and is available on macOS.
+The functional test verifies: (a) content appears in the log file during execution (incremental, not buffered until exit), (b) all subprocess output is present after completion, (c) no line duplication.
+
+## Stream-JSON Output Format (2026-03-17)
+
+All `claude --print` invocations in continuous mode use `--output-format stream-json` to produce NDJSON (newline-delimited JSON) output. Without this flag, `--print` in text mode only emits the assistant's final text responses — tool calls, file reads, edits, and intermediate reasoning are silent. With `stream-json`, every message, tool_use, tool_result, and result event is emitted as a JSON line, giving the log files real content for activity monitoring and evaluator analysis.
+
+The `extract_activity` function's filename regex (`grep -oE '[a-zA-Z0-9_.-]+\.(md|py|sh|...)'`) still matches file paths embedded in JSON values like `"file_path":"foo.py"`, so activity extraction works without changes.
 
 ## Stale IN_PROGRESS Recovery
 

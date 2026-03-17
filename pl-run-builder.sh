@@ -1007,7 +1007,7 @@ BOOTSTRAP_OVERRIDE
     start_bootstrap_canvas
 
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-    run_line_buffered claude --print --session-id "$BOOTSTRAP_SESSION_ID" \
+    run_line_buffered claude --print --output-format stream-json --session-id "$BOOTSTRAP_SESSION_ID" \
         "${CLI_ARGS[@]}" \
         --append-system-prompt-file "$BOOTSTRAP_PROMPT_FILE" \
         "Begin Builder session." > "$BOOTSTRAP_LOG" 2>&1
@@ -1198,7 +1198,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             (
                 cd "$WT_DIR" || exit 1
                 export PURLIN_PROJECT_ROOT="$WT_DIR"
-                run_line_buffered claude --print "${CLI_ARGS[@]}" \
+                run_line_buffered claude --print --output-format stream-json "${CLI_ARGS[@]}" \
                     --append-system-prompt-file "$PARALLEL_PROMPT_FILE" \
                     "$INITIAL_MSG" > "$LOG_FILE" 2>&1
             ) &
@@ -1325,7 +1325,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             # Execute Builder based on action type
             case "$RUN_ACTION" in
                 run|retry)
-                    run_line_buffered claude --print --session-id "$SESSION_ID" \
+                    run_line_buffered claude --print --output-format stream-json --session-id "$SESSION_ID" \
                         "${CLI_ARGS[@]}" \
                         --append-system-prompt-file "$PROMPT_FILE" \
                         "$INITIAL_MSG" > "$LOG_FILE" 2>&1 &
@@ -1334,7 +1334,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     BUILDER_PID=""
                     ;;
                 resume)
-                    run_line_buffered claude --resume "$SESSION_ID" --print \
+                    run_line_buffered claude --resume "$SESSION_ID" --print --output-format stream-json \
                         "${CLI_ARGS[@]}" \
                         "Approved. Proceed." >> "$LOG_FILE" 2>&1 &
                     BUILDER_PID=$!

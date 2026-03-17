@@ -154,23 +154,37 @@ if echo "$@" | grep -q "json-schema"; then
     exit 0
 fi
 
-# Builder invocation — produce output based on behavior
+# Builder invocation — produce stream-json output (NDJSON)
+emit_json() {{
+    echo "$1"
+}}
+
 case "$BEHAVIOR" in
     phase_complete)
-        echo "Phase 1 of $PHASE_COUNT complete"
-        echo "Recommended next step: run QA to verify Phase 1 features."
+        emit_json '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+        emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Reading feature spec..."}}]}}}}'
+        emit_json '{{"type":"tool_use","name":"Read","input":{{"file_path":"features/a.md"}}}}'
+        emit_json '{{"type":"tool_result","output":"# Feature A\\nTest content."}}'
+        emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase 1 of '$PHASE_COUNT' complete\\nRecommended next step: run QA to verify Phase 1 features."}}]}}}}'
+        emit_json '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":5000}}'
         ;;
     all_complete)
         if [ -f "$PURLIN_PROJECT_ROOT/.purlin/cache/delivery_plan.md" ]; then
             rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/delivery_plan.md"
         fi
-        echo "All phases complete. Delivery plan deleted."
+        emit_json '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+        emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"All phases complete. Delivery plan deleted."}}]}}}}'
+        emit_json '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
         ;;
     infeasible)
-        echo "INFEASIBLE: Cannot implement feature due to missing dependency."
+        emit_json '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+        emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"INFEASIBLE: Cannot implement feature due to missing dependency."}}]}}}}'
+        emit_json '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":1000}}'
         ;;
     noop)
-        echo "Starting session..."
+        emit_json '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+        emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Starting session..."}}]}}}}'
+        emit_json '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":1000}}'
         ;;
 esac
 
@@ -561,9 +575,13 @@ COUNT=$((COUNT + 1))
 echo "$COUNT" > "$STATE_FILE"
 
 if [ "$COUNT" -eq 1 ]; then
-    echo "Ready to go, or would you like to adjust the plan?"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Ready to go, or would you like to adjust the plan?"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 else
-    echo "Phase 1 of 1 complete"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase 1 of 1 complete"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 fi
 exit 0
 ''')
@@ -638,10 +656,13 @@ COUNT=$((COUNT + 1))
 echo "$COUNT" > "$STATE_FILE"
 
 if [ "$COUNT" -le 1 ]; then
-    echo "Context limit approaching. Saving checkpoint."
-    echo "context exhaustion"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Context limit approaching. Saving checkpoint.\\ncontext exhaustion"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 else
-    echo "Phase 1 of 1 complete"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase 1 of 1 complete"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 fi
 exit 0
 ''')
@@ -852,12 +873,16 @@ if [ "$CALL_NUM" -eq 1 ]; then
 {plan_text}
 PLAN_EOF
     fi
-    echo "Bootstrap session complete."
+    echo '{{"type":"system","subtype":"init","session_id":"mock-bootstrap"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Bootstrap session complete."}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-bootstrap","cost_usd":0.01,"duration_ms":3000}}'
     exit {exit_code}
 fi
 
 # Phase execution calls
-echo "Phase complete"
+echo '{{"type":"system","subtype":"init","session_id":"mock-phase"}}'
+echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase complete"}}]}}}}'
+echo '{{"type":"result","subtype":"success","session_id":"mock-phase","cost_usd":0.01,"duration_ms":5000}}'
 exit 0
 ''')
     os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
@@ -1153,7 +1178,9 @@ fi
 
 # Builder call — modify delivery plan to trigger fallback "continue"
 # but since there's only 1 phase, the outer loop will end
-echo "Phase 1 of 1 complete"
+echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase 1 of 1 complete"}}]}}}}'
+echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 exit 0
 ''')
         os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
@@ -1229,14 +1256,24 @@ def test_logging_per_phase():
 
         log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'continuous_build_phase_1.log')
         log_exists = os.path.exists(log_path)
-        log_has_content = False
+        log_content = ""
         if log_exists:
             with open(log_path) as f:
-                log_has_content = len(f.read().strip()) > 0
+                log_content = f.read()
 
-        ok = log_exists and log_has_content
+        # Must contain actual Builder output in stream-json format
+        has_builder_output = "Phase 1 of" in log_content
+        # Must be JSON lines (stream-json), not plain text
+        has_json = '"type":' in log_content
+        # Log must be substantially larger than 4 bytes (control-char ghost)
+        log_size = len(log_content)
+        not_ghost = log_size > 50
+
+        ok = log_exists and has_builder_output and has_json and not_ghost
         record("Logging Per Phase", ok,
-               f"exists={log_exists}, has_content={log_has_content}" if not ok else "")
+               f"exists={log_exists}, builder_output={has_builder_output}, "
+               f"json={has_json}, size={log_size}, "
+               f"content_preview={repr(log_content[:200])}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -1398,7 +1435,9 @@ if [ -f "$MOD_SCRIPT" ]; then
     python3 "$MOD_SCRIPT" "{plan_path}" "{tmpdir}" 2>/dev/null
 fi
 
-echo "Phase $CALL_NUM complete"
+echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase '"$CALL_NUM"' complete"}}]}}}}'
+echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":5000}}'
 exit 0
 ''')
     os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
@@ -1925,7 +1964,9 @@ elif echo "$@" | grep -q "Phase 5"; then
 AMEND
 fi
 
-echo "Phase complete"
+echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase complete"}}]}}}}'
+echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":5000}}'
 exit 0
 ''')
         os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
@@ -2342,7 +2383,9 @@ elif echo "$@" | grep -q "Phase 5"; then
 {{"requesting_phase": 5, "amendments": [{{"action": "add", "phase_number": 8, "label": "Fix5", "features": ["f5.md"], "reason": "test"}}]}}
 AMEND
 fi
-echo "Phase complete"
+echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"Phase complete"}}]}}}}'
+echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":5000}}'
 exit 0
 ''')
         os.chmod(mock_script, os.stat(mock_script).st_mode | stat.S_IEXEC)
@@ -2860,17 +2903,23 @@ def test_all_builder_output_routes_to_log_files():
     bootstrap_section = source[bootstrap_start:]
     bootstrap_section = bootstrap_section[:bootstrap_section.find('# --- Track initial') if '# --- Track initial' in bootstrap_section else len(bootstrap_section)]
     has_bootstrap_redirect = '> "$BOOTSTRAP_LOG" 2>&1' in bootstrap_section
+    has_bootstrap_stream = '--output-format stream-json' in bootstrap_section
 
     seq_start = source.find('# SEQUENTIAL EXECUTION')
     seq_section = source[seq_start:]
     seq_section = seq_section[:seq_section.find('\n    fi\ndone')]
     has_seq_redirect = '> "$LOG_FILE" 2>&1' in seq_section
     has_seq_append = '>> "$LOG_FILE" 2>&1' in seq_section
+    has_seq_stream = '--output-format stream-json' in seq_section
 
     parallel_start = source.find('# PARALLEL EXECUTION')
     parallel_section = source[parallel_start:]
     parallel_section = parallel_section[:parallel_section.find('\n    else\n')]
     has_par_redirect = '> "$LOG_FILE" 2>&1' in parallel_section
+    has_par_stream = '--output-format stream-json' in parallel_section
+
+    # All claude invocations must use stream-json for real log content
+    all_stream = has_bootstrap_stream and has_seq_stream and has_par_stream
 
     # Integration: verify no builder output on stdout
     tmpdir = tempfile.mkdtemp()
@@ -2884,11 +2933,13 @@ def test_all_builder_output_routes_to_log_files():
         stdout_clean = "Phase 1 of" not in proc.stdout
 
         ok = (has_no_tee and has_bootstrap_redirect and has_seq_redirect and
-              has_seq_append and has_par_redirect and stdout_clean)
+              has_seq_append and has_par_redirect and all_stream and stdout_clean)
         record("All Builder Output Routes to Log Files in Continuous Mode", ok,
                f"no_tee={has_no_tee}, boot_redir={has_bootstrap_redirect}, "
                f"seq_redir={has_seq_redirect}, seq_append={has_seq_append}, "
-               f"par_redir={has_par_redirect}, stdout_clean={stdout_clean}" if not ok else "")
+               f"par_redir={has_par_redirect}, "
+               f"stream_json(boot={has_bootstrap_stream},seq={has_seq_stream},par={has_par_stream}), "
+               f"stdout_clean={stdout_clean}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -3063,11 +3114,13 @@ COUNT=$((COUNT + 1))
 echo "$COUNT" > "$STATE_FILE"
 
 if [ "$COUNT" -eq 1 ]; then
-    echo "INITIAL_RUN_OUTPUT"
-    echo "Ready to go, or would you like to adjust the plan?"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"INITIAL_RUN_OUTPUT\\nReady to go, or would you like to adjust the plan?"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 else
-    echo "RESUMED_RUN_OUTPUT"
-    echo "Phase 1 of 1 complete"
+    echo '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
+    echo '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"RESUMED_RUN_OUTPUT\\nPhase 1 of 1 complete"}}]}}}}'
+    echo '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":3000}}'
 fi
 exit 0
 ''')
@@ -3679,38 +3732,115 @@ def test_canvas_shows_latest_log_line_as_activity():
 # Scenario: Line Buffering Fallback on macOS (Section 2.16)
 # ============================================================
 def test_line_buffering_fallback_on_macos():
-    """When stdbuf is not available, the launcher uses script -q /dev/null
-    to force pseudo-TTY line buffering. If neither is available, warns."""
+    """Functional test: run_line_buffered routes subprocess output to the log
+    file via > redirect, both during execution (incremental) and at completion.
+
+    On macOS, script(1) tees output to both its file arg AND stdout.
+    The file arg MUST be /dev/null (discarded), so only the stdout copy
+    reaches the log file redirect. Using /dev/stdout would cause duplication
+    (every line appears twice) because both destinations are the same fd."""
     source = read_launcher()
 
-    # Verify run_line_buffered function exists
+    # --- Part 1: Source structure ---
     has_fn = 'run_line_buffered()' in source
-
-    # Find the run_line_buffered function body
     fn_start = source.find('run_line_buffered()')
     fn_end = source.find('\n}', fn_start)
     fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
-
-    # Verify fallback chain: stdbuf -> script -> warning
-    has_stdbuf = 'stdbuf -oL' in fn_body
     has_script_fallback = 'script -q /dev/null' in fn_body
-    has_warning = 'Warning' in fn_body or 'warning' in fn_body
-    # Verify the order: stdbuf checked first, then script, then warning fallback
-    stdbuf_pos = fn_body.find('stdbuf')
-    script_pos = fn_body.find('script -q')
-    warning_pos = fn_body.find('Warning') if 'Warning' in fn_body else fn_body.find('warning')
-    has_correct_order = (stdbuf_pos >= 0 and script_pos >= 0 and warning_pos >= 0 and
-                         stdbuf_pos < script_pos < warning_pos)
-    # Verify command -v checks for both tools
-    has_stdbuf_check = 'command -v stdbuf' in fn_body
-    has_script_check = 'command -v script' in fn_body
+    # /dev/stdout causes duplication — must NOT be present
+    no_dev_stdout = 'script -q /dev/stdout' not in fn_body
 
-    ok = (has_fn and has_stdbuf and has_script_fallback and has_warning and
-          has_correct_order and has_stdbuf_check and has_script_check)
-    record("Line Buffering Fallback on macOS", ok,
-           f"fn={has_fn}, stdbuf={has_stdbuf}, script={has_script_fallback}, "
-           f"warning={has_warning}, order={has_correct_order}, "
-           f"stdbuf_check={has_stdbuf_check}, script_check={has_script_check}" if not ok else "")
+    # --- Part 2: Functional test with a slow subprocess ---
+    # Verifies: (a) content appears DURING execution, (b) no duplication,
+    # (c) actual subprocess text lands in the log file
+    tmpdir = tempfile.mkdtemp()
+    try:
+        marker = "BUFFERED_OUTPUT_MARKER_12345"
+        log_file = os.path.join(tmpdir, 'test_output.log')
+
+        # Slow command: writes 3 lines with sleeps between them
+        test_cmd = os.path.join(tmpdir, 'test_echo.sh')
+        with open(test_cmd, 'w') as f:
+            f.write(f'#!/bin/bash\n')
+            f.write(f'echo "{marker}"\n')
+            f.write(f'sleep 1\n')
+            f.write(f'echo "LINE_TWO_DELAYED"\n')
+            f.write(f'sleep 1\n')
+            f.write(f'echo "LINE_THREE_FINAL"\n')
+        os.chmod(test_cmd, os.stat(test_cmd).st_mode | stat.S_IEXEC)
+
+        # Extract the actual function from the launcher
+        fn_start_idx = source.find('run_line_buffered()')
+        fn_end_idx = source.find('\n}', fn_start_idx) + 2
+        fn_source = source[fn_start_idx:fn_end_idx]
+
+        wrapper = os.path.join(tmpdir, 'test_wrapper.sh')
+        with open(wrapper, 'w') as f:
+            f.write('#!/bin/bash\n')
+            # Strip stdbuf from PATH to force the script(1) fallback
+            f.write('CLEAN_PATH=""\n')
+            f.write('IFS=: read -ra DIRS <<< "$PATH"\n')
+            f.write('for d in "${DIRS[@]}"; do\n')
+            f.write('    if [ ! -x "$d/stdbuf" ]; then\n')
+            f.write('        CLEAN_PATH="${CLEAN_PATH:+$CLEAN_PATH:}$d"\n')
+            f.write('    fi\n')
+            f.write('done\n')
+            f.write(f'export PATH="{tmpdir}:$CLEAN_PATH"\n')
+            # Embed the extracted function
+            f.write(fn_source + '\n')
+            # Run backgrounded with redirect — exactly how the launcher does it
+            f.write(f'run_line_buffered "{test_cmd}" > "{log_file}" 2>&1 &\n')
+            f.write('PID=$!\n')
+            # Snapshot mid-execution (after first echo, before second)
+            f.write('sleep 0.5\n')
+            f.write(f'MID_CONTENT=$(cat "{log_file}" 2>/dev/null)\n')
+            f.write('wait $PID 2>/dev/null\n')
+            f.write(f'FINAL_CONTENT=$(cat "{log_file}" 2>/dev/null)\n')
+            # Report results for Python to parse
+            f.write('echo "===MID==="\n')
+            f.write('echo "$MID_CONTENT"\n')
+            f.write('echo "===FINAL==="\n')
+            f.write('echo "$FINAL_CONTENT"\n')
+        os.chmod(wrapper, os.stat(wrapper).st_mode | stat.S_IEXEC)
+
+        proc = subprocess.run(
+            ['bash', wrapper],
+            capture_output=True, text=True, timeout=15, cwd=tmpdir
+        )
+
+        stdout = proc.stdout
+        mid_section = ""
+        final_section = ""
+        if "===MID===" in stdout and "===FINAL===" in stdout:
+            mid_section = stdout.split("===MID===\n")[1].split("===FINAL===")[0]
+            final_section = stdout.split("===FINAL===\n")[1] if "===FINAL===\n" in stdout else ""
+
+        # (a) Content appears DURING execution — mid-snapshot has the marker
+        mid_has_marker = marker in mid_section
+
+        # (b) Final content has all lines
+        final_has_marker = marker in final_section
+        final_has_line_two = "LINE_TWO_DELAYED" in final_section
+        final_has_line_three = "LINE_THREE_FINAL" in final_section
+
+        # (c) No duplication — each line appears exactly once
+        marker_count = final_section.count(marker)
+        line_two_count = final_section.count("LINE_TWO_DELAYED")
+        no_duplication = (marker_count == 1 and line_two_count == 1)
+
+        ok = (has_fn and has_script_fallback and no_dev_stdout and
+              mid_has_marker and final_has_marker and
+              final_has_line_two and final_has_line_three and
+              no_duplication)
+        record("Line Buffering Fallback on macOS", ok,
+               f"fn={has_fn}, script=/dev/null={has_script_fallback}, "
+               f"no_/dev/stdout={no_dev_stdout}, "
+               f"mid_marker={mid_has_marker}, final_marker={final_has_marker}, "
+               f"line2={final_has_line_two}, line3={final_has_line_three}, "
+               f"no_dup={no_duplication}(marker_x{marker_count},line2_x{line_two_count}), "
+               f"rc={proc.returncode}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 def write_results():
