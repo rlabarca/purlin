@@ -193,10 +193,10 @@ possible to avoid conflicts.
 ```
 === Delivery Plan (N phases) ===
 
-  #   Label                        Features                                Complexity   Exec Group
-  --- ---------------------------- --------------------------------------- ------------ -------------------
-  1   Foundation Anchors           policy_critic, design_visual_standards  LOW+LOW      0 (sequential)
-  2   Policy Chain                 policy_release, policy_branch_collab    LOW+LOW      1 (parallel w/ 3)
+  #   Label                        Features                                Exec Group
+  --- ---------------------------- --------------------------------------- -------------------
+  1   Foundation Anchors           policy_critic, design_visual_standards  0 (sequential)
+  2   Policy Chain                 policy_release, policy_branch_collab    1 (parallel w/ 3)
   ...
 
 Parallel groups: 2 (Phases 2+3, Phases 4+5+6)
@@ -205,10 +205,14 @@ Review at .purlin/cache/delivery_plan.md
 Proceed? [Y/n]
 ```
 
-  - Fixed-width columns with space alignment, no Markdown pipes.
+  - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from terminal width (`tput cols`, default 80):
+    - `#` column: 4 characters (fixed).
+    - Remaining width distributed proportionally: `Label` ~30%, `Features` ~45%, `Exec Group` ~25%.
+    - Headers and separator lines use the same computed widths as data rows.
   - ANSI bold cyan (`\033[1;36m`) on header row, green (`\033[32m`) on separator lines.
-  - Phase labels from delivery plan headings, features/complexity/exec group from the analyzer.
-  - Cell content wraps or truncates (with `...`) to fit terminal width (`tput cols`, default 80).
+  - Phase labels and features from delivery plan headings, exec group from the analyzer.
+  - Cell content that exceeds its column width wraps to a continuation line. The continuation line is padded so wrapped text aligns with the column's left edge. Maximum 2 lines per cell; content exceeding 2 lines is truncated with `...` on the second line. When any cell in a row wraps, the entire row occupies 2 terminal lines.
+  - **Live resize:** While the `Proceed? [Y/n]` prompt is active, the launcher traps `SIGWINCH`. On terminal resize, it clears the table (cursor-up + clear), re-reads `tput cols`, recomputes column widths, and re-renders. The SIGWINCH trap is removed after the user responds.
   - TTY fallback: plain uncolored text when stderr is not a TTY.
   - If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
@@ -247,6 +251,8 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 - **Canvas refresh rate:** The canvas render loop runs at ~100ms for spinner frame animation. Heavier updates (log file size, activity extraction) run on 15-second intervals to avoid excessive I/O.
 
+- **Terminal width constraint:** Every line emitted by the canvas engine and all structured output (approval table, phase canvas, exit summary) MUST fit within `tput cols` characters. No output line may exceed terminal width. This prevents the terminal emulator from wrapping lines and breaking column alignment. All renderers read `tput cols` at render time and compute field widths dynamically. Canvas render loops (which re-render at ~100ms) naturally adapt to terminal resizes by re-reading `tput cols` on each cycle. Static displays (approval table, exit summary) use SIGWINCH traps where the display is interactive.
+
 - **Color palette:**
   - Spinner: cyan (`\033[36m`)
   - Headers/titles: bold cyan (`\033[1;36m`)
@@ -262,12 +268,12 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 - **Bootstrap phase canvas:** While the bootstrap Builder runs, the canvas shows a single in-place line with an animated spinner and elapsed time:
 
 ```
-⠹ Starting bootstrap session... 45s
+⠹ Bootstrapping for continuous delivery... 45s
 ```
 
   Spinner cycles through braille characters at ~100ms. Elapsed time updates every second. The line overwrites itself in place. Once bootstrap completes, the canvas clears and transitions to the plan approval table (Section 2.15) or exit state.
 
-- **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.15 approval checkpoint for format). The table replaces the spinner content in the canvas area.
+- **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.15 approval checkpoint for format). The table replaces the spinner content in the canvas area. The table re-renders on terminal resize (SIGWINCH) while the approval prompt is active, recomputing column widths from the new terminal width.
 
 - **Inter-phase canvas:** Between phases (evaluator running, re-analysis), the canvas shows a spinner line:
 
@@ -281,13 +287,13 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 ⠧ Re-analyzing delivery plan... 1s
 ```
 
-- **Sequential phase canvas:** During sequential phase execution, the canvas shows a single-phase version of the heartbeat display with spinner, elapsed time, log file size, and current activity:
+- **Sequential phase canvas:** During sequential phase execution, the canvas shows a single line (or 2 lines if wrapping is needed) with spinner, phase label, status, elapsed time, log size, and current activity. The renderer reads `tput cols` on each render cycle and computes field widths dynamically. Priority order for space allocation: spinner + phase number (fixed) > status + elapsed time > log size > activity. When the full content exceeds terminal width, activity text is truncated first (with `...`); if still too long, the phase label is truncated. When wrapping to 2 lines, the continuation line is indented to align with the phase label column:
 
 ```
 ⠹ Phase 2 -- Policy Chain   running  2m 15s   45K  editing policy_release.md
 ```
 
-  Activity is extracted from the log file tail (same extraction logic as parallel heartbeat). Updated on 15-second intervals.
+  Activity is extracted from the log file tail (same extraction logic as parallel heartbeat). Updated on 15-second intervals. The canvas adapts to terminal resizes automatically since it re-reads terminal width on each ~100ms render cycle.
 
 - **Parallel phase canvas:** During parallel execution, the canvas shows the multi-line heartbeat display:
 
@@ -302,9 +308,10 @@ All continuous mode status output renders into an **in-place terminal canvas** o
   - Phase labels extracted from delivery plan headings (`## Phase N -- Label`).
   - Per-phase elapsed time, frozen at exit for completed phases.
   - Per-phase log file size (e.g., `45K`).
-  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text truncated to ~50 characters.
+  - Current activity for running phases, extracted from log file tail: file operations show `editing <file>`, test runs show `running tests on <feature>`, commands show `running <command>`, default shows `working...`. Activity text is truncated to fit within the remaining width after the phase label, status, elapsed time, and log size fields. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated.
   - Status colors: yellow for running, green for done, red for done with 0K log size (diagnostic warning).
   - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
+  - Each phase line fits within `tput cols` characters. The renderer reads terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
 
 - **Canvas lifecycle:** The canvas render loop (background subshell) is started at the beginning of each phase and terminated when the phase or group completes. For parallel groups, the canvas runs for the duration of the group (started when the group begins, terminated before merge). The canvas PID is tracked alongside Builder PIDs for cleanup.
 
@@ -338,6 +345,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
   - Per-phase status: `COMPLETE`, `INTERRUPTED` (was running when stopped), `SKIPPED` (evaluator said stop), `PENDING` (never started).
   - Per-phase duration for completed and interrupted phases.
   - Per-phase feature list from the delivery plan.
+  - Per-phase lines fit within `tput cols`. When the feature list exceeds the available width, it wraps to a continuation line indented to the `features:` column position. Maximum 2 lines per phase; content exceeding 2 lines is truncated with `...`.
   - Retries called out by phase number.
   - Log file location reminder.
   - Exit summary uses the same color palette: bold cyan header/footer, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED/failed, dim for durations.
@@ -688,14 +696,38 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the bootstrap session created a valid delivery plan
     And stderr is a TTY
     When the canvas transitions to the approval checkpoint
-    Then the canvas clears the spinner and renders a fixed-width console table
-    And the table has columns for phase number, label, features, complexity, and exec group
+    Then the canvas clears the spinner and renders a space-aligned console table sized to the terminal width
+    And the table has columns for phase number, label, features, and exec group
     And the header row uses bold cyan ANSI coloring
     And separator lines use green ANSI coloring
-    And cell content wraps or truncates with "..." to fit terminal width (tput cols)
+    And no output line exceeds the terminal width (tput cols)
+    And column widths are computed proportionally from terminal width
+    And cell content that exceeds its column width wraps to a continuation line aligned with the column start
+    And content exceeding 2 lines is truncated with "..." on the second line
     And the table includes a parallel groups summary line
     And the table includes a delivery plan file path reference
     And the table ends with a "Proceed? [Y/n]" prompt
+
+#### Scenario: Approval Table Respects Narrow Terminal
+    Given pl-run-builder.sh is invoked with --continuous
+    And the bootstrap session created a valid delivery plan
+    And stderr is a TTY with terminal width 80
+    And a phase has a features list longer than the computed Features column width
+    When the approval table renders
+    Then no output line exceeds 80 characters
+    And the features cell wraps to a continuation line padded to the Features column start
+    And the row occupies exactly 2 terminal lines
+    And column alignment is preserved across all rows including wrapped ones
+
+#### Scenario: Approval Table Re-Renders on Terminal Resize
+    Given the approval table is displayed with the "Proceed? [Y/n]" prompt active
+    And stderr is a TTY
+    When the terminal is resized (SIGWINCH signal)
+    Then the launcher clears the existing table via ANSI cursor-up and clear sequences
+    And re-reads the terminal width via tput cols
+    And re-renders the table with recomputed column widths and cell wrapping
+    And the "Proceed? [Y/n]" prompt is re-displayed
+    And no output line exceeds the new terminal width
 
 #### Scenario: Sequential Phase Canvas During Execution
     Given --continuous is active
@@ -706,6 +738,8 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And Builder output is written only to .purlin/runtime/continuous_build_phase_2.log (not the terminal)
     And the canvas overwrites in place on each refresh
     And activity is extracted from the log file tail on 15-second intervals
+    And no output line exceeds the terminal width (tput cols)
+    And if content exceeds terminal width the activity text is truncated first
 
 #### Scenario: Parallel Phase Canvas During Execution
     Given --continuous is active
@@ -719,6 +753,8 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And running phases show activity extracted from the log file tail (truncated to ~50 chars)
     And status colors are applied: yellow for running, green for done, red for done with 0K log
     And the canvas overwrites in place via ANSI cursor-up and clear-to-end sequences
+    And no phase line exceeds the terminal width (tput cols)
+    And the canvas adapts field widths when the terminal is resized
 
 #### Scenario: All Builder Output Routes to Log Files in Continuous Mode
     Given --continuous is active
@@ -746,6 +782,8 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And the exit summary prints as permanent output (not in-place)
     And the exit summary is the only continuous mode output that persists on screen after exit
     And the exit summary uses colored output: bold cyan header, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED
+    And no exit summary line exceeds the terminal width (tput cols)
+    And per-phase feature lists that exceed available width wrap to a continuation line
 
 #### Scenario: Canvas Falls Back to Milestone Lines When Not a TTY
     Given --continuous is active
