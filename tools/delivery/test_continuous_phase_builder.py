@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 64 automated scenarios.
+"""Tests for continuous phase builder — exercises all 67 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -1001,7 +1001,8 @@ def test_bootstrap_completes_work_directly():
 
 
 def test_bootstrap_failure():
-    """Bootstrap exits non-zero without creating plan -> error, non-zero exit."""
+    """Bootstrap exits non-zero without creating plan -> error directing user
+    to run interactive session, launcher exits non-zero status."""
     tmpdir = tempfile.mkdtemp()
     try:
         graph = make_graph([("a.md", [])])
@@ -1013,13 +1014,19 @@ def test_bootstrap_failure():
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
         has_error_msg = "interactive" in proc.stderr.lower()
+        has_nonzero_exit = proc.returncode != 0
+        # Verify no delivery plan was created
+        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        no_plan_created = not os.path.exists(plan_path)
 
         ok = (
-            proc.returncode != 0
+            has_nonzero_exit
             and has_error_msg
+            and no_plan_created
         )
         record("Bootstrap Failure", ok,
                f"rc={proc.returncode}, error={has_error_msg}, "
+               f"no_plan={no_plan_created}, "
                f"stderr={proc.stderr[:500]}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
@@ -3153,7 +3160,8 @@ def test_canvas_warns_on_empty_log():
 
 
 def test_graceful_stop_on_sigint():
-    """SIGINT trap sets stop flag, kills builders and canvas, exits non-zero."""
+    """SIGINT trap sets stop flag, kills builders and canvas, resets IN_PROGRESS
+    phases to PENDING, commits the reset, exits non-zero."""
     source = read_launcher()
 
     # Verify graceful_stop function exists
@@ -3179,16 +3187,20 @@ def test_graceful_stop_on_sigint():
     has_interrupted = '"INTERRUPTED"' in source
     # Verify canvas is cleared before exit summary
     has_canvas_clear = 'canvas_clear' in source
+    # Verify phase status cleanup: reset IN_PROGRESS to PENDING on graceful stop
+    has_phase_cleanup = 'reset_stale_in_progress' in handler_body
 
     ok = (has_handler and has_stop_flag and has_trap and has_kill_pids and
           has_kill_canvas and has_kill_builder and has_trap_reset and
-          has_stop_check and has_interrupted and has_canvas_clear)
+          has_stop_check and has_interrupted and has_canvas_clear and
+          has_phase_cleanup)
     record("Graceful Stop on SIGINT", ok,
            f"handler={has_handler}, flag={has_stop_flag}, trap={has_trap}, "
            f"kill_pids={has_kill_pids}, kill_canvas={has_kill_canvas}, "
            f"kill_builder={has_kill_builder}, reset={has_trap_reset}, "
            f"check={has_stop_check}, interrupted={has_interrupted}, "
-           f"canvas_clear={has_canvas_clear}" if not ok else "")
+           f"canvas_clear={has_canvas_clear}, "
+           f"phase_cleanup={has_phase_cleanup}" if not ok else "")
 
 
 def test_second_sigint_forces_exit():
@@ -3546,6 +3558,161 @@ def test_log_files_grow_incrementally():
            f"bootstrap={has_bootstrap_buffered}" if not ok else "")
 
 
+# ============================================================
+# Scenario: Stale IN_PROGRESS Phases Reset on Startup (Section 2.4)
+# ============================================================
+def test_stale_in_progress_phases_reset_on_startup():
+    """When a delivery plan has stale IN_PROGRESS phases from a previous
+    interrupted run, the launcher resets them to PENDING before entering
+    the orchestration loop, committed to git."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        # Create plan with Phase 1 COMPLETE, Phase 2 IN_PROGRESS (stale), Phase 3 PENDING
+        plan = make_plan([
+            (1, "Foundation", "COMPLETE", ["a.md"]),
+            (2, "Stale Phase", "IN_PROGRESS", ["b.md"]),
+            (3, "Next Phase", "PENDING", ["c.md"]),
+        ])
+        graph = make_graph([
+            ("a.md", []),
+            ("b.md", []),
+            ("c.md", []),
+        ])
+        make_mock_project(tmpdir, plan, graph)
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("stop", "All phases complete successfully"),
+                                   ])
+
+        # Enhance mock git to log commits
+        mock_git = os.path.join(mock_bin, 'git')
+        with open(mock_git, 'w') as f:
+            f.write(f'''#!/bin/bash
+GIT_LOG="{tmpdir}/.purlin/runtime/git_invocations.log"
+echo "$@" >> "$GIT_LOG"
+if [ "$1" = "-C" ]; then shift 2; fi
+case "$1" in
+    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
+    merge|branch|diff|add) ;;
+    commit) ;;
+    rev-parse) echo "abc1234" ;;
+esac
+exit 0
+''')
+        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Check git log for the reset commit
+        git_log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'git_invocations.log')
+        git_log = ""
+        if os.path.exists(git_log_path):
+            with open(git_log_path) as f:
+                git_log = f.read()
+
+        has_reset_commit = 'reset stale IN_PROGRESS' in git_log
+
+        # Verify source structure: reset function exists and is called before main loop
+        source = read_launcher()
+        has_reset_fn = 'reset_stale_in_progress()' in source
+        # The reset should happen before the main orchestration loop
+        reset_pos = source.find('reset_stale_in_progress\n')
+        loop_pos = source.find('while [ "$OUTER_BREAK" = "false" ]')
+        has_reset_before_loop = (reset_pos >= 0 and loop_pos >= 0 and
+                                 reset_pos < loop_pos)
+        # Verify it converts IN_PROGRESS to PENDING
+        has_pending_replace = 'IN_PROGRESS' in source and 'PENDING' in source
+
+        ok = (has_reset_commit and has_reset_fn and has_reset_before_loop
+              and has_pending_replace)
+        record("Stale IN_PROGRESS Phases Reset on Startup", ok,
+               f"commit={has_reset_commit}, fn={has_reset_fn}, "
+               f"before_loop={has_reset_before_loop}, "
+               f"replace={has_pending_replace}, "
+               f"git_log={git_log[:300]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Canvas Shows Latest Log Line as Activity (Section 2.16)
+# ============================================================
+def test_canvas_shows_latest_log_line_as_activity():
+    """When no 'editing' or 'running' pattern matches in log tail, the
+    extract_activity function falls back to showing the last non-empty line
+    from the log, stripped of ANSI escape codes, instead of 'working...'."""
+    source = read_launcher()
+
+    # Verify extract_activity function exists
+    has_extract_fn = 'extract_activity()' in source
+
+    # Find the extract_activity function body
+    fn_start = source.find('extract_activity()')
+    fn_end = source.find('\n}', fn_start)
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Verify ANSI stripping (sed pattern for ANSI escape codes)
+    has_ansi_strip = 'sed' in fn_body and '\\x1b' in fn_body or '\\033' in fn_body
+    # Verify log tail fallback uses tail -5
+    has_tail_5 = 'tail -5' in fn_body
+    # Verify non-empty line filtering (grep -v blank lines)
+    has_nonblank_filter = 'grep -v' in fn_body and 'space' in fn_body.lower() or '[:space:]' in fn_body
+    # Verify "working..." is the LAST fallback (only when log is empty/missing)
+    # The function should check log file existence at top and return "working..." only
+    # when no log tail content is found
+    working_pos = fn_body.rfind('working...')
+    tail5_pos = fn_body.find('tail -5')
+    has_working_after_fallback = (working_pos >= 0 and tail5_pos >= 0 and
+                                  working_pos > tail5_pos)
+    # Verify truncation of the fallback line
+    has_truncation = '%.50s' in fn_body
+
+    ok = (has_extract_fn and has_ansi_strip and has_tail_5 and
+          has_nonblank_filter and has_working_after_fallback and has_truncation)
+    record("Canvas Shows Latest Log Line as Activity", ok,
+           f"fn={has_extract_fn}, ansi_strip={has_ansi_strip}, "
+           f"tail5={has_tail_5}, nonblank={has_nonblank_filter}, "
+           f"order={has_working_after_fallback}, trunc={has_truncation}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Line Buffering Fallback on macOS (Section 2.16)
+# ============================================================
+def test_line_buffering_fallback_on_macos():
+    """When stdbuf is not available, the launcher uses script -q /dev/null
+    to force pseudo-TTY line buffering. If neither is available, warns."""
+    source = read_launcher()
+
+    # Verify run_line_buffered function exists
+    has_fn = 'run_line_buffered()' in source
+
+    # Find the run_line_buffered function body
+    fn_start = source.find('run_line_buffered()')
+    fn_end = source.find('\n}', fn_start)
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Verify fallback chain: stdbuf -> script -> warning
+    has_stdbuf = 'stdbuf -oL' in fn_body
+    has_script_fallback = 'script -q /dev/null' in fn_body
+    has_warning = 'Warning' in fn_body or 'warning' in fn_body
+    # Verify the order: stdbuf checked first, then script, then warning fallback
+    stdbuf_pos = fn_body.find('stdbuf')
+    script_pos = fn_body.find('script -q')
+    warning_pos = fn_body.find('Warning') if 'Warning' in fn_body else fn_body.find('warning')
+    has_correct_order = (stdbuf_pos >= 0 and script_pos >= 0 and warning_pos >= 0 and
+                         stdbuf_pos < script_pos < warning_pos)
+    # Verify command -v checks for both tools
+    has_stdbuf_check = 'command -v stdbuf' in fn_body
+    has_script_check = 'command -v script' in fn_body
+
+    ok = (has_fn and has_stdbuf and has_script_fallback and has_warning and
+          has_correct_order and has_stdbuf_check and has_script_check)
+    record("Line Buffering Fallback on macOS", ok,
+           f"fn={has_fn}, stdbuf={has_stdbuf}, script={has_script_fallback}, "
+           f"warning={has_warning}, order={has_correct_order}, "
+           f"stdbuf_check={has_stdbuf_check}, script_check={has_script_check}" if not ok else "")
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -3660,6 +3827,11 @@ if __name__ == '__main__':
     # New scenarios: Column Alignment & Line Buffering (Section 2.16) (2)
     test_parallel_canvas_columns_align()
     test_log_files_grow_incrementally()
+
+    # New scenarios: Stale IN_PROGRESS Reset, Log Line Activity, macOS Buffering (3)
+    test_stale_in_progress_phases_reset_on_startup()
+    test_canvas_shows_latest_log_line_as_activity()
+    test_line_buffering_fallback_on_macos()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

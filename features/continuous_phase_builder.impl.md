@@ -64,7 +64,7 @@ Between phases, the canvas shows evaluator/re-analysis status. Same render loop,
 
 ## Activity Extraction from Log Files
 
-Current Builder activity is extracted by tailing the last ~20 lines of each phase's log file and pattern-matching for common operations. Priority order: file write operations map to `editing <file>`, test invocations map to `running tests on <feature>`, shell commands map to `running <command>`, and the default fallback is `working...`. Output is truncated to ~50 characters. Use simple `grep -oE` patterns -- exact parsing is not critical since this is a progress hint, not a guarantee.
+Current Builder activity is extracted by tailing the last ~20 lines of each phase's log file and pattern-matching for common operations. Priority chain: (1) file operations -> `editing <file>`, (2) test/command runs -> `running <command>`, (3) log tail fallback -> last non-empty line from `tail -5`, stripped of ANSI escape codes via `sed`. The `"working..."` string is used ONLY when the log file does not exist or is empty. Output is truncated to ~50 characters. Use simple `grep -oE` patterns -- exact parsing is not critical since this is a progress hint, not a guarantee.
 
 ## Graceful Stop via SIGINT Trap
 
@@ -81,3 +81,11 @@ Added stacked single-column layout for terminal widths below 60 columns (Section
 ## Builder Output Routing Change (Canvas Migration)
 
 [DISCOVERY] (acknowledged) Previous spec had sequential and bootstrap Builder output streamed to the terminal via `tee`. The terminal canvas model replaces this: ALL Builder output in continuous mode goes to log files only (`> "$LOG_FILE" 2>&1`). The terminal is exclusively owned by the canvas. This eliminates stdout/stderr interleaving issues and simplifies exit code handling (no `PIPESTATUS` needed since there is no pipe). The evaluator reads from log files as before -- no change to evaluator behavior.
+
+## Line Buffering: script stdin isolation
+
+The macOS `script -q /dev/null` fallback in `run_line_buffered()` uses `</dev/null` to prevent `script` from consuming parent stdin. Without this, `script` connects its stdin to the pseudo-TTY and steals input meant for later `read` commands (e.g., the approval checkpoint prompt). All continuous mode Builders are non-interactive (`-p` mode) so they never need stdin.
+
+## Stale IN_PROGRESS Recovery
+
+The `reset_stale_in_progress()` function runs both at startup (before the main orchestration loop) and during graceful stop (inside the `graceful_stop` SIGINT handler). At startup, it catches orphans from a previous interrupted run. During graceful stop, it resets phases that were marked IN_PROGRESS during the current run but not completed before the interrupt.

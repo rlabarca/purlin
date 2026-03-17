@@ -297,6 +297,13 @@ extract_activity() {
         printf "%.50s" "$cmd_match"
         return
     fi
+    # Log tail fallback: last non-empty, non-whitespace-only line, stripped of ANSI codes
+    local last_line
+    last_line=$(tail -5 "$log_file" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | grep -v '^[[:space:]]*$' | tail -1)
+    if [ -n "$last_line" ]; then
+        printf "%.50s" "$last_line"
+        return
+    fi
     echo "working..."
 }
 
@@ -357,10 +364,17 @@ with open('$DELIVERY_PLAN', 'w') as f:
 }
 
 # --- Helper: run a command with line-buffered stdout ---
+# Fallback chain: stdbuf -oL (Linux) -> script -q /dev/null (macOS) -> unbuffered with warning
 run_line_buffered() {
     if command -v stdbuf >/dev/null 2>&1; then
         stdbuf -oL "$@"
+    elif command -v script >/dev/null 2>&1; then
+        # macOS: script forces a pseudo-TTY which triggers line buffering
+        # Redirect stdin from /dev/null to prevent script from consuming
+        # parent stdin (all continuous mode Builders are non-interactive)
+        script -q /dev/null "$@" </dev/null
     else
+        echo "Warning: Neither stdbuf nor script available. Log monitoring will be degraded (full buffering)." >&2
         "$@"
     fi
 }
@@ -1053,6 +1067,31 @@ BOOTSTRAP_OVERRIDE
     fi
 fi
 
+# --- Startup recovery: reset stale IN_PROGRESS phases to PENDING (Section 2.4) ---
+# Orphans from a previous interrupted run — no Builder is actively working on them.
+reset_stale_in_progress() {
+    [ -f "$DELIVERY_PLAN" ] || return 0
+    local has_stale
+    has_stale=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null || echo 0)
+    if [ "$has_stale" -gt 0 ]; then
+        python3 -c "
+import re
+with open('$DELIVERY_PLAN', 'r') as f:
+    content = f.read()
+content = re.sub(
+    r'(\[IN_PROGRESS\])',
+    '[PENDING]',
+    content
+)
+with open('$DELIVERY_PLAN', 'w') as f:
+    f.write(content)
+" 2>/dev/null
+        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+        git -C "$SCRIPT_DIR" commit -m "chore: reset stale IN_PROGRESS phases to PENDING" 2>/dev/null
+    fi
+}
+reset_stale_in_progress
+
 # --- Track initial PENDING phase count for summary ---
 INITIAL_PENDING_COUNT=$(python3 -c "
 import re
@@ -1081,6 +1120,8 @@ graceful_stop() {
     if [ -n "$CANVAS_PID" ] && kill -0 "$CANVAS_PID" 2>/dev/null; then
         kill "$CANVAS_PID" 2>/dev/null
     fi
+    # Phase status cleanup: reset IN_PROGRESS phases to PENDING (Section 2.16)
+    reset_stale_in_progress
     # Reset trap so second SIGINT forces immediate exit
     trap - INT
 }

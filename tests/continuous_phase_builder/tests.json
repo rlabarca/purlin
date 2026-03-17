@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 64,
+  "passed": 67,
   "failed": 0,
-  "total": 64,
+  "total": 67,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -259,6 +259,18 @@
     },
     {
       "name": "Log Files Grow Incrementally During Execution",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale IN_PROGRESS Phases Reset on Startup",
+      "status": "PASS"
+    },
+    {
+      "name": "Canvas Shows Latest Log Line as Activity",
+      "status": "PASS"
+    },
+    {
+      "name": "Line Buffering Fallback on macOS",
       "status": "PASS"
     }
   ]
