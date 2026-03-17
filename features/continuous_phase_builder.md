@@ -207,10 +207,10 @@ Review at .purlin/cache/delivery_plan.md
 Proceed? [Y/n]
 ```
 
-  - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from terminal width (`tput cols`, default 80):
+  - Space-aligned columns, no Markdown pipes. Column widths are computed dynamically from the detected terminal width (see Section 2.16 Terminal width detection — do NOT call `tput cols` from the Python renderer):
     - `#` column: 4 characters (fixed).
     - Remaining width distributed proportionally: `Label` ~30%, `Features` ~45%, `Exec Group` ~25%.
-    - **Full-width fill:** The table MUST consume the entire terminal width at any size. The proportional columns expand to fill all available space after the fixed `#` column. Separator lines span the full terminal width. No trailing whitespace gap between the last column edge and the terminal boundary.
+    - **Full-width fill:** The table MUST consume the entire terminal width at any size. The proportional columns expand to fill all available space after the fixed `#` column. Every data row, header, and separator line spans the full terminal width. The last column (`Exec Group`) MUST be padded to its computed width — not left unpadded. No trailing whitespace gap between the last column edge and the terminal boundary.
     - **Minimum width floor:** If terminal width is below 60 columns, the table switches to a stacked single-column layout (one field per line, labeled) instead of the proportional column layout. This prevents unreadable truncation in narrow terminals or piped contexts. In stacked mode, field values are padded/wrapped to the full terminal width.
     - Headers and separator lines use the same computed widths as data rows.
   - ANSI bold cyan (`\033[1;36m`) on header row, green (`\033[32m`) on separator lines.
@@ -255,7 +255,9 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 - **Canvas refresh rate:** The canvas render loop runs at ~100ms for spinner frame animation. Heavier updates (log file size, activity extraction) run on 15-second intervals to avoid excessive I/O.
 
-- **Terminal width constraint:** Every line emitted by the canvas engine and all structured output (approval table, phase canvas, exit summary) MUST fit within `tput cols` characters. No output line may exceed terminal width. This prevents the terminal emulator from wrapping lines and breaking column alignment. All renderers read `tput cols` at render time and compute field widths dynamically. Canvas render loops (which re-render at ~100ms) naturally adapt to terminal resizes by re-reading `tput cols` on each cycle. Static displays (approval table, exit summary) use SIGWINCH traps where the display is interactive.
+- **Terminal width detection:** The main launcher process MUST capture the terminal width (`tput cols`, falling back to `$COLUMNS`, then 80) into a shell variable at startup and pass it explicitly to all child contexts: background subshells (via inherited variable), Python subprocesses (via command-line argument or environment variable). Background subshells and Python heredocs MUST NOT call `tput cols` independently — `tput` often cannot access the controlling terminal from a background process and silently returns the default (80), causing all output to stop well short of the actual terminal edge. For resize adaptation, the main process re-reads the width on `SIGWINCH` and writes the updated value to a shared file (e.g., `.purlin/runtime/term_width`) that child renderers poll on each render cycle.
+
+- **Terminal width constraint:** Every line emitted by the canvas engine and all structured output (approval table, phase canvas, exit summary) MUST fit within the detected terminal width AND fill it completely. No output line may exceed terminal width (prevents wrapping), and no structured line may stop short of it (prevents a visible gap at the right edge). This applies to all renderers: approval table, sequential canvas, parallel canvas, exit summary. The last field in any columnar display expands to consume all remaining width.
 
 - **Color palette:**
   - Spinner: cyan (`\033[36m`)
@@ -291,7 +293,7 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 ⠧ Re-analyzing delivery plan... 1s
 ```
 
-- **Sequential phase canvas:** During sequential phase execution, the canvas shows a single line (or 2 lines if wrapping is needed) with spinner, phase label, status, elapsed time, log size, and current activity. The renderer reads `tput cols` on each render cycle and computes field widths dynamically. Priority order for space allocation: spinner + phase number (fixed) > status + elapsed time > log size > activity. When the full content exceeds terminal width, activity text is truncated first (with `...`); if still too long, the phase label is truncated. When wrapping to 2 lines, the continuation line is indented to align with the phase label column:
+- **Sequential phase canvas:** During sequential phase execution, the canvas shows a single line (or 2 lines if wrapping is needed) with spinner, phase label, status, elapsed time, log size, and current activity. The renderer reads the shared terminal width on each render cycle and computes field widths dynamically. The activity field (last field) expands to fill all remaining terminal width. Priority order for space allocation: spinner + phase number (fixed) > status + elapsed time > log size > activity. When the full content exceeds terminal width, activity text is truncated first (with `...`); if still too long, the phase label is truncated. When wrapping to 2 lines, the continuation line is indented to align with the phase label column:
 
 ```
 ⠹ Phase 2 -- Policy Chain   running  2m 15s   45K  editing policy_release.md
@@ -303,20 +305,20 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 ```
 [19:34:58] Parallel group (3 phases):
-             Phase 2 -- Non-Critical Anchors A   running   2m 15s   45K  editing arch_automated_feedback_tests.md
-             Phase 3 -- Non-Critical Anchor B   running   2m 15s   23K  running aft-web on design_modal_standards.md
-             Phase 5 -- Core Coordination       done      1m 42s   67K
+  Phase 2 -- Non-Critical Anchors A   running   2m 15s   45K  editing arch_automated_feedback_tests.md
+  Phase 3 -- Non-Critical Anchor B   running   2m 15s   23K  running aft-web on design_modal_standards.md
+  Phase 5 -- Core Coordination       done      1m 42s   67K
 ```
 
-  - One phase per line, indented from the timestamp header.
+  - One phase per line, with 2-space indent from the left edge (not aligned to the timestamp header — that wastes too much horizontal space).
   - Phase labels extracted from delivery plan headings (`## Phase N -- Label`).
-  - **Column alignment:** All phase lines in a parallel group MUST use aligned columns. The renderer computes the maximum width of each field across all phases in the group (phase prefix `Phase N -- `, label, status, elapsed, log size) and pads each field to its column width. This ensures status, elapsed time, log size, and activity fields line up vertically across all phase lines regardless of label length. Column widths are recomputed on each render cycle (terminal resize may change available space).
+  - **Column alignment:** All phase lines in a parallel group MUST use aligned columns. The renderer computes the maximum width of each field across all phases in the group (phase prefix `Phase N -- `, label, status, elapsed, log size) and pads each field to its column width. This ensures status, elapsed time, log size, and activity fields line up vertically across all phase lines regardless of label length. The activity column (last field) expands to fill all remaining terminal width — it is not fixed-width. Column widths are recomputed on each render cycle (terminal resize may change available space).
   - Per-phase elapsed time, frozen at exit for completed phases.
   - Per-phase log file size (e.g., `45K`).
   - Current activity for running phases, extracted from log file tail. The extractor uses a priority chain: (1) file operations matching a filename pattern -> `editing <file>`, (2) test/command runs matching "running" -> `running <command>`, (3) **log tail fallback** -> the last non-empty, non-whitespace-only line from `tail -5` of the log file, stripped of ANSI escape codes and truncated to the available column width. This gives the user real-time visibility into what the agent is doing (e.g., tool calls, commit messages, status output) rather than the uninformative `"working..."`. The `"working..."` string is used ONLY when the log file does not exist or is empty. Activity text is truncated to fit within the remaining width after the aligned columns. When a phase line would exceed terminal width, activity is truncated first; if still too long, the phase label is truncated (but column alignment is preserved for the remaining fields).
   - Status colors: orange (`\033[38;5;208m`) for running, green (`\033[32m`) for done (successful), red (`\033[31m`) for done with non-zero exit code or 0K log size (diagnostic warning). Orange distinguishes actively running phases from the yellow used for TODO badges and approval table elements.
   - The canvas overwrites in place on each 15-second refresh. Spinner frames update at ~100ms between heavier refreshes.
-  - Each phase line fits within `tput cols` characters. The renderer reads terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
+  - Each phase line fits within the detected terminal width and fills it completely (activity text is padded or extended to reach the right edge). The renderer reads the shared terminal width on each ~100ms render cycle and adapts field widths accordingly. When a phase line wraps to 2 lines, the continuation is indented to align with the phase label position, and `LINE_COUNT` is incremented to keep cursor-up math accurate.
 
 - **Canvas lifecycle:** The canvas render loop (background subshell) is started at the beginning of each phase and terminated when the phase or group completes. For parallel groups, the canvas runs for the duration of the group (started when the group begins, terminated before merge). The canvas PID is tracked alongside Builder PIDs for cleanup.
 
@@ -351,7 +353,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
   - Per-phase status: `COMPLETE`, `INTERRUPTED` (was running when stopped), `SKIPPED` (evaluator said stop), `PENDING` (never started).
   - Per-phase duration for completed and interrupted phases.
   - Per-phase feature list from the delivery plan.
-  - Per-phase lines fit within `tput cols`. When the feature list exceeds the available width, it wraps to a continuation line indented to the `features:` column position. Maximum 2 lines per phase; content exceeding 2 lines is truncated with `...`.
+  - Per-phase lines fit within and fill the detected terminal width. The feature list (last field) expands to consume all remaining width. When the feature list exceeds the available width, it wraps to a continuation line indented to the `features:` column position. Maximum 2 lines per phase; content exceeding 2 lines is truncated with `...`.
   - Retries called out by phase number.
   - Log file location reminder.
   - Exit summary uses the same color palette: bold cyan header/footer, green for COMPLETE, yellow for INTERRUPTED, red for SKIPPED/failed, dim for durations.
