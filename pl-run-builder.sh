@@ -416,7 +416,7 @@ run_line_buffered() {
     fi
 }
 
-# --- Helper: update delivery plan phase status after parallel group ---
+# --- Helper: update delivery plan phase status ---
 update_plan_phase_status() {
     local phase_num="$1"
     local commit_hash
@@ -425,7 +425,7 @@ update_plan_phase_status() {
     [ -f "$DELIVERY_PLAN" ] || return 0
 
     python3 -c "
-import re, sys
+import re
 
 with open('$DELIVERY_PLAN', 'r') as f:
     content = f.read()
@@ -437,13 +437,19 @@ content = re.sub(
     content
 )
 
-# Update completion commit
-content = re.sub(
-    r'(\*\*Completion Commit:\*\*) --',
-    r'\1 $commit_hash',
-    content,
-    count=1
-)
+# Phase-aware completion commit: find the phase heading, then update the
+# next Completion Commit line after it (avoids clobbering other phases).
+m = re.search(r'## Phase $phase_num -- ', content)
+if m:
+    before = content[:m.start()]
+    after = content[m.start():]
+    after = re.sub(
+        r'(\*\*Completion Commit:\*\*) --',
+        r'\1 $commit_hash',
+        after,
+        count=1
+    )
+    content = before + after
 
 with open('$DELIVERY_PLAN', 'w') as f:
     f.write(content)
@@ -1251,16 +1257,54 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # Start canvas for parallel group visibility (Section 2.17)
         start_parallel_canvas "${WT_PHASES[*]}" "${WT_LOGS[*]}" "${WT_PIDS[*]}"
 
-        # Wait for all parallel builders to complete
-        for pid in "${WT_PIDS[@]}"; do
-            wait "$pid" 2>/dev/null
+        # Monitor parallel builders: update per-phase status as each exits (Section 2.4)
+        # As soon as a Builder exits successfully, immediately mark its phase COMPLETE
+        # on the main branch. This keeps CDD metrics accurate in real time.
+        PERPHASE_COMPLETED=()
+        while true; do
+            ALL_EXITED=true
+            for i in "${!WT_PIDS[@]}"; do
+                pid="${WT_PIDS[$i]}"
+                phase="${WT_PHASES[$i]}"
+                # Skip phases already recorded
+                already=false
+                for done_phase in "${PERPHASE_COMPLETED[@]}"; do
+                    [ "$done_phase" = "$phase" ] && already=true && break
+                done
+                [ "$already" = "true" ] && continue
+
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    wait "$pid" 2>/dev/null
+                    EXIT_CODE=$?
+                    if [ $EXIT_CODE -eq 0 ]; then
+                        # Immediately mark COMPLETE on main branch (Section 2.4)
+                        update_plan_phase_status "$phase"
+                        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+                        git -C "$SCRIPT_DIR" commit -m "chore: mark phase $phase as COMPLETE" 2>/dev/null
+                        record_phase_end "$phase" "COMPLETE"
+                        PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
+                    fi
+                    # Non-zero exits: phase remains IN_PROGRESS per spec
+                    PERPHASE_COMPLETED+=("$phase")
+                else
+                    ALL_EXITED=false
+                fi
+            done
+            [ "$ALL_EXITED" = "true" ] && break
+            [ "$STOP_REQUESTED" = "true" ] && break
+            sleep 1
         done
 
         # Check for graceful stop before merge
         if [ "$STOP_REQUESTED" = "true" ]; then
             stop_canvas
             for PHASE_NUM in $PHASE_LIST; do
-                record_phase_end "$PHASE_NUM" "INTERRUPTED"
+                # Only mark INTERRUPTED for phases not already completed
+                was_completed=false
+                for done_phase in "${PERPHASE_COMPLETED[@]}"; do
+                    [ "$done_phase" = "$PHASE_NUM" ] && was_completed=true && break
+                done
+                [ "$was_completed" = "false" ] && record_phase_end "$PHASE_NUM" "INTERRUPTED"
             done
             OUTER_BREAK=true
             continue
@@ -1317,13 +1361,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
         ACTION="${EVAL_OUTPUT%%|*}"
         REASON="${EVAL_OUTPUT#*|}"
         log_eval "Parallel group — Action: $ACTION — $REASON"
-
-        # Update delivery plan centrally for each phase in the group
-        for PHASE_NUM in $PHASE_LIST; do
-            update_plan_phase_status "$PHASE_NUM"
-            record_phase_end "$PHASE_NUM" "COMPLETE"
-            PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
-        done
 
         case "$ACTION" in
             continue)

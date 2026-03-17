@@ -119,3 +119,9 @@ Exit cleanup runs after the exit summary and status refresh, deleting transient 
 ## grep -c Exit Code Fix
 
 `grep -c` returns exit code 1 when the count is 0 (no matches). Using `|| echo 0` would append a second "0" line, causing bash `[` integer comparison to fail with "integer expression expected". Fixed by using `${var:-0}` default expansion instead.
+
+## Per-Phase Status Update During Parallel Execution (Section 2.4)
+
+Replaced the simple `wait $pid` loop (which blocked until ALL builders completed, then batch-updated all phases) with a polling monitor that detects individual builder exits via `kill -0`. As soon as a builder exits with code 0, the orchestrator immediately calls `update_plan_phase_status` and commits the delivery plan update on the main branch. This keeps CDD metrics accurate in real time (e.g., "1 DONE | 1 RUNNING" instead of "0 DONE | 2 RUNNING").
+
+Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.

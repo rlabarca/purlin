@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 69 automated scenarios.
+"""Tests for continuous phase builder — exercises all 68 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -1346,26 +1346,6 @@ def test_worktree_cleanup():
            f"post_merge={has_post_merge_cleanup}" if not ok else "")
 
 
-# ============================================================
-# Scenario: Delivery Plan Updated Centrally
-# ============================================================
-def test_delivery_plan_central_update():
-    """For parallel phases, orchestrator updates delivery plan centrally."""
-    source = read_launcher()
-
-    # Check that parallel Builders are told not to modify the plan (in PARALLEL_OVERRIDE)
-    has_no_modify_msg = 'Do NOT modify the delivery plan directly' in source
-
-    # Check that the orchestrator has a plan update function
-    has_update_function = 'update_plan_phase_status' in source
-
-    # Check that plan amendment processing exists
-    has_amendment_fn = 'apply_plan_amendments' in source
-
-    ok = has_no_modify_msg and has_update_function and has_amendment_fn
-    record("Delivery Plan Updated Centrally", ok,
-           f"no_modify={has_no_modify_msg}, update_fn={has_update_function}, "
-           f"amend_fn={has_amendment_fn}" if not ok else "")
 
 
 # ============================================================
@@ -3460,12 +3440,13 @@ exit 0
 
 
 # ============================================================
-# Scenario: Delivery Plan Updated Centrally After Group (Section 2.4)
+# Scenario: Per-Phase Status Update During Parallel Execution (Section 2.4)
 # ============================================================
-def test_delivery_plan_updated_centrally_after_group():
-    """After all parallel Builders complete, the orchestrator updates the delivery
-    plan centrally, marking completed phases as COMPLETE. Individual Builders do not
-    modify the plan during parallel execution."""
+def test_per_phase_status_update_during_parallel_execution():
+    """As soon as an individual Builder exits successfully during parallel execution,
+    the orchestrator immediately marks that phase as COMPLETE on the main branch and
+    commits the change. This happens while other Builders may still be running.
+    Individual Builders do not modify the delivery plan (amendment files only)."""
     tmpdir = tempfile.mkdtemp()
     try:
         plan = make_plan([
@@ -3482,7 +3463,7 @@ def test_delivery_plan_updated_centrally_after_group():
                                        ("stop", "All phases complete successfully"),
                                    ])
 
-        # Mock git with add/commit support
+        # Mock git with add/commit support that logs per-phase commits
         mock_git = os.path.join(mock_bin, 'git')
         with open(mock_git, 'w') as f:
             f.write(f'''#!/bin/bash
@@ -3510,23 +3491,40 @@ exit 0
         has_phase_2_complete = bool(re.search(r'## Phase 2 -- .+? \[COMPLETE\]', plan_content))
         has_phase_3_complete = bool(re.search(r'## Phase 3 -- .+? \[COMPLETE\]', plan_content))
 
-        # Verify parallel Builders are told not to modify the plan
-        source = read_launcher()
-        has_no_modify = 'Do NOT modify the delivery plan directly' in source
+        # Verify per-phase git commits were made (one per phase)
+        git_log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'git_invocations.log')
+        git_log = ""
+        if os.path.exists(git_log_path):
+            with open(git_log_path) as f:
+                git_log = f.read()
+        has_phase_2_commit = 'mark phase 2 as COMPLETE' in git_log
+        has_phase_3_commit = 'mark phase 3 as COMPLETE' in git_log
 
-        # Verify update happens after merge (in source structure)
+        # Verify the monitoring loop exists (per-phase update before merge)
+        source = read_launcher()
         parallel_section = source[source.find('PARALLEL EXECUTION'):]
         parallel_section = parallel_section[:parallel_section.find('SEQUENTIAL EXECUTION')]
-        merge_pos = parallel_section.find('merge')
+
+        # Per-phase update is in the monitoring loop, which uses kill -0 to check PIDs
+        has_monitoring_loop = 'kill -0' in parallel_section
+        # update_plan_phase_status is called inside the monitoring loop (before merge)
+        monitor_pos = parallel_section.find('kill -0')
         update_pos = parallel_section.find('update_plan_phase_status')
-        has_update_after_merge = merge_pos >= 0 and update_pos >= 0 and update_pos > merge_pos
+        merge_pos = parallel_section.find('Merge each worktree')
+        has_update_before_merge = (monitor_pos >= 0 and update_pos >= 0 and
+                                   merge_pos >= 0 and update_pos < merge_pos)
+
+        # Verify parallel Builders are told not to modify the plan
+        has_no_modify = 'Do NOT modify the delivery plan directly' in source
 
         ok = (has_phase_2_complete and has_phase_3_complete and
-              has_no_modify and has_update_after_merge)
-        record("Delivery Plan Updated Centrally After Group", ok,
+              has_phase_2_commit and has_phase_3_commit and
+              has_monitoring_loop and has_update_before_merge and has_no_modify)
+        record("Per-Phase Status Update During Parallel Execution", ok,
                f"p2_complete={has_phase_2_complete}, p3_complete={has_phase_3_complete}, "
-               f"no_modify={has_no_modify}, after_merge={has_update_after_merge}, "
-               f"plan={plan_content[:300]}" if not ok else "")
+               f"p2_commit={has_phase_2_commit}, p3_commit={has_phase_3_commit}, "
+               f"monitor_loop={has_monitoring_loop}, update_before_merge={has_update_before_merge}, "
+               f"no_modify={has_no_modify}" if not ok else "")
     finally:
         shutil.rmtree(tmpdir)
 
@@ -4088,7 +4086,6 @@ if __name__ == '__main__':
     test_logging_per_phase()
     test_exit_summary_per_phase_details()
     test_worktree_cleanup()
-    test_delivery_plan_central_update()
 
     # Dynamic Delivery Plan Handling (Section 2.13) (8)
     test_builder_adds_qa_fix_phase()
@@ -4138,7 +4135,7 @@ if __name__ == '__main__':
     # New scenarios: Pre-launch IN_PROGRESS & Central Update (Section 2.4) (3)
     test_phases_marked_in_progress_before_launch()
     test_sequential_phase_marked_in_progress()
-    test_delivery_plan_updated_centrally_after_group()
+    test_per_phase_status_update_during_parallel_execution()
 
     # New scenarios: Column Alignment & Line Buffering (Section 2.17) (2)
     test_parallel_canvas_columns_align()

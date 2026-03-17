@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 69,
+  "passed": 68,
   "failed": 0,
-  "total": 69,
+  "total": 68,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -103,10 +103,6 @@
     },
     {
       "name": "Worktree Cleanup on Error",
-      "status": "PASS"
-    },
-    {
-      "name": "Delivery Plan Updated Centrally",
       "status": "PASS"
     },
     {
@@ -250,7 +246,7 @@
       "status": "PASS"
     },
     {
-      "name": "Delivery Plan Updated Centrally After Group",
+      "name": "Per-Phase Status Update During Parallel Execution",
       "status": "PASS"
     },
     {
