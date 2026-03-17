@@ -58,6 +58,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 
 - After each Builder exit (whether sequential or parallel), pipe the Builder's output to a lightweight LLM evaluator.
 - The evaluator is invoked via `claude -p --model <haiku-model> --json-schema <schema>` with Haiku.
+- **Timeout:** The evaluator invocation MUST have a 30-second timeout (e.g., `timeout 30 claude ...`). If the call exceeds 30 seconds, kill it and fall back to the delivery plan hash check (Section 2.10). A Haiku classification call should complete in under 5 seconds — anything longer indicates a hung connection or overloaded endpoint, not a legitimate processing delay.
 - The evaluator receives: the tail of the Builder's output (last 200 lines), the current delivery plan contents (if the file still exists), and classification instructions.
 - The evaluator returns structured JSON:
 
