@@ -6,12 +6,12 @@
 ## Summary
 11 features require implementation of spec changes (anchor reviews, visual spec updates, modified scenarios, requirements section changes). Phasing is warranted due to layered dependency structure (anchors -> foundations -> dashboard features -> test harness) and parallelization opportunity (4 execution groups with 2 parallel pairs).
 
-## Phase 1 -- Foundation Anchors [IN_PROGRESS]
+## Phase 1 -- Foundation Anchors [PENDING]
 **Features:** design_visual_standards.md, policy_critic.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Policy & Modal Foundation [IN_PROGRESS]
+## Phase 2 -- Policy & Modal Foundation [PENDING]
 **Features:** policy_branch_collab.md, cdd_modal_base.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
