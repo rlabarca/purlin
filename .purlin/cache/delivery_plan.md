@@ -11,9 +11,9 @@ Five features need Builder work following recent spec updates. cdd_startup_contr
 **Completion Commit:** e49fe6b
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Agent Config & PM Launcher [PENDING]
+## Phase 2 -- Agent Config & PM Launcher [COMPLETE]
 **Features:** pl_agent_config.md, pm_agent_launcher.md
-**Completion Commit:** --
+**Completion Commit:** 9a075e8
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Session Resume & Behavior Tests [PENDING]
