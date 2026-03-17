@@ -1739,7 +1739,7 @@ class TestCLIGraphOutput(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_cli_graph_outputs_valid_json(self):
-        """--cli-graph outputs valid JSON with features, cycles, orphans arrays."""
+        """CLI graph output returns valid JSON with features, cycles, orphans arrays."""
         from graph import parse_features, generate_dependency_graph
         features = parse_features(self.features_dir)
         graph = generate_dependency_graph(features, features_dir=self.features_dir)
@@ -1758,14 +1758,66 @@ class TestCLIGraphOutput(unittest.TestCase):
 
 
 # ===================================================================
+# Dependency Graph Endpoint Tests
+# ===================================================================
+
+class TestDependencyGraphEndpoint(unittest.TestCase):
+    """Scenario: Dependency Graph Endpoint — /dependency_graph.json returns graph."""
+
+    def test_dependency_graph_endpoint_serves_cached_file(self):
+        """Dependency graph endpoint returns cached JSON with Content-Type application/json."""
+        from serve import Handler
+        import io
+
+        test_graph = {"features": [{"file": "test.md"}], "cycles": [], "orphans": []}
+        test_json = json.dumps(test_graph).encode('utf-8')
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/dependency_graph.json'
+        handler.requestline = 'GET /dependency_graph.json HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        # Write a temp graph file and patch the path
+        import serve as _serve
+        orig_path = _serve.DEPENDENCY_GRAPH_PATH
+        tmp = tempfile.NamedTemporaryFile(suffix='.json', delete=False)
+        tmp.write(test_json)
+        tmp.close()
+        _serve.DEPENDENCY_GRAPH_PATH = tmp.name
+        try:
+            handler.do_GET()
+        finally:
+            _serve.DEPENDENCY_GRAPH_PATH = orig_path
+            os.unlink(tmp.name)
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == 'Content-Type']
+        self.assertEqual(content_types, ['application/json'])
+        body = handler.wfile.getvalue()
+        data = json.loads(body)
+        self.assertIn("features", data)
+
+
+# ===================================================================
 # Port Override Tests (Section 2.12)
 # ===================================================================
 
 class TestPortResolution(unittest.TestCase):
     """Tests for cdd_lifecycle port resolution."""
 
-    def test_explicit_port_used(self):
-        """Scenario: Start with explicit port via --port flag."""
+    def test_cli_port_override_via_flag(self):
+        """Scenario: CLI Port Override via Flag — explicit port is used."""
         port = resolve_port(cli_port=9090)
         self.assertEqual(port, 9090)
 
@@ -1795,8 +1847,8 @@ class TestStartShPortValidation(unittest.TestCase):
         self.start_sh = os.path.join(
             os.path.dirname(__file__), "start.sh")
 
-    def test_invalid_port_string_rejected(self):
-        """start.sh -p notanumber exits with non-zero status and error message."""
+    def test_port_override_validation_rejects_invalid_port(self):
+        """Port override validation rejects invalid port — start.sh -p notanumber exits with error."""
         result = subprocess.run(
             ["bash", self.start_sh, "-p", "notanumber"],
             capture_output=True, text=True)
@@ -2299,7 +2351,7 @@ class TestFontSizeSliderChangesTextSize(unittest.TestCase):
         html = _gen_html()
         self.assertRegex(
             html,
-            r'\.modal-body\s*\{[^}]*font-size:\s*calc\(13px\s*\+\s*var\(--modal-font-adjust\)'
+            r'\.modal-body\s*\{[^}]*font-size:\s*calc\(14px\s*\+\s*var\(--modal-font-adjust\)'
         )
 
     def test_all_text_elements_scale(self):
@@ -2419,19 +2471,216 @@ class TestTitleSizeMatchesSpec(unittest.TestCase):
     Then the modal title computed font size is 8 points larger than the default body font size
     """
 
-    def test_title_is_8pts_above_body_default(self):
+    def test_title_is_4pts_above_body_default(self):
+        """Title font size is 4 points larger than body default (spec line 682)."""
         html = _gen_html()
         title_match = re.search(
-            r'\.modal-header h2\s*\{[^}]*font-size:\s*(\d+)px', html)
+            r'\.modal-header h2\s*\{[^}]*font-size:\s*calc\((\d+)px', html)
         body_match = re.search(
             r'\.modal-body\s*\{[^}]*font-size:\s*calc\((\d+)px', html)
         self.assertIsNotNone(title_match, "Title font-size not found")
         self.assertIsNotNone(body_match, "Body default font-size not found")
         title_size = int(title_match.group(1))
         body_default = int(body_match.group(1))
-        self.assertEqual(title_size - body_default, 8,
-                         f"Title ({title_size}px) should be 8pts above "
+        self.assertEqual(title_size - body_default, 4,
+                         f"Title ({title_size}px) should be 4pts above "
                          f"body default ({body_default}px)")
+
+
+# ===================================================================
+# Feature Content Endpoint Tests
+# ===================================================================
+
+class TestFeatureContentEndpoint(unittest.TestCase):
+    """Scenario: Feature Content Endpoint — /feature?file= returns file content."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.test_dir, "features")
+        os.makedirs(self.features_dir)
+        self.feature_path = os.path.join(self.features_dir, "test_feature.md")
+        with open(self.feature_path, "w") as f:
+            f.write("# Test Feature\n\nSome content here.\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    @patch('serve.FEATURES_DIR')
+    @patch('serve.PROJECT_ROOT')
+    def test_feature_content_endpoint_returns_file(self, mock_root, mock_fdir):
+        """Feature content endpoint returns feature file content with status 200."""
+        mock_root.__str__ = lambda s: self.test_dir
+        mock_fdir.__str__ = lambda s: self.features_dir
+        from serve import Handler
+        import io
+        import urllib.parse
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/feature?file=features/test_feature.md'
+        handler.requestline = 'GET /feature?file=features/test_feature.md HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        # Patch module-level vars for path resolution
+        import serve as _serve
+        orig_root = _serve.PROJECT_ROOT
+        orig_fdir = _serve.FEATURES_DIR
+        _serve.PROJECT_ROOT = self.test_dir
+        _serve.FEATURES_DIR = self.features_dir
+        try:
+            handler._serve_feature_content()
+        finally:
+            _serve.PROJECT_ROOT = orig_root
+            _serve.FEATURES_DIR = orig_fdir
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == 'Content-Type']
+        self.assertTrue(any('text/plain' in ct for ct in content_types))
+        body = handler.wfile.getvalue().decode('utf-8')
+        self.assertIn("# Test Feature", body)
+        self.assertIn("Some content here.", body)
+
+
+# ===================================================================
+# Impl Notes Endpoint Tests
+# ===================================================================
+
+class TestImplNotesEndpoint(unittest.TestCase):
+    """Scenario: Impl Notes Endpoint — /impl-notes?file= returns companion content."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.test_dir, "features")
+        os.makedirs(self.features_dir)
+        # Create both feature and companion file
+        with open(os.path.join(self.features_dir, "test_feature.md"), "w") as f:
+            f.write("# Test Feature\n")
+        self.impl_path = os.path.join(self.features_dir, "test_feature.impl.md")
+        with open(self.impl_path, "w") as f:
+            f.write("# Implementation Notes: Test Feature\n\nTribal knowledge here.\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_impl_notes_endpoint_returns_companion_content(self):
+        """Impl notes endpoint returns companion file content with status 200."""
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/impl-notes?file=features/test_feature.md'
+        handler.requestline = 'GET /impl-notes?file=features/test_feature.md HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+
+        headers_sent = []
+
+        def mock_send_header(key, value):
+            headers_sent.append((key, value))
+        handler.send_response = MagicMock()
+        handler.send_header = mock_send_header
+        handler.end_headers = MagicMock()
+
+        import serve as _serve
+        orig_root = _serve.PROJECT_ROOT
+        orig_fdir = _serve.FEATURES_DIR
+        _serve.PROJECT_ROOT = self.test_dir
+        _serve.FEATURES_DIR = self.features_dir
+        try:
+            handler._serve_impl_notes()
+        finally:
+            _serve.PROJECT_ROOT = orig_root
+            _serve.FEATURES_DIR = orig_fdir
+
+        handler.send_response.assert_called_with(200)
+        content_types = [v for k, v in headers_sent if k == 'Content-Type']
+        self.assertTrue(any('text/plain' in ct for ct in content_types))
+        body = handler.wfile.getvalue().decode('utf-8')
+        self.assertIn("Implementation Notes: Test Feature", body)
+        self.assertIn("Tribal knowledge here.", body)
+
+    def test_impl_notes_endpoint_returns_404_when_no_companion(self):
+        """Impl notes endpoint returns 404 when no companion file exists."""
+        from serve import Handler
+        import io
+
+        handler = Handler.__new__(Handler)
+        handler.path = '/impl-notes?file=features/no_companion.md'
+        handler.requestline = 'GET /impl-notes?file=features/no_companion.md HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'GET'
+        handler.headers = {}
+        handler.wfile = io.BytesIO()
+        handler.send_error = MagicMock()
+
+        # Create the feature file but NOT the companion
+        with open(os.path.join(self.features_dir, "no_companion.md"), "w") as f:
+            f.write("# No Companion\n")
+
+        import serve as _serve
+        orig_root = _serve.PROJECT_ROOT
+        orig_fdir = _serve.FEATURES_DIR
+        _serve.PROJECT_ROOT = self.test_dir
+        _serve.FEATURES_DIR = self.features_dir
+        try:
+            handler._serve_impl_notes()
+        finally:
+            _serve.PROJECT_ROOT = orig_root
+            _serve.FEATURES_DIR = orig_fdir
+
+        handler.send_error.assert_called_once()
+        args = handler.send_error.call_args[0]
+        self.assertEqual(args[0], 404)
+
+
+# ===================================================================
+# Section Collapse and Expand Tests (auto-web)
+# ===================================================================
+
+class TestSectionCollapseAndExpand(unittest.TestCase):
+    """Scenario: Section Collapse and Expand (auto-web)
+
+    Verifies the HTML structure contains collapsible section elements
+    with chevron indicators and toggleSection onclick handlers.
+    """
+
+    def test_section_collapse_and_expand_html_structure(self):
+        """Section collapse and expand: HTML has section headers with chevron and toggle."""
+        html = _gen_html()
+        # Active section header with toggleSection onclick
+        self.assertIn("toggleSection('active-section')", html)
+        # Complete section header with toggleSection onclick
+        self.assertIn("toggleSection('complete-section')", html)
+        # Chevron elements for visual expand/collapse indicator
+        self.assertRegex(html, r'class="chevron[^"]*".*id="active-section-chevron"')
+        self.assertRegex(html, r'class="chevron[^"]*".*id="complete-section-chevron"')
+        # Active section starts expanded (chevron has 'expanded' class)
+        self.assertRegex(html, r'class="chevron expanded".*id="active-section-chevron"')
+        # Complete section starts collapsed (section-body has 'collapsed' class)
+        self.assertRegex(html, r'class="section-body collapsed".*id="complete-section"')
+
+    def test_section_collapse_css_present(self):
+        """Section collapse CSS: collapsed class hides content via max-height:0."""
+        html = _gen_html()
+        self.assertIn('.section-body.collapsed', html)
+        self.assertIn('max-height:0', html)
+
+    def test_toggle_section_js_present(self):
+        """toggleSection JS function exists for section collapse/expand behavior."""
+        html = _gen_html()
+        self.assertIn('function toggleSection', html)
 
 
 # ===================================================================
