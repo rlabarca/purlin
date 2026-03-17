@@ -46,9 +46,9 @@
 **Completion Commit:** a3456e9
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Agent Behavior Tests [IN_PROGRESS]
+## Phase 9 -- Agent Behavior Tests [COMPLETE]
 **Features:** agent_behavior_tests.md
-**Completion Commit:** --
+**Completion Commit:** 357057c
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
