@@ -1294,6 +1294,79 @@ class TestAggregateReport(unittest.TestCase):
         self.assertIn('hardcoded_port', report)
 
 
+class TestAggregateReportStructuralCompleteness(unittest.TestCase):
+    """Scenario: Aggregate Report Structural Completeness"""
+
+    def _make_result(self):
+        return {
+            'feature_file': 'features/test_a.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0},
+                    },
+                    'policy_adherence': {'status': 'PASS', 'violations': []},
+                    'traceability': {
+                        'status': 'PASS', 'coverage': 1.0,
+                        'detail': 'OK', 'unmatched': [],
+                    },
+                },
+            },
+            'user_testing': {
+                'status': 'CLEAN',
+                'bugs': 0,
+                'discoveries': 0,
+                'intent_drifts': 0,
+                'spec_disputes': 0,
+            },
+            'action_items': {
+                'architect': [{'priority': 'MEDIUM', 'feature': 'test_a',
+                               'description': 'spec gap', 'category': 'spec'}],
+                'builder': [{'priority': 'HIGH', 'feature': 'test_a',
+                             'description': 'fix tests', 'category': 'tests'}],
+                'qa': [{'priority': 'MEDIUM', 'feature': 'test_a',
+                        'description': 'verify', 'category': 'verify'}],
+                'pm': [],
+            },
+        }
+
+    def test_summary_section_has_required_columns(self):
+        """Report contains Summary table with Feature, Spec Gate,
+        Implementation Gate, and User Testing columns."""
+        results = [self._make_result()]
+        report = generate_critic_report(results)
+        self.assertIn('## Summary', report)
+        self.assertIn('| Feature |', report)
+        self.assertIn('Spec Gate', report)
+        self.assertIn('Implementation Gate', report)
+        self.assertIn('User Testing', report)
+
+    def test_action_items_by_role_has_all_subsections(self):
+        """Report contains Action Items by Role section with all four
+        role subsections: Architect, Builder, QA, and PM."""
+        results = [self._make_result()]
+        report = generate_critic_report(results)
+        self.assertIn('## Action Items by Role', report)
+        self.assertIn('### Architect', report)
+        self.assertIn('### Builder', report)
+        self.assertIn('### QA', report)
+        self.assertIn('### PM', report)
+
+    def test_all_structural_sections_present(self):
+        """Report contains Builder Decision Audit, Policy Violations,
+        Traceability Gaps, and Open User Testing Items sections."""
+        results = [self._make_result()]
+        report = generate_critic_report(results)
+        self.assertIn('## Builder Decision Audit', report)
+        self.assertIn('## Policy Violations', report)
+        self.assertIn('## Traceability Gaps', report)
+        self.assertIn('## Open User Testing Items', report)
+
+
 # ===================================================================
 # Scenario Parsing Tests
 # ===================================================================
