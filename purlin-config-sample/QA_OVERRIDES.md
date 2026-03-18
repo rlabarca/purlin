@@ -21,3 +21,6 @@ What IS permitted:
 
 If the framework itself needs to change, communicate that need to the user.
 Changes to Purlin must be made in the Purlin repository.
+
+## Content Guidance
+This file carries project-specific verification rules and domain context. Workflow procedures and multi-step protocols belong in skill files (`.claude/commands/pl-*.md`), not here.

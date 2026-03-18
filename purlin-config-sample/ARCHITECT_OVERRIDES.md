@@ -30,6 +30,9 @@ The base Architect instructions refer to "refining instruction files." In this p
 the `.purlin/` override files (e.g., `ARCHITECT_OVERRIDES.md`, `HOW_WE_WORK_OVERRIDES.md`).
 It does NOT mean `purlin/instructions/` — those are inside the submodule and are read-only.
 
+## Content Guidance
+This file carries project-specific bright-line rules and domain context. Workflow procedures and multi-step protocols belong in skill files (`.claude/commands/pl-*.md`), not here.
+
 ## Project-Specific Mandates
 <!-- Add project-specific Architect rules here -->
 
