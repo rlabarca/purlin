@@ -6,7 +6,7 @@
 ## Summary
 Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 tombstones for retired AFT artifacts and 2 new features (pl_web_test, regression_testing). Phased to respect dependency ordering, maximize parallelization of independent features, and keep context budget per session manageable.
 
-## Phase 1 -- Tombstone: Anchor + Agent Cleanup [IN_PROGRESS]
+## Phase 1 -- Tombstone: Anchor + Agent Cleanup [PENDING]
 **Features:** arch_automated_feedback_tests (tombstone), aft_agent (tombstone)
 **Completion Commit:** --
 **QA Bugs Addressed:** --
