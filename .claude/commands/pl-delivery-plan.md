@@ -4,8 +4,6 @@ If you are not operating as the Purlin Builder, respond: "This is a Builder comm
 
 ---
 
-Read `instructions/references/phased_delivery.md` for the full phased delivery protocol.
-
 If a delivery plan already exists at `.purlin/cache/delivery_plan.md`:
 
 - Read the plan and display the current phase, completed phases, and remaining phases.
@@ -39,7 +37,13 @@ If phasing is warranted, present the user with two options:
 
 If the user approves phasing, create the delivery plan using the canonical format below, run the validation gate (see above), then commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed.
 
-See `instructions/references/phased_delivery.md` Section 10.10 for the B1/B2/B3 sub-phase protocol and Section 10.12 for plan validation requirements.
+**Phase Internal Structure (B1/B2/B3):**
+*   **B1 (Build):** Existing per-feature loop (Steps 0-3 from `/pl-build`). Each feature implemented and locally tested including AFTs.
+*   **B2 (Test):** After B1 completes for all phase features, re-run full test suite AND all AFTs for every feature. Catches cross-feature regressions.
+*   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction?), then: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]`.
+*   Status tags only after B2 passes or B3 escalations are recorded.
+
+**Cross-Session Rule:** Each phase is a separate Builder session. STOP after completing a phase. Do not auto-advance.
 
 **Canonical `delivery_plan.md` format:**
 

@@ -6,10 +6,27 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 Given the feature name provided as an argument, gate completion on all requirements:
 
-1. Confirm the feature is in TESTING state (run `tools/cdd/status.sh` if needed).
-2. Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
-3. Confirm there are zero OPEN or SPEC_UPDATED discoveries in the feature's discovery sidecar file (`features/<name>.discoveries.md`). If the file is absent or empty, the gate passes.
-4. Check for an active delivery plan at `.purlin/cache/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete — inform the user it is deferred until all phases are delivered.
-5. If all gates pass, commit the Complete status tag with the `[Verified]` trailer:
-   `git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"`
-6. Run `tools/cdd/status.sh` to confirm the feature transitions to COMPLETE.
+## Completion Gates
+
+1.  **TESTING state:** Confirm the feature is in TESTING state (run `tools/cdd/status.sh` if needed).
+2.  **All scenarios verified:** Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
+3.  **Zero open discoveries:** Confirm there are zero OPEN or SPEC_UPDATED discoveries in `features/<name>.discoveries.md`. If the file is absent or empty, the gate passes.
+4.  **Delivery plan check:** Check `.purlin/cache/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete -- inform the user: "Feature X is deferred until all phases are delivered (appears in Phase N)."
+5.  **[Verified] tag required:** QA completions MUST include the `[Verified]` tag. This distinguishes QA completions from Builder auto-completions and is checked by the Critic.
+
+## Execution
+
+If all gates pass:
+
+```
+git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"
+```
+
+Run `tools/cdd/status.sh` to confirm the feature transitions to COMPLETE.
+
+## Gate Failures
+
+If any gate fails, report which gate(s) failed and what is needed:
+*   Not in TESTING -> "Feature must be in TESTING state. Current state: <state>."
+*   Open discoveries -> "N OPEN discoveries remain: <titles>. These must be resolved before completion."
+*   Delivery plan -> "Feature appears in PENDING Phase N. Complete when all phases are delivered."

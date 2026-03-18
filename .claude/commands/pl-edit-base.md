@@ -21,12 +21,14 @@ indicate this is a consumer project, not the Purlin repo itself).
 2. Read the target base file in full.
 3. **Context Budget Classification:** Before writing any new content, classify each addition as either:
    - **Bright-line rule** (behavioral mandate, "MUST"/"MUST NOT", gate condition) -- belongs in the base file.
-   - **Protocol detail** (format spec, state machine, routing table, multi-step procedure, architectural description) -- belongs in a reference file (`instructions/references/*.md`) with a 2-3 line stub in the base file.
-   Apply this test: "If this content were missing from context, would the agent violate a rule on their next action?" If yes, it is a bright-line rule. If no, it is protocol detail.
-4. **Reference file check:** If the change adds protocol detail, either:
-   - Append to an existing reference file that covers the same domain, or
-   - Create a new reference file with a clear trigger condition in the stub.
-   The stub in the base file MUST include: (1) the trigger condition ("when X happens"), (2) the reference path, and (3) any bright-line constraint that cannot be deferred.
+   - **Protocol detail** (multi-step workflow, format template, response processing pattern, state machine, routing table) -- belongs in the corresponding **skill file** (`.claude/commands/pl-*.md`), NOT in the base file. Skills are the self-contained playbooks agents load on demand.
+   Apply this test: "If this content were missing from context, would the agent violate a rule on their next action?" If yes, it is a bright-line rule (base file). If it is a step-by-step procedure an agent follows during a specific workflow, it is protocol detail (skill file).
+   **Examples:**
+   - "Status tag MUST be a separate commit" -- bright-line rule (base).
+   - "Step 1: assemble checklist. Step 2: present with default-to-PASS semantics..." -- protocol detail (skill).
+   - "Companion file edits do NOT reset status" -- bright-line rule (base).
+   - "Discovery format: `### [TYPE] <title> (Discovered: YYYY-MM-DD)`..." -- protocol detail (skill).
+4. **Skill-first routing:** If the change adds protocol detail, route it to the corresponding skill file (`.claude/commands/pl-*.md`). The base file gets only a 2-3 line stub with: (1) the trigger condition, (2) the skill to invoke, and (3) any bright-line constraint. Only use `instructions/references/*.md` for deep reference material that doesn't map to a single skill.
 5. Run `/pl-override-edit --scan-only` on all `.purlin/` and `purlin-config-sample/` overrides
    that correspond to the file being changed. If proposed changes would break existing overrides,
    surface them before proceeding.

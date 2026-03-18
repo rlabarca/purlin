@@ -35,9 +35,15 @@ If no argument is provided, default to the calling role's own override file (Bui
 
    **If in `--scan-only` mode, stop here.**
 
-4. Apply the proposed change with these constraints:
-   - Additive only — append, do not delete or restructure existing content.
+4. **Content guidance:** Override files carry two types of content:
+   *   **Project-specific bright-line rules** -- tech stack constraints, deployment restrictions, submodule prohibitions, domain-specific mandates.
+   *   **Domain context** -- project architecture, environment details, team conventions the agent needs always-on.
+
+   Override files do NOT carry: workflow procedures, multi-step protocols, format templates, or response processing patterns. Those belong in skill files (`.claude/commands/pl-*.md`). If the proposed content is a step-by-step procedure, advise putting it in a skill instead.
+
+5. Apply the proposed change with these constraints:
+   - Additive only -- append, do not delete or restructure existing content.
    - No contradictions with the base file.
    - No code, scripts, JSON config, or executable content of any kind.
-5. Show the proposed edit and ask for user confirmation before writing.
-6. After approval, apply and commit: `git commit -m "override(<role>): <brief description>"`
+6. Show the proposed edit and ask for user confirmation before writing.
+7. After approval, apply and commit: `git commit -m "override(<role>): <brief description>"`
