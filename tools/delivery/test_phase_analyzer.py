@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for phase_analyzer.py — exercises all 11 automated scenarios."""
+"""Tests for phase_analyzer.py — exercises all 16 automated scenarios."""
 
 import json
 import os
@@ -44,12 +44,15 @@ def make_project(tmpdir, plan_text, graph_data):
     return tmpdir
 
 
-def run_analyzer(tmpdir):
+def run_analyzer(tmpdir, extra_args=None):
     """Run phase_analyzer.py with PURLIN_PROJECT_ROOT set."""
     env = os.environ.copy()
     env['PURLIN_PROJECT_ROOT'] = tmpdir
+    cmd = [sys.executable, ANALYZER_PATH]
+    if extra_args:
+        cmd.extend(extra_args)
     proc = subprocess.run(
-        [sys.executable, ANALYZER_PATH],
+        cmd,
         capture_output=True, text=True, env=env
     )
     return proc
@@ -465,6 +468,162 @@ def test_submodule_path_resolution():
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Scenario: Intra-Phase Two Independent Features
+# ============================================================
+def test_intra_phase_two_independent():
+    """Phase 2 has two features with no transitive dependency -> single parallel group."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (1, "Base", "COMPLETE", []),
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and data["phase"] == 2
+            and len(data["parallel_groups"]) == 1
+            and set(data["parallel_groups"][0]["features"]) == {"feature_a.md", "feature_b.md"}
+            and data["parallel_groups"][0]["parallel"] is True
+        )
+        record("Intra-Phase Two Independent Features", ok,
+               f"rc={proc.returncode}, data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Intra-Phase Two Dependent Features
+# ============================================================
+def test_intra_phase_two_dependent():
+    """Phase 2 has two features where b depends on a -> two sequential groups."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", ["feature_a.md"]),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and len(data["parallel_groups"]) == 2
+            and data["parallel_groups"][0]["features"] == ["feature_a.md"]
+            and data["parallel_groups"][0]["parallel"] is False
+            and data["parallel_groups"][1]["features"] == ["feature_b.md"]
+            and data["parallel_groups"][1]["parallel"] is False
+            and "feature_a.md" in data["parallel_groups"][1].get("depends_on", [])
+        )
+        record("Intra-Phase Two Dependent Features", ok,
+               f"rc={proc.returncode}, data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Intra-Phase Mixed Independence
+# ============================================================
+def test_intra_phase_mixed():
+    """Phase 3: a and b independent, c depends on a -> parallel group then sequential."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+            ("feature_c.md", ["feature_a.md"]),
+        ])
+        plan = make_plan([
+            (3, "Mixed", "PENDING", ["feature_a.md", "feature_b.md", "feature_c.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+        proc = run_analyzer(tmpdir, ['--intra-phase', '3'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and len(data["parallel_groups"]) == 2
+        )
+        if ok:
+            first = data["parallel_groups"][0]
+            second = data["parallel_groups"][1]
+            ok = (
+                set(first["features"]) == {"feature_a.md", "feature_b.md"}
+                and first["parallel"] is True
+                and second["features"] == ["feature_c.md"]
+                and second["parallel"] is False
+                and "feature_a.md" in second.get("depends_on", [])
+            )
+        record("Intra-Phase Mixed Independence", ok,
+               f"rc={proc.returncode}, data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Intra-Phase Non-Existent Phase
+# ============================================================
+def test_intra_phase_nonexistent():
+    """Requesting intra-phase for a phase that doesn't exist -> error exit."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("x.md", [])])
+        plan = make_plan([
+            (1, "One", "PENDING", ["x.md"]),
+            (2, "Two", "PENDING", ["x.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+        proc = run_analyzer(tmpdir, ['--intra-phase', '5'])
+
+        ok = (
+            proc.returncode != 0
+            and "Phase 5" in proc.stderr
+        )
+        record("Intra-Phase Non-Existent Phase", ok,
+               f"rc={proc.returncode}, stderr={proc.stderr[:200]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Intra-Phase Single Feature
+# ============================================================
+def test_intra_phase_single_feature():
+    """Phase with only one feature -> single group with parallel false."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([("feature_a.md", [])])
+        plan = make_plan([
+            (1, "Solo", "PENDING", ["feature_a.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+        proc = run_analyzer(tmpdir, ['--intra-phase', '1'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and len(data["parallel_groups"]) == 1
+            and data["parallel_groups"][0]["features"] == ["feature_a.md"]
+            and data["parallel_groups"][0]["parallel"] is False
+        )
+        record("Intra-Phase Single Feature", ok,
+               f"rc={proc.returncode}, data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -506,6 +665,11 @@ if __name__ == '__main__':
     test_transitive_dependency()
     test_exclude_non_pending()
     test_submodule_path_resolution()
+    test_intra_phase_two_independent()
+    test_intra_phase_two_dependent()
+    test_intra_phase_mixed()
+    test_intra_phase_nonexistent()
+    test_intra_phase_single_feature()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

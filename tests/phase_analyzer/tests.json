@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 11,
+  "passed": 16,
   "failed": 0,
-  "total": 11,
+  "total": 16,
   "test_file": "tools/delivery/test_phase_analyzer.py",
   "details": [
     {
@@ -47,6 +47,26 @@
     },
     {
       "name": "Submodule Path Resolution",
+      "status": "PASS"
+    },
+    {
+      "name": "Intra-Phase Two Independent Features",
+      "status": "PASS"
+    },
+    {
+      "name": "Intra-Phase Two Dependent Features",
+      "status": "PASS"
+    },
+    {
+      "name": "Intra-Phase Mixed Independence",
+      "status": "PASS"
+    },
+    {
+      "name": "Intra-Phase Non-Existent Phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Intra-Phase Single Feature",
       "status": "PASS"
     }
   ]

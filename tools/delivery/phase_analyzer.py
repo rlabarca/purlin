@@ -8,11 +8,13 @@ phase builder orchestration loop.
 
 Usage:
     python3 tools/delivery/phase_analyzer.py
+    python3 tools/delivery/phase_analyzer.py --intra-phase <phase_number>
 
 Environment:
     PURLIN_PROJECT_ROOT — project root override (submodule-safe)
 """
 
+import argparse
 import json
 import os
 import re
@@ -37,12 +39,15 @@ def _find_project_root(start_dir=None):
     return os.path.abspath(os.path.join(start_dir, '../../'))
 
 
-def parse_delivery_plan(plan_text):
+def parse_delivery_plan(plan_text, include_statuses=None):
     """Extract phases from delivery plan markdown.
 
     Returns list of dicts: [{"number": int, "status": str, "features": [str], "label": str}]
-    Only PENDING phases are included.
+    Only phases matching include_statuses are included (default: PENDING only).
     """
+    if include_statuses is None:
+        include_statuses = {'PENDING'}
+
     phases = []
     # Match: ## Phase <N> -- <Label> [<STATUS>]
     phase_pattern = re.compile(
@@ -75,7 +80,7 @@ def parse_delivery_plan(plan_text):
         else:
             feature_names = []
 
-        if status == 'PENDING':
+        if status in include_statuses:
             phases.append({
                 "number": phase_num,
                 "status": status,
@@ -332,7 +337,130 @@ def group_parallel_phases(sorted_order, phase_deps):
     return groups
 
 
+def compute_feature_independence(features, closure):
+    """Analyze pairwise independence of features within a phase.
+
+    Same pattern as group_parallel_phases() but operates on features
+    instead of phases.
+
+    Args:
+        features: list of feature filenames (bare names like "foo.md")
+        closure: transitive closure dict from build_transitive_closure()
+
+    Returns list of dicts:
+        [{"features": [str], "parallel": bool, "depends_on": [str] (optional)}]
+    Groups are ordered: independent groups first, then dependent groups.
+    """
+    if not features:
+        return []
+
+    # Normalize to full paths
+    full_paths = []
+    for f in features:
+        full = f if f.startswith('features/') else f"features/{f}"
+        full_paths.append(full)
+
+    # Build pairwise dependency map among these features
+    feat_deps = {}
+    for fp in full_paths:
+        trans = closure.get(fp, set())
+        # Only keep dependencies that are within this feature set
+        feat_deps[fp] = trans & set(full_paths)
+
+    # Topological sort of features
+    in_degree = {fp: 0 for fp in full_paths}
+    adj = defaultdict(set)
+    for fp, deps in feat_deps.items():
+        for dep in deps:
+            adj[dep].add(fp)
+            in_degree[fp] += 1
+
+    queue = sorted([fp for fp in full_paths if in_degree[fp] == 0])
+    sorted_features = []
+    while queue:
+        node = queue.pop(0)
+        sorted_features.append(node)
+        for neighbor in sorted(adj[node]):
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+                queue.sort()
+
+    # Group into parallel sets (same algorithm as group_parallel_phases)
+    groups = []
+    remaining = list(sorted_features)
+    placed_deps = set()  # track which features have been placed for depends_on
+
+    while remaining:
+        ready = []
+        for fp in remaining:
+            deps = feat_deps.get(fp, set())
+            pending = deps & set(remaining)
+            if not pending:
+                ready.append(fp)
+
+        if not ready:
+            break
+
+        # Check if ready features are pairwise independent
+        truly_parallel = []
+        for fp in ready:
+            deps = feat_deps.get(fp, set())
+            if not (deps & set(ready)):
+                truly_parallel.append(fp)
+
+        if len(truly_parallel) > 1:
+            can_parallel = True
+            for i, f1 in enumerate(truly_parallel):
+                for f2 in truly_parallel[i+1:]:
+                    if f2 in feat_deps.get(f1, set()) or f1 in feat_deps.get(f2, set()):
+                        can_parallel = False
+                        break
+                if not can_parallel:
+                    break
+
+            if can_parallel:
+                bare_names = sorted(os.path.basename(fp) for fp in truly_parallel)
+                group = {"features": bare_names, "parallel": True}
+                # Check if any feature in this group depends on features
+                # from earlier groups
+                all_deps_from_earlier = set()
+                for fp in truly_parallel:
+                    all_deps_from_earlier |= (feat_deps.get(fp, set()) & placed_deps)
+                if all_deps_from_earlier:
+                    group["depends_on"] = sorted(
+                        os.path.basename(d) for d in all_deps_from_earlier
+                    )
+                groups.append(group)
+                for fp in truly_parallel:
+                    remaining.remove(fp)
+                    placed_deps.add(fp)
+                continue
+
+        # Sequential: take the first ready feature
+        fp = ready[0]
+        bare = os.path.basename(fp)
+        group = {"features": [bare], "parallel": False}
+        deps_from_earlier = feat_deps.get(fp, set()) & placed_deps
+        if deps_from_earlier:
+            group["depends_on"] = sorted(
+                os.path.basename(d) for d in deps_from_earlier
+            )
+        groups.append(group)
+        remaining.remove(fp)
+        placed_deps.add(fp)
+
+    return groups
+
+
 def main():
+    parser = argparse.ArgumentParser(description='Phase Analyzer')
+    parser.add_argument(
+        '--intra-phase', type=int, dest='intra_phase', default=None,
+        help='Analyze feature independence within a specific phase'
+    )
+    args = parser.parse_args()
+
     project_root = _find_project_root()
 
     plan_path = os.path.join(project_root, '.purlin', 'cache', 'delivery_plan.md')
@@ -355,7 +483,41 @@ def main():
         print(f"Error reading delivery plan: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Parse delivery plan
+    # Intra-phase mode
+    if args.intra_phase is not None:
+        # Parse with PENDING and IN_PROGRESS statuses
+        all_phases = parse_delivery_plan(
+            plan_text, include_statuses={'PENDING', 'IN_PROGRESS'}
+        )
+        target_phase = None
+        for p in all_phases:
+            if p["number"] == args.intra_phase:
+                target_phase = p
+                break
+
+        if target_phase is None:
+            print(
+                f"Error: Phase {args.intra_phase} not found or is in COMPLETE status",
+                file=sys.stderr
+            )
+            sys.exit(1)
+
+        all_deps = load_dependency_graph(graph_path)
+        closure = build_transitive_closure(all_deps)
+        parallel_groups = compute_feature_independence(
+            target_phase["features"], closure
+        )
+
+        result = {
+            "phase": target_phase["number"],
+            "features": sorted(target_phase["features"]),
+            "parallel_groups": parallel_groups,
+        }
+        json.dump(result, sys.stdout, indent=2)
+        print()
+        sys.exit(0)
+
+    # Default mode: inter-phase analysis
     phases = parse_delivery_plan(plan_text)
 
     if not phases:
