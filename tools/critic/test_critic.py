@@ -1334,8 +1334,8 @@ class TestAggregateReportStructuralCompleteness(unittest.TestCase):
             },
         }
 
-    def test_summary_section_has_required_columns(self):
-        """Report contains Summary table with Feature, Spec Gate,
+    def test_aggregate_report_summary_has_required_columns(self):
+        """Aggregate report contains Summary table with Feature, Spec Gate,
         Implementation Gate, and User Testing columns."""
         results = [self._make_result()]
         report = generate_critic_report(results)
@@ -1345,8 +1345,8 @@ class TestAggregateReportStructuralCompleteness(unittest.TestCase):
         self.assertIn('Implementation Gate', report)
         self.assertIn('User Testing', report)
 
-    def test_action_items_by_role_has_all_subsections(self):
-        """Report contains Action Items by Role section with all four
+    def test_aggregate_report_action_items_by_role_subsections(self):
+        """Aggregate report contains Action Items by Role section with all four
         role subsections: Architect, Builder, QA, and PM."""
         results = [self._make_result()]
         report = generate_critic_report(results)
@@ -1356,9 +1356,9 @@ class TestAggregateReportStructuralCompleteness(unittest.TestCase):
         self.assertIn('### QA', report)
         self.assertIn('### PM', report)
 
-    def test_all_structural_sections_present(self):
-        """Report contains Builder Decision Audit, Policy Violations,
-        Traceability Gaps, and Open User Testing Items sections."""
+    def test_aggregate_report_structural_completeness_sections(self):
+        """Aggregate report structural completeness: contains Builder Decision
+        Audit, Policy Violations, Traceability Gaps, and Open User Testing Items."""
         results = [self._make_result()]
         report = generate_critic_report(results)
         self.assertIn('## Builder Decision Audit', report)
