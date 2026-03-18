@@ -41,7 +41,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 
 *   **If `find_work: false`:** Output `"find_work disabled -- awaiting instruction."` and await user input. Do NOT proceed with steps 2.1–2.3.
 *   **If `find_work: true` and `auto_start: false`:** Proceed with steps 2.1–2.3 in full (gather state, propose work plan, wait for approval).
-*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing the first item immediately without step 2.3 approval.
+*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing immediately without step 2.3 approval. Phasing rules still apply (see Section 10.5 in `phased_delivery.md`).
 
 ### 2.1 Gather Project State
 1. Read resolved config (`.purlin/config.local.json` if exists, else `.purlin/config.json`).

@@ -25,7 +25,11 @@ When a delivery plan exists at session start, the Builder resumes from the next 
 The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
 
 ## 10.5 Phasing is Optional
-Phased delivery is never automatic. The Builder proposes phasing based on scope assessment, and the user always decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely. **Exception:** When the Builder is launched with `--continuous` mode and no delivery plan exists, the bootstrap session creates the plan autonomously. The user reviews and approves the plan at a checkpoint before continuous execution begins.
+Phased delivery is never automatic unless the user has opted into autonomous execution. The Builder proposes phasing based on scope assessment, and the user decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
+
+**Exceptions:**
+*   **`auto_start: true`:** When the Builder's `auto_start` config flag is enabled and the scope assessment heuristics are met, the Builder creates the delivery plan automatically and begins Phase 1. The user has delegated approval by enabling `auto_start`.
+*   **`--continuous` mode:** When the Builder is launched with `--continuous` mode and no delivery plan exists, the bootstrap session creates the plan autonomously. The user reviews and approves the plan at a checkpoint before continuous execution begins.
 
 ## 10.6 Architect Awareness
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
