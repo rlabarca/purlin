@@ -161,6 +161,39 @@ Every delivery plan MUST pass the phase analyzer (`tools/delivery/phase_analyzer
 
 **Common cycle cause:** A feature placed in Phase N that depends on a feature in Phase M (where M > N). The fix is to move the dependent feature to Phase M or later.
 
+## 10.13 Feature-Level B1 Parallelism
+
+Within a single delivery phase, independent features can build in parallel using worktree-isolated agents. This complements the phase-level parallelism in Section 10.11 — both use the same analyzer and protocol structure.
+
+### Eligibility
+
+- The current phase has 2+ features.
+- `phase_analyzer.py --intra-phase <N>` returns a `parallel: true` group with 2+ features.
+- The user has not opted for sequential execution.
+
+### Protocol
+
+1. Run `phase_analyzer.py --intra-phase <current_phase>`.
+2. For each `parallel: true` group, launch one Agent call per feature in a single message, each with `isolation: "worktree"`.
+3. Each agent runs `/pl-build` Steps 0-2 for its assigned feature only. No Step 3 (verification), no Step 4 (status tags). The agent prompt includes:
+   - "Implement feature X ONLY. Steps 0-2 only. No tests, no AFTs, no status tags."
+   - "Do NOT modify the delivery plan."
+4. After all agents in a group return, merge each worktree branch: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially in the main session.
+5. Process `parallel: false` groups sequentially, using the standard per-feature loop (Steps 0-2).
+6. After all groups complete, proceed to B2. B2 runs full verification (tests, AFTs, Figma) on the merged code in the main session.
+
+### MCP Note
+
+Agent tool sub-agents do not have MCP connections. This is why verification is deferred to B2 — the main session retains MCP access for AFTs and Figma checks. Continuous mode's parallel phases use separate `claude` processes which DO have MCP, but B2 still runs the same way, so behavior is consistent across both modes.
+
+### Merge Conflict Strategy
+
+Merge conflict = sequential fallback. No complex escalation. If `git merge <branch> --no-edit` fails, run `git merge --abort` and re-run that feature sequentially in the main session. This is simple and reliable.
+
+### Continuous Mode Cross-Reference
+
+Both interactive and continuous mode Builders can use `--intra-phase` for feature-level parallelism within a phase. The execution mechanism differs (Agent tool with worktrees vs bash worktrees in the launcher) but the analyzer and protocol are shared.
+
 ### Cross-References
 
 - Feature spec: `features/continuous_phase_builder.md`

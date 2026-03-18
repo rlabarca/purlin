@@ -14,6 +14,21 @@ If a delivery plan exists at `.purlin/cache/delivery_plan.md`, scope work to the
 
 ---
 
+## Parallel B1 Check (delivery plan phases with 2+ features)
+
+If a delivery plan exists and the current phase has 2+ features:
+
+1. Run `python3 tools/delivery/phase_analyzer.py --intra-phase <current_phase>`.
+2. If a `parallel: true` group exists with 2+ features:
+   - Announce: "Features X and Y are independent -- building in parallel."
+   - Launch one Agent call per feature with `isolation: "worktree"`, each running Steps 0-2 only (see `instructions/references/phased_delivery.md` Section 10.13).
+   - Each agent prompt: "Implement feature X ONLY. Steps 0-2 only. No tests, no AFTs, no status tags. Do NOT modify the delivery plan."
+   - Merge returned branches: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially.
+   - After all groups complete, proceed to B2 (full verification on merged code).
+3. If no `parallel: true` groups exist, or the phase has only 1 feature: use the existing sequential per-feature loop below.
+
+---
+
 ## Per-Feature Implementation Protocol
 
 ### Step 0 -- Pre-Flight (MANDATORY)

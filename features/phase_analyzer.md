@@ -89,6 +89,30 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
 - Script lives at `tools/delivery/phase_analyzer.py` (consumer-facing tool, submodule-safe).
 - No generated artifacts are written to disk. All output is to stdout.
 
+### 2.9 Intra-Phase Feature Independence Analysis
+
+- **CLI:** `python3 tools/delivery/phase_analyzer.py --intra-phase <phase_number>`
+- Reads the delivery plan and dependency graph (same inputs as default mode).
+- Extracts features for the specified phase, then checks pairwise independence using the existing `build_transitive_closure()` algorithm.
+- Reuses `build_transitive_closure()`, `load_dependency_graph()`, `parse_delivery_plan()`. New function: `compute_feature_independence()` — same pattern as `group_parallel_phases()`.
+- Only phases in PENDING or IN_PROGRESS status are valid targets. If the specified phase does not exist or is in COMPLETE status, print an error to stderr and exit with non-zero status.
+- Output schema:
+
+```json
+{
+  "phase": 3,
+  "features": ["feature_a.md", "feature_b.md", "feature_c.md"],
+  "parallel_groups": [
+    {"features": ["feature_a.md", "feature_b.md"], "parallel": true},
+    {"features": ["feature_c.md"], "parallel": false, "depends_on": ["feature_a.md"]}
+  ]
+}
+```
+
+- `parallel_groups` is ordered: groups with no intra-phase dependencies come first, followed by groups that depend on earlier groups.
+- A group with a single feature has `parallel: false`. A group with 2+ independent features has `parallel: true`.
+- The `depends_on` field lists features from earlier groups that this group's features transitively depend on. Omitted when the group has no intra-phase dependencies.
+
 ---
 
 ## 3. Scenarios
@@ -177,6 +201,36 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
     When phase_analyzer.py is run
     Then it reads files relative to PURLIN_PROJECT_ROOT
     And does not assume CWD or hardcode framework paths
+
+#### Scenario: Intra-Phase Two Independent Features
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And no transitive dependency exists between them
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups contains one group with both features and parallel true
+
+#### Scenario: Intra-Phase Two Dependent Features
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And feature_b.md transitively depends on feature_a.md
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups contains two sequential groups
+
+#### Scenario: Intra-Phase Mixed Independence
+    Given Phase 3 contains feature_a.md, feature_b.md, feature_c.md
+    And feature_a.md and feature_b.md are independent
+    And feature_c.md depends on feature_a.md
+    When phase_analyzer.py --intra-phase 3 is run
+    Then the first group is parallel with feature_a.md and feature_b.md
+    And the second group is sequential with feature_c.md
+
+#### Scenario: Intra-Phase Non-Existent Phase
+    Given the delivery plan has Phases 1 and 2 only
+    When phase_analyzer.py --intra-phase 5 is run
+    Then an error is printed to stderr and exit status is 1
+
+#### Scenario: Intra-Phase Single Feature
+    Given Phase 1 contains only feature_a.md
+    When phase_analyzer.py --intra-phase 1 is run
+    Then parallel_groups contains one group with parallel false
 
 ### Manual Scenarios (Human Verification Required)
 None.
