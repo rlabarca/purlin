@@ -4,6 +4,7 @@
 #        tools/cdd/status.sh --startup <role>    — startup briefing for agent role
 #        tools/cdd/status.sh --graph             — outputs dependency_graph.json to stdout
 #        tools/cdd/status.sh --incomplete        — lists features not fully complete
+#        tools/cdd/status.sh --verbose ...       — show diagnostic stderr on terminal
 # Side effect: regenerates .purlin/cache/ artifacts.
 set -euo pipefail
 
@@ -19,10 +20,37 @@ if [ -z "${PURLIN_PROJECT_ROOT:-}" ]; then
     fi
 fi
 
+# --- Diagnostic logging (tools_diagnostic_logging) ---
+_PURLIN_VERBOSE=0
+_pl_args=()
+for _pl_a in "$@"; do
+    [ "$_pl_a" = "--verbose" ] && _PURLIN_VERBOSE=1 || _pl_args+=("$_pl_a")
+done
+set -- "${_pl_args[@]+"${_pl_args[@]}"}"
+
+_PURLIN_LOG_DIR="${PURLIN_PROJECT_ROOT:-.}/.purlin/runtime"
+mkdir -p "$_PURLIN_LOG_DIR"
+_PURLIN_LOG="$_PURLIN_LOG_DIR/purlin.log"
+
+# Log captured stderr from a temp file with ISO 8601 timestamp and script name.
+_log_stderr() {
+    local _label="$1" _errfile="$2"
+    [ ! -s "$_errfile" ] && return 0
+    local _ts
+    _ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    while IFS= read -r _line; do
+        printf '[%s %s] %s\n' "$_ts" "$_label" "$_line"
+    done < "$_errfile" >> "$_PURLIN_LOG"
+    [ "$_PURLIN_VERBOSE" = "1" ] && cat "$_errfile" >&2
+    return 0
+}
+
 # Source shared Python resolver (python_environment.md §2.2)
-# Suppress resolve_python diagnostics so agents piping stdout to a JSON
-# parser (even with accidental 2>&1) get clean output.
-source "$SCRIPT_DIR/../resolve_python.sh" 2>/dev/null
+# Capture diagnostics to log instead of discarding.
+_resolve_err=$(mktemp)
+source "$SCRIPT_DIR/../resolve_python.sh" 2>"$_resolve_err" || true
+_log_stderr "status.sh" "$_resolve_err"
+rm -f "$_resolve_err"
 
 # Helper: run Critic before status to ensure critic.json files are fresh.
 run_critic_if_needed() {
@@ -30,7 +58,11 @@ run_critic_if_needed() {
         export CRITIC_RUNNING=1
         CRITIC_SCRIPT="$SCRIPT_DIR/../critic/run.sh"
         if [ -f "$CRITIC_SCRIPT" ]; then
-            "$CRITIC_SCRIPT" >/dev/null 2>&1 || true
+            local _critic_err
+            _critic_err=$(mktemp)
+            "$CRITIC_SCRIPT" >/dev/null 2>"$_critic_err" || true
+            _log_stderr "status.sh" "$_critic_err"
+            rm -f "$_critic_err"
         fi
     fi
 }

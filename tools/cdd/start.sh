@@ -120,10 +120,25 @@ fi
 
 if [ -n "$VERIFY_PID" ] && [ -f "$PORT_FILE" ]; then
     PORT=$(cat "$PORT_FILE")
-    if [ "$RESTARTING" = true ]; then
-        echo "Restarted CDD server on port $PORT"
+
+    # Health check: verify server is accepting connections (tools_diagnostic_logging §2.3)
+    _HEALTH_STATUS="confirmed responsive"
+    if command -v curl >/dev/null 2>&1; then
+        if ! curl -sf --max-time 2 "http://localhost:$PORT/status.json" >/dev/null 2>&1; then
+            _HEALTH_STATUS="may still be starting"
+            _PURLIN_LOG="$RUNTIME_DIR/purlin.log"
+            _ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '[%s start.sh] Health check failed for port %s — server may still be starting\n' "$_ts" "$PORT" >> "$_PURLIN_LOG"
+        fi
+    else
+        _HEALTH_STATUS="skipped (curl unavailable)"
     fi
-    echo "http://localhost:$PORT"
+
+    if [ "$RESTARTING" = true ]; then
+        echo "Restarted CDD server on port $PORT ($_HEALTH_STATUS)"
+    else
+        echo "http://localhost:$PORT ($_HEALTH_STATUS)"
+    fi
 else
     echo "ERROR: CDD Monitor failed to start. Check $RUNTIME_DIR/cdd.log" >&2
     exit 1
