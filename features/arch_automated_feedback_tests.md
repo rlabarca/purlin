@@ -27,9 +27,24 @@ AFTs that target visual systems (web UI, mobile apps) SHOULD compare their outpu
 - **Figma MCP** (when available) -- authoritative three-source triangulated verification (design + spec + app)
 - This is the primary mechanism for the Builder to "look at the designs" like a real developer, ensuring what was built matches the intended look and feel
 
+### Execution Tiers
+
+AFTs operate in three tiers with different triggers, owners, and performance profiles:
+
+| Tier | When | Who | What Runs | Speed |
+|------|------|-----|-----------|-------|
+| Unit | During build (Step 3) | Builder (auto) | pytest/jest, in-process | Seconds |
+| AFT Spot | During build (Step 3) | Builder (selective) | AFT:Web for visual features only | Minutes |
+| Regression | User-chosen intervals | QA composes, user executes | All AFTs (Agent, Web, full) | External terminal |
+
+**Tier rules:**
+
+- **Unit:** Always runs during Builder Step 3. Covers import-and-call, exit code, and value assertions.
+- **AFT Spot:** Runs during Builder Step 3 ONLY for features with `> AFT Web:` metadata AND a Visual Specification section. All other features skip AFT during build.
+- **Regression:** Runs outside the build cycle at user-chosen intervals. QA composes the regression set; the user executes in an external terminal. Results feed back via `tests.json`.
+
 ### Execution Constraints
 
-- AFTs are invoked by the Builder during verification (Step 3) and by QA for integration testing
 - AFTs MUST be headless/non-interactive (no human in the loop during execution)
 - AFTs MUST produce machine-readable results (pass/fail per scenario/checklist item)
 - AFTs MUST respect regression scoping (targeted, cosmetic, dependency-only)
