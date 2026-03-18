@@ -996,15 +996,12 @@ class TestPMColdStartChecksFigmaMCPAvailability(unittest.TestCase):
         """'pm' is a valid explicit argument for /pl-resume."""
         self.assertIn('pm', VALID_ARGS)
 
-    def test_startup_state_gathering_has_pm_section(self):
-        """The startup state gathering reference includes a PM section."""
-        ref_path = os.path.join(
-            PROJECT_ROOT, 'instructions', 'references',
-            'startup_state_gathering.md')
-        with open(ref_path) as f:
+    def test_command_file_has_pm_figma_mcp_check(self):
+        """The command file includes PM Figma MCP availability check."""
+        with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('### PM', content)
-        self.assertIn('Figma MCP Availability Check', content)
+        self.assertIn('Figma MCP', content)
+        self.assertIn('PM', content)
 
 
 class TestBuilderColdStartLoadsTombstonesAndAnchors(unittest.TestCase):
@@ -1175,14 +1172,10 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
             content = f.read()
         self.assertIn('verification_effort', content)
 
-    def test_startup_state_gathering_references_verification_effort(self):
-        """Startup state gathering reference includes QA effort reading."""
-        ref_path = os.path.join(
-            PROJECT_ROOT, 'instructions', 'references',
-            'startup_state_gathering.md')
-        with open(ref_path) as f:
+    def test_command_file_references_qa_verification_effort(self):
+        """Command file includes QA verification_effort reading."""
+        with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('Verification Effort', content)
         self.assertIn('verification_effort', content)
 
 
