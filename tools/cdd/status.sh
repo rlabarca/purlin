@@ -40,6 +40,14 @@ export PYTHONWARNINGS=ignore
 
 if [ "${1:-}" = "--graph" ]; then
     exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-graph
+elif [ "${1:-}" = "--role" ]; then
+    # Role-filtered output (cdd_status_monitor.md Section 2.7, --role flag)
+    if [ -z "${2:-}" ]; then
+        echo "Error: --role requires a role argument (architect|builder|qa|pm)" >&2
+        exit 1
+    fi
+    run_critic_if_needed
+    exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-role-status "$2"
 elif [ "${1:-}" = "--incomplete" ]; then
     # List features where any role column is not in its "done" state.
     # This avoids agents needing inline Python with != (which bash

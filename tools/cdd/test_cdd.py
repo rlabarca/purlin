@@ -25,6 +25,7 @@ from serve import (
     extract_label,
     generate_internal_feature_status,
     generate_api_status_json,
+    generate_role_filtered_status_json,
     _is_feature_complete,
     _feature_urgency,
     strip_discoveries_section,
@@ -1755,6 +1756,335 @@ class TestCLIGraphOutput(unittest.TestCase):
         json_str = json.dumps(graph, indent=2)
         reparsed = json.loads(json_str)
         self.assertEqual(reparsed["features"], graph["features"])
+
+
+# ===================================================================
+# CLI Role-Filtered Output Tests
+# ===================================================================
+
+class TestCLIRoleFilteredOutput(unittest.TestCase):
+    """Scenario: CLI Role-Filtered Output
+
+    Given features with various lifecycle states and a role with non-terminal
+    status on some features, --role <role> returns only those features plus
+    scoped action items and policy violations.
+    """
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_role_filtered_returns_only_non_terminal_features(
+            self, mock_fabs, mock_tdir):
+        """Features where the role has terminal status are excluded."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+            mock_fabs.__str__ = lambda s: features_dir
+            # Patch the actual string value used by serve
+            mock_tdir.__str__ = lambda s: tests_dir
+
+            # Create 4 features with different builder statuses
+            feature_configs = {
+                "feat_todo1": {"builder": "TODO", "architect": "DONE",
+                               "qa": "N/A", "pm": "N/A"},
+                "feat_todo2": {"builder": "TODO", "architect": "DONE",
+                               "qa": "N/A", "pm": "N/A"},
+                "feat_fail": {"builder": "FAIL", "architect": "DONE",
+                              "qa": "N/A", "pm": "N/A"},
+                "feat_done": {"builder": "DONE", "architect": "DONE",
+                              "qa": "CLEAN", "pm": "N/A"},
+            }
+
+            for stem, role_status in feature_configs.items():
+                # Create feature file
+                fpath = os.path.join(features_dir, f"{stem}.md")
+                with open(fpath, 'w') as f:
+                    f.write(f'# Feature: {stem}\n\n> Label: "{stem}"\n')
+
+                # Create critic.json with role_status
+                tdir = os.path.join(tests_dir, stem)
+                os.makedirs(tdir, exist_ok=True)
+                critic_data = {
+                    "role_status": role_status,
+                    "action_items": {
+                        "architect": [],
+                        "builder": [{"priority": "HIGH",
+                                     "description": f"Implement {stem}",
+                                     "feature": stem,
+                                     "category": "lifecycle_reset"}]
+                        if role_status["builder"] != "DONE" else [],
+                        "qa": [],
+                        "pm": [],
+                    },
+                    "implementation_gate": {
+                        "checks": {
+                            "policy_adherence": {
+                                "status": "PASS",
+                                "violations": [],
+                            }
+                        }
+                    },
+                }
+                with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                    json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("builder")
+
+            # Should have 3 features (2 TODO + 1 FAIL), not the DONE one
+            self.assertEqual(len(result["features"]), 3)
+            feature_files = [f["file"] for f in result["features"]]
+            self.assertNotIn("features/feat_done.md", feature_files)
+            self.assertIn("features/feat_todo1.md", feature_files)
+            self.assertIn("features/feat_todo2.md", feature_files)
+            self.assertIn("features/feat_fail.md", feature_files)
+
+            # Action items should be builder-only, 3 items
+            self.assertEqual(len(result["action_items"]), 3)
+            for item in result["action_items"]:
+                self.assertIn("description", item)
+
+            # Output must NOT contain other roles' action items
+            self.assertNotIn("architect", result)
+            self.assertNotIn("qa", result)
+            self.assertNotIn("pm", result)
+
+            # Must have standard keys
+            self.assertIn("features", result)
+            self.assertIn("action_items", result)
+            self.assertIn("policy_violations", result)
+            self.assertIn("generated_at", result)
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_role_filtered_includes_scoped_policy_violations(
+            self, mock_fabs, mock_tdir):
+        """Policy violations are included only for features in the filtered set."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+
+            # Feature with violations and builder TODO
+            for stem in ["feat_with_violations", "feat_clean"]:
+                fpath = os.path.join(features_dir, f"{stem}.md")
+                with open(fpath, 'w') as f:
+                    f.write(f'# Feature: {stem}\n\n> Label: "{stem}"\n')
+
+                tdir = os.path.join(tests_dir, stem)
+                os.makedirs(tdir, exist_ok=True)
+
+                is_todo = stem == "feat_with_violations"
+                violations = [
+                    {"file": "tools/cdd/graph.py", "line": 100,
+                     "pattern": "#[0-9a-fA-F]{3,8}",
+                     "text": "fill:#e1f5fe"},
+                    {"file": "tools/cdd/graph.py", "line": 200,
+                     "pattern": "#[0-9a-fA-F]{3,8}",
+                     "text": "fill:#01579b"},
+                ] if is_todo else []
+
+                critic_data = {
+                    "role_status": {
+                        "builder": "TODO" if is_todo else "DONE",
+                        "architect": "DONE", "qa": "N/A", "pm": "N/A",
+                    },
+                    "action_items": {"architect": [], "builder": [],
+                                     "qa": [], "pm": []},
+                    "implementation_gate": {
+                        "checks": {
+                            "policy_adherence": {
+                                "status": "FAIL" if violations else "PASS",
+                                "violations": violations,
+                            }
+                        }
+                    },
+                }
+                with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                    json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("builder")
+
+            # Only feat_with_violations is in the filtered set
+            self.assertEqual(len(result["features"]), 1)
+            self.assertEqual(result["features"][0]["file"],
+                             "features/feat_with_violations.md")
+
+            # Violations should be compacted and present
+            self.assertGreater(len(result["policy_violations"]), 0)
+            # All violations should reference the filtered feature
+            for pv in result["policy_violations"]:
+                self.assertEqual(pv["feature"], "feat_with_violations")
+                self.assertIn("count", pv)
+                self.assertIn("file", pv)
+                self.assertIn("pattern", pv)
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_output_is_valid_json_with_required_keys(
+            self, mock_fabs, mock_tdir):
+        """Output must be valid JSON with features, action_items,
+        policy_violations, and generated_at keys."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+
+            fpath = os.path.join(features_dir, "feat_a.md")
+            with open(fpath, 'w') as f:
+                f.write('# Feature A\n\n> Label: "Feature A"\n')
+
+            tdir = os.path.join(tests_dir, "feat_a")
+            os.makedirs(tdir, exist_ok=True)
+            critic_data = {
+                "role_status": {"builder": "TODO", "architect": "DONE",
+                                "qa": "N/A", "pm": "N/A"},
+                "action_items": {"architect": [], "builder": [],
+                                 "qa": [], "pm": []},
+                "implementation_gate": {"checks": {"policy_adherence": {
+                    "status": "PASS", "violations": []}}},
+            }
+            with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("builder")
+
+            # Verify JSON round-trip
+            json_str = json.dumps(result, indent=2)
+            reparsed = json.loads(json_str)
+            self.assertEqual(reparsed["features"], result["features"])
+            self.assertEqual(reparsed["action_items"], result["action_items"])
+            self.assertEqual(reparsed["policy_violations"],
+                             result["policy_violations"])
+            self.assertIn("generated_at", reparsed)
+
+
+class TestCLIRoleFilteredOutputNoWork(unittest.TestCase):
+    """Scenario: CLI Role-Filtered Output With No Work
+
+    Given all features have terminal status for a role, the filtered output
+    has empty features and action_items arrays.
+    """
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_all_terminal_returns_empty_arrays(self, mock_fabs, mock_tdir):
+        """When all features have builder DONE, output is empty."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+
+            for stem in ["feat_a", "feat_b", "feat_c"]:
+                fpath = os.path.join(features_dir, f"{stem}.md")
+                with open(fpath, 'w') as f:
+                    f.write(f'# Feature: {stem}\n\n> Label: "{stem}"\n')
+
+                tdir = os.path.join(tests_dir, stem)
+                os.makedirs(tdir, exist_ok=True)
+                critic_data = {
+                    "role_status": {"builder": "DONE", "architect": "DONE",
+                                    "qa": "CLEAN", "pm": "N/A"},
+                    "action_items": {"architect": [], "builder": [],
+                                     "qa": [], "pm": []},
+                    "implementation_gate": {"checks": {"policy_adherence": {
+                        "status": "PASS", "violations": []}}},
+                }
+                with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                    json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("builder")
+
+            self.assertEqual(len(result["features"]), 0)
+            self.assertEqual(len(result["action_items"]), 0)
+            self.assertEqual(len(result["policy_violations"]), 0)
+            # Must still be valid JSON with required keys
+            self.assertIn("generated_at", result)
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_qa_clean_is_terminal(self, mock_fabs, mock_tdir):
+        """CLEAN status is terminal for QA role."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+
+            fpath = os.path.join(features_dir, "feat_a.md")
+            with open(fpath, 'w') as f:
+                f.write('# Feature A\n\n> Label: "Feature A"\n')
+
+            tdir = os.path.join(tests_dir, "feat_a")
+            os.makedirs(tdir, exist_ok=True)
+            critic_data = {
+                "role_status": {"builder": "DONE", "architect": "DONE",
+                                "qa": "CLEAN", "pm": "N/A"},
+                "action_items": {"architect": [], "builder": [],
+                                 "qa": [], "pm": []},
+                "implementation_gate": {"checks": {"policy_adherence": {
+                    "status": "PASS", "violations": []}}},
+            }
+            with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("qa")
+
+            # qa=CLEAN is terminal, so no features
+            self.assertEqual(len(result["features"]), 0)
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_na_is_terminal(self, mock_fabs, mock_tdir):
+        """N/A status is terminal for any role."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            tests_dir = os.path.join(tmpdir, "tests")
+            os.makedirs(features_dir)
+
+            fpath = os.path.join(features_dir, "feat_a.md")
+            with open(fpath, 'w') as f:
+                f.write('# Feature A\n\n> Label: "Feature A"\n')
+
+            tdir = os.path.join(tests_dir, "feat_a")
+            os.makedirs(tdir, exist_ok=True)
+            critic_data = {
+                "role_status": {"builder": "DONE", "architect": "DONE",
+                                "qa": "CLEAN", "pm": "N/A"},
+                "action_items": {"architect": [], "builder": [],
+                                 "qa": [], "pm": []},
+                "implementation_gate": {"checks": {"policy_adherence": {
+                    "status": "PASS", "violations": []}}},
+            }
+            with open(os.path.join(tdir, "critic.json"), 'w') as f:
+                json.dump(critic_data, f)
+
+            with patch('serve.FEATURES_ABS', features_dir), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', tests_dir), \
+                 patch('serve.build_status_commit_cache', return_value={}):
+                result = generate_role_filtered_status_json("pm")
+
+            # pm=N/A is terminal
+            self.assertEqual(len(result["features"]), 0)
 
 
 # ===================================================================

@@ -846,6 +846,88 @@ def generate_api_status_json(cache=None):
     return result
 
 
+# Terminal role statuses — features in these states are excluded from
+# role-filtered output (spec Section 2.7, --role flag).
+_TERMINAL_STATUSES = {'DONE', 'CLEAN', 'N/A'}
+
+
+def generate_role_filtered_status_json(role, cache=None):
+    """Generates role-filtered status JSON for --role <role> CLI mode.
+
+    Returns a JSON object containing ONLY:
+    (a) features where the specified role has non-terminal status,
+    (b) that role's action items from critic.json files,
+    (c) compact policy violations scoped to those features.
+    """
+    if cache is None:
+        cache = build_status_commit_cache()
+
+    full_status = generate_api_status_json(cache)
+
+    # (a) Filter features to non-terminal for this role
+    filtered = []
+    for feat in full_status.get("features", []):
+        role_val = feat.get(role)
+        if role_val and role_val not in _TERMINAL_STATUSES:
+            filtered.append(feat)
+
+    filtered_stems = set()
+    for feat in filtered:
+        # Extract stem from file path (e.g. "features/foo.md" -> "foo")
+        fname = os.path.basename(feat["file"])
+        stem = os.path.splitext(fname)[0]
+        filtered_stems.add(stem)
+
+    # (b) Aggregate action items for this role from critic.json files
+    action_items = []
+    # (c) Aggregate policy violations scoped to filtered features
+    policy_violations = []
+
+    if os.path.isdir(TESTS_DIR):
+        for stem in sorted(filtered_stems):
+            critic_path = os.path.join(TESTS_DIR, stem, "critic.json")
+            if not os.path.isfile(critic_path):
+                continue
+            try:
+                with open(critic_path, 'r') as f:
+                    cdata = json.load(f)
+            except (json.JSONDecodeError, IOError, OSError):
+                continue
+
+            # Action items for this role
+            role_items = cdata.get("action_items", {}).get(role, [])
+            action_items.extend(role_items)
+
+            # Policy violations scoped to this feature
+            pa = (cdata.get("implementation_gate", {})
+                  .get("checks", {})
+                  .get("policy_adherence", {}))
+            violations = pa.get("violations", [])
+            if violations:
+                # Compact: group by (file, pattern) -> count
+                groups = {}
+                for v in violations:
+                    key = (v.get("file", ""), v.get("pattern", ""))
+                    if key not in groups:
+                        groups[key] = {"file": key[0], "pattern": key[1],
+                                       "count": 0, "feature": stem}
+                    groups[key]["count"] += 1
+                policy_violations.extend(groups.values())
+
+    result = {
+        "features": filtered,
+        "action_items": action_items,
+        "policy_violations": policy_violations,
+        "generated_at": full_status.get("generated_at", ""),
+    }
+
+    # Include critic_last_run if present
+    if "critic_last_run" in full_status:
+        result["critic_last_run"] = full_status["critic_last_run"]
+
+    return result
+
+
 # ===================================================================
 # Web Dashboard (role-based columns, Active/Complete grouping)
 # ===================================================================
@@ -6222,7 +6304,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--cli-status":
+    if len(sys.argv) > 2 and sys.argv[1] == "--cli-role-status":
+        # Role-filtered CLI mode: output filtered JSON for a specific role
+        role = sys.argv[2].lower()
+        valid_roles = {'architect', 'builder', 'qa', 'pm'}
+        if role not in valid_roles:
+            print(f"Error: invalid role '{role}'. Must be one of: {', '.join(sorted(valid_roles))}", file=sys.stderr)
+            sys.exit(1)
+        cache = build_status_commit_cache()
+        write_internal_feature_status(cache)
+        write_api_status_json(cache)
+        role_data = generate_role_filtered_status_json(role, cache)
+        json.dump(role_data, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write('\n')
+    elif len(sys.argv) > 1 and sys.argv[1] == "--cli-status":
         # CLI mode: output API JSON to stdout, regenerate cached artifacts
         cache = build_status_commit_cache()
         write_internal_feature_status(cache)
