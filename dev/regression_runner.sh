@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# dev/aft_runner.sh
+# dev/regression_runner.sh
 #
-# AFT Regression Runner
-# Dispatches AFT harnesses in two modes:
+# Regression Runner
+# Dispatches test harnesses in two modes:
 #   --watch: polls for trigger files and executes harnesses continuously
 #   --once <harness> [args...]: runs a single harness invocation and exits
 #
-# See features/aft_regression_testing.md for full specification.
+# See features/regression_testing.md for full specification.
 #
 # Classification: Purlin-dev-specific (dev/, not consumer-facing).
 
@@ -15,8 +15,8 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUNTIME_DIR="$PROJECT_ROOT/.purlin/runtime"
-TRIGGER_FILE="$RUNTIME_DIR/aft_trigger.json"
-RESULT_FILE="$RUNTIME_DIR/aft_result.json"
+TRIGGER_FILE="$RUNTIME_DIR/regression_trigger.json"
+RESULT_FILE="$RUNTIME_DIR/regression_result.json"
 
 # Defaults
 MODE=""
@@ -31,9 +31,9 @@ SESSION_FAIL=0
 
 usage() {
     cat <<'USAGE'
-Usage: aft_runner.sh [options]
+Usage: regression_runner.sh [options]
 
-AFT Regression Runner. Dispatches AFT harnesses for regression testing.
+Regression Runner. Dispatches harnesses for regression testing.
 
 Modes:
   --watch                 Poll for trigger files and execute harnesses
@@ -44,16 +44,16 @@ Options:
   -h, --help              Show this help
 
 Watch Mode:
-  Polls .purlin/runtime/aft_trigger.json at 1-second intervals.
+  Polls .purlin/runtime/regression_trigger.json at 1-second intervals.
   When a trigger appears, executes the specified harness, writes
-  .purlin/runtime/aft_result.json, deletes the trigger, and resumes.
+  .purlin/runtime/regression_result.json, deletes the trigger, and resumes.
   SIGINT prints a session summary and exits cleanly.
 
 Once Mode:
   Runs the specified harness, writes a result file, and exits with
   the harness exit code.
 
-Trigger format (.purlin/runtime/aft_trigger.json):
+Trigger format (.purlin/runtime/regression_trigger.json):
   {"harness": "dev/test_agent_interactions.sh", "args": ["--write-results"]}
 
 USAGE
@@ -210,7 +210,7 @@ with open('$RESULT_FILE', 'w') as f:
 # --- Watch mode ---
 print_session_summary() {
     echo ""
-    echo "=== AFT Regression Session Summary ==="
+    echo "=== Regression Session Summary ==="
     echo "Total executions: ${#EXECUTIONS[@]}"
     echo "Passed: $SESSION_PASS  Failed: $SESSION_FAIL"
     echo ""
@@ -231,7 +231,7 @@ if [[ "$MODE" == "watch" ]]; then
     # Trap SIGINT for clean shutdown with summary
     trap 'print_session_summary; exit 0' INT
 
-    echo "AFT Regression Runner: watch mode (timeout=${TIMEOUT}s)"
+    echo "Regression Runner: watch mode (timeout=${TIMEOUT}s)"
     echo "Polling: $TRIGGER_FILE"
     echo "Press Ctrl+C to stop and see session summary."
     echo ""
@@ -253,9 +253,9 @@ try:
 except (json.JSONDecodeError, KeyError, TypeError) as e:
     print('__MALFORMED__')
     print(str(e))
-" > /tmp/aft_trigger_parsed.txt 2>&1; then
-                parsed_harness="$(sed -n '1p' /tmp/aft_trigger_parsed.txt)"
-                parsed_args_json="$(sed -n '2p' /tmp/aft_trigger_parsed.txt)"
+" > /tmp/regression_trigger_parsed.txt 2>&1; then
+                parsed_harness="$(sed -n '1p' /tmp/regression_trigger_parsed.txt)"
+                parsed_args_json="$(sed -n '2p' /tmp/regression_trigger_parsed.txt)"
             fi
 
             if [[ "$parsed_harness" == "__MALFORMED__" ]] || [[ -z "$parsed_harness" ]]; then

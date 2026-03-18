@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Tests for dev/aft_runner.sh and the enriched tests.json format.
+"""Tests for dev/regression_runner.sh and the enriched tests.json format.
 
-Covers automated scenarios from features/aft_regression_testing.md.
-Outputs test results to tests/aft_regression_testing/tests.json.
+Covers automated scenarios from features/regression_testing.md.
+Outputs test results to tests/regression_testing/tests.json.
 """
 
 import json
@@ -16,7 +16,7 @@ import unittest
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
-RUNNER_SCRIPT = os.path.join(SCRIPT_DIR, 'aft_runner.sh')
+RUNNER_SCRIPT = os.path.join(SCRIPT_DIR, 'regression_runner.sh')
 
 
 class TestOnceMode(unittest.TestCase):
@@ -51,7 +51,7 @@ class TestOnceMode(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         # Result file should exist
         result_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'runtime', 'aft_result.json')
+            PROJECT_ROOT, '.purlin', 'runtime', 'regression_result.json')
         self.assertTrue(os.path.isfile(result_path))
         with open(result_path) as f:
             data = json.load(f)
@@ -103,7 +103,7 @@ class TestWatchModeTimeout(unittest.TestCase):
             # Should have non-zero exit (killed by timeout)
             self.assertNotEqual(result.returncode, 0)
 
-            result_path = os.path.join(runtime_dir, 'aft_result.json')
+            result_path = os.path.join(runtime_dir, 'regression_result.json')
             if os.path.isfile(result_path):
                 with open(result_path) as f:
                     data = json.load(f)
@@ -122,7 +122,7 @@ class TestWatchModeSIGINT(unittest.TestCase):
             PROJECT_ROOT, '.purlin', 'runtime')
         os.makedirs(runtime_dir, exist_ok=True)
         # Clean trigger/result files
-        trigger = os.path.join(runtime_dir, 'aft_trigger.json')
+        trigger = os.path.join(runtime_dir, 'regression_trigger.json')
         if os.path.isfile(trigger):
             os.remove(trigger)
 
@@ -150,7 +150,7 @@ class TestMalformedTrigger(unittest.TestCase):
         runtime_dir = os.path.join(
             PROJECT_ROOT, '.purlin', 'runtime')
         os.makedirs(runtime_dir, exist_ok=True)
-        trigger = os.path.join(runtime_dir, 'aft_trigger.json')
+        trigger = os.path.join(runtime_dir, 'regression_trigger.json')
 
         # Write malformed JSON
         with open(trigger, 'w') as f:
@@ -183,8 +183,8 @@ class TestWatchModePollAndExecute(unittest.TestCase):
             runtime_dir = os.path.join(
                 PROJECT_ROOT, '.purlin', 'runtime')
             os.makedirs(runtime_dir, exist_ok=True)
-            trigger = os.path.join(runtime_dir, 'aft_trigger.json')
-            result_file = os.path.join(runtime_dir, 'aft_result.json')
+            trigger = os.path.join(runtime_dir, 'regression_trigger.json')
+            result_file = os.path.join(runtime_dir, 'regression_result.json')
 
             # Remove stale files
             for f in (trigger, result_file):
@@ -495,12 +495,12 @@ class TestStalenessDetection(unittest.TestCase):
 
 
 # ===================================================================
-# Test runner with output to tests/aft_regression_testing/tests.json
+# Test runner with output to tests/regression_testing/tests.json
 # ===================================================================
 
 if __name__ == '__main__':
     tests_out_dir = os.path.join(
-        PROJECT_ROOT, 'tests', 'aft_regression_testing')
+        PROJECT_ROOT, 'tests', 'regression_testing')
     os.makedirs(tests_out_dir, exist_ok=True)
     status_file = os.path.join(tests_out_dir, 'tests.json')
 
@@ -516,7 +516,7 @@ if __name__ == '__main__':
         'passed': result.testsRun - failure_count,
         'failed': failure_count,
         'total': result.testsRun,
-        'test_file': 'dev/test_aft_runner.py',
+        'test_file': 'dev/test_regression_runner.py',
     }
     with open(status_file, 'w') as f:
         json.dump(report, f)
