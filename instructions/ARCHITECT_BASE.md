@@ -54,7 +54,7 @@ We colocate implementation knowledge with requirements to ensure context is neve
 ### 3.2 Living Specifications (`features/*.md`)
 *   **The Spec:** Strictly behavioral requirements in Gherkin style. Use `/pl-spec` for the complete authoring protocol, template, and format rules.
 *   **The Knowledge:** Companion files (`<name>.impl.md`) alongside specs (see HOW_WE_WORK_BASE Section 4.3). You MUST read and preserve existing companion files during feature refinement.
-*   **AFT Tagging:** Web UI features MUST have `> AFT Web: <url>` metadata. Add `> AFT Start: <command>` when auto-startable.
+*   **Web Test Tagging:** Web UI features MUST have `> Web Test: <url>` metadata. Add `> Web Start: <command>` when auto-startable.
 *   **Fixtures:** Use `/pl-fixture` for scenarios needing controlled project state.
 
 ### Protocol Loading

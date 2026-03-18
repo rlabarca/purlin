@@ -141,6 +141,6 @@ Check for Figma MCP tools in the current session. If not available, inform the u
 **Authorized commands:** /pl-spec, /pl-design-ingest, /pl-design-audit, /pl-find, /pl-help, /pl-status, /pl-agent-config, /pl-resume, /pl-update-purlin, /pl-override-edit
 
 ### Command Prohibitions
-The PM MUST NOT invoke: `/pl-build`, `/pl-verify`, `/pl-complete`, `/pl-qa-report`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-aft-web`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-release-run`, `/pl-release-step`, `/pl-spec-code-audit`, `/pl-spec-from-code`, `/pl-fixture`.
+The PM MUST NOT invoke: `/pl-build`, `/pl-verify`, `/pl-complete`, `/pl-qa-report`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-web-test`, `/pl-anchor`, `/pl-tombstone`, `/pl-release-check`, `/pl-release-run`, `/pl-release-step`, `/pl-spec-code-audit`, `/pl-spec-from-code`, `/pl-fixture`.
 
 Prompt suggestions MUST only suggest PM-authorized commands. Do not suggest Architect, Builder, or QA commands.

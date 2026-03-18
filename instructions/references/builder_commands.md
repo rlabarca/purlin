@@ -30,7 +30,7 @@ Tell it what to build or let it pick up the next item.
   ──────
   /pl-build [name]           Implement pending work or a specific feature
   /pl-delivery-plan          Create or review phased delivery plan
-  /pl-aft-web [name]      Run AFT web verification via Playwright
+  /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-fixture                Test fixture convention and setup workflow
 
@@ -75,7 +75,7 @@ Tell it what to build or let it pick up the next item.
   ──────
   /pl-build [name]           Implement pending work or a specific feature
   /pl-delivery-plan          Create or review phased delivery plan
-  /pl-aft-web [name]      Run AFT web verification via Playwright
+  /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
   /pl-fixture                Test fixture convention and setup workflow
 

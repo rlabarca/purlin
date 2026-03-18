@@ -23,9 +23,8 @@ Feature files use `>` blockquote lines at the top for metadata. Supported metada
 - `> Label: "Human-Readable Name"` -- display name for CDD dashboard.
 - `> Category: "Category Name"` -- grouping for CDD dashboard.
 - `> Prerequisite: features/<name>.md` -- dependency link to an anchor node or foundation feature.
-- `> AFT Web: <url>` -- declares the feature's web UI is accessible at `<url>` for automated feedback testing via `/pl-aft-web`. Features without this annotation use `/pl-verify` (manual). Example: `> AFT Web: http://localhost:9086`.
-- `> AFT Start: <command>` -- auto-start command for the target system. When the server at the `AFT Web` URL is not reachable, this command is executed to start it before verification. Example: `> AFT Start: /pl-cdd`.
-- `> AFT Agent: <role>` -- declares manual scenarios eligible for automated agent interaction testing. The role value indicates which agent role's conversation flow is tested (e.g., `architect`, `builder`). See `features/aft_agent.md` for the AFT:Agent pattern.
+- `> Web Test: <url>` -- declares the feature's web UI is accessible at `<url>` for automated web testing via `/pl-web-test`. Features without this annotation use `/pl-verify` (manual). Example: `> Web Test: http://localhost:9086`. Legacy `> AFT Web:` is accepted for backward compatibility.
+- `> Web Start: <command>` -- auto-start command for the target system. When the server at the `Web Test` URL is not reachable, this command is executed to start it before verification. Example: `> Web Start: /pl-cdd`. Legacy `> AFT Start:` is accepted for backward compatibility.
 - `> Owner: PM` or `> Owner: Architect` -- declares which role owns design decisions and dispute resolution for this feature. Default when absent: Architect. Anchor nodes (`arch_*`, `design_*`, `policy_*`) are always Architect-owned; the tag is ignored if present on an anchor. The Owner tag is sticky -- it persists through edits by any agent. Architect can edit PM-owned features (spec gate fixes, prerequisite additions) without changing ownership. The Critic uses this tag to route SPEC_DISPUTEs: disputes on `> Owner: PM` features or referencing Visual Specification screens route to PM; all others route to Architect.
 - `> Figma Status: <status>` -- Figma design's dev mode status at time of last ingestion. Values: `Design`, `Ready for Dev`, `Completed`. Set by PM during `/pl-design-ingest`. Advisory gate for Builder work queue: the Critic generates a LOW-priority PM action item when a feature is in Builder TODO state with `Figma Status: Design`.
 - `> Test Fixtures: <url>` -- non-default fixture repo URL (local path or remote URL). Most features use the convention path (`.purlin/runtime/fixture-repo`) and do not need this field. Only add when the feature's fixtures live in a different repo.
@@ -109,7 +108,7 @@ fixture repo.
 
 or:
 
-    ### 2.x AFT Web Fixture Tags
+    ### 2.x Web Test Fixture Tags
 
 **Table format:**
 

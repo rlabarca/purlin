@@ -1,6 +1,6 @@
 # Visual Verification Protocol
 
-> This file is loaded on-demand by `/pl-verify` and `/pl-aft-web` when a feature has a `## Visual Specification` section.
+> This file is loaded on-demand by `/pl-verify` and `/pl-web-test` when a feature has a `## Visual Specification` section.
 
 ## 5.4.1 Present Checklist and Offer Screenshot Input
 1.  **Present the visual spec overview:** List the screens defined in the visual specification section with their design asset references. For each screen, also present the `- **Processed:**` date. If the processed date is older than the artifact's modification time (or the Critic has flagged it as STALE), note the staleness to the user: "Warning: design artifact for Screen X was updated after the description was last processed. The description may not reflect the latest design."
@@ -48,9 +48,9 @@ When screenshot-assisted verification is activated (via `detail` request or for 
 *   Example prompt: "Features X and Y have 15 visual items total across 3 screens. Would you like to provide screenshots for batch analysis?"
 
 ## 5.4.7 Playwright MCP Automated Alternative
-For features with `> AFT Web: <url>` metadata, `/pl-aft-web` provides fully automated visual verification using Playwright MCP browser control tools. The agent navigates to each screen, takes screenshots, executes interactions (hover, click, theme switch), and judges each checklist item via vision analysis -- no manual screenshot provision or human confirmation required. Results are recorded as PASS/FAIL per checklist item with observation notes. Failures are recorded as `[BUG]` discoveries in the standard format.
+For features with `> Web Test: <url>` metadata, `/pl-web-test` provides fully automated visual verification using Playwright MCP browser control tools. The agent navigates to each screen, takes screenshots, executes interactions (hover, click, theme switch), and judges each checklist item via vision analysis -- no manual screenshot provision or human confirmation required. Results are recorded as PASS/FAIL per checklist item with observation notes. Failures are recorded as `[BUG]` discoveries in the standard format.
 
-When Figma MCP is also available and a visual spec screen has a Figma reference, `/pl-aft-web` performs **Figma-triangulated verification**: comparing three independent sources (Figma design via MCP, spec Token Map + checklists, running app via Playwright) to detect discrepancies with attribution. Verdicts include PASS, BUG (app wrong -> Builder), STALE (Figma updated -> PM re-ingest), and SPEC_DRIFT (app matches Figma but not spec -> PM sync). Token Map entries are also verified by comparing Figma design variable values against the app's computed CSS property values.
+When Figma MCP is also available and a visual spec screen has a Figma reference, `/pl-web-test` performs **Figma-triangulated verification**: comparing three independent sources (Figma design via MCP, spec Token Map + checklists, running app via Playwright) to detect discrepancies with attribution. Verdicts include PASS, BUG (app wrong -> Builder), STALE (Figma updated -> PM re-ingest), and SPEC_DRIFT (app matches Figma but not spec -> PM sync). Token Map entries are also verified by comparing Figma design variable values against the app's computed CSS property values.
 
 ## 5.4.8 Figma-Assisted Manual Verification
 For non-web-testable features, QA can still use Figma MCP during manual `/pl-verify` sessions. When a visual spec screen has a Figma reference and Figma MCP is available:

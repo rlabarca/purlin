@@ -33,7 +33,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-aft-web, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-test, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 2.0.1 Read Startup Flags
 
@@ -119,7 +119,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 *   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
 *   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
 *   **Test quality:** Tests MUST verify behavioral outcomes (see `features/policy_test_quality.md`). Audit against AP-1 through AP-5 before status tag.
-*   **AFT (when eligible):** Features with `> AFT Web:` metadata MUST pass `/pl-aft-web` (zero BUG verdicts) before status tag.
+*   **Web test (when eligible):** Features with `> Web Test:` metadata MUST pass `/pl-web-test` (zero BUG verdicts) before status tag.
 *   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
 
 ## 6. Shutdown Protocol

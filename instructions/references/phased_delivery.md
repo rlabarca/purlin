@@ -62,7 +62,7 @@ This factor is **subordinate** to testability (Section 10.8) and dependency orde
 
 No hard token counting is required. This is qualitative judgment based on scope signals: number of features, spec length, estimated file count, and test complexity.
 
-B2 (Test Sub-Phase) re-runs all tests and AFTs for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. When a phase contains features with known interaction complexity, budget more generously.
+B2 (Test Sub-Phase) re-runs all tests and web tests for the phase. B3 (Fix Sub-Phase) may iterate multiple times. Budget approximately 20-30% additional context beyond B1 implementation for the B2/B3 cycle. When a phase contains features with known interaction complexity, budget more generously.
 
 ## 10.10 Phase Internal Structure (B1/B2/B3)
 
@@ -70,19 +70,19 @@ Each delivery phase has an internal three-step structure that separates implemen
 
 ### B1 (Build Sub-Phase)
 
-Existing per-feature implementation loop (Steps 0-3 in BUILDER_BASE). Each feature is implemented and locally tested including AFTs. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort) for implementation decisions. AFT verification (`/pl-aft-web`) uses Figma MCP for three-source comparison when available, regardless of this priority. The Builder iterates per-feature until `/pl-aft-web` passes. Fast iteration.
+Existing per-feature implementation loop (Steps 0-3 in BUILDER_BASE). Each feature is implemented and locally tested including web tests. No status tags yet. Visual design read priority: Token Map -> brief.json -> Figma (last resort) for implementation decisions. Web test verification (`/pl-web-test`) uses Figma MCP for three-source comparison when available, regardless of this priority. The Builder iterates per-feature until `/pl-web-test` passes. Fast iteration.
 
 ### B2 (Test Sub-Phase)
 
-After B1 completes for all features in the phase, re-run the full test suite AND all applicable AFTs for every feature in the phase. This catches cross-feature regressions within the phase. Record which features/tests failed and which passed.
+After B1 completes for all features in the phase, re-run the full test suite AND all applicable web tests for every feature in the phase. This catches cross-feature regressions within the phase. Record which features/tests failed and which passed.
 
 **B2 Visual Design Verification:** During B2, the Builder's visual verification priority INVERTS from B1. Implementation is complete -- accuracy matters more than iteration speed. For features with a `## Visual Specification` section:
 
 1. **Reference images** (in `features/design/`): During B1, these are audit references, not Builder inputs. During B2, they become verification inputs. The Builder takes a Playwright screenshot and compares it against the reference image. This is fast (local, multimodal) and catches obvious visual drift.
-2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Builder uses the same three-source triangulated verification that `/pl-aft-web` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
+2. **Figma MCP** (if available): During B1, Figma is last resort. During B2, it is the authoritative design source. The Builder uses the same three-source triangulated verification that `/pl-web-test` already supports: Figma (via MCP) + Spec (Token Map + checklists) + App (Playwright computed styles).
 3. **Token Map + checklists**: Always verified, both in B1 and B2.
 
-This means `/pl-aft-web` is invoked with its full capability during B2 -- including Figma comparison and reference image comparison -- not the lighter-weight version used during B1 Step 3. The speed cost (~5-10 seconds per screen for Figma MCP) is acceptable in a dedicated verification phase.
+This means `/pl-web-test` is invoked with its full capability during B2 -- including Figma comparison and reference image comparison -- not the lighter-weight version used during B1 Step 3. The speed cost (~5-10 seconds per screen for Figma MCP) is acceptable in a dedicated verification phase.
 
 ### B3 (Fix Sub-Phase) -- Analyze-First Protocol
 
@@ -176,15 +176,15 @@ Within a single delivery phase, independent features can build in parallel using
 1. Run `phase_analyzer.py --intra-phase <current_phase>`.
 2. For each `parallel: true` group, launch one Agent call per feature in a single message, each with `isolation: "worktree"`.
 3. Each agent runs `/pl-build` Steps 0-2 for its assigned feature only. No Step 3 (verification), no Step 4 (status tags). The agent prompt includes:
-   - "Implement feature X ONLY. Steps 0-2 only. No tests, no AFTs, no status tags."
+   - "Implement feature X ONLY. Steps 0-2 only. No tests, no web tests, no status tags."
    - "Do NOT modify the delivery plan."
 4. After all agents in a group return, merge each worktree branch: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially in the main session.
 5. Process `parallel: false` groups sequentially, using the standard per-feature loop (Steps 0-2).
-6. After all groups complete, proceed to B2. B2 runs full verification (tests, AFTs, Figma) on the merged code in the main session.
+6. After all groups complete, proceed to B2. B2 runs full verification (tests, web tests, Figma) on the merged code in the main session.
 
 ### MCP Note
 
-Agent tool sub-agents do not have MCP connections. This is why verification is deferred to B2 — the main session retains MCP access for AFTs and Figma checks. Continuous mode's parallel phases use separate `claude` processes which DO have MCP, but B2 still runs the same way, so behavior is consistent across both modes.
+Agent tool sub-agents do not have MCP connections. This is why verification is deferred to B2 — the main session retains MCP access for web tests and Figma checks. Continuous mode's parallel phases use separate `claude` processes which DO have MCP, but B2 still runs the same way, so behavior is consistent across both modes.
 
 ### Merge Conflict Strategy
 
