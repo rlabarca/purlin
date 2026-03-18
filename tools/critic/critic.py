@@ -2960,9 +2960,13 @@ def compute_role_status(feature_result, cdd_status=None):
         # Spec modified after last status commit -- implementation review needed
         builder_status = 'TODO'
     elif struct_status == 'PASS' and not has_open_bugs:
-        # Check if there are any Builder action items
+        # Check if there are any blocking Builder action items.
+        # LOW-priority items are advisory and do not block DONE
+        # (policy_critic §2.17: "Advisory only").
         builder_items = action_items.get('builder', [])
-        builder_status = 'TODO' if builder_items else 'DONE'
+        blocking_items = [i for i in builder_items
+                          if i.get('priority') != 'LOW']
+        builder_status = 'TODO' if blocking_items else 'DONE'
     else:
         builder_status = 'TODO'
 
