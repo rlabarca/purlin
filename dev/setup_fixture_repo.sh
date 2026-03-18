@@ -987,6 +987,61 @@ create_tests_json_pass "feat_b"
 commit_and_tag "main/cdd_status_monitor/empty-active" \
     "All features complete, Active section empty for empty-state badge behavior"
 
+# --- parallel-phases ---
+reset_workdir
+create_base_project
+
+# Create features for phases
+for i in $(seq 1 10); do
+    create_feature "phase_feat_${i}.md" "Phase Feature $i" "Core" "policy_critic.md" "TODO"
+done
+git add -A >/dev/null 2>&1
+git commit -m "feat: add 10 features for parallel phases" >/dev/null 2>&1
+
+# Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED
+mkdir -p .purlin/cache
+cat > .purlin/cache/delivery_plan.md <<'DPEOF'
+# Delivery Plan
+
+> Last Updated: 2026-03-10
+
+## Phase 1: Foundation [COMPLETE]
+- phase_feat_1.md
+
+## Phase 2: Core Logic [COMPLETE]
+- phase_feat_2.md
+
+## Phase 3: Integration [COMPLETE]
+- phase_feat_3.md
+
+## Phase 4: Polish [COMPLETE]
+- phase_feat_4.md
+
+## Phase 5: Parallel A [IN_PROGRESS]
+- phase_feat_5.md
+
+## Phase 6: Parallel B [IN_PROGRESS]
+- phase_feat_6.md
+
+## Phase 7: Testing [PENDING]
+- phase_feat_7.md
+
+## Phase 8: Documentation [PENDING]
+- phase_feat_8.md
+
+## Phase 9: Release Prep [PENDING]
+- phase_feat_9.md
+
+## ~~Phase 10: Deprecated~~ [REMOVED]
+- ~~phase_feat_10.md~~
+DPEOF
+
+git add -A >/dev/null 2>&1
+git commit -m "chore: add delivery plan with parallel phases" >/dev/null 2>&1
+
+commit_and_tag "main/cdd_status_monitor/parallel-phases" \
+    "Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED"
+
 # =====================================================================
 echo ""
 echo "--- collab_whats_different ---"
