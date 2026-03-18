@@ -3,6 +3,8 @@
 > Label: "Architecture: Automated Feedback Tests"
 > Category: "Automated Feedback Tests"
 
+[Complete]
+
 ## Purpose
 
 Defines the Automated Feedback Test (AFT) pattern -- the abstract contract that all automated feedback test tools must satisfy. AFTs are tools that script interactions with a target system, observe results, compare against expectations, and report structured pass/fail with evidence. They feed results back into the discovery system when failures are found. This anchor node ensures consistent behavior across all AFT implementations (web, API, LLM, mobile) and establishes the invariants that govern their use by Builder and QA agents.
