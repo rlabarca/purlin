@@ -8,7 +8,6 @@
 
 [Complete]
 
-
 ## Summary
 
 Adds `--continuous` mode to the Builder launcher for fully autonomous multi-phase delivery. The orchestrator re-analyzes the delivery plan before each execution group, launches parallel Builders in git worktrees when phases are independent, uses a Haiku evaluator to classify exit states (continue/retry/approve/stop), and renders real-time progress via an in-place terminal canvas. The canvas engine reads terminal width from a shared file (not `tput cols` in subshells), supports resize adaptation via SIGWINCH, and shows per-phase status with aligned columns that fill the full terminal width. Includes bootstrap mode for plan creation, graceful SIGINT handling, plan amendment support for parallel Builders, and a rich exit summary with LLM-generated work digest.
