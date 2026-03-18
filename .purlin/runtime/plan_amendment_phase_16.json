@@ -1,0 +1,12 @@
+{
+  "requesting_phase": 16,
+  "amendments": [
+    {
+      "action": "complete",
+      "phase_number": 16,
+      "label": "CDD Spec Map",
+      "completion_commit": "adde9c224936315fbc6b0728832a0a1cf4c01b92",
+      "reason": "Re-verification after AFT-to-Web-Test metadata rename. All 121 tests pass. Fixture repo initialized with varied-scenarios tag."
+    }
+  ]
+}
