@@ -1,24 +1,114 @@
 # Delivery Plan
 
 **Created:** 2026-03-18
-**Total Phases:** 3
+**Total Phases:** 21
 
 ## Summary
-Three independent features implementing shared infrastructure (bootstrap module), diagnostic observability (logging + health checks), and terminal identity (title + badge). Phased because two are HIGH-complexity with 5+ scenarios each, and the bootstrap module's 24+ file migration benefits from an isolated verification gate.
+Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 tombstones for retired AFT artifacts and 2 new features (pl_web_test, regression_testing). Phased to respect dependency ordering, maximize parallelization of independent features, and keep context budget per session manageable.
 
-## Phase 1 -- Bootstrap Module [COMPLETE]
-**Features:** tools_bootstrap_module.md
-**Completion Commit:** f31402c
+## Phase 1 -- Tombstone: Anchor + Agent Cleanup [IN_PROGRESS]
+**Features:** arch_automated_feedback_tests (tombstone), aft_agent (tombstone)
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Diagnostic Logging [COMPLETE]
-**Features:** tools_diagnostic_logging.md
-**Completion Commit:** 33f9cdc
+## Phase 2 -- Tombstone: Skills + Runner Cleanup [PENDING]
+**Features:** pl_aft_web (tombstone), aft_regression_testing (tombstone)
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Terminal Identity [COMPLETE]
-**Features:** terminal_identity.md
-**Completion Commit:** f8f1133
+## Phase 3 -- Root Policies [PENDING]
+**Features:** policy_critic.md, arch_testing.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 4 -- Root Anchors [PENDING]
+**Features:** design_artifact_pipeline.md, policy_test_quality.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 5 -- CDD Lifecycle Fix [PENDING]
+**Features:** cdd_lifecycle.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 6 -- QA Effort Classification [PENDING]
+**Features:** qa_verification_effort.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 7 -- CDD Modal Base [PENDING]
+**Features:** cdd_modal_base.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 8 -- Cosmetic Release Resets A [PENDING]
+**Features:** release_doc_consistency_check.md, release_record_version_notes.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 9 -- Release Infrastructure Resets [PENDING]
+**Features:** release_submodule_safety_audit.md, instruction_audit.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 10 -- Regression Testing [PENDING]
+**Features:** regression_testing.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 11 -- pl-update-purlin [PENDING]
+**Features:** pl_update_purlin.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 12 -- Continuous Phase Builder [PENDING]
+**Features:** continuous_phase_builder.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 13 -- pl-web-test [PENDING]
+**Features:** pl_web_test.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 14 -- CDD Status Monitor [PENDING]
+**Features:** cdd_status_monitor.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 15 -- CDD QA Effort Display [PENDING]
+**Features:** cdd_qa_effort_display.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 16 -- CDD Spec Map [PENDING]
+**Features:** cdd_spec_map.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 17 -- CDD Agent Configuration [PENDING]
+**Features:** cdd_agent_configuration.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 18 -- CDD Branch Collaboration [PENDING]
+**Features:** cdd_branch_collab.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 19 -- Release Checklist UI [PENDING]
+**Features:** release_checklist_ui.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 20 -- CDD Startup Controls [PENDING]
+**Features:** cdd_startup_controls.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 21 -- Collab What's Different [PENDING]
+**Features:** collab_whats_different.md
+**Completion Commit:** --
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
