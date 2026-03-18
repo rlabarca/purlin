@@ -2903,7 +2903,7 @@ commit_and_tag "main/git_timestamp_resilience/normal-ordering" \
 
 # =====================================================================
 echo ""
-echo "--- aft_agent: builder role fixtures ---"
+echo "--- agent_interactions: builder role fixtures ---"
 
 # builder_startup/todo-features
 reset_workdir
@@ -2934,7 +2934,7 @@ commit_and_tag "main/builder_startup/todo-features" \
 
 # =====================================================================
 echo ""
-echo "--- aft_agent: qa role fixtures ---"
+echo "--- agent_interactions: qa role fixtures ---"
 
 # qa_verify/pending-verification
 reset_workdir

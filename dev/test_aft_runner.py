@@ -256,14 +256,14 @@ class TestQASkillIdentifiesEligible(unittest.TestCase):
         self.assertIn('all', content)
         self.assertIn('skip', content)
 
-    def test_skill_identifies_aft_metadata_features(self):
-        """The skill references AFT Agent and AFT Web metadata types."""
+    def test_skill_identifies_web_test_metadata_features(self):
+        """The skill references Web Test metadata and Regression Testing sections."""
         skill_path = os.path.join(
             PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
         with open(skill_path) as f:
             content = f.read()
-        self.assertIn('AFT Agent:', content)
-        self.assertIn('AFT Web:', content)
+        self.assertIn('Web Test:', content)
+        self.assertIn('Regression Testing', content)
 
 
 class TestQASkillComposesCommand(unittest.TestCase):
@@ -276,7 +276,7 @@ class TestQASkillComposesCommand(unittest.TestCase):
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('--once', content)
-        self.assertIn('dev/aft_runner.sh', content)
+        self.assertIn('dev/regression_runner.sh', content)
         self.assertIn('--write-results', content)
 
     def test_qa_skill_composes_command_watch_mode(self):
@@ -322,13 +322,13 @@ class TestEnrichedResultsFormat(unittest.TestCase):
                 {
                     'name': 'test_single_turn',
                     'status': 'PASS',
-                    'scenario_ref': 'features/aft_agent.md:Single-turn agent test',
+                    'scenario_ref': 'features/arch_testing.md:Single-turn agent test',
                     'expected': 'Agent produces structured output',
                 },
                 {
                     'name': 'test_multi_turn',
                     'status': 'FAIL',
-                    'scenario_ref': 'features/aft_agent.md:Multi-turn session',
+                    'scenario_ref': 'features/arch_testing.md:Multi-turn session',
                     'expected': 'Agent resumes session state',
                     'actual_excerpt': 'Error: session ID not found...',
                 },
@@ -342,12 +342,12 @@ class TestEnrichedResultsFormat(unittest.TestCase):
         # Enriched fields on passing entry
         self.assertEqual(
             parsed['details'][0]['scenario_ref'],
-            'features/aft_agent.md:Single-turn agent test')
+            'features/arch_testing.md:Single-turn agent test')
         self.assertNotIn('actual_excerpt', parsed['details'][0])
         # Enriched fields on failing entry
         self.assertEqual(
             parsed['details'][1]['scenario_ref'],
-            'features/aft_agent.md:Multi-turn session')
+            'features/arch_testing.md:Multi-turn session')
         self.assertIn('actual_excerpt', parsed['details'][1])
 
     def test_enriched_format_backward_compatible(self):
