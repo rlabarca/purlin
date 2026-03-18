@@ -14,19 +14,10 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root
 
-# Project root detection (Section 2.11)
-_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-if _env_root and os.path.isdir(_env_root):
-    PROJECT_ROOT = _env_root
-else:
-    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            PROJECT_ROOT = candidate
-            break
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 # Artifact isolation (Section 2.12): write outputs to .purlin/cache/
 CACHE_DIR = os.path.join(PROJECT_ROOT, ".purlin", "cache")

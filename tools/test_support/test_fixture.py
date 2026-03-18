@@ -15,14 +15,9 @@ import unittest
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURE_SH = os.path.join(SCRIPT_DIR, "fixture.sh")
 
-# Resolve project root for test output
-PROJECT_ROOT = os.environ.get("PURLIN_PROJECT_ROOT")
-if not PROJECT_ROOT:
-    d = SCRIPT_DIR
-    while d != "/":
-        if os.path.isdir(os.path.join(d, "features")):
-            PROJECT_ROOT = d
-        d = os.path.dirname(d)
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 
 def run_fixture(*args, env_override=None):

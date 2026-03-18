@@ -7,21 +7,9 @@ import os
 import sys
 
 
-def detect_project_root(script_dir=None):
-    """Detect project root using PURLIN_PROJECT_ROOT or climbing fallback."""
-    env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-    if env_root and os.path.isdir(env_root):
-        return env_root
-    if script_dir is None:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Climbing fallback: further path first (submodule), then nearer (standalone)
-    root = os.path.abspath(os.path.join(script_dir, '../../'))
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(script_dir, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            root = candidate
-            break
-    return root
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(_SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root
 
 
 def make_finding(severity, category, file_path, message, line=None):

@@ -16,17 +16,9 @@ import shutil
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Project root detection
-_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-if _env_root and os.path.isdir(_env_root):
-    PROJECT_ROOT = _env_root
-else:
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            PROJECT_ROOT = candidate
-            break
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 
 TESTS_DIR = os.path.join(PROJECT_ROOT, "tests", "release_checklist_core")
 

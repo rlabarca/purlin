@@ -17,7 +17,9 @@ import sys
 import tempfile
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 LAUNCHER_PATH = os.path.join(PROJECT_ROOT, 'pl-run-builder.sh')
 
 # Track results

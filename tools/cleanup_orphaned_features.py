@@ -9,19 +9,11 @@ Identifies and optionally moves .md files in feature directories
 that are not part of the dependency tree to a .trash folder.
 """
 
-# Project root detection (Section 2.11, 2.14)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-if _env_root and os.path.isdir(_env_root):
-    PROJECT_ROOT = _env_root
-else:
-    # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../'))
-    for depth in ('../../', '../'):
-        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            PROJECT_ROOT = candidate
-            break
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
+from tools.bootstrap import detect_project_root
+
+PROJECT_ROOT = detect_project_root(os.path.join(SCRIPT_DIR, 'config'))
 
 
 def get_referenced_features(features_dir):

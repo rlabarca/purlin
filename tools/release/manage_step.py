@@ -11,28 +11,11 @@ import sys
 import tempfile
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
 
-# Project root detection (submodule_bootstrap.md Section 2.11)
-_env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-if _env_root and os.path.isdir(_env_root):
-    PROJECT_ROOT = _env_root
-else:
-    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            PROJECT_ROOT = candidate
-            break
-
-# Config loading via resolver (config_layering: local config with shared fallback)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-# In submodule mode, tools/ lives under purlin/ (SCRIPT_DIR/../..), not PROJECT_ROOT.
-_framework_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-if _framework_root != PROJECT_ROOT and _framework_root not in sys.path:
-    sys.path.insert(0, _framework_root)
-from tools.config.resolve_config import resolve_config as _resolve_config
-_config = _resolve_config(PROJECT_ROOT)
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
+_config = load_config(PROJECT_ROOT)
 
 TOOLS_ROOT = _config.get("tools_root", "tools")
 
@@ -63,20 +46,8 @@ def _load_steps(path):
 
 
 def _atomic_write(path, data):
-    """Write JSON atomically: temp file in same dir, then rename."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        dir=os.path.dirname(path), suffix=".tmp"
-    )
-    try:
-        with os.fdopen(fd, 'w') as f:
-            json.dump(data, f, indent=2)
-            f.write('\n')
-        os.replace(tmp_path, path)
-    except Exception:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        raise
+    """Write JSON atomically via bootstrap module."""
+    _bootstrap_atomic_write(path, data, as_json=True)
 
 
 def _find_step_index(steps, step_id):

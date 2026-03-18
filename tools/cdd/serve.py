@@ -27,34 +27,17 @@ for i, arg in enumerate(sys.argv[1:], 1):
         _cli_root = arg.split('=', 1)[1]
         break
 
-# Project root detection (Section 2.11)
-# Priority: --project-root CLI arg > PURLIN_PROJECT_ROOT env var > climbing fallback
 if _cli_root and os.path.isdir(_cli_root):
-    PROJECT_ROOT = os.path.abspath(_cli_root)
-    os.environ['PURLIN_PROJECT_ROOT'] = PROJECT_ROOT
-else:
-    _env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-    if _env_root and os.path.isdir(_env_root):
-        PROJECT_ROOT = _env_root
-    else:
-        # Climbing fallback: try FURTHER path first (submodule), then nearer (standalone)
-        PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-        for depth in ('../../../', '../../'):
-            candidate = os.path.abspath(os.path.join(SCRIPT_DIR, depth))
-            if os.path.exists(os.path.join(candidate, '.purlin')):
-                PROJECT_ROOT = candidate
-                break
+    os.environ['PURLIN_PROJECT_ROOT'] = os.path.abspath(_cli_root)
 
-# Config loading via resolver (config_layering: local config with shared fallback)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-# In submodule mode, tools/ lives under purlin/ (SCRIPT_DIR/../..), not PROJECT_ROOT.
-# Add the framework root so `from tools.config...` resolves in both layouts.
-_framework_root = os.path.abspath(os.path.join(SCRIPT_DIR, '../../'))
-if _framework_root != PROJECT_ROOT and _framework_root not in sys.path:
-    sys.path.insert(0, _framework_root)
-from tools.config.resolve_config import resolve_config as _resolve_config
-CONFIG = _resolve_config(PROJECT_ROOT)
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root, load_config, atomic_write as _bootstrap_atomic_write
+
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
+CONFIG = load_config(PROJECT_ROOT)
+
+# Re-export for runtime config reloading (used by API endpoints)
+_resolve_config = lambda root: load_config(root)
 CONFIG_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.local.json")
 CONFIG_SHARED_PATH = os.path.join(PROJECT_ROOT, ".purlin", "config.json")
 
@@ -185,19 +168,8 @@ def _newest_feature_mtime(features_abs):
 
 
 def _write_atomic(path, data):
-    """Write data to path atomically via temp file + rename."""
-    dirname = os.path.dirname(path)
-    try:
-        fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix='.tmp')
-        with os.fdopen(fd, 'w') as f:
-            f.write(data)
-        os.replace(tmp_path, path)
-    except (IOError, OSError):
-        # Best-effort cleanup
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+    """Write data to path atomically via bootstrap module."""
+    _bootstrap_atomic_write(path, data)
 
 
 def _load_persistent_status_cache():

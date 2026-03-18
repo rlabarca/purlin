@@ -1,0 +1,39 @@
+# Implementation Notes: Bootstrap Module
+
+## Design Decisions
+
+**[CLARIFICATION]** The spec says "try the further path (3 levels up from script_dir) before the nearer path (2 levels up)." The implementation uses hardcoded relative depths (`../../../` and `../../`) matching the existing inline patterns exactly. A general walk-up approach was considered but rejected because it could find `.purlin/` directories from unrelated projects higher in the filesystem tree (e.g., Claude Code's `~/.claude/projects/*/memory/` creates `.purlin/` in the user's home directory). (Severity: INFO)
+
+**[CLARIFICATION]** For scripts at non-standard depths (`tools/cleanup_orphaned_features.py` and `tools/test_pl_design_*.py` at `tools/` root level), the migration passes `os.path.join(SCRIPT_DIR, 'config')` as `script_dir` to align with the standard 2-level depth expectation. This is functionally equivalent to their original custom climbing depths. (Severity: INFO)
+
+**[CLARIFICATION]** `serve.py` has a special `--project-root` CLI pre-parse that sets `PURLIN_PROJECT_ROOT` before calling `detect_project_root`. This preserves the three-tier priority: CLI arg > env var > climbing fallback. The pre-parse block was kept inline since it's serve.py-specific, not a general pattern. (Severity: INFO)
+
+**[CLARIFICATION]** `audit_common.py`'s `detect_project_root` was replaced with a re-export from bootstrap, preserving the import interface for downstream consumers (`verify_zero_queue.py`, `verify_dependency_integrity.py`, `test_release_audit.py`). (Severity: INFO)
+
+**[CLARIFICATION]** `serve.py` references `_resolve_config` at runtime for config reloading (API endpoints that re-read config from disk). A lambda wrapper `_resolve_config = lambda root: load_config(root)` was added to preserve this interface. (Severity: INFO)
+
+## Migration Summary
+
+16 files migrated to import from `tools/bootstrap.py`:
+- **Application files (8):** serve.py, graph.py, critic.py, phase_analyzer.py, manage_step.py, resolve.py, extract_whats_different.py, cleanup_orphaned_features.py
+- **Shared utility (1):** audit_common.py (re-export)
+- **Test files (7):** test_manage_step.py, test_release.py, test_fixture.py, test_continuous_phase_builder.py, test_cdd_branch_collab.py, test_pl_design_ingest.py, test_pl_design_audit.py
+
+Files NOT migrated (by design):
+- `config/resolve_config.py`: Keeps its own `_find_project_root` for CLI entry point (avoids circular dependency with bootstrap's `load_config`)
+- Test files that only do `sys.path.insert` for sibling imports without their own root detection (test_cdd.py, test_spec_map.py, test_cdd_modal_base.py, etc.)
+
+### Test Quality Audit
+
+| Test | Deletion Test | Anti-Pattern | Value Assertion |
+|------|--------------|-------------|-----------------|
+| TestDetectProjectRootEnvVar | Yes - would fail if env var check removed | Clean | Asserts exact path equality |
+| TestDetectProjectRootClimbing | Yes - would fail if climbing removed | Clean | Asserts found root matches expected |
+| TestDetectProjectRootSubmodule | Yes - would fail if preference logic removed | Clean | Asserts consumer > submodule |
+| TestAtomicWriteBasic | Yes - would fail if write removed | Clean | Asserts file content matches |
+| TestAtomicWriteParentDirs | Yes - would fail if makedirs removed | Clean | Asserts nested write succeeds |
+| TestAtomicWriteJson | Yes - would fail if json mode removed | Clean | Asserts JSON format + trailing newline |
+| TestAtomicWriteFailure | Yes - would fail if cleanup removed | Clean | Asserts no temp files remain |
+| TestLoadConfigValid | Yes - would fail if delegation removed | Clean | Asserts config values match |
+| TestLoadConfigMissing | Yes - would fail if fallback removed | Clean | Asserts empty dict returned |
+| TestMigratedCallsites | Yes - structural verification | Clean | Asserts root detection from standard depths |

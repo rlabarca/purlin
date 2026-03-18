@@ -22,21 +22,9 @@ import sys
 from collections import defaultdict
 
 
-def _find_project_root(start_dir=None):
-    """Detect project root using PURLIN_PROJECT_ROOT or climbing fallback."""
-    env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
-    if env_root and os.path.isdir(env_root):
-        return env_root
-
-    if start_dir is None:
-        start_dir = os.path.dirname(os.path.abspath(__file__))
-
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(start_dir, depth))
-        if os.path.exists(os.path.join(candidate, '.purlin')):
-            return candidate
-
-    return os.path.abspath(os.path.join(start_dir, '../../'))
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(_SCRIPT_DIR, '../../')))
+from tools.bootstrap import detect_project_root as _find_project_root
 
 
 def parse_delivery_plan(plan_text, include_statuses=None):

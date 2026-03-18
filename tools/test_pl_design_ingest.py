@@ -18,7 +18,9 @@ import unittest
 from datetime import date
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, '..')))
+from tools.bootstrap import detect_project_root
+PROJECT_ROOT = detect_project_root(os.path.join(SCRIPT_DIR, 'config'))
 sys.path.insert(0, os.path.join(SCRIPT_DIR, 'critic'))
 
 from critic import parse_visual_spec
