@@ -99,3 +99,15 @@ Audited 15 new tests (2026-03-18) against policy_test_quality.md:
 - **AP-3:** Mocks limited to module-level constants (FEATURES_ABS, TESTS_DIR, etc.) and `run_command` for git; briefing logic runs unmocked.
 - **AP-4:** No tautological assertions — all checks verify specific expected values (role name, field presence, filtered feature counts, pattern extraction).
 - **AP-5:** Tests use multi-feature setups with mixed statuses, tombstones, anchors with FORBIDDEN patterns, discovery sidecars, and spec gate data.
+
+*   **Abbreviated Status Commit Format (2026-03-18):** Implemented Section 2.1 abbreviated format support in `build_status_commit_cache()`. Changed git log grep from `--grep='\\[Complete features/'` to `--grep='\\[Complete'` to capture both canonical and abbreviated commits. Added three new regex patterns: `abbrev_complete_re` (`\[Complete\]`), `abbrev_testing_re` (`\[Ready for (?:Verification|Testing)\]`), and `conv_scope_re` (`^\w+\(([^)]+)\):`) for conventional commit scope extraction. Canonical format is tried first; abbreviated is a fallback only. Abbreviated format resolves to `features/<scope>.md` and verifies file existence on disk via `os.path.isfile()`. Non-existent scopes and commits without conventional scope prefixes are silently ignored. 8 new unit tests in `TestAbbreviatedStatusCommitCache` cover: scope resolution, both Ready for Verification/Testing variants, non-existent scope, missing scope prefix, canonical precedence within same commit, scope trailer extraction, and mixed format timeline. 3 new stages in `test_lifecycle.sh` (5a, 5b, 5c) cover the end-to-end lifecycle integration.
+
+### Test Quality Audit (Abbreviated Status Commit Format)
+
+Audited 8 new tests (2026-03-18) against policy_test_quality.md:
+- **Deletion:** Tests import and call `build_status_commit_cache` directly — deletion causes ImportError + assertion failures.
+- **AP-1:** No prose inspection — tests mock `run_command` to supply specific git log output and check parsed cache results.
+- **AP-2:** Value assertions (exact timestamps, commit hashes, scope strings, cache key presence/absence, cache length).
+- **AP-3:** Mocks limited to `run_command`, `_load_persistent_status_cache`, `_save_persistent_status_cache`, `_get_current_head`, and `os.path.isfile`; parsing logic runs unmocked.
+- **AP-4:** No tautological assertions — all checks verify specific expected values.
+- **AP-5:** Tests use mixed format scenarios (canonical + abbreviated in same timeline, same-commit precedence, multi-feature setups).

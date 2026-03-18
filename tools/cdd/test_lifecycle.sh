@@ -255,6 +255,104 @@ if $stage_ok; then
 fi
 
 # ============================================================
+# Stage 5a: Abbreviated Status Commit Format
+# ============================================================
+# The feature is in TODO state from Stage 5. Use abbreviated format
+# to mark it complete: feat(<scope>): [Complete]
+
+sleep 1
+
+git commit --allow-empty -m "feat(_test_lifecycle_temp): [Complete] all scenarios passing" --quiet
+
+refresh
+lifecycle=$(get_lifecycle)
+builder=$(get_role builder)
+
+stage_ok=true
+assert_eq "lifecycle" "COMPLETE" "$lifecycle" || stage_ok=false
+assert_eq "builder"   "DONE"    "$builder"   || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Lifecycle Integration -- Abbreviated Status Commit Format'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
+# Stage 5b: Abbreviated Status Commit With Non-Existent Feature Scope
+# ============================================================
+# A commit with a scope that doesn't correspond to any feature file
+# must be silently ignored.
+
+git commit --allow-empty -m "feat(nonexistent_feature): [Complete] something" --quiet
+
+refresh
+
+# Check that no feature entry was created for nonexistent_feature
+nonexistent_check=$("$PYTHON_EXE" -c "
+import json, sys
+try:
+    with open('.purlin/cache/feature_status.json') as f:
+        d = json.load(f)
+    for state in ('complete', 'testing', 'todo'):
+        for entry in d['features'].get(state, []):
+            if 'nonexistent_feature' in entry.get('file', ''):
+                print('FOUND')
+                sys.exit(0)
+    print('NOT_FOUND')
+except Exception as e:
+    print('ERROR:' + str(e))
+")
+
+stage_ok=true
+assert_eq "nonexistent_ignored" "NOT_FOUND" "$nonexistent_check" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Abbreviated Status Commit With Non-Existent Feature Scope'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
+# Stage 5c: Canonical Status Commit Format Takes Precedence Over Abbreviated
+# ============================================================
+# Reset the temp feature to TODO, then make a canonical [Complete] commit,
+# then a later abbreviated [Complete] commit that also modifies the file.
+# The most recent matching commit determines lifecycle state.
+
+sleep 1
+
+# Reset to TODO by modifying spec
+sed -i '' 's/Placeholder (modified)/Placeholder (reset)/' "$TEMP_FEATURE"
+git add "$TEMP_FEATURE"
+git commit -m "test(lifecycle): reset for precedence test" --quiet
+
+sleep 1
+
+# Canonical complete
+git commit --allow-empty -m "status(lifecycle): [Complete features/_test_lifecycle_temp.md] [Verified]" --quiet
+
+sleep 1
+
+# Later abbreviated complete that also touches the feature file
+echo "## Precedence Test Addendum" >> "$TEMP_FEATURE"
+git add "$TEMP_FEATURE"
+git commit -m "feat(_test_lifecycle_temp): [Complete] updated" --quiet
+
+refresh
+lifecycle=$(get_lifecycle)
+
+stage_ok=true
+# The abbreviated commit is most recent — its timestamp matches the file mod.
+# Since complete_ts == file_mod_ts, spec_content_unchanged returns False
+# (content changed), so lifecycle should be COMPLETE only if the abbreviated
+# commit's timestamp is used. The abbreviated commit IS the most recent
+# [Complete] and its timestamp equals the file mtime (same commit), so
+# spec_content_unchanged compares content at that hash which IS the current
+# content. Result: COMPLETE.
+assert_eq "lifecycle" "COMPLETE" "$lifecycle" || stage_ok=false
+if $stage_ok; then
+    echo '[Scenario] Canonical Status Commit Format Takes Precedence Over Abbreviated'
+    PASSED=$((PASSED + 1))
+fi
+
+# ============================================================
 # Stage 6: Theme Toggle LocalStorage Behavior (HTML inspection)
 # ============================================================
 

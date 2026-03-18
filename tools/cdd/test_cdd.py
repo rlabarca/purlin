@@ -27,6 +27,7 @@ from serve import (
     generate_api_status_json,
     generate_role_filtered_status_json,
     generate_startup_briefing,
+    build_status_commit_cache,
     _count_scenarios,
     _extract_forbidden_patterns,
     _scan_discovery_sidecars,
@@ -3654,6 +3655,123 @@ class TestScanDiscoverySidecars(unittest.TestCase):
                 result = _scan_discovery_sidecars()
             self.assertEqual(result["total_open"], 0)
             self.assertEqual(result["by_feature"], {})
+
+
+# ===================================================================
+# Abbreviated Status Commit Format Tests
+# ===================================================================
+
+
+class TestAbbreviatedStatusCommitCache(unittest.TestCase):
+    """Tests for abbreviated status commit format in build_status_commit_cache.
+
+    Covers scenarios:
+    - Lifecycle Integration -- Abbreviated Status Commit Format
+    - Abbreviated Status Commit With Non-Existent Feature Scope
+    - Canonical Status Commit Format Takes Precedence Over Abbreviated
+    """
+
+    def _run_cache_with_git_output(self, git_output, existing_files=None):
+        """Helper: run build_status_commit_cache with mocked git log output.
+
+        existing_files: set of relative paths that should exist on disk.
+        """
+        if existing_files is None:
+            existing_files = set()
+
+        def mock_isfile(path):
+            for rel in existing_files:
+                if path.endswith(rel):
+                    return True
+            return False
+
+        with patch('serve.run_command', return_value=git_output), \
+             patch('serve._load_persistent_status_cache', return_value=(None, None)), \
+             patch('serve._save_persistent_status_cache'), \
+             patch('serve._get_current_head', return_value='abc123'), \
+             patch('os.path.isfile', side_effect=mock_isfile):
+            return build_status_commit_cache()
+
+    def test_abbreviated_complete_resolves_from_scope(self):
+        """Abbreviated [Complete] with conventional scope resolves to feature."""
+        git_output = "1700000000 aaa111 feat(my_feature): [Complete] all scenarios passing"
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files={'features/my_feature.md'})
+        self.assertIn('features/my_feature.md', cache)
+        self.assertEqual(cache['features/my_feature.md']['complete_ts'], 1700000000)
+        self.assertEqual(cache['features/my_feature.md']['complete_hash'], 'aaa111')
+
+    def test_abbreviated_testing_resolves_from_scope(self):
+        """Abbreviated [Ready for Verification] resolves from scope."""
+        git_output = "1700000000 bbb222 status(my_feature): [Ready for Verification]"
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files={'features/my_feature.md'})
+        self.assertIn('features/my_feature.md', cache)
+        self.assertEqual(cache['features/my_feature.md']['testing_ts'], 1700000000)
+
+    def test_abbreviated_testing_ready_for_testing_resolves(self):
+        """Abbreviated [Ready for Testing] also resolves from scope."""
+        git_output = "1700000000 ccc333 status(my_feature): [Ready for Testing]"
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files={'features/my_feature.md'})
+        self.assertIn('features/my_feature.md', cache)
+        self.assertEqual(cache['features/my_feature.md']['testing_ts'], 1700000000)
+
+    def test_nonexistent_scope_silently_ignored(self):
+        """Abbreviated commit with non-existent feature scope produces no entry."""
+        git_output = "1700000000 ddd444 feat(nonexistent_feature): [Complete] something"
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files=set())
+        self.assertNotIn('features/nonexistent_feature.md', cache)
+        self.assertEqual(len(cache), 0)
+
+    def test_no_scope_prefix_silently_ignored(self):
+        """Abbreviated commit without conventional scope prefix is ignored."""
+        git_output = "1700000000 eee555 [Complete] no scope here"
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files=set())
+        self.assertEqual(len(cache), 0)
+
+    def test_canonical_takes_precedence_in_same_commit(self):
+        """When a commit has both canonical path and a scope, canonical is used."""
+        git_output = (
+            "1700000000 fff666 feat(wrong_scope): "
+            "[Complete features/correct_feature.md]"
+        )
+        cache = self._run_cache_with_git_output(
+            git_output,
+            existing_files={'features/correct_feature.md',
+                            'features/wrong_scope.md'})
+        self.assertIn('features/correct_feature.md', cache)
+        self.assertNotIn('features/wrong_scope.md', cache)
+
+    def test_abbreviated_scope_trailer_extracted(self):
+        """[Scope: ...] trailer is extracted from abbreviated commits."""
+        git_output = (
+            "1700000000 ggg777 feat(my_feature): "
+            "[Complete] [Scope: targeted:SomeScenario]"
+        )
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files={'features/my_feature.md'})
+        self.assertEqual(
+            cache['features/my_feature.md']['scope'],
+            'targeted:SomeScenario')
+
+    def test_mixed_canonical_and_abbreviated_timeline(self):
+        """Both formats contribute to the same feature's timeline correctly."""
+        # Earlier canonical testing commit, later abbreviated complete
+        git_output = (
+            "1700000002 hhh888 feat(my_feature): [Complete] done\n"
+            "1700000001 iii999 status(lifecycle): "
+            "[Ready for Verification features/my_feature.md]"
+        )
+        cache = self._run_cache_with_git_output(
+            git_output, existing_files={'features/my_feature.md'})
+        entry = cache['features/my_feature.md']
+        self.assertEqual(entry['complete_ts'], 1700000002)
+        self.assertEqual(entry['complete_hash'], 'hhh888')
+        self.assertEqual(entry['testing_ts'], 1700000001)
+        self.assertEqual(entry['testing_hash'], 'iii999')
 
 
 # ===================================================================

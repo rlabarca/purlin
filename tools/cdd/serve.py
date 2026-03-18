@@ -295,8 +295,10 @@ def build_status_commit_cache():
                     for k, v in cached_entries.items()}
 
     # Cache miss — full git log scan
+    # Grep for both canonical ([Complete features/...]) and abbreviated
+    # ([Complete], [Ready for Verification/Testing]) status commit formats.
     output = run_command(
-        "git log --grep='\\[Complete features/' "
+        "git log --grep='\\[Complete' "
         "--grep='\\[Ready for' --format='%ct %H %s'"
     )
     if not output:
@@ -306,8 +308,14 @@ def build_status_commit_cache():
         return {}
 
     cache = {}
+    # Canonical format: file path inside brackets
     complete_re = re.compile(r'\[Complete (features/\S+\.md)\]')
     testing_re = re.compile(r'\[Ready for \w+ (features/\S+\.md)\]')
+    # Abbreviated format: no file path, just the tag
+    abbrev_complete_re = re.compile(r'\[Complete\]')
+    abbrev_testing_re = re.compile(r'\[Ready for (?:Verification|Testing)\]')
+    # Conventional commit scope: type(scope): ...
+    conv_scope_re = re.compile(r'^\w+\(([^)]+)\):')
     scope_re = re.compile(r'\[Scope:\s*([^\]]+)\]')
 
     for line in output.splitlines():
@@ -324,6 +332,7 @@ def build_status_commit_cache():
         fpath = None
         commit_type = None
 
+        # Try canonical format first (always takes precedence)
         m = complete_re.search(subject)
         if m:
             fpath = os.path.normpath(m.group(1))
@@ -333,6 +342,20 @@ def build_status_commit_cache():
             if m:
                 fpath = os.path.normpath(m.group(1))
                 commit_type = 'testing'
+
+        # Fallback: abbreviated format — resolve from conventional commit scope
+        if not fpath:
+            is_abbrev_complete = abbrev_complete_re.search(subject)
+            is_abbrev_testing = abbrev_testing_re.search(subject)
+            if is_abbrev_complete or is_abbrev_testing:
+                scope_m = conv_scope_re.match(subject)
+                if scope_m:
+                    scope_name = scope_m.group(1)
+                    resolved = os.path.normpath(f"features/{scope_name}.md")
+                    abs_resolved = os.path.join(PROJECT_ROOT, resolved)
+                    if os.path.isfile(abs_resolved):
+                        fpath = resolved
+                        commit_type = 'complete' if is_abbrev_complete else 'testing'
 
         if not fpath:
             continue
