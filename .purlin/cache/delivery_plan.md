@@ -16,9 +16,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 0400005
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Root Policies [IN_PROGRESS]
+## Phase 3 -- Root Policies [COMPLETE]
 **Features:** policy_critic.md, arch_testing.md
-**Completion Commit:** --
+**Completion Commit:** 695cabf
 **QA Bugs Addressed:** --
 
 ## Phase 4 -- Root Anchors [PENDING]
