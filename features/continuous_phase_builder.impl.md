@@ -143,3 +143,14 @@ The output format from `run_evaluator` changed from `action|reason` to `action|s
 **Fix:** Two-part approach:
 1. Refactored `run_line_buffered` → `run_to_log` with log file as first parameter. The function handles all redirect logic internally (stdbuf path: `> logfile 2>&1`; script path: `> logfile 2>&1`; fallback: `> logfile 2>&1`). Append mode via `--append` flag.
 2. Added output containment at the parallel call site: `( ... ) > /dev/null 2>&1 &`. The outer redirect catches any PTY master leakage that bypasses the inner redirect inside `run_to_log`. Sequential and bootstrap invocations don't need containment (no concurrent PTY interaction).
+
+### Test Quality Audit
+
+Audited 70 scenarios (2026-03-18) against policy_test_quality.md. Two test patterns: source-parsing (structural verification of launcher script) and execution (run launcher with mock claude/git in isolated temp dirs).
+
+- **Deletion:** Execution tests run the actual `pl-run-builder.sh` with controlled inputs — deleting the launcher or its orchestration logic causes immediate test failures. Source-parsing tests (`test_default_behavior`, `test_system_prompt_overrides`, etc.) grep the script body for required patterns.
+- **AP-1 (tautology):** Tests assert specific behavioral outcomes — exit codes, stderr messages ("Retry limit exceeded", "merge conflict"), file creation (logs, invocation records), and invocation counts. No "assert exists" patterns.
+- **AP-2 (echo):** Tests verify computed orchestration behavior: sequential/parallel phase routing, evaluator-driven retry/approve/stop, merge conflict detection, bootstrap plan creation. Inputs are delivery plans with varied dependency structures; outputs are orchestration decisions, not input parroting.
+- **AP-3 (mock-only):** Tests use mock `claude` (records invocations, returns structured evaluator responses) and mock `git` (handles worktree/merge commands) but run the real launcher script with real phase analyzer logic. The orchestration code under test is fully exercised.
+- **AP-4 (flag-check):** Tests verify behavioral outcomes, not flag presence. E.g., `test_evaluator_retry` verifies 2+ builder invocations and "Retrying" in stderr; `test_parallel_merge_conflict` verifies non-zero exit and "merge conflict" message; `test_graceful_stop_on_sigint` verifies SIGINT produces cleanup behavior.
+- **AP-5 (constant):** Test fixtures use varied dependency graphs (linear chains, parallel-independent, mixed), different evaluator response sequences, and multi-phase plans. No hardcoded "always pass" data.
