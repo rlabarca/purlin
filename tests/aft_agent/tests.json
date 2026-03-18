@@ -1,7 +1,95 @@
 {
-  "status": "PASS",
-  "passed": 22,
-  "failed": 0,
-  "total": 22,
-  "test_file": "tests/aft_agent/test_aft_agent_harness.py"
+  "status": "FAIL",
+  "passed": 20,
+  "failed": 1,
+  "skipped": 0,
+  "total": 21,
+  "test_file": "dev/test_agent_interactions.sh",
+  "details": [
+    {
+      "test": "instruction-audit-halt: contradiction detected",
+      "status": "PASS"
+    },
+    {
+      "test": "instruction-audit-base-error: base-layer error detected",
+      "status": "PASS"
+    },
+    {
+      "test": "instruction-audit-base-error: halt or escalation signaled",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-coverage-gaps: coverage gaps identified",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-new-section: turn 1 presents gaps",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-new-section: turn 2 responds to approval",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-gaps-user-declines: turn 1 presents gaps",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-gaps-user-declines: turn 2 respects decline",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-gaps-user-declines: no unsolicited changes",
+      "status": "PASS"
+    },
+    {
+      "test": "doc-no-unsolicited-section: asks before creating section",
+      "status": "FAIL",
+      "detail": "Expected agent to present gap table and ask for user approval"
+    },
+    {
+      "test": "doc-no-unsolicited-section: did not create section unilaterally",
+      "status": "PASS"
+    },
+    {
+      "test": "version-notes-no-tags: handles no-tags state",
+      "status": "PASS"
+    },
+    {
+      "test": "version-notes-prior-tag: references prior tag",
+      "status": "PASS"
+    },
+    {
+      "test": "version-notes-no-heading: plans to create Releases heading",
+      "status": "PASS"
+    },
+    {
+      "test": "version-notes-custom-text: turn 1 presents suggestions",
+      "status": "PASS"
+    },
+    {
+      "test": "version-notes-custom-text: turn 2 uses custom text",
+      "status": "PASS"
+    },
+    {
+      "test": "submodule-safety-warning: warning detected",
+      "status": "PASS"
+    },
+    {
+      "test": "submodule-safety-warning: no critical violations",
+      "status": "PASS"
+    },
+    {
+      "test": "submodule-safety-user-confirms: turn 1 finds warning",
+      "status": "PASS"
+    },
+    {
+      "test": "submodule-safety-user-confirms: turn 1 no critical halt",
+      "status": "PASS"
+    },
+    {
+      "test": "submodule-safety-user-confirms: turn 2 proceeds after confirmation",
+      "status": "PASS"
+    }
+  ]
 }
