@@ -6,17 +6,17 @@
 ## Summary
 Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 tombstones for retired AFT artifacts and 2 new features (pl_web_test, regression_testing). Phased to respect dependency ordering, maximize parallelization of independent features, and keep context budget per session manageable.
 
-## Phase 1 -- Tombstone: Anchor + Agent Cleanup [PENDING]
+## Phase 1 -- Tombstone: Anchor + Agent Cleanup [IN_PROGRESS]
 **Features:** arch_automated_feedback_tests (tombstone), aft_agent (tombstone)
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Tombstone: Skills + Runner Cleanup [PENDING]
+## Phase 2 -- Tombstone: Skills + Runner Cleanup [IN_PROGRESS]
 **Features:** pl_aft_web (tombstone), aft_regression_testing (tombstone)
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Root Policies [PENDING]
+## Phase 3 -- Root Policies [IN_PROGRESS]
 **Features:** policy_critic.md, arch_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -36,7 +36,7 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- CDD Modal Base [PENDING]
+## Phase 7 -- CDD Modal Base [IN_PROGRESS]
 **Features:** cdd_modal_base.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -56,7 +56,7 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- pl-update-purlin [PENDING]
+## Phase 11 -- pl-update-purlin [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
