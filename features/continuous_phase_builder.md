@@ -6,15 +6,15 @@
 > Prerequisite: features/phase_analyzer.md
 > Prerequisite: features/agent_launchers_common.md
 
-[Complete]
+[TODO]
 
 ## Summary
 
-Adds `--continuous` mode to the Builder launcher for fully autonomous multi-phase delivery. The orchestrator re-analyzes the delivery plan before each execution group, launches parallel Builders in git worktrees when phases are independent, uses a Haiku evaluator to classify exit states (continue/retry/approve/stop), and renders real-time progress via an in-place terminal canvas. The canvas engine reads terminal width from a shared file (not `tput cols` in subshells), supports resize adaptation via SIGWINCH, and shows per-phase status with aligned columns that fill the full terminal width. Includes bootstrap mode for plan creation, graceful SIGINT handling, plan amendment support for parallel Builders, and a rich exit summary with LLM-generated work digest.
+Adds `--continuous` mode to the Builder launcher for fully autonomous multi-phase delivery. The orchestrator re-analyzes the delivery plan before each execution group, launches parallel Builders in git worktrees when phases are independent, uses a Haiku evaluator to classify exit states (continue/retry/approve/remediate/stop), and renders real-time progress via an in-place terminal canvas. The canvas engine reads terminal width from a shared file (not `tput cols` in subshells), supports resize adaptation via SIGWINCH, and shows per-phase status with aligned columns that fill the full terminal width. Includes bootstrap mode for plan creation, graceful SIGINT handling, plan amendment support for parallel Builders, inter-phase Critic integration for quality validation between phases, dynamic remediation phase insertion for automatically fixing Critic-identified issues, and a rich exit summary with LLM-generated work digest.
 
 ## 1. Overview
 
-An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-builder.sh`) that automatically progresses through all delivery plan phases without human intervention. Uses the phase analyzer for dependency-aware ordering and parallelization, an LLM evaluator (Haiku) to classify Builder exit states, and system prompt overrides to enable autonomous operation. When `--continuous` is not passed, the launcher behaves identically to today.
+An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-builder.sh`) that automatically progresses through all delivery plan phases without human intervention. Uses the phase analyzer for dependency-aware ordering and parallelization, an LLM evaluator (Haiku) to classify Builder exit states (continue/retry/approve/remediate/stop), and system prompt overrides to enable autonomous operation. Optionally runs the Critic between phases to validate feature quality, and dynamically inserts remediation phases when HIGH/CRITICAL issues are detected. When `--continuous` is not passed, the launcher behaves identically to today.
 
 ---
 
@@ -64,19 +64,19 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - **Model:** The evaluator model is configurable via `continuous_evaluator_model` in `.purlin/config.json` (or `.purlin/config.local.json`). If absent, defaults to Haiku. Acceptable values are any model ID from the `models` array in config (e.g., `"claude-haiku-4-5-20251001"`, `"claude-sonnet-4-6"`). Use Sonnet when evaluator misclassifications are observed; use Haiku for cost efficiency.
 - The evaluator is invoked via `claude -p --model <resolved-model> --json-schema <schema>`.
 - **Timeout:** The evaluator invocation MUST have a 30-second timeout (e.g., `timeout 30 claude ...`). If the call exceeds 30 seconds, kill it and fall back to the delivery plan hash check (Section 2.10). A Haiku classification call should complete in under 5 seconds — anything longer indicates a hung connection or overloaded endpoint, not a legitimate processing delay.
-- The evaluator receives: the tail of the Builder's output (last 200 lines), the current delivery plan contents (if the file still exists), and classification instructions.
+- The evaluator receives three inputs: (1) the tail of the Builder's output (last 200 lines), (2) the current delivery plan contents (if the file still exists), and (3) when `inter_phase_critic` is enabled, the inter-phase Critic summary (see Section 2.18). The Critic summary is injected as a `## Critic Analysis Summary` section in the evaluator prompt, after the builder output and delivery plan sections.
 - The evaluator returns structured JSON:
 
 ```json
 {
-  "action": "continue | retry | approve | stop",
+  "action": "continue | retry | approve | remediate | stop",
   "success": true | false,
   "reason": "Brief explanation"
 }
 ```
 
 - **`success` field:** The evaluator MUST explicitly set `success: true` when the stop action indicates all work completed successfully, and `success: false` for error/stall stops. The orchestrator MUST use this boolean to determine exit status for stop actions -- NOT keyword matching on the reason string. This eliminates false negatives from reason phrasing variation.
-- For non-stop actions (`continue`, `retry`, `approve`), the `success` field MUST be `false` (it is only meaningful for `stop`).
+- For non-stop actions (`continue`, `retry`, `approve`, `remediate`), the `success` field MUST be `false` (it is only meaningful for `stop`).
 
 - **Decision mapping:**
 
@@ -89,12 +89,14 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 | Error requiring human input (INFEASIBLE, missing fixture) | `stop` | `false` |
 | All phases complete / delivery plan deleted | `stop` | `true` |
 | No meaningful progress detected | `stop` | `false` |
+| Critic found HIGH/CRITICAL issues in phase features | `remediate` | `false` |
 
 ### 2.6 Evaluator Actions
 
 - **`continue`:** Proceed to the next phase or execution group. Start a new session.
 - **`approve`:** The Builder paused for approval despite the auto-proceed override. Resume the same session via `claude -r <session-name> -p "Approved. Proceed."`. After the resumed run completes, re-evaluate with the new output.
 - **`retry`:** Relaunch the same phase in a new session (fresh context). Maximum 2 consecutive retries per phase. If the retry limit is exceeded, exit with an escalation message.
+- **`remediate`:** Critic found HIGH/CRITICAL quality issues in the just-completed phase's features (see Section 2.19). The orchestrator inserts a remediation phase targeting the specific issues and re-enters the orchestration loop. The remediation phase runs before the next planned phase.
 - **`stop`:** Exit the orchestration loop. Print the reason from the evaluator. If `success` is `true`, record the phase as `COMPLETE` and exit with zero status. If `success` is `false`, record the phase as `SKIPPED` and exit with non-zero status.
 
 ### 2.7 Approval Bypass (Auto-Proceed Override)
@@ -143,14 +145,16 @@ possible to avoid conflicts.
 - Merge conflict during parallel merge: stop immediately, report conflicting files, exit non-zero.
 - Orphaned worktrees on error: clean up any worktrees created during the current run.
 - Retry limit exceeded: exit with message identifying the stuck phase and suggesting manual intervention.
+- Inter-phase Critic failure: if the Critic fails for a feature (non-zero exit, timeout, or malformed output), log the failure and skip that feature's Critic result. The evaluator receives a partial or empty Critic summary. Critic failures do not block orchestration.
+- Remediation limit exceeded: when `max_remediation_attempts` is reached for a source phase, log the escalation (feature names, issue categories, attempt count), treat the evaluator result as `continue`, and proceed to the next planned phase. The exit summary includes a `Remediation Escalations` section listing unresolved issues.
 
 ### 2.11 Runtime Artifact Cleanup
 
 During execution, the continuous builder creates transient runtime artifacts in `.purlin/runtime/` that are consumed by the canvas, exit summary, and evaluator. These MUST be cleaned up at two points:
 
-- **Startup purge:** Before entering the orchestration loop (after bootstrap, before the first phase), delete all stale artifacts from a previous run: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`. This prevents phantom phases in the exit summary, inflated retry counts, and stale amendment files from confusing the current run. Log files (`continuous_build_*.log`) are also deleted at startup — they are diagnostic artifacts for the most recent run, not a persistent history.
+- **Startup purge:** Before entering the orchestration loop (after bootstrap, before the first phase), delete all stale artifacts from a previous run: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`, `remediation_attempt_*`, `interphase_critic_summary.md`, `remediation_phase_*_prompt.txt`. This prevents phantom phases in the exit summary, inflated retry counts, stale amendment files, and stale remediation state from confusing the current run. Log files (`continuous_build_*.log`) are also deleted at startup — they are diagnostic artifacts for the most recent run, not a persistent history.
 
-- **Exit cleanup:** After the exit summary prints (which is the last consumer of these files), delete all transient artifacts: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`, and `canvas_state`. Log files are preserved after exit — the exit summary references their paths, and the user may want to inspect them. The next startup purge will delete them.
+- **Exit cleanup:** After the exit summary prints (which is the last consumer of these files), delete all transient artifacts: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`, `canvas_state`, `remediation_attempt_*`, `interphase_critic_summary.md`, `remediation_phase_*_prompt.txt`. Log files are preserved after exit — the exit summary references their paths, and the user may want to inspect them. The next startup purge will delete them.
 
 **Not cleaned up (intentional):** Log files are preserved after exit but purged on the next startup. The `agent_role` file and `term_width` file (Section 2.17) persist across runs by design.
 
@@ -306,7 +310,13 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 - **Approval checkpoint canvas:** When bootstrap creates a valid plan, the canvas clears the spinner and renders the colored console table (see Section 2.16 approval checkpoint for format). The table replaces the spinner content in the canvas area. The table re-renders on terminal resize (SIGWINCH) while the approval prompt is active, recomputing column widths from the new terminal width.
 
-- **Inter-phase canvas:** Between phases (evaluator running, re-analysis), the canvas shows a spinner line:
+- **Inter-phase canvas:** Between phases (evaluator running, Critic analysis, re-analysis), the canvas shows a spinner line:
+
+```
+⠼ Running Critic on phase 2 features... 5s
+```
+
+  or
 
 ```
 ⠼ Evaluating phase 2 output... 3s
@@ -317,6 +327,8 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 ```
 ⠧ Re-analyzing delivery plan... 1s
 ```
+
+  The Critic spinner appears only when `inter_phase_critic` is enabled. The sequence is: Critic run → evaluator → re-analysis.
 
 - **Sequential phase canvas:** During sequential phase execution, the canvas shows a single line (or 2 lines if wrapping is needed) with spinner, phase label, status, elapsed time, log size, and current activity. The renderer reads the shared terminal width on each render cycle and computes field widths dynamically. The activity field (last field) expands to fill all remaining terminal width. Priority order for space allocation: spinner + phase number (fixed) > status + elapsed time > log size > activity. When the full content exceeds terminal width, activity text is truncated first (with `...`); if still too long, the phase label is truncated. When wrapping to 2 lines, the continuation line is indented to align with the phase label column:
 
@@ -429,7 +441,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
 ================================
 ```
 
-- **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The status refresh output is also permanent (not canvas).
+- **Post-run status refresh:** After printing the exit summary, the launcher runs `tools/cdd/status.sh` to regenerate the Critic report and update all `critic.json` files. This ensures the CDD dashboard reflects completed work (Builder TODOs clear to DONE for completed phases). Runs on every exit path: success, failure, and graceful stop. Does NOT run on second-SIGINT forced exit. The post-run status refresh MUST suppress stdout output. The purpose of this call is to regenerate cached Critic artifacts for the next session — the JSON status payload is not intended for the user. Redirect stdout to `/dev/null`; only stderr (diagnostics) may print to the terminal. This prevents the full JSON status dump from pushing the exit summary off screen.
 
 - **TTY fallback:** When stderr is not a TTY (`! [ -t 2 ]`), no canvas is rendered. Instead, print minimal milestone lines: `"Bootstrap started"`, `"Bootstrap complete"`, `"Phase N started"`, `"Phase N complete"`, etc. No spinner, no color, no ANSI. One line per event, append-only.
 
@@ -438,6 +450,59 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
 - **Log file buffering:** Builder output MUST be line-buffered when redirected to log files. Without this, the OS defaults to full buffering (~4-8KB blocks) when stdout is not a TTY, causing the canvas to show `0K` log size until the process exits or the buffer fills. The launcher MUST use a platform-aware buffering wrapper with a defined fallback chain: (1) `stdbuf -oL` (Linux/GNU coreutils), (2) `script -q /dev/null` pipe (macOS -- `script` forces a pseudo-TTY, which triggers line buffering), (3) if neither is available, log a warning to stderr and proceed unbuffered. The current fallback (silent no-op) is a bug -- it MUST at minimum warn the user that log monitoring will be degraded. This applies to all Builder invocations: sequential phases, parallel worktree phases, and bootstrap. The evaluator and canvas both depend on log files growing incrementally during execution.
 
 - **Non-continuous mode:** Without `--continuous`, no canvas is rendered. Behavior is unchanged from the current interactive launcher.
+
+### 2.18 Inter-Phase Critic Integration
+
+The Critic validates spec gate compliance, test traceability, policy adherence, and feature lifecycle status. When enabled between phases, the evaluator gains visibility into whether features actually achieved lifecycle completion — not just whether the Builder session exited.
+
+- **Configuration:** Controlled by `inter_phase_critic` (boolean, default `false`) in `.purlin/config.json` or `.purlin/config.local.json`. When `false`, the orchestrator skips the Critic run entirely and the evaluator receives no Critic summary — behavior is identical to the pre-integration state.
+- **Trigger point:** After Builder(s) complete and code is merged (parallel: after worktree merge + plan amendment application; sequential: after Builder exits), BEFORE the evaluator runs. The sequence is: Builder completes → code merged → Critic runs → evaluator runs → re-analysis.
+- **Scoping:** The Critic runs per-feature, only on features listed in the just-completed phase(s). Uses existing single-feature mode: `tools/critic/run.sh features/<name>.md`. For parallel groups, the Critic runs on features from ALL phases in the group.
+- **Output:** Critic results are written to `tests/<feature>/critic.json` (existing behavior). The orchestrator generates a condensed text summary at `.purlin/runtime/interphase_critic_summary.md` containing:
+  - Per-feature lifecycle status (`builder` field from `role_status` in `critic.json`)
+  - Per-feature gate results (spec gate pass/fail, implementation gate pass/fail)
+  - Only HIGH and CRITICAL action items (MEDIUM/LOW omitted for evaluator clarity)
+  - The feature's current lifecycle tag (e.g., `[TODO]`, `[Complete]`)
+- **Evaluator integration:** The summary is passed to the evaluator as a third input section (`## Critic Analysis Summary`) alongside builder output and delivery plan. When the summary is empty or absent (all features clean, or Critic disabled), the evaluator receives no Critic section and behaves as before.
+- **Failure handling:** If the Critic fails for a feature (non-zero exit, timeout, or malformed output), log the failure to stderr and skip that feature's result. The evaluator receives a partial or empty summary. Critic failures do not block orchestration.
+- **Canvas integration:** A new spinner state renders during the Critic run: `"Running Critic on phase N features..."` between Builder completion and evaluator invocation. For parallel groups, the spinner says `"Running Critic on phase N/M/... features..."` listing all phase numbers in the group.
+
+### 2.19 Dynamic Remediation Phases
+
+When the inter-phase Critic identifies quality issues that the Builder failed to resolve, the orchestrator can automatically insert remediation phases to fix them before proceeding to the next planned phase.
+
+- **New evaluator action:** `"remediate"` is added to the action enum (alongside continue/retry/approve/stop). The evaluator returns this when the Critic summary shows features still at `builder: "TODO"` (lifecycle tag unchanged after the phase that was supposed to complete them) OR when the summary contains HIGH/CRITICAL action items. Only HIGH/CRITICAL items trigger remediation — MEDIUM/LOW do not.
+- **Insertion mechanism:** When the evaluator returns `"remediate"`, the orchestrator writes a plan amendment file at `.purlin/runtime/plan_amendment_phase_<N>.json` (where `<N>` is a generated phase number) containing a remediation phase. The amendment is applied via the existing `apply_plan_amendments()` mechanism. The remediation phase includes a `remediation_context` object listing:
+  - The source phase number that triggered remediation
+  - Per-feature issues (lifecycle status, gate failures, HIGH/CRITICAL action items)
+  - The features that need attention
+- **Builder prompt:** Remediation phases inject a `REMEDIATION PHASE` system prompt override. The override text is written to `.purlin/runtime/remediation_phase_<N>_prompt.txt` and includes:
+  - A header identifying this as a remediation phase (not a standard delivery phase)
+  - The specific features to address
+  - The specific issues to fix (from the Critic summary)
+  - An instruction to focus exclusively on resolving the listed issues and committing lifecycle status tags
+
+```
+REMEDIATION PHASE ACTIVE: This is a targeted remediation phase, not a standard
+delivery phase. You MUST fix the following Critic-identified issues:
+
+Features requiring attention:
+- <feature_name>: <issue description> (lifecycle: [TODO], expected: [Complete])
+- <feature_name>: <issue description> (HIGH: <action item text>)
+
+Focus exclusively on resolving these issues. For features stuck at [TODO],
+ensure the lifecycle tag is updated to [Complete] in the feature file and
+committed. For Critic gate failures, address the specific gap identified.
+Do not begin work on other features or phases.
+```
+
+- **Guard rails:**
+  - `max_remediation_attempts` (integer, default `2`) in `.purlin/config.json` or `.purlin/config.local.json`. Controls the maximum number of remediation phases per source phase. Tracked via `.purlin/runtime/remediation_attempt_<source_phase>` counter files (each file contains an integer count).
+  - When the limit is exceeded: log the escalation (feature names, issue categories, attempt count), treat the result as `continue`, and proceed to the next planned phase. The exit summary includes a `Remediation Escalations` section listing the unresolved features and issues.
+  - Only HIGH/CRITICAL Critic items trigger remediation. MEDIUM/LOW items are informational and do not cause the evaluator to return `"remediate"`.
+  - `max_remediation_attempts: 0` effectively disables remediation while keeping the inter-phase Critic run active (the evaluator still receives the Critic summary but cannot return `"remediate"`).
+- **Resolution definition:** An issue is considered resolved when the next Critic run (either in a subsequent remediation phase or the next planned phase) no longer produces a HIGH/CRITICAL item in the same category for that feature, and/or the feature's lifecycle tag has advanced from `[TODO]`.
+- **Remediation in exit summary:** Remediation phases are labeled as `REMEDIATION (Phase N)` in the exit summary phase table, where `N` is the source phase number. This distinguishes them from planned delivery phases. If any remediation escalations occurred, the exit summary includes a `Remediation Escalations` section after the retries line listing each escalated source phase, its features, and the unresolved issues.
 
 ---
 
@@ -594,6 +659,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     When the launcher detects the evaluator failure
     Then it falls back to checking whether the delivery plan file changed
     And continues if the delivery plan was modified, stops if unchanged
+    And the fallback does NOT attempt remediation (remediate action requires a successful evaluator call)
 
 #### Scenario: System Prompt Overrides Injected
     Given --continuous is active
@@ -1050,6 +1116,171 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And it deletes all plan_amendment_phase_*.json files
     And it deletes the approval_table_lines and canvas_state files
     And log files (continuous_build_*.log) are preserved for user inspection
+
+#### Scenario: Inter-Phase Critic Runs After Sequential Phase
+    Given --continuous is active with inter_phase_critic enabled
+    And the phase analyzer returns a sequential group for Phase 2
+    And Phase 2 contains features: policy_release.md, policy_branch_collab.md
+    When the Builder exits Phase 2
+    And the orchestrator has updated Phase 2 status in the delivery plan
+    Then the orchestrator runs tools/critic/run.sh on policy_release.md and policy_branch_collab.md
+    And Critic results are written to tests/policy_release/critic.json and tests/policy_branch_collab/critic.json
+    And a condensed summary is written to .purlin/runtime/interphase_critic_summary.md
+    And the summary contains per-feature lifecycle status, gate results, and HIGH/CRITICAL action items only
+    And the evaluator receives the summary as a "## Critic Analysis Summary" section in its prompt
+
+#### Scenario: Inter-Phase Critic Runs After Parallel Group
+    Given --continuous is active with inter_phase_critic enabled
+    And the phase analyzer returns a parallel group with Phases 2 and 3
+    And Phase 2 contains features: arch_testing.md
+    And Phase 3 contains features: policy_critic.md, design_visual_standards.md
+    When both parallel Builders complete and worktrees are merged
+    Then the orchestrator runs the Critic on ALL features across ALL phases in the group
+    And the Critic runs on arch_testing.md, policy_critic.md, and design_visual_standards.md
+    And the condensed summary includes results for all three features
+
+#### Scenario: Evaluator Returns Remediate on HIGH Issues
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 3 has completed
+    And the Critic summary shows builder: "TODO" for arch_testing.md (lifecycle tag unchanged)
+    And the Critic summary contains a HIGH action item for arch_testing.md
+    When the evaluator classifies the combined output (builder output + delivery plan + Critic summary)
+    Then it returns action "remediate" with success: false
+    And the reason references the Critic findings
+
+#### Scenario: Remediation Phase Inserted Into Plan
+    Given --continuous is active with inter_phase_critic enabled
+    And the evaluator returned "remediate" after Phase 3
+    When the orchestrator processes the remediate action
+    Then it writes a plan amendment file at .purlin/runtime/plan_amendment_phase_<N>.json
+    And the amendment contains a remediation phase with a remediation_context object
+    And the remediation_context lists the source phase (3), affected features, and specific issues
+    And the amendment is applied via the existing apply_plan_amendments() mechanism
+    And the phase analyzer picks up the remediation phase as PENDING on the next re-analysis
+
+#### Scenario: Remediation Builder Receives Issue Context
+    Given --continuous is active with inter_phase_critic enabled
+    And a remediation phase has been inserted targeting arch_testing.md and policy_critic.md
+    When the orchestrator launches a Builder for the remediation phase
+    Then a system prompt override is written to .purlin/runtime/remediation_phase_<N>_prompt.txt
+    And the override identifies this as a REMEDIATION PHASE (not a standard delivery phase)
+    And the override lists each feature with its specific issue (lifecycle status, gate failure details)
+    And the Builder's system prompt includes the remediation override text
+
+#### Scenario: Remediation Attempt Limit Prevents Infinite Loop
+    Given --continuous is active with inter_phase_critic enabled and max_remediation_attempts: 2
+    And Phase 3 has already triggered 2 remediation attempts
+    And .purlin/runtime/remediation_attempt_3 contains the count "2"
+    When the evaluator returns "remediate" again for Phase 3 issues
+    Then the orchestrator detects the limit has been reached
+    And logs the escalation with feature names, issue categories, and attempt count
+    And treats the result as "continue" (proceeds to the next planned phase)
+    And the exit summary includes a "Remediation Escalations" section listing the unresolved issues
+
+#### Scenario: Critic Failure Does Not Block Orchestration
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 2 contains features: policy_release.md, policy_branch_collab.md
+    When the Builder exits Phase 2
+    And the Critic run on policy_release.md fails (non-zero exit code)
+    And the Critic run on policy_branch_collab.md succeeds
+    Then the orchestrator logs the Critic failure for policy_release.md
+    And the Critic summary contains results only for policy_branch_collab.md
+    And the evaluator receives the partial summary
+    And orchestration continues normally
+
+#### Scenario: Inter-Phase Critic Disabled by Config
+    Given --continuous is active
+    And inter_phase_critic is false (or absent) in config
+    When a phase completes
+    Then the orchestrator does NOT run the Critic between phases
+    And the evaluator receives no Critic summary section
+    And the evaluator makes decisions based only on builder output and delivery plan
+    And behavior is identical to the pre-integration state
+
+#### Scenario: Remediation Phase Passes Critic
+    Given --continuous is active with inter_phase_critic enabled
+    And a remediation phase has just completed
+    And the Critic now shows builder: "DONE" for all targeted features
+    And no HIGH/CRITICAL action items remain
+    When the evaluator classifies the output with the clean Critic summary
+    Then it returns action "continue" (not "remediate")
+    And the orchestrator proceeds to the next planned delivery phase
+
+#### Scenario: MEDIUM and LOW Issues Do Not Trigger Remediation
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 2 has completed
+    And the Critic summary contains only MEDIUM and LOW action items (no HIGH/CRITICAL)
+    When the evaluator classifies the combined output
+    Then it does NOT return "remediate"
+    And it returns "continue" or another appropriate action based on builder output
+    And the MEDIUM/LOW items are informational only
+
+#### Scenario: Remediation Attempt Counter Tracks Per Source Phase
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 3 has triggered 1 remediation attempt (.purlin/runtime/remediation_attempt_3 contains "1")
+    And Phase 5 has triggered 0 remediation attempts (no remediation_attempt_5 file exists)
+    When Phase 5 triggers a remediation
+    Then .purlin/runtime/remediation_attempt_5 is created with count "1"
+    And .purlin/runtime/remediation_attempt_3 remains at "1" (independent tracking)
+    And Phase 5 has 1 remaining remediation attempt before its limit
+
+#### Scenario: Canvas Shows Critic Status Between Phases
+    Given --continuous is active with inter_phase_critic enabled
+    And stderr is a TTY
+    And Phase 2 has just completed
+    When the inter-phase Critic runs
+    Then the canvas shows a spinner line "Running Critic on phase 2 features..." with elapsed time
+    And the spinner uses the same braille animation as other inter-phase spinners
+    And the spinner transitions to "Evaluating phase 2 output..." when the Critic completes and the evaluator starts
+
+#### Scenario: Remediation Phases in Exit Summary
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 3 triggered a remediation phase that completed successfully
+    And Phase 7 triggered a remediation phase that exceeded the attempt limit
+    When the exit summary prints
+    Then the phase table includes the Phase 3 remediation phase labeled as "REMEDIATION (Phase 3)"
+    And the Phase 7 remediation phase is also labeled as "REMEDIATION (Phase 7)"
+    And the exit summary includes a "Remediation Escalations" section after the retries line
+    And the escalations section lists Phase 7's unresolved features and issues
+
+#### Scenario: Startup and Exit Cleanup Includes Remediation Artifacts
+    Given --continuous is active
+    And .purlin/runtime/ contains stale remediation artifacts from a previous run (remediation_attempt_3, interphase_critic_summary.md, remediation_phase_4_prompt.txt)
+    When the launcher performs startup purge
+    Then it deletes all remediation_attempt_* files
+    And it deletes interphase_critic_summary.md
+    And it deletes all remediation_phase_*_prompt.txt files
+    And when the launcher performs exit cleanup the same artifacts are deleted
+
+#### Scenario: Post-Run Status Refresh Does Not Print JSON
+    Given --continuous is active
+    And the orchestration loop has completed
+    And the exit summary has been printed
+    When the post-run status refresh runs
+    Then the status.sh JSON output is suppressed (stdout redirected to /dev/null)
+    And the exit summary remains the last visible output
+    And only stderr diagnostics from status.sh may print to the terminal
+    And Critic artifacts are regenerated for the next session
+
+#### Scenario: Remediation Triggered When Builder Exits Without Feature Completion
+    Given --continuous is active with inter_phase_critic enabled
+    And Phase 3 contains features: arch_testing.md, policy_critic.md
+    And both features have lifecycle tag [TODO] in their spec files
+    When the Builder exits Phase 3 without changing either lifecycle tag to [Complete]
+    And the orchestrator marks Phase 3 as COMPLETE in the delivery plan
+    And the inter-phase Critic runs on arch_testing.md and policy_critic.md
+    Then the Critic summary shows builder: "TODO" for both features
+    And the evaluator returns action "remediate"
+    And a remediation phase is inserted targeting arch_testing.md and policy_critic.md
+    And the remediation Builder receives specific instructions to complete these features
+
+#### Scenario: Evaluator Fallback Does Not Attempt Remediation
+    Given --continuous is active with inter_phase_critic enabled
+    And the evaluator invocation fails (timeout or malformed JSON)
+    When the launcher falls back to the delivery plan hash check
+    Then the fallback logic returns "continue" or "stop" only
+    And the fallback does NOT return "remediate"
+    And remediation is only available when the evaluator succeeds
 
 ### Manual Scenarios (Human Verification Required)
 None.
