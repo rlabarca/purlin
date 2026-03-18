@@ -8,8 +8,8 @@
 > Prerequisite: features/test_fixture_repo.md
 > Prerequisite: features/critic_role_status.md
 > Prerequisite: features/cdd_modal_base.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 [Complete]
 

@@ -5,8 +5,8 @@
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/agent_launchers_common.md
 > Prerequisite: features/cdd_agent_configuration.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 
 ## 1. Overview

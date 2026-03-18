@@ -4,7 +4,6 @@
 > Category: "Release Process"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
-> AFT Agent: architect
 
 ## 1. Overview
 
@@ -65,6 +64,13 @@ If the user declines all gaps, proceed without changes.
 | Tag | State Description |
 |-----|-------------------|
 | `main/release_doc_consistency_check/inconsistent-docs` | Project with instruction files containing contradictory lifecycle definitions |
+
+### 2.8 Regression Testing
+
+Regression tests verify the architect agent correctly identifies documentation inconsistencies.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures)
+- **Scenarios covered:** Coverage gap detection, new-section-needed identification, clean-state negative tests
+- **Fixture tags:** See Integration Test Fixture Tags section
 
 ## 3. Scenarios
 

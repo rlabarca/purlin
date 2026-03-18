@@ -7,8 +7,8 @@
 > Prerequisite: features/models_configuration.md
 > Prerequisite: features/config_layering.md
 > Prerequisite: features/test_fixture_repo.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 
 ## 1. Overview

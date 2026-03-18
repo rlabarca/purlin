@@ -4,7 +4,6 @@
 > Category: "Release Process"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
-> AFT Agent: architect
 
 [Complete]
 
@@ -53,6 +52,13 @@ This step is registered in `tools/release/global_steps.json` as:
 | Friendly Name | `Purlin Agent Instruction Audit` |
 | Code | null |
 | Agent Instructions | "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies in override files and commit. If a finding is a base-layer error (stale path or contradiction in the base instruction file itself, not in the override), HALT the step and report the base-layer error. Do not attempt to fix base-layer errors via overrides. In the Purlin repo, use /pl-edit-base. In consumer projects, report to the framework maintainer." |
+
+### 2.5 Regression Testing
+
+Regression tests verify the architect agent correctly identifies instruction file inconsistencies.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures)
+- **Scenarios covered:** Base-conflict detection, base-error halt/escalation, clean-state negative tests
+- **Fixture tags:** See Section 2.4 Integration Test Fixture Tags (if present, otherwise just reference the tags in the file)
 
 ## 3. Scenarios
 

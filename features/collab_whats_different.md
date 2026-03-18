@@ -5,8 +5,8 @@
 > Prerequisite: features/cdd_branch_collab.md
 > Prerequisite: features/design_visual_standards.md
 > Prerequisite: features/cdd_modal_base.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 [TODO]
 

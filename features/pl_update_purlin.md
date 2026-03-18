@@ -4,7 +4,6 @@
 > Category: "Agent Skills"
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
-> AFT Agent: architect
 > Test Fixtures: https://github.com/rlabarca/weather1
 
 ## 1. Overview
@@ -243,6 +242,13 @@ files need alignment.
 - Group findings by dimension (A through D)
 - Omit dimensions that found no issues
 - If all four dimensions are clean: "No customization impacts detected."
+
+### 2.14 Regression Testing
+
+Regression tests verify the update agent correctly handles submodule update scenarios.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures against external fixture repo)
+- **Scenarios covered:** Clean update, conflict detection, dry-run mode
+- **Fixture tags:** See Integration Test Fixture Tags section
 
 ---
 

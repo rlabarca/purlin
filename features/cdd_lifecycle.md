@@ -4,8 +4,8 @@
 > Category: "CDD Dashboard"
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/config_layering.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 [TODO]
 

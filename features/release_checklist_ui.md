@@ -7,8 +7,8 @@
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/test_fixture_repo.md
 > Prerequisite: features/cdd_modal_base.md
-> AFT Web: http://localhost:9086
-> AFT Start: /pl-cdd
+> Web Test: http://localhost:9086
+> Web Start: /pl-cdd
 
 ## 1. Overview
 

@@ -1,14 +1,14 @@
-# Feature: AFT Regression Testing
+# Feature: Regression Testing
 
-> Label: "AFT Regression Testing"
-> Category: "Automated Feedback Tests"
-> Prerequisite: features/arch_automated_feedback_tests.md
+> Label: "Regression Testing"
+> Category: "Test Infrastructure"
+> Prerequisite: features/arch_testing.md
 
 [Complete]
 
 ## 1. Overview
 
-Provides infrastructure for running full AFT regression suites outside the build cycle. The Builder focuses on fast unit tests during Step 3; full AFT regression (Agent, Web) runs at user-chosen intervals, owned end-to-end by QA. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `tests.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
+Provides infrastructure for running full regression suites outside the build cycle. The Builder focuses on fast unit tests during Step 3; full regression (agent, web) runs at user-chosen intervals, owned end-to-end by QA. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `tests.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
 
 ---
 
@@ -16,14 +16,14 @@ Provides infrastructure for running full AFT regression suites outside the build
 
 ### 2.1 Runner Script
 
-A shell script at `dev/aft_runner.sh` (Purlin-dev-specific, not consumer-facing) that dispatches AFT harnesses in two modes:
+A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-facing) that dispatches test harnesses in two modes:
 
-- **Watch mode:** `./dev/aft_runner.sh --watch` polls `.purlin/runtime/aft_trigger.json` at 1-second intervals. When a trigger file appears, the runner executes the specified harness, writes `.purlin/runtime/aft_result.json`, deletes the trigger, and resumes polling. SIGINT prints a summary of all executions in the session.
-- **Once mode:** `./dev/aft_runner.sh --once <harness> [args...]` runs a single harness invocation and exits with the harness exit code.
+- **Watch mode:** `./dev/regression_runner.sh --watch` polls `.purlin/runtime/regression_trigger.json` at 1-second intervals. When a trigger file appears, the runner executes the specified harness, writes `.purlin/runtime/regression_result.json`, deletes the trigger, and resumes polling. SIGINT prints a summary of all executions in the session.
+- **Once mode:** `./dev/regression_runner.sh --once <harness> [args...]` runs a single harness invocation and exits with the harness exit code.
 - Per-execution timeout defaults to 300 seconds, configurable via `--timeout <seconds>`.
 - Generic dispatch: the runner supports any harness that follows the `--write-results` convention. It does not hardcode harness paths.
 
-**Trigger format** (`.purlin/runtime/aft_trigger.json`):
+**Trigger format** (`.purlin/runtime/regression_trigger.json`):
 
 ```json
 {
@@ -33,7 +33,7 @@ A shell script at `dev/aft_runner.sh` (Purlin-dev-specific, not consumer-facing)
 }
 ```
 
-**Result format** (`.purlin/runtime/aft_result.json`):
+**Result format** (`.purlin/runtime/regression_result.json`):
 
 ```json
 {
@@ -55,14 +55,14 @@ A QA-owned slash command at `.claude/commands/pl-regression.md`. QA owns the reg
 **Skill flow:**
 
 1. Read feature status via `tools/cdd/status.sh --role qa`.
-2. Identify regression-eligible features: features with AFT metadata (`> AFT Agent:` or `> AFT Web:`) that have STALE, FAIL, or NOT_RUN test results.
+2. Identify regression-eligible features: features with `> Web Test:` metadata or `### Regression Testing` sections that have STALE, FAIL, or NOT_RUN test results.
 3. Present interactive options to the user: "Found N features eligible for regression. Run all, or select? [all / 1,2,... / skip]".
 4. Compose an external command based on user selection (either a single `--once` invocation or a trigger file for watch mode).
 5. Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
    ```
    Run this in a separate terminal:
 
-       ./dev/aft_runner.sh --once dev/test_agent_interactions.sh --write-results
+       ./dev/regression_runner.sh --once dev/test_agent_interactions.sh --write-results
 
    Tell me when it finishes.
    ```
@@ -119,9 +119,9 @@ and is vulnerable to false positives.
 #### Scenario: Watch mode polls and executes trigger
 
     Given the runner is started in watch mode
-    When a trigger file is written to .purlin/runtime/aft_trigger.json
+    When a trigger file is written to .purlin/runtime/regression_trigger.json
     Then the runner executes the specified harness
-    And writes a result file to .purlin/runtime/aft_result.json
+    And writes a result file to .purlin/runtime/regression_result.json
     And deletes the trigger file
     And resumes polling
 
@@ -130,7 +130,7 @@ and is vulnerable to false positives.
     Given the runner is invoked with --once dev/test_agent_interactions.sh --write-results
     When the harness completes
     Then the runner exits with the harness exit code
-    And a result file is written to .purlin/runtime/aft_result.json
+    And a result file is written to .purlin/runtime/regression_result.json
 
 #### Scenario: Watch mode timeout kills long-running harness
 
@@ -157,7 +157,7 @@ and is vulnerable to false positives.
 
 #### Scenario: QA skill identifies regression-eligible features
 
-    Given the project has 5 features with AFT metadata
+    Given the project has 5 features with test metadata
     And 2 features have STALE test results
     And 1 feature has FAIL test results
     When the QA agent invokes the regression skill

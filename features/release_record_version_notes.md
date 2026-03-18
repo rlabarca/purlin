@@ -4,7 +4,6 @@
 > Category: "Release Process"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
-> AFT Agent: architect
 
 ## 1. Overview
 
@@ -57,6 +56,13 @@ New entries are prepended at the top of the `## Releases` section (most recent f
 | Friendly Name | `Record Version & Release Notes` |
 | Code | null |
 | Agent Instructions | See Sections 2.1–2.5 above. |
+
+### 2.7 Regression Testing
+
+Regression tests verify the architect agent correctly generates release notes.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures)
+- **Scenarios covered:** No-tags handling, prior-tag changelog, clean-state negative tests
+- **Fixture tags:** See Integration Test Fixture Tags section
 
 ## 3. Scenarios
 

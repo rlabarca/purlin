@@ -5,7 +5,6 @@
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/project_init.md
-> AFT Agent: architect
 
 ## 1. Overview
 
@@ -178,6 +177,13 @@ not this file).
 |-----|-------------------|
 | `main/release_submodule_safety_audit/clean-submodule` | Project where all tool paths resolve correctly for submodule consumption |
 | `main/release_submodule_safety_audit/violations-present` | Project with hardcoded paths, artifacts in tools/, and bare json.load() calls |
+
+### 2.8 Regression Testing
+
+Regression tests verify the architect agent correctly identifies submodule safety violations.
+- **Approach:** Agent behavior harness (`claude --print` with fixtures)
+- **Scenarios covered:** Warning-only detection, clean-state negative tests
+- **Fixture tags:** See Integration Test Fixture Tags section
 
 ## 3. Scenarios
 
