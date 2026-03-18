@@ -86,6 +86,14 @@ generate_launcher() {
     local OVERRIDES_FILE="$4"
     local SESSION_MSG="$5"
     local FRAMEWORK_VAR="\$SCRIPT_DIR/$SUBMODULE_NAME"
+    local DISPLAY_NAME
+    case "$ROLE" in
+        architect) DISPLAY_NAME="Architect" ;;
+        builder) DISPLAY_NAME="Builder" ;;
+        qa) DISPLAY_NAME="QA" ;;
+        pm) DISPLAY_NAME="PM" ;;
+        *) DISPLAY_NAME="$ROLE" ;;
+    esac
 
     # Part 1: Shebang, SCRIPT_DIR, PURLIN_PROJECT_ROOT (literal)
     cat > "$OUTPUT_FILE" << 'LAUNCHER_EOF'
@@ -107,8 +115,13 @@ if [ ! -d "\$CORE_DIR/instructions" ]; then
     CORE_DIR="\$SCRIPT_DIR"
 fi
 
+# Source terminal identity helper (no-op if missing)
+if [ -f "\$CORE_DIR/tools/terminal/identity.sh" ]; then
+    source "\$CORE_DIR/tools/terminal/identity.sh"
+fi
+
 PROMPT_FILE=\$(mktemp)
-trap "rm -f '\$PROMPT_FILE'" EXIT
+trap "rm -f '\$PROMPT_FILE'; type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity" EXIT
 
 cat "\$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "\$PROMPT_FILE"
 printf "\n\n" >> "\$PROMPT_FILE"
@@ -207,8 +220,9 @@ fi
 LAUNCHER_EOF
     fi
 
-    # Part 4e: Claude invocation (expanded for session msg)
+    # Part 4e: Set terminal identity and invoke Claude (expanded for session msg + display name)
     cat >> "$OUTPUT_FILE" << LAUNCHER_EOF
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "${DISPLAY_NAME}"
 claude "\${CLI_ARGS[@]}" --append-system-prompt-file "\$PROMPT_FILE" "${SESSION_MSG}"
 LAUNCHER_EOF
 

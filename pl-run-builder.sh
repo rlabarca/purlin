@@ -9,6 +9,11 @@ fi
 
 export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
+# Source terminal identity helper (no-op if missing)
+if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
+    source "$CORE_DIR/tools/terminal/identity.sh"
+fi
+
 # --- Parse launcher flags ---
 CONTINUOUS=false
 while [[ $# -gt 0 ]]; do
@@ -25,6 +30,8 @@ BOOTSTRAP_PROMPT_FILE=""
 CANVAS_PID=""
 CANVAS_STATE_FILE=""
 cleanup() {
+    # Clear terminal identity (guarded in case helper was not sourced)
+    type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     rm -f "$PROMPT_FILE"
     [ -n "$PARALLEL_PROMPT_FILE" ] && rm -f "$PARALLEL_PROMPT_FILE"
     [ -n "$BOOTSTRAP_PROMPT_FILE" ] && rm -f "$BOOTSTRAP_PROMPT_FILE"
@@ -133,6 +140,7 @@ fi
 
 # --- Non-continuous mode: original behavior ---
 if [ "$CONTINUOUS" = "false" ]; then
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
     claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
     exit $?
 fi
@@ -1191,6 +1199,7 @@ or "ask the user."
 BOOTSTRAP_OVERRIDE
 
     # Start bootstrap canvas spinner
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Bootstrap"
     start_bootstrap_canvas
 
     BOOTSTRAP_SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
@@ -1202,6 +1211,7 @@ BOOTSTRAP_OVERRIDE
 
     # Stop the bootstrap canvas
     stop_canvas
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
     if ! [ -t 2 ]; then
         canvas_milestone "Bootstrap complete"
     fi
@@ -1296,6 +1306,8 @@ BUILDER_PID=""
 
 graceful_stop() {
     STOP_REQUESTED=true
+    # Clear terminal identity before stopping
+    type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
     # Send SIGTERM to sequential Builder
     if [ -n "$BUILDER_PID" ] && kill -0 "$BUILDER_PID" 2>/dev/null; then
         kill "$BUILDER_PID" 2>/dev/null
@@ -1320,6 +1332,13 @@ trap graceful_stop INT
 # ================================================================
 
 OUTER_BREAK=false
+
+# Extract total phase count for terminal identity display
+TOTAL_PHASE_COUNT=$(sed -n 's/.*\*\*Total Phases:\*\* \([0-9]*\).*/\1/p' "$DELIVERY_PLAN" 2>/dev/null)
+TOTAL_PHASE_COUNT=${TOTAL_PHASE_COUNT:-0}
+
+# Set initial continuous-mode identity
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
 
 while [ "$OUTER_BREAK" = "false" ]; do
 
@@ -1362,6 +1381,9 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # ============================================================
         # PARALLEL EXECUTION
         # ============================================================
+        # Update terminal identity to show parallel phase numbers
+        PHASE_DISPLAY=$(echo "$PHASE_LIST" | tr ' ' ',')
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Phases $PHASE_DISPLAY"
         PARALLEL_GROUPS_USED=$((PARALLEL_GROUPS_USED + 1))
 
         # Capture plan hash BEFORE any phase status changes so the evaluator
@@ -1495,6 +1517,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
         apply_plan_amendments
 
         # Evaluate using the last parallel log
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
         start_interphase_canvas "Evaluating parallel group output..."
         LAST_LOG="${WT_LOGS[${#WT_LOGS[@]}-1]}"
         EVAL_OUTPUT=$(run_evaluator "$LAST_LOG")
@@ -1513,6 +1536,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         case "$ACTION" in
             continue)
+                type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
                 # Loop back to re-analyze (fresh ordering)
                 ;;
             stop)
@@ -1544,6 +1568,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Pre-launch: mark phase as IN_PROGRESS (Section 2.4)
         mark_phases_in_progress "$PHASE_NUM"
+        # Update terminal identity for sequential phase
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Phase ${PHASE_NUM}/${TOTAL_PHASE_COUNT}"
 
         record_phase_start "$PHASE_NUM"
 
@@ -1600,6 +1626,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             fi
 
             # Run evaluator with inter-phase canvas
+            type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
             start_interphase_canvas "Evaluating phase $PHASE_NUM output..."
             EVAL_OUTPUT=$(run_evaluator "$LOG_FILE")
 
@@ -1620,6 +1647,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     update_plan_phase_status "$PHASE_NUM"
                     record_phase_end "$PHASE_NUM" "COMPLETE"
                     PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
+                    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
                     break  # Exit inner loop; outer loop re-analyzes
                     ;;
                 approve)
