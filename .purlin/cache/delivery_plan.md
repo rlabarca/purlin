@@ -81,9 +81,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 5bad58a
 **QA Bugs Addressed:** --
 
-## Phase 16 -- CDD Spec Map [IN_PROGRESS]
+## Phase 16 -- CDD Spec Map [COMPLETE]
 **Features:** cdd_spec_map.md
-**Completion Commit:** --
+**Completion Commit:** 77efa90
 **QA Bugs Addressed:** --
 
 ## Phase 17 -- CDD Agent Configuration [IN_PROGRESS]
