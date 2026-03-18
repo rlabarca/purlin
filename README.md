@@ -204,7 +204,7 @@ The dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED), a con
 
 ```bash
 git init                  # skip if already a git repo
-git submodule add https://github.com/rlabarca/purlin purlin
+git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 git submodule update --init
 ./purlin/pl-init.sh
 ```
@@ -279,7 +279,7 @@ Use `/pl-update-purlin` from any agent session. It fetches upstream, analyzes ch
 
 ## Configuration (Optional)
 
-**Startup controls:** Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard). Set `startup_sequence: false` to skip orientation on launch. Set `recommend_next_actions: false` to skip the prioritized work plan. Both `false` = expert mode.
+**Startup controls:** Per-agent flags in `.purlin/config.json` (or the Agent Config panel in the dashboard). Set `find_work: false` to skip orientation on launch (expert mode). Set `auto_start: true` (with `find_work: true`) to begin executing the work plan immediately without waiting for approval.
 
 **Python environment:** Core tools use only the standard library. Optional features (e.g., LLM-based logic drift detection) need: `python3 -m venv .venv && .venv/bin/pip install -r purlin/requirements-optional.txt`
 
