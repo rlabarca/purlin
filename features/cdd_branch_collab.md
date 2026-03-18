@@ -9,7 +9,7 @@
 > AFT Web: http://localhost:9086
 > AFT Start: /pl-cdd
 
-[TODO] <!-- reset: Builder must implement HEAD-based sync, operation modals, --prune -->
+[Complete]
 
 ## 1. Overview
 

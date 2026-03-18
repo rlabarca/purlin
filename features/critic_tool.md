@@ -6,6 +6,8 @@
 > Prerequisite: features/impl_notes_companion.md
 > Prerequisite: features/test_fixture_repo.md
 
+[Complete]
+
 ## 1. Overview
 The Critic tool is the project coordination engine. It performs dual-gate validation (Spec Gate + Implementation Gate) on feature files, audits user testing status, generates role-specific action items for each agent, and produces per-feature reports and an aggregate `CRITIC_REPORT.md`. Every agent runs the Critic at session start to determine their priorities.
 

@@ -8,7 +8,7 @@
 > AFT Web: http://localhost:9086
 > AFT Start: /pl-cdd
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 The Spec Map view within the CDD Dashboard renders an interactive dependency graph of all feature files. It provides visual exploration of the project's feature relationships, category groupings, and prerequisite chains. This feature absorbs all visualization and generation requirements from the retired `software_map_generator.md`.
