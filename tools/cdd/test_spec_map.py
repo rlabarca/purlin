@@ -702,6 +702,13 @@ class TestDoubleClickBackgroundRecentersGraph(unittest.TestCase):
         # The core handler uses evt.target === instance check
         self.assertIn('evt.target === instance', self.content)
 
+    def test_recenter_uses_animation(self):
+        """recenterGraph (called by background dbltap) uses animated fit."""
+        idx = self.content.find('function recenterGraph()')
+        block = self.content[idx:idx + 500]
+        self.assertIn('cy.animate(', block)
+        self.assertNotIn('cy.fit(undefined, 40)', block)
+
 
 class TestFeatureDetailModalViaGraphNode(unittest.TestCase):
     """Scenario: Feature Detail Modal via Graph Node
@@ -1013,11 +1020,14 @@ class TestRecenterGraphButtonResetsViewAndInteractionState(unittest.TestCase):
         block = self.content[idx:idx + 500]
         self.assertIn('userModifiedView = false', block)
 
-    def test_recenter_calls_fit(self):
-        """recenterGraph calls cy.fit() to zoom-to-fit."""
+    def test_recenter_animates_fit(self):
+        """recenterGraph uses cy.animate() with same params as category zoom."""
         idx = self.content.find('function recenterGraph()')
         block = self.content[idx:idx + 500]
-        self.assertIn('cy.fit(undefined, 40)', block)
+        self.assertIn('cy.animate(', block)
+        self.assertIn('padding: 40', block)
+        self.assertIn('duration: 400', block)
+        self.assertIn("easing: 'ease-in-out-cubic'", block)
 
     def test_recenter_button_in_html(self):
         """Recenter Graph button exists in the Spec Map view."""

@@ -4745,9 +4745,15 @@ function recenterGraph() {{
     // Re-run packed layout to reset node positions
     runPackedLayout();
     programmaticViewport = true;
-    cy.fit(undefined, 40);
-    programmaticViewport = false;
-    updateCategoryLabelSizes();
+    cy.animate({{
+      fit: {{ eles: cy.elements(), padding: 40 }},
+      duration: 400,
+      easing: 'ease-in-out-cubic',
+      complete: function() {{
+        programmaticViewport = false;
+        updateCategoryLabelSizes();
+      }}
+    }});
   }}
 }}
 
