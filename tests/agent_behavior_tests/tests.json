@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 23,
+  "passed": 28,
   "failed": 0,
-  "total": 23,
+  "total": 28,
   "test_file": "dev/test_behavior_harness.py",
   "details": [
     {
@@ -27,6 +27,18 @@
     },
     {
       "test": "test_test_runner_uses_jq_with_fallback (__main__.TestAutoCreateFixtures.test_test_runner_uses_jq_with_fallback)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_discovery_finds_all_pl_scripts (__main__.TestCLIScriptDiscovery.test_discovery_finds_all_pl_scripts)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_help_output_enables_flag_discovery (__main__.TestCLIScriptDiscovery.test_help_output_enables_flag_discovery)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_script_with_help_produces_structured_output (__main__.TestCLIScriptDiscovery.test_script_with_help_produces_structured_output)",
       "status": "PASS"
     },
     {
@@ -79,6 +91,14 @@
     },
     {
       "test": "test_resume_echoes_checkpoint_fields_correctly (__main__.TestResumeCheckpointEcho.test_resume_echoes_checkpoint_fields_correctly)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fallback_message_is_appropriate (__main__.TestStaleScriptFallback.test_fallback_message_is_appropriate)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_script_without_help_exits_nonzero_or_no_structured_output (__main__.TestStaleScriptFallback.test_script_without_help_exits_nonzero_or_no_structured_output)",
       "status": "PASS"
     },
     {

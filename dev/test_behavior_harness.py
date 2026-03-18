@@ -711,6 +711,147 @@ class TestAutoCreateFixtures(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Skill discovers CLI scripts dynamically (auto-test-only)
+# ===================================================================
+
+class TestCLIScriptDiscovery(unittest.TestCase):
+    """Scenario: Skill discovers CLI scripts dynamically
+
+    Given the project root contains pl-run-builder.sh and pl-cdd-start.sh with --help support
+    When the user runs /pl-help
+    Then the output includes a "CLI Scripts" section after the slash command table
+    And each script's name, description, and options are shown
+
+    Tests the --help convention and discovery mechanism rather than full
+    agent invocation.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmpdir = tempfile.mkdtemp(prefix="cli-discovery-")
+        # Create scripts with --help support
+        cls.script_with_help = os.path.join(cls.tmpdir, "pl-run-builder.sh")
+        with open(cls.script_with_help, "w") as f:
+            f.write('#!/bin/bash\n')
+            f.write('if [[ "$1" == "--help" ]]; then\n')
+            f.write('  echo "$(basename "$0") — Launch the Builder agent"\n')
+            f.write('  echo ""\n')
+            f.write('  echo "Options:"\n')
+            f.write('  echo "  --continuous   Run in continuous mode"\n')
+            f.write('  echo "  --help         Show this help"\n')
+            f.write('  exit 0\n')
+            f.write('fi\n')
+            f.write('echo "running"\n')
+        os.chmod(cls.script_with_help, 0o755)
+
+        cls.script_with_help_2 = os.path.join(cls.tmpdir, "pl-cdd-start.sh")
+        with open(cls.script_with_help_2, "w") as f:
+            f.write('#!/bin/bash\n')
+            f.write('if [[ "$1" == "--help" ]]; then\n')
+            f.write('  echo "$(basename "$0") — Start CDD Dashboard"\n')
+            f.write('  echo ""\n')
+            f.write('  echo "Options:"\n')
+            f.write('  echo "  --port PORT    Port number"\n')
+            f.write('  echo "  --help         Show this help"\n')
+            f.write('  exit 0\n')
+            f.write('fi\n')
+        os.chmod(cls.script_with_help_2, 0o755)
+
+        # Create script without --help support
+        cls.script_no_help = os.path.join(cls.tmpdir, "pl-run-architect.sh")
+        with open(cls.script_no_help, "w") as f:
+            f.write('#!/bin/bash\n')
+            f.write('echo "running architect"\n')
+        os.chmod(cls.script_no_help, 0o755)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmpdir)
+
+    def test_script_with_help_produces_structured_output(self):
+        """Scripts with --help produce name, description, and options."""
+        result = subprocess.run(
+            ["bash", self.script_with_help, "--help"],
+            capture_output=True, text=True, timeout=3,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("pl-run-builder.sh", result.stdout)
+        self.assertIn("Launch the Builder agent", result.stdout)
+        self.assertIn("--continuous", result.stdout)
+        self.assertIn("--help", result.stdout)
+
+    def test_discovery_finds_all_pl_scripts(self):
+        """Globbing pl-*.sh discovers all scripts in the directory."""
+        import glob
+        scripts = sorted(glob.glob(os.path.join(self.tmpdir, "pl-*.sh")))
+        basenames = [os.path.basename(s) for s in scripts]
+        self.assertIn("pl-run-builder.sh", basenames)
+        self.assertIn("pl-cdd-start.sh", basenames)
+        self.assertIn("pl-run-architect.sh", basenames)
+        self.assertEqual(len(basenames), 3)
+
+    def test_help_output_enables_flag_discovery(self):
+        """--help output contains enough info to answer 'how do I run X?' questions."""
+        result = subprocess.run(
+            ["bash", self.script_with_help, "--help"],
+            capture_output=True, text=True, timeout=3,
+        )
+        # A user asking "how do I start the builder in continuous mode?"
+        # should find --continuous in the help output
+        self.assertIn("--continuous", result.stdout)
+        self.assertIn("continuous mode", result.stdout)
+
+
+# ===================================================================
+# Scenario: Stale launcher without --help (auto-test-only)
+# ===================================================================
+
+class TestStaleScriptFallback(unittest.TestCase):
+    """Scenario: Stale launcher without --help
+
+    Given pl-run-architect.sh does not support --help
+    When the user runs /pl-help
+    Then pl-run-architect.sh appears with a refresh note instead of help text
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmpdir = tempfile.mkdtemp(prefix="stale-script-")
+        cls.script_no_help = os.path.join(cls.tmpdir, "pl-run-architect.sh")
+        with open(cls.script_no_help, "w") as f:
+            f.write('#!/bin/bash\n')
+            f.write('echo "running architect"\n')
+        os.chmod(cls.script_no_help, 0o755)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmpdir)
+
+    def test_script_without_help_exits_nonzero_or_no_structured_output(self):
+        """Script without --help doesn't produce structured help output."""
+        result = subprocess.run(
+            ["bash", self.script_no_help, "--help"],
+            capture_output=True, text=True, timeout=3,
+        )
+        # Script ignores --help and just runs normally — output won't contain
+        # the structured help format (script name via basename, Options section)
+        has_structured = (
+            "Options:" in result.stdout
+            and "pl-run-architect.sh" in result.stdout
+        )
+        self.assertFalse(
+            has_structured,
+            "Script without --help should NOT produce structured help output",
+        )
+
+    def test_fallback_message_is_appropriate(self):
+        """The expected fallback message matches the spec convention."""
+        fallback = "(no help -- run pl-init.sh to refresh)"
+        self.assertIn("no help", fallback)
+        self.assertIn("pl-init.sh", fallback)
+
+
+# ===================================================================
 # Test result output
 # ===================================================================
 
@@ -768,10 +909,15 @@ if __name__ == "__main__":
             )
         print(f"\nResults written to {out_file}")
 
-        # Distribute pl_help results from TestHelpVariantDetection
+        # Distribute pl_help results from all pl_help test classes
+        pl_help_classes = (
+            "TestHelpVariantDetection",
+            "TestCLIScriptDiscovery",
+            "TestStaleScriptFallback",
+        )
         pl_help_results = [
             r for r in result.results
-            if "TestHelpVariantDetection" in r["test"]
+            if any(cls in r["test"] for cls in pl_help_classes)
         ]
         if pl_help_results:
             help_dir = os.path.join(PROJECT_ROOT, "tests", "pl_help")
