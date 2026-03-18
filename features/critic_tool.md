@@ -119,7 +119,7 @@ The tool MUST generate `CRITIC_REPORT.md` at the project root containing:
 *   Summary table: feature name, spec gate status, implementation gate status, user testing status.
 *   **Action Items by Role:** A section with `### Architect`, `### Builder`, `### QA`, `### PM` subsections. Each subsection lists action items sorted by priority (HIGH first), aggregated across all features. This is the primary coordination output. See `critic_role_status.md` for the complete routing rules that determine which items appear under each role.
 *   Builder decision audit: all AUTONOMOUS/DEVIATION/DISCOVERY entries across features.
-*   Policy violations: all FORBIDDEN pattern matches.
+*   **Policy violations (compact):** FORBIDDEN pattern matches grouped by `feature + pattern`, showing count and the first 3 example line numbers per group. Format: `<feature_name>: <count>x <pattern_description> in <file> (lines N,M,O...+K more)`. Individual per-line entries are NOT written to the report. This ensures the policy violations section scales as O(unique feature+pattern pairs), not O(total violations).
 *   Traceability gaps: scenarios without matching tests.
 *   Open user testing items: all OPEN discoveries across features.
 
@@ -959,6 +959,14 @@ The following fixture tags provide deterministic project states for integration-
     When the Critic generates the lifecycle_reset action item
     Then the scenario diff shows has_diff false
     And the description includes "requirements sections modified [2.2]"
+
+#### Scenario: Compact Policy Violation Grouping in Aggregate Report
+    Given a project has 34 policy violations for pattern `#hex` in `tools/cdd/serve.py` across lines 259-312
+    And 12 policy violations for pattern `#hex` in `tools/cdd/dashboard.html` across lines 44-89
+    When the Critic generates CRITIC_REPORT.md
+    Then the policy violations section contains exactly 2 grouped entries (not 46 individual lines)
+    And each entry shows format: `<feature_name>: <count>x <pattern> in <file> (lines <first3>...+<remaining> more)`
+    And the first entry reads: `cdd_agent_configuration: 34x #hex in tools/cdd/serve.py (lines 259,262,265...+31 more)`
 
 ### Manual Scenarios (Human Verification Required)
 

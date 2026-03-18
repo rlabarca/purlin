@@ -183,6 +183,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 *   **Purpose:** Provides agents with feature status without requiring the web server to be running. This is the primary agent interface for CDD status queries.
 *   **Output:** Writes the same JSON schema as the `/status.json` API endpoint to stdout. The output MUST be valid JSON parseable by `python3 json.load()`.
 *   **`--graph` Flag:** When invoked with `--graph`, the tool outputs the `dependency_graph.json` content to stdout instead of the status JSON. If the cached file is stale or missing, it regenerates the dependency graph first.
+*   **`--role <role>` Flag:** When invoked with `--role architect|builder|qa|pm`, the tool outputs a filtered JSON object containing ONLY: (a) summary rows for features where the specified role has non-terminal status (i.e., not DONE/CLEAN/N/A), (b) that role's action items from the Critic report, and (c) compact policy violations scoped to those features. The output MUST be valid JSON. This eliminates the need for agents to read the full `CRITIC_REPORT.md` -- the filtered output provides everything a role needs in a single invocation. When `--role` is combined with `--graph`, the `--role` flag is ignored.
 *   **Side Effect:** Regenerates `.purlin/cache/feature_status.json` (the internal lifecycle-based artifact consumed by the Critic) and `.purlin/cache/status.json` (the full API response, identical to the `/status.json` web endpoint schema). Both files are written on every status regeneration (CLI invocation, HTTP API request, and dashboard page load). The `status.json` file enables agents to read current project status as a file without depending on the web server.
 *   **Project Root Detection:** Uses `PURLIN_PROJECT_ROOT` if set, then climbing fallback (per project_init.md Section 2.1).
 *   **No Server Dependency:** The tool MUST NOT depend on the web server being running. It computes status directly from disk (feature files, git history, critic.json files).
@@ -404,6 +405,24 @@ These scenarios are validated by the Builder's automated test suite.
     Given a feature has a status commit with no [Scope: ...] trailer
     When an agent calls GET /status.json
     Then the feature entry does not include a change_scope field
+
+#### Scenario: CLI Role-Filtered Output
+    Given 62 features exist with various lifecycle states
+    And the Builder has 3 features with non-terminal status (2 TODO, 1 FAIL)
+    And the Architect has 0 features with non-terminal status
+    When an agent runs tools/cdd/status.sh --role builder
+    Then valid JSON is written to stdout
+    And the features array contains exactly 3 entries (only features where builder status is not DONE)
+    And an action_items key contains only the builder's action items
+    And a policy_violations key contains only violations scoped to those 3 features
+    And the output does NOT contain action items for architect, qa, or pm
+
+#### Scenario: CLI Role-Filtered Output With No Work
+    Given all features have builder status DONE
+    When an agent runs tools/cdd/status.sh --role builder
+    Then valid JSON is written to stdout
+    And the features array is empty
+    And the action_items array is empty
 
 #### Scenario: CLI Status Tool Project Root Detection
     Given PURLIN_PROJECT_ROOT is set to a valid project root

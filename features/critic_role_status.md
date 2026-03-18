@@ -129,7 +129,7 @@ When PM or Architect resolves a SPEC_DISPUTE, the resolution cascade to Builder 
 *   **Invariant:** The resolver (PM or Architect) MUST transition the discovery status from OPEN to either SPEC_UPDATED (if the spec is changed) or RESOLVED (if the spec is upheld). Leaving a dispute in OPEN status after resolution is a process error.
 
 ### 2.7 Canonical JSON Schema for Role Keys
-The per-feature `critic.json` MUST include all four roles in both `action_items` and `role_status`:
+The per-feature `critic.json` MUST include all four roles in `action_items`, `role_status`, and `role_status_reason`:
 
 ```json
 {
@@ -144,9 +144,48 @@ The per-feature `critic.json` MUST include all four roles in both `action_items`
         "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
         "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A",
         "pm": "DONE | TODO | N/A"
+    },
+    "role_status_reason": {
+        "architect": "<human-readable reason for current status>",
+        "builder": "<human-readable reason for current status>",
+        "qa": "<human-readable reason for current status>",
+        "pm": "<human-readable reason for current status>"
     }
 }
 ```
+
+**Role Status Reason:** For each role, the Critic MUST produce a human-readable one-line reason explaining WHY the role has its current status. Terminal states use brief reasons: `"no action items"` (Architect DONE), `"all tests pass, no open items"` (Builder DONE), `"tests pass, no discoveries"` (QA CLEAN), `"no visual or design work"` (PM N/A). Non-terminal states include the specific trigger: `"spec modified after status commit (implementation exists, all tests pass)"`, `"missing tests.json"`, `"3 open BUGs in discovery sidecar"`, `"2 OPEN SPEC_DISPUTEs"`, etc. This eliminates the need for agents to investigate why a status value was assigned.
+
+### 2.7.1 Lifecycle Reset Context
+
+When a feature's lifecycle resets to TODO (spec file modified after status commit), the Critic MUST distinguish between genuinely unimplemented features and features that were reset by a spec touch. For `lifecycle_reset` category action items, the Critic MUST include a `reset_context` object:
+
+```json
+{
+    "category": "lifecycle_reset",
+    "reset_context": {
+        "has_passing_tests": true,
+        "structural_completeness": "PASS | WARN | FAIL | MISSING",
+        "traceability": "PASS | WARN | FAIL",
+        "scenario_diff": {
+            "new": ["Scenario Title A"],
+            "modified": ["Scenario Title B"],
+            "removed": ["Scenario Title C"],
+            "has_diff": true
+        },
+        "requirements_changed": true,
+        "changed_sections": ["2.2", "2.5"]
+    },
+    "description": "<context-aware description>"
+}
+```
+
+**Description generation rules based reset context:**
+*   If `has_passing_tests && !scenario_diff.has_diff && !requirements_changed`: `"Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"`
+*   If `scenario_diff.has_diff`: `"Implement spec changes for <feature_name>: N new scenario(s) [titles], M modified [titles], K removed [titles]"` (existing behavior)
+*   If `requirements_changed && !scenario_diff.has_diff`: `"Review requirements changes for <feature_name>: sections [changed_sections]"`
+
+This eliminates the re-implementation loop where a Builder attempts to re-implement code that already exists because a spec file was touched without behavioral changes.
 
 ### 2.8 Aggregate Report Role Iteration
 The aggregate report generator (`CRITIC_REPORT.md`) MUST iterate over `('Architect', 'Builder', 'QA', 'PM')` for the role-specific action items section. PM action items are listed under a `### PM` subsection.
@@ -313,6 +352,57 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     When the Critic computes role status
     Then role_status.builder is not BLOCKED (no OPEN disputes remain)
     And the feature lifecycle has NOT reset to TODO (no spec edit occurred)
+
+#### Scenario: Role status reason populated for all roles
+
+    Given a feature with builder status TODO due to lifecycle reset
+    When the Critic generates critic.json
+    Then the role_status_reason object contains a key for each role (architect, builder, qa, pm)
+    And each value is a non-empty human-readable string
+    And builder reason contains the specific trigger (e.g., "spec modified after status commit")
+
+#### Scenario: Reset context distinguishes spec-touch from real change
+
+    Given a feature was previously at COMPLETE lifecycle state with all tests passing
+    And the Architect touches the spec file (whitespace edit, no scenario or requirements change)
+    And the feature resets to TODO lifecycle state
+    When the Critic generates the lifecycle_reset action item
+    Then reset_context.has_passing_tests is true
+    And reset_context.scenario_diff.has_diff is false
+    And reset_context.requirements_changed is false
+    And the description reads "Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"
+
+#### Scenario: Reset context with new scenarios
+
+    Given a feature was previously at COMPLETE lifecycle state
+    And the Architect adds 2 new automated scenarios and modifies 1 existing scenario
+    And the feature resets to TODO lifecycle state
+    When the Critic generates the lifecycle_reset action item
+    Then reset_context.scenario_diff.has_diff is true
+    And reset_context.scenario_diff.new contains 2 scenario titles
+    And reset_context.scenario_diff.modified contains 1 scenario title
+    And the description includes "2 new scenario(s)" and "1 modified"
+
+#### Scenario: Reset context with requirements-only change
+
+    Given a feature was previously at COMPLETE lifecycle state
+    And the Architect modifies Requirements section 2.3 without changing any scenarios
+    And the feature resets to TODO lifecycle state
+    When the Critic generates the lifecycle_reset action item
+    Then reset_context.scenario_diff.has_diff is false
+    And reset_context.requirements_changed is true
+    And reset_context.changed_sections contains "2.3"
+    And the description includes "Review requirements changes"
+
+#### Scenario: Reset context for genuinely unimplemented feature
+
+    Given a feature has never had a status commit (no tests.json exists)
+    And the feature is in TODO lifecycle state
+    When the Critic generates action items
+    Then the builder action item has category "lifecycle_reset"
+    And reset_context.has_passing_tests is false
+    And reset_context.structural_completeness is "MISSING"
+    And the description follows the existing format "Implement spec changes for <feature_name>"
 
 ### Manual Scenarios (Human Verification Required)
 
