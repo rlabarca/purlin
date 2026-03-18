@@ -99,7 +99,7 @@ Releases are synchronization points where the entire project state -- Specs, Arc
 
 ## 6. Layered Instruction Architecture
 
-Instructions use a two-layer model (base in `instructions/` + override in `.purlin/`). See `instructions/references/layered_instructions.md` for the full architecture, override management protocol, and path resolution conventions.
+Instructions use a two-layer model: **base** (`instructions/` in the framework) provides core rules; **override** (`.purlin/` in the consumer project) adds project-specific context. At launch, both layers are concatenated (base first, then overrides). Use `/pl-override-edit` for guided override management with built-in conflict scanning.
 
 ### Submodule Immutability Mandate
 **Agents running in a consumer project MUST NEVER modify any file inside the submodule directory** (e.g., `purlin/`). All project-specific customizations go in `.purlin/` overrides, `features/`, and root-level launcher scripts. If an agent needs to change framework behavior, it MUST use the override layer (`.purlin/*_OVERRIDES.md`), never edit base files.
@@ -122,9 +122,25 @@ User Testing Discoveries are stored in **sidecar files** (`features/<name>.disco
 *   **[INTENT_DRIFT]** -- Behavior matches the spec literally but misses the actual intent.
 *   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable.
 
-For discovery lifecycle (status progression), queue hygiene, and feedback routing details, see `instructions/references/user_testing_protocol.md`.
+Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-discovery` for the full recording and lifecycle protocol.
 
-## 8. Critic-Driven Coordination
+## 8. Protocol Quick Reference
+
+| When you need to... | Do this |
+|---------------------|---------|
+| Implement a feature | Invoke `/pl-build` |
+| Understand Critic status | Run `tools/cdd/status.sh --role <role>` or invoke `/pl-status` |
+| Create/refine a spec | Invoke `/pl-spec` |
+| Create/update an anchor node | Invoke `/pl-anchor` |
+| Record a QA discovery | Invoke `/pl-discovery` |
+| Handle phased delivery | Invoke `/pl-delivery-plan` |
+| Verify a feature (QA) | Invoke `/pl-verify` |
+| Mark feature complete (QA) | Invoke `/pl-complete` |
+| Edit override files | Invoke `/pl-override-edit` |
+
+Skills carry the complete workflow protocol. Invoke the skill before executing the workflow.
+
+## 9. Critic-Driven Coordination
 The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `tools/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
 
 *   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA, PM columns).
@@ -133,7 +149,7 @@ The Critic is the project coordination engine. It validates quality AND generate
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
 *   **Agent Interface:** Agents access tool data via CLI commands (`tools/cdd/status.sh`, `tools/cdd/status.sh --graph`, `tools/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
 
-### 8.1 What the Critic Validates
+### 9.1 What the Critic Validates
 The Critic applies a **dual-gate model** to every feature:
 
 *   **Spec Gate (pre-implementation):** Validates that required spec sections are present, scenarios are well-formed, and prerequisite anchor nodes are declared. This gate runs regardless of feature lifecycle status and is the primary signal for Architect action items.
@@ -146,7 +162,7 @@ In addition to the dual-gate, the Critic runs these supplementary audits on ever
 *   **Visual Specification Detection:** Detects `## Visual Specification` sections and surfaces visual checklist items as QA action items for the visual verification pass.
 *   **Untracked File Audit:** Checks git status for untracked files in Architect-owned directories and flags them as MEDIUM-priority Architect triage items.
 
-### 8.2 Role-Specific Action Items
+### 9.2 Role-Specific Action Items
 Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggregate results across all features are written to `CRITIC_REPORT.md`, organized by role.
 
 **Priority levels:**
@@ -161,7 +177,7 @@ Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggrega
 *   **QA:** Features in TESTING lifecycle, SPEC_UPDATED discoveries awaiting re-verification, visual verification passes.
 *   **PM:** SPEC_DISPUTEs on PM-owned features or Visual Specification screens, stale/missing/unprocessed design artifacts.
 
-For how automated test status maps to Builder/QA dashboard columns, see `instructions/references/cdd_internals.md`.
+Automated test status is embedded in role columns: Builder `DONE` implies tests passed; QA `CLEAN` requires `tests.json` with `status: "PASS"`; QA `N/A` means no test coverage exists.
 
 ## 9. Visual Specification Convention
 
@@ -173,13 +189,12 @@ authoring to the PM and focuses on structural validation. The Critic detects vis
 sections and generates QA action items for visual verification.
 
 For the full convention (format, inheritance, design pipeline, verification methods), see
-`instructions/references/visual_spec_convention.md`.
+`instructions/references/visual_spec_convention.md`. Use `/pl-verify` for the complete visual verification protocol.
 
 ## 10. Phased Delivery Protocol
 
 Large-scope changes may be split into numbered delivery phases to organize work into testable
 blocks and enable parallel delivery. The delivery plan artifact lives at
 `.purlin/cache/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it appears in
-any PENDING phase of the delivery plan. For the full protocol (format, cross-session
-resumption, QA interaction, Architect awareness), see
-`instructions/references/phased_delivery.md`.
+any PENDING phase of the delivery plan. Use `/pl-delivery-plan` for the full phased delivery
+protocol (format, sizing, cross-session resumption, QA interaction).

@@ -8,6 +8,8 @@
 3.  **Offer screenshot input:** After presenting the checklist, prompt the user: "Would you like to provide one or more screenshots of this screen? I can analyze them to auto-verify many of the checklist items, reducing the number of items you need to confirm manually."
 4.  If the user declines or provides no screenshots, fall back to manual verification (Section 5.4.4).
 
+**Batched mode:** In the batched verification workflow (QA_BASE Section 5), visual items appear as numbered `[V]` entries in the main checklist alongside functional scenarios. The screenshot-assisted protocol activates when the user requests `detail` for a visual item or when a feature has many visual items (10+). In batched mode, the user judges visual items by number like functional items -- reporting failures via `F<N>` syntax.
+
 ## 5.4.2 Screenshot Analysis
 When screenshot(s) are provided:
 
@@ -31,17 +33,19 @@ Present results in two groups:
 2.  **Manual confirmation required:** A consolidated list of items the agent could not verify from screenshots. Present these together with a single prompt for the user to confirm PASS or FAIL (preserving the existing "single checklist, single prompt" pattern for the manual subset).
 
 ## 5.4.4 Manual Fallback
-If the user declines screenshots: present the full checklist and ask for a single PASS/FAIL for all visual items (current behavior, preserved as-is).
+If the user declines screenshots: present the full checklist and ask for a single PASS/FAIL for all visual items (current behavior, preserved as-is). In batched mode (QA_BASE Section 5), this is the default -- visual items are numbered `[V]` entries in the main checklist and the user judges them by number alongside functional scenarios.
 
 ## 5.4.5 Recording Failures
 Record failures using the standard discovery protocol (Section 4.2). Record `[BUG]` or `[DISCOVERY]` entries (depending on whether a scenario covers the behavior) with a "visual" context note in the discovery entry. For auto-detected failures confirmed by the user, include the screenshot observation in the discovery's Observed Behavior field.
 
 ## 5.4.6 Batching Optimization
-When multiple features have visual specs in the same session, you MAY offer to batch all visual checks together with screenshot-assisted verification:
+In the batched verification workflow (QA_BASE Section 5), visual items are already integrated into the flat-numbered checklist alongside functional scenarios. Cross-feature batching is the default behavior -- all visual items across all TESTING features share a single numbering sequence.
+
+When screenshot-assisted verification is activated (via `detail` request or for features with 10+ visual items), you MAY offer to batch screenshots across features:
 *   Collect screenshots for all screens across features before analysis.
 *   Present auto-verified results grouped by feature.
 *   Present the consolidated manual confirmation list across all features.
-*   Example prompt: "3 functional scenarios across 2 features completed. Ready for visual verification: 12 checklist items across 3 screens. Would you like to provide screenshots for batch analysis, or verify feature-by-feature?"
+*   Example prompt: "Features X and Y have 15 visual items total across 3 screens. Would you like to provide screenshots for batch analysis?"
 
 ## 5.4.7 Playwright MCP Automated Alternative
 For features with `> AFT Web: <url>` metadata, `/pl-aft-web` provides fully automated visual verification using Playwright MCP browser control tools. The agent navigates to each screen, takes screenshots, executes interactions (hover, click, theme switch), and judges each checklist item via vision analysis -- no manual screenshot provision or human confirmation required. Results are recorded as PASS/FAIL per checklist item with observation notes. Failures are recorded as `[BUG]` discoveries in the standard format.

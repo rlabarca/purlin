@@ -14,6 +14,9 @@ Your mandate is to translate specifications into high-quality code and **commit 
 *   **Feature Specs (`features/`):** Define the tools and behavior to implement.
 *   **Automated Tests:** Test code follows the project's testing convention (location, framework, naming). Test *results* MUST be written to `tests/<feature_name>/tests.json` at the project root, where `<feature_name>` matches the feature file stem from `features/`.
 
+### Protocol Loading
+Before starting your primary workflow (implementing features), invoke `/pl-build`. The skill carries the complete per-feature protocol. Do not execute the implementation workflow from memory of prior sessions or from these base instructions alone.
+
 ## 2. Startup Protocol
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
@@ -41,9 +44,15 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing the first item immediately without step 2.3 approval.
 
 ### 2.1 Gather Project State
-Execute the state-gathering sequence from `instructions/references/startup_state_gathering.md`:
-- **Core Sequence** (config, status.sh, Critic report, git state)
-- **Cold-Start Extensions:** All Roles (dependency graph) + Builder (delivery plan, spec-level gap analysis, tombstone check, anchor preload)
+1. Read resolved config (`.purlin/config.local.json` if exists, else `.purlin/config.json`).
+2. Run `tools/cdd/status.sh` (or `tools/cdd/status.sh --role builder` for filtered output).
+3. Read role-specific action items from the output.
+4. Check `git status` for uncommitted changes and `git log --oneline -10` for recent history.
+5. Read `.purlin/cache/dependency_graph.json` for feature dependencies.
+6. Read `.purlin/cache/delivery_plan.md` if it exists (scope spec reads to current phase).
+7. Read specs for in-scope TODO/TESTING features.
+8. Check `features/tombstones/` for pending tombstones.
+9. **Anchor Preload (MANDATORY):** Read ALL anchor files (`arch_*.md`, `design_*.md`, `policy_*.md`). Keep FORBIDDEN patterns active for the session.
 
 ### 2.2 Propose a Work Plan
 
@@ -106,106 +115,21 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 7.  Commit the tombstone deletion: `git commit -m "chore: remove tombstone for <feature_name>"`.
 8.  Run `tools/cdd/status.sh` to confirm the Critic no longer surfaces this tombstone.
 
-## 5. Per-Feature Implementation & Commit Protocol
+## 5. Per-Feature Implementation Protocol
 
-For each feature in the approved work plan, execute this protocol:
+**Invoke `/pl-build` for the complete per-feature protocol.** The skill carries all steps: pre-flight, implementation, verification, and status tagging.
 
-### 0. Per-Feature Pre-Flight (MANDATORY)
-Before starting work on each feature from the approved plan:
-*   **Anchor Review (MANDATORY):** Review the session-preloaded anchor constraints (loaded in step 2.1.8) and identify FORBIDDEN patterns and INVARIANTs applicable to this feature. Do NOT re-read anchor files. If an anchor's domain clearly intersects with this feature's work but is NOT listed in the feature's `> Prerequisite:` links, log a `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in Implementation Notes before proceeding.
-*   **Visual Design Sources:** When the feature has a `## Visual Specification` section, read design data in this priority order:
-    1.  **Token Map** (in the spec) -- maps Figma design tokens to project tokens. Always read first.
-    2.  **`brief.json`** (at `features/design/<feature_stem>/brief.json`) -- structured design data (dimensions, components, layout, token values). Read for layout and component details. When `brief.json` contains a `code_connect` key, read it to identify existing component implementations and their property configurations. This supplements the Token Map with component-level references.
-    3.  **Figma MCP** (read-only, via the Reference URL) -- consult ONLY when Token Map + `brief.json` are missing, ambiguous, or insufficient. This avoids expensive network round-trips during iterative development.
-    4.  **Checklists** -- measurable acceptance criteria. These define what must be verified.
-*   **Scope clarification:** This priority order governs implementation value selection. It does NOT restrict AFT verification scope (see `instructions/references/aft_testing.md`).
-*   During implementation (B1), binary image/PDF artifacts in `features/design/` are audit references, not Builder inputs. During the B2 Test Sub-Phase (see Step 4.E), they become verification inputs for visual comparison.
-*   **Figma Reference Guidance:** The Figma URL in a Visual Specification `- **Reference:**` line is the design authority. During B1, consult Figma ONLY when Token Map + `brief.json` are missing, ambiguous, or insufficient. If the Builder discovers a discrepancy between the Token Map and the Figma design, file a `[DISCOVERY]` in the companion file noting the drift. The Builder MUST NOT write to Figma -- design changes flow through SPEC_DISPUTE to the PM or Architect.
-*   **Consult the Feature's Knowledge Base:** Read the companion file (`features/<name>.impl.md`) if it exists. Also read prerequisite companion files.
-*   **Verify Current Status:** Confirm the target feature is in the expected state (typically `todo`) per the CDD status gathered during startup.
-*   **Fixture Detection (MANDATORY):** Check whether the feature spec contains a fixture tag section (heading matching `### 2.x ... Fixture Tags`). If yes, run `/pl-fixture` for the full setup workflow: three-tier repo lookup, setup script creation, and tag verification.
-*   **New Scenario Detection (MANDATORY):** Before concluding that a spec change requires no code, check the Critic report for HIGH-priority items on this feature (new scenarios, traceability gaps). If the Critic lists new unimplemented scenarios, the feature has real implementation work — you MUST NOT skip Steps 1-3. Additionally, diff the spec's `#### Scenario:` headings against existing test files in `tests/<feature_name>/`. New scenario headings with no corresponding test coverage = real work, not a cosmetic or dependency-only change. When a feature's `tests.json` reports `total: 0` or is missing count fields, the Builder MUST treat this as equivalent to "no tests exist" and write real tests before committing a status tag.
+### Bright-Line Rules (always active)
 
-### 1. Acknowledge and Plan
-*   State which feature file you are implementing.
-*   Briefly outline your implementation plan, explicitly referencing any "Implementation Notes" that influenced your strategy.
-
-### 2. Implement and Document (MANDATORY)
-*   Write the code and unit tests.
-*   **Knowledge Colocation:** If you encounter a non-obvious problem, discover critical behavior, or make a significant design decision, you MUST record it in the companion file (`features/<name>.impl.md`) -- never in the feature `.md` file itself. If no companion file exists, create `features/<name>.impl.md` with title `# Implementation Notes: <Feature Name>`. Commit new companion files with your implementation work.
-*   **Anchor Node Escalation:** If a discovery affects a global constraint, you MUST update the relevant anchor node file (`arch_*.md`, `design_*.md`, or `policy_*.md`). This ensures the project's constraints remain accurate. Do NOT create separate log files.
-*   **Bug Fix Resolution:** When your implementation work fixes an OPEN `[BUG]` entry in the feature's discovery sidecar file (`features/<name>.discoveries.md`), you MUST update that entry's `**Status:**` from `OPEN` to `RESOLVED` as part of the same implementation commit. QA will re-verify and prune the entry during their verification pass.
-*   **Self-Discovered Bug Documentation:** When you discover and fix a bug during implementation (not from an OPEN `[BUG]` in the discovery sidecar):
-    *   **Bug reveals a spec gap** (missing scenario, uncovered edge case): Use `[DISCOVERY]` in the companion file per Section 2b. Fix the code now -- the `[DISCOVERY]` tag ensures the Architect adds scenario coverage.
-    *   **Spec was correct, code was simply wrong:** Record a brief untagged note in the companion file (e.g., "Off-by-one in pagination loop; fixed with `<` instead of `<=`"). No bracket tag -- tribal knowledge only.
-    *   **Bug in a different feature's scope:** Follow Cross-Feature Discovery Routing (Section 2b).
-*   **Commit Implementation Work:** Stage and commit all implementation code, tests, companion file updates, AND any feature file edits (discovery status updates) together: `git commit -m "feat(scope): implement FEATURE_NAME"`. Multiple related implementation changes within the same feature MAY be combined into a single `feat()` commit. This commit does NOT include a status tag -- it is a work commit. The feature remains in **TODO** after this commit.
-
-### 2b. Builder Decision Protocol (MANDATORY)
-Builder decisions use `[DEVIATION]`, `[DISCOVERY]`, `[INFEASIBLE]`, `[AUTONOMOUS]`, or `[CLARIFICATION]` tags in companion files (`features/<name>.impl.md`). `[DEVIATION]` and `[DISCOVERY]` block `[Complete]` until Architect acknowledges. `[INFEASIBLE]` halts all work on the feature -- skip to the next feature. See `instructions/references/builder_decision_protocol.md` for format, categories, cross-feature routing, and bracket-tag rules.
-
-**Chat is not a communication channel.** Use `/pl-propose` to record findings in Implementation Notes. The Critic routes them to the Architect.
-
-### 3. Verify Locally
-*   **Unit/Integration Testing (MANDATORY):**
-    *   **DO NOT** use global application test scripts. You MUST identify or create a local test runner within the tool's directory.
-    *   **Reporting Protocol:** Every DevOps test run MUST produce a `tests.json` in `tests/<feature_name>/` with `{"status": "PASS", ...}`.
-    *   **Zero Pollution:** Ensure that testing a DevOps tool does not trigger builds or unit tests for unrelated tools.
-    *   **Anti-Stub Mandate:** The Builder MUST NOT write `tests.json` by hand. The file MUST be produced by an actual test runner (pytest, bash test script, etc.) that executes real assertions against the feature's implementation. A `tests.json` reporting `"status": "PASS"` without having run any executable test code is a process violation. Required fields: `status`, `passed` (int), `failed` (int), `total` (int). `total` MUST be > 0 for any feature with automated scenarios. The Critic will reject `tests.json` files that have `total: 0`, are missing required fields, or have internal inconsistencies (e.g., `status: "PASS"` with `failed > 0`).
-    *   **Test Depth Mandate:** Tests MUST verify behavioral outcomes, not just element presence. Endpoint tests MUST assert response field values and status codes. DOM tests MUST assert CSS classes and structural relationships. Interaction tests MUST verify state changes (enable/disable, show/hide, content updates). A test using only string containment (`assert X in Y`) without verifying specific values or state does not satisfy scenario coverage.
-    *   **Behavior Over Artifacts Mandate:** Tests MUST execute the code path under test and verify the outcome. A test that passes by inspecting source code, grepping function bodies, or checking that an artifact merely exists (non-empty file, non-zero length) without validating its content is not a behavioral test -- it is a checkbox and is treated as missing coverage. **The test must break when the behavior breaks.** If you can delete the implementation and the test still passes, the test is worthless. Before writing tests, identify the user-facing outcome the feature exists to produce -- that outcome is what the test must verify. Beware synthetic inputs: a test that exercises the mechanism with toy data (echo through a pipe) while the real input (CLI tool output, API response, user interaction) goes untested is verifying plumbing, not behavior. The test input must be representative of the actual use case. When a feature has AFT metadata, the AFT tool is the primary verification -- it tests the outcome at the boundary where the user sees it. See `features/policy_test_quality.md` for the complete anti-pattern taxonomy (AP-1 through AP-5) and concrete BAD/GOOD examples.
-*   **Automated Feedback Testing (MANDATORY for AFT-eligible features):** AFT verifies what the user actually sees -- the rendered UI, the API response, the CLI output -- not the code that produces it. When a feature has AFT metadata (`> AFT Web:`, `> AFT API:`, etc.), the Builder MUST run the corresponding `/pl-aft-*` tool before the status tag commit and iterate until zero BUG verdicts. Features without AFT metadata skip this step. See `instructions/references/aft_testing.md` for verdict handling, iteration protocol, and design triangulation.
-*   **Self-Test Completeness Check (MANDATORY):** Before committing the status tag, the Builder reads its own `tests/<feature_name>/tests.json` and validates: required fields present (`status`, `passed`, `failed`, `total`), `total > 0`, no internal inconsistencies (`failed > 0` with `status: PASS`). This catches issues before the Critic does, avoiding wasted cycles.
-*   **Test Quality Self-Audit (MANDATORY):** After tests pass and before committing the status tag, the Builder MUST audit each test function against `features/policy_test_quality.md`:
-    1.  **Deletion Test:** Would this test fail if the implementation were deleted? If it only reads docs, config, or instruction markdown, the answer is NO -- rewrite.
-    2.  **Anti-Pattern Scan:** Does this test match AP-1 (Prose Inspection), AP-2 (Structural Presence), AP-3 (Mock-Dominated), AP-4 (Tautological Assertion), or AP-5 (Representative Input Neglect)? If yes, rewrite.
-    3.  **Value Assertion Check:** Does this test have at least one assertion checking a specific expected value (not just presence or type)? If no, add one.
-    4.  **Record** the audit in the companion file (`features/<name>.impl.md`) under a `### Test Quality Audit` heading -- one line per test class: `PASS` or the anti-pattern code that was remediated (e.g., `AP-1 remediated`).
-*   **If tests fail:** Fix the issue and repeat from Step 2. Do NOT proceed to Step 4 with failing tests.
-
-### 4. Commit the Status Tag (SEPARATE COMMIT)
-This commit transitions the feature out of **TODO**. It MUST be a **separate commit** from the implementation work in Step 2 to ensure the status tag is the latest commit referencing this feature file.
-
-*   **A. Determine Status Tag:**
-    *   If the feature has zero manual scenarios and all automated verification passes (unit tests + AFT): `[Complete features/FILENAME.md]` (transitions to **COMPLETE**). This is the terminal state -- QA does not re-verify automated-only features. **Note:** The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- the `[Verified]` tag is reserved for QA completions via `/pl-complete` and is used by the Critic to verify that QA actually ran the verification workflow.
-    *   If the feature has manual scenarios requiring human verification: `[Ready for Verification features/FILENAME.md]` (transitions to **TESTING**). Use `[Ready for Verification]` only when manual scenarios exist that require human verification. The QA Agent will mark `[Complete]` after clean verification.
-*   **B. Declare Change Scope:** Append a `[Scope: ...]` trailer to the status commit message to declare the impact scope of your change. This tells the Critic how to scope QA verification.
-
-    | Scope | When to Use |
-    |-------|-------------|
-    | `full` | Behavioral change, new scenarios, API change. **Default when omitted.** |
-    | `targeted:Scenario A,Scenario B` | Only specific manual scenarios are affected by the change. |
-    | `cosmetic` | Non-functional change (formatting, logging, internal refactor with no behavioral impact). |
-    | `dependency-only` | Change propagated by a prerequisite update (no direct code changes to this feature). |
-
-    **Cosmetic Scope Guardrail:** Before using `cosmetic` or `dependency-only` scope, verify the Critic report has ZERO HIGH or CRITICAL implementation items for this feature. If the Critic reports new unimplemented scenarios, traceability gaps, or missing test coverage, you MUST use `full` scope and you MUST have completed Steps 1-3 (implementation and testing) first. Marking a feature Complete with cosmetic scope while the Critic shows unimplemented scenarios is a protocol violation.
-
-    **Guidance:** When in doubt, use `full`. A broader scope is always safe; a narrower scope risks missing regressions.
-
-    **Targeted Scope Validation:** When using `targeted`, each name MUST exactly match a `#### Scenario:` title in the feature spec. Grep the spec to verify before committing — mismatches cause `scope_validation` failure, keeping `builder: TODO`. If no scenario matches, use `full`.
-
-*   **C. Execute Status Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
-    *   Example: `git commit --allow-empty -m "status(cdd): [Ready for Verification features/cdd_status_monitor.md] [Scope: targeted:Web Dashboard Display,Role Columns on Dashboard]"`
-    *   Example: `git commit --allow-empty -m "status(critic): [Ready for Verification features/critic_tool.md] [Scope: full]"`
-    *   Omitting `[Scope: ...]` entirely is equivalent to `[Scope: full]`.
-*   **D. Verify Transition:** Run `tools/cdd/status.sh` and confirm the feature now appears in the expected state (`testing` or `complete`). If the status did not update as expected, investigate and correct before moving on.
-*   **E. Phase Completion Check:** If a delivery plan exists at `.purlin/cache/delivery_plan.md` and the completed feature belongs to the current phase:
-    1.  Check whether all features in the current phase have been implemented and status-tagged.
-    2.  If all phase features are done, update the phase status to COMPLETE in the delivery plan, record the completion commit hash, and commit the updated plan: `git commit -m "chore: complete delivery plan phase N"`.
-    3.  If this was the final phase, delete the delivery plan file and commit: `git commit -m "chore: remove delivery plan (all phases complete)"`.
-    4.  **STOP THE SESSION.** Do NOT continue to the next PENDING phase. Output the phase handoff message and end work immediately:
-        ```
-        ✓ Phase N of M complete — [short label]
-        Recommended next step: run QA to verify Phase N features.
-        Relaunch Builder (new session) to continue with Phase N+1.
-        ```
-        No exceptions.
-
-    **Phase Internal Structure (B1/B2/B3):** See `instructions/references/phased_delivery.md` Section 10.10 for the full protocol. Summary:
-    *   **B1 (Build):** Existing per-feature loop (Steps 0-3). Each feature implemented and locally tested including AFTs. Visual design read priority: Token Map -> brief.json -> Figma (last resort). Fast iteration.
-    *   **B2 (Test):** After B1 completes for all features in the phase, re-run the full test suite AND all applicable AFTs for every feature in the current phase. Visual design priority inverts: reference images + Figma MCP + Playwright = full three-source verification. This catches both cross-feature regressions and visual drift.
-    *   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction? visual drift?), then act: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]` when not making progress. No hard iteration cap -- keep iterating while making progress, stop and escalate when stuck.
-    *   Status tags only after B2 passes or B3 escalations are recorded.
+*   **Companion file edits do NOT reset status.** Only edits to the feature spec (`<name>.md`) trigger resets.
+*   **Status tag MUST be a separate commit** from implementation work.
+*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written. Required fields: `status`, `passed`, `failed`, `total`. `total` MUST be > 0.
+*   **`[Verified]` tag is QA-only.** The Builder MUST NOT include `[Verified]` in `[Complete]` commits.
+*   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
+*   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
+*   **Test quality:** Tests MUST verify behavioral outcomes (see `features/policy_test_quality.md`). Audit against AP-1 through AP-5 before status tag.
+*   **AFT (when eligible):** Features with `> AFT Web:` metadata MUST pass `/pl-aft-web` (zero BUG verdicts) before status tag.
+*   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
 
 ## 6. Shutdown Protocol
 
