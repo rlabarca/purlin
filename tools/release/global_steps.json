@@ -26,7 +26,7 @@
             "friendly_name": "Purlin Agent Instruction Audit",
             "description": "Verifies that .purlin/ override files are consistent with the base instruction layer and do not introduce contradictions.",
             "code": null,
-            "agent_instructions": "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit."
+            "agent_instructions": "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies in override files and commit. If a finding is a base-layer error (stale path or contradiction in the base instruction file itself, not in the override), HALT the step and report the base-layer error. Do not attempt to fix base-layer errors via overrides. In the Purlin repo, use /pl-edit-base. In consumer projects, report to the framework maintainer."
         },
         {
             "id": "purlin.doc_consistency_check",
