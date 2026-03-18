@@ -21,17 +21,17 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 695cabf
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Root Anchors [PENDING]
+## Phase 4 -- Root Anchors [IN_PROGRESS]
 **Features:** design_artifact_pipeline.md, policy_test_quality.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- CDD Lifecycle Fix [PENDING]
+## Phase 5 -- CDD Lifecycle Fix [IN_PROGRESS]
 **Features:** cdd_lifecycle.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- QA Effort Classification [PENDING]
+## Phase 6 -- QA Effort Classification [IN_PROGRESS]
 **Features:** qa_verification_effort.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -41,17 +41,17 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 8ae3c63
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Cosmetic Release Resets A [PENDING]
+## Phase 8 -- Cosmetic Release Resets A [IN_PROGRESS]
 **Features:** release_doc_consistency_check.md, release_record_version_notes.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Release Infrastructure Resets [PENDING]
+## Phase 9 -- Release Infrastructure Resets [IN_PROGRESS]
 **Features:** release_submodule_safety_audit.md, instruction_audit.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- Regression Testing [PENDING]
+## Phase 10 -- Regression Testing [IN_PROGRESS]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -61,7 +61,7 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 5f1cf8f
 **QA Bugs Addressed:** --
 
-## Phase 12 -- Continuous Phase Builder [PENDING]
+## Phase 12 -- Continuous Phase Builder [IN_PROGRESS]
 **Features:** continuous_phase_builder.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
