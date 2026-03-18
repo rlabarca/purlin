@@ -256,14 +256,14 @@ class TestQASkillIdentifiesEligible(unittest.TestCase):
         self.assertIn('all', content)
         self.assertIn('skip', content)
 
-    def test_skill_identifies_aft_metadata_features(self):
-        """The skill references AFT Agent and AFT Web metadata types."""
+    def test_skill_identifies_web_test_metadata_features(self):
+        """The skill references Web Test metadata and Regression Testing sections."""
         skill_path = os.path.join(
             PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
         with open(skill_path) as f:
             content = f.read()
-        self.assertIn('AFT Agent:', content)
-        self.assertIn('AFT Web:', content)
+        self.assertIn('Web Test:', content)
+        self.assertIn('Regression Testing', content)
 
 
 class TestQASkillComposesCommand(unittest.TestCase):
@@ -276,7 +276,7 @@ class TestQASkillComposesCommand(unittest.TestCase):
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('--once', content)
-        self.assertIn('dev/aft_runner.sh', content)
+        self.assertIn('dev/regression_runner.sh', content)
         self.assertIn('--write-results', content)
 
     def test_qa_skill_composes_command_watch_mode(self):
