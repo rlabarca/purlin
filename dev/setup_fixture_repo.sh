@@ -1530,9 +1530,9 @@ cat > tests/auto_only_feat/critic.json <<'EOF'
     "action_items": [],
     "role_status": {"architect": "DONE", "builder": "DONE", "qa": "CLEAN"},
     "verification_effort": {
-        "auto_web": 0, "auto_test_only": 1, "auto_skip": 0,
+        "web_test": 0, "test_only": 1, "skip": 0,
         "manual_interactive": 0, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 1, "total_manual": 0, "summary": "1 auto-test-only"
+        "total_auto": 1, "total_manual": 0, "summary": "builder-verified"
     },
     "change_scope": "full"
 }
@@ -1550,9 +1550,9 @@ cat > tests/manual_feat/critic.json <<'EOF'
     "action_items": [],
     "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"},
     "verification_effort": {
-        "auto_web": 0, "auto_test_only": 0, "auto_skip": 0,
+        "web_test": 0, "test_only": 0, "skip": 0,
         "manual_interactive": 2, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 0, "total_manual": 2, "summary": "2 manual-interactive"
+        "total_auto": 0, "total_manual": 2, "summary": "2 manual"
     },
     "change_scope": "full"
 }
@@ -1570,9 +1570,9 @@ cat > tests/mixed_feat/critic.json <<'EOF'
     "action_items": [],
     "role_status": {"architect": "DONE", "builder": "DONE", "qa": "TODO"},
     "verification_effort": {
-        "auto_web": 1, "auto_test_only": 0, "auto_skip": 0,
+        "web_test": 1, "test_only": 0, "skip": 0,
         "manual_interactive": 0, "manual_visual": 0, "manual_hardware": 0,
-        "total_auto": 1, "total_manual": 0, "summary": "1 auto-web"
+        "total_auto": 1, "total_manual": 0, "summary": "no QA items"
     },
     "change_scope": "full"
 }

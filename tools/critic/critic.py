@@ -2728,28 +2728,33 @@ def _get_feature_change_scope(feature_file, cdd_status):
     return None
 
 
-def _parse_aft_web(content):
-    """Extract > AFT Web: URL from feature file metadata.
+def _parse_web_test(content):
+    """Extract > Web Test: (or legacy > AFT Web:) URL from feature file metadata.
 
     Returns the URL string if found, or None if not present.
+    Accepts both ``> Web Test:`` and ``> AFT Web:`` for backward compatibility.
     """
-    match = re.search(r'^>\s*AFT Web:\s*(.+)', content, re.MULTILINE)
+    match = re.search(r'^>\s*(?:Web Test|AFT Web):\s*(.+)', content, re.MULTILINE)
     if match:
         return match.group(1).strip()
     return None
+
+
+# Backward-compatible alias so existing call sites keep working during transition
+_parse_aft_web = _parse_web_test
 
 
 def compute_verification_effort(content, lifecycle_state, regression_scope,
                                 role_status, feature_result):
     """Compute verification_effort block for a feature.
 
-    Classifies pending verification work into Builder-owned AFT categories
+    Classifies pending verification work into Builder-owned auto categories
     and QA-owned manual categories per qa_verification_effort.md.
 
     Returns dict with category counts, totals, and summary.
     """
     zeroed = {
-        'aft_web': 0, 'aft_test_only': 0, 'aft_skip': 0,
+        'web_test': 0, 'test_only': 0, 'skip': 0,
         'manual_interactive': 0, 'manual_visual': 0, 'manual_hardware': 0,
         'total_auto': 0, 'total_manual': 0, 'summary': 'no QA items',
     }
@@ -2772,18 +2777,18 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     # Only TESTING features reach here
     declared = regression_scope.get('declared', 'full')
 
-    # Cosmetic scope: aft_skip (if not escalated — escalation changes declared to 'full')
+    # Cosmetic scope: skip (if not escalated — escalation changes declared to 'full')
     if declared == 'cosmetic':
         return {
             **zeroed,
-            'aft_skip': 1,
+            'skip': 1,
             'total_auto': 1,
             'summary': 'builder-verified',
         }
 
     # Parse feature data
-    aft_web_url = _parse_aft_web(content)
-    is_web = aft_web_url is not None
+    web_test_url = _parse_web_test(content)
+    is_web = web_test_url is not None
     scenarios = parse_scenarios(content)
     visual = parse_visual_spec(content)
 
@@ -2803,7 +2808,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     manual_count = len(manual_scenarios)
     visual_items = regression_scope.get('visual_items', 0)
 
-    # AFT:TestOnly — only automated scenarios, no manual, no visual, tests pass
+    # TestOnly — only automated scenarios, no manual, no visual, tests pass
     has_manual = manual_count > 0
     has_visual = visual_items > 0
     struct = feature_result.get('implementation_gate', {}).get(
@@ -2814,7 +2819,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         if tests_pass:
             return {
                 **zeroed,
-                'aft_test_only': 1,
+                'test_only': 1,
                 'total_auto': 1,
                 'summary': 'builder-verified',
             }
@@ -2822,7 +2827,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
             return zeroed
 
     # Classify manual scenarios and visual items
-    aft_web = 0
+    web_test_count = 0
     manual_interactive = 0
     manual_visual = 0
     manual_hardware = 0
@@ -2831,8 +2836,8 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         r'\b(hardware|serial|GPIO|USB|device|physical)\b', re.IGNORECASE)
 
     if is_web:
-        # AFT web: visual items -> aft_web; manual scenarios classified normally
-        aft_web = visual_items
+        # Web test: visual items -> web_test; manual scenarios classified normally
+        web_test_count = visual_items
         for s in manual_scenarios:
             if hardware_keywords.search(s.get('body', '')):
                 manual_hardware += 1
@@ -2848,15 +2853,15 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         # Non-web visual items -> manual_visual
         manual_visual = visual_items
 
-    total_auto = aft_web
+    total_auto = web_test_count
     total_manual = manual_interactive + manual_visual + manual_hardware
 
     summary = f'{total_manual} manual'
 
     return {
-        'aft_web': aft_web,
-        'aft_test_only': 0,
-        'aft_skip': 0,
+        'web_test': web_test_count,
+        'test_only': 0,
+        'skip': 0,
         'manual_interactive': manual_interactive,
         'manual_visual': manual_visual,
         'manual_hardware': manual_hardware,

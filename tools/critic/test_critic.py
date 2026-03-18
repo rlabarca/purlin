@@ -74,6 +74,7 @@ from critic import (
     compute_regression_set,
     _extract_scope_from_commit,
     _parse_aft_web,
+    _parse_web_test,
     compute_verification_effort,
     _get_requirements_diff,
     extract_figma_status,
@@ -6515,7 +6516,7 @@ WEB_TESTABLE_FEATURE = """\
 
 > Label: "Test"
 > Category: "CDD Dashboard"
-> AFT Web: http://localhost:9086
+> Web Test: http://localhost:9086
 
 ## 1. Overview
 Test feature.
@@ -6633,27 +6634,32 @@ AUTO_ONLY_FEATURE = """\
 """
 
 
-class TestParseAftWeb(unittest.TestCase):
-    """Scenario: AFT Web metadata detection."""
+class TestParseWebTest(unittest.TestCase):
+    """Scenario: Web Test metadata detection."""
 
-    def test_aft_web_found(self):
+    def test_web_test_found(self):
+        content = '> Label: "Test"\n> Web Test: http://localhost:9086\n'
+        self.assertEqual(_parse_web_test(content), 'http://localhost:9086')
+
+    def test_legacy_aft_web_found(self):
+        """Backward compatibility: > AFT Web: still detected."""
         content = '> Label: "Test"\n> AFT Web: http://localhost:9086\n'
-        self.assertEqual(_parse_aft_web(content), 'http://localhost:9086')
+        self.assertEqual(_parse_web_test(content), 'http://localhost:9086')
 
-    def test_aft_web_not_found(self):
+    def test_web_test_not_found(self):
         content = '> Label: "Test"\n> Category: "Tools"\n'
-        self.assertIsNone(_parse_aft_web(content))
+        self.assertIsNone(_parse_web_test(content))
 
 
-class TestVerificationEffortAftWeb(unittest.TestCase):
-    """Scenario: AFT-web feature classifies visual items as aft_web and manual scenarios normally."""
+class TestVerificationEffortWebTest(unittest.TestCase):
+    """Scenario: Web-test feature classifies visual items as web_test and manual scenarios normally."""
 
     WEB_FEATURE_NO_HARDWARE = """\
 # Feature: Test
 
 > Label: "Test"
 > Category: "CDD Dashboard"
-> AFT Web: http://localhost:9086
+> Web Test: http://localhost:9086
 
 ## 3. Scenarios
 
@@ -6698,7 +6704,7 @@ class TestVerificationEffortAftWeb(unittest.TestCase):
 - [ ] Colors match theme
 """
 
-    def test_aft_web_feature_visual_aft_web_manual_interactive(self):
+    def test_web_test_feature_visual_web_test_manual_interactive(self):
         regression_scope = {
             'declared': 'full',
             'scenarios': ['Manual one', 'Manual two', 'Manual three'],
@@ -6710,7 +6716,7 @@ class TestVerificationEffortAftWeb(unittest.TestCase):
         ve = compute_verification_effort(
             self.WEB_FEATURE_NO_HARDWARE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_web'], 2)  # visual items only
+        self.assertEqual(ve['web_test'], 2)  # visual items only
         self.assertEqual(ve['manual_interactive'], 3)
         self.assertEqual(ve['manual_visual'], 0)
         self.assertEqual(ve['total_auto'], 2)
@@ -6718,8 +6724,8 @@ class TestVerificationEffortAftWeb(unittest.TestCase):
         self.assertEqual(ve['summary'], '3 manual')
 
 
-class TestVerificationEffortAftWebMixed(unittest.TestCase):
-    """Scenario: AFT-web feature with mixed manual types and visual items."""
+class TestVerificationEffortWebTestMixed(unittest.TestCase):
+    """Scenario: Web-test feature with mixed manual types and visual items."""
 
     def test_web_feature_mixed_manual_types(self):
         regression_scope = {
@@ -6733,7 +6739,7 @@ class TestVerificationEffortAftWebMixed(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_web'], 2)  # visual items only
+        self.assertEqual(ve['web_test'], 2)  # visual items only
         self.assertEqual(ve['manual_interactive'], 2)
         self.assertEqual(ve['manual_hardware'], 1)
         self.assertEqual(ve['total_auto'], 2)
@@ -6757,7 +6763,7 @@ class TestVerificationEffortNonWeb(unittest.TestCase):
         ve = compute_verification_effort(
             NON_WEB_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_web'], 0)
+        self.assertEqual(ve['web_test'], 0)
         self.assertEqual(ve['manual_interactive'], 2)
         self.assertEqual(ve['manual_hardware'], 1)
         self.assertEqual(ve['manual_visual'], 3)
@@ -6767,7 +6773,7 @@ class TestVerificationEffortNonWeb(unittest.TestCase):
 
 
 class TestVerificationEffortAutoTestOnly(unittest.TestCase):
-    """Scenario: Feature with only automated scenarios classifies as aft_test_only."""
+    """Scenario: Feature with only automated scenarios classifies as test_only."""
 
     def test_auto_only_with_passing_tests(self):
         regression_scope = {
@@ -6781,16 +6787,16 @@ class TestVerificationEffortAutoTestOnly(unittest.TestCase):
         ve = compute_verification_effort(
             AUTO_ONLY_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_test_only'], 1)
+        self.assertEqual(ve['test_only'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
         self.assertEqual(ve['summary'], 'builder-verified')
 
 
 class TestVerificationEffortCosmeticScope(unittest.TestCase):
-    """Scenario: Cosmetic scope feature classified as aft_skip."""
+    """Scenario: Cosmetic scope feature classified as skip."""
 
-    def test_cosmetic_scope_aft_skip(self):
+    def test_cosmetic_scope_skip(self):
         regression_scope = {
             'declared': 'cosmetic',
             'scenarios': [],
@@ -6802,7 +6808,7 @@ class TestVerificationEffortCosmeticScope(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_skip'], 1)
+        self.assertEqual(ve['skip'], 1)
         self.assertEqual(ve['total_auto'], 1)
         self.assertEqual(ve['total_manual'], 0)
         self.assertEqual(ve['summary'], 'builder-verified')
@@ -6823,7 +6829,7 @@ class TestVerificationEffortTargetedScope(unittest.TestCase):
         ve = compute_verification_effort(
             WEB_TESTABLE_FEATURE, 'testing', regression_scope,
             role_status, result)
-        self.assertEqual(ve['aft_web'], 0)  # No visual items in scope
+        self.assertEqual(ve['web_test'], 0)  # No visual items in scope
         self.assertEqual(ve['manual_interactive'], 2)  # 2 targeted manual scenarios
         self.assertEqual(ve['total_auto'], 0)
         self.assertEqual(ve['total_manual'], 2)
@@ -6878,7 +6884,7 @@ class TestVerificationEffortNonTestingLifecycle(unittest.TestCase):
 
 
 class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
-    """Scenario: Visual spec items classified by AFT eligibility."""
+    """Scenario: Visual spec items classified by web-test eligibility."""
 
     def test_non_web_visual_only(self):
         content = """\
@@ -6913,7 +6919,7 @@ class TestVerificationEffortVisualSpecNonWeb(unittest.TestCase):
             content, 'testing', regression_scope,
             role_status, result)
         self.assertEqual(ve['manual_visual'], 6)
-        self.assertEqual(ve['aft_web'], 0)
+        self.assertEqual(ve['web_test'], 0)
         self.assertEqual(ve['total_manual'], 6)
         self.assertEqual(ve['summary'], '6 manual')
 
@@ -6939,9 +6945,9 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
             data = generate_critic_json(feature_path)
             self.assertIn('verification_effort', data)
             ve = data['verification_effort']
-            self.assertIn('aft_web', ve)
-            self.assertIn('aft_test_only', ve)
-            self.assertIn('aft_skip', ve)
+            self.assertIn('web_test', ve)
+            self.assertIn('test_only', ve)
+            self.assertIn('skip', ve)
             self.assertIn('manual_interactive', ve)
             self.assertIn('manual_visual', ve)
             self.assertIn('manual_hardware', ve)
