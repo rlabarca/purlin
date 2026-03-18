@@ -11,9 +11,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** e92ce4e
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Tombstone: Skills + Runner Cleanup [IN_PROGRESS]
+## Phase 2 -- Tombstone: Skills + Runner Cleanup [COMPLETE]
 **Features:** pl_aft_web (tombstone), aft_regression_testing (tombstone)
-**Completion Commit:** --
+**Completion Commit:** 0400005
 **QA Bugs Addressed:** --
 
 ## Phase 3 -- Root Policies [IN_PROGRESS]
