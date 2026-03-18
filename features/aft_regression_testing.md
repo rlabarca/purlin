@@ -4,6 +4,8 @@
 > Category: "Automated Feedback Tests"
 > Prerequisite: features/arch_automated_feedback_tests.md
 
+[Complete]
+
 ## 1. Overview
 
 Provides infrastructure for running full AFT regression suites outside the build cycle. The Builder focuses on fast unit tests during Step 3; full AFT regression (Agent, Web) runs at user-chosen intervals, owned end-to-end by QA. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `tests.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
