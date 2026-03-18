@@ -322,13 +322,13 @@ class TestEnrichedResultsFormat(unittest.TestCase):
                 {
                     'name': 'test_single_turn',
                     'status': 'PASS',
-                    'scenario_ref': 'features/aft_agent.md:Single-turn agent test',
+                    'scenario_ref': 'features/arch_testing.md:Single-turn agent test',
                     'expected': 'Agent produces structured output',
                 },
                 {
                     'name': 'test_multi_turn',
                     'status': 'FAIL',
-                    'scenario_ref': 'features/aft_agent.md:Multi-turn session',
+                    'scenario_ref': 'features/arch_testing.md:Multi-turn session',
                     'expected': 'Agent resumes session state',
                     'actual_excerpt': 'Error: session ID not found...',
                 },
@@ -342,12 +342,12 @@ class TestEnrichedResultsFormat(unittest.TestCase):
         # Enriched fields on passing entry
         self.assertEqual(
             parsed['details'][0]['scenario_ref'],
-            'features/aft_agent.md:Single-turn agent test')
+            'features/arch_testing.md:Single-turn agent test')
         self.assertNotIn('actual_excerpt', parsed['details'][0])
         # Enriched fields on failing entry
         self.assertEqual(
             parsed['details'][1]['scenario_ref'],
-            'features/aft_agent.md:Multi-turn session')
+            'features/arch_testing.md:Multi-turn session')
         self.assertIn('actual_excerpt', parsed['details'][1])
 
     def test_enriched_format_backward_compatible(self):

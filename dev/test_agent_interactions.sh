@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # dev/test_agent_interactions.sh
 #
-# AFT Agent Interaction Test Harness
+# Agent Interaction Test Harness
 # Tests agent interaction scenarios using claude --print with
 # session-based multi-turn support against fixture repo states.
 #
-# See features/aft_agent.md for full specification.
+# See features/arch_testing.md for the testing pattern.
 #
 # Classification: Purlin-dev-specific (dev/, not consumer-facing).
 
@@ -35,7 +35,7 @@ usage() {
     cat <<'USAGE'
 Usage: test_agent_interactions.sh [options]
 
-AFT Agent interaction test harness. Runs claude --print against fixture
+Agent interaction test harness. Runs claude --print against fixture
 repo states to verify agent interaction scenarios (single-turn and
 multi-turn).
 
@@ -44,7 +44,7 @@ Options:
                          Auto-created via dev/setup_fixture_repo.sh if missing
   --model <model>        Claude model (default: claude-haiku-4-5-20251001)
   --scenario <name>      Run only the named scenario (e.g., instruction-audit-halt)
-  --write-results        Write tests.json to tests/aft_agent/
+  --write-results        Write tests.json to tests/agent_interactions/
   -h, --help             Show this help
 
 Examples:
@@ -1093,7 +1093,7 @@ write_results() {
         return
     fi
 
-    local out_dir="$PROJECT_ROOT/tests/aft_agent"
+    local out_dir="$PROJECT_ROOT/tests/agent_interactions"
     mkdir -p "$out_dir"
 
     local status="PASS"
@@ -1125,7 +1125,7 @@ write_results() {
 
 # --- Main ---
 main() {
-    echo "AFT Agent Interaction Test Harness"
+    echo "Agent Interaction Test Harness"
     echo "Model: $MODEL"
     echo "Fixture repo: $FIXTURE_REPO"
     if [[ -n "$SCENARIO_FILTER" ]]; then

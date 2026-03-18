@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Tests for the AFT Agent interaction test harness (dev/test_agent_interactions.sh).
+"""Tests for the Agent interaction test harness (dev/test_agent_interactions.sh).
 
-Covers all 9 automated scenarios from features/aft_agent.md Section 3.
+Covers all 9 automated scenarios for agent interaction testing.
 Tests verify harness infrastructure without requiring claude --print
 invocations (which are expensive API calls).
 
-Outputs test results to tests/aft_agent/tests.json.
+Outputs test results to tests/agent_interactions/tests.json.
 """
 
 import json
@@ -849,7 +849,7 @@ if __name__ == "__main__":
 
     # Write tests.json
     if PROJECT_ROOT:
-        out_dir = os.path.join(PROJECT_ROOT, "tests", "aft_agent")
+        out_dir = os.path.join(PROJECT_ROOT, "tests", "agent_interactions")
         os.makedirs(out_dir, exist_ok=True)
         out_file = os.path.join(out_dir, "tests.json")
 
