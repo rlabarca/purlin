@@ -204,7 +204,7 @@ The dashboard shows per-branch sync state (SAME, AHEAD, BEHIND, DIVERGED), a con
 
 ```bash
 git init                  # skip if already a git repo
-git submodule add https://github.com/rlabarca/purlin purlin
+git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
 git submodule update --init
 ./purlin/pl-init.sh
 ```
