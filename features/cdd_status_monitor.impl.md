@@ -74,4 +74,16 @@
 
 [DISCOVERY] 4 hardcoded hex colors in serve.py violate design_visual_standards Section 2.7 FORBIDDEN — **ACKNOWLEDGED** — RESOLVED 2026-03-16. Replaced `#FFF` with `var(--purlin-surface)`, `#666` with `var(--purlin-muted)`, `#FF4500` with `var(--purlin-status-error)`, `#fff` with `var(--purlin-surface)`.
 
+*   **CLI Role-Filtered Output (2026-03-17):** Implemented `--role <role>` flag per spec Section 2.7. Added `generate_role_filtered_status_json(role, cache)` to `serve.py` — filters full API JSON to features where the role has non-terminal status (not DONE/CLEAN/N/A), aggregates that role's action items from per-feature `critic.json` files, and compacts policy violations (grouped by file+pattern with counts) scoped to the filtered features. CLI wiring: `status.sh --role <role>` → `serve.py --cli-role-status <role>`. Side effects (write_internal_feature_status, write_api_status_json) run before filtering so cached artifacts stay fresh.
+
+### Test Quality Audit
+
+Audited 6 new tests (2026-03-17) against policy_test_quality.md:
+- **Deletion:** All tests import and call `generate_role_filtered_status_json` directly — deletion causes ImportError + assertion failures.
+- **AP-1:** No prose inspection — tests call the filtering function with constructed feature/critic data.
+- **AP-2:** Value assertions (exact counts, specific file paths, array emptiness).
+- **AP-3:** Mocks limited to module-level path constants; filtering logic runs unmocked.
+- **AP-4:** No tautological assertions — all checks verify specific expected values.
+- **AP-5:** Tests use multi-feature setups with mixed role statuses, violations, and action items.
+
 *   **Delivery Phase Expanded API Format (2026-03-16):** Updated `get_delivery_phase()` from old `{"current": N, "total": N}` format to expanded format per spec Section 2.4: `{"completed": N, "in_progress": N, "pending": N, "removed": N, "total": N, "phases": [...]}`. Regex updated to capture phase labels from `## Phase N -- Label [STATUS]` headings (supports `--`, `—`, `–` separators). Now recognizes all 4 statuses: COMPLETE, IN_PROGRESS, PENDING, REMOVED. Returns None when all phases are COMPLETE or REMOVED (previously only COMPLETE). HTML annotation updated from `[PHASE (N/M)]` to `[N/M DONE | N RUNNING]` per Section 2.11.
