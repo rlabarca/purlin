@@ -8392,6 +8392,250 @@ Reqs.
             critic.FEATURES_DIR = orig_features
 
 
+class TestSpecDisputeActionRequiredPMOnArchitectOwned(unittest.TestCase):
+    """Scenario: SPEC_DISPUTE with Action Required PM on Architect-owned
+    feature routes to PM.
+
+    When a feature has Owner: Architect (or no Owner tag) and an OPEN
+    SPEC_DISPUTE with 'Action Required: PM', the dispute routes to PM
+    action items (not Architect), and the QA informational item references
+    PM as the resolver.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: Architect Owned With PM Override
+
+> Label: "Tool: Architect PM Override"
+> Owner: Architect
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+
+### [SPEC_DISPUTE] Layout disagrees with spec (Discovered: 2026-03-01)
+- **Action Required:** PM
+- **Status:** OPEN
+"""
+        with open(os.path.join(
+                self.features_dir, 'arch_pm_override.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_dispute_routes_to_pm_not_architect(self):
+        """SPEC_DISPUTE with Action Required: PM on Architect-owned feature
+        appears in pm action items, not architect action items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/arch_pm_override.md'
+            result['_owner'] = 'Architect'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+
+            # PM should have the HIGH-priority dispute item
+            pm_items = items['pm']
+            dispute_pm = [
+                i for i in pm_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(dispute_pm) > 0,
+                'PM should have the dispute item via Action Required override')
+            self.assertEqual(dispute_pm[0]['priority'], 'HIGH')
+
+            # Architect should NOT have the dispute item
+            arch_items = items['architect']
+            dispute_arch = [
+                i for i in arch_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertEqual(
+                len(dispute_arch), 0,
+                'Architect should NOT have dispute when Action Required: PM')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_qa_informational_item_references_pm_as_resolver(self):
+        """QA LOW-priority informational item references PM as the resolver
+        when Action Required: PM overrides Architect ownership."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/arch_pm_override.md'
+            result['_owner'] = 'Architect'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+
+            qa_items = items['qa']
+            suspended_qa = [
+                i for i in qa_items
+                if 'suspended' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(suspended_qa) > 0,
+                'QA should have a suspended-scenario informational item')
+            self.assertEqual(suspended_qa[0]['priority'], 'LOW')
+            self.assertIn('PM', suspended_qa[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
+class TestSpecDisputeActionRequiredArchitectOnPMOwned(unittest.TestCase):
+    """Scenario: SPEC_DISPUTE with Action Required Architect on PM-owned
+    feature stays with Architect.
+
+    When a feature has Owner: PM and an OPEN SPEC_DISPUTE with
+    'Action Required: Architect', the dispute routes to Architect action
+    items (not PM), and the QA informational item references Architect
+    as the resolver.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        content = """\
+# Feature: PM Owned With Architect Override
+
+> Label: "Tool: PM Architect Override"
+> Owner: PM
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+## 4. Implementation Notes
+* Note.
+
+## User Testing Discoveries
+
+### [SPEC_DISPUTE] Structural concern needs Architect (Discovered: 2026-03-01)
+- **Action Required:** Architect
+- **Status:** OPEN
+"""
+        with open(os.path.join(
+                self.features_dir, 'pm_arch_override.md'), 'w') as f:
+            f.write(content)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_dispute_routes_to_architect_not_pm(self):
+        """SPEC_DISPUTE with Action Required: Architect on PM-owned feature
+        appears in architect action items, not pm action items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/pm_arch_override.md'
+            result['_owner'] = 'PM'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+
+            # Architect should have the HIGH-priority dispute item
+            arch_items = items['architect']
+            dispute_arch = [
+                i for i in arch_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(dispute_arch) > 0,
+                'Architect should have the dispute via Action Required override')
+            self.assertEqual(dispute_arch[0]['priority'], 'HIGH')
+
+            # PM should NOT have the dispute item
+            pm_items = items['pm']
+            dispute_pm = [
+                i for i in pm_items
+                if 'disputed' in i['description'].lower()
+            ]
+            self.assertEqual(
+                len(dispute_pm), 0,
+                'PM should NOT have dispute when Action Required: Architect')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_qa_informational_item_references_architect_as_resolver(self):
+        """QA LOW-priority informational item references Architect as the
+        resolver when Action Required: Architect overrides PM ownership."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/pm_arch_override.md'
+            result['_owner'] = 'PM'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 1,
+            }
+            items = generate_action_items(result)
+
+            qa_items = items['qa']
+            suspended_qa = [
+                i for i in qa_items
+                if 'suspended' in i['description'].lower()
+            ]
+            self.assertTrue(
+                len(suspended_qa) > 0,
+                'QA should have a suspended-scenario informational item')
+            self.assertEqual(suspended_qa[0]['priority'], 'LOW')
+            self.assertIn('Architect', suspended_qa[0]['description'])
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+
 class TestBuilderBlockedClearsOnResolved(unittest.TestCase):
     """Scenario: Builder BLOCKED clears when SPEC_DISPUTE moves to RESOLVED.
 

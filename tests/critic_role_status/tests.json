@@ -1,1 +1,7 @@
-{"status": "PASS", "passed": 30, "failed": 0, "total": 30, "test_file": "tools/critic/test_critic_role_status.py"}
+{
+  "status": "PASS",
+  "passed": 351,
+  "failed": 0,
+  "total": 351,
+  "test_file": "tools/critic/test_critic.py"
+}

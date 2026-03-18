@@ -2020,12 +2020,19 @@ def generate_action_items(feature_result, cdd_status=None):
     if open_disputes:
         for dispute in open_disputes:
             _d_title = dispute.get('title', '')
-            _d_routes_to_pm = (
-                owner == 'PM'
-                or _d_title.startswith('Visual:')
-                or 'visual specification' in _d_title.lower()
-                or any(sn in _d_title for sn in visual_screen_names)
-            )
+            _d_action_req = (
+                dispute.get('action_required') or '').strip().lower()
+            if _d_action_req == 'pm':
+                _d_routes_to_pm = True
+            elif _d_action_req == 'architect':
+                _d_routes_to_pm = False
+            else:
+                _d_routes_to_pm = (
+                    owner == 'PM'
+                    or _d_title.startswith('Visual:')
+                    or 'visual specification' in _d_title.lower()
+                    or any(sn in _d_title for sn in visual_screen_names)
+                )
             _resolver = 'PM' if _d_routes_to_pm else 'Architect'
             qa_items.append({
                 'priority': 'LOW',
