@@ -549,9 +549,9 @@ def parse_fixture_tags(content):
     """Parse fixture tag declarations from a feature spec.
 
     Detects:
-    - ``### 2.x AFT Web Fixture Tags`` sections (and variants like
+    - ``### 2.x Web Test Fixture Tags`` sections (and variants like
       ``Integration Test Fixture Tags``, ``Fixture Tags Required``,
-      ``Fixture Tags for Testing``)
+      ``Fixture Tags for Testing``, legacy ``AFT Web Fixture Tags``)
     - ``> Test Fixtures: <repo-url>`` metadata lines
 
     Returns dict:
@@ -571,7 +571,7 @@ def parse_fixture_tags(content):
 
     # Find fixture tag sections: ### 2.x ... Fixture Tags ...
     # Matches headings like:
-    #   ### 2.5 AFT Web Fixture Tags
+    #   ### 2.5 Web Test Fixture Tags
     #   ### 2.13 Integration Test Fixture Tags
     #   ### 2.3 Fixture Tags Required
     #   ### 2.8 Fixture Tags for Testing

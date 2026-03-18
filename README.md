@@ -137,7 +137,7 @@ Translates specifications into working code and tests. Owns the implementation -
 | `/pl-infeasible <name>` | Escalate a feature as unimplementable |
 | `/pl-propose <topic>` | Suggest a spec change to the Architect |
 | `/pl-spec-code-audit` | Find spec gaps and code-side deviations |
-| `/pl-aft-web` | Run AFT web verification via Playwright |
+| `/pl-web-test` | Run web test verification via Playwright |
 
 ---
 
@@ -151,7 +151,7 @@ Verifies features against their specifications through interactive scenario exec
 | `/pl-discovery <name>` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) |
 | `/pl-complete <name>` | Mark a feature complete after all checks pass |
 | `/pl-qa-report` | Summary of open discoveries and completion blockers |
-| `/pl-aft-web` | Run AFT web verification via Playwright |
+| `/pl-web-test` | Run web test verification via Playwright |
 
 ---
 

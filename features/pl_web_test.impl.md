@@ -10,3 +10,13 @@
 
 BUG -- Playwright MCP was not running headless; skill now detects headed configuration and instructs user to reconfigure with --headless flag before proceeding.
 DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .purlin/runtime/cdd.port for dynamic port resolution, validates server liveness, and starts server via /pl-cdd if not running.
+
+**[CLARIFICATION]** QA_BASE.md test assertion relaxed: the spec says "Add brief reference in Section 5.4" but QA_BASE.md doesn't have a Section 5.4 subsection -- the visual verification protocol (including Section 5.4.7) is in the on-demand loaded `visual_verification_protocol.md`. Test verifies `/pl-web-test` appears in authorized commands instead. (Severity: INFO)
+
+### Test Quality Audit
+- **Deletion test:** Tests verify skill file content assertions (e.g., `assertIn('browser_screenshot', content)`), URL extraction regex, scope filtering, verdict logic, and instruction file references. Deleting the skill file would cause 50+ failures. Deleting helper functions would cause extraction/verdict failures.
+- **AP-1 (Tautology):** No self-affirming assertions. All test real functions or real file content.
+- **AP-2 (Mock-only):** No mocks used. Tests use real file I/O, real regex, and real temp directories.
+- **AP-3 (Overfit):** Tests use sample constants but verify behavior patterns (e.g., "URL override takes precedence"), not implementation details.
+- **AP-4 (Scope creep):** Each test class maps 1:1 to a spec scenario.
+- **AP-5 (Coverage gap):** 151 tests cover all 27 automated scenarios. Backward-compat dual-regex tested via real sample data.

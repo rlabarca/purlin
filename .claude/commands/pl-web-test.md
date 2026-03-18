@@ -1,15 +1,15 @@
 **Purlin command: shared (Builder, QA)**
 
-If you are operating as the Purlin Architect Agent, respond: "This is a Builder/QA command. Ask your Builder or QA agent to run /pl-aft-web instead." and stop.
+If you are operating as the Purlin Architect Agent, respond: "This is a Builder/QA command. Ask your Builder or QA agent to run /pl-web-test instead." and stop.
 
 ---
 
 ## Arguments
 
-`/pl-aft-web [feature_name ...] [url_override]`
+`/pl-web-test [feature_name ...] [url_override]`
 
 - `feature_name` (optional, repeatable): One or more feature names (without `features/` prefix or `.md` suffix).
-- `url_override` (optional): A URL (starts with `http://` or `https://`) that overrides the `> AFT Web:` URL from the feature spec. Applies to all specified features.
+- `url_override` (optional): A URL (starts with `http://` or `https://`) that overrides the `> Web Test:` URL from the feature spec. Applies to all specified features.
 - No arguments: auto-discover web-testable features in TESTING state.
 
 ---
@@ -20,14 +20,14 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 
 **If explicit feature names were provided:**
 1. For each name, read `features/<name>.md`.
-2. Check for `> AFT Web: <url>` metadata. If absent, skip with: "Feature `<name>` has no `> AFT Web:` metadata. Use `/pl-verify` for manual verification."
+2. Check for `> Web Test: <url>` metadata. If absent, skip with: "Feature `<name>` has no `> Web Test:` metadata. Use `/pl-verify` for manual verification."
 3. Extract the base URL from the metadata (or use the URL override argument if provided).
 
 **If no arguments were provided:**
 1. Run `tools/cdd/status.sh` and read `CRITIC_REPORT.md`.
 2. Identify features in TESTING state.
-3. For each TESTING feature, read the spec and check for `> AFT Web: <url>` metadata.
-4. Only features with `> AFT Web:` are eligible. Skip all others silently.
+3. For each TESTING feature, read the spec and check for `> Web Test: <url>` metadata.
+4. Only features with `> Web Test:` are eligible. Skip all others silently.
 5. If no web-testable features are found, inform the user: "No web-testable features found in TESTING state. Use `/pl-verify` for manual verification." and stop.
 
 ### Step 2 — Playwright MCP Pre-Check
@@ -47,14 +47,14 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
       Headless mode is required (runs invisibly, avoids disrupting your screen, 20-30% faster).
       Please reconfigure:
         claude mcp remove playwright && claude mcp add playwright -- npx @playwright/mcp --headless
-      Then restart the Claude Code session and re-run /pl-aft-web.
+      Then restart the Claude Code session and re-run /pl-web-test.
       ```
       Stop execution.
    c. **If the args array contains `--headless`:** Proceed to Step 3.
 3. **If NOT available:**
    a. Attempt auto-setup: run `npx @playwright/mcp@latest --help` to verify the package is accessible.
    b. If the package is accessible, run: `claude mcp add playwright -- npx @playwright/mcp --headless`
-   c. Inform the user: "Playwright MCP server has been configured in headless mode. Please restart the Claude Code session to load the new MCP server, then re-run `/pl-aft-web`."
+   c. Inform the user: "Playwright MCP server has been configured in headless mode. Please restart the Claude Code session to load the new MCP server, then re-run `/pl-web-test`."
    d. Stop execution. Do NOT attempt verification without Playwright MCP.
    e. If the package is NOT accessible, print the error and provide manual setup instructions:
       ```
@@ -62,7 +62,7 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
       1. npm install -g @playwright/mcp
       2. claude mcp add playwright -- npx @playwright/mcp --headless
       3. Restart Claude Code session
-      4. Re-run /pl-aft-web
+      4. Re-run /pl-web-test
       ```
    f. Stop execution.
 
@@ -87,27 +87,27 @@ For each eligible feature, resolve the final URL before navigating:
 1. **Determine effective URL** using this priority order:
    a. **URL override from command argument** — If the user provided a URL argument, use it as-is. Skip steps 2-4.
    b. **Runtime port file** — Read `.purlin/runtime/cdd.port` at the project root.
-      - If the file exists and contains a valid port number (digits only, trimmed), replace the port in the `> AFT Web:` URL with this runtime port.
-      - If the file does not exist or is empty, fall through to the `> AFT Web:` URL.
-   c. **Spec URL** — Use the `> AFT Web:` URL as-is (fallback).
+      - If the file exists and contains a valid port number (digits only, trimmed), replace the port in the `> Web Test:` URL with this runtime port.
+      - If the file does not exist or is empty, fall through to the `> Web Test:` URL.
+   c. **Spec URL** — Use the `> Web Test:` URL as-is (fallback).
 
 2. **Liveness check:** Attempt to reach the resolved URL:
    - Use `curl -s -o /dev/null -w "%{http_code}" <resolved_url>` via Bash to check if the server responds.
    - A 200-level or 300-level response means the server is alive.
 
 3. **Auto-start (if not reachable):** If the liveness check fails:
-   a. Check the feature spec for `> AFT Start: <command>` metadata.
+   a. Check the feature spec for `> Web Start: <command>` metadata.
    b. If present, invoke the start command (e.g., run the slash command or shell command).
    c. Wait for the port file to appear (poll every 1 second, up to 10 seconds).
    d. Re-read the port file for the updated port.
    e. Retry the liveness check at the updated URL.
    f. If still not reachable after auto-start, report the error and skip this feature (continue with others).
 
-4. **No start command:** If the server is not reachable and no `> AFT Start:` metadata exists, report: "Server not reachable at `<resolved_url>`. No `> AFT Start:` command configured." and skip this feature (continue with others).
+4. **No start command:** If the server is not reachable and no `> Web Start:` metadata exists, report: "Server not reachable at `<resolved_url>`. No `> Web Start:` command configured." and skip this feature (continue with others).
 
 ### Step 3.6 — Fixture-Backed Testing (Per Scenario)
 
-When a feature has both `> AFT Web:` and `> Test Fixtures: <repo-url>` metadata, individual scenarios may reference fixture tags to run against pre-built project states instead of the live project.
+When a feature has both `> Web Test:` and `> Test Fixtures: <repo-url>` metadata, individual scenarios may reference fixture tags to run against pre-built project states instead of the live project.
 
 **Fixture detection:** For each in-scope scenario, check whether any Given step references a fixture tag (pattern: `fixture tag "<tag-path>"`). If no Given step references a fixture, use the normal port resolution from Step 3.5.
 
@@ -115,7 +115,7 @@ When a feature has both `> AFT Web:` and `> Test Fixtures: <repo-url>` metadata,
 
 1. **Checkout:** Run `tools/test_support/fixture.sh checkout <repo-url> <tag>` via Bash to obtain the fixture state in a temp directory. The command prints the checkout path to stdout.
 2. **Start server:** Run `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0` via Bash (background). The `--port 0` flag binds an ephemeral port. Read the actual port from the server's stdout (e.g., `Serving on port 52341`).
-3. **URL construction:** Use `http://localhost:<ephemeral-port>` as the test URL for this scenario. This overrides both the `> AFT Web:` URL and runtime port file resolution entirely.
+3. **URL construction:** Use `http://localhost:<ephemeral-port>` as the test URL for this scenario. This overrides both the `> Web Test:` URL and runtime port file resolution entirely.
 4. **Execute scenario:** Run the scenario's When/Then steps against the fixture-backed server using Steps 5-6 below.
 5. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `tools/test_support/fixture.sh cleanup <fixture-dir>` via Bash.
 
@@ -125,11 +125,11 @@ When a feature has both `> AFT Web:` and `> Test Fixtures: <repo-url>` metadata,
 
 ### Step 3.7 — Screenshot Directory Setup
 
-All screenshots taken during aft-web MUST be saved to `.purlin/runtime/aft-web/`, NOT the project root. This directory is gitignored and transient.
+All screenshots taken during web-test MUST be saved to `.purlin/runtime/web-test/`, NOT the project root. This directory is gitignored and transient.
 
-1. Create the directory: `mkdir -p .purlin/runtime/aft-web`
-2. When calling `browser_take_screenshot`, ALWAYS use the `filename` parameter with a path under this directory (e.g., `.purlin/runtime/aft-web/feature-scenario-step.png`).
-3. After all features have been verified (Step 8 complete), delete the directory: `rm -rf .purlin/runtime/aft-web`
+1. Create the directory: `mkdir -p .purlin/runtime/web-test`
+2. When calling `browser_take_screenshot`, ALWAYS use the `filename` parameter with a path under this directory (e.g., `.purlin/runtime/web-test/feature-scenario-step.png`).
+3. After all features have been verified (Step 8 complete), delete the directory: `rm -rf .purlin/runtime/web-test`
 
 ### Step 4 — Browser Setup
 
@@ -237,7 +237,7 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
    - **Action Required:** Builder
    - **Status:** OPEN
    ```
-   Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - aft-web findings"`
+   Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - web-test findings"`
 
 4. **For STALE/DRIFT items:** Note as PM action items in the output. These are not BUG discoveries -- they indicate the spec needs re-ingestion or sync.
 

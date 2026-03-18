@@ -73,7 +73,6 @@ from critic import (
     validate_visual_references,
     compute_regression_set,
     _extract_scope_from_commit,
-    _parse_aft_web,
     _parse_web_test,
     compute_verification_effort,
     _get_requirements_diff,
@@ -6968,10 +6967,10 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
 class TestParseFixtureTags(unittest.TestCase):
     """Test parse_fixture_tags() extraction from feature specs."""
 
-    def test_extracts_aft_web_fixture_tags(self):
+    def test_extracts_web_test_fixture_tags(self):
         content = """# Feature: Test
 ## 2. Requirements
-### 2.5 AFT Web Fixture Tags
+### 2.5 Web Test Fixture Tags
 
 The following fixture tags:
 
@@ -7054,7 +7053,7 @@ Nothing fancy.
 
     def test_skips_header_row(self):
         """The 'Tag' header in markdown table should not be extracted."""
-        content = """### 2.1 AFT Web Fixture Tags
+        content = """### 2.1 Web Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -7065,7 +7064,7 @@ Nothing fancy.
         self.assertNotIn('Tag', result['tags'])
 
     def test_multiple_fixture_tag_sections(self):
-        content = """### 2.5 AFT Web Fixture Tags
+        content = """### 2.5 Web Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -7230,7 +7229,7 @@ class TestFixtureTagsInCriticJson(unittest.TestCase):
 Test feature.
 
 ## 2. Requirements
-### 2.1 AFT Web Fixture Tags
+### 2.1 Web Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
