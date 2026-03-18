@@ -51,7 +51,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 ### 2.2 Propose a Work Plan
 
 #### 2.2.0 Resuming a Delivery Plan
-If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead, present a phase-scoped resume plan:
+If a delivery plan exists (`delivery_plan_state.exists` in the startup briefing), skip the scope assessment below. Instead, present a phase-scoped resume plan:
 1.  State which phase is being resumed (e.g., "Resuming Phase 2 of 3").
 2.  List any QA bugs from prior phases that must be addressed first (highest priority).
 3.  List the features in the current phase with their implementation status. If resuming an interrupted IN_PROGRESS phase, skip features already in TESTING state (they were completed before the interruption).
@@ -59,8 +59,11 @@ If a delivery plan exists (step 2.1.5), skip the scope assessment below. Instead
 5.  Ask the user: **"Ready to resume, or would you like to adjust the plan?"**
 
 #### 2.2.1 Scope Assessment
-If no delivery plan exists, assess whether the work scope warrants phased delivery. If 2+
-HIGH-complexity features or 3+ features of any mix exist, recommend phasing. When proposing
+If no delivery plan exists, assess whether the work scope warrants phased delivery. The startup
+briefing pre-computes `phasing_recommended` based on this heuristic (3+ in-scope features, or
+2+ with `scenario_count >= 5`), so the Builder can check that field directly instead of
+re-deriving the count. If 2+ HIGH-complexity features or 3+ features of any mix exist,
+recommend phasing. When proposing
 phase sizes, consider context budget -- phases with large cumulative scope (many specs to read,
 many files to modify, extensive tests) benefit from being smaller. See
 `instructions/references/phased_delivery.md` Section 10.9. Run `/pl-delivery-plan` to create

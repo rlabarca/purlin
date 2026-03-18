@@ -172,24 +172,32 @@ When the system prompt already contains the role instructions (agent was started
 
 #### 2.3.5 Step 5 -- Gather Fresh Project State
 
-Execute the state-gathering sequence defined in the role's base instruction file (startup section).
-
-**Always (both warm resume and cold start):**
-- Execute the **Core Sequence** (Architect, Builder, QA) or **PM section** (PM only).
-
-**Cold start only (no checkpoint):**
-- Execute the **Cold-Start Extensions** for the detected role. This includes the dependency graph read (All Roles section) plus the role-specific extension section (Builder, QA, Architect, or PM).
+Run `tools/cdd/status.sh --startup <role>` (where `<role>` is the role detected in Step 1).
+This single call runs the Critic and returns the full startup briefing with config, git state,
+feature summary, action items, dependency graph summary, and role-specific extensions.
 
 **Warm resume (checkpoint exists):**
-- Skip Cold-Start Extensions. The checkpoint's work plan already incorporates this context. Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
+- The startup briefing provides fresh project state. The work plan comes from the checkpoint's
+  "Next" list (not the briefing's action items).
+- Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, check
+  `delivery_plan_state` in the briefing.
 
-**Startup flag handling (cold start only):**
-When no checkpoint exists, the cold-start path acts as a substitute for the full startup. After state gathering, check `find_work` and `auto_start` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
-- `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
-- `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
-- `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
+**Cold start (no checkpoint):**
+- Use the briefing to generate a full work plan, following the role's base instruction file
+  for plan structure.
+- **Builder phasing assessment:** If `delivery_plan_state.exists` is false and
+  `phasing_recommended` is true, run `/pl-delivery-plan` to create a phased delivery plan
+  before proposing the work plan.
+- Check `find_work` and `auto_start` from the briefing's `config` object:
+  - `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the
+    recovery summary. Do not auto-generate a work plan.
+  - `find_work: true, auto_start: false` -- proceed with full work plan generation and wait
+    for user approval.
+  - `find_work: true, auto_start: true` -- proceed with full work plan generation and begin
+    executing immediately without waiting for approval.
 
-When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
+When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is
+the work plan regardless of flag values.
 
 #### 2.3.6 Step 6 -- Present Recovery Summary
 
@@ -362,9 +370,8 @@ Uncommitted:    [none | summary]
     And features/tombstones/ contains at least one tombstone file
     And features/ contains at least one anchor node file
     When the agent invokes /pl-resume builder
-    Then the Builder cold-start extensions run
-    And the tombstone check lists all files in features/tombstones/
-    And all anchor node files in features/ are read
+    Then the startup briefing contains tombstones with file and label per entry
+    And the startup briefing contains anchor_constraints with FORBIDDEN patterns
     And the recovery summary includes tombstone tasks as HIGH-priority items
 
 #### Scenario: QA Cold Start Reads Verification Effort
@@ -372,8 +379,8 @@ Uncommitted:    [none | summary]
     Given .purlin/cache/session_checkpoint_qa.md does not exist
     And at least one feature is in TESTING state
     When the agent invokes /pl-resume qa
-    Then the QA cold-start extensions run
-    And verification_effort is read from each TESTING feature's critic.json
+    Then the startup briefing is retrieved
+    And the startup briefing contains testing_features with verification_effort per feature
     And the recovery summary includes effort classification per feature
 
 #### Scenario: Cold Start Respects Startup Flags
@@ -381,7 +388,7 @@ Uncommitted:    [none | summary]
     Given .purlin/cache/session_checkpoint_builder.md does not exist
     And .purlin/config.json sets find_work to false for the builder role
     When the agent invokes /pl-resume builder
-    Then the core state-gathering sequence runs
+    Then the startup briefing is retrieved
     And the recovery summary displays "find_work disabled -- awaiting instruction."
     And the agent does not auto-generate a full work plan
     And the agent awaits user direction

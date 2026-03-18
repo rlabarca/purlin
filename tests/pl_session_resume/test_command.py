@@ -1095,6 +1095,33 @@ class TestBuilderColdStartLoadsTombstonesAndAnchors(unittest.TestCase):
         self.assertGreater(len(anchors), 0,
                            'Project should have at least one anchor node')
 
+    def test_startup_briefing_has_tombstones_field(self):
+        """Startup briefing JSON contains tombstones array."""
+        import subprocess
+        result = subprocess.run(
+            ['bash', 'tools/cdd/status.sh', '--startup', 'builder'],
+            capture_output=True, text=True, timeout=60, cwd=PROJECT_ROOT)
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertIn('tombstones', data)
+        self.assertIsInstance(data['tombstones'], list)
+
+    def test_startup_briefing_has_anchor_constraints_field(self):
+        """Startup briefing JSON contains anchor_constraints with
+        FORBIDDEN patterns structure."""
+        import subprocess
+        result = subprocess.run(
+            ['bash', 'tools/cdd/status.sh', '--startup', 'builder'],
+            capture_output=True, text=True, timeout=60, cwd=PROJECT_ROOT)
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertIn('anchor_constraints', data)
+        constraints = data['anchor_constraints']
+        self.assertIsInstance(constraints, dict)
+        for anchor_name, constraint in constraints.items():
+            self.assertIn('forbidden_patterns', constraint)
+            self.assertIn('label', constraint)
+
 
 class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
     """Scenario: QA Cold Start Reads Verification Effort
@@ -1176,6 +1203,23 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
         with open(COMMAND_FILE) as f:
             content = f.read()
         self.assertIn('discovery summary', content.lower())
+
+    def test_startup_briefing_features_have_verification_effort(self):
+        """Startup briefing features array includes verification_effort
+        per feature entry."""
+        import subprocess
+        result = subprocess.run(
+            ['bash', 'tools/cdd/status.sh', '--startup', 'qa'],
+            capture_output=True, text=True, timeout=60, cwd=PROJECT_ROOT)
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertIn('features', data)
+        features = data['features']
+        self.assertGreater(len(features), 0)
+        for feat in features:
+            self.assertIn('verification_effort', feat,
+                          f'Feature {feat.get("file", "?")} missing '
+                          f'verification_effort')
 
 
 class TestColdStartRespectsStartupFlags(unittest.TestCase):
@@ -1261,6 +1305,22 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
         recommend = builder_cfg.get('auto_start', True)
         self.assertTrue(startup)
         self.assertTrue(recommend)
+
+    def test_startup_briefing_has_config_with_flags(self):
+        """Startup briefing JSON contains config with find_work
+        and auto_start fields."""
+        import subprocess
+        result = subprocess.run(
+            ['bash', 'tools/cdd/status.sh', '--startup', 'builder'],
+            capture_output=True, text=True, timeout=60, cwd=PROJECT_ROOT)
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertIn('config', data)
+        config = data['config']
+        self.assertIn('find_work', config)
+        self.assertIn('auto_start', config)
+        self.assertIsInstance(config['find_work'], bool)
+        self.assertIsInstance(config['auto_start'], bool)
 
 
 class TestStartupBriefingIntegration(unittest.TestCase):

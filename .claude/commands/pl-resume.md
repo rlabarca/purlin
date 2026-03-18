@@ -142,30 +142,36 @@ Do NOT read or print the full command table file. The one-liner is sufficient fo
 
 ### Step 5 -- Gather Fresh Project State
 
-Execute the core state-gathering sequence (always, both cases):
+Run `tools/cdd/status.sh --startup <role>` (where `<role>` is the role detected in Step 1).
+This single call runs the Critic and returns the full startup briefing with config, git state,
+feature summary, action items, dependency graph summary, and role-specific extensions
+(Builder: tombstones, anchor constraints, delivery plan state, phasing recommendation;
+QA: testing features, discovery summary; Architect: spec completeness, untracked files).
 
-1. Read `.purlin/config.json` for role-specific settings.
-2. Run `tools/cdd/status.sh` to regenerate the Critic report.
-3. Read `CRITIC_REPORT.md` -- the role-specific subsection under "Action Items by Role".
-4. Run `git status` for uncommitted changes.
-5. Run `git log --oneline -10` for recent commit history.
+**When a checkpoint exists (warm resume):**
+- The startup briefing provides fresh project state. The work plan comes from the
+  checkpoint's "Next" list.
+- Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, check
+  `delivery_plan_state` in the briefing.
 
-**When no checkpoint exists (cold start):** additionally gather:
-- Read `.purlin/cache/dependency_graph.json` for the feature graph.
-- **Builder:** Read `.purlin/cache/delivery_plan.md` if it exists. Identify features in TODO state. List `features/tombstones/` for tombstone tasks. Read ALL anchor node files in `features/` (`arch_*.md`, `design_*.md`, `policy_*.md`).
-- **QA:** Identify features in TESTING state from the Critic report. For each, read `verification_effort` from `tests/<feature_name>/critic.json`.
-- **Architect:** Perform spec-level gap analysis on TODO/TESTING features.
-- **PM:** Check for Figma MCP tools in the current session. If not available, inform the user and provide setup instructions.
+**When no checkpoint exists (cold start):** additionally:
+- Use the briefing to generate a full work plan.
+- **Builder phasing:** If `delivery_plan_state.exists` is false and `phasing_recommended`
+  is true, run `/pl-delivery-plan` to create a phased delivery plan before proposing the
+  work plan.
 
 **Startup flag handling (cold start only):**
-When no checkpoint exists, check `find_work` and `auto_start` from the resolved config (`.purlin/config.local.json` if it exists, otherwise `.purlin/config.json`) for the detected role:
-- `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the recovery summary. Do not auto-generate a work plan.
-- `find_work: true, auto_start: false` -- proceed with full work plan generation and wait for user approval.
-- `find_work: true, auto_start: true` -- proceed with full work plan generation and begin executing immediately without waiting for approval.
+When no checkpoint exists, check `find_work` and `auto_start` from the briefing's `config`
+object for the detected role:
+- `find_work: false` -- output `"find_work disabled -- awaiting instruction."` after the
+  recovery summary. Do not auto-generate a work plan.
+- `find_work: true, auto_start: false` -- proceed with full work plan generation and wait
+  for user approval.
+- `find_work: true, auto_start: true` -- proceed with full work plan generation and begin
+  executing immediately without waiting for approval.
 
-When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list is the work plan regardless of flag values.
-
-**When a checkpoint exists:** skip the dependency graph read and role-specific analysis (the checkpoint's work plan already incorporates these). Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, the Builder SHOULD still read `.purlin/cache/delivery_plan.md`.
+When a checkpoint exists, startup flags are not consulted -- the checkpoint's "Next" list
+is the work plan regardless of flag values.
 
 ### Step 6 -- Present Recovery Summary
 
