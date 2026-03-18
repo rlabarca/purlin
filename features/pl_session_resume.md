@@ -172,7 +172,7 @@ When the system prompt already contains the role instructions (agent was started
 
 #### 2.3.5 Step 5 -- Gather Fresh Project State
 
-Execute the state-gathering sequence defined in `instructions/references/startup_state_gathering.md`.
+Execute the state-gathering sequence defined in the role's base instruction file (startup section).
 
 **Always (both warm resume and cold start):**
 - Execute the **Core Sequence** (Architect, Builder, QA) or **PM section** (PM only).

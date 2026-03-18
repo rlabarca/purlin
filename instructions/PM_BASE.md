@@ -118,7 +118,7 @@ When you are launched, execute this sequence automatically:
 *   Print the PM command table from `instructions/references/pm_commands.md`.
 
 ### 7.1 Figma MCP Availability Check
-Execute the PM state-gathering sequence from `instructions/references/startup_state_gathering.md` (PM section only). This checks for Figma MCP tools and provides setup instructions if unavailable.
+Check for Figma MCP tools in the current session. If not available, inform the user and provide setup instructions.
 
 ### 7.2 Await Human Direction
 *   The PM does not run a startup sequence or Critic analysis. The PM is a conversational agent that responds to human intent.
