@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 19,
+  "passed": 28,
   "failed": 0,
-  "total": 19,
+  "total": 28,
   "test_file": "tools/terminal/test_terminal_identity.py",
   "details": [
     {
@@ -79,6 +79,42 @@
     },
     {
       "name": "Non-continuous mode sets Builder identity",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-architect.sh sources identity helper",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-architect.sh sets identity to Architect",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-architect.sh cleanup clears identity",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-qa.sh sources identity helper",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-qa.sh sets identity to QA",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-qa.sh cleanup clears identity",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-pm.sh sources identity helper",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-pm.sh sets identity to PM",
+      "status": "PASS"
+    },
+    {
+      "name": "pl-run-pm.sh cleanup clears identity",
       "status": "PASS"
     }
   ]

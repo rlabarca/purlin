@@ -1,8 +1,8 @@
 # Terminal Identity -- Implementation Notes
 
-## Known Implementation Gap: Non-Builder Root Launchers (2026-03-18)
+## Resolved: Non-Builder Root Launchers (2026-03-18)
 
-The Builder launcher (`pl-run-builder.sh`) correctly implements all three identity integration points. The Architect, QA, and PM launchers (`pl-run-architect.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) are missing all three.
+All four root launchers now implement the three-point identity integration pattern. The gap in Architect, QA, and PM launchers was resolved by adding sourcing, set_agent_identity, and cleanup to each.
 
 ### Reference Implementation (pl-run-builder.sh)
 

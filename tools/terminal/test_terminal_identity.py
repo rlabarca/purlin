@@ -21,6 +21,9 @@ PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
 IDENTITY_SCRIPT = os.path.join(PROJECT_ROOT, 'tools', 'terminal', 'identity.sh')
 INIT_SCRIPT = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
 LAUNCHER_PATH = os.path.join(PROJECT_ROOT, 'pl-run-builder.sh')
+ARCHITECT_LAUNCHER = os.path.join(PROJECT_ROOT, 'pl-run-architect.sh')
+QA_LAUNCHER = os.path.join(PROJECT_ROOT, 'pl-run-qa.sh')
+PM_LAUNCHER = os.path.join(PROJECT_ROOT, 'pl-run-pm.sh')
 
 # Track results
 results = {"passed": 0, "failed": 0, "total": 0, "details": []}
@@ -345,6 +348,60 @@ def test_non_continuous_mode_sets_identity():
 
 
 # ============================================================
+# Non-Builder Root Launcher Integration Tests
+# ============================================================
+
+def _test_launcher_sources_identity(path, role_name):
+    """Verify a root launcher sources the identity helper."""
+    launcher_src = read_file(path)
+    record(
+        f"pl-run-{role_name.lower()}.sh sources identity helper",
+        'tools/terminal/identity.sh' in launcher_src and 'source' in launcher_src,
+        f"identity.sh source line not found in pl-run-{role_name.lower()}.sh"
+    )
+
+
+def _test_launcher_sets_identity(path, role_name, display_name):
+    """Verify a root launcher sets identity before claude invocation."""
+    launcher_src = read_file(path)
+    record(
+        f"pl-run-{role_name.lower()}.sh sets identity to {display_name}",
+        f'set_agent_identity "{display_name}"' in launcher_src,
+        f'set_agent_identity "{display_name}" not found in pl-run-{role_name.lower()}.sh'
+    )
+
+
+def _test_launcher_cleanup_clears_identity(path, role_name):
+    """Verify a root launcher cleanup clears identity."""
+    launcher_src = read_file(path)
+    cleanup_match = re.search(r'cleanup\(\)\s*\{.*?\}', launcher_src, re.DOTALL)
+    has_clear = cleanup_match and 'clear_agent_identity' in cleanup_match.group()
+    record(
+        f"pl-run-{role_name.lower()}.sh cleanup clears identity",
+        has_clear,
+        f"clear_agent_identity not found in pl-run-{role_name.lower()}.sh cleanup()"
+    )
+
+
+def test_architect_launcher_identity():
+    _test_launcher_sources_identity(ARCHITECT_LAUNCHER, "architect")
+    _test_launcher_sets_identity(ARCHITECT_LAUNCHER, "architect", "Architect")
+    _test_launcher_cleanup_clears_identity(ARCHITECT_LAUNCHER, "architect")
+
+
+def test_qa_launcher_identity():
+    _test_launcher_sources_identity(QA_LAUNCHER, "qa")
+    _test_launcher_sets_identity(QA_LAUNCHER, "qa", "QA")
+    _test_launcher_cleanup_clears_identity(QA_LAUNCHER, "qa")
+
+
+def test_pm_launcher_identity():
+    _test_launcher_sources_identity(PM_LAUNCHER, "pm")
+    _test_launcher_sets_identity(PM_LAUNCHER, "pm", "PM")
+    _test_launcher_cleanup_clears_identity(PM_LAUNCHER, "pm")
+
+
+# ============================================================
 # Main
 # ============================================================
 
@@ -378,6 +435,12 @@ if __name__ == '__main__':
     test_builder_evaluator_identity()
     test_builder_between_phases_resets_identity()
     test_non_continuous_mode_sets_identity()
+
+    # Non-builder root launcher integration
+    print("\n--- Non-Builder Root Launcher Integration ---")
+    test_architect_launcher_identity()
+    test_qa_launcher_identity()
+    test_pm_launcher_identity()
 
     # Summary
     print(f"\n=== Results: {results['passed']}/{results['total']} passed ===")

@@ -9,8 +9,17 @@ fi
 
 export PURLIN_PROJECT_ROOT="$SCRIPT_DIR"
 
+# Source terminal identity helper (no-op if missing)
+if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
+    source "$CORE_DIR/tools/terminal/identity.sh"
+fi
+
 PROMPT_FILE=$(mktemp)
-trap "rm -f '$PROMPT_FILE'" EXIT
+cleanup() {
+    type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
+    rm -f "$PROMPT_FILE"
+}
+trap cleanup EXIT
 
 cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
 printf "\n\n" >> "$PROMPT_FILE"
@@ -58,4 +67,5 @@ if [ "$AGENT_BYPASS" = "true" ]; then
 else
     CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
 fi
+type set_agent_identity >/dev/null 2>&1 && set_agent_identity "QA"
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin QA verification session."
