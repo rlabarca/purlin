@@ -10,6 +10,8 @@ AFT Regression Testing skill. QA owns the regression tier end-to-end: authoring 
 
 This skill identifies regression-eligible features and composes external commands for the user to execute in a separate terminal.
 
+**MANDATORY UX RULE:** Whenever you ask the user to run something in an external terminal — whether through this skill or ad-hoc during triage — you MUST print the exact, complete, copy-pasteable command. Never describe what to run in prose. The user should never have to assemble a command from your output. This applies to every interaction, not just Step 3.
+
 ---
 
 ## Execution Protocol
