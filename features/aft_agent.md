@@ -4,7 +4,7 @@
 > Category: "Automated Feedback Tests"
 > Prerequisite: features/arch_automated_feedback_tests.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
