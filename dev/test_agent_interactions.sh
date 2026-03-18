@@ -541,7 +541,9 @@ scenario_submodule_safety_warning() {
             "Expected agent to flag json.load warning"
     fi
 
-    if assert_not_contains "$output" "CRITICAL.*violation\|CRITICAL.*error\|halt.*release\|release.*block\|cannot.*proceed\|release.*cannot"; then
+    # Test intent: agent should not HALT the release. Using "critical" as an adjective
+    # is acceptable; only release-blocking language should fail this assertion.
+    if assert_not_contains "$output" "halt.*release\|release.*halt\|cannot.*proceed\|release.*block\|block.*release\|must.*fix.*before.*releas\|fix.*before.*releas"; then
         record_result "PASS" "$name: no critical violations"
     else
         record_result "FAIL" "$name: no critical violations" \
@@ -778,8 +780,8 @@ scenario_submodule_safety_user_confirms() {
             "Expected agent to report WARNING finding for unguarded json.load"
     fi
 
-    # Agent should not halt (no CRITICAL findings)
-    if assert_not_contains "$output1" "CRITICAL\|halt.*release\|cannot.*proceed"; then
+    # Agent should not halt the release (using "critical" as adjective is acceptable)
+    if assert_not_contains "$output1" "halt.*release\|release.*halt\|cannot.*proceed\|release.*block\|block.*release\|must.*fix.*before.*releas\|fix.*before.*releas"; then
         record_result "PASS" "$name: turn 1 no critical halt"
     else
         record_result "FAIL" "$name: turn 1 no critical halt" \
