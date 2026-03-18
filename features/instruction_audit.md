@@ -50,7 +50,7 @@ This step is registered in `tools/release/global_steps.json` as:
 | ID | `purlin.instruction_audit` |
 | Friendly Name | `Purlin Agent Instruction Audit` |
 | Code | null |
-| Agent Instructions | "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies and commit." |
+| Agent Instructions | "Check `.purlin/HOW_WE_WORK_OVERRIDES.md`, `.purlin/ARCHITECT_OVERRIDES.md`, `.purlin/BUILDER_OVERRIDES.md`, and `.purlin/QA_OVERRIDES.md` for rules that directly contradict the base instruction files. Check for stale path references and terminology mismatches. Fix any inconsistencies in override files and commit. If a finding is a base-layer error (stale path or contradiction in the base instruction file itself, not in the override), HALT the step and report the base-layer error. Do not attempt to fix base-layer errors via overrides. In the Purlin repo, use /pl-edit-base. In consumer projects, report to the framework maintainer." |
 
 ## 3. Scenarios
 

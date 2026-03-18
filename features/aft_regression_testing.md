@@ -4,7 +4,7 @@
 > Category: "Automated Feedback Tests"
 > Prerequisite: features/arch_automated_feedback_tests.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
@@ -93,6 +93,23 @@ The Builder does NOT trigger or author regression tests. The Builder's only role
 
 A regression result is stale when the feature's source code was modified since the `tests.json` file's mtime. The QA regression skill uses staleness to prioritize re-testing: stale features appear first in the eligible list and are marked with a `[STALE]` indicator.
 
+### 2.6 Assertion Tier Tracking
+
+Each `tests.json` detail entry MAY include an optional `assertion_tier` field with value `1`,
+`2`, or `3`, corresponding to the assertion quality tiers defined in
+`features/aft_agent.md` Section 2.10. This field is backward-compatible -- existing consumers
+that do not recognize it will ignore it.
+
+The QA regression skill reports tier distribution in its summary output:
+
+```
+Tier Distribution: T1=3  T2=12  T3=6  (untagged=0)
+```
+
+Suites where more than 50% of assertions are Tier 1 are flagged with a `[SHALLOW]` indicator
+in the summary, signaling that the suite relies too heavily on keyword-presence assertions
+and is vulnerable to false positives.
+
 ---
 
 ## 3. Scenarios
@@ -175,6 +192,16 @@ A regression result is stale when the feature's source code was modified since t
     When the QA skill computes the eligible list
     Then feature A appears first with a STALE indicator
     And feature B does not appear in the eligible list
+
+#### Scenario: Shallow assertion suite flagged when majority are Tier 1
+
+    Given a harness writes tests.json with 10 detail entries
+    And 6 entries have assertion_tier: 1
+    And 4 entries have assertion_tier: 2
+    When the QA regression skill reads the results and computes tier distribution
+    Then the summary shows "T1=6  T2=4  T3=0"
+    And the suite is flagged with a [SHALLOW] indicator
+    And the indicator message notes that >50% of assertions are Tier 1
 
 ### Manual Scenarios (Human Verification Required)
 

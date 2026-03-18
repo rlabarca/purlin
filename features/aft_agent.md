@@ -4,7 +4,7 @@
 > Category: "Automated Feedback Tests"
 > Prerequisite: features/arch_automated_feedback_tests.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
@@ -118,6 +118,81 @@ that assembles the full prompt from:
 | `main/release_record_version_notes/prior-tag` | Repo with v1.0.0 tag + later commits |
 | `main/release_record_version_notes/no-releases-heading` | README lacks ## Releases |
 | `main/release_submodule_safety_audit/warning-only` | json.load WARNING, no CRITICALs |
+| `main/release_instruction_audit/base-error` | Base instruction file contains stale path |
+| `main/release_instruction_audit/clean` | All overrides consistent with base layer |
+| `main/release_doc_consistency_check/clean` | README fully covers all features |
+| `main/release_record_version_notes/clean` | Clean repo with valid tags and Releases heading |
+| `main/release_submodule_safety_audit/clean` | No submodule safety violations |
+| *(Builder/QA role fixtures — placeholder)* | |
+| `main/builder_*` | Builder role test fixtures (Builder creates) |
+| `main/qa_*` | QA role test fixtures (Builder creates) |
+
+### 2.10 Assertion Quality Tiers
+
+AFT:Agent assertions are classified into three tiers of increasing rigor:
+
+| Tier | Name | Description | Example |
+|------|------|-------------|---------|
+| 1 | Keyword Presence | Asserts that one or more keywords appear in the output. Passes on incidental matches. | `assert_contains "$output" "table\|findings"` |
+| 2 | Specific Finding | Asserts a specific finding, value, or structural element that the agent must have actually detected. | `assert_contains "$output" "BUILDER_BASE.md"` (the actual file with the issue) |
+| 3 | State Verification | Inspects filesystem or project state after the agent acts, verifying the agent produced a concrete artifact or side effect. | Check that a committed file contains the expected fix content. |
+
+**Rules:**
+
+- Every scenario MUST include at least one Tier 2 or Tier 3 assertion. Tier 1 alone is
+  insufficient -- it passes on incidental keyword matches and does not verify the agent
+  actually detected the intended problem.
+- Tier 3 requires inspecting state after `claude --print` completes. Because `claude --print`
+  does not execute tool calls (no file writes), Tier 3 assertions verify the agent's *stated
+  intent* to write specific content (e.g., asserting the output contains a proposed commit
+  message or file diff), not actual filesystem changes. If future harness capabilities enable
+  sandboxed execution, Tier 3 can verify actual file state.
+
+### 2.11 Multi-Role Coverage
+
+The AFT:Agent test suite MUST include scenarios for at least two distinct agent roles to verify
+that the harness and prompt construction work across role boundaries. The initial role is
+Architect (via release step testing). Additional roles:
+
+- **Builder:** At least one scenario testing Builder-role agent behavior against a Builder
+  fixture. Fixture tags follow the `main/builder_*` convention in the tag table (Section 2.9).
+- **QA:** At least one scenario testing QA-role agent behavior against a QA fixture. Fixture
+  tags follow the `main/qa_*` convention in the tag table (Section 2.9).
+
+The Builder creates the role-specific fixtures and scenarios. The harness's
+`construct_release_prompt()` function already accepts a role parameter; multi-role coverage
+validates that this parameter produces correct prompt construction for each role.
+
+### 2.12 Negative (Canary) Tests
+
+The test suite MUST include at least one negative scenario per tested release step category.
+A negative test:
+
+1. Checks out a **clean** fixture (one where the release step should find no problems).
+2. Runs the agent against the clean fixture with the same prompt construction as the positive
+   test.
+3. Asserts that **prohibited patterns are absent** -- the agent should NOT report problems,
+   contradictions, stale paths, or action items that do not exist.
+
+Negative tests prevent false positives: if a positive test's assertion pattern also matches on
+a clean fixture, the assertion is too loose (Tier 1 problem). Clean fixture tags already exist
+in the tag table (Section 2.9) with the `/clean` suffix convention.
+
+### 2.13 Multi-Turn Depth
+
+The test suite MUST include at least one scenario with three or more turns. Multi-turn depth
+tests verify decision chains where turn N depends on accumulated context from turns 1 through
+N-1. This catches regressions in session state management and context accumulation that
+single-turn and two-turn tests miss.
+
+A 3+ turn scenario follows this structure:
+
+1. **Turn 1:** Agent presents initial findings or options.
+2. **Turn 2:** User selects an option or asks for detail; agent responds with refined output.
+3. **Turn 3:** User confirms action or requests further refinement; agent's response must
+   reflect accumulated context from both prior turns.
+
+The harness uses `--session-id` and `--resume` as specified in Section 2.3.
 
 ---
 
@@ -159,6 +234,41 @@ that assembles the full prompt from:
     When the harness attempts to run the scenario
     Then the scenario is reported as SKIP (not FAIL)
     And the skip reason includes the missing tag name
+
+#### Scenario: Negative test detects no false positives on clean fixture
+    Given a fixture repo checked out at a clean tag (e.g., `main/release_instruction_audit/clean`)
+    And the system prompt is constructed with the same release step instructions as the positive test
+    When the harness executes a single-turn test via `claude --print`
+    Then the agent's response does NOT contain problem indicators (contradictions, stale paths, errors)
+    And the harness asserts prohibited patterns are absent
+    And writes a PASS result to `tests/<feature>/tests.json`
+
+#### Scenario: Tier 2 assertion verifies specific finding
+    Given a fixture repo checked out at a tag with a known defect
+    And the system prompt includes the relevant release step instructions
+    When the harness executes a single-turn test via `claude --print`
+    Then the harness asserts the agent's response contains the specific defect identifier
+    (e.g., the exact file name, path, or contradiction text -- not just generic keywords)
+    And the assertion would NOT pass on a clean fixture with no defects
+
+#### Scenario: Multi-turn test with three or more turns
+    Given a fixture repo checked out at a tag with a known project state
+    And a session ID generated for the test
+    When the harness executes turn 1 via `claude --print --session-id <id>`
+    And the agent responds with findings or options
+    And the harness executes turn 2 via `claude --print --resume <id>` with a scripted selection
+    And the agent responds with refined output based on the selection
+    And the harness executes turn 3 via `claude --print --resume <id>` with a scripted confirmation
+    Then the agent's third response reflects accumulated context from turns 1 and 2
+    And the harness asserts the final response contains expected outcome content
+
+#### Scenario: State verification after agent action
+    Given a fixture repo checked out at a tag with a known defect
+    And the system prompt includes release step instructions that direct the agent to take action
+    When the harness executes a multi-turn test where the agent states intent to fix the defect
+    Then the harness asserts the agent's output contains specific proposed changes
+    (e.g., a proposed commit message, file diff, or explicit description of the fix)
+    And the proposed changes reference the correct file and defect
 
 ### Manual Scenarios (Human Verification Required)
 
