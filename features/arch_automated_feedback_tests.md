@@ -35,13 +35,13 @@ AFTs operate in three tiers with different triggers, owners, and performance pro
 |------|------|-----|-----------|-------|
 | Unit | During build (Step 3) | Builder (auto) | pytest/jest, in-process | Seconds |
 | AFT Spot | During build (Step 3) | Builder (selective) | AFT:Web for visual features only | Minutes |
-| Regression | User-chosen intervals | QA composes, user executes | All AFTs (Agent, Web, full) | External terminal |
+| Regression | User-chosen intervals | QA (end-to-end) | All AFTs (Agent, Web, full) | External terminal |
 
 **Tier rules:**
 
 - **Unit:** Always runs during Builder Step 3. Covers import-and-call, exit code, and value assertions.
 - **AFT Spot:** Runs during Builder Step 3 ONLY for features with `> AFT Web:` metadata AND a Visual Specification section. All other features skip AFT during build.
-- **Regression:** Runs outside the build cycle at user-chosen intervals. QA composes the regression set; the user executes in an external terminal. Results feed back via `tests.json`.
+- **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `tests.json`. The Builder's only role in regression is consuming results to fix code.
 
 ### Execution Constraints
 

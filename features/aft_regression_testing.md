@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-Provides infrastructure for running full AFT regression suites outside the build cycle. The Builder focuses on fast unit tests during Step 3; full AFT regression (Agent, Web) runs at user-chosen intervals via a watch-mode runner and a QA-owned composition skill. Results feed back into the discovery system and enrich `tests.json` with scenario-level context for batch fixing.
+Provides infrastructure for running full AFT regression suites outside the build cycle. The Builder focuses on fast unit tests during Step 3; full AFT regression (Agent, Web) runs at user-chosen intervals, owned end-to-end by QA. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `tests.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
 
 ---
 
@@ -46,13 +46,24 @@ A shell script at `dev/aft_runner.sh` (Purlin-dev-specific, not consumer-facing)
 
 ### 2.2 QA Regression Skill
 
-A QA-owned slash command at `.claude/commands/pl-regression.md` with the following flow:
+A QA-owned slash command at `.claude/commands/pl-regression.md`. QA owns the regression tier end-to-end: authoring harness scripts, composing regression sets, and triaging results.
+
+**Harness authorship:** QA writes and maintains the harness scripts that test behavioral scenarios (agent interaction flows, web UI regression, API contract checks). Harness scripts are behavioral verification artifacts, not application code. They live alongside other QA verification scripts. The Builder does NOT write regression harnesses.
+
+**Skill flow:**
 
 1. Read feature status via `tools/cdd/status.sh --role qa`.
 2. Identify regression-eligible features: features with AFT metadata (`> AFT Agent:` or `> AFT Web:`) that have STALE, FAIL, or NOT_RUN test results.
 3. Present interactive options to the user: "Found N features eligible for regression. Run all, or select? [all / 1,2,... / skip]".
 4. Compose an external command based on user selection (either a single `--once` invocation or a trigger file for watch mode).
-5. Instruct the user: "Run this in an external terminal: `<command>`. Tell me when it is done."
+5. Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
+   ```
+   Run this in a separate terminal:
+
+       ./dev/aft_runner.sh --once dev/test_agent_interactions.sh --write-results
+
+   Tell me when it finishes.
+   ```
 6. After user confirms completion: read `tests.json` files for each regression-tested feature, create `[BUG]` discovery sidecar entries for any failures, print a summary, and run `tools/cdd/status.sh`.
 
 ### 2.3 Enriched Result Format
@@ -67,11 +78,12 @@ These fields give the Builder enough context to batch-fix failures without re-ru
 
 ### 2.4 Builder Consumption Pattern
 
-The Builder does NOT trigger regression during Step 3. The user tells the Builder "regression results are ready." The Builder then:
+The Builder does NOT trigger or author regression tests. The Builder's only role in the regression tier is consuming results to fix application code. The user tells the Builder "regression results are ready." The Builder then:
 
 1. Reads `tests.json` files for features with updated results.
-2. Uses enriched fields (`scenario_ref`, `expected`, `actual_excerpt`) to diagnose and fix failures in one pass.
+2. Uses enriched fields (`scenario_ref`, `expected`, `actual_excerpt`) to diagnose and fix application code in one pass.
 3. Re-runs only unit tests (Step 3 tier) to confirm fixes, without re-running the full regression suite.
+4. Does NOT modify the harness scripts themselves. If a harness expectation is stale, the Builder flags it for QA to update.
 
 ### 2.5 Staleness Detection
 
