@@ -41,9 +41,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 8ae3c63
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Cosmetic Release Resets A [IN_PROGRESS]
+## Phase 8 -- Cosmetic Release Resets A [COMPLETE]
 **Features:** release_doc_consistency_check.md, release_record_version_notes.md
-**Completion Commit:** --
+**Completion Commit:** df0a24e
 **QA Bugs Addressed:** --
 
 ## Phase 9 -- Release Infrastructure Resets [COMPLETE]
