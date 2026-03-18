@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The Critic computes a per-feature **verification effort** classification that breaks down verification work into Builder-owned AFT categories and QA-owned manual categories. Builder-owned categories are computed for status tracking but do not generate QA action items. QA only sees manual items and cross-feature integration work.
+The Critic computes a per-feature **verification effort** classification that breaks down verification work into Builder-owned auto-verified categories and QA-owned manual categories. Builder-owned categories are computed for status tracking but do not generate QA action items. QA only sees manual items and cross-feature integration work.
 
 ---
 
@@ -20,27 +20,27 @@ The Critic MUST classify each feature's pending verification work into exactly s
 
 | Category | Key | Owner | Definition | Resolution Method |
 |----------|-----|-------|------------|-------------------|
-| AFT:Web | `aft_web` | **Builder** | Visual spec items on features with `> AFT Web:` metadata | Builder runs `/pl-aft-web` during B2 |
-| AFT:TestOnly | `aft_test_only` | **Builder** | Feature has ONLY automated scenarios (no manual scenarios, no visual spec). Tests pass | Builder marks `[Complete]` directly |
-| AFT:Skip | `aft_skip` | **Builder** | Regression scope is `cosmetic` -- skip entirely | Builder marks `[Complete]` with cosmetic scope |
-| Manual:Interactive | `manual_interactive` | **QA** | Manual scenarios on non-AFT features requiring human interaction | `/pl-verify` with human |
-| Manual:Visual | `manual_visual` | **QA** | Visual spec checklist items on non-AFT features | `/pl-verify` with screenshot exchange |
+| Web:Test | `web_test` | **Builder** | Visual spec items on features with `> Web Test:` metadata | Builder runs `/pl-web-test` during B2 |
+| TestOnly | `test_only` | **Builder** | Feature has ONLY automated scenarios (no manual scenarios, no visual spec). Tests pass | Builder marks `[Complete]` directly |
+| Skip | `skip` | **Builder** | Regression scope is `cosmetic` -- skip entirely | Builder marks `[Complete]` with cosmetic scope |
+| Manual:Interactive | `manual_interactive` | **QA** | Manual scenarios on non-web-test features requiring human interaction | `/pl-verify` with human |
+| Manual:Visual | `manual_visual` | **QA** | Visual spec checklist items on non-web-test features | `/pl-verify` with screenshot exchange |
 | Manual:Hardware | `manual_hardware` | **QA** | Steps explicitly requiring physical hardware or non-browser environment | Human-in-the-loop only |
 
-A single feature MAY have BOTH AFT and manual items. Counts reflect individual scenarios and visual checklist items, not whole features. If a manual scenario CAN be fully verified via browser automation, the Architect SHOULD move it to `### Automated Scenarios` with an `(auto-web)` tag -- at that point it is counted by traceability, not effort classification.
+A single feature MAY have BOTH auto-verified and manual items. Counts reflect individual scenarios and visual checklist items, not whole features. If a manual scenario CAN be fully verified via browser automation, the Architect SHOULD move it to `### Automated Scenarios` with an `(auto-web)` tag -- at that point it is counted by traceability, not effort classification.
 
-Builder-owned categories (AFT:Web, AFT:TestOnly, AFT:Skip) are computed but NOT shown as QA action items. QA's `verification_effort` summary only counts QA-owned categories.
+Builder-owned categories (Web:Test, TestOnly, Skip) are computed but NOT shown as QA action items. QA's `verification_effort` summary only counts QA-owned categories.
 
 ### 2.2 Classification Rules
 
-*   **AFT-web detection:** A feature is AFT-eligible for web testing if it contains a `> AFT Web:` metadata line. The Critic already parses this metadata for other purposes.
+*   **Web test detection:** A feature is web-test-eligible if it contains a `> Web Test:` metadata line (or legacy `> AFT Web:` for backward compatibility). The Critic already parses this metadata for other purposes.
 *   **Manual scenario count:** The number of `#### Scenario:` headings under `### Manual Scenarios (Human Verification Required)`.
 *   **Visual checklist item count:** The number of `- [ ]` items under `## Visual Specification`.
-*   **Automated-only detection:** A feature is `aft_test_only` when it has automated scenarios, zero manual scenarios, zero visual spec items, and `tests/<feature>/tests.json` exists with `status: "PASS"`.
-*   **Cosmetic detection:** A feature is `aft_skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard (policy_critic.md Section 2.8) did not escalate it to `full`.
-*   **AFT-web visual reclassification:** On AFT-web features, visual spec items are classified as `aft_web`. Manual scenarios on AFT-web features follow the same classification as non-AFT features (`manual_interactive` or `manual_hardware`).
+*   **Automated-only detection:** A feature is `test_only` when it has automated scenarios, zero manual scenarios, zero visual spec items, and `tests/<feature>/tests.json` exists with `status: "PASS"`.
+*   **Cosmetic detection:** A feature is `skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard (policy_critic.md Section 2.8) did not escalate it to `full`.
+*   **Web test visual reclassification:** On web-test features, visual spec items are classified as `web_test`. Manual scenarios on web-test features follow the same classification as non-web-test features (`manual_interactive` or `manual_hardware`).
 *   **Hardware classification:** Manual scenario steps that reference physical hardware, serial ports, GPIO, USB devices, or non-browser environments are classified as `manual_hardware`. The Critic uses keyword matching on scenario step text: `hardware`, `serial`, `GPIO`, `USB`, `device`, `physical`. If no hardware keywords are found, manual scenarios default to `manual_interactive`.
-*   **Scope filtering:** Classification respects regression scoping. A `targeted:` scope reduces the count to only named scenarios/screens. A `cosmetic` scope sets all counts to zero and `aft_skip` to 1. A `dependency-only` scope counts only scenarios in the Critic's computed `regression_scope.scenarios` list.
+*   **Scope filtering:** Classification respects regression scoping. A `targeted:` scope reduces the count to only named scenarios/screens. A `cosmetic` scope sets all counts to zero and `skip` to 1. A `dependency-only` scope counts only scenarios in the Critic's computed `regression_scope.scenarios` list.
 
 ### 2.3 Output Schema
 
@@ -48,9 +48,9 @@ The Critic MUST include a `verification_effort` block in each feature's `tests/<
 
 ```json
 "verification_effort": {
-    "aft_web": 3,
-    "aft_test_only": 0,
-    "aft_skip": 0,
+    "web_test": 3,
+    "test_only": 0,
+    "skip": 0,
     "manual_interactive": 2,
     "manual_visual": 4,
     "manual_hardware": 0,
@@ -60,15 +60,15 @@ The Critic MUST include a `verification_effort` block in each feature's `tests/<
 }
 ```
 
-*   `total_auto` = `aft_web` + `aft_test_only` + `aft_skip`.
+*   `total_auto` = `web_test` + `test_only` + `skip`.
 *   `total_manual` = `manual_interactive` + `manual_visual` + `manual_hardware`.
-*   `summary` is a human-readable string: `"<total_manual> manual"`. AFT counts are not included in the summary (they are Builder-owned).
+*   `summary` is a human-readable string: `"<total_manual> manual"`. Auto-verified counts are not included in the summary (they are Builder-owned).
 *   When all counts are zero (no QA work pending), `summary` is `"no QA items"`.
 *   When a feature is `[Complete]` via Builder (no `[Verified]`), `summary` is `"builder-verified"`.
 
 ### 2.4 Computation Timing
 
-The `verification_effort` block MUST be computed during the same Critic pass that computes `role_status` and `regression_scope`. It uses data already parsed by `compute_role_status()` -- scenario counts, visual spec detection, `> AFT Web:` metadata, and regression scope. No additional file reads are required.
+The `verification_effort` block MUST be computed during the same Critic pass that computes `role_status` and `regression_scope`. It uses data already parsed by `compute_role_status()` -- scenario counts, visual spec detection, `> Web Test:` metadata, and regression scope. No additional file reads are required.
 
 ### 2.5 Lifecycle Gating
 
@@ -82,7 +82,7 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
 
 | Tag | State Description |
 |-----|-------------------|
-| `main/qa_verification_effort/varied-effort-types` | Project with features having AFT-only, manual, and mixed verification classifications |
+| `main/qa_verification_effort/varied-effort-types` | Project with features having auto-verified-only, manual, and mixed verification classifications |
 
 ---
 
@@ -90,58 +90,58 @@ The `verification_effort` block is only meaningful for features in TESTING lifec
 
 ### Automated Scenarios
 
-#### Scenario: AFT-web feature classifies visual items as aft_web and manual scenarios normally
+#### Scenario: Web-test feature classifies visual items as web_test and manual scenarios normally
 
-    Given a feature has `> AFT Web: http://localhost:9086` metadata
+    Given a feature has `> Web Test: http://localhost:9086` metadata
     And the feature has 3 manual scenarios and 2 visual checklist items
     When the Critic computes verification_effort for this feature
-    Then `aft_web` is 2 (visual items only)
+    Then `web_test` is 2 (visual items only)
     And `manual_interactive` is 3
     And `summary` is "3 manual"
 
-#### Scenario: Non-AFT feature classifies manual scenarios as manual_interactive
+#### Scenario: Non-web-test feature classifies manual scenarios as manual_interactive
 
-    Given a feature does NOT have `> AFT Web:` metadata
+    Given a feature does NOT have `> Web Test:` metadata
     And the feature has 4 manual scenarios
     When the Critic computes verification_effort
     Then `manual_interactive` is 4
-    And `aft_web` is 0
+    And `web_test` is 0
     And `summary` is "4 manual"
 
-#### Scenario: Feature with only automated scenarios classifies as aft_test_only
+#### Scenario: Feature with only automated scenarios classifies as test_only
 
     Given a feature has 5 automated scenarios and zero manual scenarios
     And the feature has no `## Visual Specification` section
     And `tests/<feature>/tests.json` exists with `status: "PASS"`
     When the Critic computes verification_effort
-    Then `aft_test_only` is 1
+    Then `test_only` is 1
     And all other category counts are 0
     And `summary` is "builder-verified"
 
-#### Scenario: AFT-web feature with mixed manual types and visual items
+#### Scenario: Web-test feature with mixed manual types and visual items
 
-    Given an AFT-web feature has 2 interactive manual scenarios and 1 hardware manual scenario
+    Given a web-test feature has 2 interactive manual scenarios and 1 hardware manual scenario
     And the feature has 2 visual checklist items
     When the Critic computes verification_effort
-    Then `aft_web` is 2 (visual items only)
+    Then `web_test` is 2 (visual items only)
     And `manual_interactive` is 2
     And `manual_hardware` is 1
     And `summary` is "3 manual"
 
-#### Scenario: Visual spec items classified by AFT eligibility
+#### Scenario: Visual spec items classified by web-test eligibility
 
-    Given a non-AFT feature has 6 visual checklist items and no manual scenarios
+    Given a non-web-test feature has 6 visual checklist items and no manual scenarios
     When the Critic computes verification_effort
     Then `manual_visual` is 6
-    And `aft_web` is 0
+    And `web_test` is 0
     And `summary` is "6 manual"
 
-#### Scenario: Cosmetic scope feature classified as aft_skip
+#### Scenario: Cosmetic scope feature classified as skip
 
     Given a feature has `regression_scope.change_scope` of "cosmetic"
     And the cosmetic first-pass guard did not escalate
     When the Critic computes verification_effort
-    Then `aft_skip` is 1
+    Then `skip` is 1
     And all other counts are 0
     And `summary` is "builder-verified"
 

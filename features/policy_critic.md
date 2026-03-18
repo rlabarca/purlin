@@ -124,7 +124,7 @@ When a feature has `change_scope: "targeted:..."` and `builder: "DONE"`, the Cri
 *   **Suppression when builder is TODO:** When `builder: "TODO"`, the targeted scope completeness check is suppressed entirely. The Builder already has a HIGH-priority action item to implement the feature, which inherently covers all scenarios in the spec. Generating an additional Architect warning for unscoped scenarios is redundant noise.
 
 ### 2.11 Fixture Tag Validation
-When a feature spec declares fixture tags (via a `### 2.x AFT Web Fixture Tags` or `### 2.x Integration Test Fixture Tags` section, or via `> Test Fixtures:` metadata with Given steps referencing tags), the Critic MUST validate that the declared tags exist in the fixture repo. Missing tags produce a MEDIUM-priority Builder action item.
+When a feature spec declares fixture tags (via a `### 2.x Web Test Fixture Tags` or `### 2.x Integration Test Fixture Tags` section, or via `> Test Fixtures:` metadata with Given steps referencing tags), the Critic MUST validate that the declared tags exist in the fixture repo. Missing tags produce a MEDIUM-priority Builder action item.
 
 *   **Purpose:** Prevents features from being marked complete when their declared test infrastructure does not exist. Without this check, specs can declare fixture tags that remain aspirational indefinitely.
 *   **Mechanism:** The Critic parses fixture tag sections from feature specs and cross-references against `fixture list` output. Tags that are declared but missing are flagged.
@@ -174,22 +174,24 @@ The following keys in `.purlin/config.json` govern Critic behavior:
 | `critic_gate_blocking` | boolean | `false` | **Deprecated (no-op).** Retained for backward compatibility. Status transitions are not gated by critic results. |
 
 ### 2.14 Verification Effort Classification
-The Critic MUST compute a `verification_effort` block for each feature, classifying pending verification work into Builder-owned AFT categories and QA-owned manual categories. This block is included in the per-feature `critic.json` output alongside `role_status`.
+The Critic MUST compute a `verification_effort` block for each feature, classifying pending verification work into Builder-owned auto-verified categories and QA-owned manual categories. This block is included in the per-feature `critic.json` output alongside `role_status`.
 
 **Taxonomy:**
 
 | Category | Key | Owner | Condition |
 |----------|-----|-------|-----------|
-| AFT:Web | `aft_web` | **Builder** | Visual spec items on `> AFT Web:` features |
-| AFT:TestOnly | `aft_test_only` | **Builder** | Feature has only automated scenarios, tests pass, no manual/visual items |
-| AFT:Skip | `aft_skip` | **Builder** | Regression scope is `cosmetic` (not escalated) |
+| Web:Test | `web_test` | **Builder** | Visual spec items on `> Web Test:` features |
+| TestOnly | `test_only` | **Builder** | Feature has only automated scenarios, tests pass, no manual/visual items |
+| Skip | `skip` | **Builder** | Regression scope is `cosmetic` (not escalated) |
 | Manual:Interactive | `manual_interactive` | **QA** | Manual scenarios on non-web features |
 | Manual:Visual | `manual_visual` | **QA** | Visual spec items on non-web features |
 | Manual:Hardware | `manual_hardware` | **QA** | Scenarios with hardware/device keywords on non-web features |
 
-AFT categories are Builder-owned. They are computed for status tracking but do NOT generate QA action items. AFT items route to Builder action items. When the Builder marks `[Complete]` with zero manual scenarios, `qa: "N/A"`.
+Auto-verified categories are Builder-owned. They are computed for status tracking but do NOT generate QA action items. Auto-verified items route to Builder action items. When the Builder marks `[Complete]` with zero manual scenarios, `qa: "N/A"`.
 
 Derived fields: `total_auto`, `total_manual`, `summary` (human-readable string). QA's `verification_effort` summary only counts QA-owned categories. Summary format: `"N manual"` (not `"M auto, N manual"`). When a feature is `[Complete]` via Builder (no `[Verified]`), summary = `"builder-verified"`.
+
+**Backward compatibility:** The Critic parser MUST accept both `> AFT Web:` and `> Web Test:` metadata for web test detection during the transition period.
 
 The block is only meaningful for TESTING features (qa: TODO). Non-TESTING features report zeroed counts with `summary` of `"no QA items"` or `"awaiting builder"` as appropriate.
 
