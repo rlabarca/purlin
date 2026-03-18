@@ -1,0 +1,81 @@
+# Policy: Test Quality Standards
+
+> Label: "Policy: Test Quality Standards"
+> Category: "Coordination & Lifecycle"
+> Prerequisite: features/policy_critic.md
+
+## 1. Purpose
+
+Codifies test quality standards to prevent shallow tests that pass structural validation (tests.json schema, keyword traceability) but do not verify behavioral outcomes. The Critic validates that tests exist and trace to scenarios; this policy defines what those tests must actually do to be meaningful.
+
+## 2. Test Quality Invariants
+
+### 2.1 The Deletion Invariant
+
+If the implementation under test were deleted, at least one test per automated scenario MUST fail. This is the minimum bar for test quality. A test that passes without the implementation is not a test -- it is a checkbox.
+
+### 2.2 Anti-Pattern Taxonomy
+
+Five named anti-patterns the Builder MUST check against during the self-audit. Each includes a concrete BAD/GOOD example.
+
+**AP-1: Prose Inspection**
+Test reads a documentation, markdown, or instruction file and asserts string presence instead of importing and calling the implementation code.
+
+- BAD: `content = open('features/my_feature.md').read(); assert 'retry logic' in content`
+- GOOD: `result = retry_operation(failing_func, max_retries=3); assertEqual(result.attempts, 3)`
+
+**AP-2: Structural Presence**
+Test checks that a key, section, or element exists without verifying its value or correctness.
+
+- BAD: `assertIn('status', result)`
+- GOOD: `assertEqual(result['status'], 'PASS')`
+
+**AP-3: Mock-Dominated**
+Test mocks the implementation under test then asserts the mock was called, verifying wiring rather than behavior. Mocks of external dependencies (network, filesystem, clock) are acceptable; mocks of the code path being tested are not.
+
+- BAD: `mock_process = Mock(return_value={'ok': True}); result = run(mock_process); mock_process.assert_called_once()`
+- GOOD: `result = process_real_input(sample_data); assertEqual(result['status'], 'ok')`
+
+**AP-4: Tautological Assertion**
+Asserts something that is always true regardless of whether the implementation is correct. Type checks on functions with typed signatures, None checks on required return values, and isinstance checks when the constructor guarantees the type.
+
+- BAD: `assertIsInstance(result, dict)` (when the function signature guarantees dict)
+- GOOD: `assertEqual(result['computed_value'], expected_value)`
+
+**AP-5: Representative Input Neglect**
+Tests use toy data (empty strings, single-element lists, trivially small inputs) that do not resemble real inputs, missing failure modes that occur with actual data shapes. A test that exercises the mechanism with synthetic data while the real input (CLI output, API response, complex config) goes untested is verifying plumbing, not behavior.
+
+- BAD: `result = parse_config('{}'); assertIsNotNone(result)`
+- GOOD: `result = parse_config(SAMPLE_REAL_CONFIG); assertEqual(result['database']['host'], 'localhost'); assertEqual(len(result['features']), 5)`
+
+### 2.3 Test Classification by Feature Type
+
+What constitutes behavioral testing depends on the feature category:
+
+| Feature Type | Behavioral Test Approach |
+|---|---|
+| Python tool features | Import and call the implementation functions. Assert return values, side effects, and error conditions against expected outcomes. |
+| Claude skill/command features | Test the infrastructure the skill depends on (parsers, validators, state management), not string presence in the command markdown file. |
+| Shell script features | Execute the script with controlled arguments. Assert exit codes, stdout content, and filesystem side effects. |
+| Web UI features | Interact with rendered DOM or API endpoints. Assert response content, status codes, and state changes. |
+
+### 2.4 Minimum Assertion Depth
+
+Each test function MUST include at least one value-verifying assertion -- an assertion that checks a specific expected value, not merely presence or type.
+
+Value-verifying assertions (count toward minimum):
+- `assertEqual(result, expected)`
+- `assert result['key'] == 'specific_value'`
+- `assertEqual(exit_code, 0)`
+
+Presence-only assertions (do NOT count alone):
+- `assertIn('key', result)` without verifying `result['key']`
+- `assertTrue(os.path.exists(path))` without verifying file contents
+- `assertIsNotNone(result)` without verifying result value
+
+A test MAY use presence-only assertions alongside value-verifying assertions. The mandate is that presence-only assertions alone are insufficient.
+
+## Scenarios
+
+No automated or manual scenarios. This is a policy anchor node -- its "scenarios" are
+process invariants enforced by instruction files and tooling.

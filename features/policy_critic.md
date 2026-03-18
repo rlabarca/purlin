@@ -227,6 +227,15 @@ The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Comp
 
 **Rationale:** The workflow (HOW_WE_WORK_BASE Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by the Builder. When a Builder commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
 
+### 2.17 Test Quality Audit Trail
+
+When a feature has automated scenarios AND `builder: "DONE"` AND the feature's companion file (`features/<name>.impl.md`) does not contain a `### Test Quality Audit` section, the Critic MUST generate a **LOW**-priority Builder action item with category `missing_test_quality_audit`: `"Missing test quality audit for <name> -- run self-audit per policy_test_quality.md"`.
+
+*   **Purpose:** Creates visibility for the test quality self-audit process defined in `features/policy_test_quality.md` without blocking releases. The audit trail ensures Builder compliance is trackable across sessions.
+*   **Gate impact:** Advisory only. This check does NOT affect the Implementation Gate pass/fail status. It generates a LOW-priority nudge in the Builder's action items section of the Critic report.
+*   **Escalation path:** If the advisory nudge proves insufficient after several Builder sessions (quality remains shallow), the priority MAY be elevated to MEDIUM or HIGH by updating this section. No tooling changes required -- the Critic's priority routing handles the escalation automatically.
+*   **Exemptions:** Features with zero automated scenarios are exempt (no tests to audit). Features where `builder: "TODO"` are exempt (Builder has not completed implementation yet).
+
 ## 4. Output Contract
 The Critic tool MUST produce:
 
