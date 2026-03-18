@@ -6,15 +6,15 @@
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
-      "test": "test_detects_contradiction (tools.release.test_release_audit.TestInstructionAuditContradiction.test_detects_contradiction)",
+      "test": "test_instruction_audit (__main__.TestAllScriptsValidJSON.test_instruction_audit)",
       "status": "PASS"
     },
     {
-      "test": "test_detects_stale_path (tools.release.test_release_audit.TestInstructionAuditStalePath.test_detects_stale_path)",
+      "test": "test_detects_contradiction (__main__.TestInstructionAuditContradiction.test_detects_contradiction)",
       "status": "PASS"
     },
     {
-      "test": "test_instruction_audit (tools.release.test_release_audit.TestAllScriptsValidJSON.test_instruction_audit)",
+      "test": "test_detects_stale_path (__main__.TestInstructionAuditStalePath.test_detects_stale_path)",
       "status": "PASS"
     }
   ]

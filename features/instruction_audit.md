@@ -6,6 +6,8 @@
 > Prerequisite: features/release_checklist_core.md
 > AFT Agent: architect
 
+[Complete]
+
 ## 1. Overview
 
 This feature defines the `purlin.instruction_audit` release step: a pre-push audit that verifies the `.purlin/` override files do not introduce contradictions or drift against the base instruction layer. It is one of the global release steps defined in `tools/release/global_steps.json` and applies to all projects using the Purlin framework — both the framework repository itself and consumer projects.
