@@ -51,9 +51,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- Regression Testing [IN_PROGRESS]
+## Phase 10 -- Regression Testing [COMPLETE]
 **Features:** regression_testing.md
-**Completion Commit:** --
+**Completion Commit:** e318b1e
 **QA Bugs Addressed:** --
 
 ## Phase 11 -- pl-update-purlin [COMPLETE]
