@@ -205,12 +205,17 @@ Additionally, even when a valid TESTING-phase commit exists, the most recent pos
 
 A lifecycle reset to TODO occurs when the feature spec is modified after the last `[Complete]` or `[Testing]` status commit. The most recent reset point is the timestamp of the commit that last modified the feature spec file and caused the lifecycle to return to TODO. A TESTING-phase commit that predates this reset is stale and MUST NOT satisfy the invariant.
 
+**Abbreviated Format Support:** The Critic MUST recognize both canonical and abbreviated status commit formats when searching for TESTING-phase and `[Complete]` commits (consistent with `cdd_status_monitor.md` Section 2.1 Status Commit Discovery Patterns):
+*   **Canonical:** `[Ready for \w+ features/<name>.md]`, `[Complete features/<name>.md]` — feature identified from the embedded path.
+*   **Abbreviated:** `[Ready for Verification]`, `[Ready for Testing]`, `[Complete]` without an inline file path — feature resolved from the conventional commit scope (`<type>(<scope>):` → `features/<scope>.md`). Only applies when the resolved file exists on disk.
+*   **`[Verified]` detection:** A `[Complete]` commit (canonical or abbreviated) contains `[Verified]` when the tag appears anywhere in the commit message. The detection is format-independent.
+
 **Detection:** When computing `qa_status` and `lifecycle_state == 'complete'`, the Critic MUST:
 1.  Parse the feature's scenarios and count manual scenarios.
 2.  If manual scenarios > 0, determine the most recent lifecycle reset point: the timestamp of the latest spec-modifying commit that post-dates the previous `[Complete]` or `[Testing]` status commit. If no status commit exists, the reset point is epoch zero (all TESTING-phase commits qualify).
-3.  Search git history for a TESTING-phase commit matching the pattern `[Ready for \w+ features/<name>.md]` whose timestamp is **at or after** the reset point determined in step 2.
+3.  Search git history for a TESTING-phase commit matching either the canonical pattern `[Ready for \w+ features/<name>.md]` or the abbreviated pattern (`[Ready for Verification]` / `[Ready for Testing]` with conventional commit scope resolving to `features/<name>.md`) whose timestamp is **at or after** the reset point determined in step 2.
 4.  If no such post-reset TESTING-phase commit exists, set `qa_status = 'TODO'`.
-5.  If a post-reset TESTING-phase commit IS found, additionally check that the most recent post-reset `[Complete]` commit for this feature contains the `[Verified]` tag.
+5.  If a post-reset TESTING-phase commit IS found, additionally check that the most recent post-reset `[Complete]` commit for this feature (canonical or abbreviated) contains the `[Verified]` tag.
 6.  If the `[Complete]` commit lacks `[Verified]`, set `qa_status = 'TODO'`.
 
 **Action Item Generation:** When this invariant triggers, the Critic MUST generate a HIGH-priority QA action item with category `bypassed_qa_verification`. The message depends on the sub-case:
@@ -219,7 +224,7 @@ A lifecycle reset to TODO occurs when the feature spec is modified after the las
 
 The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Complete]` commit message for a feature indicates QA verification occurred. The tag has no timestamp semantics -- only presence/absence matters.
 
-**`[Verified]` Tag Contract:** The `[Verified]` tag is a bracketed trailer appended to the `[Complete]` status commit message, produced exclusively by `/pl-complete` (QA-only). Format: `status(<scope>): [Complete features/<name>.md] [Verified]`. The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- Builder completions apply only to features with zero manual scenarios.
+**`[Verified]` Tag Contract:** The `[Verified]` tag is a bracketed trailer appended to the `[Complete]` status commit message, produced exclusively by `/pl-complete` (QA-only). Canonical format: `status(<scope>): [Complete features/<name>.md] [Verified]`. Abbreviated format: `status(<scope>): [Complete] [Verified]`. Both formats are valid; the Critic detects `[Verified]` by presence in the commit message, not by position relative to the file path. The Builder MUST NOT include `[Verified]` in `[Complete]` commits -- Builder completions apply only to features with zero manual scenarios.
 
 **Verification Effort Consistency:** The `verification_effort` computation (Section 2.14) MUST also recognize this case. When a COMPLETE feature has `qa_status = 'TODO'` due to bypassed verification, `verification_effort` MUST compute the full classification (interactive/visual/hardware counts) rather than returning zeroed values. The lifecycle gating in `verification_effort` MUST treat "COMPLETE with bypassed QA" equivalently to TESTING for classification purposes.
 

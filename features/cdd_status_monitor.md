@@ -21,6 +21,11 @@ The CDD Dashboard is the web interface for human review of the Continuous Design
 ### 2.1 Feature Scanning
 *   **Path Awareness:** The monitor must scan the project's `features/` directory for all feature files.
 *   **Status Detection:** Status is derived from a combination of file modification timestamps (for [TODO] detection) and source control history/tags.
+*   **Status Commit Discovery Patterns:** The system recognizes two commit message formats for lifecycle status detection:
+    *   **Canonical format** (file path inside brackets): `[Complete features/<name>.md]`, `[Ready for <word> features/<name>.md]`. The feature is identified directly from the embedded file path.
+    *   **Abbreviated format** (no file path, scope fallback): `[Complete]`, `[Ready for Verification]`, `[Ready for Testing]`. The feature is resolved from the conventional commit scope (`<type>(<scope>):` prefix → `features/<scope>.md`). Only applies when the resolved file exists on disk. When no conventional commit scope is present, or the resolved path does not exist, the commit is silently ignored.
+    *   **Precedence:** Canonical format always takes precedence. If a commit message contains both a canonical `[Complete features/<name>.md]` and a scope prefix, the canonical path is used. Abbreviated format is a fallback only.
+    *   **Trailer parity:** Abbreviated-format commits with `[Scope: ...]` or `[Verified]` trailers MUST be processed identically to canonical-format commits. The trailer semantics are format-independent.
 *   **Sidecar File Exemption:** Edits to companion files (`<name>.impl.md`) and discovery sidecar files (`<name>.discoveries.md`) do NOT trigger lifecycle resets. Only edits to the feature spec file (`<name>.md`) itself trigger a reset to TODO. Because discoveries are stored in sidecar files (not in the feature file), QA housekeeping never causes false lifecycle resets.
 
 ### 2.2 UI & Layout
@@ -210,7 +215,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
 *   **No Agent Use:** This button is for human use only. Agents MUST continue to use `tools/critic/run.sh` via CLI.
 
 ### 2.8 Lifecycle Integration Test
-An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/critic/run.sh` correctly report feature lifecycle state and role status columns through the complete feature lifecycle (TODO -> TESTING -> COMPLETE -> spec edit -> TODO reset). This test eliminates the need for manual QA verification of lifecycle and role status logic.
+An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/critic/run.sh` correctly report feature lifecycle state and role status columns through the complete feature lifecycle (TODO -> TESTING -> COMPLETE -> spec edit -> TODO reset), including both canonical and abbreviated status commit formats. This test eliminates the need for manual QA verification of lifecycle and role status logic.
 
 *   **Test Script:** `tools/cdd/test_lifecycle.sh` (Bash). Executable (`chmod +x`).
 *   **Dependency:** Requires `tools/cdd/status.sh` (Section 2.6) to be implemented first. The test invokes `status.sh` at each lifecycle stage.
@@ -220,6 +225,7 @@ An automated end-to-end test MUST verify that `tools/cdd/status.sh` and `tools/c
 *   **Verification Method:** At each lifecycle stage, the test runs `tools/cdd/status.sh` and parses the JSON output to assert expected role status values for the temporary feature. (The Critic runs automatically as part of `status.sh`, regenerating `critic.json` files before the status JSON is produced.) Assertions use `python3 -c` or `jq` to extract and compare JSON fields.
 *   **Cleanup Guarantee:** The test MUST use `trap` to ensure cleanup runs on exit (success, failure, or signal). Cleanup sequence: (1) `git reset --hard <pre-test-sha>` to revert all temporary commits, (2) remove any untracked temporary files (`features/_test_lifecycle_temp.md`, `tests/_test_lifecycle_temp/`), (3) run `tools/cdd/status.sh` to restore clean critic.json state. After cleanup, `git log` and `git status` MUST show no trace of the test.
 *   **Test Results:** On success, output `[Scenario] <title>` lines for each passing stage (Bash test file convention) and write `tests/cdd_status_monitor/tests.json` with `{"status": "PASS"}`. On any assertion failure, report the failing stage and expected vs actual values, then proceed to cleanup.
+*   **Abbreviated Format Stage:** After the canonical lifecycle stages pass, the test MUST exercise the abbreviated status commit format. This stage resets the temporary feature to TODO (via a spec edit), then commits a `[Complete]` status using the abbreviated format (`feat(<temp>): [Complete] all scenarios passing`) and verifies that `tools/cdd/status.sh` reports the feature as COMPLETE with `builder: DONE`. An additional sub-stage MUST verify that an abbreviated commit with a non-existent scope (e.g., `feat(nonexistent_feature): [Complete] something`) is silently ignored and does not create a feature entry.
 
 ### 2.9 Branding & Theme
 
@@ -521,6 +527,28 @@ These scenarios are validated by the Builder's automated test suite.
     And tools/cdd/status.sh is run
     Then the feature lifecycle is reset to TODO
     And role_status.builder is TODO
+
+#### Scenario: Lifecycle Integration -- Abbreviated Status Commit Format
+    Given a temporary feature file is created and committed
+    And tests are created and pass
+    And a commit "feat(<temp>): [Complete] all scenarios passing" is made
+    When tools/cdd/status.sh is run
+    Then the feature lifecycle is COMPLETE
+    And role_status.builder is DONE
+
+#### Scenario: Abbreviated Status Commit With Non-Existent Feature Scope
+    Given a commit "feat(nonexistent_feature): [Complete] something" exists in git log
+    And no file exists at features/nonexistent_feature.md
+    When tools/cdd/status.sh is run
+    Then the commit is silently ignored
+    And no feature entry is created for nonexistent_feature
+
+#### Scenario: Canonical Status Commit Format Takes Precedence Over Abbreviated
+    Given a temporary feature file is created and committed
+    And a canonical status commit "[Complete features/<temp>.md]" is made
+    And a later abbreviated commit "feat(<temp>): [Complete] updated" modifies the feature file
+    When tools/cdd/status.sh is run
+    Then the most recent matching commit determines lifecycle state
 
 #### Scenario: Lifecycle Integration -- Cleanup
     Given the lifecycle integration test has run (pass or fail)
