@@ -3,5 +3,5 @@
   "passed": 22,
   "failed": 0,
   "total": 22,
-  "test_file": "dev/test_aft_agent_harness.py"
+  "test_file": "tests/aft_agent/test_aft_agent_harness.py"
 }
