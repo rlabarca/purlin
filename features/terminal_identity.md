@@ -38,7 +38,7 @@ A sourceable bash library (not directly executable) providing two tiers of funct
 
 ### 2.2 Identity on Agent Start
 
-- All four agent roles (Architect, Builder, QA, PM) set both title and badge to their display name on startup.
+- All four root launchers (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) and all generated launchers (via `init.sh`) set both title and badge to their display name on startup.
 - The helper script is sourced from `$CORE_DIR/tools/terminal/identity.sh`.
 
 ### 2.3 Identity Cleanup
