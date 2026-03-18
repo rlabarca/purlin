@@ -1930,6 +1930,54 @@ EOF
 commit_and_tag "main/release_instruction_audit/base-conflict" \
     "Override rule directly contradicts base instruction"
 
+# release_instruction_audit/base-error
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+# Include global_steps.json for release step testing
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+# Base layer has a genuine error: references a non-existent tool path
+# and uses a deprecated lifecycle label. The override is correct and
+# cannot fix the base error without modifying the base itself.
+cat > instructions/BUILDER_BASE.md <<'EOF'
+# Builder Base Instructions
+
+## 1. Executive Summary
+Your mandate is to translate specifications into high-quality code.
+
+## 2. Build Protocol
+Run `tools/legacy_build_engine/compile.sh` to build the project.
+This path is hardcoded in the base layer.
+
+## 3. Feature Status Lifecycle
+Features move through DRAFT -> REVIEW -> SHIPPED.
+The SHIPPED status is used by the base framework.
+
+## 4. Verification
+After building, run `tools/legacy_build_engine/verify.sh` for verification.
+EOF
+
+# Override is clean — no contradictions, just normal overrides
+cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
+# Builder Overrides
+
+## Build Environment
+Use Node.js 20+ for all build operations.
+EOF
+
+commit_and_tag "main/release_instruction_audit/base-error" \
+    "Base layer references non-existent tools/legacy_build_engine/ — cannot fix via override"
+
 # =====================================================================
 echo ""
 echo "--- release_checklist_core ---"
@@ -2129,6 +2177,43 @@ EOF
 commit_and_tag "main/release_doc_consistency_check/new-section-needed" \
     "Gap requires new ## heading for monitoring/observability"
 
+# release_doc_consistency_check/clean
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
+create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_dashboard" "DONE" "DONE" "CLEAN"
+create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_dashboard"
+create_tests_json_pass "feat_api"
+
+# README covers all features
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Dashboard: Interactive dashboard for viewing project status.
+- API Gateway: Backend API routing and gateway services.
+
+## Getting Started
+Run `npm start` to launch the application.
+EOF
+
+commit_and_tag "main/release_doc_consistency_check/clean" \
+    "README fully covers all features"
+
 # =====================================================================
 echo ""
 echo "--- release_record_version_notes ---"
@@ -2216,6 +2301,33 @@ EOF
 
 commit_and_tag "main/release_record_version_notes/no-releases-heading" \
     "README lacks ## Releases section"
+
+# release_record_version_notes/clean
+reset_workdir
+create_base_project
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_core" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_core"
+
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Core System: Foundation project setup.
+
+## Releases
+### v1.0.0 — 2026-01-15
+- Initial release with Core System.
+EOF
+
+commit_and_tag "main/release_record_version_notes/clean" \
+    "Clean repo with valid tags and Releases heading"
 
 # =====================================================================
 echo ""
@@ -2326,6 +2438,46 @@ PYEOF
 
 commit_and_tag "main/release_submodule_safety_audit/warning-only" \
     "Tool with json.load WARNING but no CRITICAL violations"
+
+# release_submodule_safety_audit/clean (alias for clean-submodule with spec-canonical tag name)
+reset_workdir
+create_base_project
+
+mkdir -p tools/safe_tool
+cat > tools/safe_tool/tool.py <<'PYEOF'
+import os, json
+
+def get_project_root():
+    root = os.environ.get("PURLIN_PROJECT_ROOT")
+    if root:
+        return root
+    d = os.path.dirname(os.path.abspath(__file__))
+    candidate = None
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, "features")):
+            candidate = d
+        d = os.path.dirname(d)
+    return candidate
+
+def load_config():
+    root = get_project_root()
+    config_path = os.path.join(root, ".purlin", "config.json")
+    try:
+        with open(config_path) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return {"tools_root": "tools"}
+
+def write_output(data):
+    root = get_project_root()
+    out = os.path.join(root, ".purlin", "runtime", "output.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w") as f:
+        json.dump(data, f)
+PYEOF
+
+commit_and_tag "main/release_submodule_safety_audit/clean" \
+    "No submodule safety violations"
 
 # =====================================================================
 echo ""
@@ -2748,6 +2900,66 @@ GIT_AUTHOR_DATE="2026-01-15T13:00:00Z" GIT_COMMITTER_DATE="2026-01-15T13:00:00Z"
 
 commit_and_tag "main/git_timestamp_resilience/normal-ordering" \
     "Two status commits with 1-hour gap between timestamps"
+
+# =====================================================================
+echo ""
+echo "--- aft_agent: builder role fixtures ---"
+
+# builder_startup/todo-features
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "TODO"
+create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_auth" "DONE" "TODO" "N/A"
+create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_api"
+
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Authentication: User login and session management.
+- API Gateway: Backend API routing.
+EOF
+
+commit_and_tag "main/builder_startup/todo-features" \
+    "Project with TODO feature for Builder role testing"
+
+# =====================================================================
+echo ""
+echo "--- aft_agent: qa role fixtures ---"
+
+# qa_verify/pending-verification
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+create_feature_with_manual "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "TESTING" \
+    "Visual rendering check" "Responsive layout verification"
+create_critic_json "feat_dashboard" "DONE" "DONE" "VERIFY"
+create_tests_json_pass "feat_dashboard"
+
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Dashboard: Interactive project status dashboard.
+EOF
+
+commit_and_tag "main/qa_verify/pending-verification" \
+    "Project with TESTING feature for QA role testing"
 
 # =====================================================================
 # PUSH ALL TAGS TO BARE REPO

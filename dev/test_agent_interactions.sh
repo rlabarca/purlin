@@ -335,6 +335,14 @@ scenario_instruction_audit_halt() {
             "Expected agent to identify contradiction in overrides"
     fi
 
+    # Tier 2: Assert the specific file containing the contradiction
+    if assert_contains "$output" "BUILDER_OVERRIDES"; then
+        record_result "PASS" "$name: identifies specific override file"
+    else
+        record_result "FAIL" "$name: identifies specific override file" \
+            "Expected agent to name BUILDER_OVERRIDES.md as the file with the contradiction"
+    fi
+
     rm -f "$prompt_file"
     cleanup_fixture "$fixture_dir"
 }
@@ -362,6 +370,14 @@ scenario_doc_coverage_gaps() {
     else
         record_result "FAIL" "$name: coverage gaps identified" \
             "Expected agent to identify missing feature coverage in README"
+    fi
+
+    # Tier 2: Assert the specific missing features are named
+    if assert_contains "$output" "API.*Gateway\|Monitoring"; then
+        record_result "PASS" "$name: names specific missing features"
+    else
+        record_result "FAIL" "$name: names specific missing features" \
+            "Expected agent to name API Gateway or Monitoring as uncovered features"
     fi
 
     rm -f "$prompt_file"
@@ -805,6 +821,256 @@ scenario_submodule_safety_user_confirms() {
     cleanup_fixture "$fixture_dir"
 }
 
+# --- New Scenarios: Negative, Tier 2, Multi-Role, 3+ Turn, State Verification ---
+
+scenario_instruction_audit_clean() {
+    local name="instruction-audit-clean"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Instruction Audit Clean (Negative/Canary) ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/release_instruction_audit/clean") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_instruction_audit/clean"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.instruction_audit")
+    output=$(run_claude_test "$prompt_file" \
+        "Execute the instruction audit release step. Report any contradictions found." \
+        "$fixture_dir")
+
+    # Negative test: agent should NOT report finding contradictions or stale paths
+    if assert_not_contains "$output" "found.*contradict\|detected.*contradict\|found.*stale\|halt.*release\|FAIL\|violation.*found\|error.*detected"; then
+        record_result "PASS" "$name: no false positives on clean fixture"
+    else
+        record_result "FAIL" "$name: no false positives on clean fixture" \
+            "Agent reported problems on a clean fixture — assertion too loose"
+    fi
+
+    # Positive check: agent should indicate clean state
+    if assert_contains "$output" "clean\|no.*contradict\|no.*issue\|consistent\|no.*problem\|no.*finding\|no.*stale\|pass\|no.*violation"; then
+        record_result "PASS" "$name: confirms clean state"
+    else
+        record_result "FAIL" "$name: confirms clean state" \
+            "Expected agent to confirm overrides are consistent with base"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_tier2_specific_finding() {
+    local name="tier2-specific-finding"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Tier 2 Assertion — Specific Finding ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/release_instruction_audit/base-conflict") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_instruction_audit/base-conflict"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.instruction_audit")
+    output=$(run_claude_test "$prompt_file" \
+        "Execute the instruction audit release step. Check all override files against their base layer counterparts." \
+        "$fixture_dir")
+
+    # Tier 2: Assert the specific override file containing the defect
+    if assert_contains "$output" "BUILDER_OVERRIDES"; then
+        record_result "PASS" "$name: identifies defect file (BUILDER_OVERRIDES)"
+    else
+        record_result "FAIL" "$name: identifies defect file (BUILDER_OVERRIDES)" \
+            "Expected agent to name BUILDER_OVERRIDES.md — not just generic 'contradiction'"
+    fi
+
+    # Tier 2: Assert the specific contradictory rule content
+    if assert_contains "$output" "status.*tag\|MUST NOT.*status\|MUST NOT.*commit"; then
+        record_result "PASS" "$name: identifies specific contradiction content"
+    else
+        record_result "FAIL" "$name: identifies specific contradiction content" \
+            "Expected agent to reference the specific 'status tag commits' contradiction"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_doc_three_turn_refinement() {
+    local name="doc-three-turn-refinement"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Doc Consistency — Three-Turn Refinement ---"
+    local fixture_dir prompt_file output1 output2 output3
+
+    fixture_dir=$(checkout_fixture_safe "main/release_doc_consistency_check/new-section-needed") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_doc_consistency_check/new-section-needed"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.doc_consistency_check")
+    reset_session
+
+    # Turn 1: Agent presents gap table
+    output1=$(run_claude_turn "$prompt_file" \
+        "Execute the documentation consistency check release step." \
+        "$fixture_dir")
+
+    if assert_contains "$output1" "gap\|missing\|table\|Monitoring\|Observability"; then
+        record_result "PASS" "$name: turn 1 presents gap analysis"
+    else
+        record_result "FAIL" "$name: turn 1 presents gap analysis" \
+            "Expected agent to present coverage gaps including monitoring"
+    fi
+
+    # Turn 2: User selects monitoring gap to add
+    output2=$(run_claude_turn "$prompt_file" \
+        "Yes, add the monitoring section. Put it under the existing Features heading." \
+        "$fixture_dir")
+
+    if assert_contains "$output2" "monitor\|add\|section\|feature"; then
+        record_result "PASS" "$name: turn 2 acknowledges selection"
+    else
+        record_result "FAIL" "$name: turn 2 acknowledges selection" \
+            "Expected agent to acknowledge adding monitoring section"
+    fi
+
+    # Turn 3: User refines with additional detail
+    output3=$(run_claude_turn "$prompt_file" \
+        "Also mention that monitoring includes alerting and metrics collection." \
+        "$fixture_dir")
+
+    # Tier 2: Turn 3 must reflect accumulated context — monitoring AND alerting/metrics
+    if assert_contains "$output3" "alert\|metric"; then
+        record_result "PASS" "$name: turn 3 reflects accumulated context"
+    else
+        record_result "FAIL" "$name: turn 3 reflects accumulated context" \
+            "Expected turn 3 to incorporate alerting/metrics from accumulated context"
+    fi
+
+    reset_session
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_state_verification_fix_intent() {
+    local name="state-verification-fix-intent"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: State Verification — Agent Fix Intent ---"
+    local fixture_dir prompt_file output1 output2
+
+    fixture_dir=$(checkout_fixture_safe "main/release_instruction_audit/base-conflict") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_instruction_audit/base-conflict"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.instruction_audit")
+    reset_session
+
+    # Turn 1: Agent identifies contradiction
+    output1=$(run_claude_turn "$prompt_file" \
+        "Execute the instruction audit release step. Check all override files." \
+        "$fixture_dir")
+
+    if assert_contains "$output1" "contradict\|conflict\|inconsisten"; then
+        record_result "PASS" "$name: turn 1 detects contradiction"
+    else
+        record_result "FAIL" "$name: turn 1 detects contradiction" \
+            "Expected agent to detect contradiction in overrides"
+    fi
+
+    # Turn 2: Ask agent to fix it
+    output2=$(run_claude_turn "$prompt_file" \
+        "Fix the contradiction in the override file and show me what you would commit." \
+        "$fixture_dir")
+
+    # Tier 3 (stated intent): Agent must reference the specific file to modify
+    if assert_contains "$output2" "BUILDER_OVERRIDES"; then
+        record_result "PASS" "$name: proposed fix references correct file"
+    else
+        record_result "FAIL" "$name: proposed fix references correct file" \
+            "Expected agent to propose changes to BUILDER_OVERRIDES.md"
+    fi
+
+    # Tier 3 (stated intent): Agent must include a commit message or diff description
+    if assert_contains "$output2" "fix.*override\|commit\|remov\|delet\|revis"; then
+        record_result "PASS" "$name: proposed fix includes change description"
+    else
+        record_result "FAIL" "$name: proposed fix includes change description" \
+            "Expected agent to describe the proposed fix (commit message or diff)"
+    fi
+
+    reset_session
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_builder_role_startup() {
+    local name="builder-role-startup"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Builder Role — Identifies TODO Features ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/builder_startup/todo-features") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/builder_startup/todo-features"
+        return 0
+    }
+
+    prompt_file=$(construct_prompt "$fixture_dir" "BUILDER")
+    output=$(run_claude_test "$prompt_file" \
+        "You are the Builder agent. Look at the features/ directory and identify any features that need implementation work. List features in TODO state." \
+        "$fixture_dir")
+
+    # Tier 2: Agent should identify the specific TODO feature
+    if assert_contains "$output" "Authentication\|feat_auth"; then
+        record_result "PASS" "$name: identifies TODO feature by name"
+    else
+        record_result "FAIL" "$name: identifies TODO feature by name" \
+            "Expected Builder to identify Authentication / feat_auth as TODO"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_qa_role_verification() {
+    local name="qa-role-verification"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: QA Role — Identifies Verification Work ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/qa_verify/pending-verification") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/qa_verify/pending-verification"
+        return 0
+    }
+
+    prompt_file=$(construct_prompt "$fixture_dir" "QA")
+    output=$(run_claude_test "$prompt_file" \
+        "You are the QA agent. Look at the features/ directory and identify any features that need verification. List features in TESTING state that have manual scenarios." \
+        "$fixture_dir")
+
+    # Tier 2: Agent should identify the specific TESTING feature
+    if assert_contains "$output" "Dashboard\|feat_dashboard\|TESTING"; then
+        record_result "PASS" "$name: identifies TESTING feature"
+    else
+        record_result "FAIL" "$name: identifies TESTING feature" \
+            "Expected QA to identify Dashboard / feat_dashboard as needing verification"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
 # --- Summary and Results ---
 
 print_summary() {
@@ -872,6 +1138,12 @@ main() {
     scenario_version_notes_custom_text
     scenario_submodule_safety_warning
     scenario_submodule_safety_user_confirms
+    scenario_instruction_audit_clean
+    scenario_tier2_specific_finding
+    scenario_doc_three_turn_refinement
+    scenario_state_verification_fix_intent
+    scenario_builder_role_startup
+    scenario_qa_role_verification
 
     print_summary
     write_results
