@@ -330,8 +330,8 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 
 ```
 [19:34:58] Parallel group (3 phases):
-  Phase 2 -- Non-Critical Anchors A   running   2m 15s   45K  editing arch_automated_feedback_tests.md
-  Phase 3 -- Non-Critical Anchor B   running   2m 15s   23K  running aft-web on design_modal_standards.md
+  Phase 2 -- Non-Critical Anchors A   running   2m 15s   45K  editing arch_testing.md
+  Phase 3 -- Non-Critical Anchor B   running   2m 15s   23K  running web-test on design_modal_standards.md
   Phase 5 -- Core Coordination       done      1m 42s   67K
 ```
 
@@ -365,7 +365,7 @@ Duration: 12m 45s
 Phases: 4/6 completed
 
   Phase 1 -- Critical Path Anchors      COMPLETE      3m 12s   features: policy_critic.md, design_visual_standards.md
-  Phase 2 -- Non-Critical Anchors A     COMPLETE      2m 45s   features: design_artifact_pipeline.md, arch_automated_feedback_tests.md
+  Phase 2 -- Non-Critical Anchors A     COMPLETE      2m 45s   features: design_artifact_pipeline.md, arch_testing.md
   Phase 3 -- Non-Critical Anchor B      COMPLETE      1m 58s   features: design_modal_standards.md
   Phase 4 -- Policy Chain               INTERRUPTED            features: policy_release.md, policy_branch_collab.md
   Phase 5 -- Core Coordination          PENDING                features: impl_notes_companion.md
@@ -960,7 +960,7 @@ Log files: .purlin/runtime/continuous_build_phase_*.log
     And stderr is a TTY
     And the Builder is currently editing a file
     When the canvas performs a 15-second activity refresh
-    Then the phase line shows the current activity (e.g., "editing arch_automated_feedback_tests.md")
+    Then the phase line shows the current activity (e.g., "editing arch_testing.md")
     And the activity text is truncated to fit the remaining terminal width after aligned columns
 
 #### Scenario: Canvas Shows Latest Log Line as Activity

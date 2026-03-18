@@ -77,17 +77,17 @@ A test MAY use presence-only assertions alongside value-verifying assertions. Th
 
 ### 2.5 Test Tier Decision Matrix
 
-Defines what the Builder runs during Step 3 versus what defers to the Regression tier (see `arch_automated_feedback_tests.md` Execution Tiers).
+Defines what the Builder runs during Step 3 versus what defers to the Regression tier (see `arch_testing.md` Execution Tiers).
 
 | Feature Type | Step 3 Testing | Regression Tier |
 |---|---|---|
-| Python tool | Unit tests (pytest): import and call functions, assert values | AFT:Agent if applicable |
-| Shell script | Execute with args, assert exit codes and output | AFT:Agent if applicable |
-| Web UI with `> AFT Web:` | Unit tests + AFT:Web spot check (visual verification) | Full AFT:Web regression |
-| Web UI without `> AFT Web:` | Unit tests only | N/A |
-| Claude skill/command | Test infrastructure (parsers, validators, state) | AFT:Agent for interaction flow |
+| Python tool | Unit tests (pytest): import and call functions, assert values | Regression harness if applicable |
+| Shell script | Execute with args, assert exit codes and output | Regression harness if applicable |
+| Web UI with `> Web Test:` | Unit tests + web test spot check (visual verification) | Full web test regression |
+| Web UI without `> Web Test:` | Unit tests only | N/A |
+| Claude skill/command | Test infrastructure (parsers, validators, state) | Regression harness for interaction flow |
 
-**Builder rule:** Run AFT:Web during Step 3 ONLY for features with `> AFT Web:` metadata AND a Visual Specification section. All other features: unit tests only.
+**Builder rule:** Run `/pl-web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
 
 ### 2.6 Subagent Test Quality Evaluation
 
