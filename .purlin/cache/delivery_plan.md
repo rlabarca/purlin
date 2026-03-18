@@ -56,9 +56,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- pl-update-purlin [IN_PROGRESS]
+## Phase 11 -- pl-update-purlin [COMPLETE]
 **Features:** pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** 5f1cf8f
 **QA Bugs Addressed:** --
 
 ## Phase 12 -- Continuous Phase Builder [PENDING]
