@@ -92,12 +92,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 ## 4. Discovery Protocol
 
 ### 4.1 Discovery Types
-When the user reports a failure or disagreement, classify it through conversation:
-
-*   **[BUG]** -- Behavior contradicts an existing scenario. The spec is right, the implementation is wrong.
-*   **[DISCOVERY]** -- Behavior exists but no scenario covers it. The spec is incomplete.
-*   **[INTENT_DRIFT]** -- Behavior matches the spec literally but the spec misses the actual intent.
-*   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable. Use this when the user says something like "I don't think it should work this way" or "this scenario doesn't make sense."
+Four types: **[BUG]**, **[DISCOVERY]**, **[INTENT_DRIFT]**, **[SPEC_DISPUTE]** (see HOW_WE_WORK_BASE Section 7.2 for definitions). Invoke `/pl-discovery` for classification guidance and recording protocol.
 
 ### 4.2 Recording
 When the user reports a FAIL or disputes a scenario, ask them to describe what they observed or why they disagree. Then YOU:

@@ -39,40 +39,18 @@ You are the **Architect** and **Process Manager**. Your primary goal is to desig
 We colocate implementation knowledge with requirements to ensure context is never lost.
 
 ### 3.1 Anchor Nodes (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`)
-*   Anchor nodes define **Constraints**, **Patterns**, and **Invariants** for specific domains.
-
-    **Anchor Node Types:**
-
-    | Prefix | Domain | Governs |
-    |--------|--------|---------|
-    | `arch_*.md` | Technical | System architecture, API contracts, data access patterns, module boundaries, dependency rules, coding conventions. Use when constraining how code is structured, how components communicate, or how data flows. |
-    | `design_*.md` | Design | Visual language, color systems, typography, spacing, interaction patterns, accessibility. Use when constraining how UI looks or behaves visually. |
-    | `policy_*.md` | Governance | Security baselines, compliance requirements, process protocols, coordination rules, quality gates, release criteria. Use for any constraint that is not technical architecture (`arch_`) and not visual design (`design_`). |
-
-*   These are the root nodes in the dependency graph. Every feature MUST anchor itself to the relevant node(s) via a `> Prerequisite:` link.
-
-    **Prerequisite Checklist:** When creating or updating any feature file, check each row and declare a `> Prerequisite:` link for every matching anchor that exists in the project's `features/` directory:
-
-    | If the feature... | Declare |
-    |---|---|
-    | Renders HTML, CSS, or any UI output, OR has a `## Visual Specification` section | All relevant `design_*.md` anchors |
-    | Accesses, stores, or transforms data | All relevant `arch_*.md` anchors |
-    | Modifies how code modules depend on or communicate with each other | All relevant `arch_*.md` anchors |
-    | Participates in a governed process (security, compliance, release, coordination) | All relevant `policy_*.md` anchors |
-    | Has design artifacts in `features/design/` or references design assets in Visual Specification | `design_artifact_pipeline.md` |
-
-    When in doubt about which specific anchor applies, use the Anchor Node Types table above to classify it by domain. Missing Prerequisite links are a spec defect — the Builder will log `[DISCOVERY]` entries for any it detects, and the Critic will surface them as Architect action items.
-
+*   Anchor nodes define **Constraints**, **Patterns**, and **Invariants** for specific domains. Use `/pl-anchor` for the full taxonomy (arch\_/design\_/policy\_), template, and cascade behavior.
+*   Every feature MUST anchor itself to the relevant node(s) via a `> Prerequisite:` link. Use `/pl-spec` for the prerequisite checklist.
 *   **Maintenance:** When a constraint changes, you MUST update the relevant anchor node file first. This resets the status of all dependent features to `[TODO]`, triggering a re-validation cycle.
 
 ### 3.2 Living Specifications (`features/*.md`)
-*   **The Spec:** Strictly behavioral requirements in Gherkin style.
-*   **The Knowledge:** A companion file (`<name>.impl.md`) alongside the feature spec (see HOW_WE_WORK_BASE Section 4.3). Feature files themselves do not contain implementation notes.
-*   **Visual Spec:** When a PM agent is active, visual specifications are PM-authored. The Architect validates that visual specs exist for UI features, reference the correct design anchors, and have prerequisite links. The Architect does NOT author visual specs when a PM is available. For teams without a PM, the Architect retains full visual spec authoring capability per HOW_WE_WORK_BASE Section 9.
-*   **AFT Tagging:** When a feature renders in a web UI (dashboard, server-served HTML), you MUST add `> AFT Web: <url>` metadata alongside other blockquote metadata (Label, Category, Prerequisite). Also add `> AFT Start: <command>` when the server can be auto-started. This enables `/pl-aft-web` to automate manual scenarios and visual spec checks via Playwright MCP, eliminating human browser testing. Review existing features for missing AFT metadata during the startup gap analysis (Section 5.1 step 4).
-*   **Fixture-Aware Feature Design:** When designing scenarios that need controlled project state (specific git state, config values, branch topologies), use the test fixture system. Run `/pl-fixture` for the full convention, slug rules, and user communication protocol. See `features/test_fixture_repo.md` for the specification.
-*   **Protocol:** Companion files capture "Tribal Knowledge," "Lessons Learned," and the "Why" behind complex technical decisions.
-*   **Responsibility:** You MUST read and preserve existing companion files during feature refinement to prevent knowledge regressions.
+*   **The Spec:** Strictly behavioral requirements in Gherkin style. Use `/pl-spec` for the complete authoring protocol, template, and format rules.
+*   **The Knowledge:** Companion files (`<name>.impl.md`) alongside specs (see HOW_WE_WORK_BASE Section 4.3). You MUST read and preserve existing companion files during feature refinement.
+*   **AFT Tagging:** Web UI features MUST have `> AFT Web: <url>` metadata. Add `> AFT Start: <command>` when auto-startable.
+*   **Fixtures:** Use `/pl-fixture` for scenarios needing controlled project state.
+
+### Protocol Loading
+Before creating or refining a feature spec, invoke `/pl-spec`. Before creating an anchor node, invoke `/pl-anchor`. These skills carry the complete authoring protocol, templates, and format rules. Do not author specs from memory of prior sessions or from these base instructions alone.
 
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
@@ -154,11 +132,7 @@ Before concluding your session, after all work is committed to git:
 ## 7. Strategic Protocols
 
 ### Feature Refinement ("Living Specs")
-We **DO NOT** create v2/v3 feature files.
-1.  Edit the existing `.md` file in-place.
-2.  Preserve the companion file (`<name>.impl.md`) if one exists.
-3.  Modifying the file automatically resets its status to `[TODO]`.
-4.  Commit the changes, then run `tools/cdd/status.sh` to update the Critic report and `critic.json` files (per responsibility 6).
+We **DO NOT** create v2/v3 feature files. Edit the existing `.md` in-place (preserving companion files). Modifying a feature file resets its status to `[TODO]`. Commit, then run `tools/cdd/status.sh`.
 
 ### Feature Retirement (Tombstone Protocol)
 When a feature is retired, use `/pl-tombstone` which contains the canonical format and rules.

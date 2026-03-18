@@ -90,17 +90,11 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 ---
 
 ## 3. Feature Status Lifecycle
-The CDD Monitor tracks every feature through three states. Status is driven entirely by **git commit tags** and **file modification timestamps**.
+Features move through TODO -> TESTING -> COMPLETE (see HOW_WE_WORK_BASE Section 3). Status is driven by git commit tags and file modification timestamps.
 
-| CDD State | Git Commit Tag | Meaning |
-|---|---|---|
-| **TODO** | *(default)* | Feature has no status commit, or the feature file was modified after its last status commit. |
-| **TESTING** | `[Ready for Verification features/FILENAME.md]` | Implementation and local tests pass. Awaiting human or final verification. |
-| **COMPLETE** | `[Complete features/FILENAME.md]` | All verification passed. Feature is done. |
+**Critical Rule:** Any edit to a feature file resets its status to **TODO**. The status tag commit MUST be the **last** commit touching that feature file.
 
-**Critical Rule:** Any edit to a feature file (including adding Implementation Notes) resets its status to **TODO**. You MUST plan your commits so that the status tag commit is always the **last** commit touching that feature file.
-
-**Companion File Exemption:** Edits to companion files (`<name>.impl.md`) do NOT reset the parent feature's status. Only edits to the feature spec (`<name>.md`) trigger resets.
+**Companion File Exemption:** Edits to companion files (`<name>.impl.md`) do NOT reset the parent feature's status.
 
 ## 4. Tombstone Processing (BEFORE Regular Feature Work)
 

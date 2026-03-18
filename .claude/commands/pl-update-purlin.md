@@ -67,6 +67,7 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    * Init refresh completed
    * Config sync: <result>
    ```
+   **If any command files were skipped** (locally modified), warn the user: "M command files were skipped because they have local modifications. These files may contain outdated workflow protocols. Run `diff <local_file> <submodule_source>` to review upstream changes and consider merging manually."
 
 9. **Customization Impact Check (Optional):**
    - **Skip entirely if `--auto-approve`** -- do not prompt or analyze.
