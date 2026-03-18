@@ -76,9 +76,9 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 15 -- CDD QA Effort Display [IN_PROGRESS]
+## Phase 15 -- CDD QA Effort Display [COMPLETE]
 **Features:** cdd_qa_effort_display.md
-**Completion Commit:** --
+**Completion Commit:** 5bad58a
 **QA Bugs Addressed:** --
 
 ## Phase 16 -- CDD Spec Map [PENDING]
