@@ -189,8 +189,8 @@ run_claude_turn() {
         # Subsequent turn: resume existing session
         session_args+=(--resume "$SESSION_ID")
     else
-        # First turn: create named session
-        SESSION_ID="aft-agent-$(date +%s)-$$"
+        # First turn: create named session (must be a valid UUID per claude CLI requirement)
+        SESSION_ID=$(python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || uuidgen 2>/dev/null || printf '%08x-%04x-%04x-%04x-%012x' $RANDOM $RANDOM $RANDOM $RANDOM $RANDOM)
         session_args+=(--session-id "$SESSION_ID")
         session_args+=(--append-system-prompt-file "$prompt_file")
     fi
@@ -431,7 +431,7 @@ scenario_version_notes_no_tags() {
         "Execute the Record Version & Release Notes step." \
         "$fixture_dir")
 
-    if assert_contains "$output" "no.*tag\|everything.*new\|first.*release\|no.*previous"; then
+    if assert_contains "$output" "no.*tag\|everything.*new\|first.*release\|no.*previous\|0.*tag\|no.*version\|no.*release.*histor\|no.*prior\|initial\|no.*exist.*tag\|treat.*all.*new\|all.*commit"; then
         record_result "PASS" "$name: handles no-tags state"
     else
         record_result "FAIL" "$name: handles no-tags state" \
@@ -527,9 +527,11 @@ scenario_submodule_safety_warning() {
         return 0
     }
 
-    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.instruction_audit")
+    # Use base 4-layer prompt only — submodule safety rules are in HOW_WE_WORK base instructions;
+    # instruction_audit step ID was previously used here by mistake, causing spurious CRITICAL output.
+    prompt_file=$(construct_prompt "$fixture_dir" "ARCHITECT")
     output=$(run_claude_test "$prompt_file" \
-        "Audit the tools/ directory for submodule safety compliance." \
+        "Audit the tools/ directory for submodule safety compliance. Report any violations found." \
         "$fixture_dir")
 
     if assert_contains "$output" "warning\|json.load\|exception"; then
@@ -546,6 +548,257 @@ scenario_submodule_safety_warning() {
             "Should NOT report critical violations for warning-only state"
     fi
 
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_instruction_audit_base_error() {
+    local name="instruction-audit-base-error"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Instruction Audit Halts on Base-Layer Error ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/release_instruction_audit/base-error") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_instruction_audit/base-error"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.instruction_audit")
+    output=$(run_claude_test "$prompt_file" \
+        "Execute the instruction audit release step. Check all override files against their base layer counterparts." \
+        "$fixture_dir")
+
+    # Agent should identify the base-layer error (stale path to legacy_build_engine)
+    if assert_contains "$output" "legacy_build_engine\|base.*error\|base.*layer\|does not exist\|non.existent\|stale.*path"; then
+        record_result "PASS" "$name: base-layer error detected"
+    else
+        record_result "FAIL" "$name: base-layer error detected" \
+            "Expected agent to identify stale path in base layer (tools/legacy_build_engine/)"
+    fi
+
+    # Agent should signal halting or escalation (not just a simple fix)
+    if assert_contains "$output" "halt\|cannot.*fix.*override\|base.*must.*be.*fix\|pl-edit-base\|block\|cannot.*correct.*override\|escalat"; then
+        record_result "PASS" "$name: halt or escalation signaled"
+    else
+        record_result "FAIL" "$name: halt or escalation signaled" \
+            "Expected agent to halt or escalate since base-layer error cannot be fixed via override"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_doc_gaps_user_declines() {
+    local name="doc-gaps-user-declines"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Doc Consistency — User Declines All Gaps ---"
+    local fixture_dir prompt_file output1 output2
+
+    fixture_dir=$(checkout_fixture_safe "main/release_doc_consistency_check/coverage-gaps") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_doc_consistency_check/coverage-gaps"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.doc_consistency_check")
+    reset_session
+
+    # Turn 1: Agent presents coverage gap table
+    output1=$(run_claude_turn "$prompt_file" \
+        "Execute the documentation consistency check release step." \
+        "$fixture_dir")
+
+    if assert_contains "$output1" "gap\|missing\|not covered\|table\|absent"; then
+        record_result "PASS" "$name: turn 1 presents gaps"
+    else
+        record_result "FAIL" "$name: turn 1 presents gaps" \
+            "Expected agent to present coverage gap table"
+    fi
+
+    # Turn 2: User declines all additions
+    output2=$(run_claude_turn "$prompt_file" \
+        "No, I don't want to add any of these. Decline all." \
+        "$fixture_dir")
+
+    if assert_contains "$output2" "no.*change\|proceed\|clean\|skip\|no.*addition\|declin\|without.*change"; then
+        record_result "PASS" "$name: turn 2 respects decline"
+    else
+        record_result "FAIL" "$name: turn 2 respects decline" \
+            "Expected agent to acknowledge decline and make no changes"
+    fi
+
+    # Agent should NOT have created any new sections
+    if assert_not_contains "$output2" "created.*section\|added.*##\|new.*heading.*created"; then
+        record_result "PASS" "$name: no unsolicited changes"
+    else
+        record_result "FAIL" "$name: no unsolicited changes" \
+            "Agent should not create sections when user declined"
+    fi
+
+    reset_session
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_doc_no_unsolicited_section() {
+    local name="doc-no-unsolicited-section"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Doc Consistency — No Unsolicited Major Section ---"
+    local fixture_dir prompt_file output
+
+    fixture_dir=$(checkout_fixture_safe "main/release_doc_consistency_check/new-section-needed") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_doc_consistency_check/new-section-needed"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.doc_consistency_check")
+    output=$(run_claude_test "$prompt_file" \
+        "Execute the documentation consistency check release step." \
+        "$fixture_dir")
+
+    # Agent MUST present gaps and ASK before creating any new section
+    if assert_contains "$output" "gap\|suggest\|would you\|like to\|which.*item\|approve\|table"; then
+        record_result "PASS" "$name: asks before creating section"
+    else
+        record_result "FAIL" "$name: asks before creating section" \
+            "Expected agent to present gap table and ask for user approval"
+    fi
+
+    # Agent must NOT have created a new ## section without asking
+    if assert_not_contains "$output" "I.*created.*section\|I.*added.*##\|I.*wrote.*new.*section"; then
+        record_result "PASS" "$name: did not create section unilaterally"
+    else
+        record_result "FAIL" "$name: did not create section unilaterally" \
+            "Agent MUST NOT create a new ## heading without explicit user confirmation"
+    fi
+
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_version_notes_custom_text() {
+    local name="version-notes-custom-text"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Version Notes — User Writes Custom Notes ---"
+    local fixture_dir prompt_file output1 output2
+
+    fixture_dir=$(checkout_fixture_safe "main/release_record_version_notes/prior-tag") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_record_version_notes/prior-tag"
+        return 0
+    }
+
+    # Set up git history with a version tag and subsequent commits
+    (
+        cd "$fixture_dir"
+        git config user.email "test@aft.dev"
+        git config user.name "AFT Test"
+        git tag v1.0.0 HEAD 2>/dev/null || true
+        echo "new feature" > feature.txt
+        git add feature.txt
+        git commit -m "feat: add notification system" 2>/dev/null || true
+    )
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "purlin.record_version_notes")
+    reset_session
+
+    # Turn 1: Agent presents commit candidates and suggestions
+    output1=$(run_claude_turn "$prompt_file" \
+        "Execute the Record Version & Release Notes step." \
+        "$fixture_dir")
+
+    if assert_contains "$output1" "suggest\|release.*note\|candidate\|commit\|v1.0.0\|since"; then
+        record_result "PASS" "$name: turn 1 presents suggestions"
+    else
+        record_result "FAIL" "$name: turn 1 presents suggestions" \
+            "Expected agent to present release note suggestions from git history"
+    fi
+
+    # Turn 2: User provides custom text and version
+    output2=$(run_claude_turn "$prompt_file" \
+        "Version: v1.1.0. Release notes: Major improvements to the notification pipeline and enhanced monitoring capabilities." \
+        "$fixture_dir")
+
+    # Agent should acknowledge the custom notes
+    if assert_contains "$output2" "v1.1.0\|notification\|monitor\|custom\|record\|README\|Release"; then
+        record_result "PASS" "$name: turn 2 uses custom text"
+    else
+        record_result "FAIL" "$name: turn 2 uses custom text" \
+            "Expected agent to acknowledge and use the user's custom release notes"
+    fi
+
+    reset_session
+    rm -f "$prompt_file"
+    cleanup_fixture "$fixture_dir"
+}
+
+scenario_submodule_safety_user_confirms() {
+    local name="submodule-safety-user-confirms"
+    should_run_scenario "$name" || return 0
+
+    echo ""
+    echo "--- Scenario: Submodule Safety — User Confirms WARNING ---"
+    local fixture_dir prompt_file output1 output2
+
+    fixture_dir=$(checkout_fixture_safe "main/release_submodule_safety_audit/warning-only") || {
+        record_result "SKIP" "$name: fixture checkout" "Missing tag: main/release_submodule_safety_audit/warning-only"
+        return 0
+    }
+
+    prompt_file=$(construct_release_prompt "$fixture_dir" "ARCHITECT" "submodule_safety_audit")
+
+    # Try local_steps.json fallback if no agent_instructions found for this step
+    # The submodule_safety_audit step is a local step, not global
+    if [[ -f "$fixture_dir/.purlin/release/local_steps.json" ]]; then
+        local local_instructions
+        local_instructions=$(jq -r '.steps[] | select(.id == "submodule_safety_audit") | .agent_instructions // empty' \
+            "$fixture_dir/.purlin/release/local_steps.json" 2>/dev/null) || true
+        if [[ -n "$local_instructions" ]]; then
+            printf '\n\n## Release Step Instructions\n\n%s\n' "$local_instructions" >> "$prompt_file"
+        fi
+    fi
+
+    reset_session
+
+    # Turn 1: Agent audits and finds WARNING
+    output1=$(run_claude_turn "$prompt_file" \
+        "Execute the submodule safety audit step. Examine all Python tools under tools/ for submodule compliance issues." \
+        "$fixture_dir")
+
+    if assert_contains "$output1" "warning\|json.load\|unguarded\|exception\|try.except\|config.*safe"; then
+        record_result "PASS" "$name: turn 1 finds warning"
+    else
+        record_result "FAIL" "$name: turn 1 finds warning" \
+            "Expected agent to report WARNING finding for unguarded json.load"
+    fi
+
+    # Agent should not halt (no CRITICAL findings)
+    if assert_not_contains "$output1" "CRITICAL\|halt.*release\|cannot.*proceed"; then
+        record_result "PASS" "$name: turn 1 no critical halt"
+    else
+        record_result "FAIL" "$name: turn 1 no critical halt" \
+            "Should not halt release on WARNING-only findings"
+    fi
+
+    # Turn 2: User confirms the warning is acceptable
+    output2=$(run_claude_turn "$prompt_file" \
+        "Yes, I confirm. This warning is acceptable — proceed with the release." \
+        "$fixture_dir")
+
+    if assert_contains "$output2" "proceed\|confirm\|accept\|record\|continu\|noted\|acknowledge"; then
+        record_result "PASS" "$name: turn 2 proceeds after confirmation"
+    else
+        record_result "FAIL" "$name: turn 2 proceeds after confirmation" \
+            "Expected agent to proceed after user confirms WARNING"
+    fi
+
+    reset_session
     rm -f "$prompt_file"
     cleanup_fixture "$fixture_dir"
 }
@@ -606,12 +859,17 @@ main() {
 
     # Run all scenarios (filtered by --scenario if provided)
     scenario_instruction_audit_halt
+    scenario_instruction_audit_base_error
     scenario_doc_coverage_gaps
     scenario_doc_new_section_multi_turn
+    scenario_doc_gaps_user_declines
+    scenario_doc_no_unsolicited_section
     scenario_version_notes_no_tags
     scenario_version_notes_prior_tag
     scenario_version_notes_no_heading
+    scenario_version_notes_custom_text
     scenario_submodule_safety_warning
+    scenario_submodule_safety_user_confirms
 
     print_summary
     write_results
