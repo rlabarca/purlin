@@ -1861,6 +1861,34 @@ EOF
 commit_and_tag "main/release_instruction_audit/stale-path" \
     "Override referencing deleted file"
 
+# release_instruction_audit/base-conflict
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+# Include global_steps.json for release step testing
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+# Override directly contradicts a base instruction
+cat > .purlin/BUILDER_OVERRIDES.md <<'EOF'
+# Builder Overrides
+
+## Status Commits
+The Builder MUST NOT make status tag commits. Status changes are tracked implicitly.
+This contradicts the base rule requiring separate status tag commits.
+EOF
+
+commit_and_tag "main/release_instruction_audit/base-conflict" \
+    "Override rule directly contradicts base instruction"
+
 # =====================================================================
 echo ""
 echo "--- release_checklist_core ---"
@@ -1985,6 +2013,169 @@ EOF
 commit_and_tag "main/release_doc_consistency_check/inconsistent-docs" \
     "Project with instruction files containing contradictory lifecycle definitions"
 
+# release_doc_consistency_check/coverage-gaps
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_dashboard.md" "Dashboard" "UI" "policy_critic.md" "COMPLETE"
+create_feature "feat_api.md" "API Gateway" "Backend" "policy_critic.md" "COMPLETE"
+create_feature "feat_monitoring.md" "Monitoring" "Observability" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_dashboard" "DONE" "DONE" "CLEAN"
+create_critic_json "feat_api" "DONE" "DONE" "CLEAN"
+create_critic_json "feat_monitoring" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_dashboard"
+create_tests_json_pass "feat_api"
+create_tests_json_pass "feat_monitoring"
+
+# README only covers Dashboard -- missing API Gateway and Monitoring
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Dashboard: Interactive dashboard for viewing project status.
+
+## Getting Started
+Run `npm start` to launch the application.
+EOF
+
+commit_and_tag "main/release_doc_consistency_check/coverage-gaps" \
+    "README only covers 1 of 3 features"
+
+# release_doc_consistency_check/new-section-needed
+reset_workdir
+create_base_project
+
+for f in HOW_WE_WORK_BASE.md BUILDER_BASE.md ARCHITECT_BASE.md QA_BASE.md; do
+    if [[ -f "$PROJECT_ROOT/instructions/$f" ]]; then
+        cp "$PROJECT_ROOT/instructions/$f" "instructions/$f"
+    fi
+done
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_auth.md" "Authentication" "Security" "policy_critic.md" "COMPLETE"
+create_feature "feat_monitoring.md" "System Monitoring" "Observability" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_auth" "DONE" "DONE" "CLEAN"
+create_critic_json "feat_monitoring" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_auth"
+create_tests_json_pass "feat_monitoring"
+
+# README has Features section but no Observability section
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Authentication: User authentication and authorization.
+
+## Security
+Authentication uses JWT tokens with configurable expiry.
+EOF
+
+commit_and_tag "main/release_doc_consistency_check/new-section-needed" \
+    "Gap requires new ## heading for monitoring/observability"
+
+# =====================================================================
+echo ""
+echo "--- release_record_version_notes ---"
+
+# release_record_version_notes/no-tags
+reset_workdir
+create_base_project
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_init.md" "Project Init" "Core" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_init" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_init"
+
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Project initialization and setup.
+
+## Releases
+No releases yet.
+EOF
+
+commit_and_tag "main/release_record_version_notes/no-tags" \
+    "Repo with commits but no release version tags"
+
+# release_record_version_notes/prior-tag
+reset_workdir
+create_base_project
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_core.md" "Core System" "Core" "policy_critic.md" "COMPLETE"
+create_feature "feat_new.md" "New Feature" "Core" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_core" "DONE" "DONE" "CLEAN"
+create_critic_json "feat_new" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_core"
+create_tests_json_pass "feat_new"
+
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Core System: Foundation project setup.
+- New Feature: Recently added functionality.
+
+## Releases
+### v1.0.0 — 2026-01-15
+- Initial release with Core System.
+EOF
+
+commit_and_tag "main/release_record_version_notes/prior-tag" \
+    "Repo with v1.0.0 tag and later commits"
+
+# release_record_version_notes/no-releases-heading
+reset_workdir
+create_base_project
+
+if [[ -f "$PROJECT_ROOT/tools/release/global_steps.json" ]]; then
+    mkdir -p tools/release
+    cp "$PROJECT_ROOT/tools/release/global_steps.json" tools/release/global_steps.json
+fi
+
+create_feature "feat_basic.md" "Basic Feature" "Core" "policy_critic.md" "COMPLETE"
+create_critic_json "feat_basic" "DONE" "DONE" "CLEAN"
+create_tests_json_pass "feat_basic"
+
+# README without ## Releases section
+cat > README.md <<'EOF'
+# Test Project
+
+## Features
+- Basic Feature: Core functionality.
+
+## Getting Started
+Run `./start.sh` to begin.
+EOF
+
+commit_and_tag "main/release_record_version_notes/no-releases-heading" \
+    "README lacks ## Releases section"
+
 # =====================================================================
 echo ""
 echo "--- release_submodule_safety_audit ---"
@@ -2053,6 +2244,47 @@ PYEOF
 
 commit_and_tag "main/release_submodule_safety_audit/violations-present" \
     "Project with hardcoded paths, artifacts in tools/, and bare json.load() calls"
+
+# release_submodule_safety_audit/warning-only
+reset_workdir
+create_base_project
+
+mkdir -p tools/warn_tool
+cat > tools/warn_tool/tool.py <<'PYEOF'
+import os, json
+
+def get_project_root():
+    root = os.environ.get("PURLIN_PROJECT_ROOT")
+    if root:
+        return root
+    d = os.path.dirname(os.path.abspath(__file__))
+    candidate = None
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, "features")):
+            candidate = d
+        d = os.path.dirname(d)
+    return candidate
+
+def load_config():
+    root = get_project_root()
+    config_path = os.path.join(root, ".purlin", "config.json")
+    try:
+        with open(config_path) as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        # WARNING: Missing IOError/OSError in exception handler
+        return {"tools_root": "tools"}
+
+def write_output(data):
+    root = get_project_root()
+    out = os.path.join(root, ".purlin", "runtime", "output.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w") as f:
+        json.dump(data, f)
+PYEOF
+
+commit_and_tag "main/release_submodule_safety_audit/warning-only" \
+    "Tool with json.load WARNING but no CRITICAL violations"
 
 # =====================================================================
 echo ""
