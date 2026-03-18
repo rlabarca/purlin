@@ -27,6 +27,7 @@ The CDD status engine and Critic tool spawn numerous git subprocesses on every i
 
 - `spec_content_unchanged()` MUST support hash-based comparison when the status commit cache contains a `spec_content_hash` field for the feature.
 - The hash is SHA-256 of the spec content stripped of the User Testing Discoveries section (everything below `## User Testing Discoveries`).
+- **Hash capture timing:** `spec_content_hash` MUST be computed from the file content **at the status commit** (the commit that set the feature to COMPLETE or TESTING), NOT from the current working-tree content. When `_save_persistent_status_cache` writes the cache, it MUST retrieve the committed content via `git show <commit_hash>:<path>` and hash that. This ensures that post-completion edits to the spec are correctly detected as changes.
 - When `spec_content_hash` is present in cache, comparison MUST compute the local file hash and compare without spawning a `git show` subprocess.
 - When `spec_content_hash` is absent (old cache format) or the cache entry is missing, the function MUST fall back to the existing `git show` full-file comparison.
 - Hash computation MUST handle Unicode content correctly (UTF-8 encoding before hashing).
@@ -146,6 +147,16 @@ The CDD status engine and Critic tool spawn numerous git subprocesses on every i
     And the cache contains spec_content_hash for this feature
     When spec_content_unchanged() is called
     Then it returns False
+
+#### Scenario: Hash miss detected after cache rebuild following spec edit
+
+    Given a feature marked COMPLETE with a status commit at time T1
+    And the cache is saved with spec_content_hash computed from the committed content at T1
+    When the spec content is edited on disk after T1 (e.g. new requirements added)
+    And the status commit cache is deleted and rebuilt via build_status_commit_cache()
+    Then the rebuilt cache contains spec_content_hash from the COMPLETE commit content (not the current working-tree content)
+    And spec_content_unchanged() returns False
+    And get_feature_status() classifies the feature as TODO (not COMPLETE)
 
 #### Scenario: Hash hit when only discoveries section changed
 
