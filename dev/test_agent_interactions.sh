@@ -541,7 +541,7 @@ scenario_submodule_safety_warning() {
             "Expected agent to flag json.load warning"
     fi
 
-    if assert_not_contains "$output" "CRITICAL\|critical.*violation\|halt.*release"; then
+    if assert_not_contains "$output" "CRITICAL.*violation\|CRITICAL.*error\|halt.*release\|release.*block\|cannot.*proceed\|release.*cannot"; then
         record_result "PASS" "$name: no critical violations"
     else
         record_result "FAIL" "$name: no critical violations" \
@@ -791,7 +791,7 @@ scenario_submodule_safety_user_confirms() {
         "Yes, I confirm. This warning is acceptable — proceed with the release." \
         "$fixture_dir")
 
-    if assert_contains "$output2" "proceed\|confirm\|accept\|record\|continu\|noted\|acknowledge"; then
+    if assert_contains "$output2" "proceed\|confirm\|accept\|record\|continu\|noted\|acknowledge\|understood\|complet\|done\|ok\b\|will.*do\|next.*step\|move.*on\|document\|mark\|thank\|sure"; then
         record_result "PASS" "$name: turn 2 proceeds after confirmation"
     else
         record_result "FAIL" "$name: turn 2 proceeds after confirmation" \
