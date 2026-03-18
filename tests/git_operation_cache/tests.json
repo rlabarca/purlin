@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "passed": 25,
+  "failed": 0,
+  "total": 25,
+  "test_file": "tools/cdd/test_git_operation_cache.py"
+}

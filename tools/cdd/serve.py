@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import http.server
 import json
 import re
@@ -7,6 +8,7 @@ import socketserver
 import subprocess
 import os
 import sys
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -96,6 +98,9 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 FEATURE_STATUS_PATH = os.path.join(CACHE_DIR, "feature_status.json")
 API_STATUS_PATH = os.path.join(CACHE_DIR, "status.json")
 DEPENDENCY_GRAPH_PATH = os.path.join(CACHE_DIR, "dependency_graph.json")
+STATUS_COMMIT_CACHE_PATH = os.path.join(CACHE_DIR, "status_commit_cache.json")
+GIT_STATUS_CACHE_PATH = os.path.join(CACHE_DIR, "git_status_snapshot.txt")
+GIT_STATUS_TTL = 10  # seconds
 TOOLS_ROOT = CONFIG.get("tools_root", "tools")
 POLL_INTERVAL = 2  # seconds for file watcher polling
 
@@ -143,10 +148,139 @@ def run_command(command):
         return ""
 
 
+def _get_current_head():
+    """Return the current HEAD commit hash, or '' if not in a git repo."""
+    return run_command("git rev-parse HEAD") or ''
+
+
+def _compute_spec_hash(content):
+    """Compute SHA-256 of spec content stripped of the Discoveries section.
+
+    Encodes as UTF-8 before hashing to handle Unicode correctly.
+    """
+    stripped = strip_discoveries_section(content).rstrip()
+    return hashlib.sha256(stripped.encode('utf-8')).hexdigest()
+
+
+def _newest_feature_mtime(features_abs):
+    """Return the newest mtime of any .md file in the features directory.
+
+    Excludes companion (.impl.md) and discovery (.discoveries.md) files.
+    """
+    newest = 0
+    if not os.path.isdir(features_abs):
+        return newest
+    for fname in os.listdir(features_abs):
+        if (fname.endswith('.md')
+                and not fname.endswith('.impl.md')
+                and not fname.endswith('.discoveries.md')):
+            fpath = os.path.join(features_abs, fname)
+            try:
+                mtime = os.path.getmtime(fpath)
+                if mtime > newest:
+                    newest = mtime
+            except OSError:
+                pass
+    return newest
+
+
+def _write_atomic(path, data):
+    """Write data to path atomically via temp file + rename."""
+    dirname = os.path.dirname(path)
+    try:
+        fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix='.tmp')
+        with os.fdopen(fd, 'w') as f:
+            f.write(data)
+        os.replace(tmp_path, path)
+    except (IOError, OSError):
+        # Best-effort cleanup
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
+def _load_persistent_status_cache():
+    """Load the persistent status commit cache from disk.
+
+    Returns (cache_dict, metadata_dict) or (None, None) if invalid/missing.
+    """
+    try:
+        with open(STATUS_COMMIT_CACHE_PATH, 'r') as f:
+            data = json.load(f)
+        meta = data.get('_metadata', {})
+        entries = data.get('entries', {})
+        if not meta.get('git_head') or not meta.get('generated_at'):
+            return None, None
+        return entries, meta
+    except (json.JSONDecodeError, IOError, OSError, KeyError):
+        return None, None
+
+
+def _save_persistent_status_cache(entries, git_head):
+    """Save the status commit cache to disk with metadata.
+
+    Also computes and stores spec_content_hash for each feature entry.
+    """
+    # Compute spec hashes
+    enriched = {}
+    for fpath, info in entries.items():
+        entry = dict(info)
+        abs_path = os.path.join(PROJECT_ROOT, fpath)
+        try:
+            with open(abs_path, 'r') as f:
+                content = f.read()
+            entry['spec_content_hash'] = _compute_spec_hash(content)
+        except (IOError, OSError):
+            pass
+        enriched[fpath] = entry
+
+    data = {
+        '_metadata': {
+            'git_head': git_head,
+            'generated_at': time.time(),
+        },
+        'entries': enriched,
+    }
+    _write_atomic(STATUS_COMMIT_CACHE_PATH, json.dumps(data, indent=2))
+
+
+def cached_git_status():
+    """Return git status --porcelain output, using a file cache with 10s TTL.
+
+    Cache file: .purlin/cache/git_status_snapshot.txt
+    A missing, stale (>10s), or truncated cache triggers a fresh git call.
+    """
+    try:
+        stat = os.stat(GIT_STATUS_CACHE_PATH)
+        age = time.time() - stat.st_mtime
+        if age <= GIT_STATUS_TTL and stat.st_size > 0:
+            with open(GIT_STATUS_CACHE_PATH, 'r') as f:
+                content = f.read()
+            # Detect truncation: content should end with newline or be empty
+            if content and not content.endswith('\n') and '\n' in content:
+                pass  # Truncated — fall through to fresh call
+            else:
+                return content
+    except (IOError, OSError):
+        pass
+
+    # Fresh call
+    output = run_command("git status --porcelain")
+    if output is None:
+        output = ""
+    _write_atomic(GIT_STATUS_CACHE_PATH, output + '\n' if output else '')
+    return output
+
+
 def build_status_commit_cache():
     """Build a cache of all status commits with a single git log command.
 
     Replaces ~100+ individual git log subprocess calls with ONE call.
+    Uses a persistent disk cache (.purlin/cache/status_commit_cache.json)
+    that is valid as long as HEAD is unchanged and no feature file has
+    been modified since the cache was generated.
+
     Returns a dict mapping normalized feature paths to their status info:
     {
         "features/foo.md": {
@@ -158,11 +292,28 @@ def build_status_commit_cache():
         }
     }
     """
+    # Try persistent cache first
+    current_head = _get_current_head()
+    cached_entries, meta = _load_persistent_status_cache()
+    if cached_entries is not None and meta is not None:
+        if (meta.get('git_head') == current_head
+                and current_head
+                and _newest_feature_mtime(FEATURES_ABS) <= meta.get('generated_at', 0)):
+            # Cache hit — strip spec_content_hash from returned entries
+            # (callers don't expect it; it's for spec_content_unchanged)
+            return {k: {kk: vv for kk, vv in v.items()
+                        if kk != 'spec_content_hash'}
+                    for k, v in cached_entries.items()}
+
+    # Cache miss — full git log scan
     output = run_command(
         "git log --grep='\\[Complete features/' "
         "--grep='\\[Ready for' --format='%ct %H %s'"
     )
     if not output:
+        # Write empty cache so we don't re-scan until HEAD changes
+        if current_head:
+            _save_persistent_status_cache({}, current_head)
         return {}
 
     cache = {}
@@ -227,6 +378,10 @@ def build_status_commit_cache():
         del info['_best_ts']
         del info['_best_hash']
 
+    # Persist to disk for subsequent invocations
+    if current_head:
+        _save_persistent_status_cache(cache, current_head)
+
     return cache
 
 
@@ -257,10 +412,27 @@ def strip_discoveries_section(content):
 def spec_content_unchanged(f_path, commit_hash):
     """Check if spec content (above Discoveries section) is unchanged since commit.
 
-    Retrieves file content at the given commit hash via git show, strips the
-    User Testing Discoveries section from both versions, and compares.
+    When the persistent status cache contains a spec_content_hash for this
+    feature, uses hash comparison (no git show subprocess). Falls back to
+    full git show comparison when the hash is unavailable.
+
     Returns True if spec content is identical (only Discoveries changed).
     """
+    # Try hash-based comparison first (avoids git show subprocess)
+    cached_entries, _ = _load_persistent_status_cache()
+    if cached_entries is not None:
+        cached_hash = cached_entries.get(f_path, {}).get('spec_content_hash')
+        if cached_hash:
+            try:
+                abs_path = os.path.join(PROJECT_ROOT, f_path)
+                with open(abs_path, 'r') as f:
+                    current_content = f.read()
+                local_hash = _compute_spec_hash(current_content)
+                return local_hash == cached_hash
+            except (IOError, OSError):
+                return False
+
+    # Fallback: full git show comparison
     try:
         committed_content = run_command(
             f"git show {commit_hash}:{f_path}"

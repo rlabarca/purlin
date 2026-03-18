@@ -254,11 +254,53 @@ _DECISION_ROUTING = {
 # DISCOVERY routing depends on source; BUG defaults to builder
 
 
+_DIFF_BATCH_SIZE = 50  # Max files per git diff call to avoid ARG_MAX
+
+
+def _batched_diff(range_spec, file_list):
+    """Run git diff for a list of files in batches of _DIFF_BATCH_SIZE.
+
+    Returns a dict mapping file paths to their diff output.
+    Skips binary files gracefully.
+    """
+    if not file_list:
+        return {}
+
+    result = {}
+    for i in range(0, len(file_list), _DIFF_BATCH_SIZE):
+        batch = file_list[i:i + _DIFF_BATCH_SIZE]
+        diff_output = _run_git(
+            ['diff', range_spec, '-U0', '--'] + batch)
+        # Split batched output by file using the diff header pattern
+        current_file = None
+        current_lines = []
+        for line in diff_output.splitlines():
+            if line.startswith('diff --git'):
+                # Save previous file
+                if current_file is not None:
+                    result[current_file] = '\n'.join(current_lines)
+                # Extract file path from 'diff --git a/path b/path'
+                parts = line.split(' b/', 1)
+                current_file = parts[1] if len(parts) == 2 else None
+                current_lines = [line]
+            elif line.startswith('Binary files'):
+                # Skip binary files
+                current_file = None
+                current_lines = []
+            elif current_file is not None:
+                current_lines.append(line)
+        # Save last file
+        if current_file is not None:
+            result[current_file] = '\n'.join(current_lines)
+    return result
+
+
 def _extract_decisions_from_diff(range_spec, changed_files):
     """Extract structured decision entries from diff content.
 
     Scans added lines in the diff for decision tags in companion files
     (Implementation Notes) and feature files (User Testing Discoveries).
+    Uses batched git diff calls (one per category) instead of per-file calls.
 
     Returns list of dicts: [{category, feature, summary, role}].
     """
@@ -274,10 +316,9 @@ def _extract_decisions_from_diff(range_spec, changed_files):
                      and f['path'].endswith('.md')
                      and not f['path'].endswith('.impl.md')]
 
-    # Process companion files for impl decisions
-    for fpath in impl_files:
-        diff_output = _run_git(
-            ['diff', range_spec, '--', fpath, '-U0'])
+    # Batched diff for companion files
+    impl_diffs = _batched_diff(range_spec, impl_files)
+    for fpath, diff_output in impl_diffs.items():
         feature_stem = os.path.basename(fpath).replace('.impl.md', '.md')
         for line in diff_output.splitlines():
             if not line.startswith('+') or line.startswith('+++'):
@@ -295,13 +336,10 @@ def _extract_decisions_from_diff(range_spec, changed_files):
                     'role': _DECISION_ROUTING.get(category, 'architect'),
                 })
 
-    # Process feature files for user testing decisions
-    for fpath in feature_files:
-        diff_output = _run_git(
-            ['diff', range_spec, '--', fpath, '-U0'])
+    # Batched diff for feature files
+    feature_diffs = _batched_diff(range_spec, feature_files)
+    for fpath, diff_output in feature_diffs.items():
         feature_name = os.path.basename(fpath)
-        # Track if we're in a BUG entry to check Action Required
-        current_bug_lines = []
         for line in diff_output.splitlines():
             if not line.startswith('+') or line.startswith('+++'):
                 continue
@@ -312,10 +350,8 @@ def _extract_decisions_from_diff(range_spec, changed_files):
                 if not summary:
                     summary = f'{category} entry in {feature_name}'
                 if category == 'BUG':
-                    # Default to builder; check nearby lines for override
                     role = 'builder'
                 elif category == 'DISCOVERY':
-                    # DISCOVERY in feature file = testing context -> architect
                     role = 'architect'
                 else:
                     role = _DECISION_ROUTING.get(category, 'architect')
