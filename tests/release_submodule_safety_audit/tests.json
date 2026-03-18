@@ -3,5 +3,23 @@
   "passed": 4,
   "failed": 0,
   "total": 4,
-  "test_file": "tools/release/test_release_audit.py"
+  "test_file": "tools/release/test_release_audit.py",
+  "details": [
+    {
+      "test": "test_submodule_safety_audit (__main__.TestAllScriptsValidJSON.test_submodule_safety_audit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_artifact_in_tools (__main__.TestSubmoduleSafetyArtifactInTools.test_detects_artifact_in_tools)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_clean (__main__.TestSubmoduleSafetyClean.test_passes_clean)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_env (__main__.TestSubmoduleSafetyMissingEnv.test_detects_missing_env)",
+      "status": "PASS"
+    }
+  ]
 }
