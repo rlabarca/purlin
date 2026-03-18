@@ -1011,9 +1011,8 @@ class TestBuilderColdStartLoadsTombstonesAndAnchors(unittest.TestCase):
     And features/tombstones/ contains at least one tombstone file
     And features/ contains at least one anchor node file
     When the agent invokes /pl-resume builder
-    Then the Builder cold-start extensions run
-    And the tombstone check lists all files in features/tombstones/
-    And all anchor node files in features/ are read
+    Then the startup briefing contains tombstones with file and label per entry
+    And the startup briefing contains anchor_constraints with FORBIDDEN patterns
     And the recovery summary includes tombstone tasks as HIGH-priority items
     """
 
@@ -1078,11 +1077,11 @@ class TestBuilderColdStartLoadsTombstonesAndAnchors(unittest.TestCase):
             content = f.read()
         self.assertIn('tombstone', content.lower())
 
-    def test_command_file_references_anchor_preload(self):
-        """Command file Step 5 references anchor node preload for Builder."""
+    def test_command_file_references_anchor_constraints(self):
+        """Command file Step 5 references anchor constraints for Builder."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('anchor node', content.lower())
+        self.assertIn('anchor constraints', content.lower())
 
     def test_real_project_anchor_nodes_exist(self):
         """The real project has at least one anchor node file."""
@@ -1103,8 +1102,8 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
     Given .purlin/cache/session_checkpoint_qa.md does not exist
     And at least one feature is in TESTING state
     When the agent invokes /pl-resume qa
-    Then the QA cold-start extensions run
-    And verification_effort is read from each TESTING feature's critic.json
+    Then the startup briefing is retrieved
+    And the startup briefing contains testing_features with verification_effort per feature
     And the recovery summary includes effort classification per feature
     """
 
@@ -1166,28 +1165,27 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
         if not found_any:
             self.skipTest('No critic.json with verification_effort found')
 
-    def test_command_file_references_verification_effort(self):
-        """Command file Step 5 references verification_effort for QA."""
+    def test_command_file_references_testing_features(self):
+        """Command file Step 5 references testing features for QA."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('verification_effort', content)
+        self.assertIn('testing features', content.lower())
 
-    def test_command_file_references_qa_verification_effort(self):
-        """Command file includes QA verification_effort reading."""
+    def test_command_file_references_discovery_summary(self):
+        """Command file Step 5 references discovery summary for QA."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('verification_effort', content)
+        self.assertIn('discovery summary', content.lower())
 
 
 class TestColdStartRespectsStartupFlags(unittest.TestCase):
     """Scenario: Cold Start Respects Startup Flags
 
     Given .purlin/cache/session_checkpoint_builder.md does not exist
-    And .purlin/config.json sets auto_start to false for builder
+    And .purlin/config.json sets find_work to false for the builder role
     When the agent invokes /pl-resume builder
-    Then the core state-gathering sequence runs
-    And the cold-start extensions run
-    And the recovery summary displays a brief status summary
+    Then the startup briefing is retrieved
+    And the recovery summary displays "find_work disabled -- awaiting instruction."
     And the agent does not auto-generate a full work plan
     And the agent awaits user direction
     """
@@ -1246,14 +1244,13 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
         self.assertIn(
             'find_work disabled -- awaiting instruction', content)
 
-    def test_command_file_references_resolved_config(self):
-        """Command file references resolved config (config.local.json first)."""
+    def test_command_file_references_briefing_config(self):
+        """Command file references startup briefing config object."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('config.local.json', content,
-                      'Command file must reference config.local.json for '
-                      'resolved config pattern')
-        self.assertIn('config.json', content)
+        self.assertIn("briefing's `config`", content,
+                      'Command file must reference briefing config object '
+                      'for startup flag handling')
 
     def test_flags_default_to_true(self):
         """Startup flags default to true when absent from config."""
@@ -1264,6 +1261,59 @@ class TestColdStartRespectsStartupFlags(unittest.TestCase):
         recommend = builder_cfg.get('auto_start', True)
         self.assertTrue(startup)
         self.assertTrue(recommend)
+
+
+class TestStartupBriefingIntegration(unittest.TestCase):
+    """Verify that --startup <role> is wired correctly in status.sh and
+    produces the right fields for the /pl-resume restore flow."""
+
+    def test_status_sh_supports_startup_flag(self):
+        """status.sh accepts --startup <role> flag."""
+        status_sh = os.path.join(PROJECT_ROOT, 'tools', 'cdd', 'status.sh')
+        with open(status_sh) as f:
+            content = f.read()
+        self.assertIn('--startup', content)
+        self.assertIn('--cli-startup', content)
+
+    def test_command_file_references_startup_flag(self):
+        """Command file Step 5 uses tools/cdd/status.sh --startup."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('tools/cdd/status.sh --startup', content)
+
+    def test_command_file_step5_references_role_extensions(self):
+        """Command file Step 5 lists Builder, QA, Architect extensions."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        # Builder extensions
+        self.assertIn('tombstones', content.lower())
+        self.assertIn('delivery plan state', content.lower())
+        self.assertIn('phasing recommendation', content.lower())
+        # QA extensions
+        self.assertIn('testing features', content.lower())
+        self.assertIn('discovery summary', content.lower())
+        # Architect extensions
+        self.assertIn('spec completeness', content.lower())
+        self.assertIn('untracked files', content.lower())
+
+    def test_command_file_references_delivery_plan_state(self):
+        """Command file references delivery_plan_state for Builder phasing."""
+        with open(COMMAND_FILE) as f:
+            content = f.read()
+        self.assertIn('delivery_plan_state', content)
+        self.assertIn('phasing_recommended', content)
+
+    def test_startup_briefing_mutual_exclusivity_with_graph(self):
+        """--startup is checked before --graph in status.sh."""
+        status_sh = os.path.join(PROJECT_ROOT, 'tools', 'cdd', 'status.sh')
+        with open(status_sh) as f:
+            content = f.read()
+        startup_pos = content.find('= "--startup"')
+        graph_pos = content.find('= "--graph"')
+        self.assertGreater(startup_pos, -1)
+        self.assertGreater(graph_pos, -1)
+        self.assertLess(startup_pos, graph_pos,
+                        "--startup must precede --graph for precedence")
 
 
 if __name__ == '__main__':
@@ -1279,5 +1329,6 @@ if __name__ == '__main__':
             'passed': result.testsRun - failed,
             'failed': failed,
             'total': result.testsRun,
+            'test_file': 'tests/pl_session_resume/test_command.py',
         }, f)
     sys.exit(0 if result.wasSuccessful() else 1)

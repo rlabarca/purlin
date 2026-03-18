@@ -1,7 +1,1 @@
-{
-  "status": "PASS",
-  "passed": 93,
-  "failed": 0,
-  "total": 93,
-  "test_file": "tests/pl_session_resume/test_command.py"
-}
+{"status": "PASS", "passed": 98, "failed": 0, "total": 98, "test_file": "tests/pl_session_resume/test_command.py"}
