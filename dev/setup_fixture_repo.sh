@@ -2493,6 +2493,208 @@ commit_and_tag "main/workflow_checklist_system/mixed-step-statuses" \
     "Project with checklist containing passed, failed, and skipped steps"
 
 # =====================================================================
+echo ""
+echo "--- git_operation_cache ---"
+
+# --- Tag 1: fresh-repo-no-cache ---
+reset_workdir
+create_base_project
+
+# 5 features: 2 Complete, 1 Testing, 2 TODO
+create_feature "alpha.md" "Alpha" "Core" "policy_critic.md" "COMPLETE"
+create_feature "beta.md" "Beta" "Core" "policy_critic.md" "COMPLETE"
+create_feature "gamma.md" "Gamma" "Core" "policy_critic.md" "TESTING"
+create_feature "delta.md" "Delta" "Core" "policy_critic.md" "TODO"
+create_feature "epsilon.md" "Epsilon" "Core" "policy_critic.md" "TODO"
+
+# Status commits for Complete/Testing features
+git add -A >/dev/null 2>&1
+git commit -m "feat: add five features" >/dev/null 2>&1
+git commit --allow-empty -m "status(alpha): [Complete features/alpha.md] [Scope: full]" >/dev/null 2>&1
+git commit --allow-empty -m "status(beta): [Complete features/beta.md] [Scope: full]" >/dev/null 2>&1
+git commit --allow-empty -m "status(gamma): [Ready for Verification features/gamma.md] [Scope: full]" >/dev/null 2>&1
+
+# Ensure NO cache files exist
+rm -rf .purlin/cache/status_commit_cache.json .purlin/cache/git_status_snapshot.txt 2>/dev/null || true
+
+git add -A >/dev/null 2>&1
+git commit -m "chore: ensure no cache files" --allow-empty >/dev/null 2>&1
+git tag "main/git_operation_cache/fresh-repo-no-cache" >/dev/null 2>&1
+TAG_COUNT=$((TAG_COUNT + 1))
+echo "  [$TAG_COUNT] main/git_operation_cache/fresh-repo-no-cache"
+
+# --- Tag 2: populated-cache-current-head ---
+CURRENT_HEAD="$(git rev-parse HEAD)"
+CURRENT_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+cat > .purlin/cache/status_commit_cache.json <<CEOF
+{
+    "generated_at": "$CURRENT_TS",
+    "git_head": "$CURRENT_HEAD",
+    "entries": {
+        "features/alpha.md": {
+            "status": "COMPLETE",
+            "commit_hash": "$CURRENT_HEAD",
+            "spec_content_hash": "abc123placeholder"
+        },
+        "features/beta.md": {
+            "status": "COMPLETE",
+            "commit_hash": "$CURRENT_HEAD",
+            "spec_content_hash": "def456placeholder"
+        },
+        "features/gamma.md": {
+            "status": "TESTING",
+            "commit_hash": "$CURRENT_HEAD"
+        }
+    }
+}
+CEOF
+
+git add -A >/dev/null 2>&1
+git commit -m "chore: add populated cache matching HEAD" >/dev/null 2>&1
+git tag "main/git_operation_cache/populated-cache-current-head" >/dev/null 2>&1
+TAG_COUNT=$((TAG_COUNT + 1))
+echo "  [$TAG_COUNT] main/git_operation_cache/populated-cache-current-head"
+
+# --- Tag 3: populated-cache-stale-head ---
+cat > .purlin/cache/status_commit_cache.json <<'CEOF'
+{
+    "generated_at": "2026-01-01T00:00:00Z",
+    "git_head": "0000000000000000000000000000000000000000",
+    "entries": {
+        "features/alpha.md": {
+            "status": "COMPLETE",
+            "commit_hash": "0000000000000000000000000000000000000000"
+        }
+    }
+}
+CEOF
+
+git add -A >/dev/null 2>&1
+git commit -m "chore: add stale cache with wrong HEAD" >/dev/null 2>&1
+git tag "main/git_operation_cache/populated-cache-stale-head" >/dev/null 2>&1
+TAG_COUNT=$((TAG_COUNT + 1))
+echo "  [$TAG_COUNT] main/git_operation_cache/populated-cache-stale-head"
+
+# --- Tag 4: many-features-for-batching ---
+reset_workdir
+create_base_project
+
+# Create 60+ companion files on main
+for i in $(seq 1 65); do
+    fname="$(printf 'feature_%03d' "$i")"
+    create_feature "${fname}.md" "Feature $i" "Core" "policy_critic.md" "COMPLETE"
+    cat > "features/${fname}.impl.md" <<IEOF
+---
+name: Feature $i Implementation
+description: Impl notes for feature $i
+type: project
+---
+
+## Implementation Notes
+
+Companion file for feature $i.
+IEOF
+done
+
+git add -A >/dev/null 2>&1
+git commit -m "feat: add 65 features with companion files" >/dev/null 2>&1
+
+# Create a branch with changes to all companion files
+git checkout -b batch-changes >/dev/null 2>&1
+for i in $(seq 1 65); do
+    fname="$(printf 'feature_%03d' "$i")"
+    echo "Updated companion content for batch test." >> "features/${fname}.impl.md"
+done
+git add -A >/dev/null 2>&1
+git commit -m "chore: update all 65 companion files" >/dev/null 2>&1
+
+# Tag on the branch
+git tag "main/git_operation_cache/many-features-for-batching" >/dev/null 2>&1
+TAG_COUNT=$((TAG_COUNT + 1))
+echo "  [$TAG_COUNT] main/git_operation_cache/many-features-for-batching"
+
+git checkout main >/dev/null 2>&1 || git checkout master >/dev/null 2>&1
+
+# --- Tag 5: mixed-changes-branch ---
+reset_workdir
+create_base_project
+
+create_feature "existing_a.md" "Existing A" "Core" "policy_critic.md" "COMPLETE"
+create_feature "existing_b.md" "Existing B" "Core" "policy_critic.md" "COMPLETE"
+create_feature "to_delete.md" "To Delete" "Core" "policy_critic.md" "TODO"
+cat > "features/existing_a.impl.md" <<'IEOF'
+## Implementation Notes
+Original companion for A.
+IEOF
+
+git add -A >/dev/null 2>&1
+git commit -m "feat: base state for mixed changes" >/dev/null 2>&1
+
+# Branch with adds, modifies, deletes
+git checkout -b mixed-changes >/dev/null 2>&1
+
+# Modify
+echo "Modified content." >> features/existing_a.md
+echo "Updated companion." >> features/existing_a.impl.md
+
+# Add new
+create_feature "new_feature.md" "New Feature" "Core" "policy_critic.md" "TODO"
+
+# Delete
+git rm features/to_delete.md >/dev/null 2>&1
+
+git add -A >/dev/null 2>&1
+git commit -m "chore: mixed adds, modifies, deletes" >/dev/null 2>&1
+
+git tag "main/git_operation_cache/mixed-changes-branch" >/dev/null 2>&1
+TAG_COUNT=$((TAG_COUNT + 1))
+echo "  [$TAG_COUNT] main/git_operation_cache/mixed-changes-branch"
+
+git checkout main >/dev/null 2>&1 || git checkout master >/dev/null 2>&1
+
+# =====================================================================
+echo ""
+echo "--- git_timestamp_resilience ---"
+
+# --- Tag 1: same-second-commits ---
+reset_workdir
+create_base_project
+
+create_feature "ts_alpha.md" "TS Alpha" "Core" "policy_critic.md" "TODO"
+create_feature "ts_beta.md" "TS Beta" "Core" "policy_critic.md" "TODO"
+
+git add -A >/dev/null 2>&1
+git commit -m "feat: add timestamp test features" >/dev/null 2>&1
+
+# Two status commits with identical author dates (same second)
+GIT_AUTHOR_DATE="2026-01-15T12:00:00Z" GIT_COMMITTER_DATE="2026-01-15T12:00:00Z" \
+    git commit --allow-empty -m "status(ts_alpha): [Complete features/ts_alpha.md] [Scope: full]" >/dev/null 2>&1
+GIT_AUTHOR_DATE="2026-01-15T12:00:00Z" GIT_COMMITTER_DATE="2026-01-15T12:00:00Z" \
+    git commit --allow-empty -m "status(ts_beta): [Complete features/ts_beta.md] [Scope: full]" >/dev/null 2>&1
+
+commit_and_tag "main/git_timestamp_resilience/same-second-commits" \
+    "Two status commits with identical timestamps"
+
+# --- Tag 2: normal-ordering ---
+reset_workdir
+create_base_project
+
+create_feature "ord_alpha.md" "Ord Alpha" "Core" "policy_critic.md" "TODO"
+create_feature "ord_beta.md" "Ord Beta" "Core" "policy_critic.md" "TODO"
+
+git add -A >/dev/null 2>&1
+git commit -m "feat: add ordering test features" >/dev/null 2>&1
+
+GIT_AUTHOR_DATE="2026-01-15T12:00:00Z" GIT_COMMITTER_DATE="2026-01-15T12:00:00Z" \
+    git commit --allow-empty -m "status(ord_alpha): [Complete features/ord_alpha.md] [Scope: full]" >/dev/null 2>&1
+GIT_AUTHOR_DATE="2026-01-15T13:00:00Z" GIT_COMMITTER_DATE="2026-01-15T13:00:00Z" \
+    git commit --allow-empty -m "status(ord_beta): [Complete features/ord_beta.md] [Scope: full]" >/dev/null 2>&1
+
+commit_and_tag "main/git_timestamp_resilience/normal-ordering" \
+    "Two status commits with 1-hour gap between timestamps"
+
+# =====================================================================
 # PUSH ALL TAGS TO BARE REPO
 # =====================================================================
 
