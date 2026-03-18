@@ -108,7 +108,7 @@ Visual items appear as numbered `[V]` entries in the main checklist. Judged by n
     3.  For verifiable items: PASS, FAIL, or UNCERTAIN with observation notes.
     4.  Present results in two groups: auto-verified + manual confirmation required.
 *   **Figma-Triangulated Verification:** When Figma MCP is available and a visual spec screen has a Figma reference, perform three-source comparison (Figma design, spec Token Map + checklists, running app). Verdicts: PASS, BUG (app wrong -> Builder), STALE (Figma updated -> PM), SPEC_DRIFT (app matches Figma, not spec -> PM).
-*   **AFT alternative:** For features with `> AFT Web:` metadata, `/pl-aft-web` provides fully automated visual verification via Playwright MCP.
+*   **Web test alternative:** For features with `> Web Test:` metadata, `/pl-web-test` provides fully automated visual verification via Playwright MCP.
 
 ### Step 6 -- Exploratory Testing
 

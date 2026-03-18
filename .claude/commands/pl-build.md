@@ -22,7 +22,7 @@ If a delivery plan exists and the current phase has 2+ features:
 2. If a `parallel: true` group exists with 2+ features:
    - Announce: "Features X and Y are independent -- building in parallel."
    - Launch one Agent call per feature with `isolation: "worktree"`, each running Steps 0-2 only (see `instructions/references/phased_delivery.md` Section 10.13).
-   - Each agent prompt: "Implement feature X ONLY. Steps 0-2 only. No tests, no AFTs, no status tags. Do NOT modify the delivery plan."
+   - Each agent prompt: "Implement feature X ONLY. Steps 0-2 only. No tests, no web tests, no status tags. Do NOT modify the delivery plan."
    - Merge returned branches: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially.
    - After all groups complete, proceed to B2 (full verification on merged code).
 3. If no `parallel: true` groups exist, or the phase has only 1 feature: use the existing sequential per-feature loop below.
@@ -65,7 +65,7 @@ If a delivery plan exists and the current phase has 2+ features:
 
 *   **Tests:** Run feature-specific tests. Results to `tests/<feature_name>/tests.json` with `{"status": "PASS", "passed": N, "failed": 0, "total": N}`. `total` MUST be > 0. File MUST be produced by an actual test runner (anti-stub mandate).
 *   **Test Quality Self-Audit:** Audit each test against `features/policy_test_quality.md`: (1) Deletion test -- would it fail if implementation deleted? (2) Anti-pattern scan (AP-1 through AP-5). (3) Value assertion check. Record audit in companion file under `### Test Quality Audit`.
-*   **AFT (if eligible):** For features with `> AFT Web:`, run `/pl-aft-web` and iterate until zero BUG verdicts.
+*   **Web test (if eligible):** For features with `> Web Test:`, run `/pl-web-test` and iterate until zero BUG verdicts.
 *   **Self-Test Completeness:** Validate `tests.json`: required fields present, `total > 0`, no inconsistencies.
 *   If tests fail, fix and repeat from Step 2.
 

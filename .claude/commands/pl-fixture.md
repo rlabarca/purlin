@@ -27,7 +27,7 @@ a machine can check the Given/When/Then chain end-to-end.
 
 ### How to Write Fixture Tag Sections
 
-Add a `### 2.x Integration Test Fixture Tags` or `### 2.x AFT Web Fixture Tags` heading
+Add a `### 2.x Integration Test Fixture Tags` or `### 2.x Web Test Fixture Tags` heading
 in the Requirements section. Include a table with Tag and State Description columns:
 
     | Tag | State Description |

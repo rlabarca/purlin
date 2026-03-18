@@ -39,8 +39,8 @@ If phasing is warranted, present the user with two options:
 If the user approves phasing, create the delivery plan using the canonical format below, run the validation gate (see above), then commit it (`git commit -m "chore: create delivery plan (N phases)"`), set Phase 1 to IN_PROGRESS, and proceed.
 
 **Phase Internal Structure (B1/B2/B3):**
-*   **B1 (Build):** Existing per-feature loop (Steps 0-3 from `/pl-build`). Each feature implemented and locally tested including AFTs.
-*   **B2 (Test):** After B1 completes for all phase features, re-run full test suite AND all AFTs for every feature. Catches cross-feature regressions.
+*   **B1 (Build):** Existing per-feature loop (Steps 0-3 from `/pl-build`). Each feature implemented and locally tested including web tests.
+*   **B2 (Test):** After B1 completes for all phase features, re-run full test suite AND all web tests for every feature. Catches cross-feature regressions.
 *   **B3 (Fix):** Analyze-first protocol. Diagnose each failure (test bug? regression? approach conflict? spec contradiction?), then: fix straightforward issues and re-test, or escalate via `[DISCOVERY]`/`[INFEASIBLE]`.
 *   Status tags only after B2 passes or B3 escalations are recorded.
 

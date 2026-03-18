@@ -25,8 +25,6 @@ When creating a new feature file, use this structure:
 > Owner: <PM or Architect -- omit line if Architect (default)>
 > Prerequisite: features/<anchor_node>.md
 
-[TODO]
-
 ## 1. Overview
 
 <One paragraph: what this feature is and why it exists.>
@@ -93,8 +91,8 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 - `> Label:` -- display name for CDD dashboard
 - `> Category:` -- grouping category
 - `> Prerequisite: features/<name>.md` -- dependency link
-- `> AFT Web: <url>` -- web UI for automated feedback testing
-- `> AFT Start: <command>` -- auto-start for AFT target
+- `> Web Test: <url>` -- web UI for automated web testing
+- `> Web Start: <command>` -- auto-start for web test target
 - `> Owner: PM` or `> Owner: Architect` -- design authority (default: Architect)
 - `> Test Fixtures: <url>` -- non-default fixture repo URL
 
