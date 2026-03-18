@@ -3,7 +3,7 @@
 > Label: "Architecture: Automated Feedback Tests"
 > Category: "Automated Feedback Tests"
 
-[TODO]
+[Complete]
 
 ## Purpose
 
