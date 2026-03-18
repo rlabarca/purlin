@@ -1488,12 +1488,36 @@ while [ "$OUTER_BREAK" = "false" ]; do
             done
         fi
 
-        # Merge each worktree branch back to main
+        # Remove worktrees before merge-back so branches can be rebased
+        for i in "${!WT_DIRS[@]}"; do
+            git -C "$SCRIPT_DIR" worktree remove "${WT_DIRS[$i]}" --force 2>/dev/null
+        done
+
+        # Rebase-before-merge: rebase each branch onto current main before
+        # merging to incorporate changes from previously-merged parallel branches.
+        # Without this, the second+ merge in a parallel group will conflict whenever
+        # two builders independently modified the same file.
         MERGE_FAILED=false
         for i in "${!WT_BRANCHES[@]}"; do
-            if ! git -C "$SCRIPT_DIR" merge "${WT_BRANCHES[$i]}" --no-edit 2>/dev/null; then
+            BRANCH="${WT_BRANCHES[$i]}"
+            PHASE="${WT_PHASES[$i]}"
+
+            # Rebase the branch onto current main
+            if ! git -C "$SCRIPT_DIR" rebase HEAD "$BRANCH" 2>/dev/null; then
                 CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
-                echo "Error: Merge conflict during parallel merge of Phase ${WT_PHASES[$i]}:" >&2
+                echo "Error: Rebase conflict during parallel merge of Phase ${PHASE}:" >&2
+                echo "$CONFLICT_FILES" >&2
+                git -C "$SCRIPT_DIR" rebase --abort 2>/dev/null
+                git -C "$SCRIPT_DIR" checkout main 2>/dev/null
+                MERGE_FAILED=true
+                break
+            fi
+
+            # Rebase leaves HEAD on the branch; switch back to main and merge
+            git -C "$SCRIPT_DIR" checkout main 2>/dev/null
+            if ! git -C "$SCRIPT_DIR" merge "$BRANCH" --no-edit 2>/dev/null; then
+                CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+                echo "Error: Merge conflict during parallel merge of Phase ${PHASE}:" >&2
                 echo "$CONFLICT_FILES" >&2
                 git -C "$SCRIPT_DIR" merge --abort 2>/dev/null
                 MERGE_FAILED=true
@@ -1501,9 +1525,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
             fi
         done
 
-        # Clean up all worktrees and branches for this group
-        for i in "${!WT_DIRS[@]}"; do
-            git -C "$SCRIPT_DIR" worktree remove "${WT_DIRS[$i]}" --force 2>/dev/null
+        # Clean up branches for this group
+        for i in "${!WT_BRANCHES[@]}"; do
             git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" 2>/dev/null
         done
 
