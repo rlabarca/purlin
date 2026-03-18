@@ -6,7 +6,9 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ## Overview
 
-AFT Regression Testing skill. Identifies regression-eligible features and composes external commands for the user to execute in a separate terminal.
+AFT Regression Testing skill. QA owns the regression tier end-to-end: authoring harness scripts, composing regression sets, and triaging results. Harness scripts are behavioral verification artifacts, not application code — the Builder does NOT write or modify regression harnesses.
+
+This skill identifies regression-eligible features and composes external commands for the user to execute in a separate terminal.
 
 ---
 
@@ -65,7 +67,14 @@ dev/aft_runner.sh --watch
 - Features with `> AFT Agent:` → `dev/test_agent_interactions.sh --write-results`
 - Features with `> AFT Web:` → Compose a `/pl-aft-web` invocation (runs inside Claude session, not external)
 
-Print the composed command and instruct: **"Run this in an external terminal: `<command>`. Tell me when it is done."**
+Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
+```
+Run this in a separate terminal:
+
+    ./dev/aft_runner.sh --once dev/test_agent_interactions.sh --write-results
+
+Tell me when it finishes.
+```
 
 ### Step 4 — Process Results
 
