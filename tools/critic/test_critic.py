@@ -7512,6 +7512,101 @@ class TestLifecycleResetActionItemWithDiff(unittest.TestCase):
                       reset_items[0]['description'])
 
 
+class TestResetContextForGenuinelyUnimplementedFeature(unittest.TestCase):
+    """Scenario: Reset context for genuinely unimplemented feature.
+
+    When a feature has never had a status commit (no tests.json exists)
+    and is in TODO lifecycle state, the builder action item has category
+    'lifecycle_reset' with the standard description format.
+    """
+
+    def _make_feature_result(self):
+        return {
+            'feature_file': 'features/new_feature.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {},
+                    },
+                    'structural_completeness': {
+                        'status': 'FAIL',
+                        'detail': 'Missing tests/new_feature/tests.json',
+                    },
+                    'traceability': {
+                        'status': 'PASS',
+                        '_matched': [],
+                    },
+                },
+            },
+            'user_testing': {'status': 'CLEAN'},
+            'visual_spec': {'present': False},
+            'regression_scope': {'declared': 'full'},
+            'fixture_tags': {
+                'declared_count': 0,
+                'missing_count': 0,
+                'missing': [],
+                'repo_url': None,
+                'repo_unavailable': False,
+            },
+        }
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_unimplemented_feature_lifecycle_reset_category(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff):
+        """Genuinely unimplemented feature (no tests.json) produces a
+        lifecycle_reset action item with standard description format."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = None  # No prior commit to diff against
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/new_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        reset_items = [
+            i for i in items['builder']
+            if i['category'] == 'lifecycle_reset'
+        ]
+        self.assertEqual(len(reset_items), 1)
+        self.assertEqual(reset_items[0]['priority'], 'HIGH')
+        self.assertIn(
+            'implement spec changes for new_feature',
+            reset_items[0]['description'].lower())
+
+    @patch('critic._get_scenario_diff')
+    @patch('critic.read_feature_file')
+    @patch('os.path.isfile', return_value=True)
+    @patch('critic._get_feature_lifecycle_state')
+    def test_unimplemented_feature_structural_completeness_missing(
+            self, mock_lifecycle, mock_isfile, mock_read, mock_diff):
+        """Genuinely unimplemented feature has structural_completeness FAIL
+        (tests.json missing) — Builder gets both lifecycle_reset and
+        structural_completeness action items."""
+        mock_lifecycle.return_value = 'todo'
+        mock_read.return_value = 'content'
+        mock_diff.return_value = None
+
+        result = self._make_feature_result()
+        cdd_status = {'features': {
+            'todo': [{'file': 'features/new_feature.md'}],
+        }}
+        items = generate_action_items(result, cdd_status)
+        struct_items = [
+            i for i in items['builder']
+            if i['category'] == 'structural_completeness'
+        ]
+        self.assertTrue(
+            len(struct_items) > 0,
+            'Missing tests.json should produce structural completeness item')
+
+
 class TestWeakTraceabilityMatch(unittest.TestCase):
     """Test weak traceability match detection for new scenarios."""
 
