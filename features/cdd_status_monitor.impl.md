@@ -87,3 +87,15 @@ Audited 6 new tests (2026-03-17) against policy_test_quality.md:
 - **AP-5:** Tests use multi-feature setups with mixed role statuses, violations, and action items.
 
 *   **Delivery Phase Expanded API Format (2026-03-16):** Updated `get_delivery_phase()` from old `{"current": N, "total": N}` format to expanded format per spec Section 2.4: `{"completed": N, "in_progress": N, "pending": N, "removed": N, "total": N, "phases": [...]}`. Regex updated to capture phase labels from `## Phase N -- Label [STATUS]` headings (supports `--`, `—`, `–` separators). Now recognizes all 4 statuses: COMPLETE, IN_PROGRESS, PENDING, REMOVED. Returns None when all phases are COMPLETE or REMOVED (previously only COMPLETE). HTML annotation updated from `[PHASE (N/M)]` to `[N/M DONE | N RUNNING]` per Section 2.11.
+
+*   **CLI Startup Briefing (2026-03-18):** Implemented Section 2.15 `--startup <role>` flag. Added `generate_startup_briefing(role, cache)` to `serve.py` — produces a single JSON blob with all common fields (config, git_state, feature_summary, action_items, role-filtered features with scenario_count, dependency_graph_summary, critic_last_run) plus role-specific extensions: Builder (tombstones, anchor_constraints with FORBIDDEN pattern extraction, delivery_plan_state, phasing_recommended), Architect (spec_completeness with spec_gate details, untracked_files), QA (testing_features with verification_effort, discovery_summary from sidecar scans, delivery_plan_gating). Helper functions: `_count_scenarios()` counts `#### Scenario:` headings, `_extract_forbidden_patterns()` parses grepable pattern/scope pairs from anchor files (handles markdown bold formatting), `_scan_discovery_sidecars()` counts OPEN discoveries. CLI wiring: `status.sh --startup <role>` → `serve.py --cli-startup <role>`. Mutual exclusivity: `--startup` checked first in both shell and Python entry points so it silently takes precedence over `--graph`/`--incomplete`. Size budget: Builder 7.9KB, QA 7.7KB, Architect 1.6KB (all under limits). 15 new tests covering all 8 spec scenarios plus helper unit tests.
+
+### Test Quality Audit (Startup Briefing)
+
+Audited 15 new tests (2026-03-18) against policy_test_quality.md:
+- **Deletion:** Tests import `generate_startup_briefing`, `_count_scenarios`, `_extract_forbidden_patterns`, `_scan_discovery_sidecars` directly — deletion causes ImportError + assertion failures.
+- **AP-1:** No prose inspection — tests construct temp environments with feature files, critic.json data, and anchor content, then call the functions.
+- **AP-2:** Value assertions (specific field values, array lengths, key presence/absence, specific string matches).
+- **AP-3:** Mocks limited to module-level constants (FEATURES_ABS, TESTS_DIR, etc.) and `run_command` for git; briefing logic runs unmocked.
+- **AP-4:** No tautological assertions — all checks verify specific expected values (role name, field presence, filtered feature counts, pattern extraction).
+- **AP-5:** Tests use multi-feature setups with mixed statuses, tombstones, anchors with FORBIDDEN patterns, discovery sidecars, and spec gate data.

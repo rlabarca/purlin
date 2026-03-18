@@ -945,6 +945,333 @@ def generate_role_filtered_status_json(role, cache=None):
     return result
 
 
+def _count_scenarios(filepath):
+    """Count '#### Scenario:' headings in a feature file."""
+    count = 0
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                if line.strip().startswith('#### Scenario:'):
+                    count += 1
+    except (IOError, OSError):
+        pass
+    return count
+
+
+def _extract_forbidden_patterns(filepath):
+    """Extract FORBIDDEN grepable patterns from an anchor node file.
+
+    Looks for patterns in a structured section (typically Section 2.3 or
+    similar) that defines scan_scope and regex patterns.
+    Returns list of {pattern, scope} dicts.
+    """
+    patterns = []
+    try:
+        with open(filepath, 'r') as f:
+            content = f.read()
+    except (IOError, OSError):
+        return patterns
+
+    # Match lines that look like grepable pattern definitions:
+    # *   **Grepable pattern:** `<regex>` ... scope/scan_scope ...
+    # OR structured blocks with "Grepable pattern:" and "Scan scope:" lines
+    # Handle markdown bold: **Grepable pattern:** `...`
+    pat_re = re.compile(
+        r'[Gg]repable\s+[Pp]attern:\*{0,2}\s*`([^`]+)`', re.MULTILINE)
+    scope_re = re.compile(
+        r'[Ss]can\s+[Ss]cope:\*{0,2}\s*`([^`]+)`', re.MULTILINE)
+
+    pat_matches = list(pat_re.finditer(content))
+    scope_matches = list(scope_re.finditer(content))
+
+    for i, pm in enumerate(pat_matches):
+        pattern = pm.group(1)
+        # Try to pair with nearest scope match after this pattern
+        scope = "tools/**"  # default
+        for sm in scope_matches:
+            if sm.start() > pm.start():
+                scope = sm.group(1)
+                break
+        patterns.append({"pattern": pattern, "scope": scope})
+
+    return patterns
+
+
+def _scan_discovery_sidecars():
+    """Scan features/*.discoveries.md for open discovery entries.
+
+    Returns {total_open: int, by_feature: {stem: count}}.
+    """
+    result = {"total_open": 0, "by_feature": {}}
+    if not os.path.isdir(FEATURES_ABS):
+        return result
+
+    for fname in os.listdir(FEATURES_ABS):
+        if not fname.endswith('.discoveries.md'):
+            continue
+        stem = fname.replace('.discoveries.md', '')
+        fpath = os.path.join(FEATURES_ABS, fname)
+        count = 0
+        try:
+            with open(fpath, 'r') as f:
+                for line in f:
+                    stripped = line.strip()
+                    if (stripped.startswith('[BUG]')
+                            or stripped.startswith('[DISCOVERY]')
+                            or stripped.startswith('[INTENT_DRIFT]')
+                            or stripped.startswith('[SPEC_DISPUTE]')):
+                        # Check if it's OPEN (not RESOLVED/PRUNED)
+                        if 'RESOLVED' not in stripped and 'PRUNED' not in stripped:
+                            count += 1
+        except (IOError, OSError):
+            continue
+        if count > 0:
+            result["by_feature"][stem] = count
+            result["total_open"] += count
+
+    return result
+
+
+def generate_startup_briefing(role, cache=None):
+    """Generates the startup briefing JSON for --startup <role>.
+
+    Single-call output with everything an agent needs to propose a work plan.
+    Spec: cdd_status_monitor.md Section 2.15.
+    """
+    if cache is None:
+        cache = build_status_commit_cache()
+
+    # Reuse role-filtered output for features and action items
+    role_data = generate_role_filtered_status_json(role, cache)
+    full_status = generate_api_status_json(cache)
+
+    # --- Common Fields (Section 2.15.1) ---
+
+    # Config: resolved agent config for this role
+    agent_cfg = CONFIG.get("agents", {}).get(role, {})
+    config_block = {
+        "find_work": agent_cfg.get("find_work", True),
+        "auto_start": agent_cfg.get("auto_start", False),
+        "model": agent_cfg.get("model", ""),
+        "effort": agent_cfg.get("effort", ""),
+    }
+
+    # Git state
+    branch = run_command("git rev-parse --abbrev-ref HEAD") or "unknown"
+    active_collab = get_active_branch()
+    porcelain = run_command("git status --porcelain") or ""
+    porcelain_lines = [l for l in porcelain.splitlines()
+                       if not any(x in l for x in ['.DS_Store', '.purlin/'])]
+    modified = [l for l in porcelain_lines if l and l[0] in ('M', 'A', 'D', 'R')
+                or (len(l) > 1 and l[1] in ('M', 'A', 'D', 'R'))]
+    untracked = [l[3:] for l in porcelain_lines if l.startswith('??')]
+    recent_log = run_command("git log -5 --format='%h|%s|%cr'") or ""
+    recent_commits = []
+    for line in recent_log.splitlines():
+        parts = line.split('|', 2)
+        if len(parts) == 3:
+            recent_commits.append({
+                "hash": parts[0],
+                "subject": parts[1],
+                "relative_time": parts[2],
+            })
+
+    git_state = {
+        "branch": branch,
+        "active_collab_branch": active_collab,
+        "clean": len(porcelain_lines) == 0,
+        "modified_files": [l.strip() for l in modified][:20],
+        "untracked_files": untracked[:20],
+        "recent_commits": recent_commits,
+    }
+
+    # Feature summary
+    all_features = full_status.get("features", [])
+    by_lifecycle = {"todo": 0, "testing": 0, "complete": 0}
+    by_role_status = {"todo": 0, "done": 0}
+    for feat in all_features:
+        # Lifecycle: determine from role statuses
+        role_val = feat.get(role)
+        if role_val in _TERMINAL_STATUSES:
+            by_role_status["done"] += 1
+        else:
+            by_role_status["todo"] += 1
+
+        # Approximate lifecycle from builder/qa status
+        builder_s = feat.get("builder", "")
+        qa_s = feat.get("qa", "")
+        if builder_s == "DONE" and qa_s in ("CLEAN", "N/A"):
+            by_lifecycle["complete"] += 1
+        elif builder_s == "DONE" and qa_s == "TODO":
+            by_lifecycle["testing"] += 1
+        else:
+            by_lifecycle["todo"] += 1
+
+    feature_summary = {
+        "total": len(all_features),
+        "by_lifecycle": by_lifecycle,
+        "by_role_status": by_role_status,
+    }
+
+    # Add scenario_count to filtered features
+    features_with_count = []
+    for feat in role_data.get("features", []):
+        entry = dict(feat)
+        fpath_abs = os.path.join(PROJECT_ROOT, feat["file"])
+        entry["scenario_count"] = _count_scenarios(fpath_abs)
+        features_with_count.append(entry)
+
+    # Dependency graph summary
+    dep_summary = {"total_features": 0, "cycles": [], "blocked_features": []}
+    try:
+        with open(DEPENDENCY_GRAPH_PATH, 'r') as f:
+            graph = json.load(f)
+        dep_summary["total_features"] = len(graph.get("features", []))
+        dep_summary["cycles"] = graph.get("cycles", [])
+    except (json.JSONDecodeError, IOError, OSError):
+        pass
+
+    result = {
+        "generated_at": role_data.get("generated_at", ""),
+        "role": role,
+        "config": config_block,
+        "git_state": git_state,
+        "feature_summary": feature_summary,
+        "action_items": role_data.get("action_items", []),
+        "features": features_with_count,
+        "dependency_graph_summary": dep_summary,
+        "critic_last_run": role_data.get("critic_last_run", ""),
+    }
+
+    # --- Role-Specific Extensions ---
+
+    if role == "builder":
+        # Tombstones (Section 2.15.2)
+        tombstones = []
+        tombstones_dir = os.path.join(FEATURES_ABS, "tombstones")
+        if os.path.isdir(tombstones_dir):
+            for fname in sorted(os.listdir(tombstones_dir)):
+                if fname.endswith('.md'):
+                    fpath = os.path.join(tombstones_dir, fname)
+                    tombstones.append({
+                        "file": os.path.normpath(
+                            os.path.join(FEATURES_REL, "tombstones", fname)),
+                        "label": extract_label(fpath),
+                    })
+        result["tombstones"] = tombstones
+
+        # Anchor constraints (Section 2.15.2)
+        anchor_constraints = {}
+        if os.path.isdir(FEATURES_ABS):
+            for fname in sorted(os.listdir(FEATURES_ABS)):
+                if (fname.endswith('.md')
+                        and not fname.endswith('.impl.md')
+                        and not fname.endswith('.discoveries.md')
+                        and (fname.startswith('arch_')
+                             or fname.startswith('design_')
+                             or fname.startswith('policy_'))):
+                    fpath = os.path.join(FEATURES_ABS, fname)
+                    forbidden = _extract_forbidden_patterns(fpath)
+                    anchor_constraints[fname] = {
+                        "label": extract_label(fpath),
+                        "forbidden_patterns": forbidden,
+                    }
+        result["anchor_constraints"] = anchor_constraints
+
+        # in_scope_features: same as features but explicitly named
+        result["in_scope_features"] = features_with_count
+
+        # Delivery plan state (Section 2.15.2)
+        delivery = get_delivery_phase()
+        if delivery:
+            # Find current phase (first IN_PROGRESS or first PENDING)
+            current_phase = None
+            phase_features_list = []
+            for p in delivery.get("phases", []):
+                if p["status"] in ("IN_PROGRESS", "PENDING"):
+                    if current_phase is None:
+                        current_phase = p["number"]
+                    break
+            result["delivery_plan_state"] = {
+                "exists": True,
+                "current_phase": current_phase,
+                "phase_features": phase_features_list,
+            }
+        else:
+            result["delivery_plan_state"] = {"exists": False}
+
+        # Phasing recommended (Section 2.15.2)
+        if not result["delivery_plan_state"]["exists"]:
+            n_features = len(features_with_count)
+            high_complexity = sum(
+                1 for f in features_with_count
+                if f.get("scenario_count", 0) >= 5)
+            result["phasing_recommended"] = (
+                n_features >= 3 or high_complexity >= 2)
+        else:
+            result["phasing_recommended"] = False
+
+    elif role == "architect":
+        # Spec completeness (Section 2.15.3)
+        spec_completeness = []
+        for feat in features_with_count:
+            fname = os.path.basename(feat["file"])
+            stem = os.path.splitext(fname)[0]
+            critic_path = os.path.join(TESTS_DIR, stem, "critic.json")
+            entry = {
+                "file": feat["file"],
+                "spec_gate": "UNKNOWN",
+                "spec_gate_details": [],
+            }
+            if os.path.isfile(critic_path):
+                try:
+                    with open(critic_path, 'r') as f:
+                        cdata = json.load(f)
+                    sg = cdata.get("spec_gate", {})
+                    entry["spec_gate"] = sg.get("status", "UNKNOWN")
+                    entry["spec_gate_details"] = sg.get("details", [])
+                except (json.JSONDecodeError, IOError, OSError):
+                    pass
+            spec_completeness.append(entry)
+        result["spec_completeness"] = spec_completeness
+
+        # Untracked files (Section 2.15.3)
+        result["untracked_files"] = untracked
+
+    elif role == "qa":
+        # Testing features with verification_effort (Section 2.15.4)
+        testing_features = []
+        for feat in all_features:
+            builder_s = feat.get("builder", "")
+            qa_s = feat.get("qa", "")
+            if builder_s == "DONE" and qa_s == "TODO":
+                testing_features.append({
+                    "file": feat["file"],
+                    "label": feat.get("label", ""),
+                    "verification_effort": feat.get("verification_effort", {}),
+                })
+        result["testing_features"] = testing_features
+
+        # Discovery summary (Section 2.15.4)
+        result["discovery_summary"] = _scan_discovery_sidecars()
+
+        # Delivery plan gating (Section 2.15.4)
+        delivery = get_delivery_phase()
+        gating = {
+            "phase_gated_features": [],
+            "fully_delivered_features": [],
+        }
+        if delivery:
+            # Features in PENDING phases are gated
+            for p in delivery.get("phases", []):
+                if p["status"] == "PENDING":
+                    gating["phase_gated_features"].append(
+                        f"Phase {p['number']}: {p['label']}")
+        result["delivery_plan_gating"] = gating
+
+    return result
+
+
 # ===================================================================
 # Web Dashboard (role-based columns, Active/Complete grouping)
 # ===================================================================
@@ -6327,7 +6654,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2 and sys.argv[1] == "--cli-role-status":
+    if len(sys.argv) > 2 and sys.argv[1] == "--cli-startup":
+        # Startup briefing CLI mode (Section 2.15): --startup takes precedence
+        role = sys.argv[2].lower()
+        valid_roles = {'architect', 'builder', 'qa', 'pm'}
+        if role not in valid_roles:
+            print(f"Error: invalid role '{role}'. Must be one of: {', '.join(sorted(valid_roles))}", file=sys.stderr)
+            sys.exit(1)
+        cache = build_status_commit_cache()
+        write_internal_feature_status(cache)
+        write_api_status_json(cache)
+        briefing = generate_startup_briefing(role, cache)
+        json.dump(briefing, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write('\n')
+    elif len(sys.argv) > 2 and sys.argv[1] == "--cli-role-status":
         # Role-filtered CLI mode: output filtered JSON for a specific role
         role = sys.argv[2].lower()
         valid_roles = {'architect', 'builder', 'qa', 'pm'}

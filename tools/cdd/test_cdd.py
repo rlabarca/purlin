@@ -26,6 +26,10 @@ from serve import (
     generate_internal_feature_status,
     generate_api_status_json,
     generate_role_filtered_status_json,
+    generate_startup_briefing,
+    _count_scenarios,
+    _extract_forbidden_patterns,
+    _scan_discovery_sidecars,
     _is_feature_complete,
     _feature_urgency,
     strip_discoveries_section,
@@ -3011,6 +3015,645 @@ class TestSectionCollapseAndExpand(unittest.TestCase):
         """toggleSection JS function exists for section collapse/expand behavior."""
         html = _gen_html()
         self.assertIn('function toggleSection', html)
+
+
+# ===================================================================
+# Startup Briefing Tests (Section 2.15)
+# ===================================================================
+
+
+def _make_startup_env(tmpdir, features=None, tombstones=None, anchors=None,
+                      critic_data=None, config=None, graph=None,
+                      delivery_plan=None, discoveries=None):
+    """Create a temp environment for startup briefing tests.
+
+    Returns dict of patch targets and values.
+    """
+    features_dir = os.path.join(tmpdir, "features")
+    tests_dir = os.path.join(tmpdir, "tests")
+    cache_dir = os.path.join(tmpdir, ".purlin", "cache")
+    os.makedirs(features_dir, exist_ok=True)
+    os.makedirs(tests_dir, exist_ok=True)
+    os.makedirs(cache_dir, exist_ok=True)
+
+    features = features or {}
+    for stem, cfg in features.items():
+        fpath = os.path.join(features_dir, f"{stem}.md")
+        scenarios = cfg.get("scenarios", [])
+        with open(fpath, 'w') as f:
+            f.write(f'# Feature: {stem}\n\n> Label: "{cfg.get("label", stem)}"\n\n')
+            for s in scenarios:
+                f.write(f'#### Scenario: {s}\n\n')
+
+        tdir = os.path.join(tests_dir, stem)
+        os.makedirs(tdir, exist_ok=True)
+        role_status = cfg.get("role_status", {
+            "architect": "DONE", "builder": "TODO",
+            "qa": "N/A", "pm": "N/A"})
+        cdata = critic_data.get(stem, {}) if critic_data else {}
+        cdata.setdefault("role_status", role_status)
+        cdata.setdefault("action_items", {
+            "architect": [], "builder": [], "qa": [], "pm": []})
+        cdata.setdefault("implementation_gate", {
+            "checks": {"policy_adherence": {
+                "status": "PASS", "violations": []}}})
+        if "verification_effort" not in cdata:
+            cdata["verification_effort"] = {
+                "summary": "no QA items", "total_auto": 0, "total_manual": 0}
+        with open(os.path.join(tdir, "critic.json"), 'w') as f:
+            json.dump(cdata, f)
+
+    tombstones = tombstones or []
+    if tombstones:
+        tdir = os.path.join(features_dir, "tombstones")
+        os.makedirs(tdir, exist_ok=True)
+        for t in tombstones:
+            fpath = os.path.join(tdir, t["file"])
+            with open(fpath, 'w') as f:
+                f.write(f'# Tombstone\n\n> Label: "{t.get("label", t["file"])}"\n')
+
+    anchors = anchors or {}
+    for fname, content in anchors.items():
+        fpath = os.path.join(features_dir, fname)
+        with open(fpath, 'w') as f:
+            f.write(content)
+
+    graph_data = graph or {"features": [], "cycles": [], "orphans": []}
+    with open(os.path.join(cache_dir, "dependency_graph.json"), 'w') as f:
+        json.dump(graph_data, f)
+
+    if delivery_plan:
+        with open(os.path.join(cache_dir, "delivery_plan.md"), 'w') as f:
+            f.write(delivery_plan)
+
+    if discoveries:
+        for stem, content in discoveries.items():
+            dpath = os.path.join(features_dir, f"{stem}.discoveries.md")
+            with open(dpath, 'w') as f:
+                f.write(content)
+
+    resolved_config = config or {
+        "agents": {
+            "builder": {"find_work": True, "auto_start": True,
+                        "model": "test-model", "effort": "high"},
+            "qa": {"find_work": True, "auto_start": False,
+                   "model": "test-model", "effort": "medium"},
+            "architect": {"find_work": False, "auto_start": False,
+                          "model": "test-model", "effort": "high"},
+            "pm": {"find_work": False, "auto_start": False,
+                   "model": "test-model", "effort": "high"},
+        }
+    }
+
+    return {
+        "features_dir": features_dir,
+        "tests_dir": tests_dir,
+        "cache_dir": cache_dir,
+        "config": resolved_config,
+        "project_root": tmpdir,
+    }
+
+
+class TestStartupBriefingCommonFields(unittest.TestCase):
+    """Scenario: Startup Briefing Common Fields"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_common_fields_present(self, mock_fabs, mock_tdir):
+        """All common fields are present with correct types."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(tmpdir, features={
+                "feat_a": {"label": "Feature A",
+                           "role_status": {"architect": "DONE",
+                                           "builder": "TODO",
+                                           "qa": "N/A", "pm": "N/A"},
+                           "scenarios": ["S1", "S2"]},
+            })
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            # Check all required common fields
+            self.assertIn("generated_at", result)
+            self.assertEqual(result["role"], "builder")
+            self.assertIn("config", result)
+            self.assertIn("find_work", result["config"])
+            self.assertIn("auto_start", result["config"])
+            self.assertIn("git_state", result)
+            self.assertIn("branch", result["git_state"])
+            self.assertIn("clean", result["git_state"])
+            self.assertIn("modified_files", result["git_state"])
+            self.assertIn("recent_commits", result["git_state"])
+            self.assertIn("feature_summary", result)
+            self.assertIn("total", result["feature_summary"])
+            self.assertIn("by_lifecycle", result["feature_summary"])
+            self.assertIn("by_role_status", result["feature_summary"])
+            self.assertIn("action_items", result)
+            self.assertIsInstance(result["action_items"], list)
+            self.assertIn("features", result)
+            self.assertIsInstance(result["features"], list)
+            self.assertIn("dependency_graph_summary", result)
+            self.assertIn("total_features",
+                          result["dependency_graph_summary"])
+            self.assertIn("cycles", result["dependency_graph_summary"])
+            self.assertIn("critic_last_run", result)
+
+
+class TestStartupBriefingBuilderExtension(unittest.TestCase):
+    """Scenario: Startup Briefing Builder Extension"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_builder_extension_fields(self, mock_fabs, mock_tdir):
+        """Builder briefing includes tombstones, anchors, delivery state."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(
+                tmpdir,
+                features={
+                    "feat_todo": {
+                        "label": "TODO Feature",
+                        "role_status": {"architect": "DONE",
+                                        "builder": "TODO",
+                                        "qa": "N/A", "pm": "N/A"},
+                        "scenarios": ["S1", "S2", "S3"]},
+                },
+                tombstones=[{"file": "old_feature.md",
+                             "label": "Old Feature"}],
+                anchors={
+                    "arch_test.md": (
+                        '# Arch: Test\n\n> Label: "Arch Test"\n\n'
+                        '## FORBIDDEN\n\n'
+                        '*   **Grepable pattern:** `#[0-9a-f]+`\n'
+                        '*   **Scan scope:** `tools/**/*.py`\n'),
+                },
+            )
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            # Tombstones
+            self.assertIn("tombstones", result)
+            self.assertEqual(len(result["tombstones"]), 1)
+            self.assertEqual(result["tombstones"][0]["label"], "Old Feature")
+            self.assertIn("file", result["tombstones"][0])
+
+            # Anchor constraints
+            self.assertIn("anchor_constraints", result)
+            self.assertIn("arch_test.md", result["anchor_constraints"])
+            arch = result["anchor_constraints"]["arch_test.md"]
+            self.assertEqual(arch["label"], "Arch Test")
+            self.assertIsInstance(arch["forbidden_patterns"], list)
+            self.assertTrue(len(arch["forbidden_patterns"]) > 0)
+            self.assertIn("pattern", arch["forbidden_patterns"][0])
+            self.assertIn("scope", arch["forbidden_patterns"][0])
+
+            # in_scope_features with scenario_count
+            self.assertIn("in_scope_features", result)
+            for f in result["in_scope_features"]:
+                self.assertIn("scenario_count", f)
+
+            # Delivery plan state
+            self.assertIn("delivery_plan_state", result)
+            self.assertIn("exists", result["delivery_plan_state"])
+
+            # No QA or Architect extension fields
+            self.assertNotIn("testing_features", result)
+            self.assertNotIn("spec_completeness", result)
+
+
+class TestStartupBriefingQAExtension(unittest.TestCase):
+    """Scenario: Startup Briefing QA Extension"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_qa_extension_fields(self, mock_fabs, mock_tdir):
+        """QA briefing includes testing_features, discovery_summary, gating."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(
+                tmpdir,
+                features={
+                    "feat_testing": {
+                        "label": "Testing Feature",
+                        "role_status": {"architect": "DONE",
+                                        "builder": "DONE",
+                                        "qa": "TODO", "pm": "N/A"},
+                        "scenarios": ["S1"]},
+                    "feat_done": {
+                        "label": "Done Feature",
+                        "role_status": {"architect": "DONE",
+                                        "builder": "DONE",
+                                        "qa": "CLEAN", "pm": "N/A"},
+                        "scenarios": ["S1"]},
+                },
+                discoveries={
+                    "feat_testing": (
+                        "[BUG] Button doesn't work\n"
+                        "[DISCOVERY] New behavior found\n"),
+                },
+            )
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("qa")
+
+            # Testing features
+            self.assertIn("testing_features", result)
+            testing = result["testing_features"]
+            self.assertEqual(len(testing), 1)
+            self.assertEqual(testing[0]["label"], "Testing Feature")
+            self.assertIn("verification_effort", testing[0])
+
+            # Discovery summary
+            self.assertIn("discovery_summary", result)
+            disc = result["discovery_summary"]
+            self.assertEqual(disc["total_open"], 2)
+            self.assertIn("feat_testing", disc["by_feature"])
+            self.assertEqual(disc["by_feature"]["feat_testing"], 2)
+
+            # Delivery plan gating
+            self.assertIn("delivery_plan_gating", result)
+            self.assertIn("phase_gated_features",
+                          result["delivery_plan_gating"])
+            self.assertIn("fully_delivered_features",
+                          result["delivery_plan_gating"])
+
+            # No Builder or Architect extension fields
+            self.assertNotIn("tombstones", result)
+            self.assertNotIn("anchor_constraints", result)
+            self.assertNotIn("spec_completeness", result)
+
+
+class TestStartupBriefingArchitectExtension(unittest.TestCase):
+    """Scenario: Startup Briefing Architect Extension"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_architect_extension_fields(self, mock_fabs, mock_tdir):
+        """Architect briefing includes spec_completeness and untracked_files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(
+                tmpdir,
+                features={
+                    "feat_specgap": {
+                        "label": "Spec Gap Feature",
+                        "role_status": {"architect": "TODO",
+                                        "builder": "TODO",
+                                        "qa": "N/A", "pm": "N/A"},
+                        "scenarios": ["S1"]},
+                },
+                critic_data={
+                    "feat_specgap": {
+                        "spec_gate": {
+                            "status": "FAIL",
+                            "details": ["Missing Section 2.1"],
+                        },
+                    },
+                },
+            )
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "?? new_file.txt\n M foo.py",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("architect")
+
+            # Spec completeness
+            self.assertIn("spec_completeness", result)
+            self.assertEqual(len(result["spec_completeness"]), 1)
+            sc = result["spec_completeness"][0]
+            self.assertEqual(sc["file"], "features/feat_specgap.md")
+            self.assertEqual(sc["spec_gate"], "FAIL")
+            self.assertEqual(sc["spec_gate_details"], ["Missing Section 2.1"])
+
+            # Untracked files
+            self.assertIn("untracked_files", result)
+            self.assertIn("new_file.txt", result["untracked_files"])
+
+            # No Builder or QA extension fields
+            self.assertNotIn("tombstones", result)
+            self.assertNotIn("testing_features", result)
+
+
+class TestStartupBriefingInvalidRole(unittest.TestCase):
+    """Scenario: Startup Briefing Invalid Role Error"""
+
+    def test_invalid_role_cli_exits_with_error(self):
+        """CLI --cli-startup with invalid role writes to stderr, exits 1."""
+        result = subprocess.run(
+            [sys.executable, os.path.join(os.path.dirname(__file__),
+                                          "serve.py"),
+             "--cli-startup", "invalid"],
+            capture_output=True, text=True,
+            env={**os.environ, "PYTHONWARNINGS": "ignore",
+                 "CRITIC_RUNNING": "1"},
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("invalid", result.stderr.lower())
+        # No JSON on stdout
+        self.assertEqual(result.stdout.strip(), "")
+
+
+class TestStartupBriefingFeaturesFiltered(unittest.TestCase):
+    """Scenario: Startup Briefing Features Filtered to Role"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_only_non_terminal_features_included(self, mock_fabs, mock_tdir):
+        """Features array contains only non-terminal features for the role."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(tmpdir, features={
+                "feat_todo": {"label": "TODO",
+                              "role_status": {"architect": "DONE",
+                                              "builder": "TODO",
+                                              "qa": "N/A", "pm": "N/A"}},
+                "feat_done": {"label": "Done",
+                              "role_status": {"architect": "DONE",
+                                              "builder": "DONE",
+                                              "qa": "CLEAN", "pm": "N/A"}},
+                "feat_fail": {"label": "Fail",
+                              "role_status": {"architect": "DONE",
+                                              "builder": "FAIL",
+                                              "qa": "N/A", "pm": "N/A"}},
+            })
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            # Only TODO and FAIL features (not DONE)
+            files = [f["file"] for f in result["features"]]
+            self.assertEqual(len(files), 2)
+            self.assertIn("features/feat_todo.md", files)
+            self.assertIn("features/feat_fail.md", files)
+            self.assertNotIn("features/feat_done.md", files)
+
+            # Action items are builder-only
+            self.assertIn("action_items", result)
+
+
+class TestStartupBriefingNoDeliveryPlan(unittest.TestCase):
+    """Scenario: Startup Briefing No Delivery Plan"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_no_plan_sets_exists_false(self, mock_fabs, mock_tdir):
+        """When no delivery plan exists, delivery_plan_state.exists is false."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(tmpdir, features={
+                "feat_a": {"label": "A",
+                           "role_status": {"architect": "DONE",
+                                           "builder": "TODO",
+                                           "qa": "N/A", "pm": "N/A"}},
+            })
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            dp = result["delivery_plan_state"]
+            self.assertFalse(dp["exists"])
+            self.assertNotIn("current_phase", dp)
+            self.assertNotIn("phase_features", dp)
+
+
+class TestStartupBriefingPhasingRecommendation(unittest.TestCase):
+    """Scenario: Startup Briefing Phasing Recommendation"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_phasing_recommended_true(self, mock_fabs, mock_tdir):
+        """Phasing recommended when 4 features, 2 with 5+ scenarios."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_startup_env(tmpdir, features={
+                "f1": {"label": "F1",
+                       "role_status": {"architect": "DONE",
+                                       "builder": "TODO",
+                                       "qa": "N/A", "pm": "N/A"},
+                       "scenarios": [f"S{i}" for i in range(6)]},
+                "f2": {"label": "F2",
+                       "role_status": {"architect": "DONE",
+                                       "builder": "TODO",
+                                       "qa": "N/A", "pm": "N/A"},
+                       "scenarios": [f"S{i}" for i in range(5)]},
+                "f3": {"label": "F3",
+                       "role_status": {"architect": "DONE",
+                                       "builder": "TODO",
+                                       "qa": "N/A", "pm": "N/A"},
+                       "scenarios": ["S1"]},
+                "f4": {"label": "F4",
+                       "role_status": {"architect": "DONE",
+                                       "builder": "TODO",
+                                       "qa": "N/A", "pm": "N/A"},
+                       "scenarios": ["S1"]},
+            })
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            self.assertTrue(result["phasing_recommended"])
+            self.assertFalse(result["delivery_plan_state"]["exists"])
+
+
+class TestStartupBriefingMutualExclusivity(unittest.TestCase):
+    """Scenario: Startup Briefing Mutual Exclusivity with Graph"""
+
+    def test_startup_flag_precedes_graph_in_shell(self):
+        """status.sh processes --startup before --graph (first match wins)."""
+        # Verify the if/elif structure: --startup condition appears before
+        # --graph condition in status.sh.
+        status_sh = os.path.join(os.path.dirname(__file__), "status.sh")
+        with open(status_sh, 'r') as f:
+            content = f.read()
+        # Find the conditional blocks (if/elif), not usage comments
+        startup_pos = content.find('= "--startup"')
+        graph_pos = content.find('= "--graph"')
+        self.assertGreater(startup_pos, -1,
+                           '"--startup" conditional not found in status.sh')
+        self.assertGreater(graph_pos, -1,
+                           '"--graph" conditional not found in status.sh')
+        self.assertLess(startup_pos, graph_pos,
+                        "--startup must appear before --graph for precedence")
+
+    def test_startup_flag_precedes_graph_in_python(self):
+        """serve.py processes --cli-startup before other CLI modes."""
+        serve_py = os.path.join(os.path.dirname(__file__), "serve.py")
+        with open(serve_py, 'r') as f:
+            content = f.read()
+        startup_pos = content.find('--cli-startup')
+        role_pos = content.find('--cli-role-status')
+        status_pos = content.find('--cli-status')
+        self.assertGreater(startup_pos, -1)
+        self.assertLess(startup_pos, role_pos,
+                        "--cli-startup must appear before --cli-role-status")
+        self.assertLess(startup_pos, status_pos,
+                        "--cli-startup must appear before --cli-status")
+
+
+class TestCountScenarios(unittest.TestCase):
+    """Helper tests for _count_scenarios."""
+
+    def test_counts_scenario_headings(self):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md',
+                                         delete=False) as f:
+            f.write("# Feature\n\n#### Scenario: A\n\n"
+                    "#### Scenario: B\n\n#### Scenario: C\n")
+            f.flush()
+            self.assertEqual(_count_scenarios(f.name), 3)
+            os.unlink(f.name)
+
+    def test_zero_scenarios(self):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md',
+                                         delete=False) as f:
+            f.write("# Feature\n\nNo scenarios here.\n")
+            f.flush()
+            self.assertEqual(_count_scenarios(f.name), 0)
+            os.unlink(f.name)
+
+    def test_missing_file(self):
+        self.assertEqual(_count_scenarios("/nonexistent/file.md"), 0)
+
+
+class TestExtractForbiddenPatterns(unittest.TestCase):
+    """Helper tests for _extract_forbidden_patterns."""
+
+    def test_extracts_pattern_and_scope(self):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md',
+                                         delete=False) as f:
+            f.write('# Anchor\n\n'
+                    '*   **Grepable pattern:** `#[0-9a-fA-F]+`\n'
+                    '*   **Scan scope:** `tools/**/*.css`\n')
+            f.flush()
+            result = _extract_forbidden_patterns(f.name)
+            os.unlink(f.name)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["pattern"], "#[0-9a-fA-F]+")
+        self.assertEqual(result[0]["scope"], "tools/**/*.css")
+
+    def test_no_patterns_returns_empty(self):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md',
+                                         delete=False) as f:
+            f.write('# Anchor\n\nNo FORBIDDEN patterns.\n')
+            f.flush()
+            result = _extract_forbidden_patterns(f.name)
+            os.unlink(f.name)
+        self.assertEqual(result, [])
+
+
+class TestScanDiscoverySidecars(unittest.TestCase):
+    """Helper tests for _scan_discovery_sidecars."""
+
+    def test_counts_open_discoveries(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create discovery file with mixed entries
+            dpath = os.path.join(tmpdir, "feat_x.discoveries.md")
+            with open(dpath, 'w') as f:
+                f.write("[BUG] Open bug\n"
+                        "[DISCOVERY] Open discovery\n"
+                        "[BUG] RESOLVED bug\n"
+                        "[INTENT_DRIFT] Open drift\n")
+            with patch('serve.FEATURES_ABS', tmpdir):
+                result = _scan_discovery_sidecars()
+            self.assertEqual(result["total_open"], 3)
+            self.assertEqual(result["by_feature"]["feat_x"], 3)
+
+    def test_empty_dir_returns_zero(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('serve.FEATURES_ABS', tmpdir):
+                result = _scan_discovery_sidecars()
+            self.assertEqual(result["total_open"], 0)
+            self.assertEqual(result["by_feature"], {})
 
 
 # ===================================================================

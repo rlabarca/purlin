@@ -1,8 +1,9 @@
 #!/bin/bash
 # status.sh — CLI agent interface for CDD feature status and dependency graph.
-# Usage: tools/cdd/status.sh               — outputs /status.json to stdout
-#        tools/cdd/status.sh --graph        — outputs dependency_graph.json to stdout
-#        tools/cdd/status.sh --incomplete   — lists features not fully complete
+# Usage: tools/cdd/status.sh                    — outputs /status.json to stdout
+#        tools/cdd/status.sh --startup <role>    — startup briefing for agent role
+#        tools/cdd/status.sh --graph             — outputs dependency_graph.json to stdout
+#        tools/cdd/status.sh --incomplete        — lists features not fully complete
 # Side effect: regenerates .purlin/cache/ artifacts.
 set -euo pipefail
 
@@ -38,7 +39,16 @@ run_critic_if_needed() {
 # so they don't pollute JSON output when callers pipe stdout to a parser.
 export PYTHONWARNINGS=ignore
 
-if [ "${1:-}" = "--graph" ]; then
+if [ "${1:-}" = "--startup" ]; then
+    # Startup briefing (cdd_status_monitor.md Section 2.15)
+    # --startup takes precedence over all other flags (mutual exclusivity)
+    if [ -z "${2:-}" ]; then
+        echo "Error: --startup requires a role argument (architect|builder|qa|pm)" >&2
+        exit 1
+    fi
+    run_critic_if_needed
+    exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-startup "$2"
+elif [ "${1:-}" = "--graph" ]; then
     exec "$PYTHON_EXE" "$SCRIPT_DIR/serve.py" --cli-graph
 elif [ "${1:-}" = "--role" ]; then
     # Role-filtered output (cdd_status_monitor.md Section 2.7, --role flag)
