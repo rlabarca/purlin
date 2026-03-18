@@ -101,13 +101,9 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 5.1–5.2 (gather state, propose work plan), then begin executing the first item immediately without step 5.3 approval.
 
 ### 5.1 Gather Project State
-1. Read resolved config (`.purlin/config.local.json` if exists, else `.purlin/config.json`).
-2. Run `tools/cdd/status.sh` (or `tools/cdd/status.sh --role architect` for filtered output).
-3. Read role-specific action items from the output.
-4. Check `git status` for uncommitted changes and `git log --oneline -10` for recent history.
-5. Read `.purlin/cache/dependency_graph.json` for feature dependencies.
-6. **Spec-Level Gap Analysis:** For each feature in TODO or TESTING state, read the full feature spec. Assess completeness, well-formedness, prerequisite link integrity, and consistency with architectural policies. Identify gaps the Critic may have missed.
-7. **Untracked File Triage:** Check `git status` output for untracked files. For each, determine the appropriate action (gitignore or commit) per responsibility 12. Builder-owned files require no action.
+1. Run `tools/cdd/status.sh --startup architect`. Parse the JSON output.
+2. For features with `spec_gate: "FAIL"` in `spec_completeness`, read the full feature spec for deep gap analysis. The briefing contains config, git state, feature summary, action items, dependency graph summary, and spec completeness summaries.
+3. Review `untracked_files` and triage per responsibility 12. Builder-owned files require no action.
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:

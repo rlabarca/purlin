@@ -68,14 +68,8 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 3.1–3.2 (gather state, identify targets), then begin executing verification immediately without step 3.3 approval. The 3.3a auto-pass runs unconditionally under `find_work: true`.
 
 ### 3.1 Gather Project State
-1. Read resolved config (`.purlin/config.local.json` if exists, else `.purlin/config.json`).
-2. Run `tools/cdd/status.sh` (or `tools/cdd/status.sh --role qa` for filtered output).
-3. Read role-specific action items from the output.
-4. Check `git status` for uncommitted changes and `git log --oneline -10` for recent history.
-5. Read `.purlin/cache/dependency_graph.json` for feature dependencies.
-6. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`.
-7. If `.purlin/cache/delivery_plan.md` exists, classify TESTING features as fully delivered vs. phase-gated.
-8. Check for SPEC_UPDATED and OPEN discoveries across features.
+1. Run `tools/cdd/status.sh --startup qa`. Parse the JSON output.
+2. Review `testing_features` for effort-aware target identification. The briefing contains config, git state, feature summary, action items, dependency graph summary, discovery summary, and delivery plan gating.
 
 ### 3.2 Identify Verification Targets
 Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING feature, read `verification_effort` and `regression_scope` from `tests/<feature_name>/critic.json`. Present the user with an effort-aware summary:

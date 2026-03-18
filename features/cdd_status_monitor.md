@@ -317,6 +317,55 @@ The following fixture tags provide deterministic project states for web-verify t
 | `main/cdd_status_monitor/empty-active` | All features complete, Active section empty for verifying empty-state badge behavior |
 | `main/cdd_status_monitor/parallel-phases` | Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED for verifying parallel phase annotation and API response |
 
+### 2.15 CLI Startup Briefing
+
+The CLI tool provides a single-call startup briefing that gives an agent everything needed to propose a work plan, eliminating multi-step state gathering.
+
+*   **Flag:** `--startup <role>` where role is one of `architect`, `builder`, `qa`, `pm`.
+*   **Critic Prerequisite:** The startup briefing MUST run the Critic first (reusing the existing `run_critic_if_needed` logic) before assembling the briefing.
+*   **Mutual Exclusivity:** `--startup` is mutually exclusive with `--graph` and `--incomplete`. When `--startup` is combined with other flags, `--startup` takes precedence silently.
+*   **Invalid Role:** If the role argument is not one of the four valid roles, the tool MUST print an error to stderr and exit with status 1.
+*   **Size Budget:** The JSON output MUST be under 15KB for Builder and QA roles, and under 20KB for Architect. This constrains the level of detail included in per-feature entries.
+*   **Role Filtering:** The `--startup` flag reuses the same role-filtering logic as the `--role` flag (Section 2.6) for the `features` array. Only features with non-terminal status for the specified role are included.
+
+#### 2.15.1 Common Fields
+
+Every startup briefing includes these top-level fields:
+
+*   `generated_at` -- ISO8601 timestamp.
+*   `role` -- The requested role string.
+*   `config` -- Resolved agent config (`find_work`, `auto_start`, `model`, `effort`).
+*   `git_state` -- Current branch, active collaboration branch (if any), clean/dirty status, modified files, untracked files, and recent commits (hash, subject, relative time).
+*   `feature_summary` -- Total feature count with breakdowns by lifecycle (`todo`, `testing`, `complete`) and by role status (`todo`, `done`).
+*   `action_items` -- Role-filtered Critic action items (priority, category, feature, description).
+*   `features` -- Array of role-relevant features (non-terminal status only) with `file`, `label`, `builder`/`architect`/`qa`/`pm` status, `change_scope`, and `scenario_count`.
+*   `dependency_graph_summary` -- Total features, cycles (if any), and blocked features.
+*   `critic_last_run` -- ISO8601 timestamp of the most recent Critic run.
+
+#### 2.15.2 Builder Extension
+
+When `role` is `builder`, the briefing adds:
+
+*   `tombstones` -- Array of pending tombstone files with `file` and `label`.
+*   `anchor_constraints` -- Object keyed by anchor filename, each containing `label` and `forbidden_patterns` (array of `{pattern, scope}` extracted from anchor files).
+*   `in_scope_features` -- Filtered features list with `scenario_count` for scoping work.
+*   `delivery_plan_state` -- Object with `exists` (bool), and when true: `current_phase` (number) and `phase_features` (array of feature filenames in the current phase).
+
+#### 2.15.3 Architect Extension
+
+When `role` is `architect`, the briefing adds:
+
+*   `spec_completeness` -- Array of TODO features with `file`, `spec_gate` result, and `spec_gate_details` (array of specific gap descriptions).
+*   `untracked_files` -- Array of untracked file paths from `git status`.
+
+#### 2.15.4 QA Extension
+
+When `role` is `qa`, the briefing adds:
+
+*   `testing_features` -- Features in TESTING lifecycle with full `verification_effort` block from `critic.json`.
+*   `discovery_summary` -- Object with `total_open` count and `by_feature` breakdown.
+*   `delivery_plan_gating` -- Object with `phase_gated_features` (not eligible for [Complete]) and `fully_delivered_features` (eligible).
+
 ## 3. Scenarios
 
 ### Automated Scenarios
@@ -710,6 +759,74 @@ These scenarios are validated by the Builder's automated test suite.
     And the port file is removed
     When the User runs tools/cdd/start.sh again
     Then the server starts successfully on the first invocation without requiring a second run
+
+#### Scenario: Startup Briefing Common Fields
+    Given feature files exist in features/ with various lifecycle states
+    And critic.json files exist for some features
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then valid JSON is written to stdout
+    And the output contains generated_at as an ISO8601 timestamp
+    And the output contains role set to "builder"
+    And the output contains config with find_work and auto_start keys
+    And the output contains git_state with branch, clean, modified_files, and recent_commits
+    And the output contains feature_summary with total, by_lifecycle, and by_role_status
+    And the output contains action_items as an array
+    And the output contains dependency_graph_summary with total_features and cycles
+    And the output contains critic_last_run as an ISO8601 timestamp
+
+#### Scenario: Startup Briefing Builder Extension
+    Given feature files exist in features/ with various lifecycle states
+    And tombstone files exist in features/tombstones/
+    And anchor files exist with FORBIDDEN patterns
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then the output contains tombstones as an array with file and label per entry
+    And the output contains anchor_constraints keyed by anchor filename
+    And each anchor entry contains label and forbidden_patterns
+    And forbidden_patterns entries have pattern and scope fields
+    And the output contains in_scope_features with scenario_count per feature
+    And the output contains delivery_plan_state with exists key
+
+#### Scenario: Startup Briefing QA Extension
+    Given features exist in TESTING lifecycle state
+    And discovery sidecar files exist with open entries
+    When an agent runs tools/cdd/status.sh --startup qa
+    Then the output contains testing_features with verification_effort per feature
+    And the output contains discovery_summary with total_open and by_feature
+    And the output contains delivery_plan_gating with phase_gated_features and fully_delivered_features
+
+#### Scenario: Startup Briefing Architect Extension
+    Given features exist in TODO lifecycle state
+    And untracked files exist in the working directory
+    When an agent runs tools/cdd/status.sh --startup architect
+    Then the output contains spec_completeness as an array
+    And each entry has file, spec_gate, and spec_gate_details fields
+    And the output contains untracked_files as an array of file paths
+
+#### Scenario: Startup Briefing Invalid Role Error
+    Given feature files exist in features/
+    When an agent runs tools/cdd/status.sh --startup invalid
+    Then an error message is written to stderr
+    And the exit status is 1
+    And no JSON is written to stdout
+
+#### Scenario: Startup Briefing Features Filtered to Role
+    Given 62 features exist with various lifecycle states
+    And the Builder has 3 features with non-terminal status
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then the features array contains only features where builder status is not DONE
+    And action_items contains only builder-relevant items
+
+#### Scenario: Startup Briefing No Delivery Plan
+    Given no delivery plan exists at .purlin/cache/delivery_plan.md
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then delivery_plan_state has exists set to false
+    And no current_phase or phase_features fields are present
+
+#### Scenario: Startup Briefing Mutual Exclusivity with Graph
+    Given feature files exist in features/
+    When an agent runs tools/cdd/status.sh --startup builder --graph
+    Then the output is a startup briefing (not a dependency graph)
+    And the startup flag takes precedence silently
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -44,15 +44,9 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing immediately without step 2.3 approval. Phasing rules still apply (see Section 10.5 in `phased_delivery.md`).
 
 ### 2.1 Gather Project State
-1. Read resolved config (`.purlin/config.local.json` if exists, else `.purlin/config.json`).
-2. Run `tools/cdd/status.sh` (or `tools/cdd/status.sh --role builder` for filtered output).
-3. Read role-specific action items from the output.
-4. Check `git status` for uncommitted changes and `git log --oneline -10` for recent history.
-5. Read `.purlin/cache/dependency_graph.json` for feature dependencies.
-6. Read `.purlin/cache/delivery_plan.md` if it exists (scope spec reads to current phase).
-7. Read specs for in-scope TODO/TESTING features.
-8. Check `features/tombstones/` for pending tombstones.
-9. **Anchor Preload (MANDATORY):** Read ALL anchor files (`arch_*.md`, `design_*.md`, `policy_*.md`). Keep FORBIDDEN patterns active for the session.
+1. Run `tools/cdd/status.sh --startup builder`. Parse the JSON output.
+2. The briefing contains config, git state, feature summary, action items, dependency graph summary, delivery plan state, tombstones, anchor constraints with FORBIDDEN patterns, and in-scope feature list. Keep FORBIDDEN patterns from `anchor_constraints` active for the session.
+3. Read specs for in-scope TODO/TESTING features (the briefing has summaries, not full text).
 
 ### 2.2 Propose a Work Plan
 
