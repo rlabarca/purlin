@@ -3,6 +3,7 @@
   "passed": 19,
   "failed": 0,
   "total": 19,
+  "test_file": "tools/terminal/test_terminal_identity.py",
   "details": [
     {
       "name": "Title escape sequence emitted for any terminal",

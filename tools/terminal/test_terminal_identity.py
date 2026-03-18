@@ -390,6 +390,7 @@ if __name__ == '__main__':
         "passed": results["passed"],
         "failed": results["failed"],
         "total": results["total"],
+        "test_file": "tools/terminal/test_terminal_identity.py",
         "details": results["details"]
     }
     with open(os.path.join(tests_dir, 'tests.json'), 'w') as f:
