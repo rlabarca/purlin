@@ -94,13 +94,23 @@ After the user confirms completion:
      - **Actual:** <actual_excerpt (first ~500 chars)>
      - **Source:** AFT regression (auto-detected)
      ```
-3. Print a summary:
+3. Compute assertion tier distribution across all detail entries:
+   - Count entries by `assertion_tier` value (1, 2, 3, or untagged if field is absent).
+   - If more than 50% of entries have `assertion_tier: 1`, flag the suite with `[SHALLOW]`.
+4. Print a summary:
    ```
    Regression Results:
      ✓ feature_a: 5/5 passed
      ✗ feature_b: 3/5 passed — 2 BUG discoveries created
+
+   Tier Distribution: T1=3  T2=12  T3=6  (untagged=0)
    ```
-4. Run `tools/cdd/status.sh` to refresh the Critic report.
+   If `[SHALLOW]` applies, append:
+   ```
+   ⚠ [SHALLOW] — >50% of assertions are Tier 1 (keyword-presence only).
+     Tier 1 assertions are vulnerable to false positives. Consider upgrading to Tier 2/3.
+   ```
+5. Run `tools/cdd/status.sh` to refresh the Critic report.
 
 ---
 
@@ -111,5 +121,9 @@ When reading `tests.json` detail entries, look for these optional fields (backwa
 - `scenario_ref` — Feature file path and scenario name (e.g., `features/aft_agent.md:Single-turn agent test`)
 - `expected` — Human-readable expected behavior from the Gherkin Then step
 - `actual_excerpt` — First ~500 characters of actual output when the test fails
+- `assertion_tier` — Integer (1, 2, or 3) indicating assertion quality tier per `features/aft_agent.md` Section 2.10:
+  - **Tier 1:** Keyword presence (e.g., "table|findings") — vulnerable to incidental matches
+  - **Tier 2:** Specific finding (e.g., exact file name or defect identifier)
+  - **Tier 3:** State verification (inspects agent's stated intent to produce artifacts)
 
 These fields are written by AFT harnesses that support the `--write-results` convention.

@@ -372,6 +372,82 @@ class TestEnrichedResultsFormat(unittest.TestCase):
         self.assertEqual(enriched['total'], 5)
 
 
+class TestShallowAssertionSuite(unittest.TestCase):
+    """Scenario: Shallow assertion suite flagged when majority are Tier 1."""
+
+    def _compute_tier_distribution(self, details):
+        """Compute tier distribution from tests.json detail entries."""
+        tiers = {1: 0, 2: 0, 3: 0, 'untagged': 0}
+        for entry in details:
+            tier = entry.get('assertion_tier')
+            if tier in (1, 2, 3):
+                tiers[tier] += 1
+            else:
+                tiers['untagged'] += 1
+        return tiers
+
+    def _is_shallow(self, tiers):
+        """Suite is SHALLOW when >50% of assertions are Tier 1."""
+        total = sum(tiers.values())
+        if total == 0:
+            return False
+        return tiers[1] / total > 0.5
+
+    def test_shallow_flagged_when_majority_tier_1(self):
+        """Suite with 6/10 Tier 1 entries is flagged [SHALLOW]."""
+        details = [
+            {'name': f'test_{i}', 'status': 'PASS', 'assertion_tier': 1}
+            for i in range(6)
+        ] + [
+            {'name': f'test_{i}', 'status': 'PASS', 'assertion_tier': 2}
+            for i in range(6, 10)
+        ]
+        tiers = self._compute_tier_distribution(details)
+        self.assertEqual(tiers[1], 6)
+        self.assertEqual(tiers[2], 4)
+        self.assertEqual(tiers[3], 0)
+        self.assertEqual(tiers['untagged'], 0)
+        self.assertTrue(self._is_shallow(tiers))
+
+    def test_not_shallow_when_minority_tier_1(self):
+        """Suite with 3/10 Tier 1 entries is NOT flagged [SHALLOW]."""
+        details = [
+            {'name': f'test_{i}', 'status': 'PASS', 'assertion_tier': 1}
+            for i in range(3)
+        ] + [
+            {'name': f'test_{i}', 'status': 'PASS', 'assertion_tier': 2}
+            for i in range(3, 10)
+        ]
+        tiers = self._compute_tier_distribution(details)
+        self.assertEqual(tiers[1], 3)
+        self.assertEqual(tiers[2], 7)
+        self.assertFalse(self._is_shallow(tiers))
+
+    def test_tier_distribution_with_untagged_entries(self):
+        """Entries without assertion_tier are counted as untagged."""
+        details = [
+            {'name': 'test_1', 'status': 'PASS', 'assertion_tier': 2},
+            {'name': 'test_2', 'status': 'PASS'},  # no tier
+            {'name': 'test_3', 'status': 'PASS', 'assertion_tier': 1},
+        ]
+        tiers = self._compute_tier_distribution(details)
+        self.assertEqual(tiers[1], 1)
+        self.assertEqual(tiers[2], 1)
+        self.assertEqual(tiers['untagged'], 1)
+
+    def test_skill_has_shallow_indicator_documentation(self):
+        """The regression skill documents the [SHALLOW] indicator
+        and tier distribution reporting."""
+        skill_path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+        with open(skill_path) as f:
+            content = f.read()
+        self.assertIn('SHALLOW', content)
+        self.assertIn('Tier Distribution', content)
+        self.assertIn('assertion_tier', content)
+        self.assertIn('50%', content)
+
+
 class TestStalenessDetection(unittest.TestCase):
     """Scenario: Staleness detection prioritizes re-testing."""
 

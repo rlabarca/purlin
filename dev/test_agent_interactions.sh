@@ -258,10 +258,12 @@ assert_not_contains() {
 
 record_result() {
     # Record a test result (PASS, FAIL, or SKIP).
-    # Args: $1 = PASS|FAIL|SKIP, $2 = description, $3 = detail (optional)
+    # Args: $1 = PASS|FAIL|SKIP, $2 = description, $3 = detail (optional),
+    #        $4 = assertion_tier (optional: 1, 2, or 3)
     local status="$1"
     local description="$2"
     local detail="${3:-}"
+    local tier="${4:-}"
 
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
 
@@ -288,7 +290,13 @@ record_result() {
 
     # Append to JSON details
     local entry
-    if [[ -n "$detail" ]]; then
+    if [[ -n "$tier" && -n "$detail" ]]; then
+        entry=$(jq -n --arg t "$description" --arg s "$status" --arg d "$detail" --argjson at "$tier" \
+            '{test: $t, status: $s, detail: $d, assertion_tier: $at}')
+    elif [[ -n "$tier" ]]; then
+        entry=$(jq -n --arg t "$description" --arg s "$status" --argjson at "$tier" \
+            '{test: $t, status: $s, assertion_tier: $at}')
+    elif [[ -n "$detail" ]]; then
         entry=$(jq -n --arg t "$description" --arg s "$status" --arg d "$detail" \
             '{test: $t, status: $s, detail: $d}')
     else
@@ -329,18 +337,18 @@ scenario_instruction_audit_halt() {
         "$fixture_dir")
 
     if assert_contains "$output" "contradict\|conflict\|inconsisten"; then
-        record_result "PASS" "$name: contradiction detected"
+        record_result "PASS" "$name: contradiction detected" "" 1
     else
         record_result "FAIL" "$name: contradiction detected" \
-            "Expected agent to identify contradiction in overrides"
+            "Expected agent to identify contradiction in overrides" 1
     fi
 
     # Tier 2: Assert the specific file containing the contradiction
     if assert_contains "$output" "BUILDER_OVERRIDES"; then
-        record_result "PASS" "$name: identifies specific override file"
+        record_result "PASS" "$name: identifies specific override file" "" 2
     else
         record_result "FAIL" "$name: identifies specific override file" \
-            "Expected agent to name BUILDER_OVERRIDES.md as the file with the contradiction"
+            "Expected agent to name BUILDER_OVERRIDES.md as the file with the contradiction" 2
     fi
 
     rm -f "$prompt_file"
@@ -366,18 +374,18 @@ scenario_doc_coverage_gaps() {
         "$fixture_dir")
 
     if assert_contains "$output" "gap\|missing\|not covered\|absent"; then
-        record_result "PASS" "$name: coverage gaps identified"
+        record_result "PASS" "$name: coverage gaps identified" "" 1
     else
         record_result "FAIL" "$name: coverage gaps identified" \
-            "Expected agent to identify missing feature coverage in README"
+            "Expected agent to identify missing feature coverage in README" 1
     fi
 
     # Tier 2: Assert the specific missing features are named
     if assert_contains "$output" "API.*Gateway\|Monitoring"; then
-        record_result "PASS" "$name: names specific missing features"
+        record_result "PASS" "$name: names specific missing features" "" 2
     else
         record_result "FAIL" "$name: names specific missing features" \
-            "Expected agent to name API Gateway or Monitoring as uncovered features"
+            "Expected agent to name API Gateway or Monitoring as uncovered features" 2
     fi
 
     rm -f "$prompt_file"
@@ -406,10 +414,10 @@ scenario_doc_new_section_multi_turn() {
         "$fixture_dir")
 
     if assert_contains "$output1" "gap\|section\|missing\|table"; then
-        record_result "PASS" "$name: turn 1 presents gaps"
+        record_result "PASS" "$name: turn 1 presents gaps" "" 1
     else
         record_result "FAIL" "$name: turn 1 presents gaps" \
-            "Expected agent to present gap table in first turn"
+            "Expected agent to present gap table in first turn" 1
     fi
 
     # Turn 2: User approves adding content
@@ -418,10 +426,10 @@ scenario_doc_new_section_multi_turn() {
         "$fixture_dir")
 
     if assert_contains "$output2" "add\|creat\|section\|heading"; then
-        record_result "PASS" "$name: turn 2 responds to approval"
+        record_result "PASS" "$name: turn 2 responds to approval" "" 1
     else
         record_result "FAIL" "$name: turn 2 responds to approval" \
-            "Expected agent to acknowledge section creation"
+            "Expected agent to acknowledge section creation" 1
     fi
 
     reset_session
@@ -448,10 +456,10 @@ scenario_version_notes_no_tags() {
         "$fixture_dir")
 
     if assert_contains "$output" "no.*tag\|everything.*new\|first.*release\|no.*previous\|0.*tag\|no.*version\|no.*release.*histor\|no.*prior\|initial\|no.*exist.*tag\|treat.*all.*new\|all.*commit"; then
-        record_result "PASS" "$name: handles no-tags state"
+        record_result "PASS" "$name: handles no-tags state" "" 1
     else
         record_result "FAIL" "$name: handles no-tags state" \
-            "Expected agent to handle absence of version tags"
+            "Expected agent to handle absence of version tags" 1
     fi
 
     rm -f "$prompt_file"
@@ -491,10 +499,10 @@ scenario_version_notes_prior_tag() {
         "$fixture_dir")
 
     if assert_contains "$output" "v1.0.0\|since.*tag\|release.*note\|commit"; then
-        record_result "PASS" "$name: references prior tag"
+        record_result "PASS" "$name: references prior tag" "" 2
     else
         record_result "FAIL" "$name: references prior tag" \
-            "Expected agent to reference v1.0.0 tag and commits since it"
+            "Expected agent to reference v1.0.0 tag and commits since it" 2
     fi
 
     rm -f "$prompt_file"
@@ -520,10 +528,10 @@ scenario_version_notes_no_heading() {
         "$fixture_dir")
 
     if assert_contains "$output" "creat\|add.*Releases\|heading\|section"; then
-        record_result "PASS" "$name: plans to create Releases heading"
+        record_result "PASS" "$name: plans to create Releases heading" "" 1
     else
         record_result "FAIL" "$name: plans to create Releases heading" \
-            "Expected agent to mention creating ## Releases heading"
+            "Expected agent to mention creating ## Releases heading" 1
     fi
 
     rm -f "$prompt_file"
@@ -551,19 +559,19 @@ scenario_submodule_safety_warning() {
         "$fixture_dir")
 
     if assert_contains "$output" "warning\|json.load\|exception"; then
-        record_result "PASS" "$name: warning detected"
+        record_result "PASS" "$name: warning detected" "" 1
     else
         record_result "FAIL" "$name: warning detected" \
-            "Expected agent to flag json.load warning"
+            "Expected agent to flag json.load warning" 1
     fi
 
     # Test intent: agent should not HALT the release. Using "critical" as an adjective
     # is acceptable; only release-blocking language should fail this assertion.
     if assert_not_contains "$output" "halt.*release\|release.*halt\|cannot.*proceed\|release.*block\|block.*release\|must.*fix.*before.*releas\|fix.*before.*releas"; then
-        record_result "PASS" "$name: no critical violations"
+        record_result "PASS" "$name: no critical violations" "" 2
     else
         record_result "FAIL" "$name: no critical violations" \
-            "Should NOT report critical violations for warning-only state"
+            "Should NOT report critical violations for warning-only state" 2
     fi
 
     rm -f "$prompt_file"
@@ -590,18 +598,18 @@ scenario_instruction_audit_base_error() {
 
     # Agent should identify the base-layer error (stale path to legacy_build_engine)
     if assert_contains "$output" "legacy_build_engine\|base.*error\|base.*layer\|does not exist\|non.existent\|stale.*path"; then
-        record_result "PASS" "$name: base-layer error detected"
+        record_result "PASS" "$name: base-layer error detected" "" 2
     else
         record_result "FAIL" "$name: base-layer error detected" \
-            "Expected agent to identify stale path in base layer (tools/legacy_build_engine/)"
+            "Expected agent to identify stale path in base layer (tools/legacy_build_engine/)" 2
     fi
 
     # Agent should signal halting or escalation (not just a simple fix)
     if assert_contains "$output" "halt\|cannot.*fix.*override\|base.*must.*be.*fix\|pl-edit-base\|block\|cannot.*correct.*override\|escalat"; then
-        record_result "PASS" "$name: halt or escalation signaled"
+        record_result "PASS" "$name: halt or escalation signaled" "" 2
     else
         record_result "FAIL" "$name: halt or escalation signaled" \
-            "Expected agent to halt or escalate since base-layer error cannot be fixed via override"
+            "Expected agent to halt or escalate since base-layer error cannot be fixed via override" 2
     fi
 
     rm -f "$prompt_file"
@@ -630,10 +638,10 @@ scenario_doc_gaps_user_declines() {
         "$fixture_dir")
 
     if assert_contains "$output1" "gap\|missing\|not covered\|table\|absent"; then
-        record_result "PASS" "$name: turn 1 presents gaps"
+        record_result "PASS" "$name: turn 1 presents gaps" "" 1
     else
         record_result "FAIL" "$name: turn 1 presents gaps" \
-            "Expected agent to present coverage gap table"
+            "Expected agent to present coverage gap table" 1
     fi
 
     # Turn 2: User declines all additions
@@ -642,18 +650,18 @@ scenario_doc_gaps_user_declines() {
         "$fixture_dir")
 
     if assert_contains "$output2" "no.*change\|proceed\|clean\|skip\|no.*addition\|declin\|without.*change"; then
-        record_result "PASS" "$name: turn 2 respects decline"
+        record_result "PASS" "$name: turn 2 respects decline" "" 1
     else
         record_result "FAIL" "$name: turn 2 respects decline" \
-            "Expected agent to acknowledge decline and make no changes"
+            "Expected agent to acknowledge decline and make no changes" 1
     fi
 
     # Agent should NOT have created any new sections
     if assert_not_contains "$output2" "created.*section\|added.*##\|new.*heading.*created"; then
-        record_result "PASS" "$name: no unsolicited changes"
+        record_result "PASS" "$name: no unsolicited changes" "" 2
     else
         record_result "FAIL" "$name: no unsolicited changes" \
-            "Agent should not create sections when user declined"
+            "Agent should not create sections when user declined" 2
     fi
 
     reset_session
@@ -681,18 +689,18 @@ scenario_doc_no_unsolicited_section() {
 
     # Agent MUST present gaps and ASK before creating any new section
     if assert_contains "$output" "gap\|suggest\|would you\|like to\|which.*item\|approve\|table"; then
-        record_result "PASS" "$name: asks before creating section"
+        record_result "PASS" "$name: asks before creating section" "" 1
     else
         record_result "FAIL" "$name: asks before creating section" \
-            "Expected agent to present gap table and ask for user approval"
+            "Expected agent to present gap table and ask for user approval" 1
     fi
 
     # Agent must NOT have created a new ## section without asking
     if assert_not_contains "$output" "I.*created.*section\|I.*added.*##\|I.*wrote.*new.*section"; then
-        record_result "PASS" "$name: did not create section unilaterally"
+        record_result "PASS" "$name: did not create section unilaterally" "" 2
     else
         record_result "FAIL" "$name: did not create section unilaterally" \
-            "Agent MUST NOT create a new ## heading without explicit user confirmation"
+            "Agent MUST NOT create a new ## heading without explicit user confirmation" 2
     fi
 
     rm -f "$prompt_file"
@@ -732,10 +740,10 @@ scenario_version_notes_custom_text() {
         "$fixture_dir")
 
     if assert_contains "$output1" "suggest\|release.*note\|candidate\|commit\|v1.0.0\|since"; then
-        record_result "PASS" "$name: turn 1 presents suggestions"
+        record_result "PASS" "$name: turn 1 presents suggestions" "" 1
     else
         record_result "FAIL" "$name: turn 1 presents suggestions" \
-            "Expected agent to present release note suggestions from git history"
+            "Expected agent to present release note suggestions from git history" 1
     fi
 
     # Turn 2: User provides custom text and version
@@ -745,10 +753,10 @@ scenario_version_notes_custom_text() {
 
     # Agent should acknowledge the custom notes
     if assert_contains "$output2" "v1.1.0\|notification\|monitor\|custom\|record\|README\|Release"; then
-        record_result "PASS" "$name: turn 2 uses custom text"
+        record_result "PASS" "$name: turn 2 uses custom text" "" 2
     else
         record_result "FAIL" "$name: turn 2 uses custom text" \
-            "Expected agent to acknowledge and use the user's custom release notes"
+            "Expected agent to acknowledge and use the user's custom release notes" 2
     fi
 
     reset_session
@@ -790,18 +798,18 @@ scenario_submodule_safety_user_confirms() {
         "$fixture_dir")
 
     if assert_contains "$output1" "warning\|json.load\|unguarded\|exception\|try.except\|config.*safe"; then
-        record_result "PASS" "$name: turn 1 finds warning"
+        record_result "PASS" "$name: turn 1 finds warning" "" 1
     else
         record_result "FAIL" "$name: turn 1 finds warning" \
-            "Expected agent to report WARNING finding for unguarded json.load"
+            "Expected agent to report WARNING finding for unguarded json.load" 1
     fi
 
     # Agent should not halt the release (using "critical" as adjective is acceptable)
     if assert_not_contains "$output1" "halt.*release\|release.*halt\|cannot.*proceed\|release.*block\|block.*release\|must.*fix.*before.*releas\|fix.*before.*releas"; then
-        record_result "PASS" "$name: turn 1 no critical halt"
+        record_result "PASS" "$name: turn 1 no critical halt" "" 2
     else
         record_result "FAIL" "$name: turn 1 no critical halt" \
-            "Should not halt release on WARNING-only findings"
+            "Should not halt release on WARNING-only findings" 2
     fi
 
     # Turn 2: User confirms the warning is acceptable
@@ -810,10 +818,10 @@ scenario_submodule_safety_user_confirms() {
         "$fixture_dir")
 
     if assert_contains "$output2" "proceed\|confirm\|accept\|record\|continu\|noted\|acknowledge\|understood\|complet\|done\|ok\b\|will.*do\|next.*step\|move.*on\|document\|mark\|thank\|sure"; then
-        record_result "PASS" "$name: turn 2 proceeds after confirmation"
+        record_result "PASS" "$name: turn 2 proceeds after confirmation" "" 1
     else
         record_result "FAIL" "$name: turn 2 proceeds after confirmation" \
-            "Expected agent to proceed after user confirms WARNING"
+            "Expected agent to proceed after user confirms WARNING" 1
     fi
 
     reset_session
@@ -843,18 +851,18 @@ scenario_instruction_audit_clean() {
 
     # Negative test: agent should NOT report finding contradictions or stale paths
     if assert_not_contains "$output" "found.*contradict\|detected.*contradict\|found.*stale\|halt.*release\|FAIL\|violation.*found\|error.*detected"; then
-        record_result "PASS" "$name: no false positives on clean fixture"
+        record_result "PASS" "$name: no false positives on clean fixture" "" 2
     else
         record_result "FAIL" "$name: no false positives on clean fixture" \
-            "Agent reported problems on a clean fixture — assertion too loose"
+            "Agent reported problems on a clean fixture — assertion too loose" 2
     fi
 
     # Positive check: agent should indicate clean state
     if assert_contains "$output" "clean\|no.*contradict\|no.*issue\|consistent\|no.*problem\|no.*finding\|no.*stale\|pass\|no.*violation"; then
-        record_result "PASS" "$name: confirms clean state"
+        record_result "PASS" "$name: confirms clean state" "" 1
     else
         record_result "FAIL" "$name: confirms clean state" \
-            "Expected agent to confirm overrides are consistent with base"
+            "Expected agent to confirm overrides are consistent with base" 1
     fi
 
     rm -f "$prompt_file"
@@ -881,18 +889,18 @@ scenario_tier2_specific_finding() {
 
     # Tier 2: Assert the specific override file containing the defect
     if assert_contains "$output" "BUILDER_OVERRIDES"; then
-        record_result "PASS" "$name: identifies defect file (BUILDER_OVERRIDES)"
+        record_result "PASS" "$name: identifies defect file (BUILDER_OVERRIDES)" "" 2
     else
         record_result "FAIL" "$name: identifies defect file (BUILDER_OVERRIDES)" \
-            "Expected agent to name BUILDER_OVERRIDES.md — not just generic 'contradiction'"
+            "Expected agent to name BUILDER_OVERRIDES.md — not just generic 'contradiction'" 2
     fi
 
     # Tier 2: Assert the specific contradictory rule content
     if assert_contains "$output" "status.*tag\|MUST NOT.*status\|MUST NOT.*commit"; then
-        record_result "PASS" "$name: identifies specific contradiction content"
+        record_result "PASS" "$name: identifies specific contradiction content" "" 2
     else
         record_result "FAIL" "$name: identifies specific contradiction content" \
-            "Expected agent to reference the specific 'status tag commits' contradiction"
+            "Expected agent to reference the specific 'status tag commits' contradiction" 2
     fi
 
     rm -f "$prompt_file"
@@ -921,10 +929,10 @@ scenario_doc_three_turn_refinement() {
         "$fixture_dir")
 
     if assert_contains "$output1" "gap\|missing\|table\|Monitoring\|Observability"; then
-        record_result "PASS" "$name: turn 1 presents gap analysis"
+        record_result "PASS" "$name: turn 1 presents gap analysis" "" 1
     else
         record_result "FAIL" "$name: turn 1 presents gap analysis" \
-            "Expected agent to present coverage gaps including monitoring"
+            "Expected agent to present coverage gaps including monitoring" 1
     fi
 
     # Turn 2: User selects monitoring gap to add
@@ -933,10 +941,10 @@ scenario_doc_three_turn_refinement() {
         "$fixture_dir")
 
     if assert_contains "$output2" "monitor\|add\|section\|feature"; then
-        record_result "PASS" "$name: turn 2 acknowledges selection"
+        record_result "PASS" "$name: turn 2 acknowledges selection" "" 1
     else
         record_result "FAIL" "$name: turn 2 acknowledges selection" \
-            "Expected agent to acknowledge adding monitoring section"
+            "Expected agent to acknowledge adding monitoring section" 1
     fi
 
     # Turn 3: User refines with additional detail
@@ -946,10 +954,10 @@ scenario_doc_three_turn_refinement() {
 
     # Tier 2: Turn 3 must reflect accumulated context — monitoring AND alerting/metrics
     if assert_contains "$output3" "alert\|metric"; then
-        record_result "PASS" "$name: turn 3 reflects accumulated context"
+        record_result "PASS" "$name: turn 3 reflects accumulated context" "" 2
     else
         record_result "FAIL" "$name: turn 3 reflects accumulated context" \
-            "Expected turn 3 to incorporate alerting/metrics from accumulated context"
+            "Expected turn 3 to incorporate alerting/metrics from accumulated context" 2
     fi
 
     reset_session
@@ -979,10 +987,10 @@ scenario_state_verification_fix_intent() {
         "$fixture_dir")
 
     if assert_contains "$output1" "contradict\|conflict\|inconsisten"; then
-        record_result "PASS" "$name: turn 1 detects contradiction"
+        record_result "PASS" "$name: turn 1 detects contradiction" "" 1
     else
         record_result "FAIL" "$name: turn 1 detects contradiction" \
-            "Expected agent to detect contradiction in overrides"
+            "Expected agent to detect contradiction in overrides" 1
     fi
 
     # Turn 2: Ask agent to fix it
@@ -992,18 +1000,18 @@ scenario_state_verification_fix_intent() {
 
     # Tier 3 (stated intent): Agent must reference the specific file to modify
     if assert_contains "$output2" "BUILDER_OVERRIDES"; then
-        record_result "PASS" "$name: proposed fix references correct file"
+        record_result "PASS" "$name: proposed fix references correct file" "" 3
     else
         record_result "FAIL" "$name: proposed fix references correct file" \
-            "Expected agent to propose changes to BUILDER_OVERRIDES.md"
+            "Expected agent to propose changes to BUILDER_OVERRIDES.md" 3
     fi
 
     # Tier 3 (stated intent): Agent must include a commit message or diff description
     if assert_contains "$output2" "fix.*override\|commit\|remov\|delet\|revis"; then
-        record_result "PASS" "$name: proposed fix includes change description"
+        record_result "PASS" "$name: proposed fix includes change description" "" 3
     else
         record_result "FAIL" "$name: proposed fix includes change description" \
-            "Expected agent to describe the proposed fix (commit message or diff)"
+            "Expected agent to describe the proposed fix (commit message or diff)" 3
     fi
 
     reset_session
@@ -1031,10 +1039,10 @@ scenario_builder_role_startup() {
 
     # Tier 2: Agent should identify the specific TODO feature
     if assert_contains "$output" "Authentication\|feat_auth"; then
-        record_result "PASS" "$name: identifies TODO feature by name"
+        record_result "PASS" "$name: identifies TODO feature by name" "" 2
     else
         record_result "FAIL" "$name: identifies TODO feature by name" \
-            "Expected Builder to identify Authentication / feat_auth as TODO"
+            "Expected Builder to identify Authentication / feat_auth as TODO" 2
     fi
 
     rm -f "$prompt_file"
@@ -1061,10 +1069,10 @@ scenario_qa_role_verification() {
 
     # Tier 2: Agent should identify the specific TESTING feature
     if assert_contains "$output" "Dashboard\|feat_dashboard\|TESTING"; then
-        record_result "PASS" "$name: identifies TESTING feature"
+        record_result "PASS" "$name: identifies TESTING feature" "" 2
     else
         record_result "FAIL" "$name: identifies TESTING feature" \
-            "Expected QA to identify Dashboard / feat_dashboard as needing verification"
+            "Expected QA to identify Dashboard / feat_dashboard as needing verification" 2
     fi
 
     rm -f "$prompt_file"
