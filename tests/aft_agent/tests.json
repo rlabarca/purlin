@@ -1,94 +1,168 @@
 {
-  "status": "FAIL",
-  "passed": 20,
-  "failed": 1,
-  "skipped": 0,
-  "total": 21,
-  "test_file": "dev/test_agent_interactions.sh",
+  "status": "PASS",
+  "passed": 40,
+  "failed": 0,
+  "total": 40,
+  "test_file": "dev/test_aft_agent_harness.py",
   "details": [
     {
-      "test": "instruction-audit-halt: contradiction detected",
+      "test": "test_checkout_safe_function_exists (__main__.TestMissingFixtureTagSkip.test_checkout_safe_function_exists)",
       "status": "PASS"
     },
     {
-      "test": "instruction-audit-base-error: base-layer error detected",
+      "test": "test_missing_tag_triggers_checkout_failure (__main__.TestMissingFixtureTagSkip.test_missing_tag_triggers_checkout_failure)",
       "status": "PASS"
     },
     {
-      "test": "instruction-audit-base-error: halt or escalation signaled",
+      "test": "test_skip_does_not_count_as_failure (__main__.TestMissingFixtureTagSkip.test_skip_does_not_count_as_failure)",
       "status": "PASS"
     },
     {
-      "test": "doc-coverage-gaps: coverage gaps identified",
+      "test": "test_skip_includes_tag_name (__main__.TestMissingFixtureTagSkip.test_skip_includes_tag_name)",
       "status": "PASS"
     },
     {
-      "test": "doc-new-section: turn 1 presents gaps",
+      "test": "test_default_model_is_haiku (__main__.TestModelOverride.test_default_model_is_haiku)",
       "status": "PASS"
     },
     {
-      "test": "doc-new-section: turn 2 responds to approval",
+      "test": "test_model_override_accepted_via_flag (__main__.TestModelOverride.test_model_override_accepted_via_flag)",
       "status": "PASS"
     },
     {
-      "test": "doc-gaps-user-declines: turn 1 presents gaps",
+      "test": "test_model_override_passed_to_claude (__main__.TestModelOverride.test_model_override_passed_to_claude)",
       "status": "PASS"
     },
     {
-      "test": "doc-gaps-user-declines: turn 2 respects decline",
+      "test": "test_first_turn_uses_session_id_flag (__main__.TestMultiTurnSessionResume.test_first_turn_uses_session_id_flag)",
       "status": "PASS"
     },
     {
-      "test": "doc-gaps-user-declines: no unsolicited changes",
+      "test": "test_reset_session_clears_state (__main__.TestMultiTurnSessionResume.test_reset_session_clears_state)",
       "status": "PASS"
     },
     {
-      "test": "doc-no-unsolicited-section: asks before creating section",
-      "status": "FAIL",
-      "detail": "Expected agent to present gap table and ask for user approval"
-    },
-    {
-      "test": "doc-no-unsolicited-section: did not create section unilaterally",
+      "test": "test_session_id_generation_format (__main__.TestMultiTurnSessionResume.test_session_id_generation_format)",
       "status": "PASS"
     },
     {
-      "test": "version-notes-no-tags: handles no-tags state",
+      "test": "test_subsequent_turn_uses_resume_flag (__main__.TestMultiTurnSessionResume.test_subsequent_turn_uses_resume_flag)",
       "status": "PASS"
     },
     {
-      "test": "version-notes-prior-tag: references prior tag",
+      "test": "test_three_turn_final_assertion_checks_accumulated_context (__main__.TestMultiTurnThreePlus.test_three_turn_final_assertion_checks_accumulated_context)",
       "status": "PASS"
     },
     {
-      "test": "version-notes-no-heading: plans to create Releases heading",
+      "test": "test_three_turn_scenario_calls_run_claude_turn_three_times (__main__.TestMultiTurnThreePlus.test_three_turn_scenario_calls_run_claude_turn_three_times)",
       "status": "PASS"
     },
     {
-      "test": "version-notes-custom-text: turn 1 presents suggestions",
+      "test": "test_three_turn_scenario_captures_three_outputs (__main__.TestMultiTurnThreePlus.test_three_turn_scenario_captures_three_outputs)",
       "status": "PASS"
     },
     {
-      "test": "version-notes-custom-text: turn 2 uses custom text",
+      "test": "test_three_turn_scenario_exists (__main__.TestMultiTurnThreePlus.test_three_turn_scenario_exists)",
       "status": "PASS"
     },
     {
-      "test": "submodule-safety-warning: warning detected",
+      "test": "test_three_turn_scenario_uses_session_management (__main__.TestMultiTurnThreePlus.test_three_turn_scenario_uses_session_management)",
       "status": "PASS"
     },
     {
-      "test": "submodule-safety-warning: no critical violations",
+      "test": "test_assert_not_contains_function_exists (__main__.TestNegativeTestCleanFixture.test_assert_not_contains_function_exists)",
       "status": "PASS"
     },
     {
-      "test": "submodule-safety-user-confirms: turn 1 finds warning",
+      "test": "test_clean_fixture_has_no_contradictions (__main__.TestNegativeTestCleanFixture.test_clean_fixture_has_no_contradictions)",
       "status": "PASS"
     },
     {
-      "test": "submodule-safety-user-confirms: turn 1 no critical halt",
+      "test": "test_negative_scenario_checks_prohibited_patterns (__main__.TestNegativeTestCleanFixture.test_negative_scenario_checks_prohibited_patterns)",
       "status": "PASS"
     },
     {
-      "test": "submodule-safety-user-confirms: turn 2 proceeds after confirmation",
+      "test": "test_negative_scenario_uses_assert_not_contains (__main__.TestNegativeTestCleanFixture.test_negative_scenario_uses_assert_not_contains)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_construct_release_prompt_extracts_step_instructions (__main__.TestReleasePromptConstruction.test_construct_release_prompt_extracts_step_instructions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_construct_release_prompt_function_exists (__main__.TestReleasePromptConstruction.test_construct_release_prompt_function_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_construct_release_prompt_handles_missing_steps_file (__main__.TestReleasePromptConstruction.test_construct_release_prompt_handles_missing_steps_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_construct_release_prompt_reads_global_steps (__main__.TestReleasePromptConstruction.test_construct_release_prompt_reads_global_steps)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_global_steps_json_is_valid (__main__.TestReleasePromptConstruction.test_global_steps_json_is_valid)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_should_run_scenario_function_exists (__main__.TestScenarioSelection.test_should_run_scenario_function_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_scenario_selection_flag (__main__.TestScenarioSelection.test_single_scenario_selection_flag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_selection_gates_each_scenario (__main__.TestScenarioSelection.test_single_selection_gates_each_scenario)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_checkout_creates_directory (__main__.TestSingleTurnStructuredOutput.test_fixture_checkout_creates_directory)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_release_prompt_includes_step_instructions (__main__.TestSingleTurnStructuredOutput.test_release_prompt_includes_step_instructions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_result_json_structure_is_valid (__main__.TestSingleTurnStructuredOutput.test_result_json_structure_is_valid)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_verification_asserts_change_description (__main__.TestStateVerificationFixIntent.test_state_verification_asserts_change_description)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_verification_asserts_specific_file (__main__.TestStateVerificationFixIntent.test_state_verification_asserts_specific_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_verification_is_multi_turn (__main__.TestStateVerificationFixIntent.test_state_verification_is_multi_turn)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_verification_scenario_exists (__main__.TestStateVerificationFixIntent.test_state_verification_scenario_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_state_verification_uses_tier3_assertions (__main__.TestStateVerificationFixIntent.test_state_verification_uses_tier3_assertions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tier2_assertion_would_not_match_clean_fixture (__main__.TestTier2SpecificFinding.test_tier2_assertion_would_not_match_clean_fixture)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tier2_scenario_asserts_contradiction_content (__main__.TestTier2SpecificFinding.test_tier2_scenario_asserts_contradiction_content)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tier2_scenario_asserts_specific_file_name (__main__.TestTier2SpecificFinding.test_tier2_scenario_asserts_specific_file_name)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tier2_uses_assertion_tier_2 (__main__.TestTier2SpecificFinding.test_tier2_uses_assertion_tier_2)",
       "status": "PASS"
     }
   ]
