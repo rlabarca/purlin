@@ -4,7 +4,7 @@
 > Category: "Coordination & Lifecycle"
 > Prerequisite: features/policy_critic.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
