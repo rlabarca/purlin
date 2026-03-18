@@ -221,18 +221,35 @@ def _save_persistent_status_cache(entries, git_head):
     """Save the status commit cache to disk with metadata.
 
     Also computes and stores spec_content_hash for each feature entry.
+    Hash is computed from the committed content at the status commit
+    (not the current working-tree content), so post-completion edits
+    are correctly detected as changes.
     """
-    # Compute spec hashes
+    # Compute spec hashes from committed content at the status commit
     enriched = {}
     for fpath, info in entries.items():
         entry = dict(info)
-        abs_path = os.path.join(PROJECT_ROOT, fpath)
-        try:
-            with open(abs_path, 'r') as f:
-                content = f.read()
-            entry['spec_content_hash'] = _compute_spec_hash(content)
-        except (IOError, OSError):
-            pass
+        # Pick the most recent status commit hash
+        complete_ts = entry.get('complete_ts', 0)
+        testing_ts = entry.get('testing_ts', 0)
+        complete_hash = entry.get('complete_hash', '')
+        testing_hash = entry.get('testing_hash', '')
+
+        if complete_ts >= testing_ts and complete_hash:
+            status_commit = complete_hash
+        elif testing_hash:
+            status_commit = testing_hash
+        else:
+            status_commit = ''
+
+        if status_commit:
+            committed_content = run_command(
+                f"git show {status_commit}:{fpath}"
+            )
+            if committed_content:
+                entry['spec_content_hash'] = _compute_spec_hash(
+                    committed_content
+                )
         enriched[fpath] = entry
 
     data = {

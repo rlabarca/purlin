@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for git_operation_cache feature.
 
-Covers all 25 automated scenarios from features/git_operation_cache.md.
+Covers all 26 automated scenarios from features/git_operation_cache.md.
 Tests persistent status commit cache, hash-based content comparison,
 batched diff extraction, and shared git status caching.
 
@@ -460,6 +460,72 @@ class TestHashHitWhenOnlyDiscoveriesChanged(CacheTestBase):
             result = spec_content_unchanged('features/feat1.md', 'some_hash')
 
         self.assertTrue(result)
+
+
+class TestHashMissAfterCacheRebuildFollowingSpecEdit(CacheTestBase):
+    """Scenario: Hash miss detected after cache rebuild following spec edit
+
+    Given a feature marked COMPLETE with a status commit at time T1
+    And the cache is saved with spec_content_hash computed from the committed content at T1
+    When the spec content is edited on disk after T1
+    And the status commit cache is deleted and rebuilt via build_status_commit_cache()
+    Then the rebuilt cache contains spec_content_hash from the COMPLETE commit content
+    And spec_content_unchanged() returns False
+    And get_feature_status() classifies the feature as TODO (not COMPLETE)
+    """
+
+    def test_hash_miss_after_cache_rebuild_following_spec_edit(self):
+        original_content = '# Feature: Test\n\n## 1. Overview\nOriginal requirements.\n'
+        self._write_feature('feat1.md', original_content)
+        self._git_commit('initial feature')
+
+        # Mark COMPLETE
+        self._git_commit('status: [Complete features/feat1.md] [Scope: full]')
+        complete_hash = self._git_head()
+
+        cache_path = os.path.join(self.cache_dir, 'status_commit_cache.json')
+
+        # Build initial cache (hash should be from committed content)
+        with patch('serve.PROJECT_ROOT', self.root), \
+             patch('serve.FEATURES_ABS', self.features_dir), \
+             patch('serve.STATUS_COMMIT_CACHE_PATH', cache_path), \
+             patch('serve.CACHE_DIR', self.cache_dir):
+            build_status_commit_cache()
+
+        # Read and verify the cached hash matches the ORIGINAL committed content
+        with open(cache_path) as f:
+            data = json.load(f)
+        original_hash = data['entries']['features/feat1.md'].get('spec_content_hash')
+        self.assertIsNotNone(original_hash)
+        self.assertEqual(original_hash, _compute_spec_hash(original_content))
+
+        # Now edit the spec on disk (post-completion)
+        edited_content = '# Feature: Test\n\n## 1. Overview\nNew requirements added.\n'
+        self._write_feature('feat1.md', edited_content)
+
+        # Delete cache and rebuild
+        os.remove(cache_path)
+
+        with patch('serve.PROJECT_ROOT', self.root), \
+             patch('serve.FEATURES_ABS', self.features_dir), \
+             patch('serve.STATUS_COMMIT_CACHE_PATH', cache_path), \
+             patch('serve.CACHE_DIR', self.cache_dir):
+            build_status_commit_cache()
+
+        # Rebuilt cache hash should STILL be from committed content (original),
+        # NOT from the edited working-tree content
+        with open(cache_path) as f:
+            data = json.load(f)
+        rebuilt_hash = data['entries']['features/feat1.md'].get('spec_content_hash')
+        self.assertIsNotNone(rebuilt_hash)
+        self.assertEqual(rebuilt_hash, _compute_spec_hash(original_content))
+        self.assertNotEqual(rebuilt_hash, _compute_spec_hash(edited_content))
+
+        # spec_content_unchanged should return False (working tree differs)
+        with patch('serve.PROJECT_ROOT', self.root), \
+             patch('serve.STATUS_COMMIT_CACHE_PATH', cache_path):
+            unchanged = spec_content_unchanged('features/feat1.md', complete_hash)
+        self.assertFalse(unchanged)
 
 
 class TestFallbackWhenNoHashInCache(CacheTestBase):
