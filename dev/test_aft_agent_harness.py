@@ -284,8 +284,8 @@ class TestModelOverride(unittest.TestCase):
     Then `claude --print` is called with `--model sonnet` instead of the default haiku
     """
 
-    def test_harness_accepts_model_flag(self):
-        """Harness accepts --model command line argument."""
+    def test_model_override_accepted_via_flag(self):
+        """Model override is accepted via --model command line argument."""
         with open(TEST_HARNESS) as f:
             content = f.read()
         self.assertIn("--model", content)
@@ -297,8 +297,8 @@ class TestModelOverride(unittest.TestCase):
             content = f.read()
         self.assertIn("claude-haiku-4-5-20251001", content)
 
-    def test_model_passed_to_claude(self):
-        """Model is passed to claude --print via --model flag."""
+    def test_model_override_passed_to_claude(self):
+        """Model override value is passed to claude --print."""
         with open(TEST_HARNESS) as f:
             content = f.read()
         self.assertIn('--model "$MODEL"', content)
@@ -317,8 +317,8 @@ class TestScenarioSelection(unittest.TestCase):
     And all other scenarios are skipped
     """
 
-    def test_harness_accepts_scenario_flag(self):
-        """Harness accepts --scenario command line argument."""
+    def test_single_scenario_selection_flag(self):
+        """Single scenario selection via --scenario command line argument."""
         with open(TEST_HARNESS) as f:
             content = f.read()
         self.assertIn("--scenario", content)
@@ -330,8 +330,8 @@ class TestScenarioSelection(unittest.TestCase):
             content = f.read()
         self.assertIn("should_run_scenario", content)
 
-    def test_each_scenario_checks_filter(self):
-        """Each scenario function calls should_run_scenario."""
+    def test_single_selection_gates_each_scenario(self):
+        """Single selection filter gates each scenario function."""
         with open(TEST_HARNESS) as f:
             content = f.read()
         import re

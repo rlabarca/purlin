@@ -26,11 +26,11 @@
       "status": "PASS"
     },
     {
-      "test": "test_harness_accepts_model_flag (__main__.TestModelOverride.test_harness_accepts_model_flag)",
+      "test": "test_model_override_accepted_via_flag (__main__.TestModelOverride.test_model_override_accepted_via_flag)",
       "status": "PASS"
     },
     {
-      "test": "test_model_passed_to_claude (__main__.TestModelOverride.test_model_passed_to_claude)",
+      "test": "test_model_override_passed_to_claude (__main__.TestModelOverride.test_model_override_passed_to_claude)",
       "status": "PASS"
     },
     {
@@ -70,15 +70,15 @@
       "status": "PASS"
     },
     {
-      "test": "test_each_scenario_checks_filter (__main__.TestScenarioSelection.test_each_scenario_checks_filter)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_harness_accepts_scenario_flag (__main__.TestScenarioSelection.test_harness_accepts_scenario_flag)",
-      "status": "PASS"
-    },
-    {
       "test": "test_should_run_scenario_function_exists (__main__.TestScenarioSelection.test_should_run_scenario_function_exists)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_scenario_selection_flag (__main__.TestScenarioSelection.test_single_scenario_selection_flag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_single_selection_gates_each_scenario (__main__.TestScenarioSelection.test_single_selection_gates_each_scenario)",
       "status": "PASS"
     },
     {
