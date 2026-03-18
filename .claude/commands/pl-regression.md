@@ -6,7 +6,7 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ## Overview
 
-AFT Regression Testing skill. QA owns the regression tier end-to-end: authoring harness scripts, composing regression sets, and triaging results. Harness scripts are behavioral verification artifacts, not application code — the Builder does NOT write or modify regression harnesses.
+Regression Testing skill. QA owns the regression tier end-to-end: authoring harness scripts, composing regression sets, and triaging results. Harness scripts are behavioral verification artifacts, not application code — the Builder does NOT write or modify regression harnesses.
 
 This skill identifies regression-eligible features and composes external commands for the user to execute in a separate terminal.
 
@@ -19,7 +19,7 @@ This skill identifies regression-eligible features and composes external command
 ### Step 1 — Discovery
 
 1. Run `tools/cdd/status.sh --role qa` and parse the output.
-2. Identify regression-eligible features: features with AFT metadata (`> AFT Agent:` or `> AFT Web:`) that meet any of these criteria:
+2. Identify regression-eligible features: features with `> Web Test:` metadata or a `### Regression Testing` section that meet any of these criteria:
    - `tests.json` has `status: "FAIL"` (FAIL)
    - `tests.json` is missing or has `total: 0` (NOT_RUN)
    - Feature source was modified after `tests.json` mtime (STALE)
@@ -29,7 +29,7 @@ This skill identifies regression-eligible features and composes external command
 ### Step 2 — Present Options
 
 If zero features are eligible:
-- Print: "No regression-eligible features found. All AFT results are current."
+- Print: "No regression-eligible features found. All regression results are current."
 - Stop.
 
 If features are found:
@@ -37,8 +37,8 @@ If features are found:
   ```
   Found N features eligible for regression:
 
-    1. [STALE] aft_agent — last tested 2h ago, source modified 1h ago
-    2. [FAIL]  pl_aft_web — 3/5 scenarios failing
+    1. [STALE] instruction_audit — last tested 2h ago, source modified 1h ago
+    2. [FAIL]  pl_web_test — 3/5 scenarios failing
     3. [NOT_RUN] new_feature — no test results
 
   Run all, select specific features, or skip? [all / 1,2,... / skip]
@@ -51,29 +51,29 @@ Based on user selection:
 
 **Single feature:**
 ```
-dev/aft_runner.sh --once <harness> --write-results
+dev/regression_runner.sh --once <harness> --write-results
 ```
 
 **Multiple features:**
 Write a trigger file for watch mode, or compose multiple `--once` invocations:
 ```
 # Option A: Sequential
-dev/aft_runner.sh --once <harness1> --write-results && dev/aft_runner.sh --once <harness2> --write-results
+dev/regression_runner.sh --once <harness1> --write-results && dev/regression_runner.sh --once <harness2> --write-results
 
 # Option B: Watch mode (for long-running suites)
-# Write trigger to .purlin/runtime/aft_trigger.json, then:
-dev/aft_runner.sh --watch
+# Write trigger to .purlin/runtime/regression_trigger.json, then:
+dev/regression_runner.sh --watch
 ```
 
 **Harness mapping:**
-- Features with `> AFT Agent:` → `dev/test_agent_interactions.sh --write-results`
-- Features with `> AFT Web:` → Compose a `/pl-aft-web` invocation (runs inside Claude session, not external)
+- Features with `### Regression Testing` section → use the harness specified in the section (e.g., `dev/test_agent_interactions.sh --write-results`)
+- Features with `> Web Test:` → Compose a `/pl-web-test` invocation (runs inside Claude session, not external)
 
 Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
 ```
 Run this in a separate terminal:
 
-    ./dev/aft_runner.sh --once dev/test_agent_interactions.sh --write-results
+    ./dev/regression_runner.sh --once dev/test_agent_interactions.sh --write-results
 
 Tell me when it finishes.
 ```
@@ -92,7 +92,7 @@ After the user confirms completion:
      - **Scenario:** <scenario_ref>
      - **Expected:** <expected>
      - **Actual:** <actual_excerpt (first ~500 chars)>
-     - **Source:** AFT regression (auto-detected)
+     - **Source:** Regression test (auto-detected)
      ```
 3. Compute assertion tier distribution across all detail entries:
    - Count entries by `assertion_tier` value (1, 2, 3, or untagged if field is absent).
@@ -118,12 +118,12 @@ After the user confirms completion:
 
 When reading `tests.json` detail entries, look for these optional fields (backward-compatible):
 
-- `scenario_ref` — Feature file path and scenario name (e.g., `features/aft_agent.md:Single-turn agent test`)
+- `scenario_ref` — Feature file path and scenario name (e.g., `features/instruction_audit.md:Single-turn detection`)
 - `expected` — Human-readable expected behavior from the Gherkin Then step
 - `actual_excerpt` — First ~500 characters of actual output when the test fails
-- `assertion_tier` — Integer (1, 2, or 3) indicating assertion quality tier per `features/aft_agent.md` Section 2.10:
+- `assertion_tier` — Integer (1, 2, or 3) indicating assertion quality tier per `features/arch_testing.md` Section 2.5:
   - **Tier 1:** Keyword presence (e.g., "table|findings") — vulnerable to incidental matches
   - **Tier 2:** Specific finding (e.g., exact file name or defect identifier)
   - **Tier 3:** State verification (inspects agent's stated intent to produce artifacts)
 
-These fields are written by AFT harnesses that support the `--write-results` convention.
+These fields are written by regression harnesses that support the `--write-results` convention.

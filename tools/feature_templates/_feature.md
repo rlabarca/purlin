@@ -5,8 +5,6 @@
 > Owner: <PM or Architect — omit line if Architect (default)>
 > Prerequisite: features/<anchor_node>.md
 
-[TODO]
-
 ## 1. Overview
 
 <One paragraph: what this feature is and why it exists.>
@@ -18,6 +16,14 @@
 ### 2.1 <Group Name>
 
 - <Requirement>
+
+<!-- Optional: Uncomment for features with regression tests.
+### 2.x Regression Testing
+
+Regression tests verify <describe what is tested>.
+- **Approach:** <Agent behavior harness / Web test / API contract check>
+- **Scenarios covered:** <which scenarios>
+-->
 
 ---
 
