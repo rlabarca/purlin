@@ -144,8 +144,9 @@ class TestWatchModeSIGINT(unittest.TestCase):
 class TestMalformedTrigger(unittest.TestCase):
     """Scenario: Runner handles malformed trigger gracefully."""
 
-    def test_malformed_trigger_is_deleted(self):
-        """Invalid JSON trigger is logged, deleted, and polling continues."""
+    def test_runner_handles_malformed_trigger(self):
+        """Runner handles malformed trigger gracefully: logs error,
+        deletes trigger, resumes polling."""
         runtime_dir = os.path.join(
             PROJECT_ROOT, '.purlin', 'runtime')
         os.makedirs(runtime_dir, exist_ok=True)
@@ -268,8 +269,8 @@ class TestQASkillIdentifiesEligible(unittest.TestCase):
 class TestQASkillComposesCommand(unittest.TestCase):
     """Scenario: QA skill composes external command for selected features."""
 
-    def test_skill_references_once_mode(self):
-        """The skill composes --once mode commands."""
+    def test_qa_skill_composes_command_once_mode(self):
+        """QA skill composes external command for once mode."""
         skill_path = os.path.join(
             PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
         with open(skill_path) as f:
@@ -278,8 +279,8 @@ class TestQASkillComposesCommand(unittest.TestCase):
         self.assertIn('dev/aft_runner.sh', content)
         self.assertIn('--write-results', content)
 
-    def test_skill_references_watch_mode(self):
-        """The skill references watch mode for multi-feature runs."""
+    def test_qa_skill_composes_command_watch_mode(self):
+        """QA skill composes external command for watch mode."""
         skill_path = os.path.join(
             PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
         with open(skill_path) as f:
@@ -374,8 +375,9 @@ class TestEnrichedResultsFormat(unittest.TestCase):
 class TestStalenessDetection(unittest.TestCase):
     """Scenario: Staleness detection prioritizes re-testing."""
 
-    def test_stale_feature_detected_by_mtime(self):
-        """A feature whose source is newer than its tests.json is stale."""
+    def test_staleness_detection_prioritizes_retesting(self):
+        """Staleness detection: feature source newer than tests.json
+        means the feature is stale and prioritized for re-testing."""
         tmpdir = tempfile.mkdtemp()
         try:
             features_dir = os.path.join(tmpdir, 'features')
