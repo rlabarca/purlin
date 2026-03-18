@@ -68,6 +68,8 @@ A QA-owned slash command at `.claude/commands/pl-regression.md`. QA owns the reg
    ```
 6. After user confirms completion: read `tests.json` files for each regression-tested feature, create `[BUG]` discovery sidecar entries for any failures, print a summary, and run `tools/cdd/status.sh`.
 
+**UX invariant:** Whenever the QA agent asks the user to run anything in an external terminal -- whether through this skill or ad-hoc during triage -- it MUST print the exact, complete command. Never describe what to run; print the literal command. The user should never have to assemble a command from prose.
+
 ### 2.3 Enriched Result Format
 
 Enhance `tests.json` detail entries with optional fields (backward-compatible with existing consumers):
