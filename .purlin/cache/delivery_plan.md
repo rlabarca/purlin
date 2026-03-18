@@ -101,12 +101,12 @@ Mass lifecycle reset from AFT-to-Web-Test rename affecting 23 features, plus 4 t
 **Completion Commit:** 2002d1d
 **QA Bugs Addressed:** --
 
-## Phase 20 -- CDD Startup Controls [PENDING]
+## Phase 20 -- CDD Startup Controls [IN_PROGRESS]
 **Features:** cdd_startup_controls.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 21 -- Collab What's Different [PENDING]
+## Phase 21 -- Collab What's Different [IN_PROGRESS]
 **Features:** collab_whats_different.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
