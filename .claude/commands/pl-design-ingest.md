@@ -31,7 +31,7 @@ Ingest a design artifact into a feature's Visual Specification section. This com
      3.1: Call `get_design_context` to extract annotations. Present behavioral notes to user: "I found these behavioral notes in the Figma annotations: [list]. I'll use these to draft scenarios -- let me know if any are outdated."
      3.2: Compare extracted Figma variable names against design anchor token list. Auto-generate identity Token Map entries for matches (with or without `var()` / `--` prefix normalization). Report identity vs. manual mapping counts.
      Auto-generate the Token Map by mapping Figma design variable names to project tokens. Also generate `brief.json` (see step 5.1).
-   - Figma URL without MCP: Record the URL. Provide MCP installation instructions (`claude mcp add --transport http figma https://mcp.figma.com/mcp`). Ask the user to provide an exported image or screenshot. If provided, process as image. If not, create a placeholder Token Map noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
+   - Figma URL without MCP: Record the URL. Walk the user through Figma MCP setup: (1) run `claude mcp add --transport http figma https://mcp.figma.com/mcp`, (2) restart Claude, (3) run the `/mcp` command, select the Figma MCP, and complete OAuth in the browser. Ask the user to provide an exported image or screenshot in the meantime. If provided, process as image. If not, create a placeholder Token Map noting manual processing is needed and append: "For higher fidelity, install Figma MCP."
 
 5. **Generate Token Map and checklists:**
    - Create a Token Map mapping design token names (from Figma or observed from artifacts) to the project's token system:

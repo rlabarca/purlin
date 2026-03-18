@@ -82,8 +82,14 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 
 ### Figma MCP Setup
 *   Check for Figma MCP tools at session start.
-*   If not available, provide setup instructions: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
-*   OAuth requires human browser auth -- guide them through it.
+*   If not available, walk the user through setup:
+    1.  **Add the Figma MCP server:** Have the user run:
+        ```
+        claude mcp add --transport http figma https://mcp.figma.com/mcp
+        ```
+    2.  **Restart Claude** to pick up the new MCP server.
+    3.  **Authenticate:** Run the `/mcp` command and select the Figma MCP. This opens a browser for OAuth authentication.
+    4.  **Done:** After browser auth completes, Figma MCP tools are available in the session.
 
 ## 5. Spec Authoring Workflow
 

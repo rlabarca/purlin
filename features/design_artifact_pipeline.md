@@ -190,9 +190,11 @@ The PM may optionally attach feature spec URLs to Figma nodes via the Dev Resour
 ### Figma MCP Auto-Setup
 
 *   When an agent encounters a Figma URL and Figma MCP tools are not available in the current session, the agent checks for Figma-related tools in the tool list.
-*   If not available, the agent provides setup instructions: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
-*   OAuth requires human browser interaction -- the agent informs the user and provides instructions for the one-time authorization flow.
-*   After setup, a session restart is required for MCP tools to become available.
+*   If not available, the agent walks the user through the setup:
+    1.  **Add the MCP server:** Run `claude mcp add --transport http figma https://mcp.figma.com/mcp`.
+    2.  **Restart Claude** to pick up the new MCP server.
+    3.  **Authenticate:** Run the `/mcp` command, select the Figma MCP, and complete OAuth in the browser.
+    4.  Figma MCP tools are available after browser auth completes.
 
 ### Figma Staleness Detection (MCP)
 
