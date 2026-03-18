@@ -40,6 +40,7 @@ AFTs that target visual systems (web UI, mobile apps) SHOULD compare their outpu
 | AFT Type | Metadata Tag | Target System | Tooling | Status |
 |----------|-------------|---------------|---------|--------|
 | Web UI | `> AFT Web: <url>` | Browser-rendered UI | Playwright MCP | **Implemented** (`/pl-aft-web`) |
+| Agent Interaction | `> AFT Agent: <role>` | Agent conversation flow | `claude --print` + session scripting | **Implemented** (`aft_agent.md`) |
 | REST/GraphQL API | `> AFT API: <base-url>` | HTTP endpoints | HTTP client + schema validation | Planned |
 | LLM Interaction | `> AFT LLM: <model-id>` | Language model | Scripted prompts + response evaluation | Planned |
 | iOS App | `> AFT iOS: <bundle-id>` | iOS simulator/device | XCUITest / Appium MCP | Planned |
@@ -54,6 +55,7 @@ All AFT tools follow the pattern `pl-aft-<type>`:
 | AFT Type | Command Name | Feature File | Command File |
 |----------|-------------|-------------|--------------|
 | Web UI | `/pl-aft-web` | `features/pl_aft_web.md` | `.claude/commands/pl-aft-web.md` |
+| Agent | N/A (harness script) | `features/aft_agent.md` | N/A (project-specific `dev/` script) |
 | REST API | `/pl-aft-api` | `features/pl_aft_api.md` | `.claude/commands/pl-aft-api.md` |
 | LLM | `/pl-aft-llm` | `features/pl_aft_llm.md` | `.claude/commands/pl-aft-llm.md` |
 | iOS | `/pl-aft-ios` | `features/pl_aft_ios.md` | `.claude/commands/pl-aft-ios.md` |

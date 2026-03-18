@@ -4,6 +4,8 @@
 > Category: "Agent Skills"
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
+> AFT Agent: architect
+> Test Fixtures: https://github.com/rlabarca/weather1
 
 ## 1. Overview
 

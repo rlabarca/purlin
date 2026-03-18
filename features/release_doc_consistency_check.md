@@ -4,6 +4,7 @@
 > Category: "Release Process"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
+> AFT Agent: architect
 
 ## 1. Overview
 

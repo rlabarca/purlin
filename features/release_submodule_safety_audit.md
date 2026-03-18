@@ -5,6 +5,7 @@
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
 > Prerequisite: features/project_init.md
+> AFT Agent: architect
 
 ## 1. Overview
 
