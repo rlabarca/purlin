@@ -84,6 +84,11 @@ def make_mock_project(tmpdir, plan_text=None, graph_data=None):
     analyzer_dst = os.path.join(tools_dir, 'phase_analyzer.py')
     shutil.copy2(analyzer_src, analyzer_dst)
 
+    # Copy bootstrap.py (required by phase_analyzer.py)
+    bootstrap_src = os.path.join(PROJECT_ROOT, 'tools', 'bootstrap.py')
+    bootstrap_dst = os.path.join(tmpdir, 'tools', 'bootstrap.py')
+    shutil.copy2(bootstrap_src, bootstrap_dst)
+
     # Create mock resolve_config.py that outputs defaults
     with open(os.path.join(config_dir, 'resolve_config.py'), 'w') as f:
         f.write('#!/usr/bin/env python3\n')
