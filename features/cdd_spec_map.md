@@ -47,7 +47,7 @@ The Spec Map view is activated via the view mode toggle in the dashboard shell (
 *   **Zoom-to-Fit on Load:** On initial page load (or when switching to the Spec Map view), the graph MUST be automatically zoomed and centered to fit the viewable page area. The graph tracks whether the user has manually modified zoom or pan:
     *   If the user has NOT modified zoom or pan since the last fit (initial load, view switch, or Recenter), auto-refresh cycles MUST re-fit the graph to the viewable area.
     *   If the user HAS modified zoom or pan, auto-refresh cycles MUST preserve the current zoom level and pan position.
-*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the Spec Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
+*   **Recenter Graph Button:** A "Recenter Graph" button MUST be displayed in the bottom-right corner of the Spec Map canvas. When clicked, it MUST (1) reset zoom and pan to fit the graph to the viewable area using an animated transition (same duration and easing as the category zoom in Section 2.5), (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions, so that subsequent auto-refresh cycles re-fit and re-layout rather than preserve.
 *   **Node Position Persistence:** The graph tracks whether the user has manually dragged any node (category group box or individual feature node). Node positions are persisted to `localStorage`, keyed by a content hash derived from the current set of nodes and their category assignments.
     *   If the user has NOT manually moved any node, auto-refresh cycles re-run the layout algorithm normally.
     *   If the user HAS manually moved one or more nodes, auto-refresh cycles restore the saved positions. Existing nodes retain their saved coordinates; any newly-added nodes are placed by the layout algorithm.
@@ -87,7 +87,7 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 
 ### 2.6 Double-Click Background Recenter
 *   **Trigger:** When the User double-clicks on the graph canvas background (not on a node, edge, or category bounding box), the graph MUST recenter and zoom-to-fit, identical to clicking the "Recenter Graph" button.
-*   **Behavior:** Same as the Recenter Graph button (Section 2.3): (1) reset zoom and pan to fit the graph to the viewable area, (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions.
+*   **Behavior:** Same as the Recenter Graph button (Section 2.3): (1) animate zoom and pan to fit the graph to the viewable area (same duration and easing as the category zoom in Section 2.5), (2) reset all manually-moved node positions to the packed layout positions, and (3) reset the interaction state to "unmodified" for both zoom/pan and node positions.
 *   **No conflict with category zoom:** Double-click on a category bounding box triggers the category zoom (Section 2.5). Double-click on the background triggers the full recenter. The target element determines which behavior fires.
 
 ### 2.7 Edge Click Pass-Through
@@ -195,7 +195,7 @@ These scenarios are validated by the Builder's automated test suite.
 #### Scenario: Recenter Graph Button Resets View and Interaction State
     Given the User has zoomed or panned the graph
     When the User clicks the Recenter Graph button
-    Then the zoom and pan are reset to fit the graph in the viewable area
+    Then the zoom and pan animate to fit the graph in the viewable area
     And the interaction state is reset to unmodified
     When the dashboard next auto-refreshes
     Then the graph is re-fitted to the viewable area rather than preserving the previous zoom/pan
@@ -283,7 +283,7 @@ These scenarios are validated by the Builder's automated test suite.
     Given the User is viewing the Spec Map view
     And the User has zoomed or panned the graph away from the default fit
     When the User double-clicks on the canvas background (not on a node or category box)
-    Then the graph recenters and zooms to fit all nodes in the viewable area
+    Then the graph animates to recenter and zoom to fit all nodes in the viewable area
     And all manually-moved node positions are reset to the packed layout positions
     And the interaction state is reset to unmodified for both zoom/pan and node positions
     And subsequent auto-refresh cycles re-fit and re-layout the graph
@@ -378,6 +378,8 @@ None.
 - [ ] Cross-category prerequisite nodes always appear above their dependents (inter-category hierarchy preserved)
 - [ ] Double-clicking a category box zooms the view to maximize that category within the viewport
 - [ ] Double-clicking the canvas background recenters and zoom-to-fits (same as Recenter Graph button)
+- [ ] "Recenter Graph" button animates the zoom transition (not instant snap)
+- [ ] Double-clicking the canvas background animates the zoom-out transition (not instant snap)
 - [ ] Clicking on edges (lines/arrows) does not select them or trigger any interaction
 - [ ] Modal from graph node click occupies 70% viewport width (inherited from cdd_modal_base.md)
 - [ ] Metadata tags displayed with highlighted names in dedicated area above markdown body
