@@ -50,7 +50,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - For execution groups with multiple phases (`parallel: true`), launch each phase's Builder in a separate git worktree.
 - Each parallel Builder is invoked with `claude -p -w <worktree-name>` where the worktree name is `continuous-phase-<phase_number>`.
 - Each parallel Builder receives a phase-specific prompt: `"Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase <N> ONLY. Work exclusively on Phase <N> features. Do not wait for approval."`.
-- **Startup recovery:** Before entering the main orchestration loop, the launcher MUST scan the delivery plan for any phases with `[IN_PROGRESS]` status and reset them to `[PENDING]`. These are orphans from a previous interrupted run -- no Builder is actively working on them. The reset is committed to git with message `"chore: reset stale IN_PROGRESS phases to PENDING"`. This ensures the phase analyzer includes them in execution planning and the CDD dashboard does not inflate the "RUNNING" count. The reset runs once, before the first `run_analyzer` call.
+- **Startup recovery:** Before entering the main orchestration loop, the launcher MUST scan the delivery plan for any phases with `[IN_PROGRESS]` status and reset them to `[PENDING]`. These are orphans from a previous interrupted run -- no Builder is actively working on them. The reset is committed to git with message `"chore: reset stale IN_PROGRESS phases to PENDING"`. This ensures the phase analyzer includes them in execution planning and the CDD dashboard does not inflate the "RUNNING" count. The reset runs before the first phase analyzer invocation that produces execution groupings -- including the approval table renderer (Section 2.16). In the bootstrap path, this means after plan validation and before the approval checkpoint. The function is idempotent.
 - **Pre-launch status update:** Before launching any Builders in an execution group, the orchestrator MUST update the delivery plan on the main branch to mark ALL phases in the group as `[IN_PROGRESS]`. For a parallel group with Phases 2 and 3, both headings are changed from `[PENDING]` to `[IN_PROGRESS]` before either worktree Builder starts. For sequential groups (single phase), the phase is marked `[IN_PROGRESS]` before the Builder launches. This commit is made on the main branch so the CDD dashboard correctly reflects the running phase count.
 - The launcher waits for all parallel Builders in the group to complete before proceeding. The terminal canvas provides progress visibility (see Section 2.17).
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
@@ -219,6 +219,7 @@ During execution, the continuous builder creates transient runtime artifacts in 
   - No plan file + exit code 0 -> Builder completed all work directly (phasing not warranted). Launcher exits successfully with summary.
   - No plan file + exit code non-zero -> bootstrap failed. Launcher exits with error directing the user to run an interactive session.
 - **Plan validation:** After bootstrap creates the plan and before the approval prompt, the launcher runs the phase analyzer as a dry-run validation. If the analyzer detects dependency cycles or structural errors, the launcher prints the error, notes that the plan has been committed for manual editing, and exits 0. The user fixes the plan and re-runs `--continuous` (which will skip bootstrap since the plan now exists).
+- **Stale status reset before approval:** After plan validation succeeds and before the approval table renders, the launcher MUST run the startup recovery reset (Section 2.4) to normalize any `[IN_PROGRESS]` phases left by the bootstrap Builder to `[PENDING]`. This ensures the approval table's phase analyzer sees the same statuses the orchestration loop will see. The function is idempotent; calling it at both bootstrap and loop-entry points is safe.
 - **Approval checkpoint:** When bootstrap creates a valid delivery plan, the canvas clears the spinner and renders a colored console table summarizing the plan. The table is rendered into the canvas area on stderr. Format:
 
 ```
@@ -248,6 +249,7 @@ Proceed? [Y/n]
   - **Live resize:** While the `Proceed? [Y/n]` prompt is active, the launcher traps `SIGWINCH`. On terminal resize, it clears the table (cursor-up + clear), re-reads `tput cols`, recomputes column widths, and re-renders. If resize crosses the 60-column threshold, the layout mode switches between columnar and stacked. The SIGWINCH trap is removed after the user responds.
   - TTY fallback: plain uncolored text when stderr is not a TTY.
   - If the user declines (or hits Ctrl-C), the launcher exits 0 with the plan committed to git -- the user can edit the plan and re-run `--continuous`. If the user approves, the launcher enters the continuous orchestration loop.
+- **Approval table fidelity invariant:** The approval table MUST display the same execution groupings the orchestration loop will compute on its first iteration. Any operation that changes phase statuses between the approval table render and the first orchestration loop iteration violates this invariant.
 - The bootstrap log is written to `.purlin/runtime/continuous_build_bootstrap.log`.
 - Bootstrap output is written to log files only; the terminal shows the canvas spinner (see Section 2.17).
 - The bootstrap session does NOT receive the continuous phase override (Section 2.7) or server permission override (Section 2.8). It receives only the bootstrap-specific override.
@@ -731,8 +733,8 @@ Do not begin work on other features or phases.
     When the orchestrator begins the sequential group
     Then the orchestrator updates the delivery plan to mark Phase 4 as IN_PROGRESS before launching the Builder
 
-#### Scenario: Stale IN_PROGRESS Phases Reset on Startup
-    Given a delivery plan exists with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
+#### Scenario: Stale IN_PROGRESS Phases Reset on Startup (Resume Path)
+    Given a delivery plan already exists with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
     And no Builder process is currently running for Phase 2
     When pl-run-builder.sh is invoked with --continuous
     Then the launcher resets Phase 2 from IN_PROGRESS to PENDING before entering the loop
@@ -926,6 +928,16 @@ Do not begin work on other features or phases.
     And re-renders the table with recomputed column widths and cell wrapping
     And the "Proceed? [Y/n]" prompt is re-displayed
     And no output line exceeds the new terminal width
+
+#### Scenario: Bootstrap IN_PROGRESS Phases Reset Before Approval Table
+    Given pl-run-builder.sh is invoked with --continuous
+    And no delivery plan exists
+    And the bootstrap Builder creates a delivery plan with Phase 1 IN_PROGRESS and remaining phases PENDING
+    When bootstrap plan validation succeeds
+    Then reset_stale_in_progress() runs before render_approval_table()
+    And Phase 1 is PENDING when the approval table's phase analyzer executes
+    And the approval table includes Phase 1 in its execution group display
+    And the approval table's displayed groups match what the orchestration loop computes on its first iteration
 
 #### Scenario: Sequential Phase Canvas During Execution
     Given --continuous is active

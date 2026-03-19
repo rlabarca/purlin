@@ -104,7 +104,7 @@ The `extract_activity` function's filename regex (`grep -oE '[a-zA-Z0-9_.-]+\.(m
 
 ## Stale IN_PROGRESS Recovery
 
-The `reset_stale_in_progress()` function runs both at startup (before the main orchestration loop) and during graceful stop (inside the `graceful_stop` SIGINT handler). At startup, it catches orphans from a previous interrupted run. During graceful stop, it resets phases that were marked IN_PROGRESS during the current run but not completed before the interrupt.
+The `reset_stale_in_progress()` function runs at three points: (1) in the bootstrap path, after plan validation and before the approval table render; (2) at startup of the orchestration loop (catches orphans from a previous interrupted run, or redundantly re-runs after bootstrap -- idempotent); (3) during graceful stop (inside the `graceful_stop` SIGINT handler). The bootstrap-path call is critical: without it, the approval table computes execution groups from a plan where IN_PROGRESS phases are excluded, producing groupings that differ from what the orchestration loop will compute after the loop-entry reset normalizes all phases to PENDING.
 
 ## Evaluator Timeout (Section 2.5)
 
