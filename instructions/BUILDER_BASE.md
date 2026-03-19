@@ -114,7 +114,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 
 *   **Companion file edits do NOT reset status.** Only edits to the feature spec (`<name>.md`) trigger resets.
 *   **Status tag MUST be a separate commit** from implementation work.
-*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written. Required fields: `status`, `passed`, `failed`, `total`. `total` MUST be > 0.
+*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written. Required fields: `status`, `passed`, `failed`, `total`. `total` MUST be > 0. Test files that use the inline harness pattern (`record()` / `write_results()`) MUST be executed directly (`python3 <path>/test_file.py`), not via pytest -- only direct execution triggers `write_results()`.
 *   **`[Verified]` tag is QA-only.** The Builder MUST NOT include `[Verified]` in `[Complete]` commits.
 *   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
 *   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
