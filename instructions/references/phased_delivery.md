@@ -19,6 +19,8 @@ Each phase MUST be a separate Builder session. The Builder MUST NOT auto-advance
 
 When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
 
+**Continuous mode exception:** When `--continuous` mode is active, the orchestrator handles phase boundaries automatically. The Builder halts at phase completion as normal, and the orchestrator launches a new session for the next phase without human intervention. QA verification between phases is recommended but does not block subsequent phases -- only CRITICAL issues (INFEASIBLE escalations, missing prerequisites) stop the continuous loop.
+
 **Scope Reset on Plan Completion:** When the Builder completes the final phase and deletes the delivery plan, the Builder MUST reset the `change_scope` to `full` for every feature that participated in the plan and still has `builder: "TODO"` status. Targeted scopes are artifacts of the phased delivery -- once the plan is gone, any remaining unbuilt work must be visible under a full scope. This prevents scenarios from becoming invisible to future Builder sessions after the delivery plan context is deleted.
 
 ## 10.4 QA Interaction

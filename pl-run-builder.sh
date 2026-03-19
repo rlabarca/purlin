@@ -77,6 +77,8 @@ There is no human user present. You MUST:
 - NEVER ask for user input or confirmation of any kind.
 - Proceed immediately with your work plan.
 - Complete the current delivery plan phase autonomously, then halt as normal.
+- Do NOT include QA recommendations or "relaunch Builder" suggestions in your output.
+  The orchestrator handles phase progression automatically.
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 CONTINUOUS_OVERRIDE
@@ -150,7 +152,7 @@ fi
 # ================================================================
 
 RUNTIME_DIR="$SCRIPT_DIR/.purlin/runtime"
-DELIVERY_PLAN="$SCRIPT_DIR/.purlin/cache/delivery_plan.md"
+DELIVERY_PLAN="$SCRIPT_DIR/.purlin/delivery_plan.md"
 PHASE_ANALYZER="$CORE_DIR/tools/delivery/phase_analyzer.py"
 # Evaluator model: configurable via continuous_evaluator_model in config, defaults to Haiku
 HAIKU_MODEL="claude-haiku-4-5-20251001"
@@ -261,6 +263,7 @@ purge_stale_runtime_artifacts() {
     rm -f "${RUNTIME_DIR}"/remediation_attempt_* 2>/dev/null
     rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
     rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
 }
 purge_stale_runtime_artifacts
 
@@ -363,6 +366,9 @@ CRITIC_EOF
 - Error requiring human input (INFEASIBLE, missing fixture) -> action: "stop", success: false
 - All phases complete / delivery plan deleted -> action: "stop", success: true
 - No meaningful progress detected -> action: "stop", success: false
+- Builder mentions "run QA", "QA verification", or "Relaunch Builder" -> these are informational recommendations, NOT stop signals. Check if PENDING or IN_PROGRESS phases remain in the delivery plan -> if yes, action: "continue"
+- Some parallel phases completed but delivery plan still has PENDING or IN_PROGRESS phases -> action: "continue"
+- action "stop" with success: true is ONLY correct when the delivery plan has been deleted OR every single phase is marked COMPLETE
 
 Only return "remediate" when a Critic Analysis Summary section is present AND contains HIGH/CRITICAL issues or features stuck at [TODO]. MEDIUM and LOW items do NOT trigger remediation.
 The "success" field MUST be true ONLY when action is "stop" AND all work completed successfully. For all other cases, success MUST be false.
@@ -435,15 +441,15 @@ evaluator_fallback() {
     # already committed plan updates before the fallback runs (parallel groups).
     # Check whether PENDING phases remain as a second signal.
     if [ -f "$DELIVERY_PLAN" ]; then
-        local pending_count
-        pending_count=$(grep -c '\[PENDING\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
-        if [ "$pending_count" -gt 0 ]; then
-            echo "continue|false|evaluator fallback: $pending_count PENDING phase(s) remain"
+        local remaining_count
+        remaining_count=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+        if [ "$remaining_count" -gt 0 ]; then
+            echo "continue|false|evaluator fallback: $remaining_count PENDING/IN_PROGRESS phase(s) remain"
             return 0
         fi
     fi
 
-    echo "stop|false|evaluator fallback: delivery plan unchanged and no PENDING phases"
+    echo "stop|false|evaluator fallback: delivery plan unchanged and no remaining phases"
 }
 
 # --- Helper: format seconds as Xm Ys ---
@@ -1401,7 +1407,7 @@ out.append('')
 if parallel_groups:
     pg_strs = ['+'.join(str(p) for p in pg) for pg in parallel_groups]
     out.append('Parallel groups: {0} (Phases {1})'.format(len(parallel_groups), ', Phases '.join(pg_strs)).ljust(cols))
-out.append('Review at .purlin/cache/delivery_plan.md'.ljust(cols))
+out.append('Review at .purlin/delivery_plan.md'.ljust(cols))
 out.append('{0}{1}{2}'.format(BOLD_CYAN, '=' * cols, RESET))
 
 print('\n'.join(out), file=sys.stderr)
@@ -1496,7 +1502,7 @@ BOOTSTRAP_OVERRIDE
             echo "Plan validation failed:" >&2
             echo "$VALIDATE_OUTPUT" | head -20 >&2
             echo "The plan has been committed for manual editing." >&2
-            echo "Fix the plan at .purlin/cache/delivery_plan.md and re-run --continuous." >&2
+            echo "Fix the plan at .purlin/delivery_plan.md and re-run --continuous." >&2
             exit 0
         fi
 
@@ -1555,6 +1561,59 @@ with open('$DELIVERY_PLAN', 'w') as f:
         git -C "$SCRIPT_DIR" commit -m "chore: reset stale IN_PROGRESS phases to PENDING" 2>/dev/null
     fi
 }
+
+# --- Helper: parallel failure tracking (file-based, bash 3 compat) ---
+increment_parallel_fail_count() {
+    local phase_num="$1"
+    local count_file="${RUNTIME_DIR}/parallel_fail_count_${phase_num}"
+    local count=0
+    [ -f "$count_file" ] && count=$(cat "$count_file" 2>/dev/null)
+    count=${count:-0}
+    count=$((count + 1))
+    echo "$count" > "$count_file"
+}
+
+get_parallel_fail_count() {
+    local phase_num="$1"
+    local count_file="${RUNTIME_DIR}/parallel_fail_count_${phase_num}"
+    local count=0
+    [ -f "$count_file" ] && count=$(cat "$count_file" 2>/dev/null)
+    echo "${count:-0}"
+}
+
+# --- Helper: skip phases that have exhausted parallel retries ---
+# After reset_stale_in_progress, iterate PENDING phases; if a phase has
+# parallel_fail_count >= 2, mark it COMPLETE (SKIPPED) and log a warning.
+skip_exhausted_parallel_phases() {
+    [ -f "$DELIVERY_PLAN" ] || return 0
+    local skipped_any=false
+    local pending_phases
+    pending_phases=$(python3 -c "
+import re
+with open('$DELIVERY_PLAN') as f:
+    content = f.read()
+for m in re.finditer(r'## Phase (\d+) -- .+? \[PENDING\]', content):
+    print(m.group(1))
+" 2>/dev/null)
+
+    for pnum in $pending_phases; do
+        local fail_count
+        fail_count=$(get_parallel_fail_count "$pnum")
+        if [ "$fail_count" -ge 2 ]; then
+            log_eval "Phase $pnum exhausted parallel retries ($fail_count failures) — marking SKIPPED"
+            update_plan_phase_status "$pnum"
+            record_phase_end "$pnum" "SKIPPED"
+            FAILURES+=("parallel_exhausted_phase_${pnum}")
+            skipped_any=true
+        fi
+    done
+
+    if [ "$skipped_any" = "true" ]; then
+        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
+        git -C "$SCRIPT_DIR" commit -m "chore: skip phases exhausted by parallel failures" 2>/dev/null
+    fi
+}
+
 reset_stale_in_progress
 
 # --- Track initial PENDING phase count for summary ---
@@ -1609,6 +1668,14 @@ type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
 
 while [ "$OUTER_BREAK" = "false" ]; do
 
+    # Reset stale IN_PROGRESS phases between iterations (Change A)
+    # Failed parallel phases stay IN_PROGRESS; reset them to PENDING so
+    # the analyzer can see them again.
+    reset_stale_in_progress
+
+    # Skip phases that have exhausted their parallel failure budget
+    skip_exhausted_parallel_phases
+
     # Re-run phase analyzer before each execution group
     start_interphase_canvas "Re-analyzing delivery plan..."
     ANALYZER_JSON=$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$PHASE_ANALYZER" 2>/dev/null)
@@ -1632,6 +1699,17 @@ while [ "$OUTER_BREAK" = "false" ]; do
     GROUPS_COUNT=$(printf '%s' "$ANALYZER_JSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['groups']))")
 
     if [ "$GROUPS_COUNT" = "0" ]; then
+        # Safety catch: if phases are stuck in IN_PROGRESS (e.g., from a
+        # parallel failure), reset them and retry before giving up.
+        if [ -f "$DELIVERY_PLAN" ]; then
+            ip_count=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+            if [ "$ip_count" -gt 0 ]; then
+                log_eval "No groups but $ip_count IN_PROGRESS phase(s) found — resetting and retrying"
+                reset_stale_in_progress
+                skip_exhausted_parallel_phases
+                continue
+            fi
+        fi
         if ! [ -t 2 ]; then
             canvas_milestone "No pending phases to execute"
         fi
@@ -1720,8 +1798,11 @@ while [ "$OUTER_BREAK" = "false" ]; do
                         git -C "$SCRIPT_DIR" commit -m "chore: mark phase $phase as COMPLETE" 2>/dev/null
                         record_phase_end "$phase" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
+                    else
+                        # Non-zero exit: track parallel failure count
+                        increment_parallel_fail_count "$phase"
+                        record_phase_end "$phase" "FAILED"
                     fi
-                    # Non-zero exits: phase remains IN_PROGRESS per spec
                     PERPHASE_COMPLETED+=("$phase")
                 else
                     ALL_EXITED=false
@@ -1808,7 +1889,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Inter-phase Critic run for all features across the parallel group (Section 2.18)
         if [ "$INTER_PHASE_CRITIC" = "true" ]; then
-            local critic_phases_display
             critic_phases_display=$(echo "$PHASE_LIST" | tr ' ' '/')
             start_interphase_canvas "Running Critic on phase ${critic_phases_display} features..."
             run_interphase_critic $PHASE_LIST
@@ -1841,7 +1921,6 @@ while [ "$OUTER_BREAK" = "false" ]; do
             remediate)
                 # Dynamic remediation for parallel group (Section 2.19)
                 # Use the last phase in the group as the source for tracking
-                local last_phase
                 last_phase=$(echo "$PHASE_LIST" | awk '{print $NF}')
                 if handle_remediate "$last_phase"; then
                     log_eval "Remediation phase inserted for parallel group (source: Phase $last_phase)"
@@ -1853,16 +1932,19 @@ while [ "$OUTER_BREAK" = "false" ]; do
                 # Loop back to re-analyze
                 ;;
             stop)
+                # Check for remaining phases before accepting stop
+                remaining_phases=0
+                [ -f "$DELIVERY_PLAN" ] && remaining_phases=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
                 if [ "$EVAL_SUCCESS" = "true" ]; then
-                    # All work done — exit cleanly
-                    OUTER_BREAK=true
+                    if [ "$remaining_phases" -gt 0 ]; then
+                        log_eval "stop(success=true) overridden: $remaining_phases PENDING/IN_PROGRESS phase(s) remain — continuing"
+                    else
+                        # All work done — exit cleanly
+                        OUTER_BREAK=true
+                    fi
                 else
-                    # Evaluator says stop on error — but check if PENDING phases
-                    # remain before giving up (guards against false-negative fallback)
-                    local pending_remaining=0
-                    [ -f "$DELIVERY_PLAN" ] && pending_remaining=$(grep -c '\[PENDING\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
-                    if [ "$pending_remaining" -gt 0 ]; then
-                        log_eval "stop(success=false) overridden: $pending_remaining PENDING phase(s) remain — continuing"
+                    if [ "$remaining_phases" -gt 0 ]; then
+                        log_eval "stop(success=false) overridden: $remaining_phases PENDING/IN_PROGRESS phase(s) remain — continuing"
                     else
                         OUTER_BREAK=true
                     fi
@@ -2010,15 +2092,38 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     fi
                     ;;
                 stop)
+                    # Check for remaining phases before accepting stop
+                    seq_remaining=0
+                    [ -f "$DELIVERY_PLAN" ] && seq_remaining=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+                    # Exclude current phase from remaining count (it's the one being stopped)
+                    seq_remaining=$((seq_remaining > 0 ? seq_remaining - 1 : 0))
+
                     if [ "$EVAL_SUCCESS" = "true" ]; then
                         record_phase_end "$PHASE_NUM" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
+                        update_plan_phase_status "$PHASE_NUM"
+                        if [ "$seq_remaining" -gt 0 ]; then
+                            log_eval "stop(success=true) overridden: $seq_remaining other PENDING/IN_PROGRESS phase(s) remain — continuing"
+                            type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                            break  # Exit inner loop; outer loop continues
+                        else
+                            OUTER_BREAK=true
+                            break
+                        fi
                     else
-                        record_phase_end "$PHASE_NUM" "SKIPPED"
-                        FAILURES+=("stop_phase_${PHASE_NUM}")
+                        if [ "$seq_remaining" -gt 0 ]; then
+                            log_eval "stop(success=false) overridden: $seq_remaining other PENDING/IN_PROGRESS phase(s) remain — continuing"
+                            record_phase_end "$PHASE_NUM" "SKIPPED"
+                            FAILURES+=("stop_phase_${PHASE_NUM}")
+                            type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                            break  # Exit inner loop; outer loop continues
+                        else
+                            record_phase_end "$PHASE_NUM" "SKIPPED"
+                            FAILURES+=("stop_phase_${PHASE_NUM}")
+                            OUTER_BREAK=true
+                            break
+                        fi
                     fi
-                    OUTER_BREAK=true
-                    break
                     ;;
                 *)
                     echo "Error: Unknown evaluator action: $ACTION" >&2
@@ -2073,7 +2178,8 @@ print_fallback_summary() {
           "${RUNTIME_DIR}"/retry_count_* "${RUNTIME_DIR}"/plan_amendment_phase_*.json \
           "${RUNTIME_DIR}/approval_table_lines" "${RUNTIME_DIR}/canvas_state" \
           "${RUNTIME_DIR}"/remediation_attempt_* "${RUNTIME_DIR}/interphase_critic_summary.md" \
-          "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
+          "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt \
+          "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
     # Reset stale IN_PROGRESS phases so next run doesn't skip them
     reset_stale_in_progress 2>/dev/null
 }
@@ -2338,7 +2444,7 @@ Structure your response as:
 1. **Overall:** One sentence — did it succeed, partially succeed, or fail?
 2. **What was built:** Bullet list of the key changes across all phases (group related work, don't list every file).
 3. **Issues:** Any problems, retries, escalations, INFEASIBLE tags, or DISCOVERY tags the Builders flagged. If none, say "None."
-4. **Needs attention:** Anything that requires human action before the next run (manual scenarios awaiting QA, unresolved discoveries, features stuck in TODO). If none, say "None."
+4. **Needs attention:** Critical issues only — INFEASIBLE tags, unresolved DISCOVERY tags, or features blocked by missing prerequisites. QA verification of completed phases is recommended but does NOT block subsequent phases. If none, say "None."
 
 Do not include phase numbers or repeat the phase table. Focus on substance.
 
@@ -2413,6 +2519,7 @@ rm -f "${RUNTIME_DIR}/canvas_state" 2>/dev/null
 rm -f "${RUNTIME_DIR}"/remediation_attempt_* 2>/dev/null
 rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
 rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
+rm -f "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
 
 # Disable the fallback summary trap and run original cleanup (temp files, worktrees)
 trap - EXIT

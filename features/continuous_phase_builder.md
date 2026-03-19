@@ -87,9 +87,11 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 | Context exhaustion / checkpoint saved mid-phase | `retry` | `false` |
 | Partial progress (features done but phase incomplete) | `retry` | `false` |
 | Error requiring human input (INFEASIBLE, missing fixture) | `stop` | `false` |
-| All phases complete / delivery plan deleted | `stop` | `true` |
+| All phases COMPLETE / delivery plan deleted (no PENDING or IN_PROGRESS remain) | `stop` | `true` |
 | No meaningful progress detected | `stop` | `false` |
 | Critic found HIGH/CRITICAL issues in phase features | `remediate` | `false` |
+| Builder mentions "run QA" / "QA verification" / "Relaunch Builder" (informational) | `continue` | `false` |
+| Some parallel phases completed but PENDING/IN_PROGRESS phases remain | `continue` | `false` |
 
 ### 2.6 Evaluator Actions
 
@@ -1304,6 +1306,57 @@ Do not begin work on other features or phases.
     Then the fallback logic returns "continue" or "stop" only
     And the fallback does NOT return "remediate"
     And remediation is only available when the evaluator succeeds
+
+#### Scenario: QA Recommendation Does Not Stop Continuous Loop
+    Given --continuous is active
+    And the Builder completes Phase 2 and outputs "Recommended next step: run QA to verify Phase 2 features"
+    And Phases 3 and 4 remain PENDING in the delivery plan
+    When the evaluator classifies the output
+    Then it returns action "continue" (QA recommendation is informational)
+    And the launcher proceeds to re-analyze and execute the next group
+
+#### Scenario: Stop Overridden When PENDING Phases Remain (Sequential)
+    Given --continuous is active
+    And the evaluator returns action "stop" with success: false for Phase 3
+    And Phases 4 and 5 remain PENDING in the delivery plan
+    When the orchestrator processes the stop action
+    Then it overrides the stop because PENDING phases remain
+    And records Phase 3 as SKIPPED
+    And continues to the next execution group
+
+#### Scenario: Stop Overridden When PENDING Phases Remain (Parallel)
+    Given --continuous is active with parallel Phases 2 and 3
+    And the evaluator returns action "stop" with success: true after the parallel group
+    And Phase 4 remains PENDING in the delivery plan
+    When the orchestrator processes the stop action
+    Then it overrides the stop because a PENDING phase remains
+    And continues to the next execution group
+
+#### Scenario: Parallel Phase Failure Tracked and Retried
+    Given --continuous is active with parallel Phases 2 and 3
+    And Phase 2 Builder exits with non-zero status (first failure)
+    And Phase 3 Builder exits successfully
+    When the monitoring loop completes
+    And the orchestrator re-enters the outer loop
+    Then Phase 2 is reset from IN_PROGRESS to PENDING
+    And Phase 2 appears in the next analyzer run
+    And the parallel failure count for Phase 2 is 1
+
+#### Scenario: Exhausted Parallel Phase Skipped After Max Failures
+    Given --continuous is active
+    And Phase 2 has failed twice in parallel execution (parallel_fail_count = 2)
+    When the orchestrator re-enters the outer loop
+    Then Phase 2 is marked COMPLETE (SKIPPED) in the delivery plan
+    And a warning is logged
+    And remaining PENDING phases continue to execute
+
+#### Scenario: Evaluator Fallback Checks IN_PROGRESS Phases
+    Given --continuous is active
+    And the evaluator invocation fails
+    And the delivery plan has Phase 4 as IN_PROGRESS (from a parallel failure)
+    When the fallback logic runs
+    Then it detects 1 IN_PROGRESS phase remaining
+    And returns "continue" (not "stop")
 
 ### Manual Scenarios (Human Verification Required)
 None.
