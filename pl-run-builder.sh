@@ -677,6 +677,33 @@ with open('$DELIVERY_PLAN', 'w') as f:
 " 2>/dev/null
 }
 
+# --- Helper: auto-resolve rebase/merge conflicts on framework-managed files ---
+# Returns 0 if ALL conflicting files are in the safe list and were resolved.
+# Returns 1 if any conflict is on a non-safe file (all-or-nothing).
+try_auto_resolve_conflicts() {
+    local safe_files=(".purlin/delivery_plan.md" "CRITIC_REPORT.md")
+    local conflict_files
+    conflict_files=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+    [ -z "$conflict_files" ] && return 1
+
+    # Check that every conflicting file is in the safe list
+    while IFS= read -r cfile; do
+        local is_safe=false
+        for safe in "${safe_files[@]}"; do
+            [ "$cfile" = "$safe" ] && is_safe=true && break
+        done
+        [ "$is_safe" = "false" ] && return 1
+    done <<< "$conflict_files"
+
+    # All conflicts are safe — resolve by keeping main's version
+    while IFS= read -r cfile; do
+        echo "  Auto-resolved conflict: $cfile (kept main's version)" >&2
+        git -C "$SCRIPT_DIR" checkout --ours -- "$cfile" > /dev/null 2>&1
+        git -C "$SCRIPT_DIR" add "$cfile" > /dev/null 2>&1
+    done <<< "$conflict_files"
+    return 0
+}
+
 # --- Helper: apply plan amendment files after parallel merge ---
 apply_plan_amendments() {
     local any_applied=false
@@ -1883,44 +1910,95 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # merging to incorporate changes from previously-merged parallel branches.
         # Without this, the second+ merge in a parallel group will conflict whenever
         # two builders independently modified the same file.
+        # Auto-resolves conflicts on framework-managed files (delivery_plan.md,
+        # CRITIC_REPORT.md) by keeping main's version.
         MERGE_FAILED=false
         for i in "${!WT_BRANCHES[@]}"; do
             BRANCH="${WT_BRANCHES[$i]}"
             PHASE="${WT_PHASES[$i]}"
 
-            # Rebase the branch onto current main
+            # Rebase the branch onto current main, with auto-resolution loop
             if ! git -C "$SCRIPT_DIR" rebase HEAD "$BRANCH" > /dev/null 2>&1; then
-                CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
-                echo "Error: Rebase conflict during parallel merge of Phase ${PHASE}:" >&2
-                echo "$CONFLICT_FILES" >&2
-                git -C "$SCRIPT_DIR" rebase --abort > /dev/null 2>&1
-                git -C "$SCRIPT_DIR" checkout main > /dev/null 2>&1
-                MERGE_FAILED=true
-                break
+                local rebase_resolved=false
+                local rebase_iter=0
+                local MAX_REBASE_ITER=20
+                while [ $rebase_iter -lt $MAX_REBASE_ITER ]; do
+                    rebase_iter=$((rebase_iter + 1))
+                    if try_auto_resolve_conflicts; then
+                        # Conflicts resolved — continue the rebase
+                        if ! GIT_EDITOR=true git -C "$SCRIPT_DIR" rebase --continue > /dev/null 2>&1; then
+                            # Check if the commit became empty after resolution
+                            local remaining_conflicts
+                            remaining_conflicts=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+                            if [ -z "$remaining_conflicts" ] && git -C "$SCRIPT_DIR" rev-parse --verify REBASE_HEAD > /dev/null 2>&1; then
+                                # Empty commit after resolution — skip it
+                                git -C "$SCRIPT_DIR" rebase --skip > /dev/null 2>&1 || continue
+                            else
+                                # New conflict on the next commit — loop will handle it
+                                continue
+                            fi
+                        fi
+                        # Check if rebase is fully complete
+                        if ! git -C "$SCRIPT_DIR" rev-parse --verify REBASE_HEAD > /dev/null 2>&1; then
+                            rebase_resolved=true
+                            break
+                        fi
+                        # Still rebasing (more commits) — continue loop
+                    else
+                        # Unsafe conflict — abort
+                        break
+                    fi
+                done
+
+                if [ "$rebase_resolved" != "true" ]; then
+                    CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+                    echo "Error: Rebase conflict during parallel merge of Phase ${PHASE}:" >&2
+                    echo "$CONFLICT_FILES" >&2
+                    git -C "$SCRIPT_DIR" rebase --abort > /dev/null 2>&1
+                    git -C "$SCRIPT_DIR" checkout main > /dev/null 2>&1
+                    MERGE_FAILED=true
+                    break
+                fi
             fi
 
             # Rebase leaves HEAD on the branch; switch back to main and merge
             git -C "$SCRIPT_DIR" checkout main > /dev/null 2>&1
             if ! git -C "$SCRIPT_DIR" merge "$BRANCH" --no-edit > /dev/null 2>&1; then
-                CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
-                echo "Error: Merge conflict during parallel merge of Phase ${PHASE}:" >&2
-                echo "$CONFLICT_FILES" >&2
-                git -C "$SCRIPT_DIR" merge --abort > /dev/null 2>&1
-                MERGE_FAILED=true
-                break
+                # Merge conflict — try auto-resolution on safe files
+                if try_auto_resolve_conflicts; then
+                    git -C "$SCRIPT_DIR" commit --no-edit > /dev/null 2>&1
+                else
+                    CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
+                    echo "Error: Merge conflict during parallel merge of Phase ${PHASE}:" >&2
+                    echo "$CONFLICT_FILES" >&2
+                    git -C "$SCRIPT_DIR" merge --abort > /dev/null 2>&1
+                    MERGE_FAILED=true
+                    break
+                fi
             fi
         done
 
-        # Clean up branches for this group
-        for i in "${!WT_BRANCHES[@]}"; do
-            git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" > /dev/null 2>&1
-        done
-
         if [ "$MERGE_FAILED" = "true" ]; then
+            # Preserve branches for manual recovery — list them for the user
+            echo "" >&2
+            echo "Unmerged worktree branches preserved for recovery:" >&2
+            for i in "${!WT_BRANCHES[@]}"; do
+                branch="${WT_BRANCHES[$i]}"
+                if git -C "$SCRIPT_DIR" rev-parse --verify "$branch" > /dev/null 2>&1; then
+                    echo "  $branch  ($(git -C "$SCRIPT_DIR" log --oneline -1 "$branch"))" >&2
+                fi
+            done
+            echo "" >&2
+            echo "To recover, cherry-pick or merge these branches manually, then delete them." >&2
             FAILURES+=("merge_conflict")
             OUTER_BREAK=true
             continue
         fi
+
+        # Clean up branches only after all merges succeeded
+        for i in "${!WT_BRANCHES[@]}"; do
+            git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" > /dev/null 2>&1
+        done
 
         # Process plan amendment files from parallel builders
         apply_plan_amendments

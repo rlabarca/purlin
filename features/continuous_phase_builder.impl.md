@@ -134,6 +134,16 @@ The evaluator JSON schema now includes a `success` boolean field. The stop-actio
 
 The output format from `run_evaluator` changed from `action|reason` to `action|success|reason` (pipe-delimited). Both sequential and parallel eval output parsing updated to extract the middle field.
 
+## Auto-Resolution of Framework File Conflicts During Parallel Merge (2026-03-19)
+
+[DISCOVERY] (acknowledged) During parallel worktree execution, the orchestrator commits delivery plan status updates on main as builders exit (marking phases COMPLETE). When worktree branches are rebased onto main, these commits conflict on `.purlin/delivery_plan.md` because the branch was forked before the status commits. `CRITIC_REPORT.md` can cause similar conflicts since both sides run `status.sh`.
+
+**Fix:** Added `try_auto_resolve_conflicts()` helper that checks whether ALL conflicting files are in a known-safe list (`delivery_plan.md`, `CRITIC_REPORT.md`). If yes, resolves all by keeping main's version (`git checkout --ours`). If any conflict is on a non-safe file, returns failure (all-or-nothing — no partial resolution). The rebase block now loops: resolve safe conflicts → `rebase --continue` → handle next commit's conflicts → repeat (max 20 iterations). Empty commits after resolution (e.g., a commit that only touched `delivery_plan.md`) are detected via `REBASE_HEAD` presence and skipped with `rebase --skip`. The merge step uses the same helper for post-rebase merge conflicts.
+
+**Why `--ours` is correct:** During `git rebase HEAD $BRANCH`, "ours" = HEAD (main). During `git merge`, "ours" = current branch (main). Both cases: `--ours` = main's version, which is authoritative for framework-managed files.
+
+**Branch preservation on merge failure:** Branch cleanup was moved after the `MERGE_FAILED` check (previously it ran unconditionally before the check, destroying all branches including unmerged ones). On failure, the orchestrator now lists surviving branches with their tip commits and instructs the user to cherry-pick or merge manually. Per spec Section 2.4: "After successful merges, clean up worktree branches."
+
 ## [DISCOVERY] (acknowledged) JSON Leaking to Terminal During Parallel Execution (2026-03-17)
 
 **Problem:** During the first `--continuous` run with parallel phases (1, 2, 3), raw NDJSON output from the `--verbose --output-format stream-json` builders leaked to the terminal, flooding it with JSON instead of showing the canvas. The parallel group completed successfully (all 3 phases merged) but the evaluator then hung for 646+ seconds (pre-timeout-fix) and the orchestrator never advanced to phase 4.
