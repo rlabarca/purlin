@@ -400,6 +400,108 @@ os.replace(tmp_path, settings_path)
 " "$SETTINGS_FILE"
 }
 
+# Install MCP servers from the framework manifest (§2.16).
+# Sets MCP_INSTALLED, MCP_SKIPPED, MCP_NOTES, and MCP_ATTEMPTED counters.
+install_mcp_servers() {
+    MCP_INSTALLED=0
+    MCP_SKIPPED=0
+    MCP_NOTES=""
+    MCP_ATTEMPTED=false
+
+    local MANIFEST="$SUBMODULE_DIR/tools/mcp/manifest.json"
+
+    # CLI guard: skip if claude CLI unavailable
+    if ! command -v claude >/dev/null 2>&1; then
+        say "  MCP: claude CLI not found, skipping MCP server installation."
+        return 0
+    fi
+
+    # Manifest guard: skip if manifest missing
+    if [ ! -f "$MANIFEST" ]; then
+        say "  MCP: manifest not found at $MANIFEST, skipping MCP server installation."
+        return 0
+    fi
+
+    MCP_ATTEMPTED=true
+
+    # Parse manifest and install servers
+    "$PYTHON_EXE" -c "
+import json, subprocess, sys, os
+
+manifest_path = sys.argv[1]
+quiet = sys.argv[2] == 'true'
+
+with open(manifest_path) as f:
+    manifest = json.load(f)
+
+installed = 0
+skipped = 0
+notes = []
+errors = []
+
+# Get list of currently installed MCP servers
+try:
+    result = subprocess.run(['claude', 'mcp', 'list'], capture_output=True, text=True, timeout=10)
+    existing_servers = result.stdout if result.returncode == 0 else ''
+except Exception:
+    existing_servers = ''
+
+for server in manifest.get('servers', []):
+    name = server['name']
+    transport = server.get('transport', 'stdio')
+
+    # Check if already installed (name appears in list output)
+    if name in existing_servers:
+        skipped += 1
+        continue
+
+    # Build install command
+    cmd = ['claude', 'mcp', 'add']
+    if transport == 'http':
+        cmd += ['--transport', 'http', name, server['url']]
+    else:
+        cmd += [name, server['command']] + server.get('args', [])
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            installed += 1
+            if server.get('post_install_notes'):
+                notes.append(f'  {name}: {server[\"post_install_notes\"]}')
+        else:
+            errors.append(f'  {name}: install failed ({result.stderr.strip()})')
+    except Exception as e:
+        errors.append(f'  {name}: install failed ({e})')
+
+# Output results as shell-parseable lines
+print(f'MCP_INSTALLED={installed}')
+print(f'MCP_SKIPPED={skipped}')
+if notes:
+    # Escape for shell
+    notes_str = '\\n'.join(notes)
+    print(f'MCP_NOTES=\"{notes_str}\"')
+else:
+    print('MCP_NOTES=\"\"')
+if errors:
+    for err in errors:
+        print(f'MCP_ERROR={err}', file=sys.stderr)
+" "$MANIFEST" "$QUIET" > /tmp/purlin_mcp_result.sh 2>/tmp/purlin_mcp_errors.txt || true
+
+    # Source results
+    if [ -f /tmp/purlin_mcp_result.sh ]; then
+        eval "$(cat /tmp/purlin_mcp_result.sh)"
+        rm -f /tmp/purlin_mcp_result.sh
+    fi
+
+    # Print errors if any
+    if [ -f /tmp/purlin_mcp_errors.txt ] && [ -s /tmp/purlin_mcp_errors.txt ]; then
+        while IFS= read -r line; do
+            say "  $line"
+        done < /tmp/purlin_mcp_errors.txt
+    fi
+    rm -f /tmp/purlin_mcp_errors.txt
+}
+
 ###############################################################################
 # 3. Full Init Mode
 ###############################################################################
@@ -492,8 +594,9 @@ else:
         mkdir "$PROJECT_ROOT/features"
     fi
 
-    # 3.8 Gitignore Handling (submodule_bootstrap.md §2.7)
+    # 3.8 Gitignore Handling (project_init.md §2.3 step 8)
     GITIGNORE="$PROJECT_ROOT/.gitignore"
+    GITIGNORE_TEMPLATE="$SUBMODULE_DIR/purlin-config-sample/gitignore.purlin"
 
     # Warn if .purlin is gitignored
     if [ -f "$GITIGNORE" ] && grep -qE '^\.purlin/?$' "$GITIGNORE"; then
@@ -503,45 +606,27 @@ else:
         say "  Remove '.purlin' from .gitignore if it was added by mistake."
     fi
 
-    # Recommended ignores
-    RECOMMENDED_IGNORES=(
-        "# OS & Editors"
-        ".DS_Store"
-        ".vscode/"
-        ".idea/"
-        ""
-        "# Python"
-        "__pycache__/"
-        "*.py[cod]"
-        ".venv/"
-        "env/"
-        "venv/"
-        ""
-        "# Purlin Tool Logs & Artifacts"
-        "*.log"
-        "*.pid"
-        ".purlin/runtime/"
-        ".purlin/cache/"
-        ".purlin/config.local.json"
-    )
-
-    if [ ! -f "$GITIGNORE" ]; then
-        printf "%s\n" "${RECOMMENDED_IGNORES[@]}" > "$GITIGNORE"
-    else
-        ADDED=0
-        for LINE in "${RECOMMENDED_IGNORES[@]}"; do
-            if [ -z "$LINE" ] || [[ "$LINE" == \#* ]]; then
-                continue
-            fi
-            if ! grep -qF "$LINE" "$GITIGNORE"; then
-                if [ "$ADDED" -eq 0 ]; then
-                    echo "" >> "$GITIGNORE"
-                    echo "# Added by Purlin init" >> "$GITIGNORE"
-                    ADDED=1
+    # Read patterns from gitignore.purlin template
+    if [ -f "$GITIGNORE_TEMPLATE" ]; then
+        if [ ! -f "$GITIGNORE" ]; then
+            cp "$GITIGNORE_TEMPLATE" "$GITIGNORE"
+        else
+            ADDED=0
+            while IFS= read -r LINE || [ -n "$LINE" ]; do
+                # Skip blank lines and comments
+                if [ -z "$LINE" ] || [[ "$LINE" == \#* ]]; then
+                    continue
                 fi
-                echo "$LINE" >> "$GITIGNORE"
-            fi
-        done
+                if ! grep -qF "$LINE" "$GITIGNORE"; then
+                    if [ "$ADDED" -eq 0 ]; then
+                        echo "" >> "$GITIGNORE"
+                        echo "# Added by Purlin init" >> "$GITIGNORE"
+                        ADDED=1
+                    fi
+                    echo "$LINE" >> "$GITIGNORE"
+                fi
+            done < "$GITIGNORE_TEMPLATE"
+        fi
     fi
 
     # 3.9 Shim Generation
@@ -559,17 +644,30 @@ else:
     # 3.12 Claude Code Hook Installation (project_init.md §2.15)
     install_session_hook
 
-    # 3.13 Summary Output
+    # 3.13 MCP Server Installation (project_init.md §2.16)
+    install_mcp_servers
+
+    # 3.14 Post-Init Staging (project_init.md §2.3 step 14)
+    # Stage exactly the files created by init — never git add -A or git add .
+    git -C "$PROJECT_ROOT" add .purlin/ 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add .claude/commands/ 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add .claude/settings.json 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add .gitignore 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add pl-init.sh 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add pl-cdd-start.sh pl-cdd-stop.sh 2>/dev/null || true
+
+    # 3.15 Summary Output
     say ""
-    say "Purlin initialized."
+    say "Purlin initialized. Files staged."
     say ""
-    say "  pl-init.sh          Run anytime to refresh"
-    say "  ./pl-run-architect.sh      Start Architect session"
-    say "  ./pl-run-builder.sh        Start Builder session"
-    say "  ./pl-run-qa.sh             Start QA session"
-    say "  ./pl-run-pm.sh             Start PM session"
-    say "  ./pl-cdd-start.sh   Start CDD dashboard"
-    say "  ./pl-cdd-stop.sh    Stop CDD dashboard"
+    say "  pl-init.sh              Run anytime to refresh"
+    say "  ./pl-run-architect.sh   Start Architect session"
+    say "  ./pl-run-builder.sh     Start Builder session"
+    say "  ./pl-run-qa.sh          Start QA session"
+    say "  ./pl-run-pm.sh          Start PM session"
+    say "  ./pl-cdd-start.sh       Start CDD dashboard"
+    say "  ./pl-cdd-stop.sh        Stop CDD dashboard"
     if [ -n "$PROVIDER_SUMMARY" ]; then
         say ""
         say "  $PROVIDER_SUMMARY"
@@ -578,8 +676,18 @@ else:
         say "  Commands: $CMD_COPIED copied"
         [ "$CMD_SKIPPED" -gt 0 ] && say ", $CMD_SKIPPED skipped (locally modified)"
     fi
+    if [ "$MCP_ATTEMPTED" = true ]; then
+        say ""
+        say "  MCP servers: $MCP_INSTALLED installed, $MCP_SKIPPED skipped"
+        if [ -n "$MCP_NOTES" ]; then
+            say "$MCP_NOTES"
+        fi
+        if [ "$MCP_INSTALLED" -gt 0 ]; then
+            say "  Restart Claude Code to load MCP servers."
+        fi
+    fi
     say ""
-    say "Next: git add -A && git commit -m \"init purlin\""
+    say "Next: git commit -m \"init purlin\""
     if [ -n "$VENV_MSG" ]; then
         say ""
         say "$VENV_MSG"
@@ -637,6 +745,43 @@ else
     # 4.6 Claude Code Hook Installation (project_init.md §2.15)
     install_session_hook
 
-    # 4.7 Refresh Summary
-    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}"
+    # 4.7 Gitignore Pattern Sync (project_init.md §2.4 step 7)
+    GITIGNORE="$PROJECT_ROOT/.gitignore"
+    GITIGNORE_TEMPLATE="$SUBMODULE_DIR/purlin-config-sample/gitignore.purlin"
+
+    if [ -f "$GITIGNORE_TEMPLATE" ] && [ -f "$GITIGNORE" ]; then
+        GITIGNORE_ADDED=0
+        while IFS= read -r LINE || [ -n "$LINE" ]; do
+            # Skip blank lines and comments
+            if [ -z "$LINE" ] || [[ "$LINE" == \#* ]]; then
+                continue
+            fi
+            if ! grep -qF "$LINE" "$GITIGNORE"; then
+                if [ "$GITIGNORE_ADDED" -eq 0 ]; then
+                    echo "" >> "$GITIGNORE"
+                    echo "# Added by Purlin refresh" >> "$GITIGNORE"
+                    GITIGNORE_ADDED=1
+                fi
+                echo "$LINE" >> "$GITIGNORE"
+            fi
+        done < "$GITIGNORE_TEMPLATE"
+    elif [ -f "$GITIGNORE_TEMPLATE" ] && [ ! -f "$GITIGNORE" ]; then
+        cp "$GITIGNORE_TEMPLATE" "$GITIGNORE"
+    fi
+
+    # 4.8 MCP Server Installation (project_init.md §2.16)
+    install_mcp_servers
+
+    # 4.9 Refresh Summary
+    MCP_NOTE=""
+    if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
+        MCP_NOTE=" MCP: $MCP_INSTALLED installed."
+    fi
+    say "Purlin refreshed. ($CMD_COPIED commands updated, $CMD_SKIPPED skipped)${SHIM_NOTE}${SYMLINK_NOTE}${MCP_NOTE}"
+    if [ "$MCP_ATTEMPTED" = true ] && [ -n "$MCP_NOTES" ]; then
+        say "$MCP_NOTES"
+    fi
+    if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
+        say "Restart Claude Code to load MCP servers."
+    fi
 fi

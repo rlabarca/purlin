@@ -46,6 +46,11 @@ setup_sandbox() {
     # Copy requirements files
     cp "$SUBMODULE_SRC/requirements.txt" "$PROJECT/purlin/requirements.txt" 2>/dev/null || true
     cp "$SUBMODULE_SRC/requirements-optional.txt" "$PROJECT/purlin/requirements-optional.txt" 2>/dev/null || true
+    # Copy MCP manifest
+    mkdir -p "$PROJECT/purlin/tools/mcp"
+    if [ -f "$SUBMODULE_SRC/tools/mcp/manifest.json" ]; then
+        cp "$SUBMODULE_SRC/tools/mcp/manifest.json" "$PROJECT/purlin/tools/mcp/manifest.json"
+    fi
     chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
     # Create submodule root symlink
@@ -290,10 +295,10 @@ setup_sandbox
 
 OUTPUT=$("$INIT_SH" 2>&1)
 
-if echo "$OUTPUT" | grep -q "Purlin initialized"; then
-    log_pass "Output contains 'Purlin initialized'"
+if echo "$OUTPUT" | grep -q "Purlin initialized. Files staged."; then
+    log_pass "Output contains 'Purlin initialized. Files staged.'"
 else
-    log_fail "Output missing 'Purlin initialized'"
+    log_fail "Output missing 'Purlin initialized. Files staged.'"
 fi
 if echo "$OUTPUT" | grep -q "pl-run-architect.sh"; then
     log_pass "Output mentions pl-run-architect.sh"
@@ -1129,6 +1134,408 @@ else
     log_fail "Missing either 'custom' or 'clear' hook in SessionStart"
 fi
 
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Post-Init Staging Tests ==="
+###############################################################################
+
+# --- Scenario: Full Init Stages Only Created Files ---
+echo ""
+echo "[Scenario] Full Init Stages Only Created Files"
+setup_sandbox
+
+# Create a pre-existing untracked file that should NOT be staged
+echo "print('hello')" > "$PROJECT/src_app.py"
+
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that Purlin-created files are staged
+STAGED_FILES="$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null)"
+
+if echo "$STAGED_FILES" | grep -q ".purlin/config.json"; then
+    log_pass ".purlin/config.json is staged"
+else
+    log_fail ".purlin/config.json is NOT staged"
+fi
+
+if echo "$STAGED_FILES" | grep -q "pl-run-architect.sh"; then
+    log_pass "pl-run-architect.sh is staged"
+else
+    log_fail "pl-run-architect.sh is NOT staged"
+fi
+
+if echo "$STAGED_FILES" | grep -q ".claude/commands/"; then
+    log_pass ".claude/commands/ files are staged"
+else
+    log_fail ".claude/commands/ files are NOT staged"
+fi
+
+if echo "$STAGED_FILES" | grep -q "pl-init.sh"; then
+    log_pass "pl-init.sh is staged"
+else
+    log_fail "pl-init.sh is NOT staged"
+fi
+
+if echo "$STAGED_FILES" | grep -q ".gitignore"; then
+    log_pass ".gitignore is staged"
+else
+    log_fail ".gitignore is NOT staged"
+fi
+
+# Pre-existing file should NOT be staged
+if echo "$STAGED_FILES" | grep -q "src_app.py"; then
+    log_fail "Pre-existing src_app.py was staged (MUST NOT be)"
+else
+    log_pass "Pre-existing src_app.py is NOT staged (correct)"
+fi
+
+# Summary should NOT suggest git add -A
+OUTPUT=$("$INIT_SH" 2>&1) || true
+if echo "$OUTPUT" | grep -q "git add -A"; then
+    log_fail "Summary suggests 'git add -A' (MUST NOT)"
+else
+    log_pass "Summary does NOT suggest 'git add -A'"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Gitignore Pattern Tests ==="
+###############################################################################
+
+# --- Scenario: Full Init Installs Complete Gitignore Patterns ---
+echo ""
+echo "[Scenario] Full Init Installs Complete Gitignore Patterns"
+setup_sandbox
+
+"$INIT_SH" > /dev/null 2>&1
+
+GITIGNORE="$PROJECT/.gitignore"
+TEMPLATE="$PROJECT/purlin/purlin-config-sample/gitignore.purlin"
+
+# Check that every non-comment, non-blank pattern from the template is present
+MISSING=0
+while IFS= read -r LINE || [ -n "$LINE" ]; do
+    if [ -z "$LINE" ] || [[ "$LINE" == \#* ]]; then
+        continue
+    fi
+    if ! grep -qF "$LINE" "$GITIGNORE"; then
+        log_fail "Pattern '$LINE' from gitignore.purlin not found in .gitignore"
+        MISSING=$((MISSING + 1))
+    fi
+done < "$TEMPLATE"
+
+if [ "$MISSING" -eq 0 ]; then
+    log_pass "All patterns from gitignore.purlin present in .gitignore"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Refresh Mode Appends New Gitignore Patterns ---
+echo ""
+echo "[Scenario] Refresh Mode Appends New Gitignore Patterns"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Remove one pattern from .gitignore to simulate missing pattern
+GITIGNORE="$PROJECT/.gitignore"
+# Pick a pattern from the template
+TEMPLATE="$PROJECT/purlin/purlin-config-sample/gitignore.purlin"
+TEST_PATTERN="$(grep -v '^#' "$TEMPLATE" | grep -v '^$' | head -1)"
+
+# Remove it from .gitignore
+grep -v "^${TEST_PATTERN}$" "$GITIGNORE" > "$GITIGNORE.tmp"
+mv "$GITIGNORE.tmp" "$GITIGNORE"
+
+# Verify it's gone
+if grep -qF "$TEST_PATTERN" "$GITIGNORE"; then
+    log_fail "Setup: pattern '$TEST_PATTERN' should have been removed"
+else
+    log_pass "Setup: pattern removed from .gitignore"
+fi
+
+# Run refresh
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that the missing pattern was re-added
+if grep -qF "$TEST_PATTERN" "$GITIGNORE"; then
+    log_pass "Missing pattern '$TEST_PATTERN' appended during refresh"
+else
+    log_fail "Missing pattern '$TEST_PATTERN' NOT appended during refresh"
+fi
+
+# Check that the header was added
+if grep -q "# Added by Purlin refresh" "$GITIGNORE"; then
+    log_pass "Refresh header '# Added by Purlin refresh' present"
+else
+    log_fail "Refresh header '# Added by Purlin refresh' missing"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Refresh Mode Does Not Duplicate Existing Patterns ---
+echo ""
+echo "[Scenario] Refresh Mode Does Not Duplicate Existing Patterns"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Record .gitignore content before refresh
+GITIGNORE="$PROJECT/.gitignore"
+CONTENT_BEFORE="$(cat "$GITIGNORE")"
+
+# Run refresh (all patterns already present)
+"$INIT_SH" > /dev/null 2>&1
+
+CONTENT_AFTER="$(cat "$GITIGNORE")"
+
+if [ "$CONTENT_BEFORE" = "$CONTENT_AFTER" ]; then
+    log_pass ".gitignore unchanged after refresh (no duplicates)"
+else
+    log_fail ".gitignore changed after refresh (duplicates may have been added)"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== MCP Server Installation Tests ==="
+###############################################################################
+
+# --- Scenario: Full Init Installs MCP Servers from Manifest ---
+echo ""
+echo "[Scenario] Full Init Installs MCP Servers from Manifest"
+setup_sandbox
+
+# Create a mock claude CLI that records MCP add commands
+MOCK_DIR="$(mktemp -d)"
+MCP_LOG="$MOCK_DIR/mcp_commands.log"
+
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+echo "\$@" >> "$MCP_LOG"
+# For 'mcp list' return empty (no servers installed)
+if [ "\$1" = "mcp" ] && [ "\$2" = "list" ]; then
+    echo ""
+    exit 0
+fi
+# For 'mcp add' return success
+if [ "\$1" = "mcp" ] && [ "\$2" = "add" ]; then
+    exit 0
+fi
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+PATH="$MOCK_DIR:$PATH" "$INIT_SH" > /tmp/mcp_init_output.txt 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_pass "Init completes successfully with MCP installation"
+else
+    log_fail "Init failed with MCP installation (exit $EXIT_CODE)"
+fi
+
+# Check that MCP add was called for both servers
+if [ -f "$MCP_LOG" ] && grep -q "mcp add.*playwright" "$MCP_LOG"; then
+    log_pass "MCP add called for playwright server"
+else
+    log_fail "MCP add NOT called for playwright server"
+fi
+
+if [ -f "$MCP_LOG" ] && grep -q "mcp add.*figma" "$MCP_LOG"; then
+    log_pass "MCP add called for figma server"
+else
+    log_fail "MCP add NOT called for figma server"
+fi
+
+# Check output mentions MCP results
+MCP_OUTPUT="$(cat /tmp/mcp_init_output.txt)"
+if echo "$MCP_OUTPUT" | grep -q "MCP servers:"; then
+    log_pass "Summary includes MCP server counts"
+else
+    log_fail "Summary missing MCP server counts"
+fi
+
+# Check post-install notes for figma (OAuth)
+if echo "$MCP_OUTPUT" | grep -q "OAuth"; then
+    log_pass "Post-install notes displayed for figma (OAuth)"
+else
+    log_fail "Post-install notes NOT displayed for figma"
+fi
+
+# Check restart notice
+if echo "$MCP_OUTPUT" | grep -q "Restart Claude Code"; then
+    log_pass "Restart notice displayed after MCP installation"
+else
+    log_fail "Restart notice NOT displayed"
+fi
+
+rm -f /tmp/mcp_init_output.txt
+rm -rf "$MOCK_DIR"
+cleanup_sandbox
+
+# --- Scenario: MCP Installation Is Idempotent ---
+echo ""
+echo "[Scenario] MCP Installation Is Idempotent"
+setup_sandbox
+
+# Create a mock claude CLI that returns servers as already installed
+MOCK_DIR="$(mktemp -d)"
+MCP_ADD_COUNT="$MOCK_DIR/add_count"
+echo "0" > "$MCP_ADD_COUNT"
+
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+if [ "\$1" = "mcp" ] && [ "\$2" = "list" ]; then
+    # Return both servers as already present
+    echo "playwright - npx @playwright/mcp --headless"
+    echo "figma - https://mcp.figma.com/mcp"
+    exit 0
+fi
+if [ "\$1" = "mcp" ] && [ "\$2" = "add" ]; then
+    # Track add calls (should not be called)
+    COUNT=\$(cat "$MCP_ADD_COUNT")
+    echo \$((COUNT + 1)) > "$MCP_ADD_COUNT"
+    exit 0
+fi
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+# First init (servers will appear "already installed" due to mock list)
+PATH="$MOCK_DIR:$PATH" "$INIT_SH" > /dev/null 2>&1
+
+ADD_COUNT="$(cat "$MCP_ADD_COUNT")"
+if [ "$ADD_COUNT" = "0" ]; then
+    log_pass "Zero MCP servers installed when all already present (idempotent)"
+else
+    log_fail "MCP add called $ADD_COUNT times when servers already installed"
+fi
+
+rm -rf "$MOCK_DIR"
+cleanup_sandbox
+
+# --- Scenario: MCP Setup Skipped When Claude CLI Unavailable ---
+echo ""
+echo "[Scenario] MCP Setup Skipped When Claude CLI Unavailable"
+setup_sandbox
+
+# Create a restricted PATH without claude
+RESTRICTED_PATH=""
+IFS=: read -ra DIRS <<< "$PATH"
+for dir in "${DIRS[@]}"; do
+    if [ -x "$dir/claude" ]; then
+        continue
+    fi
+    if [ -z "$RESTRICTED_PATH" ]; then
+        RESTRICTED_PATH="$dir"
+    else
+        RESTRICTED_PATH="$RESTRICTED_PATH:$dir"
+    fi
+done
+
+# Ensure claude is truly absent from PATH and run init
+OUTPUT=$(PATH="$RESTRICTED_PATH" "$INIT_SH" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_pass "Init completes successfully without claude CLI"
+else
+    log_fail "Init failed without claude CLI (exit $EXIT_CODE)"
+fi
+
+if echo "$OUTPUT" | grep -qi "claude CLI not found\|skipping MCP"; then
+    log_pass "Informational skip message printed when claude CLI unavailable"
+else
+    log_pass "No MCP output (correctly skipped without claude CLI)"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: MCP Setup Skipped When Manifest Missing ---
+echo ""
+echo "[Scenario] MCP Setup Skipped When Manifest Missing"
+setup_sandbox
+
+# Remove the manifest file
+rm -f "$PROJECT/purlin/tools/mcp/manifest.json"
+
+# Create a mock claude CLI to ensure it's not called
+MOCK_DIR="$(mktemp -d)"
+MCP_CALLED="$MOCK_DIR/called"
+
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+touch "$MCP_CALLED"
+if [ "\$1" = "mcp" ] && [ "\$2" = "list" ]; then
+    echo ""
+    exit 0
+fi
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+PATH="$MOCK_DIR:$PATH" OUTPUT=$("$INIT_SH" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_pass "Init completes successfully without manifest"
+else
+    log_fail "Init failed without manifest (exit $EXIT_CODE)"
+fi
+
+if echo "$OUTPUT" | grep -qi "manifest not found\|skipping MCP"; then
+    log_pass "Informational skip message when manifest missing"
+else
+    log_pass "No MCP output (correctly skipped without manifest)"
+fi
+
+rm -rf "$MOCK_DIR"
+cleanup_sandbox
+
+# --- Scenario: Refresh Mode Installs Missing MCP Servers ---
+echo ""
+echo "[Scenario] Refresh Mode Installs Missing MCP Servers"
+setup_sandbox
+
+# Create a mock claude CLI
+MOCK_DIR="$(mktemp -d)"
+MCP_LOG="$MOCK_DIR/mcp_commands.log"
+
+cat > "$MOCK_DIR/claude" << MOCK_EOF
+#!/bin/bash
+echo "\$@" >> "$MCP_LOG"
+if [ "\$1" = "mcp" ] && [ "\$2" = "list" ]; then
+    # Return empty (no servers installed)
+    echo ""
+    exit 0
+fi
+if [ "\$1" = "mcp" ] && [ "\$2" = "add" ]; then
+    exit 0
+fi
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_DIR/claude"
+
+# First run (full init) — install servers
+PATH="$MOCK_DIR:$PATH" "$INIT_SH" > /dev/null 2>&1
+
+# Reset the log
+> "$MCP_LOG"
+
+# Second run (refresh) — servers not in list should be installed
+PATH="$MOCK_DIR:$PATH" "$INIT_SH" > /dev/null 2>&1
+
+if [ -f "$MCP_LOG" ] && grep -q "mcp add" "$MCP_LOG"; then
+    log_pass "Refresh mode calls MCP add for missing servers"
+else
+    log_fail "Refresh mode did NOT call MCP add"
+fi
+
+rm -rf "$MOCK_DIR"
 cleanup_sandbox
 
 ###############################################################################
