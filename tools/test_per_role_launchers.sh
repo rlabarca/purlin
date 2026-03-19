@@ -355,6 +355,41 @@ fi
 
 teardown_launcher_sandbox
 
+# --- Scenario: Architect Launcher Falls Back When Config is Missing ---
+echo ""
+echo "[Scenario] Architect Launcher Falls Back When Config is Missing"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+# No agents.architect in config
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "pm": { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+# With empty model/effort, the launcher should still run (omitting --model/--effort or passing empty)
+# bypass_permissions defaults to false, so --allowedTools should be present (not --dangerously-skip-permissions)
+if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
+    arch_fail "Architect should NOT have --dangerously-skip-permissions when config missing (bypass defaults to false)"
+else
+    arch_pass "Architect defaults bypass_permissions to false when config missing"
+fi
+
+# Verify it still launches (captured args exist)
+if [ -n "$CAPTURED" ]; then
+    arch_pass "Architect launcher still runs when role section missing from config"
+else
+    arch_fail "Architect launcher did not run when role section missing"
+fi
+
+teardown_launcher_sandbox
+
 # --- Scenario: Architect Launcher Assembles Correct Prompt ---
 echo ""
 echo "[Scenario] Architect Launcher Assembles Correct Prompt"
@@ -621,6 +656,40 @@ if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
     qa_pass "QA launcher passes --append-system-prompt-file"
 else
     qa_fail "QA launcher missing --append-system-prompt-file (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: QA Launcher Falls Back When Config is Missing ---
+echo ""
+echo "[Scenario] QA Launcher Falls Back When Config is Missing"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-qa.sh" "$SANDBOX/"
+# No agents.qa in config
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "pm": { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-qa.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+# bypass_permissions defaults to false, so --allowedTools should be present
+if echo "$CAPTURED" | grep -q -- '--dangerously-skip-permissions'; then
+    qa_fail "QA should NOT have --dangerously-skip-permissions when config missing (bypass defaults to false)"
+else
+    qa_pass "QA defaults bypass_permissions to false when config missing"
+fi
+
+# Verify it still launches
+if [ -n "$CAPTURED" ]; then
+    qa_pass "QA launcher still runs when role section missing from config"
+else
+    qa_fail "QA launcher did not run when role section missing"
 fi
 
 teardown_launcher_sandbox
