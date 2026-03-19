@@ -21,9 +21,9 @@
 **Completion Commit:** a729d2a
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Session Resume [IN_PROGRESS]
+## Phase 4 -- Session Resume [COMPLETE]
 **Features:** pl_session_resume.md
-**Completion Commit:** --
+**Completion Commit:** 467995a
 **QA Bugs Addressed:** --
 
 ## Phase 5 -- Web Test Tool [IN_PROGRESS]
