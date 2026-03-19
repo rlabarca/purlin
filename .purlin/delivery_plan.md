@@ -6,7 +6,7 @@
 ## Summary
 15 TODO features (265 scenarios) spanning policy foundations, agent skills, release steps, test infrastructure, and orchestration tooling. Phased to respect dependency ordering (policy nodes must land before dependent skills), honor per-phase sizing caps (max 2 features, max 1 HIGH per paired phase), and keep each phase completable within a single Builder session.
 
-## Phase 1 -- Policy Foundations [IN_PROGRESS]
+## Phase 1 -- Policy Foundations [PENDING]
 **Features:** policy_critic.md, policy_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
