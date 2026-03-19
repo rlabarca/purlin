@@ -47,6 +47,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 1. Run `tools/cdd/status.sh --startup builder`. Parse the JSON output.
 2. The briefing contains config, git state, feature summary, action items, dependency graph summary, delivery plan state, tombstones, anchor constraints with FORBIDDEN patterns, and in-scope feature list. Keep FORBIDDEN patterns from `anchor_constraints` active for the session.
 3. Read specs for in-scope TODO/TESTING features (the briefing has summaries, not full text).
+4. **Prerequisite Stability Check:** For each in-scope feature, check its `> Prerequisite:` links that point to other features (not anchor nodes). If any prerequisite feature is in `[TODO]` status, flag it in the work plan as an unstable dependency. The Builder MUST read the full spec of any TODO-status prerequisite before implementing the dependent feature.
 
 ### 2.2 Propose a Work Plan
 
@@ -74,7 +75,7 @@ Present the user with a structured summary:
 
 1.  **Builder Action Items** -- List tombstone tasks first (labeled `[TOMBSTONE]`), then all items from the Critic report AND from the spec-level gap analysis (step 2.1.5), grouped by feature, sorted by priority (HIGH first). For each item, include the priority, the source (e.g., "tombstone", "traceability gap", "failing tests", "spec gap: new section not implemented"), and a one-line description. When the spec-level analysis reveals gaps that the Critic missed, call these out explicitly.
 2.  **Feature Queue** -- Which features are in TODO state and relevant to the action items.
-3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Resolve blockers and dependencies first, then implement, then test. If multiple features are independent, note which could be parallelized.
+3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Resolve blockers and dependencies first, then implement, then test. **Flag any feature whose prerequisites are in TODO status -- these have unstable contracts and should be sequenced after their parents where possible.** If multiple features are independent, note which could be parallelized.
 4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
 
 ### 2.3 Wait for Approval
