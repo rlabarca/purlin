@@ -96,6 +96,32 @@ the word "purpose" -- e.g., `## Purpose`, `## 1. Purpose`.
 
 Scenario classification and gherkin quality checks are automatically skipped for anchor nodes.
 
+## Regression Guidance Section (Optional)
+
+Feature files MAY contain a `## Regression Guidance` section with bullet points describing
+behaviors that are regression-worthy. PM or Architect adds these hints during spec authoring
+to signal which behaviors deserve independent regression coverage by QA.
+
+**Placement:** After `## Visual Specification` (if present) or after `## 3. Scenarios`,
+as the last content section before end-of-file.
+
+**Format:**
+
+    ## Regression Guidance
+    - <Behavior description: what to verify and why it is fragile>
+    - <Another behavior>
+
+**Example:**
+
+    ## Regression Guidance
+    - Idempotent repeated runs: verify no file changes on second init
+    - CDD symlink repair after manual deletion
+    - Config and overrides untouched during refresh mode
+
+**Critic interaction:** The Critic detects this section and, when the feature reaches
+`builder: "DONE"`, generates MEDIUM-priority QA action items with category
+`regression_guidance_pending`. The Builder ignores this section entirely.
+
 ## Fixture Tag Section Format
 
 Features that use test fixtures declare their fixture tags in a dedicated subsection within

@@ -119,7 +119,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 *   **`[Verified]` tag is QA-only.** The Builder MUST NOT include `[Verified]` in `[Complete]` commits.
 *   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
 *   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
-*   **Test quality:** Tests MUST verify behavioral outcomes (see `features/policy_test_quality.md`). Audit against AP-1 through AP-5 before status tag.
+*   **Test quality:** Tests MUST verify behavioral outcomes per `features/policy_test_quality.md` guidelines (AP-1 through AP-4). No subagent audit required.
 *   **Web test (when eligible):** Features with `> Web Test:` or `> AFT Web:` metadata MUST pass `/pl-web-test` (zero BUG verdicts) before status tag. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file.
 *   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
 

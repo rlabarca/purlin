@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-Codifies test quality standards to prevent shallow tests that pass structural validation (tests.json schema, keyword traceability) but do not verify behavioral outcomes. The Critic validates that tests exist and trace to scenarios; this policy defines what those tests must actually do to be meaningful.
+Codifies test quality standards that the Builder follows when writing tests. These guidelines prevent shallow tests that pass structural validation (tests.json schema) but do not verify behavioral outcomes. The Critic validates that tests exist and pass; this policy defines what good tests look like.
 
 ## 2. Test Quality Invariants
 
@@ -88,51 +88,6 @@ Defines what the Builder runs during Step 3 versus what defers to the Regression
 | Claude skill/command | Test infrastructure (parsers, validators, state) | Regression harness for interaction flow |
 
 **Builder rule:** Run `/pl-web-test` during Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features: unit tests only.
-
-### 2.6 Subagent Test Quality Evaluation
-
-After writing tests and before committing, the Builder MUST spawn Haiku subagents to independently evaluate test quality. This replaces the manual "audit against AP-1 through AP-5" with actual enforcement.
-
-**Protocol:**
-
-1. For each automated scenario, identify the corresponding test function(s).
-2. Spawn subagents **in parallel** (one per scenario-test pair, Haiku model).
-3. Each subagent receives:
-   - The Gherkin scenario text (Given/When/Then)
-   - The test function body
-   - The evaluation criteria (deletion invariant, AP-1 through AP-5, minimum assertion depth)
-4. Each subagent returns:
-   - Verdict: `ALIGNED` | `PARTIAL` | `DIVERGENT`
-   - Reasoning: brief explanation
-   - Fix suggestion: specific improvement if not ALIGNED
-5. Builder reads all verdicts:
-   - **DIVERGENT:** MUST fix the test before committing (mandatory).
-   - **PARTIAL:** SHOULD improve (recommended, not blocking).
-   - **ALIGNED:** Pass.
-6. Record verdicts in the companion file (`features/<name>.impl.md`) under a `### Test Quality Audit` heading:
-   ```
-   ### Test Quality Audit
-   Evaluated via Haiku subagent (2026-03-18)
-   - Scenario: Single-turn test produces structured output -> test_single_turn -> ALIGNED
-   - Scenario: Multi-turn test resumes session -> test_multi_turn -> ALIGNED
-   - Scenario: Fixture tag missing causes skip -> test_fixture_skip -> PARTIAL (uses empty string instead of realistic tag)
-   ```
-7. Skip entirely if the feature has zero automated scenarios (no cost).
-
-**Efficiency guarantees:**
-
-- All subagents run in parallel -- wall clock approximately 2-3 seconds total regardless of count.
-- Haiku model only (cheapest, fastest).
-- Focused prompt (scenario + test body only, no codebase exploration needed).
-- No Critic slowdown -- evaluation happens at build time, not audit time.
-
-**Why subagents instead of manual self-audit:**
-
-- Independent evaluator (addresses trust model -- not the same "brain" that wrote the test).
-- Catches AP-1 through AP-4 programmatically, not advisorily.
-- Immediate feedback with fix suggestions -- Builder fixes in-context, not after the fact.
-- Auditable record in companion file.
-- Backstop: `policy_critic.md` Section 2.17 generates a LOW-priority Builder action item when the `### Test Quality Audit` section is missing from the companion file.
 
 ## Scenarios
 

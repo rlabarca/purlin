@@ -55,3 +55,8 @@ None.
   - `<figma-token>` -> `<project-token>`
 - [ ] <Visual acceptance criterion>
 -->
+
+<!-- Optional: Uncomment to hint QA about regression-worthy behaviors.
+## Regression Guidance
+- <Behavior description: what to verify and why it is fragile>
+-->

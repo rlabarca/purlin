@@ -14,16 +14,16 @@ This policy is a prerequisite for `policy_release.md` and all release-related fe
 Every feature MUST be evaluable through two independent gates:
 
 *   **Spec Gate (Pre-Implementation):** Validates that the feature specification itself is structurally complete, properly anchored to architectural policies, and contains well-formed Gherkin scenarios. This gate can run before any code exists.
-*   **Implementation Gate (Post-Implementation):** Validates that the implementation aligns with the specification through traceability checks, policy adherence, builder decision audit, and (optionally) LLM-based logic drift detection.
+*   **Implementation Gate (Post-Implementation):** Validates that the implementation aligns with the specification through structural completeness (tests exist and pass), policy adherence, builder decision audit, and (optionally) LLM-based logic drift detection.
 
 Neither gate alone is sufficient. A feature that passes the Spec Gate but fails the Implementation Gate has a code problem. A feature that passes the Implementation Gate but fails the Spec Gate has a specification problem.
 
-### 2.2 Traceability Mandate
-Every automated Gherkin scenario in a feature file MUST be traceable to at least one automated test function. Traceability is established through keyword matching between scenario titles and test function names/bodies.
+### 2.2 Structural Test Requirement
+The Implementation Gate validates that tests exist and pass. The Builder writes tests at whatever granularity is natural for the feature -- there is no requirement for 1:1 mapping between Gherkin scenarios and test functions. QA provides independent behavioral verification through regression testing and manual scenarios.
 
-*   The traceability engine uses a keyword extraction and matching approach (2+ keyword threshold).
-*   Manual scenarios are EXEMPT from traceability but are flagged if automated tests exist for them.
-*   Explicit `traceability_overrides` in Implementation Notes allow manual mapping when keyword matching is insufficient.
+*   `tests.json` with `status: "PASS"` and `total > 0` is the hard gate (see Section 2.15).
+*   The Builder is free to organize tests by functional area, integration boundary, or any other structure that proves the implementation works.
+*   Scenario-to-test traceability is not enforced. The traceability engine remains in the codebase but is not run by the Critic.
 
 ### 2.3 Builder Decision Transparency
 The Builder MUST classify every non-trivial implementation decision using structured tags in the `## Implementation Notes` section:
@@ -141,9 +141,7 @@ When a feature resets to TODO lifecycle state (spec modified after last status c
 *   **Action item enrichment:** The lifecycle_reset Builder action item MUST include the scenario diff summary. Instead of the generic `"Review and implement spec changes for <feature>"`, the description MUST list new, modified, and removed scenarios explicitly: `"Implement spec changes for <feature>: N new scenario(s) [<titles>], M modified, K removed"`.
 *   **Requirements section change detection:** When the scenario diff shows no changes (`has_diff: False`) but the feature was still reset to TODO (spec file was modified), the Critic MUST detect which Requirements subsections changed by comparing section headings and content between the current file and the last-status-commit version. The action item description MUST include the changed section numbers: `"Implement spec changes for <feature>: requirements sections modified [2.2, 2.5]"`. If the Visual Specification section changed, append `", visual spec updated"`. This ensures the Builder knows where to look when scenarios are unchanged but behavioral requirements have been updated.
 *   **Priority:** HIGH (unchanged from current lifecycle_reset behavior).
-*   **Traceability cross-check:** When new scenarios are detected, the Critic MUST verify that each new scenario has a **strong traceability match** (not just keyword overlap with pre-existing tests). A new scenario matched only to tests that existed before the spec edit is flagged as a **weak match** — the existing test likely does not cover the new behavior. Weak matches for new scenarios produce an additional HIGH-priority Builder action item: `"New scenario '<title>' has no dedicated test — existing keyword match is likely a false positive"`.
-
-A **strong match** requires that the test function name or body contains 3 or more distinctive keywords from the scenario title (excluding common words like 'the', 'when', 'given', 'then', 'and', 'a'). Matches with fewer than 3 keywords are **weak matches** and generate MEDIUM-priority traceability warnings.
+*   **New scenario signal:** When new scenarios are detected, the action item description explicitly lists them so the Builder knows which behaviors need new test coverage. No keyword-matching or traceability cross-check is performed -- the Builder determines test organization.
 
 ### 2.13 CDD Decoupling
 The Critic is an agent-facing coordination tool. CDD is a lightweight state display for human consumption. CDD shows what IS (per-role status). The Critic shows what SHOULD BE DONE (role-specific action items). CDD does NOT run the Critic. CDD reads the `role_status` object from on-disk `critic.json` files to display Architect, Builder, QA, and PM columns on the dashboard and in the `/status.json` API. CDD does NOT compute role status itself; it consumes the Critic's pre-computed output.
@@ -234,14 +232,21 @@ The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Comp
 
 **Rationale:** The workflow (HOW_WE_WORK_BASE Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by the Builder. When a Builder commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
 
-### 2.17 Test Quality Audit Trail
+### 2.17 Regression Guidance Detection
 
-When a feature has automated scenarios AND `builder: "DONE"` AND the feature's companion file (`features/<name>.impl.md`) does not contain a `### Test Quality Audit` section, the Critic MUST generate a **LOW**-priority Builder action item with category `missing_test_quality_audit`: `"Missing test quality audit for <name> -- run self-audit per policy_test_quality.md"`.
+Feature files MAY contain a `## Regression Guidance` section with bullet points describing behaviors that are regression-worthy. PM or Architect adds these hints during spec authoring to signal which behaviors deserve independent regression coverage by QA.
 
-*   **Purpose:** Creates visibility for the test quality self-audit process defined in `features/policy_test_quality.md` without blocking releases. The audit trail ensures Builder compliance is trackable across sessions.
-*   **Gate impact:** Advisory only. This check does NOT affect the Implementation Gate pass/fail status. It generates a LOW-priority nudge in the Builder's action items section of the Critic report.
-*   **Escalation path:** If the advisory nudge proves insufficient after several Builder sessions (quality remains shallow), the priority MAY be elevated to MEDIUM or HIGH by updating this section. No tooling changes required -- the Critic's priority routing handles the escalation automatically.
-*   **Exemptions:** Features with zero automated scenarios are exempt (no tests to audit). Features where `builder: "TODO"` are exempt (Builder has not completed implementation yet).
+**Detection and Action Item Generation:**
+
+*   The Critic MUST detect `## Regression Guidance` sections in feature files.
+*   When a feature has a `## Regression Guidance` section AND `builder: "DONE"`, the Critic MUST generate **MEDIUM**-priority QA action items with category `regression_guidance_pending`: `"Regression guidance available for <name> -- review hints and create regression harness"`.
+*   The Builder ignores this section entirely -- it is not a requirement, not an automated scenario, and does not affect the Implementation Gate.
+*   Once QA creates regression coverage for the hinted behaviors (scripts in `tests/qa/`), QA can mark the item resolved by adding a `> Regression Coverage: Yes` metadata line to the feature file or by the natural lifecycle of QA verification.
+
+**Exemptions:**
+
+*   Features where `builder` status is `"TODO"` are exempt (implementation not yet complete -- regression hints are premature).
+*   The section is optional. Features without it generate no action items.
 
 ## 4. Output Contract
 The Critic tool MUST produce:
