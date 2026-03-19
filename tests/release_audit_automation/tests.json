@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 25,
+  "passed": 26,
   "failed": 0,
-  "total": 25,
+  "total": 26,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -55,6 +55,10 @@
     },
     {
       "test": "test_detects_reverse_reference (__main__.TestDepIntegrityReverseRef.test_detects_reverse_reference)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_passes_clean (__main__.TestDocConsistencyClean.test_passes_clean)",
       "status": "PASS"
     },
     {

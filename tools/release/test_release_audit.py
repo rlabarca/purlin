@@ -336,6 +336,23 @@ class TestSubmoduleSafetyClean(unittest.TestCase):
                 '    data = {}\n'
             ),
             ".purlin/config.json": '{}',
+            "purlin-config-sample/gitignore.purlin": (
+                '.purlin/cache/\n'
+                '.purlin/runtime/\n'
+                '.purlin/config.local.json\n'
+                'CRITIC_REPORT.md\n'
+                'tests/*/critic.json\n'
+            ),
+            "tools/init.sh": (
+                '#!/bin/bash\n'
+                '# Read from gitignore.purlin template\n'
+                'TEMPLATE="purlin-config-sample/gitignore.purlin"\n'
+                '# Refresh mode: sync gitignore from template\n'
+                'if [ "$MODE" = "refresh" ]; then\n'
+                '    # gitignore additive merge\n'
+                '    cat "$TEMPLATE" >> .gitignore\n'
+                'fi\n'
+            ),
         })
 
     def tearDown(self):
