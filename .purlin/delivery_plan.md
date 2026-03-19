@@ -6,9 +6,9 @@
 ## Summary
 15 features in TODO status: 7 cosmetic/dependency-only (anchor nodes and release steps) plus 8 full-implementation features. Phasing groups cosmetic re-verifications early as foundations, then implements features respecting formal dependency order. Most features depend only on Phase 1 anchor nodes, enabling high parallelism across Phases 2-12.
 
-## Phase 1 -- Anchor Nodes [IN_PROGRESS]
+## Phase 1 -- Anchor Nodes [COMPLETE]
 **Features:** policy_branch_collab.md, policy_critic.md
-**Completion Commit:** --
+**Completion Commit:** 7761d89
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Release Steps (Batch A) [PENDING]
