@@ -14,10 +14,12 @@ set -euo pipefail
 # 0. CLI Flag Parsing
 ###############################################################################
 QUIET=false
+PREFLIGHT_ONLY=false
 
 for arg in "$@"; do
     case "$arg" in
         --quiet) QUIET=true ;;
+        --preflight-only) PREFLIGHT_ONLY=true ;;
         *) echo "Unknown flag: $arg" >&2; exit 1 ;;
     esac
 done
@@ -50,7 +52,63 @@ export PURLIN_PROJECT_ROOT="$PROJECT_ROOT"
 source "$SCRIPT_DIR/resolve_python.sh"
 
 ###############################################################################
-# 1b. Standalone Mode Guard (project_init.md §2.13)
+# 1b. Preflight Checks (init_preflight_checks.md §2.1-2.3)
+###############################################################################
+# Validate required and recommended tools BEFORE any initialization work.
+# Must run before the standalone guard (1c) since that guard uses git.
+PREFLIGHT_FAILED=false
+PREFLIGHT_WARNINGS=""
+
+# Detect platform for install suggestions
+PLATFORM="$(uname -s)"
+
+# Required: git (blocks init)
+if ! command -v git >/dev/null 2>&1; then
+    PREFLIGHT_FAILED=true
+    if [ "$PLATFORM" = "Darwin" ]; then
+        INSTALL_CMD="brew install git"
+    else
+        INSTALL_CMD="sudo apt-get install git"
+    fi
+    say "  git ........... NOT FOUND"
+    say "    Install: $INSTALL_CMD"
+    say "    Docs: https://git-scm.com/downloads"
+fi
+
+# Recommended: claude CLI (warns, continues)
+if ! command -v claude >/dev/null 2>&1; then
+    PREFLIGHT_WARNINGS="${PREFLIGHT_WARNINGS}claude,"
+    say "  claude ........ NOT FOUND (recommended)"
+    say "    Install: npm install -g @anthropic-ai/claude-code"
+    say "    Note: MCP servers will not be installed without Claude CLI."
+fi
+
+# Optional: node/npx (warns, continues)
+if ! command -v node >/dev/null 2>&1; then
+    PREFLIGHT_WARNINGS="${PREFLIGHT_WARNINGS}node,"
+    if [ "$PLATFORM" = "Darwin" ]; then
+        NODE_INSTALL_CMD="brew install node"
+    else
+        NODE_INSTALL_CMD="sudo apt-get install nodejs npm"
+    fi
+    say "  node .......... NOT FOUND (optional)"
+    say "    Install: $NODE_INSTALL_CMD"
+    say "    Note: Playwright web testing will be unavailable without Node.js."
+fi
+
+if [ "$PREFLIGHT_FAILED" = true ]; then
+    echo "" >&2
+    echo "Fix these and re-run: $SUBMODULE_NAME/tools/init.sh" >&2
+    exit 1
+fi
+
+# --preflight-only: exit after checks (used by /pl-update-purlin §2.6)
+if [ "$PREFLIGHT_ONLY" = true ]; then
+    exit 0
+fi
+
+###############################################################################
+# 1c. Standalone Mode Guard (project_init.md §2.13)
 ###############################################################################
 # In a consumer project, $PROJECT_ROOT is the consumer's git repo root.
 # In standalone mode (Purlin IS the project), $PROJECT_ROOT is the parent
@@ -657,27 +715,40 @@ else:
     git -C "$PROJECT_ROOT" add pl-init.sh 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-cdd-start.sh pl-cdd-stop.sh 2>/dev/null || true
 
-    # 3.15 Summary Output
+    # 3.15 Summary Output — "What's Next" Narrative (init_preflight_checks.md §2.4)
     say ""
-    say "Purlin initialized. Files staged."
+    say "════════════════════════════════════════════════════════════════"
+    say "  Purlin initialized. Files staged."
+    say "════════════════════════════════════════════════════════════════"
     say ""
-    say "  pl-init.sh              Run anytime to refresh"
-    say "  ./pl-run-architect.sh   Start Architect session"
-    say "  ./pl-run-builder.sh     Start Builder session"
-    say "  ./pl-run-qa.sh          Start QA session"
-    say "  ./pl-run-pm.sh          Start PM session"
-    say "  ./pl-cdd-start.sh       Start CDD dashboard"
-    say "  ./pl-cdd-stop.sh        Stop CDD dashboard"
+    say "  What's Next"
+    say "  ───────────"
+    say ""
+    say "  1. Commit the scaffolding:"
+    say "     git commit -m \"init purlin\""
+    say ""
+    say "  2. Start your first agent:"
+    say "     • Have designs?      → ./pl-run-pm.sh"
+    say "       The PM reads your Figma designs and writes feature specs."
+    say "     • Have requirements? → ./pl-run-architect.sh"
+    say "       The Architect turns requirements into feature specs."
+    say ""
+    say "  3. Build from specs:"
+    say "     The Builder reads your specs and writes the code and tests"
+    say "     to match them. → ./pl-run-builder.sh"
+    say ""
+    say "  4. Watch progress:"
+    say "     ./pl-cdd-start.sh  — opens the CDD status dashboard"
+    say ""
     if [ -n "$PROVIDER_SUMMARY" ]; then
-        say ""
         say "  $PROVIDER_SUMMARY"
+        say ""
     fi
     if [ "$CMD_COPIED" -gt 0 ] || [ "$CMD_SKIPPED" -gt 0 ]; then
         say "  Commands: $CMD_COPIED copied"
         [ "$CMD_SKIPPED" -gt 0 ] && say ", $CMD_SKIPPED skipped (locally modified)"
     fi
     if [ "$MCP_ATTEMPTED" = true ]; then
-        say ""
         say "  MCP servers: $MCP_INSTALLED installed, $MCP_SKIPPED skipped"
         if [ -n "$MCP_NOTES" ]; then
             say "$MCP_NOTES"
@@ -686,12 +757,11 @@ else:
             say "  Restart Claude Code to load MCP servers."
         fi
     fi
-    say ""
-    say "Next: git commit -m \"init purlin\""
     if [ -n "$VENV_MSG" ]; then
         say ""
-        say "$VENV_MSG"
+        say "  $VENV_MSG"
     fi
+    say ""
 
 ###############################################################################
 # 4. Refresh Mode
@@ -772,7 +842,7 @@ else
     # 4.8 MCP Server Installation (project_init.md §2.16)
     install_mcp_servers
 
-    # 4.9 Refresh Summary
+    # 4.9 Refresh Summary (init_preflight_checks.md §2.4 — abbreviated)
     MCP_NOTE=""
     if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
         MCP_NOTE=" MCP: $MCP_INSTALLED installed."
@@ -784,4 +854,5 @@ else
     if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
         say "Restart Claude Code to load MCP servers."
     fi
+    say "Dashboard: ./pl-cdd-start.sh"
 fi
