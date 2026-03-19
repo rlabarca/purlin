@@ -42,11 +42,29 @@ cleanup() {
     rm -f "$CANVAS_STATE_FILE" 2>/dev/null
     # Clean up any orphaned continuous-mode worktrees
     if [ "$CONTINUOUS" = "true" ]; then
+        # Remove nested worktrees first (Claude Code's EnterWorktree creates these
+        # inside continuous-phase dirs, blocking parent worktree removal)
         for wt_dir in "$SCRIPT_DIR"/continuous-phase-*; do
             [ -d "$wt_dir" ] || continue
+            for nested in "$wt_dir"/.claude/worktrees/*/; do
+                [ -d "$nested" ] || continue
+                git -C "$SCRIPT_DIR" worktree remove "$nested" --force 2>/dev/null
+            done
             git -C "$SCRIPT_DIR" worktree remove "$wt_dir" --force 2>/dev/null
+            # Fallback: if git worktree remove left the directory, force-delete it
+            [ -d "$wt_dir" ] && rm -rf "$wt_dir"
         done
+        # Also clean Claude Code worktrees matching continuous-phase pattern
+        for wt_dir in "$SCRIPT_DIR"/.claude/worktrees/continuous-phase-*; do
+            [ -d "$wt_dir" ] || continue
+            git -C "$SCRIPT_DIR" worktree remove "$wt_dir" --force 2>/dev/null
+            [ -d "$wt_dir" ] && rm -rf "$wt_dir"
+        done
+        # Clean up all matching branches (both naming conventions)
         git -C "$SCRIPT_DIR" branch --list 'continuous-phase-*' 2>/dev/null | while read -r b; do
+            git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
+        done
+        git -C "$SCRIPT_DIR" branch --list 'worktree-continuous-phase-*' 2>/dev/null | while read -r b; do
             git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
         done
     fi
@@ -1829,6 +1847,10 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     [ "$done_phase" = "$PHASE_NUM" ] && was_completed=true && break
                 done
                 [ "$was_completed" = "false" ] && record_phase_end "$PHASE_NUM" "INTERRUPTED"
+            done
+            # Clean up worktrees for this parallel group before exiting
+            for i in "${!WT_DIRS[@]}"; do
+                git -C "$SCRIPT_DIR" worktree remove "${WT_DIRS[$i]}" --force 2>/dev/null
             done
             OUTER_BREAK=true
             continue
