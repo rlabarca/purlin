@@ -26,9 +26,9 @@
 **Completion Commit:** 467995a
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Web Test Tool [IN_PROGRESS]
+## Phase 5 -- Web Test Tool [COMPLETE]
 **Features:** pl_web_test.md
-**Completion Commit:** --
+**Completion Commit:** 9d39428
 **QA Bugs Addressed:** --
 
 ## Phase 6 -- Purlin Update Tool [COMPLETE]
