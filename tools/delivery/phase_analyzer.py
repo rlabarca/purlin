@@ -451,12 +451,12 @@ def main():
 
     project_root = _find_project_root()
 
-    plan_path = os.path.join(project_root, '.purlin', 'cache', 'delivery_plan.md')
+    plan_path = os.path.join(project_root, '.purlin', 'delivery_plan.md')
     graph_path = os.path.join(project_root, '.purlin', 'cache', 'dependency_graph.json')
 
     # Validate inputs exist
     if not os.path.exists(plan_path):
-        print("Error: delivery plan not found at .purlin/cache/delivery_plan.md", file=sys.stderr)
+        print("Error: delivery plan not found at .purlin/delivery_plan.md", file=sys.stderr)
         sys.exit(1)
 
     if not os.path.exists(graph_path):
