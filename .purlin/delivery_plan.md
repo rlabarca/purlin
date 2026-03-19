@@ -6,32 +6,32 @@
 ## Summary
 15 features reset to TODO via lifecycle_reset (spec changes). Two dependency chains exist (phase_analyzer -> continuous_phase_builder -> terminal_identity; cdd_status_monitor -> cdd_agent_configuration -> cdd_startup_controls). Remaining 9 features are fully independent. Phased for maximum parallelization with small phase sizes to prevent context exhaustion.
 
-## Phase 1 -- Phase Analyzer Foundation [PENDING]
+## Phase 1 -- Phase Analyzer Foundation [IN_PROGRESS]
 **Features:** phase_analyzer.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- CDD Status Monitor Foundation [PENDING]
+## Phase 2 -- CDD Status Monitor Foundation [IN_PROGRESS]
 **Features:** cdd_status_monitor.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Regression Testing [PENDING]
+## Phase 3 -- Regression Testing [IN_PROGRESS]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Session Resume [PENDING]
+## Phase 4 -- Session Resume [IN_PROGRESS]
 **Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Web Test Tool [PENDING]
+## Phase 5 -- Web Test Tool [IN_PROGRESS]
 **Features:** pl_web_test.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Purlin Update Tool [PENDING]
+## Phase 6 -- Purlin Update Tool [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -51,12 +51,12 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- Release Audits (Cosmetic Pair) [PENDING]
+## Phase 10 -- Release Audits (Cosmetic Pair) [IN_PROGRESS]
 **Features:** release_submodule_safety_audit.md, release_doc_consistency_check.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Release Records (Cosmetic Pair) [PENDING]
+## Phase 11 -- Release Records (Cosmetic Pair) [IN_PROGRESS]
 **Features:** instruction_audit.md, release_record_version_notes.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
