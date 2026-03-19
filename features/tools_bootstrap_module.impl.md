@@ -23,17 +23,3 @@ Files NOT migrated (by design):
 - `config/resolve_config.py`: Keeps its own `_find_project_root` for CLI entry point (avoids circular dependency with bootstrap's `load_config`)
 - Test files that only do `sys.path.insert` for sibling imports without their own root detection (test_cdd.py, test_spec_map.py, test_cdd_modal_base.py, etc.)
 
-### Test Quality Audit
-
-| Test | Deletion Test | Anti-Pattern | Value Assertion |
-|------|--------------|-------------|-----------------|
-| TestDetectProjectRootEnvVar | Yes - would fail if env var check removed | Clean | Asserts exact path equality |
-| TestDetectProjectRootClimbing | Yes - would fail if climbing removed | Clean | Asserts found root matches expected |
-| TestDetectProjectRootSubmodule | Yes - would fail if preference logic removed | Clean | Asserts consumer > submodule |
-| TestAtomicWriteBasic | Yes - would fail if write removed | Clean | Asserts file content matches |
-| TestAtomicWriteParentDirs | Yes - would fail if makedirs removed | Clean | Asserts nested write succeeds |
-| TestAtomicWriteJson | Yes - would fail if json mode removed | Clean | Asserts JSON format + trailing newline |
-| TestAtomicWriteFailure | Yes - would fail if cleanup removed | Clean | Asserts no temp files remain |
-| TestLoadConfigValid | Yes - would fail if delegation removed | Clean | Asserts config values match |
-| TestLoadConfigMissing | Yes - would fail if fallback removed | Clean | Asserts empty dict returned |
-| TestMigratedCallsites | Yes - structural verification | Clean | Asserts root detection from standard depths |

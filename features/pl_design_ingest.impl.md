@@ -24,18 +24,3 @@ This is a Claude skill/command feature. The implementation consists of:
 | `detect_identity_tokens` | Auto-detects matching Figma/project token names |
 | `extract_annotations` | Filters behavioral notes from Figma annotations |
 
-### Test Quality Audit
-Evaluated via Haiku subagent (2026-03-18)
-- Scenario: Ingest Local Image Artifact -> TestIngestLocalImageArtifact -> ALIGNED
-- Scenario: Ingest Figma URL Without MCP -> TestIngestFigmaURLWithoutMCP -> ALIGNED
-- Scenario: Figma MCP Auto-Setup When Processing Figma URL -> TestFigmaMCPAutoSetupWhenProcessingFigmaURL -> PARTIAL (constant string check for setup command is borderline AP-2, but the constant IS the implementation artifact)
-- Scenario: Figma MCP Extracts Design Context Directly -> TestFigmaMCPExtractsDesignContextDirectly -> ALIGNED
-- Scenario: Ingest Live Web Page URL -> TestIngestLiveWebPageURL -> ALIGNED
-- Scenario: Re-Process Updated Artifact -> TestReProcessUpdatedArtifact -> ALIGNED
-- Scenario: Anchor Inheritance Token Mapping -> TestAnchorInheritanceTokenMapping -> ALIGNED
-- Scenario: No Design Anchor Fallback -> TestNoDesignAnchorFallback -> ALIGNED
-- Scenario: Identity Token Auto-Detection During Figma Ingestion -> TestIdentityTokenAutoDetectionDuringFigmaIngestion -> ALIGNED
-- Scenario: Annotation Extraction Pre-Populates Behavioral Context -> TestAnnotationExtractionPrePopulatesBehavioralContext -> ALIGNED
-- Scenario: Code Connect Data Extracted Into Brief -> TestCodeConnectDataExtractedIntoBrief -> ALIGNED
-- Scenario: Figma Dev Status Extracted During Ingestion -> TestFigmaDevStatusExtractedDuringIngestion -> ALIGNED
-- Scenario: Dev Status Not Available Silently Omitted -> TestDevStatusNotAvailableSilentlyOmitted -> ALIGNED

@@ -10,16 +10,5 @@
 
 **[DISCOVERY]** Spec audit (e55c871) restored Step 0 heading to "Context Guard Counter Reset" with instruction to reset the turn counter. The context guard mechanism was previously removed from the codebase (no counter files, no hooks directory, no context_guard.sh). The instruction is effectively a no-op since there is no counter to reset, but the command file now matches the spec exactly. If a new context guard mechanism is introduced, Step 0 will be ready. (Severity: LOW) **Acknowledged -- no-op is acceptable; Step 0 is a placeholder for future context guard reintroduction.**
 
-- traceability_override: "Restore With Checkpoint" -> test_checkpoint_file_is_readable
-
 *   **Startup Briefing Integration (2026-03-18):** Spec Section 2.3.5 updated to use `tools/cdd/status.sh --startup <role>` instead of multi-step state gathering. The command file (`.claude/commands/pl-resume.md`) was updated by the Architect to reference the startup briefing mechanism. Tests updated: 4 command file content checks fixed for new wording (`config.local.json` → briefing config, `verification_effort` → `testing features`, `anchor node preload` → `anchor constraints`). 5 new integration tests added verifying `--startup` flag wiring in status.sh, role-specific extension references in command file, and `delivery_plan_state`/`phasing_recommended` field references.
 
-### Test Quality Audit
-
-Audited 5 new tests + 4 updated tests (2026-03-18) against policy_test_quality.md:
-- **Deletion:** Tests read real project files (status.sh, pl-resume.md) and assert specific content — deletion of these files causes test failures.
-- **AP-1:** No prose inspection of spec files — tests check command infrastructure files for correct wiring.
-- **AP-2:** Value assertions (specific strings in file content, positional comparisons for precedence).
-- **AP-3:** No mocking — tests read real files on disk.
-- **AP-4:** No tautological assertions — all checks verify specific expected strings.
-- **AP-5:** Tests use the actual project files, not toy data.

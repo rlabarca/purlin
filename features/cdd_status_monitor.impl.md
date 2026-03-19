@@ -76,38 +76,10 @@
 
 *   **CLI Role-Filtered Output (2026-03-17):** Implemented `--role <role>` flag per spec Section 2.7. Added `generate_role_filtered_status_json(role, cache)` to `serve.py` — filters full API JSON to features where the role has non-terminal status (not DONE/CLEAN/N/A), aggregates that role's action items from per-feature `critic.json` files, and compacts policy violations (grouped by file+pattern with counts) scoped to the filtered features. CLI wiring: `status.sh --role <role>` → `serve.py --cli-role-status <role>`. Side effects (write_internal_feature_status, write_api_status_json) run before filtering so cached artifacts stay fresh.
 
-### Test Quality Audit
-
-Audited 6 new tests (2026-03-17) against policy_test_quality.md:
-- **Deletion:** All tests import and call `generate_role_filtered_status_json` directly — deletion causes ImportError + assertion failures.
-- **AP-1:** No prose inspection — tests call the filtering function with constructed feature/critic data.
-- **AP-2:** Value assertions (exact counts, specific file paths, array emptiness).
-- **AP-3:** Mocks limited to module-level path constants; filtering logic runs unmocked.
-- **AP-4:** No tautological assertions — all checks verify specific expected values.
-- **AP-5:** Tests use multi-feature setups with mixed role statuses, violations, and action items.
-
 *   **Delivery Phase Expanded API Format (2026-03-16):** Updated `get_delivery_phase()` from old `{"current": N, "total": N}` format to expanded format per spec Section 2.4: `{"completed": N, "in_progress": N, "pending": N, "removed": N, "total": N, "phases": [...]}`. Regex updated to capture phase labels from `## Phase N -- Label [STATUS]` headings (supports `--`, `—`, `–` separators). Now recognizes all 4 statuses: COMPLETE, IN_PROGRESS, PENDING, REMOVED. Returns None when all phases are COMPLETE or REMOVED (previously only COMPLETE). HTML annotation updated from `[PHASE (N/M)]` to `[N/M DONE | N RUNNING]` per Section 2.11.
 
 *   **CLI Startup Briefing (2026-03-18):** Implemented Section 2.15 `--startup <role>` flag. Added `generate_startup_briefing(role, cache)` to `serve.py` — produces a single JSON blob with all common fields (config, git_state, feature_summary, action_items, role-filtered features with scenario_count, dependency_graph_summary, critic_last_run) plus role-specific extensions: Builder (tombstones, anchor_constraints with FORBIDDEN pattern extraction, delivery_plan_state, phasing_recommended), Architect (spec_completeness with spec_gate details, untracked_files), QA (testing_features with verification_effort, discovery_summary from sidecar scans, delivery_plan_gating). Helper functions: `_count_scenarios()` counts `#### Scenario:` headings, `_extract_forbidden_patterns()` parses grepable pattern/scope pairs from anchor files (handles markdown bold formatting), `_scan_discovery_sidecars()` counts OPEN discoveries. CLI wiring: `status.sh --startup <role>` → `serve.py --cli-startup <role>`. Mutual exclusivity: `--startup` checked first in both shell and Python entry points so it silently takes precedence over `--graph`/`--incomplete`. Size budget: Builder 7.9KB, QA 7.7KB, Architect 1.6KB (all under limits). 15 new tests covering all 8 spec scenarios plus helper unit tests.
 
-### Test Quality Audit (Startup Briefing)
-
-Audited 15 new tests (2026-03-18) against policy_test_quality.md:
-- **Deletion:** Tests import `generate_startup_briefing`, `_count_scenarios`, `_extract_forbidden_patterns`, `_scan_discovery_sidecars` directly — deletion causes ImportError + assertion failures.
-- **AP-1:** No prose inspection — tests construct temp environments with feature files, critic.json data, and anchor content, then call the functions.
-- **AP-2:** Value assertions (specific field values, array lengths, key presence/absence, specific string matches).
-- **AP-3:** Mocks limited to module-level constants (FEATURES_ABS, TESTS_DIR, etc.) and `run_command` for git; briefing logic runs unmocked.
-- **AP-4:** No tautological assertions — all checks verify specific expected values (role name, field presence, filtered feature counts, pattern extraction).
-- **AP-5:** Tests use multi-feature setups with mixed statuses, tombstones, anchors with FORBIDDEN patterns, discovery sidecars, and spec gate data.
 
 *   **Abbreviated Status Commit Format (2026-03-18):** Implemented Section 2.1 abbreviated format support in `build_status_commit_cache()`. Changed git log grep from `--grep='\\[Complete features/'` to `--grep='\\[Complete'` to capture both canonical and abbreviated commits. Added three new regex patterns: `abbrev_complete_re` (`\[Complete\]`), `abbrev_testing_re` (`\[Ready for (?:Verification|Testing)\]`), and `conv_scope_re` (`^\w+\(([^)]+)\):`) for conventional commit scope extraction. Canonical format is tried first; abbreviated is a fallback only. Abbreviated format resolves to `features/<scope>.md` and verifies file existence on disk via `os.path.isfile()`. Non-existent scopes and commits without conventional scope prefixes are silently ignored. 8 new unit tests in `TestAbbreviatedStatusCommitCache` cover: scope resolution, both Ready for Verification/Testing variants, non-existent scope, missing scope prefix, canonical precedence within same commit, scope trailer extraction, and mixed format timeline. 3 new stages in `test_lifecycle.sh` (5a, 5b, 5c) cover the end-to-end lifecycle integration.
 
-### Test Quality Audit (Abbreviated Status Commit Format)
-
-Audited 8 new tests (2026-03-18) against policy_test_quality.md:
-- **Deletion:** Tests import and call `build_status_commit_cache` directly — deletion causes ImportError + assertion failures.
-- **AP-1:** No prose inspection — tests mock `run_command` to supply specific git log output and check parsed cache results.
-- **AP-2:** Value assertions (exact timestamps, commit hashes, scope strings, cache key presence/absence, cache length).
-- **AP-3:** Mocks limited to `run_command`, `_load_persistent_status_cache`, `_save_persistent_status_cache`, `_get_current_head`, and `os.path.isfile`; parsing logic runs unmocked.
-- **AP-4:** No tautological assertions — all checks verify specific expected values.
-- **AP-5:** Tests use mixed format scenarios (canonical + abbreviated in same timeline, same-commit precedence, multi-feature setups).
