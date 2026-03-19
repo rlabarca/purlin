@@ -41,9 +41,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Purlin Update [IN_PROGRESS]
+## Phase 8 -- Purlin Update [COMPLETE]
 **Features:** pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** a7c5152
 **QA Bugs Addressed:** --
 
 ## Phase 9 -- Continuous Phase Builder [PENDING]
