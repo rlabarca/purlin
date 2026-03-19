@@ -61,9 +61,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 12 -- Regression Testing [IN_PROGRESS]
+## Phase 12 -- Regression Testing [COMPLETE]
 **Features:** regression_testing.md
-**Completion Commit:** --
+**Completion Commit:** f91a8db
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
