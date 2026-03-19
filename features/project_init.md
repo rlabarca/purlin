@@ -46,8 +46,9 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
 12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
-13. **Post-Init Staging:** After all artifacts are created, the script MUST stage exactly the files it created or modified using explicit `git add` calls. The script MUST NOT suggest or use `git add -A` or `git add .`.
-14. **Summary Output:** Print a concise summary (Section 2.7).
+13. **MCP Server Installation:** Install required MCP servers from the framework manifest (Section 2.16).
+14. **Post-Init Staging:** After all artifacts are created, the script MUST stage exactly the files it created or modified using explicit `git add` calls. The script MUST NOT suggest or use `git add -A` or `git add .`.
+15. **Summary Output:** Print a concise summary (Section 2.7).
 
 ### 2.4 Refresh Mode
 
@@ -64,7 +65,8 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
 6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
 7.  **Gitignore Pattern Sync:** Read `<submodule>/purlin-config-sample/gitignore.purlin`. For each pattern not already present in the consumer's `.gitignore`, append it under a `# Added by Purlin refresh` header. Never remove or modify existing entries.
-8.  **Refresh Summary:** Print a concise summary (Section 2.8).
+8.  **MCP Server Installation:** Install required MCP servers from the framework manifest (Section 2.16).
+9.  **Refresh Summary:** Print a concise summary (Section 2.8).
 
 ### 2.4.1 Refresh Mode Exclusions
 
@@ -209,6 +211,15 @@ The test script MUST include assertions for all of the following. Each test MUST
 34. **Hook idempotent on refresh:** Run `init.sh` twice. Assert `.claude/settings.json` contains exactly one `SessionStart` entry with `matcher: "clear"` (not duplicated).
 35. **Hook preserves existing SessionStart entries:** Create `.claude/settings.json` with an existing `SessionStart` hook using a different matcher (e.g., `"matcher": "custom"`). Run `init.sh`. Assert both the existing and Purlin hooks are present in the `SessionStart` array.
 
+**MCP Server Installation Tests:**
+
+36. **Full init installs MCP servers from manifest:** Run `init.sh` in a clean sandbox with `claude` CLI available and a valid manifest. Assert MCP servers from the manifest are installed.
+37. **MCP installation is idempotent:** Run `init.sh` twice. Assert the second run installs zero MCP servers (all skipped as already present).
+38. **Graceful skip when `claude` CLI unavailable:** Remove `claude` from PATH before running `init.sh`. Assert init completes successfully. Assert an informational skip message is printed. Assert no MCP installation is attempted.
+39. **Graceful skip when manifest file missing:** Remove `tools/mcp/manifest.json` from the submodule. Run `init.sh`. Assert init completes successfully. Assert an informational skip message is printed.
+40. **Post-install notes displayed for OAuth servers:** Run `init.sh` with a manifest containing a server with `post_install_notes`. Assert the notes text appears in the output.
+41. **Partial failure (one server fails, other still installs):** Configure the manifest so one server's install command fails. Run `init.sh`. Assert the other server is still installed. Assert the failure is reported but init completes successfully.
+
 **Standalone Guard Tests:**
 
 29. **Standalone guard refuses init in Purlin repo:** Run `init.sh` from within the Purlin repo itself (where the computed `$PROJECT_ROOT` is not a git repository). Assert stderr contains an error about init.sh being for consumer projects only. Assert non-zero exit status. Assert no files created outside the repo.
@@ -263,6 +274,53 @@ On both full init and refresh, the script MUST ensure that `.claude/settings.jso
 *   MUST NOT modify or remove any existing hooks, settings, or configuration in the file.
 *   MUST validate the result is valid JSON before writing.
 *   The merge logic SHOULD be implemented in Python (consistent with `resolve_config.py` for JSON manipulation).
+
+### 2.16 MCP Server Installation
+
+On both full init and refresh, the script MUST install MCP servers declared in the framework's manifest. This provides automatic setup of required MCP integrations (e.g., Playwright, Figma) without manual `claude mcp add` commands.
+
+**Manifest location:** `<submodule>/tools/mcp/manifest.json` (framework-owned, read-only to consumers).
+
+**Manifest schema:**
+
+```json
+{
+  "version": 1,
+  "servers": [
+    {
+      "name": "string",
+      "transport": "stdio | http",
+      "command": "string (stdio only)",
+      "args": ["string (stdio only)"],
+      "url": "string (http only)",
+      "post_install_notes": "string | null"
+    }
+  ]
+}
+```
+
+**Required servers (initial manifest):**
+
+| Name | Transport | Config | Notes |
+|------|-----------|--------|-------|
+| `playwright` | stdio | `command: "npx"`, `args: ["@playwright/mcp", "--headless"]` | None |
+| `figma` | http | `url: "https://mcp.figma.com/mcp"` | OAuth. After restarting Claude Code, run /mcp, select figma, and complete browser authentication. |
+
+**Installation behavior:**
+
+1.  **CLI guard:** Check `command -v claude` first. If unavailable (CI, non-Claude users), skip MCP setup with an informational message. Never fail init.
+2.  **Manifest guard:** If `<submodule>/tools/mcp/manifest.json` does not exist, skip MCP setup with an informational message. Never fail init.
+3.  **Per-server processing:** For each server in the manifest:
+    *   Check if already installed (skip if present).
+    *   For `stdio` transport: `claude mcp add <name> <command> <args...>`
+    *   For `http` transport: `claude mcp add --transport http <name> <url>`
+    *   If installation fails, report the error and continue to next server. Individual failures are non-fatal.
+4.  **Idempotent:** Running multiple times installs zero servers on subsequent runs if all are already present.
+5.  **Quiet mode:** When `--quiet` is active, MCP output is suppressed.
+6.  **Summary output:** After the existing init summary, append an MCP section showing:
+    *   Installed count and skipped count (e.g., "MCP servers: 2 installed, 0 skipped")
+    *   Any `post_install_notes` for newly installed servers
+    *   A restart notice if any server was installed: "Restart Claude Code to load MCP servers."
 
 ### 2.14 Integration Test Fixture Tags
 
@@ -498,6 +556,50 @@ On both full init and refresh, the script MUST ensure that `.claude/settings.jso
     And .claude/settings.json already contains the Purlin SessionStart clear hook
     When the user runs "purlin/tools/init.sh"
     Then .claude/settings.json is unchanged (no duplicate entries)
+
+#### Scenario: Full Init Installs MCP Servers from Manifest
+
+    Given Purlin is added as a submodule at "purlin/"
+    And no .purlin/ directory exists at the project root
+    And tools/mcp/manifest.json declares servers "playwright" and "figma"
+    And the claude CLI is available on PATH
+    When the user runs "purlin/tools/init.sh"
+    Then both MCP servers are installed via claude mcp add
+    And the summary includes installed count and post-install notes for figma
+    And the summary includes "Restart Claude Code to load MCP servers."
+
+#### Scenario: MCP Installation Is Idempotent
+
+    Given Purlin is added as a submodule at "purlin/"
+    And the user has already run "purlin/tools/init.sh" once (MCP servers installed)
+    When the user runs "purlin/tools/init.sh" a second time
+    Then zero MCP servers are installed (all skipped as already present)
+    And the summary shows 0 installed, 2 skipped
+
+#### Scenario: MCP Setup Skipped When Claude CLI Unavailable
+
+    Given Purlin is added as a submodule at "purlin/"
+    And the claude CLI is NOT available on PATH
+    When the user runs "purlin/tools/init.sh"
+    Then MCP server installation is skipped with an informational message
+    And init completes successfully (non-zero exit is NOT produced)
+
+#### Scenario: MCP Setup Skipped When Manifest Missing
+
+    Given Purlin is added as a submodule at "purlin/"
+    And tools/mcp/manifest.json does not exist in the submodule
+    When the user runs "purlin/tools/init.sh"
+    Then MCP server installation is skipped with an informational message
+    And init completes successfully
+
+#### Scenario: Refresh Mode Installs Missing MCP Servers
+
+    Given .purlin/ already exists at the project root
+    And the submodule manifest declares server "playwright"
+    And "playwright" is not currently installed as an MCP server
+    When the user runs "purlin/tools/init.sh"
+    Then "playwright" is installed via claude mcp add
+    And the refresh summary includes MCP installation results
 
 ### Manual Scenarios (Human Verification Required)
 

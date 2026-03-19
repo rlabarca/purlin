@@ -250,6 +250,27 @@ Regression tests verify the update agent correctly handles submodule update scen
 - **Scenarios covered:** Clean update, conflict detection, dry-run mode
 - **Fixture tags:** See Integration Test Fixture Tags section
 
+### 2.15 MCP Manifest Diff
+
+During the pre-update conflict scan (Section 2.4), the skill MUST also check if
+`tools/mcp/manifest.json` changed between the old and new submodule SHA.
+
+**Detection:**
+
+1.  Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- tools/mcp/manifest.json` to detect manifest changes.
+2.  If unchanged, skip this section entirely and produce no MCP-related output.
+
+**If the manifest changed:**
+
+1.  Read old manifest: `git -C <submodule> show <old_sha>:tools/mcp/manifest.json`
+2.  Read new manifest from disk (after submodule advance in Section 2.5).
+3.  Compute the diff between old and new server lists by `name`:
+    *   **Added servers:** Present in new manifest but not in old. These are installed automatically by `init.sh` during the init refresh step (Section 2.6). The update skill reports them in the summary.
+    *   **Removed servers:** Present in old manifest but not in new. Print an advisory: `"MCP server '<name>' was removed from Purlin manifest. Remove manually: claude mcp remove <name>"`. Do NOT auto-remove.
+    *   **Changed servers:** Present in both but with different `transport`, `command`, `args`, or `url`. Print an advisory with reconfiguration command: `"MCP server '<name>' config changed upstream. Reconfigure: claude mcp remove <name> && <new add command>"`. Where `<new add command>` is the appropriate `claude mcp add` invocation for the new server entry.
+
+**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.10): `"Restart Claude Code to load MCP changes."`
+
 ---
 
 ## 3. Scenarios
@@ -456,6 +477,42 @@ Regression tests verify the update agent correctly handles submodule update scen
     And the feature template format did not change
     When the user accepts the go-deeper analysis
     Then the report shows: "No customization impacts detected."
+
+#### Scenario: New MCP Server Detected on Update
+
+    Given the submodule is behind by 3 commits
+    And the new upstream manifest adds a server "new-tool" not in the old manifest
+    When /pl-update-purlin is invoked and the update completes
+    Then init.sh installs "new-tool" during the refresh step
+    And the summary report includes "new-tool" as a newly available MCP server
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Removed MCP Server Generates Advisory
+
+    Given the submodule is behind by 2 commits
+    And the old manifest contains server "deprecated-tool" which is absent from the new manifest
+    When /pl-update-purlin is invoked and the update completes
+    Then the summary includes: "MCP server 'deprecated-tool' was removed from Purlin manifest. Remove manually: claude mcp remove deprecated-tool"
+    And "deprecated-tool" is NOT auto-removed
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: Changed MCP Server Configuration Advisory
+
+    Given the submodule is behind by 1 commit
+    And server "playwright" exists in both old and new manifests
+    And the new manifest changes playwright's args from ["@playwright/mcp"] to ["@playwright/mcp", "--headless"]
+    When /pl-update-purlin is invoked and the update completes
+    Then the summary includes an advisory that "playwright" config changed upstream
+    And the advisory includes the reconfiguration command
+    And the summary includes "Restart Claude Code to load MCP changes."
+
+#### Scenario: No MCP Output When Manifest Unchanged
+
+    Given the submodule is behind by 5 commits
+    And tools/mcp/manifest.json is identical between old and new SHA
+    When /pl-update-purlin is invoked and the update completes
+    Then no MCP-related output appears in the summary
+    And no "Restart Claude Code" notice is shown for MCP reasons
 
 ### Manual Scenarios (Human Verification Required)
 
