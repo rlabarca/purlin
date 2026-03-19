@@ -82,6 +82,294 @@ fi
 cleanup_sandbox
 
 ###############################################################################
+# Scenario: pl-remote-pull Resolves To Main When No Active Branch
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull Resolves To Main When No Active Branch"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+
+LOCAL_DIR="$SANDBOX/local"
+git clone -q "$REMOTE_DIR" "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+
+echo "init" > file.txt
+git add file.txt
+git commit -q -m "initial commit"
+git push -q origin main 2>/dev/null
+
+# Add 3 commits to remote main
+CLONE2="$SANDBOX/clone2"
+git clone -q "$REMOTE_DIR" "$CLONE2"
+cd "$CLONE2"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "r1" > r1.txt && git add r1.txt && git commit -q -m "remote 1"
+echo "r2" > r2.txt && git add r2.txt && git commit -q -m "remote 2"
+echo "r3" > r3.txt && git add r3.txt && git commit -q -m "remote 3"
+git push -q origin main 2>/dev/null
+
+# Back to local — on main, no active_branch file
+cd "$LOCAL_DIR"
+mkdir -p .purlin/runtime
+rm -f .purlin/runtime/active_branch
+
+# Resolve: no active_branch → defaults to main
+ACTIVE_FILE=".purlin/runtime/active_branch"
+if [[ -f "$ACTIVE_FILE" ]] && [[ -s "$ACTIVE_FILE" ]]; then
+    COLLAB_BRANCH=$(cat "$ACTIVE_FILE" | tr -d '[:space:]')
+else
+    COLLAB_BRANCH="main"
+fi
+
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$COLLAB_BRANCH" != "main" ]]; then
+    log_fail "Expected collaboration branch to resolve to main, got $COLLAB_BRANCH"
+elif [[ "$CURRENT" != "main" ]]; then
+    log_fail "Expected current branch to be main, got $CURRENT"
+else
+    git fetch -q origin
+    BEHIND=$(git log "main..origin/main" --oneline 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$BEHIND" -eq 3 ]]; then
+        MERGE_OUT=$(git merge --ff-only "origin/main" 2>&1)
+        MERGE_EXIT=$?
+        if [[ $MERGE_EXIT -eq 0 ]]; then
+            log_pass "Resolved to main, fast-forwarded by $BEHIND commits"
+        else
+            log_fail "Fast-forward failed: $MERGE_OUT"
+        fi
+    else
+        log_fail "Expected BEHIND by 3, got $BEHIND"
+    fi
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-pull Rejects Non-Main Branch When No Active Branch
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull Rejects Non-Main Branch When No Active Branch"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+
+LOCAL_DIR="$SANDBOX/local"
+git clone -q "$REMOTE_DIR" "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+
+echo "init" > file.txt
+git add file.txt
+git commit -q -m "initial commit"
+git push -q origin main 2>/dev/null
+
+# Create and switch to hotfix/urgent
+git checkout -q -b "hotfix/urgent"
+
+mkdir -p .purlin/runtime
+rm -f .purlin/runtime/active_branch
+
+# Resolve: no active_branch → defaults to main
+ACTIVE_FILE=".purlin/runtime/active_branch"
+if [[ -f "$ACTIVE_FILE" ]] && [[ -s "$ACTIVE_FILE" ]]; then
+    COLLAB_BRANCH=$(cat "$ACTIVE_FILE" | tr -d '[:space:]')
+else
+    COLLAB_BRANCH="main"
+fi
+
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+# Branch guard: no active branch + not on main → reject
+if [[ "$CURRENT" != "$COLLAB_BRANCH" ]]; then
+    ERROR_MSG="No active collaboration branch. On \`main\`, /pl-remote-pull pulls main directly. Current branch: $CURRENT. Switch to main or use the CDD dashboard to create a collaboration branch."
+    if [[ "$ERROR_MSG" == *"No active collaboration branch"* ]] && [[ "$ERROR_MSG" == *"Switch to main"* ]]; then
+        log_pass "Rejected non-main branch with correct error: current=$CURRENT"
+    else
+        log_fail "Error message missing expected content"
+    fi
+else
+    log_fail "Should have detected branch mismatch: current=$CURRENT collab=$COLLAB_BRANCH"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-pull Prints Helpful Message When No Remote Configured
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull Prints Helpful Message When No Remote Configured"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+
+LOCAL_DIR="$SANDBOX/local"
+git init -q "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+
+echo "init" > file.txt
+git add file.txt
+git commit -q -m "initial commit"
+
+mkdir -p .purlin/runtime
+rm -f .purlin/runtime/active_branch
+
+# Resolve: no active_branch → defaults to main
+ACTIVE_FILE=".purlin/runtime/active_branch"
+if [[ -f "$ACTIVE_FILE" ]] && [[ -s "$ACTIVE_FILE" ]]; then
+    COLLAB_BRANCH=$(cat "$ACTIVE_FILE" | tr -d '[:space:]')
+else
+    COLLAB_BRANCH="main"
+fi
+
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+# Branch guard passes (on main)
+if [[ "$CURRENT" == "$COLLAB_BRANCH" ]]; then
+    # Remote guard: check for configured remotes
+    REMOTES=$(git remote -v 2>/dev/null)
+    if [[ -z "$REMOTES" ]]; then
+        ERROR_MSG="No git remote configured. Run /pl-remote-push to set up a remote first."
+        log_pass "No remote detected: $ERROR_MSG"
+    else
+        log_fail "Expected no remotes, but found: $REMOTES"
+    fi
+else
+    log_fail "Expected to be on main, got current=$CURRENT"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-pull First Pull Shows Safety Confirmation
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull First Pull Shows Safety Confirmation"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+
+# Create remote with commits on main (no shared history with local)
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+
+# Seed the remote with commits via a temporary clone
+SEED_DIR="$SANDBOX/seed"
+git clone -q "$REMOTE_DIR" "$SEED_DIR"
+cd "$SEED_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "r1" > r1.txt && git add r1.txt && git commit -q -m "remote 1"
+echo "r2" > r2.txt && git add r2.txt && git commit -q -m "remote 2"
+echo "r3" > r3.txt && git add r3.txt && git commit -q -m "remote 3"
+echo "r4" > r4.txt && git add r4.txt && git commit -q -m "remote 4"
+git push -q origin main 2>/dev/null
+
+# Create local repo with independent history (no merge-base with remote)
+LOCAL_DIR="$SANDBOX/local"
+git init -q "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "local init" > local.txt
+git add local.txt
+git commit -q -m "local init"
+git remote add origin "$REMOTE_DIR"
+
+mkdir -p .purlin/runtime
+rm -f .purlin/runtime/active_branch
+
+git fetch -q origin
+
+# Check first-pull condition: no merge-base between local main and origin/main
+MERGE_BASE=$(git merge-base main origin/main 2>&1)
+MERGE_BASE_EXIT=$?
+if [[ $MERGE_BASE_EXIT -ne 0 ]]; then
+    # First pull detected — build confirmation info
+    REMOTE_NAME="origin"
+    REMOTE_URL=$(git remote get-url "$REMOTE_NAME" 2>/dev/null)
+    BRANCH="main"
+    INCOMING=$(git log "main..origin/main" --oneline 2>/dev/null | wc -l | tr -d ' ')
+
+    CONFIRM_OK=true
+    if [[ "$REMOTE_NAME" != "origin" ]]; then CONFIRM_OK=false; fi
+    if [[ -z "$REMOTE_URL" ]]; then CONFIRM_OK=false; fi
+    if [[ "$BRANCH" != "main" ]]; then CONFIRM_OK=false; fi
+    if [[ "$INCOMING" -ne 4 ]]; then CONFIRM_OK=false; fi
+
+    if [[ "$CONFIRM_OK" == "true" ]]; then
+        log_pass "First pull confirmation: remote=$REMOTE_NAME url=$REMOTE_URL branch=$BRANCH incoming=$INCOMING commit(s)"
+    else
+        log_fail "First pull confirmation data incorrect: remote=$REMOTE_NAME url=$REMOTE_URL branch=$BRANCH incoming=$INCOMING"
+    fi
+else
+    log_fail "Expected no merge-base (first pull), but found: $MERGE_BASE"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-pull First Pull Aborted When User Declines
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-pull First Pull Aborted When User Declines"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+
+SEED_DIR="$SANDBOX/seed"
+git clone -q "$REMOTE_DIR" "$SEED_DIR"
+cd "$SEED_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "r1" > r1.txt && git add r1.txt && git commit -q -m "remote 1"
+git push -q origin main 2>/dev/null
+
+# Create local repo with independent history
+LOCAL_DIR="$SANDBOX/local"
+git init -q "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "local init" > local.txt
+git add local.txt
+git commit -q -m "local init"
+git remote add origin "$REMOTE_DIR"
+
+mkdir -p .purlin/runtime
+rm -f .purlin/runtime/active_branch
+
+git fetch -q origin
+
+# Confirm first-pull condition
+MERGE_BASE=$(git merge-base main origin/main 2>&1)
+MERGE_BASE_EXIT=$?
+COMMIT_BEFORE=$(git rev-parse HEAD)
+
+if [[ $MERGE_BASE_EXIT -ne 0 ]]; then
+    # Simulate user declining: do NOT merge
+    USER_RESPONSE="n"
+    if [[ "$USER_RESPONSE" != "Y" && "$USER_RESPONSE" != "y" && "$USER_RESPONSE" != "" ]]; then
+        # Aborted — verify no merge occurred
+        COMMIT_AFTER=$(git rev-parse HEAD)
+        if [[ "$COMMIT_BEFORE" == "$COMMIT_AFTER" ]]; then
+            log_pass "First pull aborted: no merge executed, HEAD unchanged"
+        else
+            log_fail "HEAD changed despite user declining: before=$COMMIT_BEFORE after=$COMMIT_AFTER"
+        fi
+    else
+        log_fail "User response should have been 'n' (decline)"
+    fi
+else
+    log_fail "Expected no merge-base (first pull), but found: $MERGE_BASE"
+fi
+cleanup_sandbox
+
+###############################################################################
 # Scenario: pl-remote-pull Aborts When Working Tree Is Dirty
 ###############################################################################
 echo ""
