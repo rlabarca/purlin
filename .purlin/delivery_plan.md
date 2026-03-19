@@ -16,9 +16,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Regression Testing [IN_PROGRESS]
+## Phase 3 -- Regression Testing [COMPLETE]
 **Features:** regression_testing.md
-**Completion Commit:** --
+**Completion Commit:** a729d2a
 **QA Bugs Addressed:** --
 
 ## Phase 4 -- Session Resume [IN_PROGRESS]
