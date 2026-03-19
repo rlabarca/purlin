@@ -4,60 +4,60 @@
 **Total Phases:** 13
 
 ## Summary
-15 TODO features spanning CDD Dashboard, delivery tooling, agent skills, test infrastructure, and release steps. Phased for maximum parallelism: 9 independent foundation phases run concurrently, then 2 dependent phases, then 2 final phases. Three dependency chains drive ordering: cdd_status_monitor -> cdd_agent_configuration -> cdd_startup_controls, and phase_analyzer -> continuous_phase_builder -> terminal_identity.
+15 features reset to TODO via lifecycle_reset (spec changes). Two dependency chains exist (phase_analyzer -> continuous_phase_builder -> terminal_identity; cdd_status_monitor -> cdd_agent_configuration -> cdd_startup_controls). Remaining 9 features are fully independent. Phased for maximum parallelization with small phase sizes to prevent context exhaustion.
 
-## Phase 1 -- CDD Status Monitor [PENDING]
-**Features:** cdd_status_monitor.md
-**Completion Commit:** --
-**QA Bugs Addressed:** --
-
-## Phase 2 -- Phase Analyzer [PENDING]
+## Phase 1 -- Phase Analyzer Foundation [PENDING]
 **Features:** phase_analyzer.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Session Resume [PENDING]
-**Features:** pl_session_resume.md
+## Phase 2 -- CDD Status Monitor Foundation [PENDING]
+**Features:** cdd_status_monitor.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Update Purlin [PENDING]
-**Features:** pl_update_purlin.md
-**Completion Commit:** --
-**QA Bugs Addressed:** --
-
-## Phase 5 -- Web Test [PENDING]
-**Features:** pl_web_test.md
-**Completion Commit:** --
-**QA Bugs Addressed:** --
-
-## Phase 6 -- What's Different [PENDING]
-**Features:** collab_whats_different.md
-**Completion Commit:** --
-**QA Bugs Addressed:** --
-
-## Phase 7 -- Regression Testing [PENDING]
+## Phase 3 -- Regression Testing [PENDING]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Release Steps A [PENDING]
-**Features:** instruction_audit.md, release_record_version_notes.md
+## Phase 4 -- Session Resume [PENDING]
+**Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Release Steps B [PENDING]
-**Features:** release_doc_consistency_check.md, release_submodule_safety_audit.md
+## Phase 5 -- Web Test Tool [PENDING]
+**Features:** pl_web_test.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- CDD Agent Configuration [PENDING]
+## Phase 6 -- Purlin Update Tool [PENDING]
+**Features:** pl_update_purlin.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 7 -- What's Different (Dependency Reset) [PENDING]
+**Features:** collab_whats_different.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 8 -- Continuous Phase Builder [PENDING]
+**Features:** continuous_phase_builder.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 9 -- CDD Agent Configuration [PENDING]
 **Features:** cdd_agent_configuration.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Continuous Phase Builder [PENDING]
-**Features:** continuous_phase_builder.md
+## Phase 10 -- Release Audits (Cosmetic Pair) [PENDING]
+**Features:** release_submodule_safety_audit.md, release_doc_consistency_check.md
+**Completion Commit:** --
+**QA Bugs Addressed:** --
+
+## Phase 11 -- Release Records (Cosmetic Pair) [PENDING]
+**Features:** instruction_audit.md, release_record_version_notes.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
