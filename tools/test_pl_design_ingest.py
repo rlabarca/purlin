@@ -332,6 +332,146 @@ def detect_identity_tokens(figma_variables, anchor_tokens):
     }
 
 
+def _extract_design_anchor(feature_content):
+    """Extract the current Design Anchor declaration from a feature file.
+
+    Returns the anchor path string (e.g. "features/design_visual_standards.md")
+    or None if no declaration exists.
+    """
+    m = re.search(r'>\s*\*\*Design Anchor:\*\*\s*(.+)', feature_content)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def _best_matching_anchor(token_map_entries, features_dir):
+    """Determine which design anchor best matches the token mappings used.
+
+    Scores each anchor by how many of its tokens appear in the token map entries
+    (as var(--token) references). Returns the filename of the best-matching anchor,
+    or None if no anchors exist.
+
+    Args:
+        token_map_entries: dict of {figma_name: mapped_value} where mapped_value
+            may be "var(--token-name)" or a literal.
+        features_dir: path to the features/ directory.
+
+    Returns:
+        Filename of the best-matching anchor (e.g. "features/design_visual_standards.md"),
+        or None.
+    """
+    if not os.path.isdir(features_dir):
+        return None
+
+    # Extract all var(--token) references from the token map
+    used_tokens = set()
+    for val in token_map_entries.values():
+        m = re.match(r'^var\((--[\w-]+)\)$', str(val))
+        if m:
+            used_tokens.add(m.group(1))
+
+    if not used_tokens:
+        return None
+
+    best_anchor = None
+    best_score = 0
+
+    for fname in sorted(os.listdir(features_dir)):
+        if fname.startswith("design_") and fname.endswith(".md"):
+            fpath = os.path.join(features_dir, fname)
+            with open(fpath, 'r') as f:
+                content = f.read()
+
+            # Count how many used tokens appear in this anchor
+            token_re = re.compile(r'\|\s*`(--[\w-]+)`\s*\|')
+            anchor_tokens = set(m.group(1) for m in token_re.finditer(content))
+            score = len(used_tokens & anchor_tokens)
+
+            if score > best_score:
+                best_score = score
+                best_anchor = f"features/{fname}"
+
+    return best_anchor
+
+
+def verify_design_anchor(feature_content, token_map_entries, features_dir):
+    """Verify and potentially update the Design Anchor on re-ingestion.
+
+    On re-processing, checks whether the current anchor declaration still matches
+    the tokens used. If a different anchor is more appropriate, returns an update.
+
+    Args:
+        feature_content: the full feature file content string.
+        token_map_entries: dict of {figma_name: mapped_value}.
+        features_dir: path to the features/ directory.
+
+    Returns:
+        dict with keys:
+            "current_anchor": str or None (existing declaration).
+            "best_anchor": str or None (best matching anchor).
+            "needs_update": bool (True if anchor should change).
+            "report": str or None (report message if anchor changed).
+    """
+    current = _extract_design_anchor(feature_content)
+    best = _best_matching_anchor(token_map_entries, features_dir)
+
+    if best is None:
+        return {
+            "current_anchor": current,
+            "best_anchor": None,
+            "needs_update": False,
+            "report": None,
+        }
+
+    if current is None:
+        return {
+            "current_anchor": None,
+            "best_anchor": best,
+            "needs_update": True,
+            "report": None,  # Adding new anchor, not updating
+        }
+
+    if current != best:
+        return {
+            "current_anchor": current,
+            "best_anchor": best,
+            "needs_update": True,
+            "report": f"Updated design anchor from `{current}` to `{best}`.",
+        }
+
+    return {
+        "current_anchor": current,
+        "best_anchor": best,
+        "needs_update": False,
+        "report": None,
+    }
+
+
+def update_design_anchor_in_content(feature_content, old_anchor, new_anchor):
+    """Replace the Design Anchor declaration in feature content.
+
+    If old_anchor is None (no existing declaration), inserts a new one
+    after the Visual Specification heading.
+
+    Returns the updated feature content string.
+    """
+    if old_anchor is not None:
+        return feature_content.replace(
+            f"> **Design Anchor:** {old_anchor}",
+            f"> **Design Anchor:** {new_anchor}",
+        )
+    else:
+        # Insert after ## Visual Specification heading
+        vs_heading = "## Visual Specification\n"
+        if vs_heading in feature_content:
+            anchor_block = (
+                f'\n> **Design Anchor:** {new_anchor}\n'
+                f'> **Inheritance:** Colors, typography, and theme switching per anchor.\n'
+            )
+            return feature_content.replace(vs_heading, vs_heading + anchor_block)
+        return feature_content
+
+
 def extract_annotations(figma_annotations):
     """Extract behavioral notes from Figma annotations.
 
@@ -730,6 +870,148 @@ class TestReProcessUpdatedArtifact(unittest.TestCase):
         self.assertIn("- [ ] New sidebar placement check", updated)
         self.assertIn("- [ ] Updated color token verification", updated)
         self.assertNotIn("- [ ] Old checklist item", updated)
+
+
+class TestReProcessAnchorVerification(unittest.TestCase):
+    """Section 2.6: Re-ingestion verifies and updates anchor declaration."""
+
+    def test_matching_anchor_no_update(self):
+        """Re-processing with tokens matching current anchor triggers no update."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            os.makedirs(features_dir)
+            with open(os.path.join(features_dir, "design_visual_standards.md"), "w") as f:
+                f.write("# Design\n| Token | Value |\n| `--purlin-accent` | `#38BDF8` |\n")
+
+            feature_content = (
+                "# Feature: Test\n"
+                "> Prerequisite: features/design_artifact_pipeline.md\n"
+                "\n## Visual Specification\n"
+                "> **Design Anchor:** features/design_visual_standards.md\n"
+                "### Screen: Main\n"
+                "- **Reference:** img.png\n"
+                "- **Token Map:** `accent` -> `var(--purlin-accent)`\n"
+            )
+            token_map = {"accent": "var(--purlin-accent)"}
+
+            result = verify_design_anchor(feature_content, token_map, features_dir)
+
+            self.assertFalse(result["needs_update"])
+            self.assertIsNone(result["report"])
+            self.assertEqual(result["current_anchor"], "features/design_visual_standards.md")
+
+    def test_different_anchor_triggers_update(self):
+        """Re-processing detects a better anchor and reports the change."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            os.makedirs(features_dir)
+            # Old anchor has no matching tokens
+            with open(os.path.join(features_dir, "design_old_standards.md"), "w") as f:
+                f.write("# Design Old\n| Token | Value |\n| `--old-color` | `#000000` |\n")
+            # New anchor matches the tokens used
+            with open(os.path.join(features_dir, "design_new_standards.md"), "w") as f:
+                f.write("# Design New\n| Token | Value |\n| `--new-accent` | `#38BDF8` |\n")
+
+            feature_content = (
+                "## Visual Specification\n"
+                "> **Design Anchor:** features/design_old_standards.md\n"
+                "### Screen: Main\n"
+                "- **Token Map:** `accent` -> `var(--new-accent)`\n"
+            )
+            token_map = {"accent": "var(--new-accent)"}
+
+            result = verify_design_anchor(feature_content, token_map, features_dir)
+
+            self.assertTrue(result["needs_update"])
+            self.assertEqual(result["best_anchor"], "features/design_new_standards.md")
+            self.assertIn("Updated design anchor from", result["report"])
+            self.assertIn("design_old_standards", result["report"])
+            self.assertIn("design_new_standards", result["report"])
+
+    def test_no_anchor_adds_one(self):
+        """Re-processing when no anchor exists adds the best matching one."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            os.makedirs(features_dir)
+            with open(os.path.join(features_dir, "design_visual_standards.md"), "w") as f:
+                f.write("# Design\n| Token | Value |\n| `--purlin-bg` | `#0B131A` |\n")
+
+            feature_content = (
+                "## Visual Specification\n"
+                "### Screen: Main\n"
+                "- **Token Map:** `surface` -> `var(--purlin-bg)`\n"
+            )
+            token_map = {"surface": "var(--purlin-bg)"}
+
+            result = verify_design_anchor(feature_content, token_map, features_dir)
+
+            self.assertTrue(result["needs_update"])
+            self.assertIsNone(result["current_anchor"])
+            self.assertEqual(result["best_anchor"], "features/design_visual_standards.md")
+            # No report for new addition (not an update)
+            self.assertIsNone(result["report"])
+
+    def test_update_anchor_in_content(self):
+        """update_design_anchor_in_content replaces the declaration."""
+        feature_content = (
+            "## Visual Specification\n"
+            "> **Design Anchor:** features/design_old.md\n"
+            "> **Inheritance:** Colors, typography, and theme switching per anchor.\n"
+        )
+        updated = update_design_anchor_in_content(
+            feature_content, "features/design_old.md", "features/design_new.md"
+        )
+        self.assertIn("> **Design Anchor:** features/design_new.md", updated)
+        self.assertNotIn("design_old.md", updated)
+
+    def test_insert_anchor_when_missing(self):
+        """update_design_anchor_in_content inserts when no declaration exists."""
+        feature_content = (
+            "## Visual Specification\n"
+            "### Screen: Main\n"
+            "- **Reference:** img.png\n"
+        )
+        updated = update_design_anchor_in_content(
+            feature_content, None, "features/design_visual_standards.md"
+        )
+        self.assertIn("> **Design Anchor:** features/design_visual_standards.md", updated)
+
+    def test_no_anchors_exist_no_update(self):
+        """When no design anchors exist in the project, no update is needed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            os.makedirs(features_dir)
+            # No design_*.md files
+
+            feature_content = (
+                "## Visual Specification\n"
+                "### Screen: Main\n"
+                "- **Token Map:** `primary` -> `#38BDF8`\n"
+            )
+            token_map = {"primary": "#38BDF8"}
+
+            result = verify_design_anchor(feature_content, token_map, features_dir)
+
+            self.assertFalse(result["needs_update"])
+
+    def test_literal_values_no_anchor_match(self):
+        """Token map with only literal values (no var() refs) produces no anchor match."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features_dir = os.path.join(tmpdir, "features")
+            os.makedirs(features_dir)
+            with open(os.path.join(features_dir, "design_visual_standards.md"), "w") as f:
+                f.write("# Design\n| Token | Value |\n| `--purlin-bg` | `#0B131A` |\n")
+
+            feature_content = (
+                "## Visual Specification\n"
+                "### Screen: Main\n"
+                "- **Token Map:** `primary` -> `#FF0000`\n"
+            )
+            token_map = {"primary": "#FF0000"}
+
+            result = verify_design_anchor(feature_content, token_map, features_dir)
+
+            self.assertFalse(result["needs_update"])
 
 
 class TestAnchorInheritanceTokenMapping(unittest.TestCase):

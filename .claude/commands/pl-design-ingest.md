@@ -65,6 +65,7 @@ Ingest a design artifact into a feature's Visual Specification section. This com
    - If no `## Visual Specification` section exists, create one with the `> **Design Anchor:**` declaration.
    - Insert or update the `### Screen:` subsection with Reference, Processed date (today), Token Map, and draft checklist items.
    - Do NOT insert a `- **Description:**` field.
+   - **Design anchor declaration (mandatory):** If the feature file does not yet have a `> **Design Anchor:**` declaration, add one referencing the most relevant `design_*.md` anchor. On re-ingestion (re-process mode), verify the existing anchor declaration still matches the design tokens used. If a different anchor is more appropriate (e.g., anchor was added or reorganized since the original ingestion), update the declaration and report: "Updated design anchor from `<old>` to `<new>`."
    - If Figma dev status was extracted (step 5.2), add `> Figma Status: <status>` to the feature spec's blockquote metadata (after Prerequisite lines).
 
 7. **Dev Resources linking (Figma MCP only, optional):**
