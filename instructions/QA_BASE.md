@@ -78,10 +78,12 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   **Total batch size:** Sum all testable items (manual scenarios + visual checklist items) across all TESTING features after scope filtering. Present as: `"Total: N items across M features"`.
 *   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
 *   If a delivery plan exists at `.purlin/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
+*   **Regression authoring targets:** Features with `### Regression Testing` or `## Regression Guidance` sections (or `> Web Test:` metadata), where Builder status is DONE and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. Present alongside verification: `"Regression: N features need scenario authoring"`.
 
 ### 3.3 Execute Verification
 *   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). Auto-verified categories (Web:Test, TestOnly, Skip) are Builder-owned -- QA does not re-verify them. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
 *   **3.3b Interactive pass:** Proceed to human-required items using the batched verification workflow (Section 5). All TESTING features with manual scenarios or visual items are assembled into a single checklist for efficient batch verification.
+*   **3.3c Regression authoring:** If regression authoring targets were discovered in 3.2, invoke `/pl-regression` (enters author mode automatically). For `auto_start: true`, execute after 3.3a auto-pass.
 
 ## 4. Discovery Protocol
 
@@ -140,6 +142,7 @@ Ensure all changes are committed to git. No uncommitted modifications should rem
 2.  If there are zero discoveries, confirm that all clean features have been marked `[Complete]` and the Architect can proceed with the release.
 3.  If there are discoveries, summarize the routing: which items need Architect attention vs. Builder fixes. Only features with zero discoveries should have been marked `[Complete]`.
 4.  **Phase context:** If a delivery plan is active, include phase progress in the summary: which features were verified for which phase, which features were deferred due to pending phases, and what remains. Example: "Verified 3 features for Phase 1. Feature X deferred (more work in Phase 2). 2 phases remaining."
+5.  **Regression handoff:** If regression work was performed this session (scenario authoring, result processing, or fixture recommendations), print the appropriate handoff message per `features/regression_testing.md` Section 2.12.
 
 ## 7. Feedback Routing Reference
 *   **BUG** -> Builder must fix implementation. **Exception:** when the BUG is in instruction-file-driven agent behavior (startup protocol ordering, role compliance, slash command gating), set `Action Required: Architect` in the discovery entry. The Architect fixes it by strengthening the relevant instruction file.

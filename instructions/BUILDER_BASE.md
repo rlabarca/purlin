@@ -122,6 +122,8 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 *   **Test quality:** Tests MUST verify behavioral outcomes per `features/policy_test_quality.md` guidelines (AP-1 through AP-4). No subagent audit required.
 *   **Web test (when eligible):** Features with `> Web Test:` or `> AFT Web:` metadata MUST pass `/pl-web-test` (zero BUG verdicts) before status tag. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file.
 *   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
+*   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
+*   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
 
 ## 6. Shutdown Protocol
 
