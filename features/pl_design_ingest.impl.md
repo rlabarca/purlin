@@ -23,4 +23,8 @@ This is a Claude skill/command feature. The implementation consists of:
 | `generate_figma_mcp_token_map` | Full token map from MCP metadata |
 | `detect_identity_tokens` | Auto-detects matching Figma/project token names |
 | `extract_annotations` | Filters behavioral notes from Figma annotations |
+| `verify_design_anchor` | Verifies/updates anchor declaration on re-ingestion |
+| `update_design_anchor_in_content` | Replaces or inserts `> **Design Anchor:**` in feature content |
+| `_extract_design_anchor` | Extracts current anchor declaration from feature content |
+| `_best_matching_anchor` | Scores anchors by token overlap to find best match |
 
