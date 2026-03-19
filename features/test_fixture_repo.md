@@ -33,7 +33,7 @@ Fixture states are git tags (not branches). Tags are immutable -- once created, 
 
 - `<project-ref>` is the project branch or version the fixtures target (e.g., `main`, `v2`, `release-1.x`). Most single-branch projects use `main/`.
 - `<feature-name>` matches the feature file name without extension (e.g., `cdd_branch_collab`).
-- `<scenario-slug>` is an Architect-chosen, short descriptive identifier (2-4 words, kebab-case). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`.
+- `<scenario-slug>` is an Architect-chosen, short descriptive identifier (2-4 words, kebab-case with hyphens). Slugs describe the fixture state, not the scenario title. Examples: `ahead-3`, `empty-repo`, `expert-mode`. Note: `<feature-name>` uses underscores (matching the feature filename), while `<scenario-slug>` uses hyphens. This distinction is intentional -- filenames follow Python/filesystem conventions, slugs follow URL/kebab-case conventions.
 
 **Examples:**
 - `main/cdd_branch_collab/sync-state-ahead`

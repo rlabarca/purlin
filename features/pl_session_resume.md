@@ -132,9 +132,9 @@ Font-size decision needs Architect ack -- recorded as [CLARIFICATION] but may es
 
 Restore mode follows an 8-step sequence. Each step is mandatory unless noted otherwise.
 
-#### 2.3.0 Step 0 -- Context Guard Counter Reset
+#### 2.3.0 Step 0 -- Stale Session State Cleanup
 
-Reset the context guard turn counter to zero. This clears stale counter state carried over from the previous session so the guard accurately tracks remaining budget for the new session.
+Clear any stale session state carried over from the previous session. This includes resetting internal turn counters or budget trackers if the agent runtime maintains them. If no such state exists in the current runtime, this step is a no-op and may be skipped silently.
 
 #### 2.3.1 Step 1 -- Role Detection (4-Tier Fallback)
 

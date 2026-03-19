@@ -94,7 +94,7 @@ After ingestion of a Figma URL with MCP available, the PM may optionally attach 
   - `- **Token Map:**` containing the generated token mappings (Figma design variable names -> project tokens).
   - Draft visual acceptance checklist items (`- [ ]`) derived from measurable design properties.
 - Do NOT generate a `- **Description:**` prose paragraph. The Token Map + checklists replace prose descriptions.
-- If the feature file does not yet have a `> **Design Anchor:**` declaration, add one referencing the most relevant `design_*.md` anchor found in the project.
+- **Design anchor declaration (mandatory):** If the feature file does not yet have a `> **Design Anchor:**` declaration, add one referencing the most relevant `design_*.md` anchor found in the project. On re-ingestion (re-process mode), verify the existing anchor declaration still matches the design tokens used. If a different anchor is more appropriate (e.g., anchor was added or reorganized since the original ingestion), update the declaration and report: "Updated design anchor from `<old>` to `<new>`."
 
 ### 2.7 Commit Protocol
 - The command commits the artifact file (if local) and the feature spec update together in a single commit.

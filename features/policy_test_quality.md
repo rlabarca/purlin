@@ -48,6 +48,10 @@ Tests use toy data (empty strings, single-element lists, trivially small inputs)
 - BAD: `result = parse_config('{}'); assertIsNotNone(result)`
 - GOOD: `result = parse_config(SAMPLE_REAL_CONFIG); assertEqual(result['database']['host'], 'localhost'); assertEqual(len(result['features']), 5)`
 
+### 2.2.1 Assertion Quality Cross-Reference
+
+The assertion quality invariants (positive/negative test pairing, assertion tightening tiers) are defined in `arch_testing.md` Section "Assertion Quality Invariant." The anti-patterns above complement those invariants: the anti-patterns describe what bad tests look like (pattern recognition), while the assertion quality invariant describes how to verify that tests are meaningful (structural guarantee). Both MUST be satisfied.
+
 ### 2.3 Test Classification by Feature Type
 
 What constitutes behavioral testing depends on the feature category:

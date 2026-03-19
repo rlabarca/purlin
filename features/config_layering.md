@@ -39,7 +39,7 @@ A shared Python utility at `tools/config/resolve_config.py` that centralizes all
 - **CLI modes:** The script is also callable from the command line for shell consumers:
   - `--dump`: Print the full resolved config as JSON to stdout.
   - `--key <name>`: Print the value of a single top-level key to stdout.
-  - `<role>` (positional: `architect`, `builder`, `qa`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_STARTUP=`, `AGENT_RECOMMEND=`.
+  - `<role>` (positional: `architect`, `builder`, `qa`, `pm`): Print shell variable assignments for agent settings: `AGENT_MODEL=`, `AGENT_EFFORT=`, `AGENT_BYPASS=`, `AGENT_FIND_WORK=`, `AGENT_AUTO_START=`.
 - **Project root detection:** Uses `PURLIN_PROJECT_ROOT` env var if set, otherwise climbs from script location (submodule-aware, per Section 2.1 of `project_init.md`).
 
 ### 2.2 Reader Migration
@@ -149,7 +149,7 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
     Given config.local.json exists with agent settings
     When resolve_config.py architect is invoked
-    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_STARTUP=, AGENT_RECOMMEND=
+    Then stdout contains AGENT_MODEL=, AGENT_EFFORT=, AGENT_BYPASS=, AGENT_FIND_WORK=, AGENT_AUTO_START=
 
 #### Scenario: Agent Config Command Writes to Local Not Shared
 

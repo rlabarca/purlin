@@ -61,6 +61,13 @@ The `### Regression Testing` section describes:
 
 The Critic detects features with `### Regression Testing` sections or `> Web Test:` metadata and flags missing regression results as QA action items ("regression coverage gap").
 
+### Regression Test Naming Contract
+
+Regression test scripts MUST follow this naming convention to enable automated discovery:
+- **Scenario declarations:** `tests/qa/scenarios/<feature_stem>_<scenario_slug>.json`
+- **Harness scripts:** `dev/<test_type>_<feature_stem>.sh` (Purlin-dev) or `tests/qa/<test_type>_<feature_stem>.sh` (consumer)
+- **Results:** Written to the feature's `tests/<feature_stem>/tests.json` via the `--write-results` convention.
+
 ### Backward Compatibility
 
 During the transition from `> AFT Web:` to `> Web Test:` metadata, the Critic parser and `/pl-web-test` tool MUST accept both forms. Consumer projects should migrate to `> Web Test:` at their convenience. The `> AFT Web:` form is deprecated and will be removed in a future release.

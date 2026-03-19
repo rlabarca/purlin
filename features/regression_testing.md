@@ -30,6 +30,7 @@ A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-
 - **Once mode:** `./dev/regression_runner.sh --once <harness> [args...]` runs a single harness invocation and exits with the harness exit code.
 - Per-execution timeout defaults to 300 seconds, configurable via `--timeout <seconds>`.
 - Generic dispatch: the runner supports any harness that follows the `--write-results` convention. It does not hardcode harness paths.
+- **Claude unavailability:** When a harness invocation fails with a non-zero exit code and stderr contains `claude` connection errors or authentication failures, the runner MUST record `exit_code` and include the stderr excerpt in `regression_result.json`. The runner does NOT retry -- it records the failure and continues polling (watch mode) or exits (once mode). The QA skill surfaces these as infrastructure failures distinct from test failures.
 
 **Trigger format** (`.purlin/runtime/regression_trigger.json`):
 
@@ -106,7 +107,7 @@ A regression result is stale when the feature's source code was modified since t
 
 Each `tests.json` detail entry MAY include an optional `assertion_tier` field with value `1`,
 `2`, or `3`, corresponding to the assertion quality tiers defined in
-`features/aft_agent.md` Section 2.10. This field is backward-compatible -- existing consumers
+`features/arch_testing.md` Section "Assertion Quality Invariant". This field is backward-compatible -- existing consumers
 that do not recognize it will ignore it.
 
 The QA regression skill reports tier distribution in its summary output:

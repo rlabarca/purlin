@@ -2,6 +2,7 @@
 
 > Label: "Design: Text Modal Standards"
 > Category: "Common Design Standards"
+> Prerequisite: features/design_visual_standards.md
 
 ## Purpose
 

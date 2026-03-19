@@ -18,7 +18,7 @@ This feature introduces a shared resolution helper (`tools/resolve_python.sh`) t
 *   **Resolution Priority:** The helper MUST resolve `$PYTHON_EXE` using the following priority order (first match wins):
     1. `$AGENTIC_PYTHON` environment variable, if set and the path exists and is executable.
     2. `$PURLIN_PROJECT_ROOT/.venv/` — project root venv (requires `$PURLIN_PROJECT_ROOT` to be set).
-    3. Climbing detection from the sourcing script's directory: `../../.venv` (standalone layout), then `../../../.venv` (submodule layout). The climbing base MUST be derived from `${BASH_SOURCE[1]}` (the sourcing script's path, not the helper's own path).
+    3. Climbing detection from the sourcing script's directory: `../../../.venv` (submodule layout) first, then `../../.venv` (standalone layout). The submodule path is checked first because it is farther from the script and represents the consumer project root, which is the higher-priority context per the Submodule Compatibility Mandate (further path before nearer path). The climbing base MUST be derived from `${BASH_SOURCE[1]}` (the sourcing script's path, not the helper's own path).
     4. System `python3` (via `command -v python3`).
     5. System `python` (via `command -v python`).
 *   **Cross-Platform Venv Path:** When checking a `.venv/` directory, the helper MUST check for the platform-appropriate interpreter:

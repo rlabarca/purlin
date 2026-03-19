@@ -25,7 +25,8 @@ The CDD Dashboard's QA column currently shows coarse status values (TODO, CLEAN,
 *   When a feature's QA status is `TODO` and it has any manual items (`total_manual > 0`), the QA cell displays `TODO` (unchanged).
 *   When both `total_auto` and `total_manual` are zero (e.g., `summary` is `"awaiting builder"`), display `TODO` (unchanged).
 *   Non-TODO QA statuses (CLEAN, FAIL, DISPUTED, N/A) are unchanged.
-*   **AUTO color:** The `AUTO` badge MUST use `var(--purlin-status-auto)` — green in both light and dark themes — to signal a positive state (no human work needed), visually distinct from the yellow `TODO` badge.
+*   **AUTO color:** The `AUTO` badge MUST use `var(--purlin-status-auto)` -- green in both light and dark themes -- to signal a positive state (no human work needed), visually distinct from the yellow `TODO` badge.
+*   **Data derivation:** The AUTO/TODO distinction is derived from the `verification_effort` block computed by the Critic per `policy_critic.md` Section 2.14 (Verification Effort Classification). A feature qualifies as AUTO when `total_manual == 0` and `total_auto > 0`.
 
 ### 2.1.1 No Aggregate QA Queue Summary
 
