@@ -2242,6 +2242,112 @@ Overview.
         finally:
             critic.FEATURES_DIR = orig_features
 
+    def test_bug_with_action_required_qa_routes_to_qa(self):
+        """BUG with Action Required: QA routes to QA items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        # Create a feature with a QA-routed BUG
+        qa_bug_content = """\
+# Feature: Stale Scenario
+
+> Label: "Tool: Stale Scenario"
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [BUG] Scenario assertion is stale (Discovered: 2026-01-01)
+- **Scenario:** Run Critic Button
+- **Observed Behavior:** Test asserts old label text.
+- **Expected Behavior:** Test should assert updated label text.
+- **Action Required:** QA
+- **Status:** OPEN
+"""
+        with open(os.path.join(self.features_dir, 'stale_scenario.md'),
+                  'w') as f:
+            f.write(qa_bug_content)
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/stale_scenario.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result)
+            qa_items = items['qa']
+            builder_items = items['builder']
+            # BUG should route to QA, not Builder
+            bug_qa = [i for i in qa_items
+                      if 'Fix bug' in i['description']
+                      and 'stale_scenario' in i.get('feature', '')]
+            self.assertEqual(len(bug_qa), 1,
+                             'Action Required: QA should route BUG to QA')
+            self.assertEqual(bug_qa[0]['priority'], 'HIGH')
+            self.assertEqual(bug_qa[0]['category'], 'user_testing')
+            # Builder should NOT have this BUG
+            bug_builder = [i for i in builder_items
+                           if 'stale_scenario' in i.get('feature', '')]
+            self.assertEqual(len(bug_builder), 0,
+                             'Action Required: QA should NOT route to Builder')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
+    def test_bug_with_action_required_pm_routes_to_pm(self):
+        """BUG with Action Required: PM routes to PM items."""
+        import critic
+        orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        # Create a feature with a PM-routed BUG
+        pm_bug_content = """\
+# Feature: Design Bug
+
+> Label: "Tool: Design Bug"
+
+## 1. Overview
+Overview.
+
+## User Testing Discoveries
+
+### [BUG] Design token mismatch (Discovered: 2026-01-01)
+- **Scenario:** Visual Spec Token Map
+- **Observed Behavior:** Token map references deleted color variable.
+- **Expected Behavior:** Token map should reference current color variable.
+- **Action Required:** PM
+- **Status:** OPEN
+"""
+        with open(os.path.join(self.features_dir, 'design_bug.md'),
+                  'w') as f:
+            f.write(pm_bug_content)
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/design_bug.md'
+            result['user_testing'] = {
+                'status': 'HAS_OPEN_ITEMS',
+                'bugs': 1, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0,
+            }
+            items = generate_action_items(result)
+            pm_items = items['pm']
+            builder_items = items['builder']
+            # BUG should route to PM, not Builder
+            bug_pm = [i for i in pm_items
+                      if 'Fix bug' in i['description']
+                      and 'design_bug' in i.get('feature', '')]
+            self.assertEqual(len(bug_pm), 1,
+                             'Action Required: PM should route BUG to PM')
+            self.assertEqual(bug_pm[0]['priority'], 'HIGH')
+            self.assertEqual(bug_pm[0]['category'], 'user_testing')
+            # Builder should NOT have this BUG
+            bug_builder = [i for i in builder_items
+                           if 'design_bug' in i.get('feature', '')]
+            self.assertEqual(len(bug_builder), 0,
+                             'Action Required: PM should NOT route to Builder')
+        finally:
+            critic.FEATURES_DIR = orig_features
+
 
 class TestActionItemsQA(unittest.TestCase):
     """Scenario: QA Action Items from TESTING Status"""

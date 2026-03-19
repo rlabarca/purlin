@@ -1650,29 +1650,30 @@ def generate_action_items(feature_result, cdd_status=None):
             ),
         })
 
-    # OPEN BUGs in User Testing -> HIGH Builder (default) or Architect (override)
+    # OPEN BUGs in User Testing -> HIGH Builder (default) or role override
     for entry in ut_entries:
         if entry['type'] == 'BUG' and entry['status'] == 'OPEN':
             action_req = (entry.get('action_required') or '').strip().lower()
+            _bug_item = {
+                'priority': 'HIGH',
+                'category': 'user_testing',
+                'feature': feature_name,
+                'description': (
+                    f'Fix bug in {feature_name}: {entry["heading"]}'
+                ),
+            }
             if action_req == 'architect':
-                architect_items.append({
-                    'priority': 'HIGH',
-                    'category': 'user_testing',
-                    'feature': feature_name,
-                    'description': (
-                        f'Fix instruction-level bug in {feature_name}: '
-                        f'{entry["heading"]}'
-                    ),
-                })
+                _bug_item['description'] = (
+                    f'Fix instruction-level bug in {feature_name}: '
+                    f'{entry["heading"]}'
+                )
+                architect_items.append(_bug_item)
+            elif action_req == 'qa':
+                qa_items.append(_bug_item)
+            elif action_req == 'pm':
+                pm_items.append(_bug_item)
             else:
-                builder_items.append({
-                    'priority': 'HIGH',
-                    'category': 'user_testing',
-                    'feature': feature_name,
-                    'description': (
-                        f'Fix bug in {feature_name}: {entry["heading"]}'
-                    ),
-                })
+                builder_items.append(_bug_item)
 
     # Cross-validation warnings (invalid targeted scope names) -> MEDIUM Builder
     # Only targeted: scopes have scope name validation errors. First-pass guard
