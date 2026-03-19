@@ -689,3 +689,9 @@ None
 - [ ] Font size control (minus, slider, plus) visible in modal header (inherited from cdd_modal_base.md)
 - [ ] Font size slider scales all digest text together (headings, paragraphs, code, tags, impact summary)
 - [ ] Font size persists when closing and reopening the What's Different modal
+
+## Regression Guidance
+- Direction-dependent content: AHEAD shows only local changes, BEHIND shows only collab changes, DIVERGED shows both
+- Digest file overwrites on each generation (no stale content accumulation)
+- Dashboard button hidden when sync state is SAME
+- Post-merge auto-generation triggers after successful /pl-remote-pull

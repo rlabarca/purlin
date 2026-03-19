@@ -1011,3 +1011,12 @@ None
 - [ ] Features without critic.json show "??" placeholder in all role columns
 - [ ] Badge styling uses existing CDD dashboard status badge pattern and color tokens
 
+
+## Regression Guidance
+- Anchor node exemption: arch_/design_/policy_ files skip Implementation Gate entirely
+- Structural completeness: PASS with total=0 is FAIL; PASS with failed>0 is FAIL
+- All-manual feature exemption: no tests.json required when zero automated scenarios
+- Builder decision audit scans anchor nodes too, not just regular features
+- Discovery status detection parses structured field lines, not free-text keyword search
+- Policy adherence: FORBIDDEN patterns from anchor nodes enforced on dependent features
+- Traceability engine code stays in repo but is NOT run by the Critic (per policy_critic.md 2.2 recalibration)

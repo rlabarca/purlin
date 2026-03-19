@@ -580,3 +580,9 @@ Allow pinning to specific Purlin versions to prevent auto-updates.
 When upstream includes a `BREAKING_CHANGES.md` file covering the update range, automatically
 trigger the customization impact analysis (Section 2.13) without prompting. The breaking
 changes file would serve as a signal that the update warrants deeper inspection.
+
+## Regression Guidance
+- Standalone mode guard fires before any fetch or file modification
+- Fast path: already-current submodule exits immediately with no side effects
+- Conflict detection: locally modified files that conflict with upstream trigger analysis mode
+- init.sh --quiet refresh runs after submodule advance

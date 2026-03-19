@@ -183,3 +183,9 @@ Purlin Builder — Ready
 ### Manual Scenarios (Human Verification Required)
 
 None.
+
+## Regression Guidance
+- Invalid config combination (find_work: false + auto_start: true) rejected at validation time
+- Startup print sequence runs unconditionally regardless of flag values
+- Config changes via dashboard POST persist to config.local.json, not config.json
+- Auto Start checkbox disables when Find Work is unchecked (cascading UI constraint)

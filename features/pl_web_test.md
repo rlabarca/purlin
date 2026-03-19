@@ -476,3 +476,9 @@ The following instruction files MUST be updated by the Builder to reference the 
 
 None.
 
+
+## Regression Guidance
+- Auto-discovery respects targeted/cosmetic scope from critic.json
+- Server auto-start via Web Start metadata when server unreachable
+- Old skill name (pl-web-verify) fully renamed -- zero references remain
+- Role guard rejects Architect invocation

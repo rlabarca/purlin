@@ -284,3 +284,7 @@ Then the Architect identifies the file and line number and reports a WARNING in 
 And presents the warning to the user for explicit confirmation,
 And if the user confirms, the Architect records the known limitation in the affected feature's
 Implementation Notes and proceeds to the next release step.
+## Regression Guidance
+- All 8 check categories exercised: PURLIN_PROJECT_ROOT, artifact paths, json.load safety, CWD assumptions, sed JSON preservation
+- CRITICAL vs WARNING severity distinction for each finding type
+- Audit scope covers both Python and shell scripts under tools/

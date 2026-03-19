@@ -124,3 +124,7 @@ Given the consistency pass reveals a documentation gap that seems to warrant a n
 When the Architect has not received explicit user confirmation for the section name and placement,
 Then the Architect MUST NOT create the new `##` heading,
 And MUST present the gap in the coverage table and await user direction.
+## Regression Guidance
+- Coverage gap table generated and presented before any writes
+- No unsolicited major sections: new ## headings require explicit user confirmation
+- Stale file paths in documentation detected against current codebase layout

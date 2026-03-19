@@ -956,3 +956,11 @@ None.
 - [ ] Multiple Prerequisites displayed on separate rows
 - [ ] No duplicate metadata blockquotes in rendered markdown body
 - [ ] Modal title is 4pts larger than body text default
+
+## Regression Guidance
+- Status detection: editing a feature spec resets to TODO; editing companion/sidecar does NOT
+- Abbreviated status commit format resolves correctly via conventional commit scope
+- Section collapse/expand state persists across page reloads via localStorage
+- Badge color mapping: DONE=green, TODO=yellow, FAIL=red, N/A=blank for correct roles
+- Tombstone entries always appear in Active section regardless of role status
+- Active section sorting: red states first, then yellow/orange, then alphabetical

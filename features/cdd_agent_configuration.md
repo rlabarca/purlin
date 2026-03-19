@@ -146,3 +146,10 @@ The following fixture tags provide deterministic project states for web-verify t
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Section collapse/expand state persists across page reloads via localStorage
 
+
+## Regression Guidance
+- Pending-write lock: rapid sequential edits not reverted by stale POST response
+- Capability-gated controls: hidden controls preserve column space (no layout shift)
+- Flicker-free updates: only changed controls re-rendered on auto-refresh
+- Section collapse state persists in localStorage alongside other sections
+- Config writes go to config.local.json (gitignored), not config.json

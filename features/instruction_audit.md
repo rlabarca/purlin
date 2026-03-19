@@ -93,3 +93,7 @@ When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect halts the step and documents the base-layer conflict,
 And uses `/pl-edit-base` (Purlin repo) or reports to the framework maintainer (consumer project),
 And the release does not proceed until the conflict is resolved.
+## Regression Guidance
+- Contradiction detection: override rule that negates base-layer rule is flagged
+- Stale path references in override files detected against current codebase
+- Scope violation: override files must be prose only, no code/scripts/JSON

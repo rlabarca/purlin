@@ -206,3 +206,9 @@ and is vulnerable to false positives.
 ### Manual Scenarios (Human Verification Required)
 
 None.
+
+## Regression Guidance
+- Watch mode: trigger file consumed and deleted after execution
+- Timeout enforcement: per-execution 300s default, configurable
+- Result file written atomically with correct exit code and timing
+- Generic dispatch: runner works with any harness following --write-results convention

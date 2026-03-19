@@ -234,3 +234,10 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
 
 ### Manual Scenarios (Human Verification Required)
 None.
+
+## Regression Guidance
+- Cycle detection: dependency cycles produce error exit, not silent misordering
+- Parallel grouping: only truly independent phases grouped together
+- PURLIN_PROJECT_ROOT used for path resolution (submodule safe)
+- Only PENDING phases included; COMPLETE and IN_PROGRESS excluded
+- Empty plan (no PENDING phases) exits successfully with empty groups

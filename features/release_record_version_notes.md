@@ -95,3 +95,7 @@ Given README.md does not contain a `## Releases` section,
 When the Architect records the version notes,
 Then the Architect creates the `## Releases` heading in README.md,
 And inserts the new entry beneath it.
+## Regression Guidance
+- Tag discovery: correct handling of no-tags-exist case (all commits treated as new)
+- User-provided notes used verbatim (not modified by synthesis)
+- Missing ## Releases heading auto-created in README.md

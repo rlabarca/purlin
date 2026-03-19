@@ -396,3 +396,9 @@ Uncommitted:    [none | summary]
 ### Manual Scenarios (Human Verification Required)
 
 None.
+
+## Regression Guidance
+- Role-scoped checkpoint files: concurrent agents save independently without overwriting
+- Corrupt or missing checkpoint gracefully handled with informative error
+- Checkpoint survives /clear and terminal restarts (written to .purlin/cache/, gitignored)
+- find_work=false respected during restore (no auto-generated work plan)

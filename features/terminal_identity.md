@@ -178,3 +178,9 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     And the title and badge update to "Builder: Phase N/M" during sequential phase execution
     And the title and badge show "Builder: Evaluating" when the evaluator runs
     And the title and badge are cleared on exit
+
+## Regression Guidance
+- Cleanup on normal exit AND Ctrl+C (both title and badge cleared)
+- Non-iTerm2 terminals: badge functions are no-op, title still works
+- Escape sequences output to /dev/tty, not stdout (safe when piped)
+- Continuous mode: title updates through phase transitions (Bootstrap -> Phase N/M -> Evaluating)
