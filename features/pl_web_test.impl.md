@@ -15,7 +15,7 @@ DISCOVERY -- Skill used hardcoded port from > Web Test: metadata; now reads .pur
 
 ### Audit Finding -- 2026-03-19
 
-[DISCOVERY] No unit tests for port resolution, auto-start, or Playwright detection logic
+[DISCOVERY] No unit tests for port resolution, auto-start, or Playwright detection logic — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #24)
 **Severity:** MEDIUM

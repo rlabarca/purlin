@@ -8,7 +8,7 @@ Added optional `include_statuses` parameter (default `{'PENDING'}`). Default mod
 
 ### Audit Finding -- 2026-03-19
 
-[DISCOVERY] Diagnostic output mixes stderr and stdout
+[DISCOVERY] Diagnostic output mixes stderr and stdout — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #44)
 **Severity:** LOW

@@ -4,7 +4,7 @@ Modal body base font size was originally 13px but `design_modal_standards.md` sp
 
 ### Audit Finding -- 2026-03-19
 
-[DISCOVERY] Font size slider uses integer step instead of sub-integer step
+[DISCOVERY] Font size slider uses integer step instead of sub-integer step — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #16)
 **Severity:** MEDIUM
@@ -13,7 +13,7 @@ Modal body base font size was originally 13px but `design_modal_standards.md` sp
 
 ---
 
-[DISCOVERY] Overlay click-to-close behavior untested
+[DISCOVERY] Overlay click-to-close behavior untested — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #17)
 **Severity:** MEDIUM

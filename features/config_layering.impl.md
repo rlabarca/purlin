@@ -115,7 +115,7 @@ This follows the same submodule-aware climbing pattern established in Section 2.
 
 ### Audit Finding -- 2026-03-19
 
-[DISCOVERY] CLI role mode shell variable outputs use stale names
+[DISCOVERY] CLI role mode shell variable outputs use stale names — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #8)
 **Severity:** HIGH

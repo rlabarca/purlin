@@ -6,7 +6,7 @@
 
 ### Audit Finding -- 2026-03-19
 
-[DISCOVERY] MCP manifest diff reporting incomplete in command file
+[DISCOVERY] MCP manifest diff reporting incomplete in command file — Acknowledged
 
 **Source:** /pl-spec-code-audit --deep (item #22)
 **Severity:** MEDIUM
