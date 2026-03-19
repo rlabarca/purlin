@@ -4,7 +4,7 @@
 > Category: "Agent Skills"
 > Prerequisite: features/policy_critic.md
 
-[TODO] <!-- reset: role-scoped checkpoint files need Builder implementation -->
+[Complete]
 
 ## 1. Overview
 
@@ -402,3 +402,4 @@ None.
 - Corrupt or missing checkpoint gracefully handled with informative error
 - Checkpoint survives /clear and terminal restarts (written to .purlin/cache/, gitignored)
 - find_work=false respected during restore (no auto-generated work plan)
+

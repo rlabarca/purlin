@@ -601,25 +601,25 @@ class TestInvalidArgumentPrintsError(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
 
-class TestStep0ContextGuardCounterReset(unittest.TestCase):
-    """Scenario: Step 0 resets context guard counter.
+class TestStep0StaleSessionStateCleanup(unittest.TestCase):
+    """Scenario: Step 0 clears stale session state.
 
-    Step 0 resets the context guard turn counter to zero, clearing stale
-    counter state from the previous session. Step 7 must NOT reset the
-    counter (restore flow consumes real context during state gathering).
+    Step 0 clears any stale session state carried over from the previous
+    session. Step 7 must NOT reset the counter (restore flow consumes
+    real context during state gathering).
     """
 
-    def test_step0_heading_references_counter_reset(self):
-        """Step 0 heading references Context Guard Counter Reset."""
+    def test_step0_heading_references_stale_session_cleanup(self):
+        """Step 0 heading references Stale Session State Cleanup."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('Step 0 -- Context Guard Counter Reset', content)
+        self.assertIn('Step 0 -- Stale Session State Cleanup', content)
 
-    def test_step0_mentions_reset_to_zero(self):
-        """Step 0 instructs resetting the counter to zero."""
+    def test_step0_mentions_stale_state_cleanup(self):
+        """Step 0 instructs clearing stale session state."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('Reset the context guard turn counter to zero', content)
+        self.assertIn('Clear any stale session state carried over', content)
 
     def test_step7_prohibits_counter_reset(self):
         """Step 7 explicitly prohibits resetting the counter."""
