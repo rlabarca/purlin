@@ -505,7 +505,8 @@ evaluator_fallback() {
     # Check whether PENDING phases remain as a second signal.
     if [ -f "$DELIVERY_PLAN" ]; then
         local remaining_count
-        remaining_count=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+        remaining_count=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || true)
+        remaining_count=${remaining_count:-0}
         if [ "$remaining_count" -gt 0 ]; then
             echo "continue|false|evaluator fallback: $remaining_count PENDING/IN_PROGRESS phase(s) remain"
             return 0
@@ -1888,7 +1889,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # Safety catch: if phases are stuck in IN_PROGRESS (e.g., from a
         # parallel failure), reset them and retry before giving up.
         if [ -f "$DELIVERY_PLAN" ]; then
-            ip_count=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+            ip_count=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null || true)
+            ip_count=${ip_count:-0}
             if [ "$ip_count" -gt 0 ]; then
                 log_eval "No groups but $ip_count IN_PROGRESS phase(s) found — resetting and retrying"
                 reset_stale_in_progress
@@ -2204,7 +2206,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             stop)
                 # Check for remaining phases before accepting stop
                 remaining_phases=0
-                [ -f "$DELIVERY_PLAN" ] && remaining_phases=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+                [ -f "$DELIVERY_PLAN" ] && { remaining_phases=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || true); remaining_phases=${remaining_phases:-0}; }
                 if [ "$EVAL_SUCCESS" = "true" ]; then
                     if [ "$remaining_phases" -gt 0 ]; then
                         log_eval "stop(success=true) overridden: $remaining_phases PENDING/IN_PROGRESS phase(s) remain — continuing"
@@ -2380,7 +2382,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
                 stop)
                     # Check for remaining phases before accepting stop
                     seq_remaining=0
-                    [ -f "$DELIVERY_PLAN" ] && seq_remaining=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || echo "0")
+                    [ -f "$DELIVERY_PLAN" ] && { seq_remaining=$(grep -cE '\[(PENDING|IN_PROGRESS)\]' "$DELIVERY_PLAN" 2>/dev/null || true); seq_remaining=${seq_remaining:-0}; }
                     # Exclude current phase from remaining count (it's the one being stopped)
                     seq_remaining=$((seq_remaining > 0 ? seq_remaining - 1 : 0))
 
