@@ -6332,6 +6332,123 @@ Just a feature.
         self.assertEqual(result['missing_reference_count'], 0)
 
 
+class TestMultiLineTokenMapDetected(unittest.TestCase):
+    """Scenario: Multi-Line Token Map Detected As Present
+
+    A Token Map with indented sub-entries on subsequent lines is detected
+    as present even without inline content on the Token Map line.
+    """
+
+    def test_multi_line_token_map(self):
+        content = """\
+# Feature: Token Map Test
+
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** `features/design/my_feature/dashboard.png`
+- **Processed:** 2026-02-15
+- **Token Map:**
+  - `surface` -> `var(--bg)`
+  - `primary` -> `var(--accent)`
+- [ ] Layout correct
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertTrue(ref['has_token_map'])
+        self.assertEqual(result['unprocessed_count'], 0)
+
+    def test_empty_token_map_no_sub_entries(self):
+        content = """\
+# Feature: Empty Token Map
+
+## Visual Specification
+
+### Screen: Settings
+- **Reference:** `features/design/settings.png`
+- **Processed:** 2026-02-15
+- **Token Map:**
+- [ ] Checkbox visible
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertFalse(ref['has_token_map'])
+        self.assertEqual(result['unprocessed_count'], 1)
+
+    def test_multi_line_token_map_stops_at_next_field(self):
+        content = """\
+# Feature: Token Map Boundary
+
+## Visual Specification
+
+### Screen: Panel
+- **Reference:** `features/design/panel.png`
+- **Token Map:**
+  - `bg` -> `var(--surface)`
+- **Processed:** 2026-03-01
+- [ ] Panel renders
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertTrue(ref['has_token_map'])
+        self.assertEqual(ref['processed_date'], '2026-03-01')
+
+
+class TestCompactFigmaNodeReference(unittest.TestCase):
+    """Scenario: Compact Figma Node Reference Classified As Figma
+
+    A reference using `Figma node <id> (file <key>)` format is classified
+    as figma type with the compact reference stored as the path.
+    """
+
+    def test_compact_figma_node_reference(self):
+        content = """\
+# Feature: Compact Figma
+
+## Visual Specification
+
+### Screen: Header
+- **Reference:** Figma node 7:81 (file TEZI0T6lObCJrC9mkmZT8v)
+- **Processed:** 2026-03-15
+- **Token Map:** Header layout tokens.
+- [ ] Logo positioned correctly
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertEqual(ref['reference_type'], 'figma')
+        self.assertEqual(ref['reference_path'],
+                         'Figma node 7:81 (file TEZI0T6lObCJrC9mkmZT8v)')
+        # Figma references should not generate missing_design_reference
+        self.assertEqual(result['missing_reference_count'], 0)
+
+
+class TestFullFigmaURLReferenceStillWorks(unittest.TestCase):
+    """Scenario: Full Figma URL Reference Still Works
+
+    The existing [Figma](url) format continues to work after the compact
+    reference format was added.
+    """
+
+    def test_full_figma_url_reference(self):
+        content = """\
+# Feature: Full Figma URL
+
+## Visual Specification
+
+### Screen: Nav
+- **Reference:** [Figma](https://www.figma.com/design/ABC123/file?node-id=7-81)
+- **Processed:** 2026-03-10
+- **Token Map:** Navigation layout.
+- [ ] Menu items present
+"""
+        result = parse_visual_spec(content)
+        ref = result['references'][0]
+        self.assertEqual(ref['reference_type'], 'figma')
+        self.assertEqual(
+            ref['reference_path'],
+            'https://www.figma.com/design/ABC123/file?node-id=7-81')
+
+
 class TestValidateVisualReferences(unittest.TestCase):
     """Test validate_visual_references() for integrity, staleness,
     and unprocessed artifact detection."""

@@ -357,10 +357,16 @@ def _parse_screen_reference(body):
     processed_date = None
     has_token_map = False
 
-    for line in body.split('\n'):
+    lines = body.split('\n')
+    for idx, line in enumerate(lines):
         stripped = line.strip()
 
-        # Reference line
+        # Reference line — detection order per spec §2.13:
+        # (1) N/A or empty -> none
+        # (2) contains [Figma]( -> figma (extract URL)
+        # (3) starts with "Figma node" -> figma (compact reference)
+        # (4) contains [Live]( -> live (extract URL)
+        # (5) otherwise -> local (strip backticks)
         if stripped.startswith('- **Reference:**'):
             ref_value = stripped[len('- **Reference:**'):].strip()
             if ref_value.upper() == 'N/A' or not ref_value:
@@ -369,12 +375,14 @@ def _parse_screen_reference(body):
                 url_match = re.search(r'\[Figma\]\(([^)]+)\)', ref_value)
                 reference_path = url_match.group(1) if url_match else ref_value
                 reference_type = 'figma'
+            elif ref_value.startswith('Figma node'):
+                reference_path = ref_value
+                reference_type = 'figma'
             elif '[Live](' in ref_value:
                 url_match = re.search(r'\[Live\]\(([^)]+)\)', ref_value)
                 reference_path = url_match.group(1) if url_match else ref_value
                 reference_type = 'live'
             else:
-                # Local file path — strip backticks
                 reference_path = ref_value.strip('`').strip()
                 reference_type = 'local'
 
@@ -384,10 +392,26 @@ def _parse_screen_reference(body):
             if date_value.upper() != 'N/A' and date_value:
                 processed_date = date_value
 
-        # Token Map line
+        # Token Map line — check inline content or multi-line sub-entries
         if stripped.startswith('- **Token Map:**'):
             map_value = stripped[len('- **Token Map:**'):].strip()
-            has_token_map = bool(map_value)
+            if map_value:
+                has_token_map = True
+            else:
+                # Check subsequent lines for indented sub-entries
+                for subsequent in lines[idx + 1:]:
+                    sub_stripped = subsequent.strip()
+                    if not sub_stripped:
+                        continue
+                    # Stop at next field, screen heading, or section end
+                    if (sub_stripped.startswith('- **')
+                            or sub_stripped.startswith('### Screen:')):
+                        break
+                    # Indented sub-entry: 2+ leading spaces followed by "- "
+                    if (len(subsequent) - len(subsequent.lstrip()) >= 2
+                            and sub_stripped.startswith('- ')):
+                        has_token_map = True
+                        break
 
     return {
         'reference_path': reference_path,
