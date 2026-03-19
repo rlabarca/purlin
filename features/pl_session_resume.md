@@ -10,7 +10,7 @@
 
 The `/pl-resume` agent skill provides a two-mode mechanism for saving and restoring agent session state across context clears and terminal restarts. When an agent is about to run out of context, it invokes `/pl-resume save` to write a structured checkpoint file. When a new session starts (with or without the launcher), the agent invokes `/pl-resume` to read the checkpoint, gather fresh project state, and resume from where the previous session left off.
 
-This skill is shared across all roles (Architect, Builder, QA, PM). The launcher scripts handle fresh session bootstrap but provide no mid-session recovery. The delivery plan (`.purlin/cache/delivery_plan.md`) partially addresses multi-phase Builder work but does not capture per-step state within a feature's implementation protocol. This skill fills that gap.
+This skill is shared across all roles (Architect, Builder, QA, PM). The launcher scripts handle fresh session bootstrap but provide no mid-session recovery. The delivery plan (`.purlin/delivery_plan.md`) partially addresses multi-phase Builder work but does not capture per-step state within a feature's implementation protocol. This skill fills that gap.
 
 ---
 

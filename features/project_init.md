@@ -41,12 +41,13 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 5.  **Launcher Script Generation:** Generate `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
 6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
-8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Append recommended ignores (including `.purlin/runtime/` and `.purlin/cache/`) if not already present.
+8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Read `purlin-config-sample/gitignore.purlin` from the submodule and merge patterns into the consumer's `.gitignore`. For each non-comment, non-blank line in the template, append it if not already present.
 9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
 10. **CDD Convenience Symlinks:** Create symlinks at the project root (Section 2.6).
 11. **Python Environment Suggestion:** If `.venv/` does not exist, print an optional venv setup suggestion. Informational and non-blocking.
 12. **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
-13. **Summary Output:** Print a concise summary (Section 2.7).
+13. **Post-Init Staging:** After all artifacts are created, the script MUST stage exactly the files it created or modified using explicit `git add` calls. The script MUST NOT suggest or use `git add -A` or `git add .`.
+14. **Summary Output:** Print a concise summary (Section 2.7).
 
 ### 2.4 Refresh Mode
 
@@ -62,7 +63,8 @@ When `.purlin/` already exists, the script MUST perform only these updates:
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
 5.  **Launcher Regeneration:** Regenerate all launcher scripts (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`) at the project root, overwriting any existing versions. Additionally, stale launchers from previous naming conventions (`run_architect.sh`, `run_builder.sh`, `run_qa.sh`) MUST be removed if they exist. Launchers are generated artifacts — not customization points — so always regenerating ensures they stay current with the latest template and config resolution logic.
 6.  **Claude Code Hook Installation:** Ensure `.claude/settings.json` contains the Purlin session-recovery hook (Section 2.15).
-7.  **Refresh Summary:** Print a concise summary (Section 2.8).
+7.  **Gitignore Pattern Sync:** Read `<submodule>/purlin-config-sample/gitignore.purlin`. For each pattern not already present in the consumer's `.gitignore`, append it under a `# Added by Purlin refresh` header. Never remove or modify existing entries.
+8.  **Refresh Summary:** Print a concise summary (Section 2.8).
 
 ### 2.4.1 Refresh Mode Exclusions
 
@@ -71,8 +73,9 @@ Refresh mode MUST NEVER modify:
 *   `.purlin/config.json` or `.purlin/config.local.json`
 *   `.purlin/*_OVERRIDES.md`
 *   `.purlin/release/` (any file)
-*   `.gitignore`
 *   `features/` directory
+
+Note: `.gitignore` is governed by the additive-only rule in Section 2.4 Step 7 -- Purlin may append missing recommended patterns but MUST NOT remove or alter existing entries.
 
 ### 2.5 Project-Root Shim (`pl-init.sh`)
 
@@ -107,7 +110,7 @@ The symlinks MUST use relative paths (not absolute) so they remain valid after r
 The full init summary MUST be concise — no verbose logs, just the essentials:
 
 ```
-Purlin initialized.
+Purlin initialized. Files staged.
 
   pl-init.sh              Run anytime to refresh
   ./pl-run-architect.sh   Start Architect session
@@ -117,7 +120,7 @@ Purlin initialized.
   ./pl-cdd-start.sh       Start CDD dashboard
   ./pl-cdd-stop.sh        Stop CDD dashboard
 
-Next: git add -A && git commit -m "init purlin"
+Next: git commit -m "init purlin"
 ```
 
 Provider detection results and command file counts MAY be included on additional lines if non-trivial (e.g., providers found, N commands copied).
@@ -426,6 +429,38 @@ On both full init and refresh, the script MUST ensure that `.claude/settings.jso
     When the user inspects "purlin/pl-init.sh"
     Then it is a symlink pointing to "tools/init.sh"
     And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
+
+#### Scenario: Full Init Stages Only Created Files
+
+    Given Purlin is added as a submodule at "purlin/"
+    And the project root contains pre-existing untracked files (e.g., src/app.py)
+    When the user runs "purlin/tools/init.sh"
+    Then only Purlin-created files are staged (git add)
+    And pre-existing untracked files are NOT staged
+    And the summary suggests "git commit" without "git add -A"
+
+#### Scenario: Full Init Installs Complete Gitignore Patterns
+
+    Given Purlin is added as a submodule at "purlin/"
+    And no .purlin/ directory exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then .gitignore contains all patterns from purlin-config-sample/gitignore.purlin
+
+#### Scenario: Refresh Mode Appends New Gitignore Patterns
+
+    Given .purlin/ already exists at the project root
+    And .gitignore exists but does not contain "CRITIC_REPORT.md"
+    And purlin-config-sample/gitignore.purlin contains "CRITIC_REPORT.md"
+    When the user runs "purlin/tools/init.sh"
+    Then .gitignore now contains "CRITIC_REPORT.md"
+    And all pre-existing .gitignore entries are preserved unchanged
+
+#### Scenario: Refresh Mode Does Not Duplicate Existing Patterns
+
+    Given .purlin/ already exists at the project root
+    And .gitignore already contains all patterns from purlin-config-sample/gitignore.purlin
+    When the user runs "purlin/tools/init.sh"
+    Then .gitignore is unchanged (no duplicate entries appended)
 
 #### Scenario: Fresh Clone Collaborator Flow
 

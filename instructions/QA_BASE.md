@@ -77,7 +77,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   **Per-feature effort:** `"Feature X: Nm manual"` -- only QA-owned manual categories from the `verification_effort` block. Builder-verified features (zero manual scenarios) show as `"builder-verified"`. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
 *   **Total batch size:** Sum all testable items (manual scenarios + visual checklist items) across all TESTING features after scope filtering. Present as: `"Total: N items across M features"`.
 *   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
-*   If a delivery plan exists at `.purlin/cache/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
+*   If a delivery plan exists at `.purlin/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
 
 ### 3.3 Execute Verification
 *   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). Auto-verified categories (Web:Test, TestOnly, Skip) are Builder-owned -- QA does not re-verify them. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.

@@ -121,7 +121,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 ### Step 7 -- Batch Completion
 
 1.  **Identify passing features:** All items passed and zero discoveries recorded.
-2.  **Delivery plan gating:** Check `.purlin/cache/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
+2.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 3.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 4.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.
 5.  **Run Critic once:** `tools/cdd/status.sh` after all status commits. Do NOT run per-feature.

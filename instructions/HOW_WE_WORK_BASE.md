@@ -195,6 +195,6 @@ For the full convention (format, inheritance, design pipeline, verification meth
 
 Large-scope changes may be split into numbered delivery phases to organize work into testable
 blocks and enable parallel delivery. The delivery plan artifact lives at
-`.purlin/cache/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it appears in
+`.purlin/delivery_plan.md`. QA MUST NOT mark a feature as `[Complete]` if it appears in
 any PENDING phase of the delivery plan. Use `/pl-delivery-plan` for the full phased delivery
 protocol (format, sizing, cross-session resumption, QA interaction).

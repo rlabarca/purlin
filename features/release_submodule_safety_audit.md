@@ -36,9 +36,12 @@ Each check category in this step corresponds to a section of that contract.
 - `instructions/BUILDER_BASE.md`
 - `instructions/QA_BASE.md`
 
+**Gitignore Template:**
+- `purlin-config-sample/gitignore.purlin`
+
 ### 2.2 Check Categories
 
-Seven check categories, each grounded in the submodule safety contract:
+Eight check categories, each grounded in the submodule safety contract:
 
 #### Category 1: PURLIN_PROJECT_ROOT Environment Variable Usage (Contract §2.11)
 
@@ -93,6 +96,33 @@ Seven check categories, each grounded in the submodule safety contract:
   path resolves via `tools_root` from `.purlin/config.json`, not as a literal
   project-root-relative path.
 - An unqualified `tools/` reference that lacks submodule-awareness context is a **WARNING**.
+
+#### Category 8: Gitignore Template Completeness
+
+##### 8a. Generated artifact coverage:
+
+- Scan Python tools and shell scripts under `tools/` for file write operations (e.g., `open(..., 'w')`, `json.dump()`, `>`, `>>`, `tee`, redirects to paths).
+- For each write target path, verify it is covered by one of:
+  a. A directory-level pattern in `purlin-config-sample/gitignore.purlin` (e.g., path under `.purlin/cache/` or `.purlin/runtime/`)
+  b. An explicit pattern in `purlin-config-sample/gitignore.purlin` (e.g., `CRITIC_REPORT.md`, `tests/*/critic.json`)
+  c. A known committed artifact (feature specs, config files, instruction files)
+- **WARNING** if a generated artifact's path is not covered. The developer must either add the pattern to `gitignore.purlin` or document why the artifact should be committed.
+
+##### 8b. Template file existence and format:
+
+- `purlin-config-sample/gitignore.purlin` MUST exist and contain at least the core patterns (`.purlin/cache/`, `.purlin/runtime/`, `.purlin/config.local.json`, `CRITIC_REPORT.md`, `tests/*/critic.json`).
+- **CRITICAL** if the template file is missing. **WARNING** if a core pattern is absent.
+
+##### 8c. Init.sh template integration:
+
+- `tools/init.sh` MUST read patterns from `purlin-config-sample/gitignore.purlin` (not a hardcoded array).
+- `tools/init.sh` refresh mode MUST perform additive-only gitignore merge (append missing patterns without removing existing entries).
+- **CRITICAL** if init.sh uses a hardcoded array instead of reading the template file. **CRITICAL** if refresh mode skips gitignore entirely.
+
+##### 8d. Update flow coverage:
+
+- The `pl-update-purlin` flow (step 4: `init.sh --quiet`) MUST trigger the gitignore sync. Since `pl-update-purlin` calls `init.sh --quiet` in refresh mode, and refresh mode performs the additive merge, this is satisfied by 8c. The audit verifies the chain: `pl-update-purlin` -> `init.sh --quiet` -> refresh mode reads template -> appends missing patterns to consumer `.gitignore`.
+- **WARNING** if the init.sh `--quiet` flag suppresses gitignore merging (it should only suppress stdout, not skip operations).
 
 ### 2.3 Report Output
 
@@ -167,8 +197,17 @@ not this file).
 8. CHECK 7 — Instruction file path awareness: Scan instruction files for direct 'tools/'
    references lacking tools_root context. WARNING if unqualified reference found.
 
-9. REPORT — Output findings table (Category | File | Finding | Severity).
-   HALT if any CRITICAL. Confirm with user if any WARNING. Report CLEAN if all pass.
+9. CHECK 8 — Gitignore template completeness: (a) Scan tools/ for file write operations
+   and verify each write target is covered by a pattern in purlin-config-sample/gitignore.purlin
+   or is a known committed artifact. WARNING if uncovered. (b) Verify gitignore.purlin exists
+   with core patterns. CRITICAL if missing, WARNING if core pattern absent. (c) Verify
+   init.sh reads from gitignore.purlin (not a hardcoded array) and refresh mode performs
+   additive-only merge. CRITICAL if hardcoded or refresh skips gitignore. (d) Verify
+   pl-update-purlin -> init.sh --quiet chain triggers gitignore sync. WARNING if --quiet
+   suppresses the merge.
+
+10. REPORT — Output findings table (Category | File | Finding | Severity).
+    HALT if any CRITICAL. Confirm with user if any WARNING. Report CLEAN if all pass.
 ```
 
 ### 2.7 Integration Test Fixture Tags
@@ -192,9 +231,9 @@ Regression tests verify the architect agent correctly identifies submodule safet
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: Clean audit — all checks pass (auto-test-only)
-Given all Python tools, shell scripts, and instruction files comply with the submodule safety contract,
+Given all Python tools, shell scripts, instruction files, and the gitignore template comply with the submodule safety contract,
 When the Architect executes the `submodule_safety_audit` step,
-Then the Architect reports "Submodule Safety Audit: CLEAN — all 7 check categories passed."
+Then the Architect reports "Submodule Safety Audit: CLEAN — all 8 check categories passed."
 And no commits are made.
 
 #### Scenario: CRITICAL finding — missing PURLIN_PROJECT_ROOT check in Python tool (auto-test-only)
@@ -216,6 +255,24 @@ Given a script writes a .pid or .log file to a path inside the tools/ directory 
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect identifies the specific script and write target,
 And reports a CRITICAL finding in Check Category 3,
+And halts the release.
+
+#### Scenario: WARNING finding -- generated artifact not covered by gitignore template (auto-test-only)
+Given a Python tool writes output to a path not covered by any pattern in purlin-config-sample/gitignore.purlin,
+When the Architect executes the `submodule_safety_audit` step,
+Then the Architect identifies the file, write target, and missing gitignore pattern,
+And reports a WARNING in Check Category 8a.
+
+#### Scenario: CRITICAL finding -- init.sh uses hardcoded gitignore array (auto-test-only)
+Given tools/init.sh contains a hardcoded RECOMMENDED_IGNORES array instead of reading purlin-config-sample/gitignore.purlin,
+When the Architect executes the `submodule_safety_audit` step,
+Then the Architect reports a CRITICAL finding in Check Category 8c,
+And halts the release.
+
+#### Scenario: CRITICAL finding -- refresh mode skips gitignore sync (auto-test-only)
+Given tools/init.sh refresh mode does not perform additive gitignore merging,
+When the Architect executes the `submodule_safety_audit` step,
+Then the Architect reports a CRITICAL finding in Check Category 8c,
 And halts the release.
 
 ### Manual Scenarios (Architect Execution)

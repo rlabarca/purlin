@@ -16,7 +16,7 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
 
 ### 2.1 Inputs
 
-- **Delivery plan:** Read from `.purlin/cache/delivery_plan.md`. Extract PENDING phases and their feature lists.
+- **Delivery plan:** Read from `.purlin/delivery_plan.md`. Extract PENDING phases and their feature lists.
 - **Dependency graph:** Read from `.purlin/cache/dependency_graph.json`. Extract feature dependency edges.
 - **Submodule safety:** MUST use `PURLIN_PROJECT_ROOT` (env var) for path resolution, with climbing fallback. MUST NOT assume CWD or hardcode paths.
 
@@ -162,7 +162,7 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
     And parallel is false for all groups
 
 #### Scenario: No Delivery Plan Exists
-    Given .purlin/cache/delivery_plan.md does not exist
+    Given .purlin/delivery_plan.md does not exist
     When phase_analyzer.py is run
     Then it prints an error to stderr
     And exits with non-zero status

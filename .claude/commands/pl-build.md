@@ -10,7 +10,7 @@ If an argument was provided, implement the named feature from `features/<arg>.md
 If no argument was provided, read `CRITIC_REPORT.md` (or `tools/cdd/status.sh --role builder` output), identify the highest-priority Builder action item, and begin implementing it.
 Check `features/tombstones/` first and process any pending tombstones before regular feature work.
 
-If a delivery plan exists at `.purlin/cache/delivery_plan.md`, scope work to the current phase only. Each phase is a separate session -- halt after completing a phase (see Step 4.E).
+If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. Each phase is a separate session -- halt after completing a phase (see Step 4.E).
 
 ---
 

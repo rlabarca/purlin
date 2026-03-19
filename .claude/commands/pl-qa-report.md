@@ -34,5 +34,5 @@ Total: N items across M features
 1.  **Features in TESTING:** List each with manual scenario count, verification scope (full/targeted/cosmetic/dependency-only), and open discovery count.
 2.  **Open Discoveries:** All OPEN and SPEC_UPDATED discoveries grouped by type (BUG / DISCOVERY / INTENT_DRIFT / SPEC_DISPUTE). Include feature name, title, and status.
 3.  **Completion Blockers:** Per TESTING feature, what blocks `[Complete]`: open discoveries, unverified scenarios, pending delivery phases.
-4.  **Delivery Plan Context:** If `.purlin/cache/delivery_plan.md` exists, classify features as fully delivered vs. phase-gated.
+4.  **Delivery Plan Context:** If `.purlin/delivery_plan.md` exists, classify features as fully delivered vs. phase-gated.
 5.  **Effort Estimate:** Total manual items across all TESTING features after scope filtering.

@@ -166,7 +166,7 @@ Tombstone files at `features/tombstones/<name>.md` represent features queued for
     *   Role fields (`architect`, `builder`, `qa`, `pm`) are omitted when no `critic.json` exists for that feature (dashboard shows `??`).
     *   `change_scope` is extracted from the most recent status commit message's `[Scope: ...]` trailer. Omitted when no scope is declared (consumers should treat absent as `full`).
     *   Tombstone entries at `features/tombstones/<name>.md` appear in the flat `features` array with `"tombstone": true`, hardcoded `"architect": "DONE"`, `"builder": "TODO"`, `"qa": "N/A"`, `"pm": "N/A"`. No `change_scope` field is present on tombstone entries.
-    *   `delivery_phase` is present ONLY when `.purlin/cache/delivery_plan.md` exists and has at least one non-COMPLETE, non-REMOVED phase. Fields: `completed` = count of COMPLETE phases; `in_progress` = count of IN_PROGRESS phases; `pending` = count of PENDING phases; `removed` = count of REMOVED phases; `total` = total number of phase headings in the plan (sum of all statuses). `phases` = array of objects sorted by phase number, each with `number` (int), `label` (string, the phase label from the heading), and `status` (string, one of `COMPLETE`, `IN_PROGRESS`, `PENDING`, `REMOVED`). When all phases are COMPLETE/REMOVED or no delivery plan exists, the `delivery_phase` field is omitted entirely. Multiple phases MAY have `IN_PROGRESS` status simultaneously during parallel execution.
+    *   `delivery_phase` is present ONLY when `.purlin/delivery_plan.md` exists and has at least one non-COMPLETE, non-REMOVED phase. Fields: `completed` = count of COMPLETE phases; `in_progress` = count of IN_PROGRESS phases; `pending` = count of PENDING phases; `removed` = count of REMOVED phases; `total` = total number of phase headings in the plan (sum of all statuses). `phases` = array of objects sorted by phase number, each with `number` (int), `label` (string, the phase label from the heading), and `status` (string, one of `COMPLETE`, `IN_PROGRESS`, `PENDING`, `REMOVED`). When all phases are COMPLETE/REMOVED or no delivery plan exists, the `delivery_phase` field is omitted entirely. Multiple phases MAY have `IN_PROGRESS` status simultaneously during parallel execution.
     *   Array sorted by file path (deterministic).
 *   **API Endpoint (`/dependency_graph.json`):** Serves the contents of `.purlin/cache/dependency_graph.json` with `Content-Type: application/json`. Returns 404 if the file does not exist.
 *   **API Endpoint (`/feature?file=<path>`):** Serves the raw content of the specified feature file. The `file` query parameter is the relative path (e.g., `features/cdd_status_monitor.md`). Returns 200 with `Content-Type: text/plain` on success, 404 if the file does not exist. Path traversal outside the project root MUST be rejected.
@@ -290,7 +290,7 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 
 ### 2.11 Delivery Phase Indicator
 
-*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/cache/delivery_plan.md` and has at least one non-COMPLETE, non-REMOVED phase, the ACTIVE section heading displays phase progress: `ACTIVE (<feature_count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. Examples:
+*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/delivery_plan.md` and has at least one non-COMPLETE, non-REMOVED phase, the ACTIVE section heading displays phase progress: `ACTIVE (<feature_count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. Examples:
     *   Serial execution: `ACTIVE (5) [4/10 DONE | 1 RUNNING]`
     *   Parallel execution: `ACTIVE (5) [4/10 DONE | 3 RUNNING]`
     *   No phases running yet: `ACTIVE (5) [0/10 DONE]`
@@ -590,7 +590,7 @@ These scenarios are validated by the Builder's automated test suite.
     Then a 404 status is returned
 
 #### Scenario: Delivery Phase in API Response
-    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/delivery_plan.md
     And the plan has 3 phases with Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 PENDING
     When an agent calls GET /status.json
     Then the response includes delivery_phase with completed 1, in_progress 1, pending 1, removed 0, total 3
@@ -599,31 +599,31 @@ These scenarios are validated by the Builder's automated test suite.
     And Phase 2 has status IN_PROGRESS
 
 #### Scenario: Delivery Phase Omitted When No Plan
-    Given no delivery plan exists at .purlin/cache/delivery_plan.md
+    Given no delivery plan exists at .purlin/delivery_plan.md
     When an agent calls GET /status.json
     Then the response does not include a delivery_phase field
 
 #### Scenario: Delivery Phase with Parallel Execution
-    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/delivery_plan.md
     And the plan has Phase 1 COMPLETE, Phase 2 IN_PROGRESS, Phase 3 IN_PROGRESS, Phase 4 PENDING
     When an agent calls GET /status.json
     Then the response includes delivery_phase with completed 1, in_progress 2, pending 1, removed 0, total 4
     And the phases array shows Phase 2 and Phase 3 both with status IN_PROGRESS
 
 #### Scenario: Delivery Phase with Removed Phase
-    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/delivery_plan.md
     And the plan has Phase 1 COMPLETE, Phase 2 REMOVED, Phase 3 IN_PROGRESS
     When an agent calls GET /status.json
     Then the response includes delivery_phase with completed 1, in_progress 1, pending 0, removed 1, total 3
 
 #### Scenario: Delivery Phase Omitted When All Complete or Removed
-    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/delivery_plan.md
     And the plan has Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 REMOVED
     When an agent calls GET /status.json
     Then the response does not include a delivery_phase field
 
 #### Scenario: Delivery Phase Labels from Plan Headings
-    Given a delivery plan exists at .purlin/cache/delivery_plan.md
+    Given a delivery plan exists at .purlin/delivery_plan.md
     And Phase 1 heading is "## Phase 1 -- Design Token Foundation [COMPLETE]"
     When an agent calls GET /status.json
     Then the phases array entry for Phase 1 has label "Design Token Foundation"
@@ -847,13 +847,13 @@ These scenarios are validated by the Builder's automated test suite.
     And action_items contains only builder-relevant items
 
 #### Scenario: Startup Briefing No Delivery Plan
-    Given no delivery plan exists at .purlin/cache/delivery_plan.md
+    Given no delivery plan exists at .purlin/delivery_plan.md
     When an agent runs tools/cdd/status.sh --startup builder
     Then delivery_plan_state has exists set to false
     And no current_phase or phase_features fields are present
 
 #### Scenario: Startup Briefing Phasing Recommendation
-    Given no delivery plan exists at .purlin/cache/delivery_plan.md
+    Given no delivery plan exists at .purlin/delivery_plan.md
     And 4 features have non-terminal builder status
     And 2 of those features have 5 or more scenarios
     When an agent runs tools/cdd/status.sh --startup builder

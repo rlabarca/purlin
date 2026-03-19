@@ -4,7 +4,7 @@ If you are not operating as the Purlin Builder, respond: "This is a Builder comm
 
 ---
 
-If a delivery plan already exists at `.purlin/cache/delivery_plan.md`:
+If a delivery plan already exists at `.purlin/delivery_plan.md`:
 
 - Read the plan and display the current phase, completed phases, and remaining phases.
 - List features in the current phase with their implementation status (TODO / TESTING / COMPLETE).
@@ -17,7 +17,7 @@ If no delivery plan exists:
 - After proposing phases, run `python3 tools/delivery/phase_analyzer.py --intra-phase <N>` for each proposed phase with 2+ features. Report in the plan presentation which phases have parallel B1 opportunities (independent features that can build concurrently) and which are fully sequential. This helps the user make informed phasing decisions.
 - Assess scope using the heuristics below.
 - Propose a phase breakdown grouped by dependency order, logical cohesion, and testability gates.
-- After user confirmation, create the delivery plan at `.purlin/cache/delivery_plan.md` using the canonical format below.
+- After user confirmation, create the delivery plan at `.purlin/delivery_plan.md` using the canonical format below.
 - **Validation gate:** After writing `delivery_plan.md` but BEFORE committing, run `python3 tools/delivery/phase_analyzer.py` and check the output. If the output contains "cycle detected" or ordering warnings, fix the plan to resolve them (typically by moving the offending feature to a later phase). Only commit after the analyzer exits cleanly with a valid execution group output.
 
 **Scope Assessment Heuristics:**

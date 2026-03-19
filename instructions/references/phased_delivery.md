@@ -7,9 +7,9 @@
 When the Architect introduces large-scale changes (multiple new feature files, major revisions across existing features), the Builder may need to split work across multiple sessions to ensure quality and enable incremental verification. The Phased Delivery Protocol provides a persistent coordination artifact that lets the Builder organize work into **testable blocks** -- groups of scenarios that logically belong together for verification -- and enable **parallel delivery** where independent blocks can be worked on by different agents simultaneously. The user orchestrates the cycle: Builder (Phase 1) -> QA (verify Phase 1) -> Builder (fix bugs + Phase 2) -> QA -> ... until complete.
 
 ## 10.2 The Delivery Plan Artifact
-*   **Path:** `.purlin/cache/delivery_plan.md`
+*   **Path:** `.purlin/delivery_plan.md`
 *   **Created by:** Builder, when user approves phased delivery.
-*   **Committed to git:** Yes (all agents read it across sessions).
+*   **Committed to git:** Yes -- lives outside `.purlin/cache/` (which is gitignored) because it is a coordination artifact read by all agents across sessions, not a regenerable cache file.
 *   **Deleted by:** Builder, when the final phase completes.
 *   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. Exactly one phase may be IN_PROGRESS at a time. COMPLETE phases are immutable historical record.
 *   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
@@ -22,7 +22,7 @@ When a delivery plan exists at session start, the Builder resumes from the next 
 **Scope Reset on Plan Completion:** When the Builder completes the final phase and deletes the delivery plan, the Builder MUST reset the `change_scope` to `full` for every feature that participated in the plan and still has `builder: "TODO"` status. Targeted scopes are artifacts of the phased delivery -- once the plan is gone, any remaining unbuilt work must be visible under a full scope. This prevents scenarios from becoming invisible to future Builder sessions after the delivery plan context is deleted.
 
 ## 10.4 QA Interaction
-The QA Agent MUST check for a delivery plan at `.purlin/cache/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
+The QA Agent MUST check for a delivery plan at `.purlin/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
 
 ## 10.5 Phasing is Optional
 Phased delivery is never automatic unless the user has opted into autonomous execution. The Builder proposes phasing based on scope assessment, and the user decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.

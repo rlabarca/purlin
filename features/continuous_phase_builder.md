@@ -210,7 +210,7 @@ During execution, the continuous builder creates transient runtime artifacts in 
 
 ### 2.16 Bootstrap Session
 
-- When `--continuous` is active and no delivery plan exists at `.purlin/cache/delivery_plan.md`, the launcher runs a bootstrap Builder session before entering the orchestration loop.
+- When `--continuous` is active and no delivery plan exists at `.purlin/delivery_plan.md`, the launcher runs a bootstrap Builder session before entering the orchestration loop.
 - The bootstrap session uses `-p` mode with a bootstrap-specific system prompt override (distinct from the continuous phase override in 2.7 and the server override in 2.8).
 - The bootstrap override instructs the Builder to: execute the standard startup protocol including scope assessment; if phasing is warranted, create the delivery plan via `/pl-delivery-plan` without user approval and halt immediately (do not begin Phase 1); if phasing is not warranted, complete the work directly and halt.
 - **Conservative sizing bias:** The bootstrap override explicitly instructs the Builder to prefer more phases over fewer, smaller phases over larger, and to maximize parallelization opportunities. The goal is to keep each phase's context footprint small enough for reliable autonomous completion. When in doubt, split.
@@ -231,7 +231,7 @@ During execution, the continuous builder creates transient runtime artifacts in 
   ...
 
 Parallel groups: 2 (Phases 2+3, Phases 4+5+6)
-Review at .purlin/cache/delivery_plan.md
+Review at .purlin/delivery_plan.md
 ================================
 Proceed? [Y/n]
 ```
@@ -588,7 +588,7 @@ Do not begin work on other features or phases.
 
 #### Scenario: Bootstrap Creates Delivery Plan
     Given pl-run-builder.sh is invoked with --continuous
-    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    And no delivery plan exists at .purlin/delivery_plan.md
     When the launcher starts the bootstrap session
     And the bootstrap Builder creates a delivery plan and exits
     Then the launcher prints a plan summary (phase count, parallel groups)
@@ -608,7 +608,7 @@ Do not begin work on other features or phases.
 
 #### Scenario: Bootstrap Completes Work Directly
     Given pl-run-builder.sh is invoked with --continuous
-    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    And no delivery plan exists at .purlin/delivery_plan.md
     And the scope assessment determines phasing is not warranted
     When the bootstrap Builder completes all work and exits with zero status
     Then the launcher detects no delivery plan was created
@@ -616,7 +616,7 @@ Do not begin work on other features or phases.
 
 #### Scenario: Bootstrap Failure
     Given pl-run-builder.sh is invoked with --continuous
-    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    And no delivery plan exists at .purlin/delivery_plan.md
     When the bootstrap Builder exits with non-zero status
     And no delivery plan was created
     Then the launcher prints an error directing the user to run an interactive session
@@ -869,7 +869,7 @@ Do not begin work on other features or phases.
 
 #### Scenario: Bootstrap Canvas Shows Spinner During Initialization
     Given pl-run-builder.sh is invoked with --continuous
-    And no delivery plan exists at .purlin/cache/delivery_plan.md
+    And no delivery plan exists at .purlin/delivery_plan.md
     And stderr is a TTY
     When the bootstrap session starts
     Then the canvas shows a single in-place line with an animated braille spinner and elapsed time
