@@ -56,9 +56,9 @@
 **Completion Commit:** 737d3e1
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Web Test [IN_PROGRESS]
+## Phase 11 -- Web Test [COMPLETE]
 **Features:** pl_web_test.md
-**Completion Commit:** --
+**Completion Commit:** ab50809
 **QA Bugs Addressed:** --
 
 ## Phase 12 -- Regression Testing [COMPLETE]
