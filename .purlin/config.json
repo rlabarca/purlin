@@ -49,7 +49,8 @@
             "effort": "high",
             "bypass_permissions": true,
             "find_work": true,
-            "auto_start": false
+            "auto_start": false,
+            "qa_mode": false
         },
         "qa": {
             "model": "claude-sonnet-4-6",

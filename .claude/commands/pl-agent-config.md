@@ -9,7 +9,7 @@ Modify agent configuration in `.purlin/config.local.json`. No git commit is made
 ```
 
 **role** (optional): `architect`, `builder`, `qa`, or `pm`. Defaults to the current agent's role.
-**key**: `model`, `effort`, `find_work`, `auto_start`, or `bypass_permissions`.
+**key**: `model`, `effort`, `find_work`, `auto_start`, `bypass_permissions`, or `qa_mode`.
 **value**: The new value (booleans: `true`/`false`; model IDs as strings; effort as `low`/`medium`/`high`).
 
 **Examples:**
@@ -18,6 +18,7 @@ Modify agent configuration in `.purlin/config.local.json`. No git commit is made
 /pl-agent-config architect model claude-opus-4-6
 /pl-agent-config builder auto_start true
 /pl-agent-config qa effort medium
+/pl-agent-config builder qa_mode true
 ```
 
 ---
@@ -46,10 +47,11 @@ Valid keys and their accepted values:
 | `find_work` | `true`, `false` |
 | `auto_start` | `true`, `false` |
 | `bypass_permissions` | `true`, `false` |
+| `qa_mode` | `true`, `false` (Builder only — switches to QA builder mode) |
 
 If `<key>` is not in this list, abort:
 ```
-Error: Unknown key '<key>'. Valid keys: model, effort, find_work, auto_start, bypass_permissions
+Error: Unknown key '<key>'. Valid keys: model, effort, find_work, auto_start, bypass_permissions, qa_mode
 ```
 
 For `model` values: read the `models` array from the resolved config and validate that `<value>` matches one of the `id` fields. If not, abort listing the valid model IDs.

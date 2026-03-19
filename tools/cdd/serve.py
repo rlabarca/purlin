@@ -410,6 +410,19 @@ def extract_label(filepath):
     return os.path.splitext(os.path.basename(filepath))[0]
 
 
+def extract_category(filepath):
+    """Extracts the Category from a feature file's frontmatter."""
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('> Category:'):
+                    return line[len('> Category:'):].strip().strip('"')
+    except (IOError, OSError):
+        pass
+    return "Uncategorized"
+
+
 def strip_discoveries_section(content):
     """Strip the '## User Testing Discoveries' section and everything below.
 
@@ -771,8 +784,10 @@ def generate_api_status_json(cache=None):
     features = []
     for fname in feature_files:
         rel_path = os.path.normpath(os.path.join(FEATURES_REL, fname))
-        label = extract_label(os.path.join(FEATURES_ABS, fname))
-        entry = {"file": rel_path, "label": label}
+        abs_path = os.path.join(FEATURES_ABS, fname)
+        label = extract_label(abs_path)
+        category = extract_category(abs_path)
+        entry = {"file": rel_path, "label": label, "category": category}
 
         stem = os.path.splitext(fname)[0]
         role_status = get_feature_role_status(stem, TESTS_DIR)
@@ -1044,12 +1059,24 @@ def generate_startup_briefing(role, cache=None):
 
     # Config: resolved agent config for this role
     agent_cfg = CONFIG.get("agents", {}).get(role, {})
+
+    # Resolve qa_mode for builder (env var > config, default false)
+    qa_mode = False
+    if role == "builder":
+        env_val = os.environ.get("PURLIN_BUILDER_QA", "").lower()
+        if env_val == "true":
+            qa_mode = True
+        else:
+            qa_mode = agent_cfg.get("qa_mode", False)
+
     config_block = {
         "find_work": agent_cfg.get("find_work", True),
         "auto_start": agent_cfg.get("auto_start", False),
         "model": agent_cfg.get("model", ""),
         "effort": agent_cfg.get("effort", ""),
     }
+    if role == "builder":
+        config_block["qa_mode"] = qa_mode
 
     # Git state
     branch = run_command("git rev-parse --abbrev-ref HEAD") or "unknown"
@@ -1116,6 +1143,34 @@ def generate_startup_briefing(role, cache=None):
         entry["scenario_count"] = _count_scenarios(fpath_abs)
         features_with_count.append(entry)
 
+    # Builder QA mode: filter features by category
+    if role == "builder":
+        _TEST_INFRA_CATEGORY = "Test Infrastructure"
+        if qa_mode:
+            # QA mode: only Test Infrastructure features
+            features_with_count = [
+                f for f in features_with_count
+                if f.get("category") == _TEST_INFRA_CATEGORY]
+        else:
+            # Normal mode: exclude Test Infrastructure features
+            features_with_count = [
+                f for f in features_with_count
+                if f.get("category") != _TEST_INFRA_CATEGORY]
+
+        # Also filter action items to match visible features
+        visible_stems = set()
+        for feat in features_with_count:
+            fname = os.path.basename(feat["file"])
+            stem = os.path.splitext(fname)[0]
+            visible_stems.add(stem)
+
+        action_items = [
+            item for item in role_data.get("action_items", [])
+            if item.get("feature", "") in visible_stems
+            or not item.get("feature")]
+    else:
+        action_items = role_data.get("action_items", [])
+
     # Dependency graph summary
     dep_summary = {"total_features": 0, "cycles": [], "blocked_features": []}
     try:
@@ -1132,7 +1187,7 @@ def generate_startup_briefing(role, cache=None):
         "config": config_block,
         "git_state": git_state,
         "feature_summary": feature_summary,
-        "action_items": role_data.get("action_items", []),
+        "action_items": action_items,
         "features": features_with_count,
         "dependency_graph_summary": dep_summary,
         "critic_last_run": role_data.get("critic_last_run", ""),
