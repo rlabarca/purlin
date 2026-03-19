@@ -6,7 +6,7 @@
 ## Summary
 20 features reset to TODO after Architect spec audit. Work splits into two parallel tiers: Layer 0 (Phases 1-7, all independent foundations) and Layer 1 (Phases 8-16, all depend only on Layer 0). Each tier executes as a parallel group. HIGH-complexity features (5+ scenarios) get dedicated phases. Note: config_layering (Phase 7) has Architect: TODO -- unstable contract, proceed with caution.
 
-## Phase 1 -- Design Foundation [IN_PROGRESS]
+## Phase 1 -- Design Foundation [PENDING]
 **Features:** design_visual_standards.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
