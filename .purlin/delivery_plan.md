@@ -11,32 +11,32 @@
 **Completion Commit:** 7761d89
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Release Steps (Batch A) [PENDING]
+## Phase 2 -- Release Steps (Batch A) [IN_PROGRESS]
 **Features:** instruction_audit.md, release_doc_consistency_check.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Release Steps (Batch B) [PENDING]
+## Phase 3 -- Release Steps (Batch B) [IN_PROGRESS]
 **Features:** release_record_version_notes.md, release_submodule_safety_audit.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Test Fixture Infrastructure [PENDING]
+## Phase 4 -- Test Fixture Infrastructure [IN_PROGRESS]
 **Features:** test_fixture_repo.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Remote Push [PENDING]
+## Phase 5 -- Remote Push [IN_PROGRESS]
 **Features:** pl_remote_push.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Remote Pull [PENDING]
+## Phase 6 -- Remote Pull [IN_PROGRESS]
 **Features:** pl_remote_pull.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Session Resume [PENDING]
+## Phase 7 -- Session Resume [IN_PROGRESS]
 **Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -46,7 +46,7 @@
 **Completion Commit:** a7c5152
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Continuous Phase Builder [PENDING]
+## Phase 9 -- Continuous Phase Builder [IN_PROGRESS]
 **Features:** continuous_phase_builder.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -56,7 +56,7 @@
 **Completion Commit:** 737d3e1
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Web Test [PENDING]
+## Phase 11 -- Web Test [IN_PROGRESS]
 **Features:** pl_web_test.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
