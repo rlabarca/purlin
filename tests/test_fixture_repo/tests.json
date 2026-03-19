@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 19,
+  "passed": 32,
   "failed": 0,
-  "total": 19,
+  "total": 32,
   "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
@@ -50,6 +50,26 @@
       "status": "PASS"
     },
     {
+      "test": "test_builder_can_read_recommendation_file (__main__.TestFixtureRecommendationReadByFutureSessions.test_builder_can_read_recommendation_file)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_builder_identifies_pending_tags (__main__.TestFixtureRecommendationReadByFutureSessions.test_builder_identifies_pending_tags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_created_entries_skipped (__main__.TestFixtureRecommendationReadByFutureSessions.test_created_entries_skipped)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_pending_entry_has_suggested_tags (__main__.TestFixtureRecommendationReadByFutureSessions.test_pending_entry_has_suggested_tags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_qa_mode_enabled_in_config (__main__.TestFixtureRecommendationReadByFutureSessions.test_qa_mode_enabled_in_config)",
+      "status": "PASS"
+    },
+    {
       "test": "test_init_creates_bare_repo (__main__.TestInitCreatesRepo.test_init_creates_bare_repo)",
       "status": "PASS"
     },
@@ -79,6 +99,38 @@
     },
     {
       "test": "test_prune_detects_tombstoned (__main__.TestPruneTombstone.test_prune_detects_tombstoned)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_fixture_repo_url_configured (__main__.TestQARecommendsRemoteFixtureRepo.test_no_fixture_repo_url_configured)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_recommendation_contains_required_fields (__main__.TestQARecommendsRemoteFixtureRepo.test_recommendation_contains_required_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_recommendation_file_created (__main__.TestQARecommendsRemoteFixtureRepo.test_recommendation_file_created)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_recommendation_header_present (__main__.TestQARecommendsRemoteFixtureRepo.test_recommendation_header_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_usage_json_created (__main__.TestQARecordsFixtureUsage.test_fixture_usage_json_created)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_usage_records_type_and_tag (__main__.TestQARecordsFixtureUsage.test_fixture_usage_records_type_and_tag)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_usage_scenario_json_written (__main__.TestQARecordsFixtureUsage.test_fixture_usage_scenario_json_written)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_fixture_usage_sets_timestamp (__main__.TestQARecordsFixtureUsage.test_fixture_usage_sets_timestamp)",
       "status": "PASS"
     }
   ]

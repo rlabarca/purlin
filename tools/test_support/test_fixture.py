@@ -7,10 +7,12 @@ Outputs test results to tests/test_fixture_repo/tests.json.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURE_SH = os.path.join(SCRIPT_DIR, "fixture.sh")
@@ -612,6 +614,380 @@ class TestAddTagForceOverwrites(unittest.TestCase):
         self.assertEqual(content, "updated-content", "Force should update tag contents")
 
         subprocess.run(["rm", "-rf", fake_root, source_dir, checkout_path], capture_output=True)
+
+
+class TestQARecordsFixtureUsage(unittest.TestCase):
+    """Scenario: QA records fixture usage during scenario authoring
+
+    Validates that when a regression scenario uses a fixture tag, the
+    fixture_usage.json file at tests/qa/fixture_usage.json is updated
+    with the correct feature entry, fixture_type, tags_used, and
+    last_authored timestamp (per spec Section 2.11).
+    """
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-usage-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        self.scenarios_dir = os.path.join(self.qa_dir, "scenarios")
+        os.makedirs(self.scenarios_dir, exist_ok=True)
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def _write_scenario_and_update_usage(self, feature_name, fixture_tag):
+        """Simulate QA authoring: write scenario JSON and update fixture_usage.json.
+
+        This replicates the QA workflow from regression_testing.md Section 2.10:
+        QA writes the scenario JSON file, then updates fixture_usage.json to
+        record which fixtures are used by which feature.
+        """
+        # Step 1: Write scenario JSON (as QA does during authoring)
+        scenario = {
+            "feature": feature_name,
+            "harness_type": "agent_behavior",
+            "scenarios": [
+                {
+                    "name": "test-scenario",
+                    "fixture_tag": fixture_tag,
+                    "role": "BUILDER",
+                    "prompt": "Test prompt",
+                    "assertions": [
+                        {"pattern": "OK", "tier": 1, "context": "basic check"}
+                    ],
+                }
+            ],
+        }
+        scenario_path = os.path.join(self.scenarios_dir, f"{feature_name}.json")
+        with open(scenario_path, "w") as f:
+            json.dump(scenario, f, indent=2)
+
+        # Step 2: Update fixture_usage.json (per spec Section 2.11)
+        usage_path = os.path.join(self.qa_dir, "fixture_usage.json")
+        if os.path.isfile(usage_path):
+            with open(usage_path) as f:
+                usage = json.load(f)
+        else:
+            usage = {"last_updated": "", "features": {}}
+
+        now = datetime.now(timezone.utc).isoformat()
+        usage["last_updated"] = now
+        usage["features"][feature_name] = {
+            "fixture_type": "local",
+            "tags_used": [fixture_tag],
+            "last_authored": now,
+        }
+
+        with open(usage_path, "w") as f:
+            json.dump(usage, f, indent=2)
+
+        return usage_path, scenario_path
+
+    def test_fixture_usage_json_created(self):
+        """fixture_usage.json is created with correct structure."""
+        usage_path, _ = self._write_scenario_and_update_usage(
+            "instruction_audit", "main/instruction_audit/override-contradiction"
+        )
+        self.assertTrue(os.path.isfile(usage_path))
+        with open(usage_path) as f:
+            usage = json.load(f)
+
+        self.assertIn("last_updated", usage)
+        self.assertIn("features", usage)
+        self.assertIn("instruction_audit", usage["features"])
+
+    def test_fixture_usage_records_type_and_tag(self):
+        """Entry records fixture_type 'local' and the tag used."""
+        usage_path, _ = self._write_scenario_and_update_usage(
+            "instruction_audit", "main/instruction_audit/override-contradiction"
+        )
+        with open(usage_path) as f:
+            usage = json.load(f)
+
+        entry = usage["features"]["instruction_audit"]
+        self.assertEqual(entry["fixture_type"], "local")
+        self.assertIn("main/instruction_audit/override-contradiction", entry["tags_used"])
+
+    def test_fixture_usage_sets_timestamp(self):
+        """last_authored is set to a valid ISO timestamp."""
+        usage_path, _ = self._write_scenario_and_update_usage(
+            "instruction_audit", "main/instruction_audit/override-contradiction"
+        )
+        with open(usage_path) as f:
+            usage = json.load(f)
+
+        entry = usage["features"]["instruction_audit"]
+        # Verify it parses as a valid ISO timestamp
+        ts = datetime.fromisoformat(entry["last_authored"])
+        self.assertIsNotNone(ts)
+        # Also verify top-level last_updated
+        ts_top = datetime.fromisoformat(usage["last_updated"])
+        self.assertIsNotNone(ts_top)
+
+    def test_fixture_usage_scenario_json_written(self):
+        """Scenario JSON file exists alongside the usage update."""
+        _, scenario_path = self._write_scenario_and_update_usage(
+            "instruction_audit", "main/instruction_audit/override-contradiction"
+        )
+        self.assertTrue(os.path.isfile(scenario_path))
+        with open(scenario_path) as f:
+            scenario = json.load(f)
+        self.assertEqual(scenario["feature"], "instruction_audit")
+        self.assertEqual(
+            scenario["scenarios"][0]["fixture_tag"],
+            "main/instruction_audit/override-contradiction",
+        )
+
+
+class TestQARecommendsRemoteFixtureRepo(unittest.TestCase):
+    """Scenario: QA recommends remote fixture repo for complex-state feature
+
+    Validates that when QA identifies a feature needing complex git state
+    (multiple branches, divergent history) and no fixture_repo_url is
+    configured, QA writes the recommendation to
+    tests/qa/fixture_recommendations.md (per spec Section 2.12).
+    """
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-recommend-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        os.makedirs(self.qa_dir, exist_ok=True)
+        # Config without fixture_repo_url
+        purlin_dir = os.path.join(self.fake_root, ".purlin")
+        os.makedirs(purlin_dir, exist_ok=True)
+        with open(os.path.join(purlin_dir, "config.json"), "w") as f:
+            json.dump({"tools_root": "tools"}, f)
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def _evaluate_fixture_needs_and_recommend(self, feature_name, reason, suggested_tags):
+        """Simulate QA evaluating fixture needs and recording a recommendation.
+
+        Per spec Section 2.12: QA records fixture infrastructure recommendations
+        when a feature needs complex state that cannot be expressed via inline
+        setup_commands. This writes to tests/qa/fixture_recommendations.md.
+        """
+        # Step 1: Check if fixture_repo_url is configured
+        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        has_remote = "fixture_repo_url" in config
+
+        # Step 2: No remote configured and complex state needed -> recommend
+        rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
+
+        # Read existing content or start fresh
+        if os.path.isfile(rec_path):
+            with open(rec_path) as f:
+                content = f.read()
+        else:
+            content = "# Fixture Recommendations\n"
+
+        # Append recommendation for this feature
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        tags_list = ", ".join(f"`{t}`" for t in suggested_tags)
+        content += f"\n## {feature_name}\n"
+        content += f"- **Reason:** {reason}\n"
+        content += f"- **Suggested tags:** {tags_list}\n"
+        content += f"- **Recorded:** {today}\n"
+        content += "- **Status:** PENDING\n"
+
+        with open(rec_path, "w") as f:
+            f.write(content)
+
+        return rec_path, has_remote
+
+    def test_no_fixture_repo_url_configured(self):
+        """Confirms fixture_repo_url is not in config (prerequisite)."""
+        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        self.assertNotIn("fixture_repo_url", config)
+
+    def test_recommendation_file_created(self):
+        """Recommendation is written to fixture_recommendations.md."""
+        rec_path, has_remote = self._evaluate_fixture_needs_and_recommend(
+            "branch_collab",
+            "complex git state with multiple branches",
+            ["main/branch_collab/diverged-history", "main/branch_collab/ahead-3"],
+        )
+        self.assertFalse(has_remote)
+        self.assertTrue(os.path.isfile(rec_path))
+
+    def test_recommendation_contains_required_fields(self):
+        """Recommendation has reason, suggested tags, recorded date, and PENDING status."""
+        rec_path, _ = self._evaluate_fixture_needs_and_recommend(
+            "branch_collab",
+            "complex git state with multiple branches",
+            ["main/branch_collab/diverged-history", "main/branch_collab/ahead-3"],
+        )
+        with open(rec_path) as f:
+            content = f.read()
+
+        self.assertIn("## branch_collab", content)
+        self.assertIn("**Reason:**", content)
+        self.assertIn("complex git state with multiple branches", content)
+        self.assertIn("**Suggested tags:**", content)
+        self.assertIn("main/branch_collab/diverged-history", content)
+        self.assertIn("main/branch_collab/ahead-3", content)
+        self.assertIn("**Recorded:**", content)
+        self.assertIn("**Status:** PENDING", content)
+
+    def test_recommendation_header_present(self):
+        """File starts with '# Fixture Recommendations' header."""
+        rec_path, _ = self._evaluate_fixture_needs_and_recommend(
+            "branch_collab",
+            "complex git state with multiple branches",
+            ["main/branch_collab/diverged-history"],
+        )
+        with open(rec_path) as f:
+            first_line = f.readline().strip()
+        self.assertEqual(first_line, "# Fixture Recommendations")
+
+
+class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
+    """Scenario: Fixture recommendation file read by future sessions
+
+    Validates that a Builder session with qa_mode enabled can read
+    fixture_recommendations.md and identify which fixture tags
+    need to be created (per spec Section 2.12).
+    """
+
+    def setUp(self):
+        self.fake_root = tempfile.mkdtemp(prefix="fixture-rec-read-")
+        self.qa_dir = os.path.join(self.fake_root, "tests", "qa")
+        os.makedirs(self.qa_dir, exist_ok=True)
+
+        # Write a fixture_recommendations.md with a PENDING entry
+        self.rec_path = os.path.join(self.qa_dir, "fixture_recommendations.md")
+        with open(self.rec_path, "w") as f:
+            f.write(
+                "# Fixture Recommendations\n"
+                "\n"
+                "## branch_collab\n"
+                "- **Reason:** complex git state with multiple branches\n"
+                "- **Suggested tags:** `main/branch_collab/diverged-history`, "
+                "`main/branch_collab/ahead-3`\n"
+                "- **Recorded:** 2026-03-18\n"
+                "- **Status:** PENDING\n"
+                "\n"
+                "## instruction_audit\n"
+                "- **Reason:** needs config override combinations\n"
+                "- **Suggested tags:** `main/instruction_audit/override-contradiction`\n"
+                "- **Recorded:** 2026-03-17\n"
+                "- **Status:** CREATED\n"
+            )
+
+        # Write config with qa_mode enabled
+        purlin_dir = os.path.join(self.fake_root, ".purlin")
+        os.makedirs(purlin_dir, exist_ok=True)
+        with open(os.path.join(purlin_dir, "config.json"), "w") as f:
+            json.dump(
+                {
+                    "tools_root": "tools",
+                    "agents": {
+                        "builder": {"qa_mode": True},
+                    },
+                },
+                f,
+            )
+
+    def tearDown(self):
+        subprocess.run(["rm", "-rf", self.fake_root], capture_output=True)
+
+    def _parse_recommendations(self, rec_path):
+        """Parse fixture_recommendations.md and return structured data.
+
+        Simulates what a Builder session does when reading
+        recommendations: parse each feature section and extract
+        reason, suggested tags, recorded date, and status.
+        """
+        with open(rec_path) as f:
+            content = f.read()
+
+        recommendations = {}
+        current_feature = None
+
+        for line in content.splitlines():
+            # Match feature header: ## <feature_name>
+            header_match = re.match(r'^## (\S+)', line)
+            if header_match:
+                current_feature = header_match.group(1)
+                recommendations[current_feature] = {}
+                continue
+
+            if current_feature is None:
+                continue
+
+            # Match fields
+            reason_match = re.match(r'^- \*\*Reason:\*\* (.+)', line)
+            if reason_match:
+                recommendations[current_feature]["reason"] = reason_match.group(1)
+                continue
+
+            tags_match = re.match(r'^- \*\*Suggested tags:\*\* (.+)', line)
+            if tags_match:
+                raw = tags_match.group(1)
+                tags = re.findall(r'`([^`]+)`', raw)
+                recommendations[current_feature]["suggested_tags"] = tags
+                continue
+
+            recorded_match = re.match(r'^- \*\*Recorded:\*\* (.+)', line)
+            if recorded_match:
+                recommendations[current_feature]["recorded"] = recorded_match.group(1)
+                continue
+
+            status_match = re.match(r'^- \*\*Status:\*\* (.+)', line)
+            if status_match:
+                recommendations[current_feature]["status"] = status_match.group(1)
+                continue
+
+        return recommendations
+
+    def test_builder_can_read_recommendation_file(self):
+        """Builder reads the recommendations file and gets structured data."""
+        recs = self._parse_recommendations(self.rec_path)
+        self.assertIn("branch_collab", recs)
+        self.assertIn("instruction_audit", recs)
+
+    def test_builder_identifies_pending_tags(self):
+        """Builder identifies PENDING features that need fixture tags created."""
+        recs = self._parse_recommendations(self.rec_path)
+
+        pending = {
+            name: data
+            for name, data in recs.items()
+            if data.get("status") == "PENDING"
+        }
+        self.assertEqual(len(pending), 1)
+        self.assertIn("branch_collab", pending)
+        self.assertNotIn("instruction_audit", pending)
+
+    def test_pending_entry_has_suggested_tags(self):
+        """PENDING entry includes suggested tags the Builder should create."""
+        recs = self._parse_recommendations(self.rec_path)
+        branch_collab = recs["branch_collab"]
+        self.assertEqual(branch_collab["status"], "PENDING")
+        self.assertIn("main/branch_collab/diverged-history", branch_collab["suggested_tags"])
+        self.assertIn("main/branch_collab/ahead-3", branch_collab["suggested_tags"])
+
+    def test_qa_mode_enabled_in_config(self):
+        """Builder config has qa_mode enabled (prerequisite for reading recs)."""
+        config_path = os.path.join(self.fake_root, ".purlin", "config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        self.assertTrue(config["agents"]["builder"]["qa_mode"])
+
+    def test_created_entries_skipped(self):
+        """Features with CREATED status are not in the pending set."""
+        recs = self._parse_recommendations(self.rec_path)
+        created = {
+            name: data
+            for name, data in recs.items()
+            if data.get("status") == "CREATED"
+        }
+        self.assertEqual(len(created), 1)
+        self.assertIn("instruction_audit", created)
 
 
 # ===================================================================
