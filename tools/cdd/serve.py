@@ -3881,12 +3881,12 @@ function stopEllipsis() {{
 function buildTagsHtml(tags) {{
   var tagConfig = [
     {{ key: 'specs', label: 'Specs', color: 'var(--purlin-accent)' }},
-    {{ key: 'anchors', label: 'Anchor', color: 'var(--purlin-status-warning)' }},
-    {{ key: 'visual', label: 'Visual', color: 'var(--purlin-status-good)' }},
-    {{ key: 'code', label: 'Code', color: 'var(--purlin-primary)' }},
-    {{ key: 'tests', label: 'Tests', color: 'var(--purlin-muted)' }},
+    {{ key: 'anchors', label: 'Anchor', color: 'var(--purlin-accent)' }},
+    {{ key: 'visual', label: 'Visual', color: 'var(--purlin-accent)' }},
+    {{ key: 'code', label: 'Code', color: 'var(--purlin-status-good)' }},
+    {{ key: 'tests', label: 'Tests', color: 'var(--purlin-status-good)' }},
     {{ key: 'purlin', label: 'Purlin', color: 'var(--purlin-status-todo)' }},
-    {{ key: 'discoveries', label: 'Discovery', color: 'var(--purlin-status-error)' }}
+    {{ key: 'discoveries', label: 'Discovery', color: 'var(--purlin-accent)' }}
   ];
   var html = '';
   tagConfig.forEach(function(tc) {{

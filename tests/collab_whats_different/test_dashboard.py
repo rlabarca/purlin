@@ -1059,6 +1059,39 @@ class TestWhatsDifferentModalFontPersists(unittest.TestCase):
         self.assertIn("querySelectorAll('.modal-font-slider')", self.content)
 
 
+class TestTagColorAlignment(unittest.TestCase):
+    """Verify tag colors in buildTagsHtml match spec Section 2.9.
+
+    Tags are grouped by domain and use the matching section header color:
+    - Spec domain (Specs, Anchor, Visual, Discovery): --purlin-accent
+    - Code domain (Code, Tests): --purlin-status-good
+    - Purlin domain: --purlin-status-todo
+    """
+
+    def setUp(self):
+        with open(SERVE_PY_PATH) as f:
+            self.content = f.read()
+
+    def test_spec_domain_tags_use_accent(self):
+        """Specs, Anchor, Visual, Discovery tags use --purlin-accent."""
+        for label in ['Specs', 'Anchor', 'Visual', 'Discovery']:
+            pattern = f"label: '{label}', color: 'var(--purlin-accent)'"
+            self.assertIn(pattern, self.content,
+                          f'{label} tag should use --purlin-accent')
+
+    def test_code_domain_tags_use_status_good(self):
+        """Code and Tests tags use --purlin-status-good."""
+        for label in ['Code', 'Tests']:
+            pattern = f"label: '{label}', color: 'var(--purlin-status-good)'"
+            self.assertIn(pattern, self.content,
+                          f'{label} tag should use --purlin-status-good')
+
+    def test_purlin_tag_uses_status_todo(self):
+        """Purlin tag uses --purlin-status-todo."""
+        pattern = "label: 'Purlin', color: 'var(--purlin-status-todo)'"
+        self.assertIn(pattern, self.content)
+
+
 if __name__ == '__main__':
     import importlib
     loader = unittest.TestLoader()

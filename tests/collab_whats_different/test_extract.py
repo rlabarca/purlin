@@ -215,6 +215,15 @@ class TestFileCategorization(unittest.TestCase):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
         self.assertEqual(ext.categorize_file('pl-run-builder.sh'), 'purlin_config')
 
+    def test_launcher_pm(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
+        self.assertEqual(ext.categorize_file('pl-run-pm.sh'), 'purlin_config')
+
+    def test_launcher_variant(self):
+        """Scenario: Purlin Infrastructure Files Classified as purlin_config
+        — variant launchers with feature prefix."""
+        self.assertEqual(ext.categorize_file('pl-run-feat1-architect.sh'), 'purlin_config')
+
     def test_purlin_command_file(self):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config"""
         self.assertEqual(ext.categorize_file('.claude/commands/pl-status.md'), 'purlin_config')
@@ -222,7 +231,8 @@ class TestFileCategorization(unittest.TestCase):
     def test_launcher_not_code(self):
         """Scenario: Purlin Infrastructure Files Classified as purlin_config
         — none of these files appear in the code category."""
-        for path in ['pl-run-builder.sh',
+        for path in ['pl-run-builder.sh', 'pl-run-pm.sh',
+                     'pl-run-feat1-architect.sh',
                      '.claude/commands/pl-status.md']:
             self.assertNotEqual(ext.categorize_file(path), 'code',
                                 f'{path} should not be categorized as code')
@@ -326,10 +336,20 @@ class TestDecisionExtraction(unittest.TestCase):
             if args[0] == 'diff':
                 if '--name-status' in args:
                     return name_status
-                # Decision diff: ['diff', range, '--', fpath, '-U0']
+                # Batched diff: ['diff', range, '-U0', '--', f1, f2, ...]
                 if '-U0' in args:
-                    fpath = args[3]  # file path is after '--'
-                    return file_diffs.get(fpath, '')
+                    sep_idx = args.index('--') if '--' in args else -1
+                    if sep_idx >= 0:
+                        paths = args[sep_idx + 1:]
+                    else:
+                        paths = []
+                    parts = []
+                    for p in paths:
+                        content = file_diffs.get(p, '')
+                        if content:
+                            parts.append(
+                                f'diff --git a/{p} b/{p}\n{content}')
+                    return '\n'.join(parts)
             return ''
         return side_effect
 

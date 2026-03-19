@@ -78,7 +78,7 @@ _STATUS_RE = re.compile(
 
 # Purlin infrastructure launcher scripts (bootstrap only)
 _PURLIN_LAUNCHER_RE = re.compile(
-    r'^pl-run-(?:architect|builder|qa)\.sh$')
+    r'^pl-run-.*(?:architect|builder|qa|pm)\.sh$')
 
 # Patterns for scope tags in commit messages
 _SCOPE_RE = re.compile(r'\[Scope:\s*(\S+)\]')
