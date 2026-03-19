@@ -67,7 +67,7 @@ If a delivery plan exists and the current phase has 2+ features:
 
 *   **Tests:** Run feature-specific tests. Results to `tests/<feature_name>/tests.json` with `{"status": "PASS", "passed": N, "failed": 0, "total": N}`. `total` MUST be > 0. File MUST be produced by an actual test runner (anti-stub mandate).
 *   **Test Quality Self-Audit:** Audit each test against `features/policy_test_quality.md`: (1) Deletion test -- would it fail if implementation deleted? (2) Anti-pattern scan (AP-1 through AP-5). (3) Value assertion check. Record audit in companion file under `### Test Quality Audit`.
-*   **Web test (if eligible):** For features with `> Web Test:` or `> AFT Web:`, run `/pl-web-test` and iterate until zero BUG verdicts.
+*   **Design alignment verification (if eligible):** For features with `> Web Test:` or `> AFT Web:`, run `/pl-web-test` and iterate until zero BUG and DRIFT verdicts (see bright-line rules). When the feature has Figma-referenced Visual Specifications, this step verifies the implementation matches the Figma design.
 *   **Self-Test Completeness:** Validate `tests.json`: required fields present, `total > 0`, no inconsistencies.
 *   If tests fail, fix and repeat from Step 2.
 
