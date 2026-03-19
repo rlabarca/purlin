@@ -6,7 +6,7 @@
 ## Summary
 15 TODO features (265 scenarios) spanning policy foundations, agent skills, release steps, test infrastructure, and orchestration tooling. Phased to respect dependency ordering (policy nodes must land before dependent skills), honor per-phase sizing caps (max 2 features, max 1 HIGH per paired phase), and keep each phase completable within a single Builder session.
 
-## Phase 1 -- Policy Foundations [PENDING]
+## Phase 1 -- Policy Foundations [IN_PROGRESS]
 **Features:** policy_critic.md, policy_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -31,12 +31,12 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Builder QA Mode [PENDING]
+## Phase 6 -- Builder QA Mode [IN_PROGRESS]
 **Features:** builder_qa_mode.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Regression Testing [PENDING]
+## Phase 7 -- Regression Testing [IN_PROGRESS]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -56,7 +56,7 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 11 -- Intelligent Update [PENDING]
+## Phase 11 -- Intelligent Update [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
