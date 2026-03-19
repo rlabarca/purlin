@@ -1,37 +1,62 @@
 Push: push local collaboration branch to remote.
 
-**Owner: All roles — from collaboration branch only**
+**Owner: All roles**
+
+The command operates in three modes:
+- **Mode 1 — No remote configured:** Guides the user through adding a git remote, then pushes.
+- **Mode 2 — Direct mode (no active branch):** Collaboration branch resolves to `main`. Pushes `main` to the remote.
+- **Mode 3 — Collaboration mode (active branch):** Pushes the active collaboration branch to the same-named remote branch.
 
 ## Steps
 
-### 0. Branch Guard
+### 0. Collaboration Branch Resolution
 
-Read `.purlin/runtime/active_branch`. If the file is absent or empty, abort:
+Read `.purlin/runtime/active_branch`:
 
-```
-No active collaboration branch. Use the CDD dashboard to create or join a branch.
-```
-
-Extract the branch name from the file contents (single line, trimmed).
+1. If present and non-empty: collaboration branch = that value (trimmed).
+2. If absent or empty: collaboration branch = `main`.
 
 ### 1. Collaboration Branch Guard
 
 Run: `git rev-parse --abbrev-ref HEAD`
 
-If the result does not match the value from Step 0, abort immediately:
+If the result does not match the resolved collaboration branch, abort with a mode-appropriate message:
 
-```
-This command must be run from the collaboration branch (<branch>).
-Current branch: <current>. Switch to <branch> before running /pl-remote-push.
-```
+- **Active branch exists** (file was present and non-empty): abort with:
+  ```
+  This command must be run from the collaboration branch (<branch>).
+  Current branch: <current>. Switch to <branch> before running /pl-remote-push.
+  ```
+
+- **No active branch (direct mode)** (file was absent or empty, resolved to `main`): abort with:
+  ```
+  No active collaboration branch. On `main`, /pl-remote-push pushes main directly.
+  Current branch: <current>. Switch to main or use the CDD dashboard to create a collaboration branch.
+  ```
 
 Do NOT proceed to Step 2.
 
-### 2. Load Config
+### 2. Remote Guard
+
+Check for configured remotes:
+
+```
+git remote -v
+```
+
+If no remotes exist, guide the user through setup:
+
+1. Check `gh` CLI availability (`command -v gh`).
+2. If `gh` available: offer two options — "Create a new GitHub repository" (`gh repo create`) or "Add an existing remote URL".
+3. If `gh` unavailable: prompt for remote URL and name (default "origin").
+4. Execute `git remote add <name> <url>` (or `gh repo create`).
+5. Proceed to push.
+
+### 3. Load Config
 
 Read `branch_collab.remote` from `.purlin/config.json`. Default to `"origin"` if the key is absent or the file does not exist. Fallback: if `branch_collab` is absent, read `remote_collab.remote`.
 
-### 3. Dirty Check
+### 4. Dirty Check
 
 ```
 git status --porcelain
@@ -41,15 +66,15 @@ Filter out any lines where the file path starts with `.purlin/` — these are ex
 
 If any non-`.purlin/` output remains, abort: "Commit or stash changes before pushing."
 
-### 4. Fetch
+### 5. Fetch
 
 ```
 git fetch <remote>
 ```
 
-If the remote branch does not exist yet (fetch returns non-zero because the refspec is not found), this is fine — it means we are creating the branch for the first time. Proceed to Step 5 treating the remote as having zero commits (AHEAD state).
+If the remote branch does not exist yet (fetch returns non-zero because the refspec is not found), this is fine — it means we are creating the branch for the first time. Proceed to Step 6 treating the remote as having zero commits (AHEAD state).
 
-### 5. Sync State
+### 6. Sync State
 
 Run two range queries:
 
@@ -66,9 +91,24 @@ Determine state:
 - ahead=0, behind>0 -> BEHIND
 - ahead>0, behind>0 -> DIVERGED
 
-If the remote tracking ref does not exist (first push), treat as AHEAD with ahead = all commits on <branch>.
+If the remote tracking ref does not exist (first push), treat as AHEAD with ahead = all commits on `<branch>`.
 
-### 6. Push or Block
+### 7. First-Push Safety Confirmation
+
+On the first push to a remote+branch pair, detected by `git rev-parse --verify <remote>/<branch>` failing (no remote tracking ref exists), display a confirmation prompt:
+
+```
+First push to this remote. Please confirm:
+  Remote:  <name> (<url>)
+  Branch:  <branch>
+  Commits: <N> commit(s) will be pushed
+
+Proceed? [Y/n]
+```
+
+If the user declines, abort without pushing. Subsequent pushes to the same remote+branch (where the remote tracking ref exists) skip this confirmation.
+
+### 8. Push or Block
 
 **SAME:** Print "Already in sync. Nothing to push." Exit.
 
@@ -91,12 +131,14 @@ Exit with failure.
 ```
 git push <remote> <branch>
 ```
-On success: Print "Pushed N commits to <remote>/<branch>."
+On success: Print "Pushed N commits to `<remote>/<branch>`."
 On failure: Print the git error message. Exit with failure.
 
 ## Notes
 
 - Does NOT merge anything. Use `/pl-remote-pull` first if behind or diverged.
 - Branches are created via the CDD dashboard, not this command.
-- Run from the collaboration branch only.
-- If the remote branch does not exist, `git push` creates it automatically.
+- **Mode 1 (no remote):** Detected after the branch guard passes. Guides through `gh repo create` or manual remote add.
+- **Mode 2 (direct mode):** No active branch file → resolves to `main`. Pushes main directly.
+- **Mode 3 (collaboration mode):** Active branch file present → pushes that branch.
+- If the remote branch does not exist, `git push` creates it automatically. The first-push safety confirmation applies.

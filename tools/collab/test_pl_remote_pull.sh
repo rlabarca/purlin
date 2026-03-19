@@ -67,21 +67,6 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario: pl-remote-pull Exits When No Active Branch
-###############################################################################
-echo ""
-echo "[Scenario] pl-remote-pull Exits When No Active Branch"
-setup_collab_repos
-cd "$LOCAL_DIR"
-rm -f .purlin/runtime/active_branch
-if [[ ! -f .purlin/runtime/active_branch ]]; then
-    log_pass "No active branch file triggers abort"
-else
-    log_fail "Active branch file should be absent"
-fi
-cleanup_sandbox
-
-###############################################################################
 # Scenario: pl-remote-pull Resolves To Main When No Active Branch
 ###############################################################################
 echo ""

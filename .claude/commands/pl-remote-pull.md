@@ -4,7 +4,7 @@ Pull: pull remote collaboration branch into current branch.
 /pl-remote-pull [<branch>]
 ```
 
-- **No argument:** Reads branch from `.purlin/runtime/active_branch`. Must be checked out on the collaboration branch (existing behavior).
+- **No argument:** Resolves the collaboration branch per policy. If `.purlin/runtime/active_branch` is present and non-empty, uses that value (collaboration mode). If absent or empty, defaults to `main` (direct mode). Must be checked out on the resolved collaboration branch.
 - **With argument** (e.g., `/pl-remote-pull RC0.8.0`): Uses the argument as the branch name directly. Runs from any branch (typically `main`). Skips Steps 0–1.
 
 **Ref substitution rule:** In explicit-branch mode, every `<branch>` ref in git range comparisons (Steps 5–6) is replaced with `HEAD`, since you are not checked out on the collaboration branch.
@@ -13,17 +13,14 @@ Pull: pull remote collaboration branch into current branch.
 
 ## Steps
 
-### 0. Branch Guard (no-argument mode only)
+### 0. Collaboration Branch Resolution (no-argument mode only)
 
 **Skip this step** when a branch argument was provided — use the argument as `<branch>` and proceed directly to Step 2.
 
-Read `.purlin/runtime/active_branch`. If the file is absent or empty, abort:
+Read `.purlin/runtime/active_branch`:
 
-```
-No active collaboration branch. Use the CDD dashboard to create or join a branch.
-```
-
-Extract the branch name from the file contents (single line, trimmed).
+1. If present and non-empty: collaboration branch = that value (trimmed).
+2. If absent or empty: collaboration branch = `main`.
 
 ### 1. Collaboration Branch Guard (no-argument mode only)
 
@@ -31,20 +28,37 @@ Extract the branch name from the file contents (single line, trimmed).
 
 Run: `git rev-parse --abbrev-ref HEAD`
 
-If the result does not match the value from Step 0, abort immediately:
+If the result does not match the resolved collaboration branch, abort with a mode-appropriate message:
 
-```
-This command must be run from the collaboration branch (<branch>).
-Current branch: <current>. Switch to <branch> before running /pl-remote-pull.
-```
+- **Active branch exists** (file was present and non-empty): abort with:
+  ```
+  This command must be run from the collaboration branch (<branch>).
+  Current branch: <current>. Switch to <branch> before running /pl-remote-pull.
+  ```
+
+- **No active branch (direct mode)** (file was absent or empty, resolved to `main`): abort with:
+  ```
+  No active collaboration branch. On `main`, /pl-remote-pull pulls main directly.
+  Current branch: <current>. Switch to main or use the CDD dashboard to create a collaboration branch.
+  ```
 
 Do NOT proceed to Step 2.
 
-### 2. Load Config
+### 2. Remote Guard
+
+After the branch guard passes (or is skipped in explicit-branch mode), check for configured remotes:
+
+```
+git remote -v
+```
+
+If no remotes exist, print: "No git remote configured. Run `/pl-remote-push` to set up a remote first." and exit with code 1.
+
+### 3. Load Config
 
 Read `branch_collab.remote` from `.purlin/config.json`. Default to `"origin"` if the key is absent or the file does not exist. Fallback: if `branch_collab` is absent, read `remote_collab.remote`.
 
-### 3. Dirty Check
+### 4. Dirty Check
 
 ```
 git status --porcelain
@@ -54,7 +68,7 @@ Filter out any lines where the file path starts with `.purlin/` — these are ex
 
 If any non-`.purlin/` output remains, abort: "Commit or stash changes before pulling."
 
-### 4. Fetch
+### 5. Fetch
 
 ```
 git fetch <remote>
@@ -62,7 +76,7 @@ git fetch <remote>
 
 If the fetch fails (remote branch does not exist), abort: "Remote branch <branch> not found on <remote>. Verify the branch exists."
 
-### 5. Sync State
+### 6. Sync State
 
 Run two range queries. In explicit-branch mode, replace `<branch>` with `HEAD` per the ref substitution rule.
 
@@ -79,7 +93,22 @@ Determine state:
 - ahead=0, behind>0 -> BEHIND
 - ahead>0, behind>0 -> DIVERGED
 
-### 6. Merge or No-op
+### 7. First-Pull Safety Confirmation
+
+On the first pull from a remote+branch pair, detected by checking whether the local branch has any merge-base with the remote tracking branch (`git merge-base <branch> <remote>/<branch>` fails), display a confirmation prompt:
+
+```
+First pull from this remote. Please confirm:
+  Remote:   <name> (<url>)
+  Branch:   <branch>
+  Incoming: <N> commit(s) will be merged
+
+Proceed? [Y/n]
+```
+
+If the user declines, abort without merging. Subsequent pulls from the same remote+branch (where a merge-base exists) skip this confirmation.
+
+### 8. Merge or No-op
 
 In explicit-branch mode, apply the same `<branch>` → `HEAD` ref substitution in all git range commands below. User-facing messages should use the branch name (not "HEAD").
 
@@ -127,7 +156,7 @@ To abandon: `git merge --abort` (restores <branch> to its pre-merge state).
 ```
 Exit with failure.
 
-### 7. Post-Merge Digest Generation
+### 9. Post-Merge Digest Generation
 
 After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-generate the "What's Different?" digest. This step is informational and does not block or fail the pull.
 
@@ -146,5 +175,5 @@ where `<tools_root>` is from `.purlin/config.json` (default `tools`).
 ## Notes
 
 - Uses `git merge` (not rebase) on the collaboration branch — it is a shared branch; rebase would rewrite history that other contributors depend on.
-- **No-argument mode:** Must be run from the collaboration branch.
+- **No-argument mode:** Must be run from the collaboration branch. If no active branch, resolves to `main`.
 - **Explicit-branch mode:** Can be run from any branch (typically `main`). Does NOT write `.purlin/runtime/active_branch` or auto-checkout the collaboration branch. The merge target is whatever branch is currently checked out.
