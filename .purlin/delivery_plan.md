@@ -31,9 +31,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Purlin Update Tool [IN_PROGRESS]
+## Phase 6 -- Purlin Update Tool [COMPLETE]
 **Features:** pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** dc36383
 **QA Bugs Addressed:** --
 
 ## Phase 7 -- What's Different (Dependency Reset) [PENDING]
