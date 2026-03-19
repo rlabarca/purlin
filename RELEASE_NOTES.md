@@ -1,5 +1,30 @@
 # Release Notes
 
+### v0.8.3 — 2026-03-19
+
+**New Commands**
+- `/pl-web-test` -- Playwright-based web verification, replaces `/pl-aft-web`
+- `/pl-whats-different` -- Compare your current branch against main to see what changed
+- `/pl-regression` -- Structured regression test pipeline with declarative scenario harness [ALPHA - basic plumbing only]
+
+**New Features**
+- Terminal Identity -- Terminal title shows which agent role is running
+- Terminal Badge -- iTerm terminals get a dynamic badge based on the agent that is running
+- Quick Start guide -- New README section with copy-paste setup instructions
+- Init preflight checks -- `pl-init.sh` now validates prerequisites and tells you what's missing
+- PM first-session guide -- PM agent walks new users through their first spec
+
+**Dashboard**
+- Spec Map animations -- Smooth zoom/recenter transitions when navigating the graph
+- Abbreviated status commits -- Workspace section shows cleaner commit summaries
+
+**Improvements**
+- Simpler startup config -- `find_work`/`auto_start` replaces the old `startup_sequence`/`recommend_next_actions` naming
+- `/pl-update-purlin` -- Now shows MCP manifest diffs when updating the submodule
+- `/pl-remote-push` / `/pl-remote-pull` -- Work gracefully without a remote configured
+- `/pl-help` -- Now discovers CLI scripts alongside slash commands
+- Continuous Phase Builder -- Parallel worktree execution with inter-phase Critic integration [ALPHA - UNSTABLE]
+
 ### v0.8.2 — 2026-03-17
 
 **PM Agent Role**
