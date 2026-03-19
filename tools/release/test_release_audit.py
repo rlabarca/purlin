@@ -364,6 +364,150 @@ class TestSubmoduleSafetyClean(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: WARNING finding -- generated artifact not covered by
+# gitignore template (auto-test-only)
+# ===================================================================
+
+class TestSubmoduleSafetyGitignoreUncoveredArtifact(unittest.TestCase):
+    """Scenario: WARNING finding -- generated artifact not covered by gitignore template"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "tools/reporter/report_gen.py": (
+                'import os\n'
+                'SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))\n'
+                'PROJECT_ROOT = os.environ.get("PURLIN_PROJECT_ROOT", SCRIPT_DIR)\n'
+                'with open("custom_output.dat", "w") as f:\n'
+                '    f.write("data")\n'
+            ),
+            "purlin-config-sample/gitignore.purlin": (
+                '.purlin/cache/\n'
+                '.purlin/runtime/\n'
+                '.purlin/config.local.json\n'
+                'CRITIC_REPORT.md\n'
+                'tests/*/critic.json\n'
+            ),
+            "tools/init.sh": (
+                '#!/bin/bash\n'
+                '# Read from gitignore.purlin template\n'
+                'TEMPLATE="purlin-config-sample/gitignore.purlin"\n'
+                '# Refresh mode: sync gitignore from template\n'
+                'if [ "$MODE" = "refresh" ]; then\n'
+                '    # gitignore additive merge\n'
+                '    cat "$TEMPLATE" >> .gitignore\n'
+                'fi\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_uncovered_artifact(self):
+        result = submodule_safety_main(self.root)
+        uncovered = [
+            f for f in result["findings"]
+            if f["category"] == "gitignore_uncovered_artifact"
+        ]
+        self.assertGreater(len(uncovered), 0, "Should detect uncovered artifact")
+        self.assertEqual(uncovered[0]["severity"], "WARNING")
+        self.assertIn("custom_output.dat", uncovered[0]["message"])
+
+
+# ===================================================================
+# Scenario: CRITICAL finding -- init.sh uses hardcoded gitignore
+# array (auto-test-only)
+# ===================================================================
+
+class TestSubmoduleSafetyGitignoreHardcodedArray(unittest.TestCase):
+    """Scenario: CRITICAL finding -- init.sh uses hardcoded gitignore array"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "purlin-config-sample/gitignore.purlin": (
+                '.purlin/cache/\n'
+                '.purlin/runtime/\n'
+                '.purlin/config.local.json\n'
+                'CRITIC_REPORT.md\n'
+                'tests/*/critic.json\n'
+            ),
+            "tools/init.sh": (
+                '#!/bin/bash\n'
+                '# Hardcoded ignores instead of reading template\n'
+                'RECOMMENDED_IGNORES=(\n'
+                '    ".purlin/cache/"\n'
+                '    ".purlin/runtime/"\n'
+                '    "CRITIC_REPORT.md"\n'
+                ')\n'
+                'for pattern in "${RECOMMENDED_IGNORES[@]}"; do\n'
+                '    echo "$pattern" >> .gitignore\n'
+                'done\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_hardcoded_array(self):
+        result = submodule_safety_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        hardcoded = [
+            f for f in result["findings"]
+            if f["category"] == "gitignore_hardcoded_array"
+        ]
+        self.assertGreater(len(hardcoded), 0, "Should detect hardcoded array")
+        self.assertEqual(hardcoded[0]["severity"], "CRITICAL")
+
+
+# ===================================================================
+# Scenario: CRITICAL finding -- refresh mode skips gitignore sync
+# (auto-test-only)
+# ===================================================================
+
+class TestSubmoduleSafetyGitignoreRefreshSkip(unittest.TestCase):
+    """Scenario: CRITICAL finding -- refresh mode skips gitignore sync"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "purlin-config-sample/gitignore.purlin": (
+                '.purlin/cache/\n'
+                '.purlin/runtime/\n'
+                '.purlin/config.local.json\n'
+                'CRITIC_REPORT.md\n'
+                'tests/*/critic.json\n'
+            ),
+            "tools/init.sh": (
+                '#!/bin/bash\n'
+                '# Read from gitignore.purlin template\n'
+                'TEMPLATE="purlin-config-sample/gitignore.purlin"\n'
+                '# Fresh install: apply gitignore from template\n'
+                'cat "$TEMPLATE" >> .gitignore\n'
+                '# Refresh mode: only update launchers\n'
+                'if [ "$ALREADY_INITIALIZED" = "true" ]; then\n'
+                '    # refresh mode — update launcher scripts only\n'
+                '    echo "Refreshing launchers..."\n'
+                'fi\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_refresh_skips_gitignore(self):
+        result = submodule_safety_main(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        refresh_skip = [
+            f for f in result["findings"]
+            if f["category"] == "gitignore_refresh_skip"
+        ]
+        self.assertGreater(len(refresh_skip), 0,
+                           "Should detect refresh mode skipping gitignore")
+        self.assertEqual(refresh_skip[0]["severity"], "CRITICAL")
+
+
+# ===================================================================
 # Scenario: Critic consistency detects deprecated terminology
 # ===================================================================
 
@@ -807,6 +951,9 @@ CLASS_FEATURE_MAP = {
     "TestSubmoduleSafetyMissingEnv": ["release_submodule_safety_audit"],
     "TestSubmoduleSafetyArtifactInTools": ["release_submodule_safety_audit"],
     "TestSubmoduleSafetyClean": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyGitignoreUncoveredArtifact": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyGitignoreHardcodedArray": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyGitignoreRefreshSkip": ["release_submodule_safety_audit"],
     "TestCriticConsistencyDeprecated": ["release_critic_consistency_check"],
     "TestCriticConsistencyRouting": ["release_critic_consistency_check"],
     "TestCriticConsistencyWarningLevel": ["release_critic_consistency_check"],

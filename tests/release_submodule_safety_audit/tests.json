@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 4,
+  "passed": 7,
   "failed": 0,
-  "total": 4,
+  "total": 7,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -15,6 +15,18 @@
     },
     {
       "test": "test_passes_clean (__main__.TestSubmoduleSafetyClean.test_passes_clean)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_hardcoded_array (__main__.TestSubmoduleSafetyGitignoreHardcodedArray.test_detects_hardcoded_array)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_refresh_skips_gitignore (__main__.TestSubmoduleSafetyGitignoreRefreshSkip.test_detects_refresh_skips_gitignore)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_uncovered_artifact (__main__.TestSubmoduleSafetyGitignoreUncoveredArtifact.test_detects_uncovered_artifact)",
       "status": "PASS"
     },
     {
