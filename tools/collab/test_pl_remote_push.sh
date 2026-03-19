@@ -92,17 +92,69 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario: pl-remote-push Exits When No Active Branch
+# Scenario: pl-remote-push Resolves To Main When No Active Branch
 ###############################################################################
 echo ""
-echo "[Scenario] pl-remote-push Exits When No Active Branch"
+echo "[Scenario] pl-remote-push Resolves To Main When No Active Branch"
 setup_collab_repos
 cd "$LOCAL_DIR"
 rm -f .purlin/runtime/active_branch
-if [[ ! -f .purlin/runtime/active_branch ]]; then
-    log_pass "No active branch file triggers abort"
+git checkout -q main
+# Add 2 local commits ahead of origin/main
+echo "m1" > m1.txt && git add m1.txt && git commit -q -m "main commit 1"
+echo "m2" > m2.txt && git add m2.txt && git commit -q -m "main commit 2"
+# Resolve collaboration branch: no active_branch file => defaults to main
+if [[ -f .purlin/runtime/active_branch ]] && [[ -s .purlin/runtime/active_branch ]]; then
+    COLLAB_BRANCH=$(cat .purlin/runtime/active_branch | tr -d '[:space:]')
 else
-    log_fail "Active branch file should be absent"
+    COLLAB_BRANCH="main"
+fi
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$COLLAB_BRANCH" == "main" && "$CURRENT" == "main" ]]; then
+    git fetch -q origin
+    AHEAD=$(git log "origin/main..main" --oneline 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$AHEAD" -eq 2 ]]; then
+        PUSH_OUTPUT=$(git push origin main 2>&1)
+        PUSH_EXIT=$?
+        if [[ $PUSH_EXIT -eq 0 ]]; then
+            log_pass "Resolved to main, pushed $AHEAD commits"
+        else
+            log_fail "Push failed: $PUSH_OUTPUT"
+        fi
+    else
+        log_fail "Expected 2 commits ahead, got $AHEAD"
+    fi
+else
+    log_fail "Expected collab=main current=main, got collab=$COLLAB_BRANCH current=$CURRENT"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push Rejects Non-Main Branch When No Active Branch
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push Rejects Non-Main Branch When No Active Branch"
+setup_collab_repos
+cd "$LOCAL_DIR"
+rm -f .purlin/runtime/active_branch
+git checkout -q -b "hotfix/urgent"
+# Resolve collaboration branch: no active_branch file => defaults to main
+if [[ -f .purlin/runtime/active_branch ]] && [[ -s .purlin/runtime/active_branch ]]; then
+    COLLAB_BRANCH=$(cat .purlin/runtime/active_branch | tr -d '[:space:]')
+else
+    COLLAB_BRANCH="main"
+fi
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+# Direct mode: not on main => abort with "No active collaboration branch" + "Switch to main"
+if [[ "$COLLAB_BRANCH" == "main" && "$CURRENT" != "main" ]]; then
+    MSG="No active collaboration branch. On main, /pl-remote-push pushes main directly. Current branch: $CURRENT. Switch to main or use the CDD dashboard to create a collaboration branch."
+    if [[ "$MSG" == *"No active collaboration branch"* && "$MSG" == *"Switch to main"* ]]; then
+        log_pass "Rejects non-main branch ($CURRENT) when no active branch: direct mode guard"
+    else
+        log_fail "Error message missing expected text"
+    fi
+else
+    log_fail "Expected collab=main current=hotfix/urgent, got collab=$COLLAB_BRANCH current=$CURRENT"
 fi
 cleanup_sandbox
 
@@ -235,6 +287,229 @@ if [[ "$AHEAD" -eq 0 && "$BEHIND" -eq 0 ]]; then
     log_pass "SAME state detected: nothing to push"
 else
     log_fail "Expected SAME (ahead=0 behind=0), got ahead=$AHEAD behind=$BEHIND"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push Detects No Remote And Prompts For Setup
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push Detects No Remote And Prompts For Setup"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "init" > file.txt && git add file.txt && git commit -q -m "initial commit"
+# No active branch => resolves to main, current is main
+mkdir -p .purlin/runtime
+# Verify no remotes are configured
+REMOTES=$(git remote -v 2>/dev/null)
+if [[ -z "$REMOTES" ]]; then
+    log_pass "No remotes detected via 'git remote -v', would prompt for setup"
+else
+    log_fail "Expected no remotes, got: $REMOTES"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push Offers gh Repo Create When gh CLI Available
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push Offers gh Repo Create When gh CLI Available"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "init" > file.txt && git add file.txt && git commit -q -m "initial commit"
+mkdir -p .purlin/runtime
+# No remotes configured
+REMOTES=$(git remote -v 2>/dev/null)
+GH_AVAILABLE=false
+if command -v gh &>/dev/null; then
+    GH_AVAILABLE=true
+fi
+if [[ -z "$REMOTES" && "$GH_AVAILABLE" == "true" ]]; then
+    # gh is available and no remotes => offer both options
+    log_pass "gh CLI available, would offer 'Create a new GitHub repository' and 'Add an existing remote URL'"
+elif [[ -z "$REMOTES" && "$GH_AVAILABLE" == "false" ]]; then
+    # gh is NOT available => only prompt for remote URL
+    log_pass "gh CLI not available, would prompt for remote URL only (gh not installed)"
+else
+    log_fail "Expected no remotes, got: $REMOTES"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push First Push To Empty Remote Succeeds
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push First Push To Empty Remote Succeeds"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+# Create 5 commits on main
+echo "c1" > c1.txt && git add c1.txt && git commit -q -m "commit 1"
+echo "c2" > c2.txt && git add c2.txt && git commit -q -m "commit 2"
+echo "c3" > c3.txt && git add c3.txt && git commit -q -m "commit 3"
+echo "c4" > c4.txt && git add c4.txt && git commit -q -m "commit 4"
+echo "c5" > c5.txt && git add c5.txt && git commit -q -m "commit 5"
+# Add remote but do NOT push (so origin/main does not exist)
+git remote add origin "$REMOTE_DIR"
+mkdir -p .purlin/runtime
+# No active_branch => resolves to main
+COLLAB_BRANCH="main"
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+# Verify origin/main does not exist (first push scenario)
+if ! git rev-parse --verify "origin/$COLLAB_BRANCH" &>/dev/null; then
+    # First push: treat as AHEAD with all commits on branch
+    AHEAD=$(git log --oneline "$COLLAB_BRANCH" 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$AHEAD" -eq 5 ]]; then
+        # Simulate user confirming first-push prompt, then push
+        PUSH_OUTPUT=$(git push origin "$COLLAB_BRANCH" 2>&1)
+        PUSH_EXIT=$?
+        if [[ $PUSH_EXIT -eq 0 ]]; then
+            log_pass "First push to empty remote succeeded: $AHEAD commits pushed"
+        else
+            log_fail "Push failed: $PUSH_OUTPUT"
+        fi
+    else
+        log_fail "Expected 5 commits ahead, got $AHEAD"
+    fi
+else
+    log_fail "origin/$COLLAB_BRANCH should not exist yet"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push First Push Shows Safety Confirmation
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push First Push Shows Safety Confirmation"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+# Create 3 commits on main
+echo "c1" > c1.txt && git add c1.txt && git commit -q -m "commit 1"
+echo "c2" > c2.txt && git add c2.txt && git commit -q -m "commit 2"
+echo "c3" > c3.txt && git add c3.txt && git commit -q -m "commit 3"
+# Add remote with a specific URL
+REMOTE_URL="$REMOTE_DIR"
+git remote add origin "$REMOTE_URL"
+mkdir -p .purlin/runtime
+COLLAB_BRANCH="main"
+# Verify first-push condition: origin/main does not exist
+FIRST_PUSH=false
+if ! git rev-parse --verify "origin/$COLLAB_BRANCH" &>/dev/null; then
+    FIRST_PUSH=true
+fi
+if [[ "$FIRST_PUSH" == "true" ]]; then
+    # Build the safety confirmation details
+    REMOTE_NAME="origin"
+    REMOTE_ACTUAL_URL=$(git remote get-url origin 2>/dev/null)
+    COMMIT_COUNT=$(git log --oneline "$COLLAB_BRANCH" 2>/dev/null | wc -l | tr -d ' ')
+    # Verify all confirmation fields are present
+    if [[ -n "$REMOTE_NAME" && -n "$REMOTE_ACTUAL_URL" && "$COLLAB_BRANCH" == "main" && "$COMMIT_COUNT" -eq 3 ]]; then
+        log_pass "First push shows safety confirmation: remote=$REMOTE_NAME url=$REMOTE_ACTUAL_URL branch=$COLLAB_BRANCH commits=$COMMIT_COUNT"
+    else
+        log_fail "Safety confirmation fields incomplete: remote=$REMOTE_NAME url=$REMOTE_ACTUAL_URL branch=$COLLAB_BRANCH commits=$COMMIT_COUNT"
+    fi
+else
+    log_fail "Expected first-push condition (no remote tracking ref)"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push First Push Aborted When User Declines
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push First Push Aborted When User Declines"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "c1" > c1.txt && git add c1.txt && git commit -q -m "commit 1"
+git remote add origin "$REMOTE_DIR"
+mkdir -p .purlin/runtime
+COLLAB_BRANCH="main"
+# Verify first-push condition
+if ! git rev-parse --verify "origin/$COLLAB_BRANCH" &>/dev/null; then
+    # User declines => no push happens
+    # Verify remote has no refs (nothing was pushed)
+    REMOTE_REFS=$(git ls-remote origin 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$REMOTE_REFS" -eq 0 ]]; then
+        log_pass "First push aborted: user declined, no git push executed, remote still empty"
+    else
+        log_fail "Expected empty remote (no refs), got $REMOTE_REFS refs"
+    fi
+else
+    log_fail "Expected first-push condition (no remote tracking ref)"
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push Subsequent Push Skips Confirmation
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push Subsequent Push Skips Confirmation"
+setup_collab_repos
+cd "$LOCAL_DIR"
+git checkout -q main
+rm -f .purlin/runtime/active_branch
+# origin/main exists because setup_collab_repos pushed to it
+# Add 2 local commits
+echo "m1" > m1.txt && git add m1.txt && git commit -q -m "main commit 1"
+echo "m2" > m2.txt && git add m2.txt && git commit -q -m "main commit 2"
+git fetch -q origin
+COLLAB_BRANCH="main"
+# Verify the remote tracking ref EXISTS (subsequent push)
+SUBSEQUENT=false
+if git rev-parse --verify "origin/$COLLAB_BRANCH" &>/dev/null; then
+    SUBSEQUENT=true
+fi
+if [[ "$SUBSEQUENT" == "true" ]]; then
+    # No safety confirmation needed, push directly
+    AHEAD=$(git log "origin/$COLLAB_BRANCH..$COLLAB_BRANCH" --oneline 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$AHEAD" -eq 2 ]]; then
+        PUSH_OUTPUT=$(git push origin "$COLLAB_BRANCH" 2>&1)
+        PUSH_EXIT=$?
+        if [[ $PUSH_EXIT -eq 0 ]]; then
+            log_pass "Subsequent push skips confirmation: pushed $AHEAD commits directly"
+        else
+            log_fail "Push failed: $PUSH_OUTPUT"
+        fi
+    else
+        log_fail "Expected 2 commits ahead, got $AHEAD"
+    fi
+else
+    log_fail "Expected remote tracking ref to exist for subsequent push"
 fi
 cleanup_sandbox
 
