@@ -5,7 +5,7 @@
 > Prerequisite: features/builder_agent_launcher.md
 > Prerequisite: features/config_layering.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
