@@ -4,7 +4,7 @@
 > Category: "Test Infrastructure"
 > Prerequisite: features/arch_testing.md
 
-[TODO]
+[Testing]
 
 ## 1. Overview
 
