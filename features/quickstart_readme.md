@@ -3,11 +3,11 @@
 > Label: "Tool: Quickstart README"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/project_init.md
-> Prerequisite: features/init_new_project_mode.md
+> Prerequisite: features/init_preflight_checks.md
 
 ## 1. Overview
 
-A "Quick Start" section in README.md provides a complete path from a blank terminal to a running Purlin project, written for users who are new to the terminal. It lists prerequisites with exact install commands, shows the single-command project creation flow, and directs users to the PM agent as the guided entry point. The section is short enough to read in under two minutes.
+A "Quick Start" section in README.md provides a complete path from a blank terminal to a running Purlin project, written for users who are new to the terminal. It lists prerequisites with exact install commands, provides a single copy-paste block for project setup, and directs users to the PM agent as the guided entry point. The section is short enough to read in under two minutes.
 
 ---
 
@@ -30,19 +30,25 @@ A "Quick Start" section in README.md provides a complete path from a blank termi
 - Each install command MUST be copy-pasteable with no placeholders.
 - MUST note which prerequisites are macOS-specific or optional.
 
-### 2.3 Project Creation Subsection
+### 2.3 Project Setup Subsection
 
-- MUST show the `--new` flag project creation as the primary path: a single command that creates the project.
-- MUST include `cd <name>` after project creation.
-- MUST end with `./pl-run-pm.sh` as the final command, framed as "Start designing."
-- MUST include a one-sentence explanation: the PM agent will ask what you're building and create the first spec.
+- MUST present a single copy-paste code block that performs the full setup sequence:
+  1. `mkdir my-app && cd my-app`
+  2. `git init`
+  3. `git submodule add <purlin-repo-url> purlin`
+  4. `./purlin/pl-init.sh`
+  5. `git add -A && git commit -m "init purlin"`
+- The block MUST use the actual Purlin repository URL.
+- If init.sh detects missing prerequisites, it will tell the user what to install (see init_preflight_checks). The README does NOT need to duplicate that logic but SHOULD mention that the setup script checks for you.
+- After the setup block, MUST show `./pl-run-pm.sh` as the next step, framed as "Start designing."
+- MUST include a one-sentence explanation: the PM agent will ask what you're building and create your first spec.
 
 ### 2.4 Tone and Audience
 
 - Written for non-technical users (product managers, designers).
-- Avoid unexplained jargon. Terms like "submodule", "CLI", "stdout", "daemon" MUST NOT appear without a plain-language explanation or MUST be avoided entirely.
+- Avoid unexplained jargon. Terms like "submodule", "CLI", "stdout", "daemon" MUST NOT appear without a plain-language explanation or MUST be avoided entirely. Where "submodule" appears in a command, a parenthetical like "(this adds Purlin to your project)" is sufficient.
 - Use second person ("you") and imperative mood ("Install", "Run", "Open").
-- No more than 3 terminal commands visible to the user (prerequisites block can be one combined block; project creation is one command; starting the PM is one command).
+- The setup block is one copy-paste action even though it contains multiple commands. Frame it that way: "Copy and paste this into your terminal."
 
 ---
 
@@ -61,21 +67,24 @@ A "Quick Start" section in README.md provides a complete path from a blank termi
 #### Scenario: Prerequisites include install commands
 
     Given the Quick Start section of README.md
-    Then it contains "brew install git" or equivalent git install command
+    Then it contains a git installation command
     And it contains a Claude Code installation command referencing @anthropic-ai/claude-code
-    And it contains "brew install node" or equivalent node install command
+    And it contains a Node.js installation command or note that it is optional
 
-#### Scenario: Project creation uses --new flag
+#### Scenario: Setup block contains the full sequence
 
     Given the Quick Start section of README.md
-    Then it contains "init.sh --new" (the single-command project creation)
-    And it contains "cd " followed by a project name placeholder
+    Then it contains a code block with "mkdir" and "cd"
+    And the code block contains "git init"
+    And the code block contains "git submodule add" with the Purlin repository URL
+    And the code block contains "pl-init.sh"
+    And the code block contains "git commit"
 
-#### Scenario: PM agent is the entry point
+#### Scenario: PM agent is the entry point after setup
 
     Given the Quick Start section of README.md
     Then it contains "pl-run-pm.sh"
-    And "pl-run-pm.sh" appears after the project creation command
+    And "pl-run-pm.sh" appears after the setup code block
     And there is explanatory text near it describing what happens next
 
 #### Scenario: Section length is within limit
@@ -87,7 +96,7 @@ A "Quick Start" section in README.md provides a complete path from a blank termi
 #### Scenario: No unexplained jargon
 
     Given the Quick Start section of README.md
-    Then it does not contain the word "submodule" without explanation
+    Then it does not contain the word "submodule" without a parenthetical explanation
     And it does not contain "CLI" without explanation
     And it does not contain "stdout" or "daemon"
 
