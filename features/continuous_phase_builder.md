@@ -56,7 +56,7 @@ An opt-in orchestration mode (`--continuous`) for the Builder launcher (`pl-run-
 - After all parallel Builders complete, merge each worktree branch back to the main branch.
 - If any merge produces a conflict, the launcher MUST stop immediately, report the conflicting files, and exit with a message directing the user to resolve manually.
 - After successful merges, clean up worktree branches.
-- **Per-phase status update:** The orchestrator monitors each parallel Builder process. As soon as an individual Builder exits successfully (exit code 0), the orchestrator immediately updates the delivery plan on the main branch to mark that phase as `[COMPLETE]` and commits the change. This happens while other Builders in the group are still running — the orchestrator does not wait for the full group to finish. This keeps CDD metrics (`K DONE | N RUNNING`) accurate in real time. The delivery plan file lives on the main branch and is not modified by worktree Builders (they use amendment files), so the orchestrator can safely write to it at any time. For Builders that exit non-zero, the phase remains `[IN_PROGRESS]` until the evaluator decides to retry or stop.
+- **Per-phase status update:** The orchestrator monitors each parallel Builder process. As soon as an individual Builder exits successfully (exit code 0), the orchestrator immediately updates the delivery plan on the main branch to mark that phase as `[COMPLETE]` and commits the change. This happens while other Builders in the group are still running — the orchestrator does not wait for the full group to finish. This keeps CDD metrics (`K DONE | N RUNNING`) accurate in real time. The delivery plan file lives on the main branch and is not modified by worktree Builders (they use amendment files), so the orchestrator can safely write to it at any time. For Builders that exit non-zero, the phase remains `[IN_PROGRESS]` until the evaluator decides to retry or stop. All git commands in this path MUST suppress output per Section 2.17 (Orchestrator command suppression).
 
 ### 2.5 LLM Evaluator
 
@@ -283,6 +283,8 @@ All continuous mode status output renders into an **in-place terminal canvas** o
 - **Canvas mechanics:** Each update uses cursor-up (`\033[<N>A`) + clear-to-end (`\033[J`) to overwrite the previous canvas content. The canvas tracks its own line count for accurate cursor positioning. On the first render, no cursor-up is emitted. All canvas output goes to stderr exclusively.
 
 - **Builder output routing:** In continuous mode, ALL Builder output (bootstrap, sequential, and parallel) goes to log files only. No Builder output streams to the terminal. The terminal is exclusively owned by the canvas. This eliminates stdout/stderr interleaving problems.
+
+- **Orchestrator command suppression:** While the canvas is active, ALL shell commands the orchestrator runs (git commits, git status, merges, worktree operations, phase analyzer invocations) MUST redirect both stdout and stderr to `/dev/null` or to log files. Git in particular emits informational output (branch divergence warnings, untracked file listings, commit summaries) that corrupts the canvas display. The canvas engine erases and redraws a fixed number of lines; interleaved output shifts the cursor baseline, causing partial redraws and visual artifacts. Every `git` invocation during canvas-active periods MUST use `> /dev/null 2>&1` (or equivalent suppression). Exit codes MUST still be captured for error handling.
 
 - **Canvas refresh rate:** The canvas render loop runs at ~100ms for spinner frame animation. Heavier updates (log file size, activity extraction) run on 15-second intervals to avoid excessive I/O.
 
@@ -984,6 +986,15 @@ Do not begin work on other features or phases.
     And no Builder output is streamed to the terminal
     And the terminal is exclusively owned by the canvas
     And the log file content is complete regardless of terminal rendering
+
+#### Scenario: Orchestrator Git Commands Suppressed During Canvas
+    Given --continuous is active with Phases 1, 2, 3, and 4 running in parallel
+    And the canvas is rendering the parallel phase display on stderr
+    When Phase 1 Builder exits successfully and the orchestrator commits the COMPLETE status update
+    Then the git add and git commit commands redirect stdout and stderr to /dev/null
+    And no git output (branch warnings, untracked file listings, commit summaries) appears on the terminal
+    And the canvas continues rendering without cursor baseline corruption
+    And the orchestrator still detects non-zero git exit codes for error handling
 
 #### Scenario: Inter-Phase Canvas Shows Evaluator Status
     Given --continuous is active

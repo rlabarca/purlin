@@ -126,6 +126,10 @@ Replaced the simple `wait $pid` loop (which blocked until ALL builders completed
 
 Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.
 
+## Orchestrator Git Output Suppression (2026-03-18)
+
+All `git` commands the orchestrator runs while the canvas is active MUST redirect stdout and stderr to `/dev/null`. Without this, `git commit` emits branch divergence warnings ("Your branch and 'origin/main' have diverged...") and untracked file listings that corrupt the canvas display. The canvas engine uses cursor-up to erase a fixed number of lines; interleaved git output shifts the baseline, causing partial redraws where old content persists below the canvas. The fix is `> /dev/null 2>&1` on every `git add`, `git commit`, `git merge`, and `git worktree` call in the orchestration loop. Exit codes are still captured via `$?` before the redirect discards output.
+
 ## Configurable Evaluator Model & Success Boolean (2026-03-17)
 
 The evaluator model is now resolved from `continuous_evaluator_model` in config (`.purlin/config.local.json` first, then `.purlin/config.json`). Defaults to Haiku if absent. The same model is used for both the evaluator and the work digest (per spec: "Same model and timeout as the evaluator").
