@@ -23,7 +23,7 @@ Branch collaboration extends Purlin's local isolation model to multi-machine wor
 - This file is gitignored (`.purlin/runtime/` is already in `.gitignore`).
 - Each collaborator independently chooses which branch to join.
 - `/pl-remote-push` and `/pl-remote-pull` read this file to determine the target branch.
-- When the file is absent or empty, no branch is active and both commands abort with a message directing the user to the CDD dashboard.
+- When the file is absent or empty, no branch is active. The collaboration branch defaults to `main` (per Section 2.4).
 
 ### 2.3 Config Is Optional
 
@@ -46,10 +46,11 @@ All collaboration commands (`/pl-remote-push`, `/pl-remote-pull`) use the collab
 
 Throughout this policy, **collaboration branch** is the canonical term for the branch that push/pull operations target. **Active branch** refers specifically to the value stored in `.purlin/runtime/active_branch`. When no active branch exists, the collaboration branch defaults to `main`.
 
-### 2.5 Collaboration Branch Restriction (Critical)
+### 2.5 Collaboration Branch Resolution
 
-- `/pl-remote-push` and `/pl-remote-pull` MUST be run from the active collaboration branch.
-- Enforcement: Step 0 branch check in each command file verifies the current branch matches the collaboration branch.
+- `/pl-remote-push` and `/pl-remote-pull` resolve the collaboration branch per Section 2.4: if `.purlin/runtime/active_branch` is present and non-empty, the collaboration branch is that value; otherwise it is `main`.
+- When the collaboration branch resolves to `main` (direct mode), push/pull operate on `main` directly -- no active branch file is required.
+- Enforcement: Step 0 in each command file resolves the collaboration branch. Step 1 verifies the current checked-out branch matches it.
 
 ### 2.6 Integration Sequence
 
@@ -81,6 +82,19 @@ All branch transitions abort if the working tree is dirty. A dirty working tree 
 
 During active collaboration, remote main is untouched. Release protocol changes (merging the collaboration branch to remote main at release time) are deferred to a separate spec increment.
 
+### 2.12 No Remote Configured
+
+When no git remote exists (`git remote -v` returns empty):
+
+- `/pl-remote-push` guides the user through adding a remote: checks for `gh` CLI availability, offers GitHub repo creation or manual URL entry, executes `git remote add`, then proceeds to push.
+- `/pl-remote-pull` prints: "No git remote configured. Run `/pl-remote-push` to set up a remote first." and exits.
+
+### 2.13 First-Push Safety Confirmation
+
+On the first push to any remote+branch pair (detected by absence of remote tracking ref via `git rev-parse --verify <remote>/<branch>`), the command MUST display the target remote name, URL, branch, and commit count, and require explicit user confirmation before pushing. Subsequent pushes to the same remote+branch skip this confirmation. This prevents accidental pushes to wrong remotes or branches during initial setup.
+
+The same confirmation pattern applies to `/pl-remote-pull` on first pull from a remote+branch pair. First pull is detected by checking whether a merge-base exists between the local branch and the remote tracking branch. The confirmation displays remote details and incoming commit count.
+
 ## 3. Config Schema (Optional Override)
 
 ```json
@@ -98,7 +112,7 @@ Fields: `remote` (default `"origin"`), `auto_fetch_interval` (seconds; 0 = disab
 
 - `git push origin main` -- direct push to remote main during active collaboration
 - `git push --force origin <branch>` -- force push to collaboration branch
-- Running `/pl-remote-push` or `/pl-remote-pull` from a branch that does not match the active branch
+- Running `/pl-remote-push` or `/pl-remote-pull` from a branch that does not match the resolved collaboration branch
 - `git checkout main` while a branch is active -- use Leave to return to main
 - Manual editing of `.purlin/config.json` to set up branch collaboration (use the dashboard)
 
