@@ -1847,41 +1847,6 @@ def generate_action_items(feature_result, cdd_status=None):
                     })
 
     # --- Test Quality Audit Trail (policy_critic Section 2.17) ---
-    # LOW-priority Builder nudge when companion file lacks ### Test Quality Audit
-    if lifecycle_state in ('testing', 'complete'):
-        _tqa_path = os.path.join(
-            FEATURES_DIR, os.path.basename(feature_file))
-        _tqa_auto_count = 0
-        if os.path.isfile(_tqa_path):
-            _tqa_content = read_feature_file(_tqa_path)
-            _tqa_scenarios = parse_scenarios(_tqa_content)
-            _tqa_auto_count = sum(
-                1 for s in _tqa_scenarios
-                if not s.get('is_manual', False))
-        if _tqa_auto_count > 0:
-            _tqa_companion = os.path.splitext(_tqa_path)[0] + '.impl.md'
-            _tqa_has_audit = False
-            if os.path.isfile(_tqa_companion):
-                try:
-                    with open(_tqa_companion, 'r', encoding='utf-8') as _f:
-                        for line in _f:
-                            if line.strip() == '### Test Quality Audit':
-                                _tqa_has_audit = True
-                                break
-                except (IOError, OSError):
-                    pass
-            if not _tqa_has_audit:
-                builder_items.append({
-                    'priority': 'LOW',
-                    'category': 'missing_test_quality_audit',
-                    'feature': feature_name,
-                    'description': (
-                        f'Missing test quality audit for {feature_name} '
-                        f'-- run subagent evaluation per '
-                        f'policy_test_quality.md Section 2.6'
-                    ),
-                })
-
     # --- QA items ---
     # Features in TESTING status (from CDD) -> MEDIUM (scope-aware)
     regression_scope = feature_result.get('regression_scope', {})
