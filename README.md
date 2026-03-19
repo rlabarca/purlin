@@ -23,15 +23,44 @@ The framework is built on four goals:
 3. **People steer, agents execute** -- you set the direction; agents handle the back-and-forth without meetings.
 4. **Code stays correct** -- specs and code are always in sync, so bugs from "stale requirements" don't happen.
 
+## Quick Start
+
+You need **git** and **Claude Code** installed. On macOS:
+
+```bash
+brew install git node           # node is optional, needed for web testing
+npm install -g @anthropic-ai/claude-code
+```
+
+Then create your project. Copy and paste this block into your terminal:
+
+```bash
+mkdir my-app && cd my-app
+git init
+git submodule add git@bitbucket.org:boomerangdev/purlin.git purlin
+./purlin/pl-init.sh
+git add -A && git commit -m "init purlin"
+```
+
+The setup script checks for missing tools and tells you how to install them. When it finishes, start the PM agent:
+
+```bash
+./pl-run-pm.sh
+```
+
+The PM will ask what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
+
+---
+
 ## Screenshots
 
-*(From v0.8.0)*
+*(From v0.8.3)*
 
 **CDD Dashboard**
-![CDD Dashboard](assets/PurlinCDDV0.8.0.png)
+![CDD Dashboard](assets/PurlinCDDV0.8.3.png)
 
 **CDD Spec Map**
-![CDD Spec Map](assets/PurlinSpecMapV0.8.0.png)
+![CDD Spec Map](assets/PurlinSpecMapV0.8.3.png)
 
 ## Core Concepts
 
