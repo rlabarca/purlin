@@ -7,7 +7,7 @@
 > Web Test: http://localhost:9086
 > Web Start: /pl-cdd
 
-[TODO]
+[Ready for Verification]
 
 ## 1. Overview
 
