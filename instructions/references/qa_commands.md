@@ -35,6 +35,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
+  /pl-regression             Author, run, or process regression scenarios
   /pl-fixture                Test fixture convention reference
 
   Cross-Agent Communication
@@ -80,6 +81,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
+  /pl-regression             Author, run, or process regression scenarios
   /pl-fixture                Test fixture convention reference
 
   Cross-Agent Communication
