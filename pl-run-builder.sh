@@ -60,13 +60,15 @@ cleanup() {
             git -C "$SCRIPT_DIR" worktree remove "$wt_dir" --force 2>/dev/null
             [ -d "$wt_dir" ] && rm -rf "$wt_dir"
         done
-        # Clean up all matching branches (both naming conventions)
-        git -C "$SCRIPT_DIR" branch --list 'continuous-phase-*' 2>/dev/null | while read -r b; do
-            git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
-        done
-        git -C "$SCRIPT_DIR" branch --list 'worktree-continuous-phase-*' 2>/dev/null | while read -r b; do
-            git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
-        done
+        # Clean up matching branches — skip if merge failure preserved them
+        if [ ! -f "$SCRIPT_DIR/.purlin/runtime/merge_failed" ]; then
+            git -C "$SCRIPT_DIR" branch --list 'continuous-phase-*' 2>/dev/null | while read -r b; do
+                git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
+            done
+            git -C "$SCRIPT_DIR" branch --list 'worktree-continuous-phase-*' 2>/dev/null | while read -r b; do
+                git -C "$SCRIPT_DIR" branch -D "$(echo "$b" | xargs)" 2>/dev/null
+            done
+        fi
     fi
 }
 trap cleanup EXIT
@@ -232,6 +234,38 @@ except (json.JSONDecodeError, IOError, OSError):
     fi
 done
 
+# Session linger timeout (Section 2.19): kill agent processes that have written
+# their result but haven't exited within this many seconds. This prevents MCP
+# servers (e.g. Playwright) from holding the process tree open indefinitely.
+SESSION_LINGER_TIMEOUT=30
+
+# --- Helper: kill a process and all its descendants ---
+# Uses process-group kill first; falls back to recursive child walk.
+kill_process_tree() {
+    local pid="$1"
+    [ -z "$pid" ] && return
+    # Collect all descendant PIDs (depth-first) so children die before parents
+    local descendants=()
+    _collect_descendants() {
+        local parent="$1"
+        local children
+        children=$(pgrep -P "$parent" 2>/dev/null) || true
+        for child in $children; do
+            _collect_descendants "$child"
+        done
+        descendants+=("$parent")
+    }
+    _collect_descendants "$pid"
+    # SIGTERM first, give 2s, then SIGKILL stragglers
+    for p in "${descendants[@]}"; do
+        kill "$p" 2>/dev/null
+    done
+    sleep 2
+    for p in "${descendants[@]}"; do
+        kill -0 "$p" 2>/dev/null && kill -9 "$p" 2>/dev/null
+    done
+}
+
 # Tracking variables (file-based retry counts for bash 3 compat)
 PHASES_COMPLETED=0
 PARALLEL_GROUPS_USED=0
@@ -290,6 +324,9 @@ purge_stale_runtime_artifacts() {
     rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
     rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
     rm -f "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/result_seen_phase_* 2>/dev/null
+    rm -f "${RUNTIME_DIR}/phase_status.json" 2>/dev/null
+    rm -f "${RUNTIME_DIR}/merge_failed" 2>/dev/null
 }
 purge_stale_runtime_artifacts
 
@@ -702,6 +739,94 @@ try_auto_resolve_conflicts() {
         git -C "$SCRIPT_DIR" add "$cfile" > /dev/null 2>&1
     done <<< "$conflict_files"
     return 0
+}
+
+# --- Helper: record phase completion to runtime JSON (no git commit) ---
+# Used during parallel execution to defer delivery_plan.md updates until after merge.
+# This avoids the merge conflict that occurs when the orchestrator and worktree branches
+# both modify delivery_plan.md independently.
+write_phase_status_json() {
+    local phase_num="$1"
+    local phase_status="$2"
+    local status_file="${RUNTIME_DIR}/phase_status.json"
+
+    python3 -c "
+import json, sys, os
+
+status_file = sys.argv[1]
+phase_num = sys.argv[2]
+phase_status = sys.argv[3]
+
+data = {}
+if os.path.exists(status_file):
+    try:
+        with open(status_file) as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        data = {}
+
+data[phase_num] = {'status': phase_status}
+
+with open(status_file, 'w') as f:
+    json.dump(data, f, indent=2)
+" "$status_file" "$phase_num" "$phase_status" 2>/dev/null
+}
+
+# --- Helper: apply deferred phase status to delivery plan after merge ---
+# Reads phase_status.json and updates delivery_plan.md in a single atomic commit.
+# Called once after all worktree branches have been successfully merged.
+apply_deferred_phase_status() {
+    local status_file="${RUNTIME_DIR}/phase_status.json"
+    [ -f "$status_file" ] || return 0
+    [ -f "$DELIVERY_PLAN" ] || return 0
+
+    local commit_hash
+    commit_hash=$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null || echo "--")
+
+    python3 -c "
+import json, re, sys
+
+status_file = sys.argv[1]
+plan_file = sys.argv[2]
+commit_hash = sys.argv[3]
+
+try:
+    with open(status_file) as f:
+        statuses = json.load(f)
+except (json.JSONDecodeError, IOError, OSError):
+    sys.exit(0)
+
+with open(plan_file) as f:
+    content = f.read()
+
+completed_phases = []
+for phase_num, info in statuses.items():
+    if info.get('status') == 'COMPLETE':
+        content = re.sub(
+            r'(## Phase ' + phase_num + r' -- .+?) \[(?:PENDING|IN_PROGRESS)\]',
+            r'\1 [COMPLETE]',
+            content
+        )
+        m = re.search(r'## Phase ' + phase_num + r' -- ', content)
+        if m:
+            before = content[:m.start()]
+            after = content[m.start():]
+            after = re.sub(
+                r'(\*\*Completion Commit:\*\*) --',
+                r'\1 ' + commit_hash,
+                after,
+                count=1
+            )
+            content = before + after
+        completed_phases.append(phase_num)
+
+with open(plan_file, 'w') as f:
+    f.write(content)
+" "$status_file" "$DELIVERY_PLAN" "$commit_hash" 2>/dev/null
+
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+    git -C "$SCRIPT_DIR" commit -m "chore: mark parallel phases complete in delivery plan" > /dev/null 2>&1
+    rm -f "$status_file"
 }
 
 # --- Helper: apply plan amendment files after parallel merge ---
@@ -1837,6 +1962,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # As soon as a Builder exits successfully, immediately mark its phase COMPLETE
         # on the main branch. This keeps CDD metrics accurate in real time.
         PERPHASE_COMPLETED=()
+        # Clean up any stale linger-detection files from previous runs
+        rm -f "${RUNTIME_DIR}"/result_seen_phase_* 2>/dev/null
         while true; do
             ALL_EXITED=true
             for i in "${!WT_PIDS[@]}"; do
@@ -1853,10 +1980,11 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     wait "$pid" 2>/dev/null
                     EXIT_CODE=$?
                     if [ $EXIT_CODE -eq 0 ]; then
-                        # Immediately mark COMPLETE on main branch (Section 2.4)
-                        update_plan_phase_status "$phase"
-                        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
-                        git -C "$SCRIPT_DIR" commit -m "chore: mark phase $phase as COMPLETE" > /dev/null 2>&1
+                        # Defer delivery plan update until after merge (Section 2.4)
+                        # Writing to phase_status.json avoids merge conflicts on
+                        # delivery_plan.md — the plan is updated once after all
+                        # worktree branches are merged back to main.
+                        write_phase_status_json "$phase" "COMPLETE"
                         record_phase_end "$phase" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
                     else
@@ -1866,6 +1994,27 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     fi
                     PERPHASE_COMPLETED+=("$phase")
                 else
+                    # Process still alive — check for linger (Section 2.19)
+                    # If the agent already wrote its result but the process hasn't
+                    # exited, an MCP server (e.g. Playwright) is likely holding it open.
+                    # File-based tracking for bash 3 compat (no associative arrays).
+                    linger_file="${RUNTIME_DIR}/result_seen_phase_${phase}"
+                    log_file="${WT_LOGS[$i]}"
+                    if [ ! -f "$linger_file" ]; then
+                        if grep -q '"type":"result"' "$log_file" 2>/dev/null; then
+                            date +%s > "$linger_file"
+                            log_eval "Phase $phase: agent result detected, waiting ${SESSION_LINGER_TIMEOUT}s for clean exit"
+                        fi
+                    fi
+                    if [ -f "$linger_file" ]; then
+                        result_seen_at=$(cat "$linger_file" 2>/dev/null)
+                        elapsed=$(( $(date +%s) - result_seen_at ))
+                        if [ "$elapsed" -ge "$SESSION_LINGER_TIMEOUT" ]; then
+                            log_eval "Phase $phase: process lingering ${elapsed}s after result — killing process tree (pid $pid)"
+                            kill_process_tree "$pid"
+                            # Let the next iteration's kill -0 detect the exit
+                        fi
+                    fi
                     ALL_EXITED=false
                 fi
             done
@@ -1979,6 +2128,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
         done
 
         if [ "$MERGE_FAILED" = "true" ]; then
+            # Write flag so the EXIT trap preserves branches for recovery
+            touch "${RUNTIME_DIR}/merge_failed"
             # Preserve branches for manual recovery — list them for the user
             echo "" >&2
             echo "Unmerged worktree branches preserved for recovery:" >&2
@@ -1999,6 +2150,9 @@ while [ "$OUTER_BREAK" = "false" ]; do
         for i in "${!WT_BRANCHES[@]}"; do
             git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" > /dev/null 2>&1
         done
+
+        # Apply deferred phase status updates to delivery plan (single atomic commit)
+        apply_deferred_phase_status
 
         # Process plan amendment files from parallel builders
         apply_plan_amendments
@@ -2104,18 +2258,34 @@ while [ "$OUTER_BREAK" = "false" ]; do
                         --append-system-prompt-file "$PROMPT_FILE" \
                         "$INITIAL_MSG" &
                     BUILDER_PID=$!
-                    wait "$BUILDER_PID" 2>/dev/null
-                    BUILDER_PID=""
                     ;;
                 resume)
                     run_to_log "$LOG_FILE" --append claude --resume "$SESSION_ID" --print --verbose --output-format stream-json \
                         "${CLI_ARGS[@]}" \
                         "Approved. Proceed." &
                     BUILDER_PID=$!
-                    wait "$BUILDER_PID" 2>/dev/null
-                    BUILDER_PID=""
                     ;;
             esac
+
+            # Wait for builder with linger detection (Section 2.19)
+            _seq_result_seen=""
+            while kill -0 "$BUILDER_PID" 2>/dev/null; do
+                if [ -z "$_seq_result_seen" ] && grep -q '"type":"result"' "$LOG_FILE" 2>/dev/null; then
+                    _seq_result_seen=$(date +%s)
+                    log_eval "Phase $PHASE_NUM: agent result detected, waiting ${SESSION_LINGER_TIMEOUT}s for clean exit"
+                fi
+                if [ -n "$_seq_result_seen" ]; then
+                    _seq_elapsed=$(( $(date +%s) - _seq_result_seen ))
+                    if [ "$_seq_elapsed" -ge "$SESSION_LINGER_TIMEOUT" ]; then
+                        log_eval "Phase $PHASE_NUM: process lingering ${_seq_elapsed}s after result — killing process tree (pid $BUILDER_PID)"
+                        kill_process_tree "$BUILDER_PID"
+                        break
+                    fi
+                fi
+                sleep 1
+            done
+            wait "$BUILDER_PID" 2>/dev/null
+            BUILDER_PID=""
 
             # Stop the sequential canvas
             stop_canvas
@@ -2295,7 +2465,8 @@ print_fallback_summary() {
           "${RUNTIME_DIR}/approval_table_lines" "${RUNTIME_DIR}/canvas_state" \
           "${RUNTIME_DIR}"/remediation_attempt_* "${RUNTIME_DIR}/interphase_critic_summary.md" \
           "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt \
-          "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
+          "${RUNTIME_DIR}"/parallel_fail_count_* \
+          "${RUNTIME_DIR}/phase_status.json" "${RUNTIME_DIR}/merge_failed" 2>/dev/null
     # Reset stale IN_PROGRESS phases so next run doesn't skip them
     reset_stale_in_progress 2>/dev/null
 }
@@ -2636,6 +2807,8 @@ rm -f "${RUNTIME_DIR}"/remediation_attempt_* 2>/dev/null
 rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
 rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
 rm -f "${RUNTIME_DIR}"/parallel_fail_count_* 2>/dev/null
+rm -f "${RUNTIME_DIR}/phase_status.json" 2>/dev/null
+rm -f "${RUNTIME_DIR}/merge_failed" 2>/dev/null
 
 # Disable the fallback summary trap and run original cleanup (temp files, worktrees)
 trap - EXIT

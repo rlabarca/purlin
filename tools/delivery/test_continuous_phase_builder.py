@@ -3550,98 +3550,48 @@ exit 0
 # Scenario: Per-Phase Status Update During Parallel Execution (Section 2.4)
 # ============================================================
 def test_per_phase_status_update_during_parallel_execution():
-    """As soon as an individual Builder exits successfully during parallel execution,
-    the orchestrator immediately marks that phase as COMPLETE on the main branch and
-    commits the change. This happens while other Builders may still be running.
-    Individual Builders do not modify the delivery plan (amendment files only)."""
-    tmpdir = tempfile.mkdtemp()
-    try:
-        plan = make_plan([
-            (2, "Design", "PENDING", ["a.md"]),
-            (3, "Update", "PENDING", ["b.md"]),
-        ])
-        graph = make_graph([
-            ("a.md", []),
-            ("b.md", []),
-        ])
-        make_mock_project(tmpdir, plan, graph)
-        mock_bin = make_mock_claude(tmpdir, "phase_complete",
-                                   eval_responses=[
-                                       ("stop", True, "All phases complete successfully"),
-                                   ])
+    """During parallel execution, phase completions are deferred to a runtime
+    JSON file (phase_status.json). The delivery plan is NOT updated during the
+    monitoring loop — this avoids merge conflicts when worktree branches are
+    merged back. After all branches merge, apply_deferred_phase_status() updates
+    the delivery plan in a single atomic commit."""
+    source = read_launcher()
+    parallel_section = source[source.find('PARALLEL EXECUTION'):]
+    parallel_section = parallel_section[:parallel_section.find('SEQUENTIAL EXECUTION')]
 
-        # Mock git with add/commit support that logs per-phase commits
-        mock_git = os.path.join(mock_bin, 'git')
-        with open(mock_git, 'w') as f:
-            f.write(f'''#!/bin/bash
-GIT_LOG="{tmpdir}/.purlin/runtime/git_invocations.log"
-echo "$@" >> "$GIT_LOG"
-if [ "$1" = "-C" ]; then shift 2; fi
-case "$1" in
-    worktree) case "$2" in add) mkdir -p "$5" 2>/dev/null ;; remove) rm -rf "$3" 2>/dev/null ;; esac ;;
-    merge|branch|diff|add|commit) ;;
-    rev-parse) echo "abc1234" ;;
-esac
-exit 0
-''')
-        os.chmod(mock_git, os.stat(mock_git).st_mode | stat.S_IEXEC)
+    # Monitoring loop uses kill -0 to detect individual builder exits
+    has_monitoring_loop = 'kill -0' in parallel_section
 
-        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+    # Completions are written to phase_status.json (deferred, no git commit)
+    monitor_start = parallel_section.find('Monitor parallel builders')
+    merge_start = parallel_section.find('Rebase-before-merge')
+    monitor_section = parallel_section[monitor_start:merge_start] if (monitor_start >= 0 and merge_start >= 0) else ""
+    has_deferred_write = 'write_phase_status_json' in monitor_section
 
-        # Verify delivery plan was updated with COMPLETE status
-        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
-        plan_content = ""
-        if os.path.exists(plan_path):
-            with open(plan_path) as f:
-                plan_content = f.read()
+    # NO update_plan_phase_status or git commit in the monitoring loop
+    has_no_direct_plan_update = 'update_plan_phase_status' not in monitor_section
+    has_no_git_commit_in_monitor = 'git commit' not in monitor_section.replace('# git commit', '')
 
-        # Plan may be deleted at end-of-run if all phases complete. Check plan OR
-        # git commit log for evidence of per-phase COMPLETE updates.
-        has_phase_2_complete = bool(re.search(r'## Phase 2 -- .+? \[COMPLETE\]', plan_content))
-        has_phase_3_complete = bool(re.search(r'## Phase 3 -- .+? \[COMPLETE\]', plan_content))
+    # apply_deferred_phase_status is called AFTER merge, BEFORE evaluator
+    merge_section = parallel_section[merge_start:]
+    has_deferred_apply_after_merge = 'apply_deferred_phase_status' in merge_section
 
-        # Verify per-phase git commits were made (one per phase)
-        git_log_path = os.path.join(tmpdir, '.purlin', 'runtime', 'git_invocations.log')
-        git_log = ""
-        if os.path.exists(git_log_path):
-            with open(git_log_path) as f:
-                git_log = f.read()
-        has_phase_2_commit = 'mark phase 2 as COMPLETE' in git_log
-        has_phase_3_commit = 'mark phase 3 as COMPLETE' in git_log
+    # Parallel Builders are told not to modify the plan
+    has_no_modify = 'Do NOT modify the delivery plan directly' in source
 
-        # If plan was deleted (all phases complete), commits prove the phases were marked
-        if not has_phase_2_complete:
-            has_phase_2_complete = has_phase_2_commit
-        if not has_phase_3_complete:
-            has_phase_3_complete = has_phase_3_commit
+    # The write_phase_status_json and apply_deferred_phase_status helpers exist
+    has_write_helper = 'write_phase_status_json()' in source
+    has_apply_helper = 'apply_deferred_phase_status()' in source
 
-        # Verify the monitoring loop exists (per-phase update before merge)
-        source = read_launcher()
-        parallel_section = source[source.find('PARALLEL EXECUTION'):]
-        parallel_section = parallel_section[:parallel_section.find('SEQUENTIAL EXECUTION')]
-
-        # Per-phase update is in the monitoring loop, which uses kill -0 to check PIDs
-        has_monitoring_loop = 'kill -0' in parallel_section
-        # update_plan_phase_status is called inside the monitoring loop (before merge)
-        monitor_pos = parallel_section.find('kill -0')
-        update_pos = parallel_section.find('update_plan_phase_status')
-        merge_pos = parallel_section.find('Rebase-before-merge')
-        has_update_before_merge = (monitor_pos >= 0 and update_pos >= 0 and
-                                   merge_pos >= 0 and update_pos < merge_pos)
-
-        # Verify parallel Builders are told not to modify the plan
-        has_no_modify = 'Do NOT modify the delivery plan directly' in source
-
-        ok = (has_phase_2_complete and has_phase_3_complete and
-              has_phase_2_commit and has_phase_3_commit and
-              has_monitoring_loop and has_update_before_merge and has_no_modify)
-        record("Per-Phase Status Update During Parallel Execution", ok,
-               f"p2_complete={has_phase_2_complete}, p3_complete={has_phase_3_complete}, "
-               f"p2_commit={has_phase_2_commit}, p3_commit={has_phase_3_commit}, "
-               f"monitor_loop={has_monitoring_loop}, update_before_merge={has_update_before_merge}, "
-               f"no_modify={has_no_modify}" if not ok else "")
-    finally:
-        shutil.rmtree(tmpdir)
+    ok = (has_monitoring_loop and has_deferred_write and
+          has_no_direct_plan_update and has_no_git_commit_in_monitor and
+          has_deferred_apply_after_merge and has_no_modify and
+          has_write_helper and has_apply_helper)
+    record("Per-Phase Status Update During Parallel Execution", ok,
+           f"monitor_loop={has_monitoring_loop}, deferred_write={has_deferred_write}, "
+           f"no_direct_plan={has_no_direct_plan_update}, no_git_commit={has_no_git_commit_in_monitor}, "
+           f"deferred_apply={has_deferred_apply_after_merge}, no_modify={has_no_modify}, "
+           f"write_helper={has_write_helper}, apply_helper={has_apply_helper}" if not ok else "")
 
 
 # ============================================================
@@ -4654,9 +4604,10 @@ def test_bootstrap_in_progress_reset_before_approval():
 # Scenario: Orchestrator Git Commands Suppressed During Canvas (Section 2.17)
 # ============================================================
 def test_orchestrator_git_commands_suppressed_during_canvas():
-    """All git add, git commit commands in the parallel monitoring loop
-    (canvas-active period) must redirect both stdout and stderr to /dev/null
-    to prevent canvas corruption."""
+    """The parallel monitoring loop (canvas-active period) must NOT contain any
+    git add/commit commands. With deferred status tracking, all delivery plan
+    updates happen after the canvas stops. The mark_phases_in_progress function
+    (runs before canvas starts) must suppress git output."""
     source = read_launcher()
 
     # Find the parallel monitoring loop section (between PARALLEL EXECUTION and
@@ -4665,32 +4616,30 @@ def test_orchestrator_git_commands_suppressed_during_canvas():
     par_end = source.find('# Stop canvas before merge')
     par_section = source[par_start:par_end] if (par_start >= 0 and par_end >= 0) else ""
 
-    # Check that git add and git commit in this section use > /dev/null 2>&1
+    # With deferred status tracking, there should be NO git add/commit in the
+    # monitoring loop — completions go to phase_status.json instead
     git_lines = [line.strip() for line in par_section.split('\n')
                  if 'git -C' in line and ('add' in line or 'commit' in line)]
+    no_git_in_monitor = len(git_lines) == 0
 
-    all_suppressed = True
-    bad_lines = []
-    for line in git_lines:
-        if '> /dev/null 2>&1' not in line:
-            all_suppressed = False
-            bad_lines.append(line)
-
-    # Also verify the mark_phases_in_progress function uses full suppression
+    # Verify the mark_phases_in_progress function uses full suppression
+    # (this runs before canvas starts, but suppression is still good practice)
     mark_fn_start = source.find('mark_phases_in_progress()')
     mark_fn_end = source.find('\n}', mark_fn_start) if mark_fn_start >= 0 else -1
     mark_fn_body = source[mark_fn_start:mark_fn_end] if mark_fn_start >= 0 else ""
     mark_git_lines = [line.strip() for line in mark_fn_body.split('\n')
                       if 'git -C' in line]
+    mark_all_suppressed = True
+    bad_lines = []
     for line in mark_git_lines:
         if '> /dev/null 2>&1' not in line:
-            all_suppressed = False
+            mark_all_suppressed = False
             bad_lines.append(line)
 
-    ok = all_suppressed and len(git_lines) > 0
+    ok = no_git_in_monitor and mark_all_suppressed
     record("Orchestrator Git Commands Suppressed During Canvas", ok,
-           f"git_lines_count={len(git_lines)}, all_suppressed={all_suppressed}, "
-           f"bad_lines={bad_lines[:3]}" if not ok else "")
+           f"no_git_in_monitor={no_git_in_monitor}, git_lines_found={git_lines}, "
+           f"mark_suppressed={mark_all_suppressed}, bad_lines={bad_lines[:3]}" if not ok else "")
 
 
 # ============================================================
@@ -4918,6 +4867,70 @@ def test_remediation_phase_passes_critic():
            f"medium_exempt={has_medium_exempt}" if not ok else "")
 
 
+# ============================================================
+# Scenario: Merge Failed Flag Preserves Branches in EXIT Trap (Section 2.4)
+# ============================================================
+def test_merge_failed_flag_preserves_branches():
+    """When a merge fails during parallel execution, the orchestrator writes a
+    merge_failed flag file. The EXIT trap checks for this flag and skips branch
+    deletion, preserving unmerged branches for manual recovery."""
+    source = read_launcher()
+
+    # The merge failure block writes the flag file
+    merge_fail_section = source[source.find('MERGE_FAILED=true'):]
+    merge_fail_section = merge_fail_section[:merge_fail_section.find('OUTER_BREAK=true')]
+    has_flag_write = 'merge_failed' in merge_fail_section and 'touch' in merge_fail_section
+
+    # The cleanup function checks the flag before deleting branches
+    cleanup_start = source.find('cleanup() {')
+    cleanup_end = source.find('\ntrap cleanup', cleanup_start) if cleanup_start >= 0 else -1
+    cleanup_body = source[cleanup_start:cleanup_end] if (cleanup_start >= 0 and cleanup_end >= 0) else ""
+    has_flag_check = 'merge_failed' in cleanup_body and 'branch -D' in cleanup_body
+
+    # The startup purge cleans the flag for fresh runs
+    purge_start = source.find('purge_stale_runtime_artifacts()')
+    purge_end = source.find('\npurge_stale_runtime_artifacts', purge_start + 1) if purge_start >= 0 else -1
+    purge_body = source[purge_start:purge_end] if (purge_start >= 0 and purge_end >= 0) else ""
+    has_flag_cleanup = 'merge_failed' in purge_body
+
+    ok = has_flag_write and has_flag_check and has_flag_cleanup
+    record("Merge Failed Flag Preserves Branches in EXIT Trap", ok,
+           f"flag_write={has_flag_write}, flag_check={has_flag_check}, "
+           f"flag_cleanup={has_flag_cleanup}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Deferred Status JSON Written During Parallel Monitoring (Section 2.4)
+# ============================================================
+def test_deferred_status_json_written():
+    """The write_phase_status_json helper writes completion data to a runtime
+    JSON file. The apply_deferred_phase_status helper reads it and updates
+    the delivery plan after merge. Both helpers exist and are properly wired."""
+    source = read_launcher()
+
+    # write_phase_status_json function exists and writes to phase_status.json
+    write_fn_start = source.find('write_phase_status_json()')
+    write_fn_end = source.find('\n}', write_fn_start) if write_fn_start >= 0 else -1
+    write_fn = source[write_fn_start:write_fn_end] if write_fn_start >= 0 else ""
+    has_json_write = 'phase_status.json' in write_fn
+    has_python_json = 'json.dump' in write_fn or 'json.load' in write_fn
+
+    # apply_deferred_phase_status function exists and reads from phase_status.json
+    apply_fn_start = source.find('apply_deferred_phase_status()')
+    apply_fn_end = source.find('\n}', apply_fn_start) if apply_fn_start >= 0 else -1
+    apply_fn = source[apply_fn_start:apply_fn_end] if apply_fn_start >= 0 else ""
+    has_json_read = 'phase_status.json' in apply_fn
+    has_plan_update = 'DELIVERY_PLAN' in apply_fn
+    has_git_commit = 'git' in apply_fn and 'commit' in apply_fn
+
+    ok = (has_json_write and has_python_json and
+          has_json_read and has_plan_update and has_git_commit)
+    record("Deferred Status JSON Written During Parallel Monitoring", ok,
+           f"json_write={has_json_write}, python_json={has_python_json}, "
+           f"json_read={has_json_read}, plan_update={has_plan_update}, "
+           f"git_commit={has_git_commit}" if not ok else "")
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -5077,6 +5090,10 @@ if __name__ == '__main__':
     test_exhausted_parallel_phase_skipped()
     test_evaluator_fallback_checks_in_progress()
     test_remediation_phase_passes_critic()
+
+    # Deferred status tracking and branch preservation (Section 2.4) (2)
+    test_merge_failed_flag_preserves_branches()
+    test_deferred_status_json_written()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

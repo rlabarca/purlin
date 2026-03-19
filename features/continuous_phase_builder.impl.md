@@ -118,9 +118,11 @@ Exit cleanup runs after the exit summary and status refresh, deleting transient 
 
 ## Per-Phase Status Update During Parallel Execution (Section 2.4)
 
-Replaced the simple `wait $pid` loop (which blocked until ALL builders completed, then batch-updated all phases) with a polling monitor that detects individual builder exits via `kill -0`. As soon as a builder exits with code 0, the orchestrator immediately calls `update_plan_phase_status` and commits the delivery plan update on the main branch. This keeps CDD metrics accurate in real time (e.g., "1 DONE | 1 RUNNING" instead of "0 DONE | 2 RUNNING").
+**Superseded by deferred status tracking (2026-03-19).** The original design committed delivery plan updates to main as each parallel builder exited. This caused guaranteed merge conflicts: worktree branches forked before the status commits and diverged on `delivery_plan.md`. Auto-resolution (keeping main's version) masked the conflict but silently dropped worktree-side edits. The EXIT trap then deleted all branches, making recovery require `git fsck` to find orphaned commits.
 
-Also fixed `update_plan_phase_status()` to use phase-aware Completion Commit targeting: the function now finds the specific phase heading first, then updates the next `**Completion Commit:** --` line after it. The previous `count=1` approach would always update the first occurrence in the file, which could target the wrong phase when phases complete out of order during parallel execution.
+**Current design:** During parallel execution, completions are recorded to `.purlin/runtime/phase_status.json` (a gitignored runtime file). No delivery plan edits or git commits happen while worktree branches are live. After all branches are merged back to main, `apply_deferred_phase_status()` reads the JSON and updates `delivery_plan.md` in a single atomic commit. The canvas engine reads status from process liveness checks and `phase_*_meta` files, so real-time display is unaffected. The `update_plan_phase_status()` function is still used for sequential execution (no merge conflict risk there).
+
+The `merge_failed` flag file at `.purlin/runtime/merge_failed` prevents the EXIT trap from deleting preserved branches. The flag is cleaned up on the next startup purge.
 
 ## Orchestrator Git Output Suppression (2026-03-18)
 
@@ -136,13 +138,13 @@ The output format from `run_evaluator` changed from `action|reason` to `action|s
 
 ## Auto-Resolution of Framework File Conflicts During Parallel Merge (2026-03-19)
 
-[DISCOVERY] (acknowledged) During parallel worktree execution, the orchestrator commits delivery plan status updates on main as builders exit (marking phases COMPLETE). When worktree branches are rebased onto main, these commits conflict on `.purlin/delivery_plan.md` because the branch was forked before the status commits. `CRITIC_REPORT.md` can cause similar conflicts since both sides run `status.sh`.
+[DISCOVERY] (acknowledged) During parallel worktree execution, the orchestrator originally committed delivery plan status updates on main as builders exited (marking phases COMPLETE). This caused guaranteed merge conflicts on `.purlin/delivery_plan.md` during the rebase step. `CRITIC_REPORT.md` can cause similar conflicts since both sides may run `status.sh`.
 
-**Fix:** Added `try_auto_resolve_conflicts()` helper that checks whether ALL conflicting files are in a known-safe list (`delivery_plan.md`, `CRITIC_REPORT.md`). If yes, resolves all by keeping main's version (`git checkout --ours`). If any conflict is on a non-safe file, returns failure (all-or-nothing — no partial resolution). The rebase block now loops: resolve safe conflicts → `rebase --continue` → handle next commit's conflicts → repeat (max 20 iterations). Empty commits after resolution (e.g., a commit that only touched `delivery_plan.md`) are detected via `REBASE_HEAD` presence and skipped with `rebase --skip`. The merge step uses the same helper for post-rebase merge conflicts.
+**Root cause eliminated:** The deferred status tracking design (see "Per-Phase Status Update" above) removes the primary cause of delivery plan conflicts — no more git commits to delivery_plan.md while worktree branches are live. However, `try_auto_resolve_conflicts()` is retained as a safety net for `CRITIC_REPORT.md` and any unexpected delivery plan conflicts from edge cases.
 
-**Why `--ours` is correct:** During `git rebase HEAD $BRANCH`, "ours" = HEAD (main). During `git merge`, "ours" = current branch (main). Both cases: `--ours` = main's version, which is authoritative for framework-managed files.
+**`try_auto_resolve_conflicts()` mechanics:** Checks whether ALL conflicting files are in a known-safe list (`delivery_plan.md`, `CRITIC_REPORT.md`). If yes, resolves all by keeping main's version (`git checkout --ours`). If any conflict is on a non-safe file, returns failure (all-or-nothing). The rebase block loops: resolve safe conflicts -> `rebase --continue` -> handle next commit's conflicts -> repeat (max 20 iterations). Empty commits after resolution are detected via `REBASE_HEAD` presence and skipped with `rebase --skip`.
 
-**Branch preservation on merge failure:** Branch cleanup was moved after the `MERGE_FAILED` check (previously it ran unconditionally before the check, destroying all branches including unmerged ones). On failure, the orchestrator now lists surviving branches with their tip commits and instructs the user to cherry-pick or merge manually. Per spec Section 2.4: "After successful merges, clean up worktree branches."
+**Branch preservation on merge failure:** The `merge_failed` flag file at `.purlin/runtime/merge_failed` is written when any merge fails. The EXIT trap checks this flag and skips branch deletion when set. On failure, the orchestrator lists surviving branches with their tip commits and instructs the user to cherry-pick or merge manually. The flag is cleaned up on the next startup purge.
 
 ## [DISCOVERY] (acknowledged) JSON Leaking to Terminal During Parallel Execution (2026-03-17)
 

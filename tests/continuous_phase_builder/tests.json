@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 95,
+  "passed": 97,
   "failed": 0,
-  "total": 95,
+  "total": 97,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -383,6 +383,14 @@
     },
     {
       "name": "Remediation Phase Passes Critic",
+      "status": "PASS"
+    },
+    {
+      "name": "Merge Failed Flag Preserves Branches in EXIT Trap",
+      "status": "PASS"
+    },
+    {
+      "name": "Deferred Status JSON Written During Parallel Monitoring",
       "status": "PASS"
     }
   ]
