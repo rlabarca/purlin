@@ -4,6 +4,7 @@
 > Category: "Agent Skills"
 > Prerequisite: features/project_init.md
 > Prerequisite: features/config_layering.md
+> Prerequisite: features/init_preflight_checks.md
 > Test Fixtures: https://github.com/rlabarca/weather1
 
 ## 1. Overview
@@ -56,7 +57,7 @@ The skill MUST:
 
 Before advancing the submodule, the skill MUST identify locally modified files that may
 conflict with upstream changes. This scan is lightweight -- it only flags files, deferring
-full analysis to Section 2.7.
+full analysis to Section 2.8.
 
 1. Read old SHA from `.purlin/.upstream_sha`
 2. Read new SHA (the target remote commit determined in Section 2.3)
@@ -72,7 +73,7 @@ full analysis to Section 2.7.
 **CDD Symlink Exclusion:** `pl-cdd-start.sh` and `pl-cdd-stop.sh` are **symlinks** managed
 exclusively by `init.sh` (see `project_init.md` Section 2.6). The skill MUST NOT read,
 compare, copy, or modify these files under any circumstance. They are refreshed automatically
-by the init step (Section 2.6).
+by the init step (Section 2.7).
 
 ### 2.5 Advance Submodule
 
@@ -80,9 +81,30 @@ Advance the submodule to the latest remote commit:
 - Detached HEAD: `git -C <submodule_dir> checkout <remote_sha>`
 - If this fails, abort with error and leave the submodule unchanged
 
-### 2.6 Init Refresh
+### 2.6 Post-Advance Prerequisite Validation
 
-After advancing the submodule, run `<submodule>/tools/init.sh --quiet` to refresh all
+After advancing the submodule (Section 2.5) and before running the init refresh (Section 2.7),
+the skill MUST run the preflight checks from the NEW init.sh version to surface any new tool
+requirements introduced by the update.
+
+1.  Execute the prerequisite detection logic (git, claude, node/npx) using the newly
+    checked-out version of init.sh. Use a check-only invocation that captures results
+    without blocking (e.g., sourcing just the preflight function, or running init.sh with
+    a `--preflight-only` flag if available).
+2.  If any **required** tool is missing: print a warning in the update output. Do NOT block
+    the update -- the submodule has already been advanced and the refresh must complete to
+    keep the project consistent. The warning MUST include the same installation instructions
+    specified in `init_preflight_checks.md` Section 2.2.
+3.  If any **recommended or optional** tool is missing: print a note with the installation
+    command and an explanation of what functionality is unavailable.
+4.  Include the prerequisite status in the summary report (Section 2.11).
+
+The key difference from init.sh's own preflight: during updates, missing required tools
+produce warnings rather than hard exits, because the submodule is already advanced.
+
+### 2.7 Init Refresh
+
+After prerequisite validation, run `<submodule>/tools/init.sh --quiet` to refresh all
 project-root artifacts:
 
 *   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic)
@@ -93,7 +115,7 @@ project-root artifacts:
 
 This delegates the mechanical copy/symlink/shim work to the canonical init script.
 
-### 2.7 Conflict Resolution
+### 2.8 Conflict Resolution
 
 **This step runs ONLY if Section 2.4 flagged locally modified files.** If no files were
 flagged, skip this section entirely.
@@ -117,7 +139,7 @@ For each flagged file:
 
 **Exclusion:** `pl-edit-base.md` MUST NEVER be synced to consumer projects. Silently exclude it from all analysis and reports.
 
-### 2.8 Config Sync
+### 2.9 Config Sync
 
 After init refresh, run the config resolver's `sync_config()` function:
 
@@ -129,7 +151,7 @@ After init refresh, run the config resolver's `sync_config()` function:
 
 This step runs unconditionally after every successful update.
 
-### 2.9 Stale Artifact Cleanup
+### 2.10 Stale Artifact Cleanup
 
 Check for legacy-named scripts at the consumer project root:
 - `run_architect.sh` (renamed to `pl-run-architect.sh`)
@@ -142,7 +164,7 @@ Check for legacy-named scripts at the consumer project root:
 If any found, prompt to remove. If declined, print "Stale files preserved." Skip entirely
 if none found. In `--dry-run` mode, list but do not delete.
 
-### 2.10 Summary Report
+### 2.11 Summary Report
 
 After successful update, display a brief summary:
 
@@ -153,9 +175,9 @@ Purlin updated: <old_version> -> <new_version>
 * Config sync: <result>
 ```
 
-If conflicts were resolved in Section 2.7, note them. If stale artifacts were cleaned, note them.
+If conflicts were resolved in Section 2.8, note them. If stale artifacts were cleaned, note them.
 
-### 2.11 Dry Run Mode
+### 2.12 Dry Run Mode
 
 When `--dry-run` is specified:
 - Perform fetch and version check
@@ -163,13 +185,13 @@ When `--dry-run` is specified:
 - Show what would be changed
 - Do NOT modify any files, advance the submodule, or update `.purlin/.upstream_sha`
 
-### 2.12 Project Root Detection
+### 2.13 Project Root Detection
 
 The skill uses `PURLIN_PROJECT_ROOT` (env var) for project root detection, with directory-climbing as fallback.
 
-### 2.13 Customization Impact Analysis (Optional)
+### 2.14 Customization Impact Analysis (Optional)
 
-After the summary report (Section 2.10), the skill MUST offer an optional deep analysis of
+After the summary report (Section 2.11), the skill MUST offer an optional deep analysis of
 how the update affects consumer-specific customizations. This step is entirely opt-in and
 runs zero analysis unless accepted.
 
@@ -220,7 +242,7 @@ Compare old vs new upstream `purlin-config-sample/config.json`:
 
 #### C. Command Behavioral Changes (Informational)
 
-For locally modified command files where the user chose "Keep current" in Section 2.7 (or
+For locally modified command files where the user chose "Keep current" in Section 2.8 (or
 where upstream changed without conflict), summarize what changed upstream between old and
 new SHA. This is informational only -- no re-merge is offered.
 
@@ -243,14 +265,14 @@ files need alignment.
 - Omit dimensions that found no issues
 - If all four dimensions are clean: "No customization impacts detected."
 
-### 2.14 Regression Testing
+### 2.15 Regression Testing
 
 Regression tests verify the update agent correctly handles submodule update scenarios.
 - **Approach:** Agent behavior harness (`claude --print` with fixtures against external fixture repo)
 - **Scenarios covered:** Clean update, conflict detection, dry-run mode
 - **Fixture tags:** See Integration Test Fixture Tags section
 
-### 2.15 MCP Manifest Diff
+### 2.16 MCP Manifest Diff
 
 During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 `tools/mcp/manifest.json` changed between the old and new submodule SHA.
@@ -263,13 +285,13 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 **If the manifest changed:**
 
 1.  Read old manifest: `git -C <submodule> show <old_sha>:tools/mcp/manifest.json`
-2.  Read new manifest from disk (after submodule advance in Section 2.5).
+2.  Read new manifest from disk (after submodule advance in Section 2.5, prerequisite check in Section 2.6).
 3.  Compute the diff between old and new server lists by `name`:
-    *   **Added servers:** Present in new manifest but not in old. These are installed automatically by `init.sh` during the init refresh step (Section 2.6). The update skill reports them in the summary.
+    *   **Added servers:** Present in new manifest but not in old. These are installed automatically by `init.sh` during the init refresh step (Section 2.7). The update skill reports them in the summary.
     *   **Removed servers:** Present in old manifest but not in new. Print an advisory: `"MCP server '<name>' was removed from Purlin manifest. Remove manually: claude mcp remove <name>"`. Do NOT auto-remove.
     *   **Changed servers:** Present in both but with different `transport`, `command`, `args`, or `url`. Print an advisory with reconfiguration command: `"MCP server '<name>' config changed upstream. Reconfigure: claude mcp remove <name> && <new add command>"`. Where `<new add command>` is the appropriate `claude mcp add` invocation for the new server entry.
 
-**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.10): `"Restart Claude Code to load MCP changes."`
+**Restart notice:** If any MCP changes occurred (added, removed, or changed), append to the summary report (Section 2.11): `"Restart Claude Code to load MCP changes."`
 
 ---
 
@@ -405,7 +427,7 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     Then the submodule is advanced
     And init.sh --quiet runs
     And config sync runs
-    And the conflict resolution step (Section 2.7) is skipped entirely
+    And the conflict resolution step (Section 2.8) is skipped entirely
     And the summary is displayed
 
 #### Scenario: Diff-Tree Early Exit Skips Per-File Scan
@@ -478,6 +500,36 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     When the user accepts the go-deeper analysis
     Then the report shows: "No customization impacts detected."
 
+#### Scenario: Update Surfaces Missing Prerequisite Warning
+
+    Given the consumer's environment does not have node/npx installed
+    And the submodule is behind by 3 commits
+    When /pl-update-purlin is invoked and the user confirms
+    Then the submodule is advanced (update is NOT blocked)
+    And the output includes a prerequisite warning for node
+    And the warning includes the platform-appropriate install command
+    And the warning explains what functionality is unavailable without node
+    And init.sh --quiet runs successfully after the warning
+
+#### Scenario: Update With All Prerequisites Met Shows No Warnings
+
+    Given git, claude, and node are all installed
+    And the submodule is behind by 2 commits
+    When /pl-update-purlin is invoked and the user confirms
+    Then no prerequisite warnings appear in the output
+    And the update completes normally
+
+#### Scenario: Missing Required Tool During Update Warns But Continues
+
+    Given claude CLI is not installed
+    And the submodule is behind by 1 commit
+    When /pl-update-purlin is invoked and the user confirms
+    Then the submodule is advanced successfully
+    And the output includes a warning about claude with install instructions
+    And the output notes MCP servers will not be installed
+    And init.sh still runs (with MCP installation skipped)
+    And the summary report includes the prerequisite status
+
 #### Scenario: New MCP Server Detected on Update
 
     Given the submodule is behind by 3 commits
@@ -547,7 +599,7 @@ For modified files:
 4. Compare: if `current_local == old_upstream`, auto-update; else, offer merge
 
 ### 4.3 Performance Principle
-The skill MUST minimize agent reasoning on the fast path. On the mandatory path (Sections 2.3 through 2.10):
+The skill MUST minimize agent reasoning on the fast path. On the mandatory path (Sections 2.3 through 2.11):
 - Use `git diff-tree` to identify upstream-changed files before scanning local files. If upstream changed zero tracked files, skip the conflict scan entirely.
 - Do NOT analyze release notes or changelog content
 - Do NOT compare override files against defaults
@@ -558,9 +610,9 @@ The skill MUST minimize agent reasoning on the fast path. On the mandatory path 
 Heavy analysis activates ONLY when the conflict scan (Section 2.4) flags files.
 
 ### 4.4 Go-Deeper Analysis Principle
-Section 2.13 is the only place where override-vs-base comparison, header scanning, config
+Section 2.14 is the only place where override-vs-base comparison, header scanning, config
 semantic analysis, and feature template format diffing occurs. These activities MUST NOT
-appear in the mandatory fast path (Sections 2.3 through 2.10). The go-deeper analysis is
+appear in the mandatory fast path (Sections 2.3 through 2.11). The go-deeper analysis is
 entirely opt-in and zero-cost when declined.
 
 ---
@@ -578,7 +630,7 @@ Allow pinning to specific Purlin versions to prevent auto-updates.
 
 ### 5.4 Automatic Go-Deeper on Breaking Changes
 When upstream includes a `BREAKING_CHANGES.md` file covering the update range, automatically
-trigger the customization impact analysis (Section 2.13) without prompting. The breaking
+trigger the customization impact analysis (Section 2.14) without prompting. The breaking
 changes file would serve as a signal that the update warrants deeper inspection.
 
 ## Regression Guidance
