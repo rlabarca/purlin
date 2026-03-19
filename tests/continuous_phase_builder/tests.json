@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 86,
+  "passed": 95,
   "failed": 0,
-  "total": 86,
+  "total": 95,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -266,7 +266,7 @@
       "status": "PASS"
     },
     {
-      "name": "Stale IN_PROGRESS Phases Reset on Startup",
+      "name": "Stale IN_PROGRESS Phases Reset on Startup (Resume Path)",
       "status": "PASS"
     },
     {
@@ -347,6 +347,42 @@
     },
     {
       "name": "Remediation Triggered When Builder Exits Without Feature Completion",
+      "status": "PASS"
+    },
+    {
+      "name": "Bootstrap IN_PROGRESS Phases Reset Before Approval Table",
+      "status": "PASS"
+    },
+    {
+      "name": "Orchestrator Git Commands Suppressed During Canvas",
+      "status": "PASS"
+    },
+    {
+      "name": "QA Recommendation Does Not Stop Continuous Loop",
+      "status": "PASS"
+    },
+    {
+      "name": "Stop Overridden When PENDING Phases Remain (Sequential)",
+      "status": "PASS"
+    },
+    {
+      "name": "Stop Overridden When PENDING Phases Remain (Parallel)",
+      "status": "PASS"
+    },
+    {
+      "name": "Parallel Phase Failure Tracked and Retried",
+      "status": "PASS"
+    },
+    {
+      "name": "Exhausted Parallel Phase Skipped After Max Failures",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Fallback Checks IN_PROGRESS Phases",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Phase Passes Critic",
       "status": "PASS"
     }
   ]

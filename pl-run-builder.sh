@@ -565,8 +565,8 @@ for p in phases:
 with open('$DELIVERY_PLAN', 'w') as f:
     f.write(content)
 " "${phases[@]}" 2>/dev/null
-    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
-    git -C "$SCRIPT_DIR" commit -m "chore: mark phases ${phases[*]} as IN_PROGRESS" 2>/dev/null
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+    git -C "$SCRIPT_DIR" commit -m "chore: mark phases ${phases[*]} as IN_PROGRESS" > /dev/null 2>&1
 }
 
 # --- Helper: run a command with line-buffered output to a log file ---
@@ -1431,6 +1431,32 @@ rerender_on_resize() {
     printf "Proceed? [Y/n] " >&2
 }
 
+# --- Startup recovery: reset stale IN_PROGRESS phases to PENDING (Section 2.4) ---
+# Orphans from a previous interrupted run — no Builder is actively working on them.
+# Defined before bootstrap block so it can be called in the bootstrap path.
+reset_stale_in_progress() {
+    [ -f "$DELIVERY_PLAN" ] || return 0
+    local has_stale
+    has_stale=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null)
+    has_stale=${has_stale:-0}
+    if [ "$has_stale" -gt 0 ]; then
+        python3 -c "
+import re
+with open('$DELIVERY_PLAN', 'r') as f:
+    content = f.read()
+content = re.sub(
+    r'(\[IN_PROGRESS\])',
+    '[PENDING]',
+    content
+)
+with open('$DELIVERY_PLAN', 'w') as f:
+    f.write(content)
+" 2>/dev/null
+        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+        git -C "$SCRIPT_DIR" commit -m "chore: reset stale IN_PROGRESS phases to PENDING" > /dev/null 2>&1
+    fi
+}
+
 # --- Bootstrap session when no delivery plan exists (Section 2.16) ---
 if [ ! -f "$DELIVERY_PLAN" ]; then
     BOOTSTRAP_LOG="${RUNTIME_DIR}/continuous_build_bootstrap.log"
@@ -1506,6 +1532,11 @@ BOOTSTRAP_OVERRIDE
             exit 0
         fi
 
+        # Reset stale IN_PROGRESS phases before approval table (Section 2.4)
+        # Ensures the approval table's phase analyzer sees the same statuses
+        # the orchestration loop will see (approval table fidelity invariant).
+        reset_stale_in_progress
+
         # Render the approval checkpoint table (Section 2.16)
         render_approval_table
         printf "Proceed? [Y/n] " >&2
@@ -1536,31 +1567,6 @@ BOOTSTRAP_OVERRIDE
         exit 1
     fi
 fi
-
-# --- Startup recovery: reset stale IN_PROGRESS phases to PENDING (Section 2.4) ---
-# Orphans from a previous interrupted run — no Builder is actively working on them.
-reset_stale_in_progress() {
-    [ -f "$DELIVERY_PLAN" ] || return 0
-    local has_stale
-    has_stale=$(grep -c '\[IN_PROGRESS\]' "$DELIVERY_PLAN" 2>/dev/null)
-    has_stale=${has_stale:-0}
-    if [ "$has_stale" -gt 0 ]; then
-        python3 -c "
-import re
-with open('$DELIVERY_PLAN', 'r') as f:
-    content = f.read()
-content = re.sub(
-    r'(\[IN_PROGRESS\])',
-    '[PENDING]',
-    content
-)
-with open('$DELIVERY_PLAN', 'w') as f:
-    f.write(content)
-" 2>/dev/null
-        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
-        git -C "$SCRIPT_DIR" commit -m "chore: reset stale IN_PROGRESS phases to PENDING" 2>/dev/null
-    fi
-}
 
 # --- Helper: parallel failure tracking (file-based, bash 3 compat) ---
 increment_parallel_fail_count() {
@@ -1609,8 +1615,8 @@ for m in re.finditer(r'## Phase (\d+) -- .+? \[PENDING\]', content):
     done
 
     if [ "$skipped_any" = "true" ]; then
-        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
-        git -C "$SCRIPT_DIR" commit -m "chore: skip phases exhausted by parallel failures" 2>/dev/null
+        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+        git -C "$SCRIPT_DIR" commit -m "chore: skip phases exhausted by parallel failures" > /dev/null 2>&1
     fi
 }
 
@@ -1749,7 +1755,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
             WT_DIR="${SCRIPT_DIR}/${WT_BRANCH}"
             LOG_FILE="${RUNTIME_DIR}/continuous_build_phase_${PHASE_NUM}_worktree.log"
 
-            git -C "$SCRIPT_DIR" worktree add -b "$WT_BRANCH" "$WT_DIR" HEAD 2>/dev/null
+            git -C "$SCRIPT_DIR" worktree add -b "$WT_BRANCH" "$WT_DIR" HEAD > /dev/null 2>&1
             record_phase_start "$PHASE_NUM"
 
             INITIAL_MSG="Begin Builder session. CONTINUOUS MODE -- you are assigned to Phase ${PHASE_NUM} ONLY. Work exclusively on Phase ${PHASE_NUM} features. Do not wait for approval."
@@ -1794,8 +1800,8 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     if [ $EXIT_CODE -eq 0 ]; then
                         # Immediately mark COMPLETE on main branch (Section 2.4)
                         update_plan_phase_status "$phase"
-                        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
-                        git -C "$SCRIPT_DIR" commit -m "chore: mark phase $phase as COMPLETE" 2>/dev/null
+                        git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+                        git -C "$SCRIPT_DIR" commit -m "chore: mark phase $phase as COMPLETE" > /dev/null 2>&1
                         record_phase_end "$phase" "COMPLETE"
                         PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
                     else
@@ -1838,7 +1844,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Remove worktrees before merge-back so branches can be rebased
         for i in "${!WT_DIRS[@]}"; do
-            git -C "$SCRIPT_DIR" worktree remove "${WT_DIRS[$i]}" --force 2>/dev/null
+            git -C "$SCRIPT_DIR" worktree remove "${WT_DIRS[$i]}" --force > /dev/null 2>&1
         done
 
         # Rebase-before-merge: rebase each branch onto current main before
@@ -1851,23 +1857,23 @@ while [ "$OUTER_BREAK" = "false" ]; do
             PHASE="${WT_PHASES[$i]}"
 
             # Rebase the branch onto current main
-            if ! git -C "$SCRIPT_DIR" rebase HEAD "$BRANCH" 2>/dev/null; then
+            if ! git -C "$SCRIPT_DIR" rebase HEAD "$BRANCH" > /dev/null 2>&1; then
                 CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
                 echo "Error: Rebase conflict during parallel merge of Phase ${PHASE}:" >&2
                 echo "$CONFLICT_FILES" >&2
-                git -C "$SCRIPT_DIR" rebase --abort 2>/dev/null
-                git -C "$SCRIPT_DIR" checkout main 2>/dev/null
+                git -C "$SCRIPT_DIR" rebase --abort > /dev/null 2>&1
+                git -C "$SCRIPT_DIR" checkout main > /dev/null 2>&1
                 MERGE_FAILED=true
                 break
             fi
 
             # Rebase leaves HEAD on the branch; switch back to main and merge
-            git -C "$SCRIPT_DIR" checkout main 2>/dev/null
-            if ! git -C "$SCRIPT_DIR" merge "$BRANCH" --no-edit 2>/dev/null; then
+            git -C "$SCRIPT_DIR" checkout main > /dev/null 2>&1
+            if ! git -C "$SCRIPT_DIR" merge "$BRANCH" --no-edit > /dev/null 2>&1; then
                 CONFLICT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only --diff-filter=U 2>/dev/null)
                 echo "Error: Merge conflict during parallel merge of Phase ${PHASE}:" >&2
                 echo "$CONFLICT_FILES" >&2
-                git -C "$SCRIPT_DIR" merge --abort 2>/dev/null
+                git -C "$SCRIPT_DIR" merge --abort > /dev/null 2>&1
                 MERGE_FAILED=true
                 break
             fi
@@ -1875,7 +1881,7 @@ while [ "$OUTER_BREAK" = "false" ]; do
 
         # Clean up branches for this group
         for i in "${!WT_BRANCHES[@]}"; do
-            git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" 2>/dev/null
+            git -C "$SCRIPT_DIR" branch -D "${WT_BRANCHES[$i]}" > /dev/null 2>&1
         done
 
         if [ "$MERGE_FAILED" = "true" ]; then
@@ -2139,8 +2145,8 @@ done
 # Prevents stale all-COMPLETE plans from blocking the next --continuous run.
 if [ "$STOP_REQUESTED" = "false" ] && [ ${#FAILURES[@]} -eq 0 ] && all_phases_complete; then
     rm -f "$DELIVERY_PLAN"
-    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" 2>/dev/null
-    git -C "$SCRIPT_DIR" commit -m "chore: remove delivery plan (all phases complete)" 2>/dev/null
+    git -C "$SCRIPT_DIR" add "$DELIVERY_PLAN" > /dev/null 2>&1
+    git -C "$SCRIPT_DIR" commit -m "chore: remove delivery plan (all phases complete)" > /dev/null 2>&1
 fi
 
 # ================================================================

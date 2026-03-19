@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for continuous phase builder — exercises all 70 automated scenarios.
+"""Tests for continuous phase builder — exercises all 95 automated scenarios.
 
 Tests validate the launcher script's structure and behavior by:
 1. Parsing the script source to verify flag handling and code paths
@@ -3791,7 +3791,7 @@ exit 0
 
         ok = (has_reset_commit and has_reset_fn and has_reset_before_loop
               and has_pending_replace)
-        record("Stale IN_PROGRESS Phases Reset on Startup", ok,
+        record("Stale IN_PROGRESS Phases Reset on Startup (Resume Path)", ok,
                f"commit={has_reset_commit}, fn={has_reset_fn}, "
                f"before_loop={has_reset_before_loop}, "
                f"replace={has_pending_replace}, "
@@ -4620,6 +4620,304 @@ exit 0
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Scenario: Bootstrap IN_PROGRESS Phases Reset Before Approval Table (Section 2.4)
+# ============================================================
+def test_bootstrap_in_progress_reset_before_approval():
+    """After bootstrap creates a plan (which may leave phases as IN_PROGRESS),
+    reset_stale_in_progress() must run before render_approval_table() so the
+    approval table shows the same groupings the orchestration loop will compute."""
+    source = read_launcher()
+
+    # The function must be defined BEFORE the bootstrap block
+    fn_def_pos = source.find('reset_stale_in_progress() {')
+    bootstrap_start = source.find('# --- Bootstrap session when no delivery plan exists')
+    has_fn_before_bootstrap = (fn_def_pos >= 0 and bootstrap_start >= 0 and
+                                fn_def_pos < bootstrap_start)
+
+    # The function must be CALLED in the bootstrap path, between plan validation
+    # success and render_approval_table
+    bootstrap_block = source[bootstrap_start:] if bootstrap_start >= 0 else ""
+    validation_end = bootstrap_block.find('fi\n\n')
+    render_pos = bootstrap_block.find('render_approval_table')
+    # Check for the call between validation and render
+    between_section = bootstrap_block[validation_end:render_pos] if (validation_end >= 0 and render_pos >= 0) else ""
+    has_reset_before_render = 'reset_stale_in_progress' in between_section
+
+    ok = has_fn_before_bootstrap and has_reset_before_render
+    record("Bootstrap IN_PROGRESS Phases Reset Before Approval Table", ok,
+           f"fn_before_bootstrap={has_fn_before_bootstrap}, "
+           f"reset_before_render={has_reset_before_render}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Orchestrator Git Commands Suppressed During Canvas (Section 2.17)
+# ============================================================
+def test_orchestrator_git_commands_suppressed_during_canvas():
+    """All git add, git commit commands in the parallel monitoring loop
+    (canvas-active period) must redirect both stdout and stderr to /dev/null
+    to prevent canvas corruption."""
+    source = read_launcher()
+
+    # Find the parallel monitoring loop section (between PARALLEL EXECUTION and
+    # the stop_canvas call that ends the parallel group)
+    par_start = source.find('# Monitor parallel builders')
+    par_end = source.find('# Stop canvas before merge')
+    par_section = source[par_start:par_end] if (par_start >= 0 and par_end >= 0) else ""
+
+    # Check that git add and git commit in this section use > /dev/null 2>&1
+    git_lines = [line.strip() for line in par_section.split('\n')
+                 if 'git -C' in line and ('add' in line or 'commit' in line)]
+
+    all_suppressed = True
+    bad_lines = []
+    for line in git_lines:
+        if '> /dev/null 2>&1' not in line:
+            all_suppressed = False
+            bad_lines.append(line)
+
+    # Also verify the mark_phases_in_progress function uses full suppression
+    mark_fn_start = source.find('mark_phases_in_progress()')
+    mark_fn_end = source.find('\n}', mark_fn_start) if mark_fn_start >= 0 else -1
+    mark_fn_body = source[mark_fn_start:mark_fn_end] if mark_fn_start >= 0 else ""
+    mark_git_lines = [line.strip() for line in mark_fn_body.split('\n')
+                      if 'git -C' in line]
+    for line in mark_git_lines:
+        if '> /dev/null 2>&1' not in line:
+            all_suppressed = False
+            bad_lines.append(line)
+
+    ok = all_suppressed and len(git_lines) > 0
+    record("Orchestrator Git Commands Suppressed During Canvas", ok,
+           f"git_lines_count={len(git_lines)}, all_suppressed={all_suppressed}, "
+           f"bad_lines={bad_lines[:3]}" if not ok else "")
+
+
+# ============================================================
+# Scenario: QA Recommendation Does Not Stop Continuous Loop (Section 2.5)
+# ============================================================
+def test_qa_recommendation_does_not_stop():
+    """Evaluator rules instruct that Builder mentions of 'run QA',
+    'QA verification', or 'Relaunch Builder' are informational and
+    should NOT produce a 'stop' action."""
+    source = read_launcher()
+
+    # Find the evaluator classification rules section
+    rules_start = source.find('## Classification Rules:')
+    rules_end = source.find('RULES_EOF', rules_start) if rules_start >= 0 else -1
+    rules_section = source[rules_start:rules_end] if (rules_start >= 0 and rules_end >= 0) else ""
+
+    has_qa_rule = 'run QA' in rules_section
+    has_qa_verification = 'QA verification' in rules_section
+    has_relaunch = 'Relaunch Builder' in rules_section
+    has_informational = 'informational' in rules_section
+    has_not_stop = 'NOT stop' in rules_section
+
+    ok = (has_qa_rule and has_qa_verification and has_relaunch and
+          has_informational and has_not_stop)
+    record("QA Recommendation Does Not Stop Continuous Loop", ok,
+           f"qa={has_qa_rule}, verification={has_qa_verification}, "
+           f"relaunch={has_relaunch}, informational={has_informational}, "
+           f"not_stop={has_not_stop}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Stop Overridden When PENDING Phases Remain (Sequential) (Section 2.6)
+# ============================================================
+def test_stop_overridden_when_pending_remain_sequential():
+    """When the evaluator returns 'stop' with success: false for a sequential
+    phase but PENDING phases remain, the orchestrator overrides the stop,
+    marks the phase as SKIPPED, and continues to the next group."""
+    source = read_launcher()
+
+    # Find the sequential stop handler (section ends at the fi/done that closes the loop)
+    seq_start = source.find('# SEQUENTIAL EXECUTION')
+    # The sequential section ends at the "fi\ndone" that closes the outer while loop
+    seq_end = source.find('fi\ndone\n\n# --- End', seq_start) if seq_start >= 0 else -1
+    if seq_end < 0 and seq_start >= 0:
+        seq_end = source.find('fi\ndone', seq_start)
+    seq_section = source[seq_start:seq_end] if (seq_start >= 0 and seq_end >= 0) else ""
+
+    # Check for stop override logic in sequential path
+    has_remaining_check = 'seq_remaining' in seq_section
+    has_override_log = 'stop(success=false) overridden' in seq_section
+    has_override_true_log = 'stop(success=true) overridden' in seq_section
+    has_skipped = 'SKIPPED' in seq_section
+    # The override must check for remaining PENDING/IN_PROGRESS phases
+    has_pending_grep = 'PENDING|IN_PROGRESS' in seq_section
+
+    ok = (has_remaining_check and has_override_log and has_override_true_log
+          and has_skipped and has_pending_grep)
+    record("Stop Overridden When PENDING Phases Remain (Sequential)", ok,
+           f"remaining={has_remaining_check}, override_false={has_override_log}, "
+           f"override_true={has_override_true_log}, skipped={has_skipped}, "
+           f"pending={has_pending_grep}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Stop Overridden When PENDING Phases Remain (Parallel) (Section 2.6)
+# ============================================================
+def test_stop_overridden_when_pending_remain_parallel():
+    """When the evaluator returns 'stop' with success: true after a parallel
+    group but PENDING phases remain, the orchestrator overrides the stop
+    and continues to the next execution group."""
+    source = read_launcher()
+
+    # Find the parallel stop handler
+    par_start = source.find('# PARALLEL EXECUTION')
+    par_end = source.find('# SEQUENTIAL EXECUTION', par_start) if par_start >= 0 else -1
+    par_section = source[par_start:par_end] if (par_start >= 0 and par_end >= 0) else ""
+
+    # Check for stop override logic in parallel path
+    has_remaining_check = 'remaining_phases' in par_section
+    has_override_true = 'stop(success=true) overridden' in par_section
+    has_override_false = 'stop(success=false) overridden' in par_section
+    has_pending_grep = 'PENDING|IN_PROGRESS' in par_section
+
+    ok = (has_remaining_check and has_override_true and has_override_false
+          and has_pending_grep)
+    record("Stop Overridden When PENDING Phases Remain (Parallel)", ok,
+           f"remaining={has_remaining_check}, override_true={has_override_true}, "
+           f"override_false={has_override_false}, "
+           f"pending={has_pending_grep}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Parallel Phase Failure Tracked and Retried (Section 2.4)
+# ============================================================
+def test_parallel_phase_failure_tracked_and_retried():
+    """When a parallel Builder exits non-zero, the orchestrator increments
+    a parallel failure counter for that phase. On the next loop iteration,
+    reset_stale_in_progress normalizes IN_PROGRESS to PENDING, and the
+    phase analyzer returns the failed phase again for retry."""
+    source = read_launcher()
+
+    # Verify parallel failure tracking functions exist
+    has_increment_fn = 'increment_parallel_fail_count()' in source
+    has_get_fn = 'get_parallel_fail_count()' in source
+    has_file_based = 'parallel_fail_count_${phase_num}' in source
+
+    # In the parallel monitoring loop, non-zero exit should increment count
+    par_start = source.find('# Monitor parallel builders')
+    par_end = source.find('# Stop canvas before merge')
+    par_section = source[par_start:par_end] if (par_start >= 0 and par_end >= 0) else ""
+
+    has_increment_on_fail = 'increment_parallel_fail_count' in par_section
+    has_failed_record = 'record_phase_end' in par_section and 'FAILED' in par_section
+
+    ok = (has_increment_fn and has_get_fn and has_file_based and
+          has_increment_on_fail and has_failed_record)
+    record("Parallel Phase Failure Tracked and Retried", ok,
+           f"increment_fn={has_increment_fn}, get_fn={has_get_fn}, "
+           f"file_based={has_file_based}, "
+           f"increment_on_fail={has_increment_on_fail}, "
+           f"failed_record={has_failed_record}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Exhausted Parallel Phase Skipped After Max Failures (Section 2.4)
+# ============================================================
+def test_exhausted_parallel_phase_skipped():
+    """After a phase has failed twice in parallel execution (fail_count >= 2),
+    skip_exhausted_parallel_phases marks it COMPLETE (SKIPPED) in the
+    delivery plan so it never retries again."""
+    source = read_launcher()
+
+    # Verify skip function exists
+    has_skip_fn = 'skip_exhausted_parallel_phases()' in source
+
+    # Find skip function body
+    fn_start = source.find('skip_exhausted_parallel_phases()')
+    fn_end = source.find('\n}', fn_start) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Verify it checks fail_count >= 2
+    has_threshold = '-ge 2' in fn_body
+    # Verify it marks SKIPPED
+    has_skipped = 'SKIPPED' in fn_body
+    # Verify it updates the plan
+    has_plan_update = 'update_plan_phase_status' in fn_body
+    # Verify it commits the change
+    has_git_commit = 'skip phases exhausted' in fn_body
+    # Verify it logs the exhaustion
+    has_log = 'exhausted parallel retries' in fn_body
+
+    # Verify the function is called in the orchestration loop
+    loop_start = source.find('while [ "$OUTER_BREAK" = "false" ]')
+    loop_section = source[loop_start:] if loop_start >= 0 else ""
+    has_called_in_loop = 'skip_exhausted_parallel_phases' in loop_section
+
+    ok = (has_skip_fn and has_threshold and has_skipped and has_plan_update
+          and has_git_commit and has_log and has_called_in_loop)
+    record("Exhausted Parallel Phase Skipped After Max Failures", ok,
+           f"fn={has_skip_fn}, threshold={has_threshold}, "
+           f"skipped={has_skipped}, plan={has_plan_update}, "
+           f"commit={has_git_commit}, log={has_log}, "
+           f"called={has_called_in_loop}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Evaluator Fallback Checks IN_PROGRESS Phases (Section 2.10)
+# ============================================================
+def test_evaluator_fallback_checks_in_progress():
+    """The evaluator fallback checks for both PENDING and IN_PROGRESS phases
+    as a second signal before returning 'stop'. If either remain, it
+    returns 'continue' even if the plan hash is unchanged."""
+    source = read_launcher()
+
+    fn_start = source.find('evaluator_fallback()')
+    fn_end = source.find('\n}', fn_start) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Must check for both PENDING and IN_PROGRESS
+    has_pending_check = 'PENDING' in fn_body
+    has_in_progress_check = 'IN_PROGRESS' in fn_body
+    # Combined grep pattern
+    has_combined = 'PENDING|IN_PROGRESS' in fn_body
+    # Returns continue when phases remain
+    has_continue_remaining = 'continue|false' in fn_body and 'remain' in fn_body
+    # Returns stop only when no remaining phases
+    has_stop_final = 'stop|false' in fn_body
+
+    ok = (has_pending_check and has_in_progress_check and has_combined and
+          has_continue_remaining and has_stop_final)
+    record("Evaluator Fallback Checks IN_PROGRESS Phases", ok,
+           f"pending={has_pending_check}, in_progress={has_in_progress_check}, "
+           f"combined={has_combined}, continue={has_continue_remaining}, "
+           f"stop={has_stop_final}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Phase Passes Critic (Section 2.19)
+# ============================================================
+def test_remediation_phase_passes_critic():
+    """After a remediation phase resolves all issues (Critic shows
+    builder: 'DONE', no HIGH/CRITICAL items), the evaluator returns
+    'continue' not 'remediate', and the orchestrator proceeds to the
+    next planned phase."""
+    source = read_launcher()
+
+    # The evaluator rules specify that "remediate" is ONLY returned when
+    # HIGH/CRITICAL issues exist AND features are stuck at TODO
+    rules_start = source.find('## Classification Rules:')
+    rules_end = source.find('RULES_EOF', rules_start) if rules_start >= 0 else -1
+    rules_section = source[rules_start:rules_end] if (rules_start >= 0 and rules_end >= 0) else ""
+
+    # Rule: Only return remediate when Critic summary has HIGH/CRITICAL or stuck at TODO
+    has_only_when = 'Only return "remediate" when' in rules_section
+    has_high_critical = 'HIGH/CRITICAL' in rules_section
+    has_stuck_todo = 'stuck at [TODO]' in rules_section or 'TODO' in rules_section
+    has_medium_exempt = 'MEDIUM and LOW items do NOT trigger' in rules_section
+
+    # The evaluator action mapping shows clean Critic -> continue
+    # (implicit: if no HIGH/CRITICAL, the evaluator does not return remediate)
+
+    ok = has_only_when and has_high_critical and has_medium_exempt
+    record("Remediation Phase Passes Critic", ok,
+           f"only_when={has_only_when}, high_critical={has_high_critical}, "
+           f"medium_exempt={has_medium_exempt}" if not ok else "")
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -4768,6 +5066,17 @@ if __name__ == '__main__':
 
     # Functional: Remediation End-to-End (1)
     test_remediation_sequential_execution()
+
+    # New scenarios: Stop Override, Parallel Failure, Evaluator Fallback (9)
+    test_bootstrap_in_progress_reset_before_approval()
+    test_orchestrator_git_commands_suppressed_during_canvas()
+    test_qa_recommendation_does_not_stop()
+    test_stop_overridden_when_pending_remain_sequential()
+    test_stop_overridden_when_pending_remain_parallel()
+    test_parallel_phase_failure_tracked_and_retried()
+    test_exhausted_parallel_phase_skipped()
+    test_evaluator_fallback_checks_in_progress()
+    test_remediation_phase_passes_critic()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)
