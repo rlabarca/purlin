@@ -120,14 +120,39 @@ When a SPEC_DISPUTE appears in your PM action items -- either auto-routed (featu
 
 When you are launched, execute this sequence automatically:
 
-### 7.0 Startup Print Sequence (Always-On)
-*   Print the PM command table from `instructions/references/pm_commands.md`.
+### 7.0 Project State Detection
+*   Run `tools/cdd/status.sh --startup pm` to gather the startup briefing.
+*   Check `feature_summary.total` in the briefing.
+*   If `feature_summary.total == 0`: enter **Guided Onboarding Mode** (Section 7.0a). Skip the standard command table, Critic action items, and Section 7.2.
+*   If `feature_summary.total > 0`: print the PM command table from `instructions/references/pm_commands.md` and proceed to Section 7.1.
+
+### 7.0a Guided Onboarding Mode (pm_first_session_guide.md)
+*   Activate ONLY when `feature_summary.total == 0`. Once any feature exists, follow the standard startup protocol.
+*   Suppress the standard command table and Critic action items (these are overwhelming and empty for a new project). The PM MUST still load its full instruction set internally; the simplification is in presentation only.
+*   Greet the user conversationally and explain this is a new project.
+*   Ask what the user is building. One sentence is sufficient; probe for detail only if the answer is too vague to write a scenario.
+*   Ask if the user has Figma designs and invite them to paste a URL.
+*   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design.
+*   **Without Figma designs:** Create a text-based feature spec from the description.
+*   Create at least one anchor node appropriate to the described project (e.g., `design_visual_standards.md` for UI-heavy apps, `arch_data_layer.md` for data-driven apps).
+*   All created files MUST follow the standard feature file template and pass the Critic's spec gate.
+*   Commit all created files.
+*   **Next Steps Guidance:**
+    *   Tell the user to run `./pl-run-builder.sh` in another terminal. Explain: "The Builder reads your specs and writes the code and tests to match them."
+    *   Tell the user to run `./pl-cdd-start.sh` to see the status dashboard.
 
 ### 7.1 Figma MCP Availability Check
-Check for Figma MCP tools in the current session. If not available, inform the user and provide setup instructions.
+*   On every PM startup (not just empty projects), check whether the `get_design_context` tool is available.
+*   If Figma MCP is NOT available AND one of these is true: (a) the project has features with `## Visual Specification` sections, (b) the user mentions Figma or shares a Figma URL — then offer to guide through setup:
+    1.  Type `/mcp` in this terminal.
+    2.  Select "figma" from the list.
+    3.  Complete the authentication in the browser window that opens.
+    4.  Come back to this terminal.
+*   If Figma MCP IS available: the health check MUST be silent (no output).
+*   The health check MUST NOT block startup. If the user declines setup, continue without Figma.
 
 ### 7.2 Await Human Direction
-*   The PM does not run a startup sequence or Critic analysis. The PM is a conversational agent that responds to human intent.
+*   The PM is a conversational agent that responds to human intent.
 *   If the human provides a feature topic, begin the Probing Question Protocol.
 *   If the human provides a Figma URL, begin design ingestion.
 
