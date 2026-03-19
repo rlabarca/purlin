@@ -238,10 +238,10 @@ The Critic MUST detect and report `## Visual Specification` sections in feature 
 *   **QA Action Items:** Generate separate QA action items for visual verification: `"Visual verify X: N checklist item(s) across M screen(s)"`. These are distinct from functional scenario verification items.
 *   **Reference Extraction (`parse_visual_spec`):** For each `### Screen:` subsection, extract:
     *   `screen_name`: The screen title from the `### Screen:` heading.
-    *   `reference_path`: The value from `- **Reference:**` (local path, Figma URL, Live URL, or `N/A`).
-    *   `reference_type`: One of `local`, `figma`, `live`, or `none`.
+    *   `reference_path`: The value from `- **Reference:**`. Accepted formats: backtick-wrapped local path, `[Figma](<url>)` markdown link, compact Figma node reference (`Figma node <id> (file <key>)`), `[Live](<url>)` markdown link, or `N/A`.
+    *   `reference_type`: One of `local`, `figma`, `live`, or `none`. Detection order: (1) `N/A` or empty -> `none`, (2) contains `[Figma](` -> `figma` (extract URL), (3) starts with `Figma node` -> `figma` (store compact reference as path), (4) contains `[Live](` -> `live` (extract URL), (5) otherwise -> `local` (strip backticks).
     *   `processed_date`: The value from `- **Processed:**` (YYYY-MM-DD or `N/A`).
-    *   `has_token_map`: Boolean indicating whether `- **Token Map:**` is present and contains at least one mapping entry.
+    *   `has_token_map`: Boolean. True when `- **Token Map:**` is present AND has content -- either (a) inline content on the same line after the colon, OR (b) indented sub-entries (lines starting with 2+ spaces followed by `- `) on subsequent lines before the next `- **` field, `### Screen:` heading, or section end.
 *   **Reference Integrity Check:** For references with `reference_type: "local"`, verify the file exists on disk relative to the project root. Missing files produce MEDIUM-priority PM action items with category `missing_design_reference`.
 *   **Staleness Check:** For references with `reference_type: "local"` and a valid `processed_date`, compare the file's modification time against the processed date. If the file is newer, produce LOW-priority PM action items with category `stale_token_map`.
 *   **Unprocessed Artifact Check:** For screens where `reference_path` is not `N/A` but `has_token_map` is false, produce HIGH-priority PM action items with category `unprocessed_artifact`.
@@ -817,6 +817,31 @@ The following fixture tags provide deterministic project states for integration-
     When the Critic tool runs the Implementation Gate traceability check
     Then visual checklist items are not counted as unmatched scenarios
     And visual items do not affect the traceability coverage percentage
+
+#### Scenario: Multi-Line Token Map Detected As Present
+
+    Given a feature file contains a Visual Specification screen with:
+      - **Token Map:**
+        - `surface` -> `var(--bg)`
+        - `primary` -> `var(--accent)`
+    When the Critic parses the visual specification
+    Then has_token_map is true for that screen
+    And no unprocessed_artifact action item is generated
+
+#### Scenario: Compact Figma Node Reference Classified As Figma
+
+    Given a feature file contains a Visual Specification screen with:
+      - **Reference:** Figma node 7:81 (file TEZI0T6lObCJrC9mkmZT8v)
+    When the Critic parses the visual specification
+    Then reference_type is "figma" for that screen
+    And no missing_design_reference action item is generated
+
+#### Scenario: Full Figma URL Reference Still Works
+
+    Given a feature file contains a Visual Specification screen with:
+      - **Reference:** [Figma](https://www.figma.com/design/ABC123/file?node-id=7-81)
+    When the Critic parses the visual specification
+    Then reference_type is "figma" for that screen
 
 #### Scenario: Scoped QA Action Item for Targeted Scope
     Given a feature is in TESTING state with 5 manual scenarios

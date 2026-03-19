@@ -152,7 +152,7 @@ After ingestion of a Figma URL with MCP available, the PM may optionally attach 
     And the Token Map is auto-generated mapping Figma design variables to project tokens
     And a brief.json is generated at features/design/<feature_stem>/brief.json
     And the brief.json contains figma_url, figma_last_modified, screens, and tokens
-    And the Reference preserves the original Figma URL
+    And the Reference identifies the Figma source (as [Figma](<url>) or compact node reference)
 
 #### Scenario: Ingest Live Web Page URL
 
