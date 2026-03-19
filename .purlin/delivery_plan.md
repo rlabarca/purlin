@@ -61,9 +61,9 @@
 **Completion Commit:** 527570a
 **QA Bugs Addressed:** --
 
-## Phase 12 -- CDD Startup Controls [IN_PROGRESS]
+## Phase 12 -- CDD Startup Controls [COMPLETE]
 **Features:** cdd_startup_controls.md
-**Completion Commit:** --
+**Completion Commit:** 4c071c3
 **QA Bugs Addressed:** --
 
 ## Phase 13 -- Terminal Identity [COMPLETE]
