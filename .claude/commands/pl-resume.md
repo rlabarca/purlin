@@ -191,7 +191,7 @@ Next Steps:
   1. <first thing to do>
   2. <second thing>
 
-<Always:>
+<When checkpoint exists, or find_work is not false:>
 Action Items:   <count> items from Critic report
 <Builder only>  Delivery plan: Phase X of Y -- next: <feature>
 <QA only>       Verification queue: N features in TESTING

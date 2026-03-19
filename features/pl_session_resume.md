@@ -215,7 +215,7 @@ Next Steps:
   1. <first thing to do>
   2. <second thing>
 
-[Always:]
+[When checkpoint exists, or find_work is not false:]
 Action Items:   [count] items from Critic report
 [Builder only]  Delivery plan: Phase X of Y -- next: <feature>
 [QA only]       Verification queue: N features in TESTING
@@ -390,6 +390,7 @@ Uncommitted:    [none | summary]
     When the agent invokes /pl-resume builder
     Then the startup briefing is retrieved
     And the recovery summary displays "find_work disabled -- awaiting instruction."
+    And the recovery summary does NOT display an Action Items line or detail table
     And the agent does not auto-generate a full work plan
     And the agent awaits user direction
 
