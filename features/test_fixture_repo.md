@@ -133,7 +133,69 @@ The Critic handles two distinct states when fixture tags are declared:
 1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
 2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
-### 2.11 Integration Test Fixture Tags
+### 2.11 Fixture Usage Tracking
+
+QA maintains a usage tracker at `tests/qa/fixture_usage.json` (committed, QA-owned) that records which fixtures are used by which regression scenarios. This file is updated during regression scenario authoring (see `features/regression_testing.md` Section 2.10).
+
+**Format:**
+
+```json
+{
+  "last_updated": "2026-03-18T...",
+  "features": {
+    "instruction_audit": {
+      "fixture_type": "local",
+      "tags_used": ["main/instruction_audit/override-contradiction"],
+      "last_authored": "2026-03-18T..."
+    },
+    "branch_collab": {
+      "fixture_type": "none",
+      "recommendation": "remote fixture repo needed",
+      "reason": "complex git state with multiple branches"
+    }
+  }
+}
+```
+
+QA announces fixture usage during authoring: `"Using fixture tag main/instruction_audit/override-contradiction (local repo)"`.
+
+### 2.12 Fixture Recommendations
+
+QA records fixture infrastructure recommendations in `tests/qa/fixture_recommendations.md` (committed, QA-owned). This file persists across sessions and tells future QA, Builder, and Architect agents what fixture work is pending.
+
+**When QA records a recommendation:**
+
+During regression scenario authoring (see `features/regression_testing.md` Section 2.10.1), if a feature needs complex state that cannot be expressed via inline `setup_commands` (elaborate git history, multiple branches, config combinations), QA prints a recommendation to the user and records it in this file.
+
+**Format:**
+
+```markdown
+# Fixture Recommendations
+
+## <feature_name>
+- **Reason:** <why persistent fixtures are needed>
+- **Suggested tags:** <list of tag paths that would be useful>
+- **Recorded:** <YYYY-MM-DD>
+- **Status:** PENDING | CREATED
+```
+
+The Builder reads this file when running with `--qa` flag and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
+
+### 2.13 Remote Fixture Awareness
+
+When `fixture_repo_url` is configured in `.purlin/config.json`, QA uses the remote URL for fixture checkout during regression scenario authoring. QA recommends remote fixture repos but does not manage them directly -- the human sets up the remote repo, and the Builder creates fixture tags within it.
+
+**QA recommendation flow:**
+
+When QA identifies features needing complex state fixtures:
+
+1. QA prints a recommendation describing what fixture state is needed and why.
+2. If the user approves, QA records the recommendation in `tests/qa/fixture_recommendations.md`.
+3. The human creates the repo (or uses an existing one) and configures `fixture_repo_url` via `/pl-agent-config`.
+4. The Builder (with `--qa` flag) creates fixture tags in the configured repo.
+5. QA's next authoring session uses the fixtures automatically via the fixture resolution order.
+
+### 2.14 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -269,6 +331,32 @@ The Critic handles two distinct states when fixture tags are declared:
     Then the command exits 0
     And the tag `main/test_feature/existing-state` points to a new commit
     And checking out that tag yields the updated files
+
+#### Scenario: QA records fixture usage during scenario authoring
+
+    Given QA is authoring a regression scenario for feature "instruction_audit"
+    And the scenario uses fixture tag "main/instruction_audit/override-contradiction"
+    When the scenario JSON file is written
+    Then tests/qa/fixture_usage.json is updated with the feature entry
+    And the entry records fixture_type "local" and the tag used
+    And last_authored is set to the current timestamp
+
+#### Scenario: QA recommends remote fixture repo for complex-state feature
+
+    Given QA is authoring a regression scenario for a feature needing complex git state
+    And the feature requires multiple branches and divergent history
+    And no fixture_repo_url is configured
+    When QA evaluates the fixture needs
+    Then QA prints a recommendation describing the complex state requirement
+    And asks the user whether to record the recommendation
+    And if approved, writes the recommendation to tests/qa/fixture_recommendations.md
+
+#### Scenario: Fixture recommendation file read by future sessions
+
+    Given tests/qa/fixture_recommendations.md contains a PENDING recommendation for "branch_collab"
+    When a new Builder session starts with qa_mode enabled
+    Then the Builder can read the recommendation file
+    And identify which fixture tags need to be created
 
 ### Manual Scenarios (Human Verification Required)
 
