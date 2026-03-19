@@ -36,9 +36,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Session Resume [IN_PROGRESS]
+## Phase 7 -- Session Resume [COMPLETE]
 **Features:** pl_session_resume.md
-**Completion Commit:** --
+**Completion Commit:** 7350517
 **QA Bugs Addressed:** --
 
 ## Phase 8 -- Purlin Update [COMPLETE]
