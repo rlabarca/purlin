@@ -6,7 +6,7 @@
 ## Summary
 15 features in TODO status: 7 cosmetic/dependency-only (anchor nodes and release steps) plus 8 full-implementation features. Phasing groups cosmetic re-verifications early as foundations, then implements features respecting formal dependency order. Most features depend only on Phase 1 anchor nodes, enabling high parallelism across Phases 2-12.
 
-## Phase 1 -- Anchor Nodes [PENDING]
+## Phase 1 -- Anchor Nodes [IN_PROGRESS]
 **Features:** policy_branch_collab.md, policy_critic.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -41,7 +41,7 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Purlin Update [PENDING]
+## Phase 8 -- Purlin Update [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -51,7 +51,7 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 10 -- Builder QA Mode [PENDING]
+## Phase 10 -- Builder QA Mode [IN_PROGRESS]
 **Features:** builder_qa_mode.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -61,7 +61,7 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 12 -- Regression Testing [PENDING]
+## Phase 12 -- Regression Testing [IN_PROGRESS]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
