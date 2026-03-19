@@ -69,6 +69,8 @@ Append these sections after the common fields:
 **Current Scenario:** <scenario name>
 **Discoveries:** <discoveries recorded this session, or "None">
 **Verification Queue:** <features verified vs. remaining>
+**Regression Authoring:** <e.g., "5 of 8 features authored" or "N/A">
+**Last Authored Feature:** <feature name, or "N/A">
 ```
 
 **Architect only:**
