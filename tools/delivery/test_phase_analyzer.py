@@ -34,7 +34,7 @@ def make_project(tmpdir, plan_text, graph_data):
     os.makedirs(cache_dir, exist_ok=True)
 
     if plan_text is not None:
-        with open(os.path.join(cache_dir, 'delivery_plan.md'), 'w') as f:
+        with open(os.path.join(purlin_dir, 'delivery_plan.md'), 'w') as f:
             f.write(plan_text)
 
     if graph_data is not None:

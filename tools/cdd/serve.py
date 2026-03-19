@@ -574,7 +574,7 @@ def aggregate_test_statuses(statuses):
 def get_delivery_phase():
     """Parse the delivery plan and return phase summary info.
 
-    Reads `.purlin/cache/delivery_plan.md`, parses phase headings,
+    Reads `.purlin/delivery_plan.md`, parses phase headings,
     and returns counts by status plus per-phase detail.
 
     Supports the canonical format: `## Phase N -- Label [STATUS]`
@@ -583,7 +583,7 @@ def get_delivery_phase():
     and phases array — or None if no plan exists or all phases are
     COMPLETE/REMOVED.
     """
-    plan_path = os.path.join(CACHE_DIR, "delivery_plan.md")
+    plan_path = os.path.join(PROJECT_ROOT, ".purlin", "delivery_plan.md")
     if not os.path.isfile(plan_path):
         return None
 

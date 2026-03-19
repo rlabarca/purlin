@@ -71,7 +71,7 @@ def make_mock_project(tmpdir, plan_text=None, graph_data=None):
 
     # Delivery plan
     if plan_text is not None:
-        with open(os.path.join(cache_dir, 'delivery_plan.md'), 'w') as f:
+        with open(os.path.join(purlin_dir, 'delivery_plan.md'), 'w') as f:
             f.write(plan_text)
 
     # Dependency graph
@@ -179,8 +179,8 @@ case "$BEHAVIOR" in
         emit_json '{{"type":"result","subtype":"success","session_id":"mock-session","cost_usd":0.01,"duration_ms":5000}}'
         ;;
     all_complete)
-        if [ -f "$PURLIN_PROJECT_ROOT/.purlin/cache/delivery_plan.md" ]; then
-            rm -f "$PURLIN_PROJECT_ROOT/.purlin/cache/delivery_plan.md"
+        if [ -f "$PURLIN_PROJECT_ROOT/.purlin/delivery_plan.md" ]; then
+            rm -f "$PURLIN_PROJECT_ROOT/.purlin/delivery_plan.md"
         fi
         emit_json '{{"type":"system","subtype":"init","session_id":"mock-session"}}'
         emit_json '{{"type":"assistant","message":{{"role":"assistant","content":[{{"type":"text","text":"All phases complete. Delivery plan deleted."}}]}}}}'
@@ -831,7 +831,7 @@ def make_bootstrap_mock_claude(tmpdir, creates_plan=True, exit_code=0,
     mock_bin_dir = os.path.join(tmpdir, 'mock_bin')
     os.makedirs(mock_bin_dir, exist_ok=True)
 
-    plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+    plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
     if plan_text is None:
         plan_text = make_plan([(1, "A", "PENDING", ["a.md"])])
 
@@ -993,7 +993,7 @@ def test_bootstrap_plan_declined():
         # Decline the plan
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'], stdin_input="n\n")
 
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         plan_exists = os.path.exists(plan_path)
         has_declined_msg = "declined" in proc.stderr.lower()
 
@@ -1022,7 +1022,7 @@ def test_bootstrap_completes_work_directly():
 
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         plan_exists = os.path.exists(plan_path)
         has_direct_msg = "completed all work directly" in proc.stderr.lower()
 
@@ -1054,7 +1054,7 @@ def test_bootstrap_failure():
         has_error_msg = "interactive" in proc.stderr.lower()
         has_nonzero_exit = proc.returncode != 0
         # Verify no delivery plan was created
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         no_plan_created = not os.path.exists(plan_path)
 
         ok = (
@@ -1471,7 +1471,7 @@ def make_plan_modifying_mock(tmpdir, modifications, eval_responses):
         with open(mod_script, 'w') as f:
             f.write(mod_fn)
 
-    plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+    plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
 
     mock_script = os.path.join(mock_bin_dir, 'claude')
     mod_nums = ' '.join(str(n) for n in modifications.keys())
@@ -2090,7 +2090,7 @@ exit 0
         # Check that amendments were applied — either in the plan file (if it still exists)
         # or evidenced by phases 7/8 running (visible in stderr).
         # The plan may be deleted at end-of-run if all phases complete successfully.
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         plan_content = ""
         if os.path.exists(plan_path):
             with open(plan_path) as f:
@@ -2740,7 +2740,7 @@ def test_approval_checkpoint_renders_table():
     has_green_sep = '32m' in source  # Green for separators
     has_proceed = 'Proceed? [Y/n]' in source
     has_parallel_groups = 'Parallel groups:' in source
-    has_review_path = 'Review at .purlin/cache/delivery_plan.md' in source
+    has_review_path = 'Review at .purlin/delivery_plan.md' in source
 
     # Verify dynamic column widths from terminal width (env var or tput cols)
     has_tput_cols = 'PURLIN_TERM_COLS' in source or 'tput cols' in source
@@ -3450,7 +3450,7 @@ exit 0
         # After the run, check that the delivery plan has IN_PROGRESS or COMPLETE
         # (the mark_phases_in_progress function changes PENDING -> IN_PROGRESS,
         # and update_plan_phase_status changes it to COMPLETE after group completes)
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         plan_content = ""
         if os.path.exists(plan_path):
             with open(plan_path) as f:
@@ -3589,7 +3589,7 @@ exit 0
         proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
 
         # Verify delivery plan was updated with COMPLETE status
-        plan_path = os.path.join(tmpdir, '.purlin', 'cache', 'delivery_plan.md')
+        plan_path = os.path.join(tmpdir, '.purlin', 'delivery_plan.md')
         plan_content = ""
         if os.path.exists(plan_path):
             with open(plan_path) as f:
