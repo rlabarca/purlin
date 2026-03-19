@@ -61,7 +61,7 @@
 **Completion Commit:** 527570a
 **QA Bugs Addressed:** --
 
-## Phase 12 -- CDD Startup Controls [PENDING]
+## Phase 12 -- CDD Startup Controls [IN_PROGRESS]
 **Features:** cdd_startup_controls.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
