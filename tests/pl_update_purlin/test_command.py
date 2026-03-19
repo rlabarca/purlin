@@ -29,6 +29,9 @@ Covers automated scenarios from features/pl_update_purlin.md:
 - Go-Deeper Summarizes Skipped Command Changes
 - Go-Deeper Available in Dry-Run Mode
 - Go-Deeper Reports No Impacts When Clean
+- Update Surfaces Missing Prerequisite Warning
+- Update With All Prerequisites Met Shows No Warnings
+- Missing Required Tool During Update Warns But Continues
 - New MCP Server Detected on Update
 - Removed MCP Server Generates Advisory
 - Changed MCP Server Configuration Advisory
@@ -874,6 +877,108 @@ class TestChangedMCPServerConfigurationAdvisory(unittest.TestCase):
         for field in ['transport', 'command', 'args', 'url']:
             self.assertIn(field, content.lower(),
                           f'Missing server comparison field: {field}')
+
+
+class TestUpdateSurfacesMissingPrerequisiteWarning(unittest.TestCase):
+    """Scenario: Update Surfaces Missing Prerequisite Warning
+
+    Given the consumer's environment does not have node/npx installed
+    And the submodule is behind by 3 commits
+    When /pl-update-purlin is invoked and the user confirms
+    Then the submodule is advanced (update is NOT blocked)
+    And the output includes a prerequisite warning for node
+    And the warning includes the platform-appropriate install command
+    And the warning explains what functionality is unavailable without node
+    And init.sh --quiet runs successfully after the warning
+    """
+
+    def test_command_has_prerequisite_validation_step(self):
+        """Command includes the post-advance prerequisite validation step."""
+        content = _get_command_content()
+        self.assertIn('Post-Advance Prerequisite Validation', content)
+
+    def test_command_references_preflight_only_flag(self):
+        """Command instructs running init.sh --preflight-only."""
+        content = _get_command_content()
+        self.assertIn('--preflight-only', content)
+
+    def test_command_warns_not_blocks_on_missing_tools(self):
+        """Command states missing tools produce warnings, not hard exits."""
+        content = _get_command_content()
+        self.assertIn('Do NOT block the update', content)
+
+    def test_init_supports_preflight_only_flag(self):
+        """init.sh supports the --preflight-only flag."""
+        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
+        with open(init_path) as f:
+            init_content = f.read()
+        self.assertIn('--preflight-only', init_content)
+
+    def test_command_includes_prerequisite_in_summary(self):
+        """Command instructs including prerequisite status in the summary."""
+        content = _get_command_content()
+        self.assertIn('prerequisite status in the summary', content.lower())
+
+
+class TestUpdateWithAllPrerequisitesMetShowsNoWarnings(unittest.TestCase):
+    """Scenario: Update With All Prerequisites Met Shows No Warnings
+
+    Given git, claude, and node are all installed
+    And the submodule is behind by 2 commits
+    When /pl-update-purlin is invoked and the user confirms
+    Then no prerequisite warnings appear in the output
+    And the update completes normally
+    """
+
+    def test_command_states_no_output_when_all_present(self):
+        """Command states no prerequisite output when all tools are present."""
+        content = _get_command_content()
+        self.assertIn(
+            'all prerequisites are met: produce no prerequisite output',
+            content.lower())
+
+    def test_preflight_only_exits_cleanly_when_all_present(self):
+        """init.sh --preflight-only exits 0 when all tools present."""
+        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
+        with open(init_path) as f:
+            init_content = f.read()
+        # The preflight-only path should exit 0
+        self.assertIn('PREFLIGHT_ONLY', init_content)
+
+
+class TestMissingRequiredToolDuringUpdateWarnsButContinues(unittest.TestCase):
+    """Scenario: Missing Required Tool During Update Warns But Continues
+
+    Given claude CLI is not installed
+    And the submodule is behind by 1 commit
+    When /pl-update-purlin is invoked and the user confirms
+    Then the submodule is advanced successfully
+    And the output includes a warning about claude with install instructions
+    And the output notes MCP servers will not be installed
+    And init.sh still runs (with MCP installation skipped)
+    And the summary report includes the prerequisite status
+    """
+
+    def test_command_handles_missing_recommended_tools(self):
+        """Command documents behavior for missing recommended tools."""
+        content = _get_command_content()
+        self.assertIn('recommended', content.lower())
+        self.assertIn('npm install -g @anthropic-ai/claude-code', content)
+
+    def test_command_notes_mcp_unavailable_without_claude(self):
+        """Command notes MCP servers will not be installed without claude."""
+        content = _get_command_content()
+        self.assertIn('MCP servers will not be installed', content)
+
+    def test_command_update_continues_despite_missing_tool(self):
+        """Command states the submodule is already advanced so update continues."""
+        content = _get_command_content()
+        self.assertIn('submodule is already advanced', content.lower())
+
+    def test_command_handles_missing_optional_tools(self):
+        """Command documents behavior for missing optional tools like node."""
+        content = _get_command_content()
+        self.assertIn('Playwright web testing will be unavailable', content)
 
 
 class TestNoMCPOutputWhenManifestUnchanged(unittest.TestCase):

@@ -35,6 +35,15 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    - `git -C <submodule_dir> checkout <remote_sha>` (detached HEAD)
    - If this fails, abort with error
 
+3b. **Post-Advance Prerequisite Validation (init_preflight_checks.md §2.6):**
+   - After advancing the submodule, run `<submodule>/tools/init.sh --preflight-only` to check tool prerequisites using the NEW init.sh version
+   - If any **required** tool (git) is missing: print a warning with install instructions. Do NOT block the update — the submodule is already advanced and the refresh must complete to keep the project consistent.
+   - If any **recommended** tool (claude) is missing: print a note with the install command (`npm install -g @anthropic-ai/claude-code`) and note that MCP servers will not be installed.
+   - If any **optional** tool (node/npx) is missing: print a note with the install command and explain that Playwright web testing will be unavailable.
+   - If all prerequisites are met: produce no prerequisite output.
+   - Include the prerequisite status in the summary report (step 8).
+   - Key difference from init.sh's own preflight: during updates, missing required tools produce warnings rather than hard exits, because the submodule is already advanced.
+
 4. **Init Refresh:**
    - Run `<submodule>/tools/init.sh --quiet` to refresh all project-root artifacts
    - This handles: command files (unmodified ones auto-copied), CDD symlinks, launcher scripts, shim (`pl-init.sh`), and `.purlin/.upstream_sha`
