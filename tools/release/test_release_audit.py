@@ -602,6 +602,32 @@ class TestCriticConsistencyWarningLevel(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: Doc consistency — fully consistent (clean state)
+# ===================================================================
+
+class TestDocConsistencyClean(unittest.TestCase):
+    """Scenario: Documentation is fully consistent"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "README.md": (
+                '# Project\n'
+                'This project includes my_feature.\n'
+            ),
+            "features/my_feature.md": '# My Feature\n',
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_passes_clean(self):
+        result = doc_consistency_main(self.root)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(len(result["findings"]), 0)
+
+
+# ===================================================================
 # Scenario: Doc consistency detects coverage gap
 # ===================================================================
 

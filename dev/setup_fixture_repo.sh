@@ -510,7 +510,7 @@ commit_and_tag "main/cdd_isolated_teams/two-worktrees" \
 
 # delivery-phase-active
 mkdir -p .purlin/cache
-cat > .purlin/cache/delivery_plan.md <<'EOF'
+cat > .purlin/delivery_plan.md <<'EOF'
 # Delivery Plan
 
 ## Phase 1: Core [COMPLETE]
@@ -538,7 +538,7 @@ commit_and_tag "main/cdd_isolated_teams/delivery-phase-active" \
     "Worktree with an active delivery plan for verifying Phase N/M orange badge"
 
 # two-worktrees-mixed
-rm -f .purlin/cache/delivery_plan.md
+rm -f .purlin/delivery_plan.md
 cat > .purlin/cache/feature_status.json <<'EOF'
 {
     "features": [],
@@ -1000,7 +1000,7 @@ git commit -m "feat: add 10 features for parallel phases" >/dev/null 2>&1
 
 # Delivery plan with 10 phases: 4 COMPLETE, 2 IN_PROGRESS, 3 PENDING, 1 REMOVED
 mkdir -p .purlin/cache
-cat > .purlin/cache/delivery_plan.md <<'DPEOF'
+cat > .purlin/delivery_plan.md <<'DPEOF'
 # Delivery Plan
 
 > Last Updated: 2026-03-10
