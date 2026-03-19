@@ -29,6 +29,10 @@ Covers automated scenarios from features/pl_update_purlin.md:
 - Go-Deeper Summarizes Skipped Command Changes
 - Go-Deeper Available in Dry-Run Mode
 - Go-Deeper Reports No Impacts When Clean
+- New MCP Server Detected on Update
+- Removed MCP Server Generates Advisory
+- Changed MCP Server Configuration Advisory
+- No MCP Output When Manifest Unchanged
 
 The agent command is a Claude skill defined in .claude/commands/pl-update-purlin.md.
 These tests verify the command file structure, referenced infrastructure,
@@ -780,6 +784,126 @@ class TestGoDeeperReportsNoImpactsWhenClean(unittest.TestCase):
         """Command instructs omitting categories with no issues."""
         content = _get_command_content()
         self.assertIn('Omit categories with no issues', content)
+
+
+class TestNewMCPServerDetectedOnUpdate(unittest.TestCase):
+    """Scenario: New MCP Server Detected on Update
+
+    Given the new upstream manifest adds a server not in the old manifest
+    When /pl-update-purlin is invoked and the update completes
+    Then init.sh installs the new server during the refresh step
+    And the summary report includes the new server as newly available
+    And the summary includes "Restart Claude Code to load MCP changes."
+    """
+
+    def test_command_references_mcp_manifest(self):
+        """Command references tools/mcp/manifest.json for MCP diff."""
+        content = _get_command_content()
+        self.assertIn('tools/mcp/manifest.json', content)
+
+    def test_command_detects_added_servers(self):
+        """Command instructs detecting added MCP servers."""
+        content = _get_command_content()
+        self.assertIn('Added servers', content)
+
+    def test_command_reports_new_servers_in_summary(self):
+        """Command instructs reporting newly available servers in summary."""
+        content = _get_command_content()
+        self.assertIn('newly available', content.lower())
+
+    def test_command_includes_restart_notice(self):
+        """Command includes restart notice when MCP changes occur."""
+        content = _get_command_content()
+        self.assertIn('Restart Claude Code to load MCP changes', content)
+
+    def test_mcp_manifest_file_exists(self):
+        """The tools/mcp/manifest.json file exists in the repository."""
+        manifest_path = os.path.join(
+            PROJECT_ROOT, 'tools', 'mcp', 'manifest.json')
+        self.assertTrue(os.path.isfile(manifest_path),
+                        f'manifest.json not found: {manifest_path}')
+
+
+class TestRemovedMCPServerGeneratesAdvisory(unittest.TestCase):
+    """Scenario: Removed MCP Server Generates Advisory
+
+    Given the old manifest contains a server absent from the new manifest
+    When /pl-update-purlin is invoked and the update completes
+    Then the summary includes a removal advisory with claude mcp remove command
+    And the server is NOT auto-removed
+    """
+
+    def test_command_detects_removed_servers(self):
+        """Command instructs detecting removed MCP servers."""
+        content = _get_command_content()
+        self.assertIn('Removed servers', content)
+
+    def test_command_includes_remove_advisory(self):
+        """Command includes the claude mcp remove advisory text."""
+        content = _get_command_content()
+        self.assertIn('claude mcp remove', content)
+
+    def test_command_does_not_auto_remove(self):
+        """Command explicitly states not to auto-remove servers."""
+        content = _get_command_content()
+        self.assertIn('Do NOT auto-remove', content)
+
+
+class TestChangedMCPServerConfigurationAdvisory(unittest.TestCase):
+    """Scenario: Changed MCP Server Configuration Advisory
+
+    Given a server exists in both old and new manifests with different config
+    When /pl-update-purlin is invoked and the update completes
+    Then the summary includes an advisory that the server config changed
+    And the advisory includes the reconfiguration command
+    """
+
+    def test_command_detects_changed_servers(self):
+        """Command instructs detecting changed MCP server configurations."""
+        content = _get_command_content()
+        self.assertIn('Changed servers', content)
+
+    def test_command_includes_reconfiguration_advisory(self):
+        """Command includes reconfiguration command format."""
+        content = _get_command_content()
+        self.assertIn('Reconfigure:', content)
+
+    def test_command_compares_server_fields(self):
+        """Command instructs comparing transport, command, args, or url fields."""
+        content = _get_command_content()
+        for field in ['transport', 'command', 'args', 'url']:
+            self.assertIn(field, content.lower(),
+                          f'Missing server comparison field: {field}')
+
+
+class TestNoMCPOutputWhenManifestUnchanged(unittest.TestCase):
+    """Scenario: No MCP Output When Manifest Unchanged
+
+    Given tools/mcp/manifest.json is identical between old and new SHA
+    When /pl-update-purlin is invoked and the update completes
+    Then no MCP-related output appears in the summary
+    And no "Restart Claude Code" notice is shown for MCP reasons
+    """
+
+    def test_command_skips_mcp_when_unchanged(self):
+        """Command instructs skipping MCP analysis when manifest unchanged."""
+        content = _get_command_content()
+        self.assertIn(
+            'did NOT change between old and new SHA, skip this step entirely',
+            content)
+
+    def test_command_produces_no_mcp_output_when_clean(self):
+        """Command states no MCP output when manifest unchanged."""
+        content = _get_command_content()
+        self.assertIn('produce no MCP-related output', content)
+
+    def test_mcp_check_uses_diff_tree(self):
+        """Command uses diff-tree to check manifest changes."""
+        content = _get_command_content()
+        self.assertIn(
+            'diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> '
+            '-- tools/mcp/manifest.json',
+            content)
 
 
 if __name__ == '__main__':

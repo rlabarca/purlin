@@ -21,7 +21,8 @@ Update the Purlin submodule to the latest version with automatic artifact refres
 2. **Pre-Update Conflict Scan:**
    - Read old SHA from `.purlin/.upstream_sha`
    - First, run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/` to identify which command files changed upstream (single invocation). Also check launcher-relevant paths (e.g., `tools/init.sh`).
-   - **If no command files or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict.
+   - Also check if `tools/mcp/manifest.json` changed: `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- tools/mcp/manifest.json`. Record whether the MCP manifest changed (used in step 4b).
+   - **If no command files or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict. (The MCP manifest check above is independent and does not affect this early-exit.)
    - For files that appear in BOTH the consumer project AND the diff-tree output (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
@@ -38,6 +39,17 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    - Run `<submodule>/tools/init.sh --quiet` to refresh all project-root artifacts
    - This handles: command files (unmodified ones auto-copied), CDD symlinks, launcher scripts, shim (`pl-init.sh`), and `.purlin/.upstream_sha`
    - Init's timestamp logic preserves locally modified command files — conflict resolution happens in step 5
+
+4b. **MCP Manifest Diff (only if step 2 detected manifest change):**
+   - If `tools/mcp/manifest.json` did NOT change between old and new SHA, skip this step entirely and produce no MCP-related output.
+   - If the manifest changed:
+     1. Read old manifest: `git -C <submodule> show <old_sha>:tools/mcp/manifest.json`
+     2. Read new manifest from disk (after submodule advance): `<submodule>/tools/mcp/manifest.json`
+     3. Compute diff by server `name`:
+        - **Added servers** (in new, not in old): Report in summary as newly available. These are installed automatically by `init.sh` during the init refresh step.
+        - **Removed servers** (in old, not in new): Print advisory: `"MCP server '<name>' was removed from Purlin manifest. Remove manually: claude mcp remove <name>"`. Do NOT auto-remove.
+        - **Changed servers** (in both, but different `transport`, `command`, `args`, or `url`): Print advisory with reconfiguration command: `"MCP server '<name>' config changed upstream. Reconfigure: claude mcp remove <name> && <new add command>"`.
+     4. If ANY MCP changes occurred (added, removed, or changed), append to the summary: `"Restart Claude Code to load MCP changes."`
 
 5. **Conflict Resolution (only if step 2 found locally modified files):**
    - For each flagged command file where upstream ALSO changed the file:
@@ -68,6 +80,12 @@ Update the Purlin submodule to the latest version with automatic artifact refres
    * Config sync: <result>
    ```
    **If any command files were skipped** (locally modified), warn the user: "M command files were skipped because they have local modifications. These files may contain outdated workflow protocols. Run `diff <local_file> <submodule_source>` to review upstream changes and consider merging manually."
+   **MCP changes (from step 4b):** If MCP manifest changes were detected, include in summary:
+   - List added MCP servers as newly available
+   - Include `claude mcp remove <name>` advisory for each removed server
+   - Include reconfiguration advisory for each changed server
+   - Append: "Restart Claude Code to load MCP changes."
+   If no MCP manifest changes were detected, produce no MCP-related output in the summary.
 
 9. **Customization Impact Check (Optional):**
    - **Skip entirely if `--auto-approve`** -- do not prompt or analyze.
