@@ -6,37 +6,37 @@
 ## Summary
 20 features reset to TODO after Architect spec audit. Work splits into two parallel tiers: Layer 0 (Phases 1-7, all independent foundations) and Layer 1 (Phases 8-16, all depend only on Layer 0). Each tier executes as a parallel group. HIGH-complexity features (5+ scenarios) get dedicated phases. Note: config_layering (Phase 7) has Architect: TODO -- unstable contract, proceed with caution.
 
-## Phase 1 -- Design Foundation [PENDING]
+## Phase 1 -- Design Foundation [IN_PROGRESS]
 **Features:** design_visual_standards.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Policy Anchors [PENDING]
+## Phase 2 -- Policy Anchors [IN_PROGRESS]
 **Features:** policy_test_quality.md, policy_branch_collab.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Core Infrastructure [PENDING]
+## Phase 3 -- Core Infrastructure [IN_PROGRESS]
 **Features:** agent_launchers_common.md, models_configuration.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Python Env Refresh [PENDING]
+## Phase 4 -- Python Env Refresh [IN_PROGRESS]
 **Features:** python_environment.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Session Resume Re-verify [PENDING]
+## Phase 5 -- Session Resume Re-verify [IN_PROGRESS]
 **Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Design Ingest Skill [PENDING]
+## Phase 6 -- Design Ingest Skill [IN_PROGRESS]
 **Features:** pl_design_ingest.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Config Layering [PENDING]
+## Phase 7 -- Config Layering [IN_PROGRESS]
 **Features:** config_layering.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
