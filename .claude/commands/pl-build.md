@@ -36,6 +36,7 @@ If a delivery plan exists and the current phase has 2+ features:
 *   **Re-Verification Detection:** Check the Critic's `reset_context` for this feature. If `has_passing_tests: true` AND `scenario_diff.has_diff: false` AND `requirements_changed: false`, this is a re-verification task, NOT a new implementation task. Run existing tests, confirm they pass, and re-tag (skip to Step 3 -> Step 4). Do NOT re-implement existing code.
 *   **Anchor Review:** Check session-preloaded anchor constraints. Identify FORBIDDEN patterns and INVARIANTs applicable to this feature. If an anchor's domain intersects but is not listed in `> Prerequisite:` links, log `[DISCOVERY: missing Prerequisite link to <anchor_name>]` in the companion file.
 *   **Visual Design Sources:** When the feature has a `## Visual Specification`, read in priority: Token Map (in spec) -> `brief.json` (at `features/design/<stem>/brief.json`) -> Figma MCP (last resort, read-only).
+*   **Web Test Readiness:** When the feature has `## Visual Specification` AND web test metadata (`> Web Test:` or `> AFT Web:`), check for Playwright MCP availability now (look for `browser_navigate` in the available tool list). If MCP is not available, attempt auto-setup: verify package via `npx @playwright/mcp@latest --help`, then run `claude mcp add playwright -- npx @playwright/mcp --headless`. If setup succeeds, inform the user a session restart is needed and HALT -- do not begin implementation without MCP ready. If the feature has `## Visual Specification` but NO web test metadata, log `[DISCOVERY: feature has Visual Specification but no web test URL -- visual verification cannot be automated]` in the companion file and continue.
 *   **Companion File:** Read `features/<name>.impl.md` if it exists. Also read prerequisite companion files.
 *   **Verify Status:** Confirm the target feature is in the expected state per CDD status.
 *   **Fixture Detection:** If the spec contains a fixture tag section (`### 2.x ... Fixture Tags`), run `/pl-fixture` for setup.
@@ -65,7 +66,7 @@ If a delivery plan exists and the current phase has 2+ features:
 
 *   **Tests:** Run feature-specific tests. Results to `tests/<feature_name>/tests.json` with `{"status": "PASS", "passed": N, "failed": 0, "total": N}`. `total` MUST be > 0. File MUST be produced by an actual test runner (anti-stub mandate).
 *   **Test Quality Self-Audit:** Audit each test against `features/policy_test_quality.md`: (1) Deletion test -- would it fail if implementation deleted? (2) Anti-pattern scan (AP-1 through AP-5). (3) Value assertion check. Record audit in companion file under `### Test Quality Audit`.
-*   **Web test (if eligible):** For features with `> Web Test:`, run `/pl-web-test` and iterate until zero BUG verdicts.
+*   **Web test (if eligible):** For features with `> Web Test:` or `> AFT Web:`, run `/pl-web-test` and iterate until zero BUG verdicts.
 *   **Self-Test Completeness:** Validate `tests.json`: required fields present, `total > 0`, no inconsistencies.
 *   If tests fail, fix and repeat from Step 2.
 
