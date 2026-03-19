@@ -104,9 +104,9 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 Execute this 8-step sequence:
 
-### Step 0 -- Context Guard Counter Reset
+### Step 0 -- Stale Session State Cleanup
 
-Reset the context guard turn counter to zero. This clears stale counter state carried over from the previous session so the guard accurately tracks remaining budget for the new session.
+Clear any stale session state carried over from the previous session. This includes resetting internal turn counters or budget trackers if the agent runtime maintains them. If no such state exists in the current runtime, this step is a no-op and may be skipped silently.
 
 ### Step 1 -- Role Detection (4-Tier Fallback)
 
