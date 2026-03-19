@@ -6,6 +6,7 @@
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 env/
 venv/
@@ -22,16 +23,13 @@ features/digests/
 *.log
 *.pid
 *.mmd
-tools/feature_graph_*.mmd
-tools/cdd/feature_status.json
 tests/*/critic.json
 CRITIC_REPORT.md
-tools/*/test_status.json
-tools/test_status.json
 tools/critic/.cache/
 
 # Web-verify screenshots
 *.png
+!assets/*.png
 *.jpeg
 
 # Temp
