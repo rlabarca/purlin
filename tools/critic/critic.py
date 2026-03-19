@@ -1277,11 +1277,15 @@ def run_implementation_gate(content, feature_stem, filename, feature_path=None):
         impl_notes = get_implementation_notes(content)
     scenarios = parse_scenarios(content)
 
-    # Traceability
-    traceability_result = run_traceability(
-        scenarios, PROJECT_ROOT, feature_stem,
-        tools_root=TOOLS_ROOT, impl_notes=impl_notes,
-    )
+    # Traceability -- not enforced (policy_critic Section 2.2)
+    # The traceability engine code remains but is not invoked.
+    traceability_result = {
+        'status': 'PASS',
+        'coverage': 1.0,
+        'detail': 'N/A - traceability not enforced',
+        'matched': [],
+        'weak_matches': [],
+    }
 
     # Policy adherence
     policy_result = run_policy_check(
@@ -1623,44 +1627,6 @@ def generate_action_items(feature_result, cdd_status=None):
             'description': desc,
         })
 
-    # Weak traceability match detection for new scenarios (Section 2.12)
-    # When new scenarios are detected in the diff and have keyword-only
-    # traceability matches to pre-existing tests, flag them.
-    if scenario_diff and scenario_diff['new']:
-        traceability_matched = impl_gate['checks'].get(
-            'traceability', {}).get('_matched', [])
-        matched_by_title = {
-            m['scenario']: m for m in traceability_matched
-        }
-        commit_hash = scenario_diff.get('commit_hash')
-
-        for new_title in scenario_diff['new']:
-            match_info = matched_by_title.get(new_title)
-            if match_info and match_info.get('via') == 'keyword':
-                # Check if matched test functions existed before the
-                # spec edit by checking if any were added after the
-                # status commit.
-                has_new_test = False
-                if commit_hash:
-                    for test_name in match_info.get('tests', []):
-                        if _test_added_after_commit(
-                                test_name, feature_name,
-                                commit_hash):
-                            has_new_test = True
-                            break
-
-                if not has_new_test:
-                    builder_items.append({
-                        'priority': 'HIGH',
-                        'category': 'weak_traceability',
-                        'feature': feature_name,
-                        'description': (
-                            f"New scenario '{new_title}' has no dedicated "
-                            f"test — existing keyword match is likely a "
-                            f"false positive"
-                        ),
-                    })
-
     # Structural completeness FAIL -> HIGH (missing/malformed tests.json)
     # Structural completeness WARN -> HIGH (tests.json exists with status FAIL)
     struct = impl_gate['checks'].get('structural_completeness', {})
@@ -1681,33 +1647,6 @@ def generate_action_items(feature_result, cdd_status=None):
             'feature': feature_name,
             'description': (
                 f'Fix failing tests for {feature_name}'
-            ),
-        })
-
-    # Traceability gaps -> MEDIUM
-    trace = impl_gate['checks'].get('traceability', {})
-    if trace.get('status') in ('WARN', 'FAIL'):
-        builder_items.append({
-            'priority': 'MEDIUM',
-            'category': 'traceability',
-            'feature': feature_name,
-            'description': (
-                f'Write tests for {feature_name}: '
-                f'{trace.get("detail", "coverage gap")}'
-            ),
-        })
-
-    # Keyword-count weak matches -> MEDIUM (Section 2.12 of policy_critic)
-    # Matches with <3 keyword overlap are weak and warrant a warning.
-    weak_keyword_matches = trace.get('_weak_matches', [])
-    for wm in weak_keyword_matches:
-        builder_items.append({
-            'priority': 'MEDIUM',
-            'category': 'weak_keyword_match',
-            'feature': feature_name,
-            'description': (
-                f"Scenario '{wm['scenario']}' has weak traceability "
-                f"({wm.get('max_overlap', 0)} keyword(s), needs 3+)"
             ),
         })
 
@@ -2050,6 +1989,29 @@ def generate_action_items(feature_result, cdd_status=None):
                     f'resolution by {_resolver} for {feature_name}'
                 ),
             })
+
+    # Regression Guidance Detection (policy_critic Section 2.17)
+    # When a feature has a ## Regression Guidance section and builder is DONE
+    # (lifecycle testing or complete), generate a MEDIUM QA action item.
+    if lifecycle_state in ('testing', 'complete'):
+        _rg_path = os.path.join(
+            FEATURES_DIR, os.path.basename(feature_file))
+        if os.path.isfile(_rg_path):
+            _rg_content = read_feature_file(_rg_path)
+            _rg_match = re.search(
+                r'^##\s+Regression\s+Guidance\s*$',
+                _rg_content, re.MULTILINE)
+            if _rg_match:
+                qa_items.append({
+                    'priority': 'MEDIUM',
+                    'category': 'regression_guidance_pending',
+                    'feature': feature_name,
+                    'description': (
+                        f'Regression guidance available for '
+                        f'{feature_name} -- review hints and '
+                        f'create regression harness'
+                    ),
+                })
 
     # --- PM items ---
     # Figma Dev Status Advisory Gate (policy_critic Section 2.9)

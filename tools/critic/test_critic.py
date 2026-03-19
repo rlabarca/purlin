@@ -2031,39 +2031,7 @@ class TestActionItemsArchitect(unittest.TestCase):
 
 
 class TestActionItemsBuilder(unittest.TestCase):
-    """Scenario: Builder Action Items from Traceability Gaps"""
-
-    def test_traceability_gap_generates_medium_item(self):
-        result = {
-            'feature_file': 'features/test.md',
-            'spec_gate': {'status': 'PASS', 'checks': {}},
-            'implementation_gate': {
-                'status': 'WARN',
-                'checks': {
-                    'traceability': {
-                        'status': 'WARN',
-                        'coverage': 0.5,
-                        'detail': '1/2 traced. Unmatched: Zero-Queue Verification',
-                    },
-                    'policy_adherence': {'status': 'PASS', 'violations': [], 'detail': 'OK'},
-                    'structural_completeness': {'status': 'PASS', 'detail': 'OK'},
-                    'builder_decisions': {
-                        'status': 'PASS',
-                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
-                                    'DEVIATION': 0, 'DISCOVERY': 0},
-                        'detail': 'OK',
-                    },
-                    'logic_drift': {'status': 'PASS', 'pairs': [], 'detail': 'OK'},
-                },
-            },
-            'user_testing': {'status': 'CLEAN', 'bugs': 0,
-                             'discoveries': 0, 'intent_drifts': 0},
-        }
-        items = generate_action_items(result)
-        builder_items = items['builder']
-        self.assertTrue(len(builder_items) > 0)
-        self.assertEqual(builder_items[0]['priority'], 'MEDIUM')
-        self.assertIn('Write tests', builder_items[0]['description'])
+    """Scenario: Builder Action Items from Structural Completeness"""
 
     def test_structural_fail_generates_high_item(self):
         result = {
@@ -7730,111 +7698,6 @@ class TestResetContextForGenuinelyUnimplementedFeature(unittest.TestCase):
             'Missing tests.json should produce structural completeness item')
 
 
-class TestWeakTraceabilityMatch(unittest.TestCase):
-    """Test weak traceability match detection for new scenarios."""
-
-    def _make_feature_result(self, matched=None):
-        return {
-            'feature_file': 'features/my_feature.md',
-            'spec_gate': {'status': 'PASS', 'checks': {}},
-            'implementation_gate': {
-                'status': 'PASS',
-                'checks': {
-                    'builder_decisions': {
-                        'status': 'PASS',
-                        'summary': {},
-                    },
-                    'traceability': {
-                        'status': 'PASS',
-                        '_matched': matched or [],
-                    },
-                },
-            },
-            'user_testing': {'status': 'CLEAN'},
-            'visual_spec': {'present': False},
-            'regression_scope': {'declared': 'full'},
-            'fixture_tags': {
-                'declared_count': 0,
-                'missing_count': 0,
-                'missing': [],
-                'repo_url': None,
-                'repo_unavailable': False,
-            },
-        }
-
-    @patch('critic._test_added_after_commit')
-    @patch('critic._get_scenario_diff')
-    @patch('critic.read_feature_file')
-    @patch('os.path.isfile', return_value=True)
-    @patch('critic._get_feature_lifecycle_state')
-    def test_weak_match_flagged(
-            self, mock_lifecycle, mock_isfile, mock_read, mock_diff,
-            mock_test_added):
-        """New scenario with pre-existing keyword match is flagged."""
-        mock_lifecycle.return_value = 'todo'
-        mock_read.return_value = 'content'
-        mock_diff.return_value = {
-            'new': ['Convention Path Fixture Repo Used'],
-            'modified': [],
-            'removed': [],
-            'has_diff': True,
-            'commit_hash': 'abc123',
-        }
-        mock_test_added.return_value = False  # test existed before
-
-        result = self._make_feature_result(matched=[{
-            'scenario': 'Convention Path Fixture Repo Used',
-            'tests': ['test_convention_path'],
-            'via': 'keyword',
-        }])
-        cdd_status = {'features': {
-            'todo': [{'file': 'features/my_feature.md'}],
-        }}
-        items = generate_action_items(result, cdd_status)
-        weak_items = [
-            i for i in items['builder']
-            if i['category'] == 'weak_traceability'
-        ]
-        self.assertEqual(len(weak_items), 1)
-        self.assertEqual(weak_items[0]['priority'], 'HIGH')
-        self.assertIn('no dedicated test', weak_items[0]['description'])
-        self.assertIn('false positive', weak_items[0]['description'])
-
-    @patch('critic._test_added_after_commit')
-    @patch('critic._get_scenario_diff')
-    @patch('critic.read_feature_file')
-    @patch('os.path.isfile', return_value=True)
-    @patch('critic._get_feature_lifecycle_state')
-    def test_new_test_not_flagged(
-            self, mock_lifecycle, mock_isfile, mock_read, mock_diff,
-            mock_test_added):
-        """New scenario with dedicated new test is NOT flagged."""
-        mock_lifecycle.return_value = 'todo'
-        mock_read.return_value = 'content'
-        mock_diff.return_value = {
-            'new': ['Convention Path Fixture Repo Used'],
-            'modified': [],
-            'removed': [],
-            'has_diff': True,
-            'commit_hash': 'abc123',
-        }
-        mock_test_added.return_value = True  # test added after commit
-
-        result = self._make_feature_result(matched=[{
-            'scenario': 'Convention Path Fixture Repo Used',
-            'tests': ['test_convention_path_fixture_repo'],
-            'via': 'keyword',
-        }])
-        cdd_status = {'features': {
-            'todo': [{'file': 'features/my_feature.md'}],
-        }}
-        items = generate_action_items(result, cdd_status)
-        weak_items = [
-            i for i in items['builder']
-            if i['category'] == 'weak_traceability'
-        ]
-        self.assertEqual(len(weak_items), 0)
-
 
 class TestBuilderActionItemGeneratedForFailingTests(unittest.TestCase):
     """Scenario: Builder Action Item Generated for Failing Tests
@@ -9252,6 +9115,272 @@ class TestFigmaDevStatusAdvisoryGate(unittest.TestCase):
             critic.FEATURES_DIR = orig_features
 
 
+class TestTraceabilityNotEnforced(unittest.TestCase):
+    """Traceability is not enforced -- always reports PASS."""
+
+    def setUp(self):
+        import critic
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        feature_content = """\
+# Feature: Sample
+
+> Label: "Sample"
+> Prerequisite: features/policy_critic.md
+
+## 1. Overview
+A sample.
+
+## 2. Requirements
+### 2.1 Something
+Do something.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: First scenario
+    Given something
+    When action
+    Then result
+
+### Manual Scenarios (Human Verification Required)
+None.
+"""
+        self.feature_path = os.path.join(
+            self.features_dir, 'sample.md')
+        with open(self.feature_path, 'w') as f:
+            f.write(feature_content)
+        self._orig_features = critic.FEATURES_DIR
+        self._orig_root = critic.PROJECT_ROOT
+        self._orig_tools = critic.TOOLS_ROOT
+        critic.FEATURES_DIR = self.features_dir
+        critic.PROJECT_ROOT = self.root
+        critic.TOOLS_ROOT = os.path.join(self.root, 'tools')
+
+    def tearDown(self):
+        import critic
+        critic.FEATURES_DIR = self._orig_features
+        critic.PROJECT_ROOT = self._orig_root
+        critic.TOOLS_ROOT = self._orig_tools
+        shutil.rmtree(self.root)
+
+    def test_traceability_always_pass(self):
+        """Traceability check always reports PASS regardless of test coverage."""
+        import critic
+        content = open(self.feature_path).read()
+        result = critic.run_implementation_gate(
+            content, 'sample', 'sample.md',
+            feature_path=self.feature_path)
+        trace = result['checks']['traceability']
+        self.assertEqual(trace['status'], 'PASS')
+        self.assertEqual(trace['coverage'], 1.0)
+        self.assertIn('not enforced', trace['detail'])
+
+    def test_no_traceability_action_items(self):
+        """No traceability-related action items are generated."""
+        feature_result = {
+            'feature_file': 'features/sample.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {
+                        'status': 'PASS',
+                        'coverage': 1.0,
+                        'detail': 'N/A - traceability not enforced',
+                        '_matched': [],
+                        '_weak_matches': [],
+                    },
+                },
+            },
+            'lifecycle_state': 'testing',
+            'regression_scope': {},
+            'visual_spec': {},
+            'user_testing': {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0},
+        }
+        cdd_status = {
+            'features': {
+                'testing': [{'file': 'features/sample.md'}],
+                'complete': [], 'todo': [],
+            },
+        }
+        items = generate_action_items(feature_result, cdd_status)
+        trace_items = [
+            i for i in items['builder']
+            if i['category'] in ('traceability', 'weak_keyword_match',
+                                 'weak_traceability')]
+        self.assertEqual(len(trace_items), 0)
+
+
+class TestRegressionGuidanceDetection(unittest.TestCase):
+    """Regression Guidance Detection (policy_critic Section 2.17)."""
+
+    def setUp(self):
+        import critic
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+        self._orig_features = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+
+    def tearDown(self):
+        import critic
+        critic.FEATURES_DIR = self._orig_features
+        shutil.rmtree(self.root)
+
+    def _write_feature(self, name, has_regression_guidance=False):
+        content = f"""\
+# Feature: {name}
+
+> Label: "{name}"
+> Prerequisite: features/policy_critic.md
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+### 2.1 Req
+Req.
+
+## 3. Scenarios
+
+### Automated Scenarios
+
+#### Scenario: Test scenario
+    Given something
+    When action
+    Then result
+
+### Manual Scenarios (Human Verification Required)
+None.
+"""
+        if has_regression_guidance:
+            content += """
+## Regression Guidance
+
+- When modifying the parser, re-run all format tests.
+- Watch for edge cases with empty input.
+"""
+        path = os.path.join(self.features_dir, f'{name}.md')
+        with open(path, 'w') as f:
+            f.write(content)
+        return path
+
+    def _make_result(self, name, lifecycle_state='testing'):
+        cdd_status = {
+            'features': {
+                'testing': ([{'file': f'features/{name}.md'}]
+                            if lifecycle_state == 'testing' else []),
+                'complete': ([{'file': f'features/{name}.md'}]
+                             if lifecycle_state == 'complete' else []),
+                'todo': ([{'file': f'features/{name}.md'}]
+                         if lifecycle_state == 'todo' else []),
+            },
+        }
+        result = {
+            'feature_file': f'features/{name}.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {'status': 'PASS', 'checks': {}},
+            'lifecycle_state': lifecycle_state,
+            'regression_scope': {},
+            'visual_spec': {},
+            'user_testing': {
+                'status': 'CLEAN', 'bugs': 0, 'discoveries': 0,
+                'intent_drifts': 0, 'spec_disputes': 0},
+        }
+        return result, cdd_status
+
+    def test_generates_qa_item_when_builder_done(self):
+        """Regression guidance generates MEDIUM QA item when builder DONE."""
+        self._write_feature('rg_feature', has_regression_guidance=True)
+        result, cdd = self._make_result('rg_feature', 'testing')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 1)
+        self.assertEqual(rg_items[0]['priority'], 'MEDIUM')
+        self.assertIn('rg_feature', rg_items[0]['description'])
+        self.assertIn('regression harness', rg_items[0]['description'])
+
+    def test_no_item_when_builder_todo(self):
+        """No regression guidance item when builder is TODO."""
+        self._write_feature('rg_todo', has_regression_guidance=True)
+        result, cdd = self._make_result('rg_todo', 'todo')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 0)
+
+    def test_no_item_when_no_section(self):
+        """No regression guidance item when section absent."""
+        self._write_feature('no_rg', has_regression_guidance=False)
+        result, cdd = self._make_result('no_rg', 'testing')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 0)
+
+    def test_generates_for_complete_lifecycle(self):
+        """Regression guidance also detected for COMPLETE lifecycle."""
+        self._write_feature('rg_complete', has_regression_guidance=True)
+        result, cdd = self._make_result('rg_complete', 'complete')
+        items = generate_action_items(result, cdd)
+        rg_items = [
+            i for i in items['qa']
+            if i['category'] == 'regression_guidance_pending']
+        self.assertEqual(len(rg_items), 1)
+
+
+class TestStructuralCompletenessStillEnforced(unittest.TestCase):
+    """Structural completeness gate still enforces tests.json."""
+
+    def test_missing_tests_json_fails(self):
+        """Missing tests.json causes structural completeness FAIL."""
+        import critic
+        root = tempfile.mkdtemp()
+        try:
+            orig_root = critic.PROJECT_ROOT
+            critic.PROJECT_ROOT = root
+            scenarios = [{'title': 'Test', 'is_manual': False}]
+            result = check_structural_completeness('nonexistent', scenarios)
+            self.assertEqual(result['status'], 'FAIL')
+        finally:
+            critic.PROJECT_ROOT = orig_root
+            shutil.rmtree(root)
+
+    def test_passing_tests_json_passes(self):
+        """Valid tests.json with PASS status passes structural completeness."""
+        import critic
+        root = tempfile.mkdtemp()
+        try:
+            orig_root = critic.PROJECT_ROOT
+            critic.PROJECT_ROOT = root
+            test_dir = os.path.join(root, 'tests', 'my_feature')
+            os.makedirs(test_dir)
+            with open(os.path.join(test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    'status': 'PASS', 'passed': 5, 'failed': 0, 'total': 5,
+                    'test_file': 'tools/my_feature/test.py',
+                }, f)
+            # Create backing test file
+            tool_dir = os.path.join(root, 'tools', 'my_feature')
+            os.makedirs(tool_dir)
+            with open(os.path.join(tool_dir, 'test.py'), 'w') as f:
+                f.write('# test\n')
+            result = check_structural_completeness('my_feature', [])
+            self.assertEqual(result['status'], 'PASS')
+        finally:
+            critic.PROJECT_ROOT = orig_root
+            shutil.rmtree(root)
+
+
 # ===================================================================
 # Test runner with output to tests/critic_tool/tests.json
 # ===================================================================
@@ -9279,8 +9408,7 @@ if __name__ == '__main__':
     with open(status_file, 'w') as f:
         json.dump(report, f)
     # Also write to features that share this test suite
-    for shared_feature in ('qa_verification_effort', 'policy_critic',
-                           'critic_test_quality_audit'):
+    for shared_feature in ('qa_verification_effort', 'policy_critic'):
         shared_dir = os.path.join(project_root, 'tests', shared_feature)
         os.makedirs(shared_dir, exist_ok=True)
         with open(os.path.join(shared_dir, 'tests.json'), 'w') as f:
