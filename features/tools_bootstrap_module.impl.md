@@ -23,3 +23,7 @@ Files NOT migrated (by design):
 - `config/resolve_config.py`: Keeps its own `_find_project_root` for CLI entry point (avoids circular dependency with bootstrap's `load_config`)
 - Test files that only do `sys.path.insert` for sibling imports without their own root detection (test_cdd.py, test_spec_map.py, test_cdd_modal_base.py, etc.)
 
+## Circular Dependency Workaround
+
+`bootstrap.py` exports `load_config()` which depends on `resolve_config.py`. Meanwhile, `resolve_config.py` needs `detect_project_root()` from `bootstrap.py` for its Python API mode. To break this cycle, `serve.py` uses a lambda wrapper: `_resolve_config = lambda root: load_config(root)`. This defers the import resolution to runtime, avoiding the circular import at module load time. The pattern is localized to `serve.py` because it is the only consumer that needs both bootstrap's root detection and config's reload-on-API-call behavior in the same module.
+

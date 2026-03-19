@@ -92,7 +92,7 @@ except: print('claude-sonnet-4-6')
 ### Shell (after)
 ```bash
 eval $(python3 "$TOOLS_ROOT/config/resolve_config.py" "$ROLE")
-# Now AGENT_MODEL, AGENT_EFFORT, AGENT_BYPASS, AGENT_STARTUP, AGENT_RECOMMEND are set
+# Now AGENT_MODEL, AGENT_EFFORT, AGENT_BYPASS, AGENT_FIND_WORK, AGENT_AUTO_START are set
 ```
 
 ## Test Update Inventory
@@ -112,3 +112,12 @@ The resolver uses `PURLIN_PROJECT_ROOT` as the primary detection mechanism. When
 - Submodule: `<submodule>/tools/config/resolve_config.py` -> climb 3 levels -> project root (detected by presence of `.purlin/` directory)
 
 This follows the same submodule-aware climbing pattern established in Section 2.11 of `submodule_bootstrap.md`.
+
+### Audit Finding -- 2026-03-19
+
+[DISCOVERY] CLI role mode shell variable outputs use stale names
+
+**Source:** /pl-spec-code-audit --deep (item #8)
+**Severity:** HIGH
+**Details:** The spec (Section 2.6) defines CLI role mode outputs as `AGENT_FIND_WORK` and `AGENT_AUTO_START`, but the shell consumer template in this companion file (line 95) still references `AGENT_STARTUP` and `AGENT_RECOMMEND`. The resolver implementation must output the correct variable names matching the spec. Additionally, the spec's CLI role mode section should explicitly enumerate all output variables including the new `find_work` and `auto_start` fields.
+**Suggested fix:** (1) Update the shell consumer template in this companion file to use `AGENT_FIND_WORK` and `AGENT_AUTO_START`. (2) Verify the resolver implementation (`tools/config/resolve_config.py`) outputs these variable names when invoked in CLI role mode. (3) Update all shell launcher scripts that `eval` the resolver output to expect the new names.

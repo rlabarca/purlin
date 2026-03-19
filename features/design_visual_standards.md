@@ -118,6 +118,7 @@ The wide letter-spacing on uppercase elements is a defining characteristic of th
 *   Hardcoded hex colors in tool CSS (MUST use `var(--purlin-*)` custom properties).
     *   **Grepable pattern:** `#[0-9a-fA-F]{3,8}` in any `.py`, `.html`, `.css`, or `.js` file under `tools/`.
     *   **Scan scope:** `tools/**/*.{py,html,css,js}`
+    *   **Exemption:** CSS custom property *definitions* inside `:root` and `[data-theme]` selector blocks are exempt. These blocks define the token values themselves (e.g., `--purlin-bg: #1A1D23;`) and are the canonical source of truth for the token system. The FORBIDDEN pattern targets *usage* of hex colors outside token definitions -- i.e., any hex color in a property that is not a custom property declaration.
 *   Inline style color values that bypass the token system.
     *   **Grepable pattern:** `style=` attributes containing `color:` or `background` values not using `var(--purlin-*)`.
     *   **Scan scope:** `tools/**/*.{py,html,css,js}`

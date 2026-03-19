@@ -12,3 +12,5 @@ The dependency graph is computed and cached by `tools/cdd/status.sh --graph`. Ma
 **Severity:** MEDIUM
 **Details:** The spec describes tiered severity for reverse references (based on distance, type), but the implementation flags all reverse references at the same severity level.
 **Suggested fix:** Implement tiered severity per spec: direct reverse refs = HIGH, transitive = MEDIUM, informational = LOW.
+
+**Architect Acknowledgment (2026-03-19):** Re-confirmed during deep audit. The flat severity classification is a known simplification. The spec's tiered model (direct=HIGH, transitive=MEDIUM, informational=LOW) remains the target state. Priority: LOW -- the current behavior is conservative (over-flags rather than under-flags), which is safe for release validation.

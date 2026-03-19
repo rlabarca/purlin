@@ -29,7 +29,7 @@ Stateless, self-managing process lifecycle for the CDD Dashboard server. The ser
 Port is determined by a priority chain:
 
 1. **Already running:** If a CDD process for this project is found in `ps`, reuse the port read from `.purlin/runtime/cdd.port`. Do not start a new instance.
-2. **`-p` flag:** If the user passes `-p <port>` to `start.sh`, use that port exactly.
+2. **`-p` flag:** If the user passes `-p <port>` to `start.sh`, attempt to bind to that port. If binding fails (port in use), report the error and exit 1 -- do NOT fall back to OS-assigned. The `-p` flag represents an explicit user choice. (Exception: the restart sequence in Section 2.9 handles port-unavailable internally by retrying without `-p`.)
 3. **OS-assigned free port:** When neither (1) nor (2) applies, `serve.py` binds to port 0 via `socket.bind(('', 0))` and lets the OS assign a free port.
 
 The `cdd_port` config key is **removed entirely** from `.purlin/config.json`, `purlin-config-sample/config.json`, and all config resolution logic in `start.sh` and `serve.py`. Port is now either auto-selected or explicitly set via the `-p` flag.
