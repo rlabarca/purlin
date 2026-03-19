@@ -15,7 +15,7 @@ Role-specific launcher configuration for the PM agent (`pl-run-pm.sh`). Inherits
 ## 2. Requirements
 
 ### 2.1 Tool Restrictions (bypass=false)
-*   `--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep"`
+*   `--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Write" "Edit" "Glob" "Grep"`
 
 ### 2.2 Session Message
 *   `"Begin PM session."`

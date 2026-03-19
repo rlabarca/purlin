@@ -28,9 +28,9 @@ Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `p
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_STARTUP`, and `AGENT_RECOMMEND` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_FIND_WORK`, and `AGENT_AUTO_START` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
 *   The generated launcher MUST call `resolve_config.py <role>` (via `$CORE_DIR/tools/config/resolve_config.py`) and `eval` the shell variable assignments it returns. It MUST NOT use an inline `python3 -c "import json; ..."` pattern that reads `config.json` directly.
-*   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_STARTUP="true"`, `AGENT_RECOMMEND="true"`.
+*   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_FIND_WORK="true"`, `AGENT_AUTO_START="false"`.
 
 ### 2.4 Claude Dispatch
 ```

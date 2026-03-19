@@ -37,11 +37,12 @@ The `/pl-agent-config` skill provides the ONLY sanctioned way for agents to modi
 
 The skill MUST reject unknown keys with a clear error. Valid keys for any role are:
 
-- `model` — must match an `id` in the `models` array in config
-- `effort` — must be one of `low`, `medium`, `high`
-- `find_work` — must be `true` or `false`
-- `auto_start` — must be `true` or `false`
-- `bypass_permissions` — must be `true` or `false`
+- `model` -- must match an `id` in the `models` array in config
+- `effort` -- must be one of `low`, `medium`, `high`
+- `find_work` -- must be `true` or `false`
+- `auto_start` -- must be `true` or `false`
+- `bypass_permissions` -- must be `true` or `false`
+- `qa_mode` -- must be `true` or `false`. Builder-only. When `true`, the Builder runs in QA mode (verification-focused session). See `builder_qa_mode.md`.
 
 ### 2.3 Atomic Write
 

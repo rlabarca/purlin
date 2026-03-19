@@ -106,6 +106,15 @@ After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-gen
 
 **Skip this step** when the merge result is SAME, AHEAD, or DIVERGED-with-conflicts.
 
+### 2.9 FORBIDDEN Pattern Enforcement
+
+The command MUST NOT execute any operation that violates the FORBIDDEN patterns in `policy_branch_collab.md` Section 4:
+
+- MUST NOT rebase the collaboration branch. Uses `git merge` exclusively (consistent with policy Section 2.8).
+- MUST NOT push to any branch. This is a pull-only command.
+- MUST NOT auto-resolve merge conflicts. Conflict resolution is a human responsibility per policy Section 2.8.
+- In no-argument mode, MUST NOT proceed when the current branch does not match the resolved collaboration branch (enforced by the Collaboration Branch Guard in Section 2.3).
+
 ---
 
 ## 3. Scenarios

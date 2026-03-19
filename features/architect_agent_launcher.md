@@ -32,6 +32,10 @@ When `agents.architect` is absent from the resolved config:
 { "model": "", "effort": "", "bypass_permissions": false }
 ```
 
+### 2.5 Startup Sequence Config
+*   The Architect uses `find_work: true` and `auto_start: false` by default, consistent with other agent roles.
+*   These values are read from the resolved config via `AGENT_FIND_WORK` and `AGENT_AUTO_START` shell variables (see `agent_launchers_common.md` Section 2.3).
+
 ---
 
 ## 3. Scenarios
@@ -45,6 +49,13 @@ When `agents.architect` is absent from the resolved config:
     And it invokes the claude CLI with --model claude-sonnet-4-6 --effort high
     And it passes --allowedTools with the Architect role restrictions
     And it passes --append-system-prompt-file pointing to the assembled prompt
+
+#### Scenario: Architect Launcher Falls Back When Config is Missing
+    Given config.json does not contain an agents.architect section
+    When pl-run-architect.sh is executed
+    Then it uses default values (empty model, empty effort, bypass_permissions false)
+    And find_work defaults to true
+    And auto_start defaults to false
 
 #### Scenario: Architect Launcher Assembles Correct Prompt
     Given instructions/ARCHITECT_BASE.md exists

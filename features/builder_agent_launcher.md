@@ -32,6 +32,10 @@ When `agents.builder` is absent from the resolved config:
 { "model": "", "effort": "", "bypass_permissions": false }
 ```
 
+### 2.5 Startup Sequence Config
+*   The Builder uses `find_work: true` and `auto_start: false` by default, consistent with other agent roles.
+*   These values are read from the resolved config via `AGENT_FIND_WORK` and `AGENT_AUTO_START` shell variables (see `agent_launchers_common.md` Section 2.3).
+
 ---
 
 ## 3. Scenarios

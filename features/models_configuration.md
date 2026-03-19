@@ -24,6 +24,8 @@ Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that i
     *   `model` (string): Model ID from the `models` array.
     *   `effort` (string): One of `"low"`, `"medium"`, `"high"`. Only meaningful when the model's `capabilities.effort` is `true`.
     *   `bypass_permissions` (boolean): Whether to skip permission prompts. Only meaningful when the model's `capabilities.permissions` is `true`.
+    *   `find_work` (boolean, optional): Whether the agent runs its startup work-finding protocol. Default `true`. See `agent_launchers_common.md` Section 2.3.
+    *   `auto_start` (boolean, optional): Whether the agent begins executing its work plan without waiting for user approval. Default `false`. See `agent_launchers_common.md` Section 2.3.
 *   **Canonical Schema:** The following structure is the reference for both `config.json` and `purlin-config-sample/config.json`. The Builder MUST update both files to match, removing the former `llm_providers` wrapper and any `provider` fields from `agents.*` entries:
 
 ```json
@@ -46,10 +48,10 @@ Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that i
         }
     ],
     "agents": {
-        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true },
-        "builder":   { "model": "claude-opus-4-6",   "effort": "high", "bypass_permissions": true },
-        "qa":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true },
-        "pm":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true }
+        "architect": { "model": "claude-sonnet-4-6", "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": false },
+        "builder":   { "model": "claude-opus-4-6",   "effort": "high", "bypass_permissions": true, "find_work": true, "auto_start": false },
+        "qa":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true, "find_work": true, "auto_start": false },
+        "pm":        { "model": "claude-sonnet-4-6", "effort": "medium", "bypass_permissions": true, "find_work": true, "auto_start": false }
     }
 }
 ```

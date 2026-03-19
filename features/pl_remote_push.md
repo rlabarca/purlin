@@ -101,6 +101,14 @@ Steps (after preconditions pass):
 
 If the remote tracking ref does not exist (first push), treat as AHEAD with ahead = all commits on `<branch>`. The first-push safety confirmation (2.6) applies before the actual push.
 
+### 2.8 FORBIDDEN Pattern Enforcement
+
+The command MUST NOT execute any operation that violates the FORBIDDEN patterns in `policy_branch_collab.md` Section 4:
+
+- MUST NOT `git push --force` to any branch. If push fails due to non-fast-forward, report the error and instruct `/pl-remote-pull`.
+- MUST NOT push to a branch that does not match the resolved collaboration branch (enforced by the Collaboration Branch Guard in Section 2.3).
+- User-provided input (remote names, branch names) MUST be validated against shell injection. Branch names are resolved from `.purlin/runtime/active_branch` or defaulted to `main` — never from unchecked user input passed directly to git commands.
+
 ---
 
 ## 3. Scenarios
