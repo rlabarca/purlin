@@ -46,7 +46,7 @@
 **Completion Commit:** d627ed6
 **QA Bugs Addressed:** --
 
-## Phase 9 -- CDD Agent Configuration [PENDING]
+## Phase 9 -- CDD Agent Configuration [IN_PROGRESS]
 **Features:** cdd_agent_configuration.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -66,7 +66,7 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 13 -- Terminal Identity [PENDING]
+## Phase 13 -- Terminal Identity [IN_PROGRESS]
 **Features:** terminal_identity.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
