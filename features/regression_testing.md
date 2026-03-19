@@ -57,12 +57,12 @@ A QA-owned slash command at `.claude/commands/pl-regression.md`. QA owns the reg
 1. Read feature status via `tools/cdd/status.sh --role qa`.
 2. Identify regression-eligible features: features with `> Web Test:` metadata or `### Regression Testing` sections that have STALE, FAIL, or NOT_RUN test results.
 3. Present interactive options to the user: "Found N features eligible for regression. Run all, or select? [all / 1,2,... / skip]".
-4. Compose an external command based on user selection (either a single `--once` invocation or a trigger file for watch mode).
+4. Compose an external command based on user selection — a direct harness invocation (single feature) or a sequential `&&` chain (multiple features). The runner (`dev/regression_runner.sh`) is a Purlin-dev convenience and is NOT part of the composed command.
 5. Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
    ```
    Run this in a separate terminal:
 
-       ./dev/regression_runner.sh --once dev/test_agent_interactions.sh --write-results
+       ./tests/qa/test_agent_interactions.sh --write-results
 
    Tell me when it finishes.
    ```
@@ -168,8 +168,8 @@ and is vulnerable to false positives.
 
     Given the QA agent selects features 1 and 3 from the eligible list
     When the skill composes the regression command
-    Then the command uses --once mode for single features or writes a trigger file for watch mode
-    And the composed command includes the correct harness path and args
+    Then the command is a direct harness invocation chain (not wrapped in the runner)
+    And the composed command includes the correct harness path and --write-results args
 
 #### Scenario: QA skill creates BUG discoveries for regression failures
 

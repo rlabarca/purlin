@@ -47,33 +47,27 @@ If features are found:
 
 ### Step 3 — Compose Command
 
-Based on user selection:
+Based on user selection, compose **direct harness invocations** — do NOT use `dev/regression_runner.sh` (that is a Purlin-dev convenience, not part of the consumer contract).
+
+**Harness mapping:**
+- Features with `### Regression Testing` section → use the harness path specified in the section directly (e.g., `./tests/qa/test_agent_interactions.sh --write-results`)
+- Features with `> Web Test:` → Compose a `/pl-web-test` invocation (runs inside Claude session, not external)
 
 **Single feature:**
 ```
-dev/regression_runner.sh --once <harness> --write-results
+./<harness_path> --write-results
 ```
 
-**Multiple features:**
-Write a trigger file for watch mode, or compose multiple `--once` invocations:
+**Multiple features (sequential chain):**
 ```
-# Option A: Sequential
-dev/regression_runner.sh --once <harness1> --write-results && dev/regression_runner.sh --once <harness2> --write-results
-
-# Option B: Watch mode (for long-running suites)
-# Write trigger to .purlin/runtime/regression_trigger.json, then:
-dev/regression_runner.sh --watch
+./<harness1_path> --write-results && ./<harness2_path> --write-results
 ```
-
-**Harness mapping:**
-- Features with `### Regression Testing` section → use the harness specified in the section (e.g., `dev/test_agent_interactions.sh --write-results`)
-- Features with `> Web Test:` → Compose a `/pl-web-test` invocation (runs inside Claude session, not external)
 
 Print the command in a clearly formatted, self-contained, copy-pasteable block. The user MUST be able to copy the entire command and paste it into a separate terminal without modification. Example format:
 ```
 Run this in a separate terminal:
 
-    ./dev/regression_runner.sh --once dev/test_agent_interactions.sh --write-results
+    ./tests/qa/test_agent_interactions.sh --write-results
 
 Tell me when it finishes.
 ```
