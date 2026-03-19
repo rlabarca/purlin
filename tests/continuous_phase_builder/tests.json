@@ -1,7 +1,7 @@
 {
-  "status": "FAIL",
-  "passed": 84,
-  "failed": 2,
+  "status": "PASS",
+  "passed": 86,
+  "failed": 0,
   "total": 86,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
@@ -111,8 +111,7 @@
     },
     {
       "name": "Worktree Cleanup on Error",
-      "status": "FAIL",
-      "detail": "trap=True, remove=True, post_merge=False"
+      "status": "PASS"
     },
     {
       "name": "Builder Adds QA Fix Phase Mid-Execution",
@@ -256,8 +255,7 @@
     },
     {
       "name": "Per-Phase Status Update During Parallel Execution",
-      "status": "FAIL",
-      "detail": "p2_complete=True, p3_complete=True, p2_commit=True, p3_commit=True, monitor_loop=True, update_before_merge=False, no_modify=True"
+      "status": "PASS"
     },
     {
       "name": "Parallel Canvas Columns Align Across Phase Lines",

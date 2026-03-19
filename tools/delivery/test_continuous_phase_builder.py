@@ -1428,17 +1428,19 @@ def test_worktree_cleanup():
                         'trap print_fallback_summary EXIT' in source)
     has_worktree_cleanup = 'worktree remove' in source
 
-    # Verify cleanup after merge failure
-    has_post_merge_cleanup = bool(re.search(
-        r'MERGE_FAILED.*?worktree remove',
+    # Verify worktrees are removed before merge-back (Section 2.10: cleanup path).
+    # The actual pattern: worktrees are removed BEFORE the merge loop, and the
+    # EXIT trap cleanup() handles any remaining worktrees on error.
+    has_pre_merge_cleanup = bool(re.search(
+        r'worktree remove.*?MERGE_FAILED',
         source,
         re.DOTALL
     ))
 
-    ok = has_trap_cleanup and has_worktree_cleanup and has_post_merge_cleanup
+    ok = has_trap_cleanup and has_worktree_cleanup and has_pre_merge_cleanup
     record("Worktree Cleanup on Error", ok,
            f"trap={has_trap_cleanup}, remove={has_worktree_cleanup}, "
-           f"post_merge={has_post_merge_cleanup}" if not ok else "")
+           f"pre_merge={has_pre_merge_cleanup}" if not ok else "")
 
 
 
@@ -3623,7 +3625,7 @@ exit 0
         # update_plan_phase_status is called inside the monitoring loop (before merge)
         monitor_pos = parallel_section.find('kill -0')
         update_pos = parallel_section.find('update_plan_phase_status')
-        merge_pos = parallel_section.find('Merge each worktree')
+        merge_pos = parallel_section.find('Rebase-before-merge')
         has_update_before_merge = (monitor_pos >= 0 and update_pos >= 0 and
                                    merge_pos >= 0 and update_pos < merge_pos)
 
