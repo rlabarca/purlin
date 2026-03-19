@@ -174,6 +174,36 @@ except (json.JSONDecodeError, IOError, OSError):
     fi
 done
 
+# Inter-phase Critic integration (Section 2.18): default false
+INTER_PHASE_CRITIC=false
+MAX_REMEDIATION_ATTEMPTS=2
+for cfg_file in "$SCRIPT_DIR/.purlin/config.local.json" "$SCRIPT_DIR/.purlin/config.json"; do
+    if [ -f "$cfg_file" ]; then
+        _ipc_val=$(python3 -c "
+import json
+try:
+    data = json.load(open('$cfg_file'))
+    if data.get('inter_phase_critic', False):
+        print('true')
+    else:
+        print('false')
+except (json.JSONDecodeError, IOError, OSError):
+    print('false')
+" 2>/dev/null)
+        INTER_PHASE_CRITIC="${_ipc_val:-false}"
+        _mra_val=$(python3 -c "
+import json
+try:
+    data = json.load(open('$cfg_file'))
+    print(data.get('max_remediation_attempts', 2))
+except (json.JSONDecodeError, IOError, OSError):
+    print(2)
+" 2>/dev/null)
+        MAX_REMEDIATION_ATTEMPTS="${_mra_val:-2}"
+        break
+    fi
+done
+
 # Tracking variables (file-based retry counts for bash 3 compat)
 PHASES_COMPLETED=0
 PARALLEL_GROUPS_USED=0
@@ -181,6 +211,7 @@ GROUPS_EXECUTED=0
 TOTAL_RETRIES=0
 FAILURES=()
 PLAN_AMENDED=false
+REMEDIATION_ESCALATIONS=()
 INITIAL_PENDING_COUNT=0
 START_TIME=$(date +%s)
 
@@ -227,6 +258,9 @@ purge_stale_runtime_artifacts() {
     rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json 2>/dev/null
     rm -f "${RUNTIME_DIR}/approval_table_lines" 2>/dev/null
     rm -f "${RUNTIME_DIR}"/continuous_build_*.log 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/remediation_attempt_* 2>/dev/null
+    rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
+    rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
 }
 purge_stale_runtime_artifacts
 
@@ -260,7 +294,7 @@ if all_phases_complete; then
 fi
 
 # Evaluator JSON schema
-EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","stop"]},"success":{"type":"boolean"},"reason":{"type":"string"}},"required":["action","success","reason"]}'
+EVALUATOR_SCHEMA='{"type":"object","properties":{"action":{"type":"string","enum":["continue","retry","approve","remediate","stop"]},"success":{"type":"boolean"},"reason":{"type":"string"}},"required":["action","success","reason"]}'
 
 # --- Helper: log evaluator decision with timestamp ---
 log_eval() {
@@ -288,6 +322,13 @@ run_evaluator() {
         plan_content=$(cat "$DELIVERY_PLAN")
     fi
 
+    # Read inter-phase Critic summary if available (Section 2.18)
+    local critic_summary=""
+    local critic_summary_file="${RUNTIME_DIR}/interphase_critic_summary.md"
+    if [ -f "$critic_summary_file" ] && [ -s "$critic_summary_file" ]; then
+        critic_summary=$(cat "$critic_summary_file")
+    fi
+
     local eval_msg_file
     eval_msg_file=$(mktemp)
     cat > "$eval_msg_file" << EVAL_EOF
@@ -298,6 +339,18 @@ ${tail_output}
 
 ## Current Delivery Plan:
 ${plan_content}
+EVAL_EOF
+
+    # Inject Critic summary if present (Section 2.18)
+    if [ -n "$critic_summary" ]; then
+        cat >> "$eval_msg_file" << CRITIC_EOF
+
+## Critic Analysis Summary
+${critic_summary}
+CRITIC_EOF
+    fi
+
+    cat >> "$eval_msg_file" << RULES_EOF
 
 ## Classification Rules:
 - "Phase N of M complete" + delivery plan updated -> action: "continue", success: false
@@ -306,14 +359,16 @@ ${plan_content}
 - Context exhaustion / checkpoint saved mid-phase -> action: "retry", success: false
 - Partial progress (features done but phase incomplete) -> action: "retry", success: false
 - Builder output mentions plan amendment but current phase not complete -> action: "retry", success: false
+- Critic found HIGH/CRITICAL issues: features still at builder "TODO" (lifecycle tag unchanged) or HIGH/CRITICAL action items present -> action: "remediate", success: false
 - Error requiring human input (INFEASIBLE, missing fixture) -> action: "stop", success: false
 - All phases complete / delivery plan deleted -> action: "stop", success: true
 - No meaningful progress detected -> action: "stop", success: false
 
+Only return "remediate" when a Critic Analysis Summary section is present AND contains HIGH/CRITICAL issues or features stuck at [TODO]. MEDIUM and LOW items do NOT trigger remediation.
 The "success" field MUST be true ONLY when action is "stop" AND all work completed successfully. For all other cases, success MUST be false.
 
 Return a JSON object with "action", "success", and "reason" fields.
-EVAL_EOF
+RULES_EOF
 
     local eval_result eval_rc
     # 30-second timeout (Section 2.5): platform-aware fallback
@@ -643,6 +698,218 @@ with open('$DELIVERY_PLAN', 'w') as f:
         PLAN_AMENDED=true
         log_eval "Applied plan amendments from parallel builders"
     fi
+}
+
+# --- Helper: run inter-phase Critic on phase features (Section 2.18) ---
+# Usage: run_interphase_critic <phase_num> [phase_num...]
+# Writes condensed summary to $RUNTIME_DIR/interphase_critic_summary.md
+# Returns 0 always (Critic failures do not block orchestration)
+run_interphase_critic() {
+    [ "$INTER_PHASE_CRITIC" = "true" ] || return 0
+
+    local critic_script="$CORE_DIR/tools/critic/run.sh"
+    [ -f "$critic_script" ] || { echo "Warning: Critic script not found at $critic_script" >&2; return 0; }
+
+    local phase_nums=("$@")
+    local all_features=()
+
+    # Collect features from all specified phases
+    for pnum in "${phase_nums[@]}"; do
+        local feat_str
+        feat_str=$(extract_phase_features "$pnum")
+        [ "$feat_str" = "--" ] && continue
+        # Split comma-separated feature list
+        IFS=', ' read -ra feats <<< "$feat_str"
+        for f in "${feats[@]}"; do
+            [ -n "$f" ] && all_features+=("$f")
+        done
+    done
+
+    [ ${#all_features[@]} -eq 0 ] && return 0
+
+    # Run Critic per-feature and collect results
+    local summary_file="${RUNTIME_DIR}/interphase_critic_summary.md"
+    rm -f "$summary_file" 2>/dev/null
+
+    local has_results=false
+    for feature in "${all_features[@]}"; do
+        local feature_path="features/${feature}"
+        local feature_stem="${feature%.md}"
+        local critic_json="tests/${feature_stem}/critic.json"
+
+        # Run Critic (scoped to single feature)
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" bash "$critic_script" "$feature_path" > /dev/null 2>&1
+        local critic_rc=$?
+
+        if [ $critic_rc -ne 0 ]; then
+            log_eval "Critic failed for $feature (exit code $critic_rc) — skipping"
+            continue
+        fi
+
+        local critic_json_path="${SCRIPT_DIR}/${critic_json}"
+        [ -f "$critic_json_path" ] || continue
+
+        # Extract condensed results from critic.json
+        python3 -c "
+import json, sys
+
+try:
+    with open(sys.argv[1]) as f:
+        data = json.load(f)
+except (json.JSONDecodeError, IOError, OSError):
+    sys.exit(0)
+
+feature = sys.argv[2]
+summary_file = sys.argv[3]
+
+# Extract role_status.builder
+role_status = data.get('role_status', {})
+builder_status = role_status.get('builder', 'unknown')
+
+# Extract gate results
+spec_gate = data.get('spec_gate', {}).get('status', 'unknown')
+impl_gate = data.get('implementation_gate', {}).get('status', 'unknown')
+
+# Extract lifecycle tag
+lifecycle = data.get('lifecycle_status', 'unknown')
+
+# Extract HIGH and CRITICAL action items only
+high_crit_items = []
+for item in data.get('action_items', []):
+    priority = item.get('priority', '').upper()
+    if priority in ('HIGH', 'CRITICAL'):
+        high_crit_items.append('{}: {}'.format(priority, item.get('description', '')))
+
+with open(summary_file, 'a') as f:
+    f.write('### {}\n'.format(feature))
+    f.write('- **Lifecycle:** {}\n'.format(lifecycle))
+    f.write('- **Builder Status:** {}\n'.format(builder_status))
+    f.write('- **Spec Gate:** {}\n'.format(spec_gate))
+    f.write('- **Implementation Gate:** {}\n'.format(impl_gate))
+    if high_crit_items:
+        f.write('- **Issues:**\n')
+        for item in high_crit_items:
+            f.write('  - {}\n'.format(item))
+    f.write('\n')
+" "$critic_json_path" "$feature" "$summary_file" 2>/dev/null
+
+        has_results=true
+    done
+
+    [ "$has_results" = "true" ] || rm -f "$summary_file" 2>/dev/null
+    return 0
+}
+
+# --- Helper: handle remediation action (Section 2.19) ---
+# Usage: handle_remediate <source_phase_num>
+# Returns 0 if remediation phase was inserted, 1 if limit exceeded
+handle_remediate() {
+    local source_phase="$1"
+
+    # Check remediation attempt count
+    local attempt_file="${RUNTIME_DIR}/remediation_attempt_${source_phase}"
+    local attempt_count=0
+    [ -f "$attempt_file" ] && attempt_count=$(cat "$attempt_file" 2>/dev/null)
+    attempt_count=${attempt_count:-0}
+
+    if [ "$attempt_count" -ge "$MAX_REMEDIATION_ATTEMPTS" ]; then
+        log_eval "Remediation limit exceeded for Phase $source_phase (${attempt_count}/${MAX_REMEDIATION_ATTEMPTS})"
+
+        # Collect escalation info for exit summary
+        local feat_str
+        feat_str=$(extract_phase_features "$source_phase")
+        REMEDIATION_ESCALATIONS+=("Phase ${source_phase}: features=${feat_str}, attempts=${attempt_count}")
+
+        return 1
+    fi
+
+    # Increment attempt counter
+    attempt_count=$((attempt_count + 1))
+    echo "$attempt_count" > "$attempt_file"
+
+    # Read Critic summary for remediation context
+    local summary_file="${RUNTIME_DIR}/interphase_critic_summary.md"
+    local critic_content=""
+    [ -f "$summary_file" ] && critic_content=$(cat "$summary_file")
+
+    # Generate remediation phase number (source_phase * 100 + attempt)
+    local rem_phase_num=$((source_phase * 100 + attempt_count))
+
+    # Build feature list and issue descriptions from Critic summary
+    local feature_issues=""
+    if [ -n "$critic_content" ]; then
+        feature_issues=$(python3 -c "
+import re, sys
+
+content = sys.argv[1]
+lines = []
+current_feature = ''
+for line in content.split('\n'):
+    m = re.match(r'### (.+)', line)
+    if m:
+        current_feature = m.group(1)
+    elif '**Lifecycle:**' in line and '[TODO]' in line:
+        lines.append('- {}: lifecycle stuck at [TODO] (expected: [Complete])'.format(current_feature))
+    elif '**Issues:**' in line:
+        pass
+    elif line.strip().startswith('- HIGH:') or line.strip().startswith('- CRITICAL:'):
+        lines.append('- {}: {}'.format(current_feature, line.strip().lstrip('- ')))
+print('\n'.join(lines))
+" "$critic_content" 2>/dev/null)
+    fi
+
+    # Extract features from the source phase
+    local feat_str
+    feat_str=$(extract_phase_features "$source_phase")
+    IFS=', ' read -ra feats <<< "$feat_str"
+    local feat_list=()
+    for f in "${feats[@]}"; do
+        [ -n "$f" ] && feat_list+=("$f")
+    done
+
+    # Write plan amendment
+    local amend_file="${RUNTIME_DIR}/plan_amendment_phase_${rem_phase_num}.json"
+    python3 -c "
+import json, sys
+amendment = {
+    'requesting_phase': int(sys.argv[1]),
+    'amendments': [{
+        'action': 'add',
+        'phase_number': int(sys.argv[2]),
+        'label': 'Remediation (Phase {})'.format(sys.argv[1]),
+        'features': sys.argv[3].split(','),
+        'reason': 'Critic found HIGH/CRITICAL issues after Phase {}'.format(sys.argv[1]),
+        'remediation_context': {
+            'source_phase': int(sys.argv[1]),
+            'attempt': int(sys.argv[4]),
+            'issues': sys.argv[5]
+        }
+    }]
+}
+with open(sys.argv[6], 'w') as f:
+    json.dump(amendment, f, indent=2)
+" "$source_phase" "$rem_phase_num" "$(IFS=,; echo "${feat_list[*]}")" "$attempt_count" "${feature_issues:-no details available}" "$amend_file" 2>/dev/null
+
+    # Write remediation prompt file
+    local prompt_file="${RUNTIME_DIR}/remediation_phase_${rem_phase_num}_prompt.txt"
+    cat > "$prompt_file" << REMEDIATION_EOF
+REMEDIATION PHASE ACTIVE: This is a targeted remediation phase, not a standard
+delivery phase. You MUST fix the following Critic-identified issues:
+
+Features requiring attention:
+${feature_issues:-No specific issues extracted — review the feature specs and ensure lifecycle tags are updated.}
+
+Focus exclusively on resolving these issues. For features stuck at [TODO],
+ensure the lifecycle tag is updated to [Complete] in the feature file and
+committed. For Critic gate failures, address the specific gap identified.
+Do not begin work on other features or phases.
+REMEDIATION_EOF
+
+    # Apply the amendment via existing mechanism
+    apply_plan_amendments
+
+    log_eval "Remediation phase $rem_phase_num inserted for Phase $source_phase (attempt $attempt_count)"
+    return 0
 }
 
 # ================================================================
@@ -1539,6 +1806,15 @@ while [ "$OUTER_BREAK" = "false" ]; do
         # Process plan amendment files from parallel builders
         apply_plan_amendments
 
+        # Inter-phase Critic run for all features across the parallel group (Section 2.18)
+        if [ "$INTER_PHASE_CRITIC" = "true" ]; then
+            local critic_phases_display
+            critic_phases_display=$(echo "$PHASE_LIST" | tr ' ' '/')
+            start_interphase_canvas "Running Critic on phase ${critic_phases_display} features..."
+            run_interphase_critic $PHASE_LIST
+            stop_canvas
+        fi
+
         # Evaluate using the last parallel log
         type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
         start_interphase_canvas "Evaluating parallel group output..."
@@ -1561,6 +1837,20 @@ while [ "$OUTER_BREAK" = "false" ]; do
             continue)
                 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
                 # Loop back to re-analyze (fresh ordering)
+                ;;
+            remediate)
+                # Dynamic remediation for parallel group (Section 2.19)
+                # Use the last phase in the group as the source for tracking
+                local last_phase
+                last_phase=$(echo "$PHASE_LIST" | awk '{print $NF}')
+                if handle_remediate "$last_phase"; then
+                    log_eval "Remediation phase inserted for parallel group (source: Phase $last_phase)"
+                    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                else
+                    log_eval "Remediation limit exceeded for parallel group — continuing"
+                    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                fi
+                # Loop back to re-analyze
                 ;;
             stop)
                 if [ "$EVAL_SUCCESS" = "true" ]; then
@@ -1648,6 +1938,13 @@ while [ "$OUTER_BREAK" = "false" ]; do
                 PLAN_AMENDED=true
             fi
 
+            # Inter-phase Critic run (Section 2.18)
+            if [ "$INTER_PHASE_CRITIC" = "true" ]; then
+                start_interphase_canvas "Running Critic on phase $PHASE_NUM features..."
+                run_interphase_critic "$PHASE_NUM"
+                stop_canvas
+            fi
+
             # Run evaluator with inter-phase canvas
             type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
             start_interphase_canvas "Evaluating phase $PHASE_NUM output..."
@@ -1695,6 +1992,22 @@ while [ "$OUTER_BREAK" = "false" ]; do
                     log_eval "Retrying Phase $PHASE_NUM (attempt $((RETRY_COUNT + 1)))"
                     SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
                     RUN_ACTION="retry"
+                    ;;
+                remediate)
+                    # Dynamic remediation (Section 2.19)
+                    update_plan_phase_status "$PHASE_NUM"
+                    record_phase_end "$PHASE_NUM" "COMPLETE"
+                    PHASES_COMPLETED=$((PHASES_COMPLETED + 1))
+                    if handle_remediate "$PHASE_NUM"; then
+                        log_eval "Remediation phase inserted for Phase $PHASE_NUM"
+                        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                        break  # Exit inner loop; outer loop re-analyzes (picks up remediation phase)
+                    else
+                        # Limit exceeded — treat as continue
+                        log_eval "Remediation limit exceeded for Phase $PHASE_NUM — continuing"
+                        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+                        break
+                    fi
                     ;;
                 stop)
                     if [ "$EVAL_SUCCESS" = "true" ]; then
@@ -1758,7 +2071,9 @@ print_fallback_summary() {
     # Clean up runtime artifacts
     rm -f "${RUNTIME_DIR}"/phase_*_meta "${RUNTIME_DIR}"/canvas_frozen_* \
           "${RUNTIME_DIR}"/retry_count_* "${RUNTIME_DIR}"/plan_amendment_phase_*.json \
-          "${RUNTIME_DIR}/approval_table_lines" "${RUNTIME_DIR}/canvas_state" 2>/dev/null
+          "${RUNTIME_DIR}/approval_table_lines" "${RUNTIME_DIR}/canvas_state" \
+          "${RUNTIME_DIR}"/remediation_attempt_* "${RUNTIME_DIR}/interphase_critic_summary.md" \
+          "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
     # Reset stale IN_PROGRESS phases so next run doesn't skip them
     reset_stale_in_progress 2>/dev/null
 }
@@ -1972,6 +2287,13 @@ echo "Parallel groups: $PARALLEL_GROUPS_USED" >&2
 if [ "$PLAN_AMENDED" = "true" ]; then
     echo "Note: delivery plan was amended during execution" >&2
 fi
+if [ ${#REMEDIATION_ESCALATIONS[@]} -gt 0 ]; then
+    echo "" >&2
+    echo "Remediation Escalations:" >&2
+    for esc in "${REMEDIATION_ESCALATIONS[@]}"; do
+        echo "  $esc" >&2
+    done
+fi
 
 # --- Part 2: Work digest (LLM-summarized via Haiku) ---
 generate_work_digest() {
@@ -2077,7 +2399,7 @@ EXIT_SUMMARY_PRINTED=true
 # Post-run status refresh (Section 2.17)
 if [ -f "$CDD_STATUS" ]; then
     echo "" >&2
-    bash "$CDD_STATUS" 2>&1
+    bash "$CDD_STATUS" > /dev/null
 fi
 
 # --- Exit cleanup: delete transient runtime artifacts (Section 2.11) ---
@@ -2088,6 +2410,9 @@ rm -f "${RUNTIME_DIR}"/retry_count_* 2>/dev/null
 rm -f "${RUNTIME_DIR}"/plan_amendment_phase_*.json 2>/dev/null
 rm -f "${RUNTIME_DIR}/approval_table_lines" 2>/dev/null
 rm -f "${RUNTIME_DIR}/canvas_state" 2>/dev/null
+rm -f "${RUNTIME_DIR}"/remediation_attempt_* 2>/dev/null
+rm -f "${RUNTIME_DIR}/interphase_critic_summary.md" 2>/dev/null
+rm -f "${RUNTIME_DIR}"/remediation_phase_*_prompt.txt 2>/dev/null
 
 # Disable the fallback summary trap and run original cleanup (temp files, worktrees)
 trap - EXIT

@@ -144,9 +144,28 @@ The output format from `run_evaluator` changed from `action|reason` to `action|s
 1. Refactored `run_line_buffered` → `run_to_log` with log file as first parameter. The function handles all redirect logic internally (stdbuf path: `> logfile 2>&1`; script path: `> logfile 2>&1`; fallback: `> logfile 2>&1`). Append mode via `--append` flag.
 2. Added output containment at the parallel call site: `( ... ) > /dev/null 2>&1 &`. The outer redirect catches any PTY master leakage that bypasses the inner redirect inside `run_to_log`. Sequential and bootstrap invocations don't need containment (no concurrent PTY interaction).
 
+## Inter-Phase Critic Integration (Section 2.18)
+
+The `run_interphase_critic()` function runs `tools/critic/run.sh` per-feature on the just-completed phase's features. It reads `critic.json` output and generates a condensed summary at `.purlin/runtime/interphase_critic_summary.md` containing only lifecycle status, gate results, and HIGH/CRITICAL action items. The summary is injected into the evaluator prompt as `## Critic Analysis Summary` — inserted between the delivery plan section and the classification rules.
+
+Critic failures (non-zero exit, missing json) are logged and skipped. The evaluator receives a partial or empty summary. Critic failures never block orchestration.
+
+## Dynamic Remediation Phases (Section 2.19)
+
+The `handle_remediate()` function manages remediation phase insertion. Key design decisions:
+
+- **Phase numbering:** Remediation phases use `source_phase * 100 + attempt_count` to generate unique, non-colliding phase numbers (e.g., Phase 3's first remediation is Phase 301).
+- **Attempt tracking:** File-based counters at `.purlin/runtime/remediation_attempt_<source_phase>` (same pattern as retry counters, bash 3 compatible).
+- **Limit exceeded behavior:** When `max_remediation_attempts` is reached, the escalation is logged, added to the `REMEDIATION_ESCALATIONS` array, and the evaluator result is treated as `continue` (proceed to next planned phase). The exit summary prints an explicit `Remediation Escalations` section.
+- **Sequential vs parallel:** In sequential mode, the source phase is the current phase. In parallel mode, the last phase in the group is used as the source for tracking (the Critic runs on ALL features across all phases in the group).
+
+## Post-Run Status Refresh Fix (Section 2.17)
+
+[CLARIFICATION] Changed `bash "$CDD_STATUS" 2>&1` to `bash "$CDD_STATUS" > /dev/null`. The previous code merged stderr into stdout, printing the full JSON status payload to the terminal. The spec requires stdout suppressed (artifact regeneration only) with only stderr diagnostics visible. (Severity: INFO)
+
 ### Test Quality Audit
 
-Audited 70 scenarios (2026-03-18) against policy_test_quality.md. Two test patterns: source-parsing (structural verification of launcher script) and execution (run launcher with mock claude/git in isolated temp dirs).
+Audited 86 scenarios (2026-03-18) against policy_test_quality.md. Two test patterns: source-parsing (structural verification of launcher script) and execution (run launcher with mock claude/git in isolated temp dirs).
 
 - **Deletion:** Execution tests run the actual `pl-run-builder.sh` with controlled inputs — deleting the launcher or its orchestration logic causes immediate test failures. Source-parsing tests (`test_default_behavior`, `test_system_prompt_overrides`, etc.) grep the script body for required patterns.
 - **AP-1 (tautology):** Tests assert specific behavioral outcomes — exit codes, stderr messages ("Retry limit exceeded", "merge conflict"), file creation (logs, invocation records), and invocation counts. No "assert exists" patterns.

@@ -1,8 +1,8 @@
 {
-  "status": "PASS",
-  "passed": 70,
-  "failed": 0,
-  "total": 70,
+  "status": "FAIL",
+  "passed": 84,
+  "failed": 2,
+  "total": 86,
   "test_file": "tools/delivery/test_continuous_phase_builder.py",
   "details": [
     {
@@ -111,7 +111,8 @@
     },
     {
       "name": "Worktree Cleanup on Error",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "trap=True, remove=True, post_merge=False"
     },
     {
       "name": "Builder Adds QA Fix Phase Mid-Execution",
@@ -255,7 +256,8 @@
     },
     {
       "name": "Per-Phase Status Update During Parallel Execution",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "p2_complete=True, p3_complete=True, p2_commit=True, p3_commit=True, monitor_loop=True, update_before_merge=False, no_modify=True"
     },
     {
       "name": "Parallel Canvas Columns Align Across Phase Lines",
@@ -283,6 +285,70 @@
     },
     {
       "name": "Exit Cleanup of Transient Artifacts",
+      "status": "PASS"
+    },
+    {
+      "name": "Inter-Phase Critic Runs After Sequential Phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Inter-Phase Critic Runs After Parallel Group",
+      "status": "PASS"
+    },
+    {
+      "name": "Critic Failure Does Not Block Orchestration",
+      "status": "PASS"
+    },
+    {
+      "name": "Inter-Phase Critic Disabled by Config",
+      "status": "PASS"
+    },
+    {
+      "name": "Canvas Shows Critic Status Between Phases",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Returns Remediate on HIGH Issues",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Phase Inserted Into Plan",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Builder Receives Issue Context",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Attempt Limit Prevents Infinite Loop",
+      "status": "PASS"
+    },
+    {
+      "name": "MEDIUM and LOW Issues Do Not Trigger Remediation",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Attempt Counter Tracks Per Source Phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Phases in Exit Summary",
+      "status": "PASS"
+    },
+    {
+      "name": "Startup and Exit Cleanup Includes Remediation Artifacts",
+      "status": "PASS"
+    },
+    {
+      "name": "Post-Run Status Refresh Does Not Print JSON",
+      "status": "PASS"
+    },
+    {
+      "name": "Evaluator Fallback Does Not Attempt Remediation",
+      "status": "PASS"
+    },
+    {
+      "name": "Remediation Triggered When Builder Exits Without Feature Completion",
       "status": "PASS"
     }
   ]

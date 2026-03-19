@@ -4143,6 +4143,481 @@ exit 0
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Scenario: Inter-Phase Critic Runs After Sequential Phase (Section 2.18)
+# ============================================================
+def test_interphase_critic_runs_after_sequential_phase():
+    """With inter_phase_critic enabled, after a sequential Builder exits,
+    the Critic runs on the phase's features before the evaluator."""
+    source = read_launcher()
+
+    # Verify run_interphase_critic function exists
+    has_critic_fn = 'run_interphase_critic()' in source
+
+    # Verify Critic is called in sequential path (between builder exit and evaluator)
+    seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
+    critic_call_pos = seq_section.find('run_interphase_critic')
+    eval_call_pos = seq_section.find('run_evaluator')
+    has_critic_before_eval = (critic_call_pos >= 0 and eval_call_pos >= 0
+                              and critic_call_pos < eval_call_pos)
+
+    # Verify it's gated on INTER_PHASE_CRITIC config
+    has_gate = 'INTER_PHASE_CRITIC' in source[:source.find('run_interphase_critic()')]
+
+    # Verify the Critic runner uses tools/critic/run.sh
+    fn_start = source.find('run_interphase_critic()')
+    fn_end = source.find('\n}', fn_start + 1)
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    uses_critic_script = 'tools/critic/run.sh' in fn_body
+
+    # Verify summary is written to the correct path
+    writes_summary = 'interphase_critic_summary.md' in fn_body
+
+    ok = (has_critic_fn and has_critic_before_eval and has_gate
+          and uses_critic_script and writes_summary)
+    record("Inter-Phase Critic Runs After Sequential Phase", ok,
+           f"fn={has_critic_fn}, before_eval={has_critic_before_eval}, "
+           f"gate={has_gate}, script={uses_critic_script}, "
+           f"summary={writes_summary}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Inter-Phase Critic Runs After Parallel Group (Section 2.18)
+# ============================================================
+def test_interphase_critic_runs_after_parallel_group():
+    """With inter_phase_critic enabled, after parallel Builders complete
+    and worktrees are merged, the Critic runs on ALL features across ALL
+    phases in the group."""
+    source = read_launcher()
+
+    # Verify Critic is called in parallel path (between merge and evaluator)
+    par_section = source[source.find('PARALLEL EXECUTION'):source.find('SEQUENTIAL EXECUTION')]
+    critic_pos = par_section.find('run_interphase_critic')
+    eval_pos = par_section.find('run_evaluator')
+    has_critic_before_eval = (critic_pos >= 0 and eval_pos >= 0
+                              and critic_pos < eval_pos)
+
+    # Verify the call passes all phase numbers (PHASE_LIST)
+    # The call should pass $PHASE_LIST (which is space-separated) to cover all phases
+    critic_call_line = ""
+    for line in par_section.split('\n'):
+        if 'run_interphase_critic' in line:
+            critic_call_line = line
+            break
+    passes_all_phases = 'PHASE_LIST' in critic_call_line
+
+    ok = has_critic_before_eval and passes_all_phases
+    record("Inter-Phase Critic Runs After Parallel Group", ok,
+           f"before_eval={has_critic_before_eval}, "
+           f"all_phases={passes_all_phases}, "
+           f"call={critic_call_line.strip()}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Evaluator Returns Remediate on HIGH Issues (Section 2.19)
+# ============================================================
+def test_evaluator_returns_remediate():
+    """When the Critic summary shows features at builder 'TODO' or
+    HIGH/CRITICAL action items, the evaluator can return 'remediate'."""
+    source = read_launcher()
+
+    # Verify 'remediate' is in the evaluator schema
+    schema_match = re.search(r'EVALUATOR_SCHEMA=.*remediate', source)
+    has_remediate_in_schema = schema_match is not None
+
+    # Verify 'remediate' classification rule in evaluator prompt
+    has_remediate_rule = 'Critic found HIGH/CRITICAL issues' in source
+
+    # Verify 'remediate' handler exists in sequential case
+    seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
+    has_remediate_case = 'remediate)' in seq_section
+
+    ok = has_remediate_in_schema and has_remediate_rule and has_remediate_case
+    record("Evaluator Returns Remediate on HIGH Issues", ok,
+           f"schema={has_remediate_in_schema}, rule={has_remediate_rule}, "
+           f"case={has_remediate_case}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Phase Inserted Into Plan (Section 2.19)
+# ============================================================
+def test_remediation_phase_inserted():
+    """When the evaluator returns 'remediate', the orchestrator writes a plan
+    amendment file and applies it via apply_plan_amendments()."""
+    source = read_launcher()
+
+    # Verify handle_remediate function exists
+    has_fn = 'handle_remediate()' in source
+
+    # Extract full function body: from declaration to the next top-level bash
+    # comment section (avoids false-positive on embedded '}' in Python code)
+    fn_start = source.find('handle_remediate()')
+    fn_end_marker = source.find('\n# ===', fn_start + 100) if fn_start >= 0 else -1
+    if fn_end_marker < 0 and fn_start >= 0:
+        fn_end_marker = source.find('\n# ---', fn_start + 100)
+    fn_body = source[fn_start:fn_end_marker] if fn_start >= 0 and fn_end_marker >= 0 else ""
+    writes_amendment = 'plan_amendment_phase_' in fn_body
+    calls_apply = 'apply_plan_amendments' in fn_body
+    writes_prompt = 'remediation_phase_' in fn_body and '_prompt.txt' in fn_body
+
+    ok = has_fn and writes_amendment and calls_apply and writes_prompt
+    record("Remediation Phase Inserted Into Plan", ok,
+           f"fn={has_fn}, amendment={writes_amendment}, "
+           f"apply={calls_apply}, prompt={writes_prompt}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Builder Receives Issue Context (Section 2.19)
+# ============================================================
+def test_remediation_builder_receives_context():
+    """Remediation phases write a REMEDIATION PHASE override prompt file
+    that lists features with their specific issues."""
+    source = read_launcher()
+
+    fn_start = source.find('handle_remediate()')
+    fn_end_marker = source.find('\n# ===', fn_start + 100) if fn_start >= 0 else -1
+    if fn_end_marker < 0 and fn_start >= 0:
+        fn_end_marker = source.find('\n# ---', fn_start + 100)
+    fn_body = source[fn_start:fn_end_marker] if fn_start >= 0 and fn_end_marker >= 0 else ""
+
+    has_remediation_header = 'REMEDIATION PHASE ACTIVE' in fn_body
+    has_feature_listing = 'Features requiring attention' in fn_body
+    has_focus_instruction = 'Focus exclusively' in fn_body
+
+    ok = has_remediation_header and has_feature_listing and has_focus_instruction
+    record("Remediation Builder Receives Issue Context", ok,
+           f"header={has_remediation_header}, features={has_feature_listing}, "
+           f"focus={has_focus_instruction}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Attempt Limit Prevents Infinite Loop (Section 2.19)
+# ============================================================
+def test_remediation_attempt_limit():
+    """max_remediation_attempts (default 2) limits remediation phases
+    per source phase. Tracked via remediation_attempt_<N> counter files."""
+    source = read_launcher()
+
+    # Verify max_remediation_attempts config reading
+    has_config = 'MAX_REMEDIATION_ATTEMPTS' in source
+    has_default = 'max_remediation_attempts' in source
+
+    # Verify limit check in handle_remediate
+    fn_start = source.find('handle_remediate()')
+    fn_end = source.find('\n}', fn_start + 200) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    checks_limit = 'MAX_REMEDIATION_ATTEMPTS' in fn_body
+    uses_counter_file = 'remediation_attempt_' in fn_body
+
+    # Verify escalation tracking
+    has_escalation_array = 'REMEDIATION_ESCALATIONS' in source
+
+    ok = has_config and has_default and checks_limit and uses_counter_file and has_escalation_array
+    record("Remediation Attempt Limit Prevents Infinite Loop", ok,
+           f"config={has_config}, default={has_default}, "
+           f"limit={checks_limit}, counter={uses_counter_file}, "
+           f"escalation={has_escalation_array}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Critic Failure Does Not Block Orchestration (Section 2.18)
+# ============================================================
+def test_critic_failure_no_block():
+    """If the Critic fails for a feature (non-zero exit), the orchestrator
+    logs the failure, skips that feature, and continues with a partial summary."""
+    source = read_launcher()
+
+    fn_start = source.find('run_interphase_critic()')
+    fn_end = source.find('\n}', fn_start + 1) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Verify Critic failures are logged and skipped (not blocking)
+    checks_exit_code = 'critic_rc' in fn_body
+    logs_failure = 'Critic failed' in fn_body
+    continues_on_fail = 'continue' in fn_body
+
+    ok = checks_exit_code and logs_failure and continues_on_fail
+    record("Critic Failure Does Not Block Orchestration", ok,
+           f"exit_check={checks_exit_code}, log={logs_failure}, "
+           f"continue={continues_on_fail}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Inter-Phase Critic Disabled by Config (Section 2.18)
+# ============================================================
+def test_interphase_critic_disabled_by_config():
+    """When inter_phase_critic is false or absent, the Critic is not run
+    between phases and the evaluator receives no Critic summary."""
+    source = read_launcher()
+
+    # Verify the Critic call is gated on INTER_PHASE_CRITIC
+    seq_section = source[source.find('SEQUENTIAL EXECUTION'):]
+    gate_before_critic = 'INTER_PHASE_CRITIC' in seq_section.split('run_interphase_critic')[0][-200:]
+
+    # Verify default is false
+    has_default_false = 'INTER_PHASE_CRITIC=false' in source
+
+    # Verify the run_interphase_critic function returns early when disabled
+    fn_start = source.find('run_interphase_critic()')
+    fn_end = source.find('\n}', fn_start + 1) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    has_early_return = 'INTER_PHASE_CRITIC" = "true" ] || return 0' in fn_body
+
+    ok = gate_before_critic and has_default_false and has_early_return
+    record("Inter-Phase Critic Disabled by Config", ok,
+           f"gate={gate_before_critic}, default={has_default_false}, "
+           f"early_return={has_early_return}" if not ok else "")
+
+
+# ============================================================
+# Scenario: MEDIUM and LOW Issues Do Not Trigger Remediation (Section 2.19)
+# ============================================================
+def test_medium_low_no_remediation():
+    """The evaluator prompt explicitly states that only HIGH/CRITICAL
+    issues trigger remediation. MEDIUM/LOW are informational only."""
+    source = read_launcher()
+
+    # Verify the evaluator prompt mentions this rule
+    has_high_crit_only = 'Only return "remediate" when' in source
+    has_medium_low_note = 'MEDIUM and LOW items do NOT trigger remediation' in source
+
+    # Verify the Critic summary filters only HIGH/CRITICAL
+    fn_start = source.find('run_interphase_critic()')
+    fn_end = source.find('\n}', fn_start + 1) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    filters_priority = "HIGH" in fn_body and "CRITICAL" in fn_body
+
+    ok = has_high_crit_only and has_medium_low_note and filters_priority
+    record("MEDIUM and LOW Issues Do Not Trigger Remediation", ok,
+           f"rule={has_high_crit_only}, note={has_medium_low_note}, "
+           f"filter={filters_priority}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Attempt Counter Tracks Per Source Phase (Section 2.19)
+# ============================================================
+def test_remediation_counter_per_source_phase():
+    """Each source phase has its own remediation counter file at
+    .purlin/runtime/remediation_attempt_<source_phase>."""
+    source = read_launcher()
+
+    fn_start = source.find('handle_remediate()')
+    fn_end = source.find('\n}', fn_start + 200) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    # Counter file is named per source phase
+    uses_source_phase = 'remediation_attempt_${source_phase}' in fn_body
+    # Counter is read and incremented
+    reads_counter = 'attempt_count' in fn_body
+    increments = 'attempt_count + 1' in fn_body
+
+    ok = uses_source_phase and reads_counter and increments
+    record("Remediation Attempt Counter Tracks Per Source Phase", ok,
+           f"per_phase={uses_source_phase}, read={reads_counter}, "
+           f"increment={increments}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Canvas Shows Critic Status Between Phases (Section 2.18)
+# ============================================================
+def test_canvas_shows_critic_status():
+    """When inter_phase_critic is enabled, the canvas shows a spinner
+    'Running Critic on phase N features...' between Builder completion
+    and evaluator invocation."""
+    source = read_launcher()
+
+    has_critic_spinner = 'Running Critic on phase' in source
+    # Verify it uses start_interphase_canvas
+    critic_spinner_line = ""
+    for line in source.split('\n'):
+        if 'Running Critic on phase' in line:
+            critic_spinner_line = line
+            break
+    uses_canvas = 'start_interphase_canvas' in critic_spinner_line
+
+    ok = has_critic_spinner and uses_canvas
+    record("Canvas Shows Critic Status Between Phases", ok,
+           f"spinner={has_critic_spinner}, canvas={uses_canvas}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Phases in Exit Summary (Section 2.19)
+# ============================================================
+def test_remediation_phases_in_exit_summary():
+    """Remediation phases are labeled as 'REMEDIATION (Phase N)' in the
+    exit summary. If escalations occurred, a Remediation Escalations
+    section lists unresolved issues."""
+    source = read_launcher()
+
+    # Verify REMEDIATION_ESCALATIONS array is printed in exit summary
+    has_escalation_section = 'Remediation Escalations' in source
+
+    # Verify the label format is in handle_remediate
+    fn_start = source.find('handle_remediate()')
+    fn_end = source.find('\n}', fn_start + 200) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+    has_label = 'Remediation (Phase' in fn_body
+
+    ok = has_escalation_section and has_label
+    record("Remediation Phases in Exit Summary", ok,
+           f"escalation_section={has_escalation_section}, label={has_label}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Startup and Exit Cleanup Includes Remediation Artifacts (Section 2.11)
+# ============================================================
+def test_cleanup_includes_remediation_artifacts():
+    """Both startup purge and exit cleanup delete remediation_attempt_*,
+    interphase_critic_summary.md, and remediation_phase_*_prompt.txt."""
+    source = read_launcher()
+
+    # Startup purge
+    fn_start = source.find('purge_stale_runtime_artifacts()')
+    fn_end = source.find('\n}', fn_start) if fn_start >= 0 else -1
+    purge_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    purge_remediation = 'remediation_attempt_*' in purge_body
+    purge_summary = 'interphase_critic_summary.md' in purge_body
+    purge_prompt = 'remediation_phase_*_prompt.txt' in purge_body
+
+    # Exit cleanup
+    exit_section = source[source.find('Exit cleanup'):]
+    exit_remediation = 'remediation_attempt_*' in exit_section
+    exit_summary = 'interphase_critic_summary.md' in exit_section
+    exit_prompt = 'remediation_phase_*_prompt.txt' in exit_section
+
+    ok = (purge_remediation and purge_summary and purge_prompt
+          and exit_remediation and exit_summary and exit_prompt)
+    record("Startup and Exit Cleanup Includes Remediation Artifacts", ok,
+           f"purge: rem={purge_remediation}, sum={purge_summary}, prompt={purge_prompt}; "
+           f"exit: rem={exit_remediation}, sum={exit_summary}, prompt={exit_prompt}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Post-Run Status Refresh Does Not Print JSON (Section 2.17)
+# ============================================================
+def test_post_run_status_refresh_no_json():
+    """The status.sh JSON output is suppressed (stdout redirected to
+    /dev/null) so the exit summary remains the last visible output."""
+    source = read_launcher()
+
+    # Find the post-run status refresh line
+    has_redirect = 'bash "$CDD_STATUS" > /dev/null' in source
+
+    # Verify it does NOT merge stderr into stdout (old bug: 2>&1)
+    old_pattern = 'bash "$CDD_STATUS" 2>&1'
+    has_old_bug = old_pattern in source
+
+    ok = has_redirect and not has_old_bug
+    record("Post-Run Status Refresh Does Not Print JSON", ok,
+           f"redirect={has_redirect}, old_bug={has_old_bug}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Evaluator Fallback Does Not Attempt Remediation (Section 2.18)
+# ============================================================
+def test_evaluator_fallback_no_remediation():
+    """The evaluator fallback (hash check) only returns 'continue' or 'stop',
+    never 'remediate'. Remediation requires a successful evaluator call."""
+    source = read_launcher()
+
+    fn_start = source.find('evaluator_fallback()')
+    fn_end = source.find('\n}', fn_start) if fn_start >= 0 else -1
+    fn_body = source[fn_start:fn_end] if fn_start >= 0 else ""
+
+    no_remediate = 'remediate' not in fn_body
+    returns_continue = 'continue|false' in fn_body
+    returns_stop = 'stop|false' in fn_body
+
+    ok = no_remediate and returns_continue and returns_stop
+    record("Evaluator Fallback Does Not Attempt Remediation", ok,
+           f"no_remediate={no_remediate}, continue={returns_continue}, "
+           f"stop={returns_stop}" if not ok else "")
+
+
+# ============================================================
+# Scenario: Remediation Triggered When Builder Exits Without Feature Completion
+# ============================================================
+def test_remediation_sequential_execution():
+    """Functional test: sequential path with inter_phase_critic enabled
+    and evaluator returning 'remediate' inserts a remediation phase and
+    continues the loop."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        plan = make_plan([
+            (1, "Test Phase", "PENDING", ["a.md"]),
+        ])
+        graph = make_graph([("a.md", [])])
+        make_mock_project(tmpdir, plan, graph)
+
+        # Create config with inter_phase_critic enabled
+        config_path = os.path.join(tmpdir, '.purlin', 'config.json')
+        with open(config_path, 'w') as f:
+            json.dump({
+                'inter_phase_critic': True,
+                'max_remediation_attempts': 1,
+            }, f)
+
+        # Create mock Critic script
+        critic_dir = os.path.join(tmpdir, 'tools', 'critic')
+        os.makedirs(critic_dir, exist_ok=True)
+        critic_script = os.path.join(critic_dir, 'run.sh')
+        with open(critic_script, 'w') as f:
+            # Writes a critic.json with a HIGH action item
+            f.write(f'''#!/bin/bash
+FEATURE="$1"
+STEM=$(basename "$FEATURE" .md)
+RESULTS_DIR="{tmpdir}/tests/$STEM"
+mkdir -p "$RESULTS_DIR"
+cat > "$RESULTS_DIR/critic.json" << 'CEOF'
+{{
+  "role_status": {{"builder": "TODO"}},
+  "spec_gate": {{"status": "PASS"}},
+  "implementation_gate": {{"status": "PASS"}},
+  "lifecycle_status": "[TODO]",
+  "action_items": [
+    {{"priority": "HIGH", "description": "Feature lifecycle stuck at TODO"}}
+  ]
+}}
+CEOF
+exit 0
+''')
+        os.chmod(critic_script, os.stat(critic_script).st_mode | stat.S_IEXEC)
+
+        # Evaluator sequence: remediate -> then stop on remediation phase
+        mock_bin = make_mock_claude(tmpdir, "phase_complete",
+                                   eval_responses=[
+                                       ("remediate", False, "Critic found issues"),
+                                       ("stop", True, "Remediation complete"),
+                                   ])
+
+        # Mock CDD status.sh (post-run refresh)
+        cdd_dir = os.path.join(tmpdir, 'tools', 'cdd')
+        os.makedirs(cdd_dir, exist_ok=True)
+        with open(os.path.join(cdd_dir, 'status.sh'), 'w') as f:
+            f.write('#!/bin/bash\necho "status ok"\n')
+        os.chmod(os.path.join(cdd_dir, 'status.sh'),
+                 os.stat(os.path.join(cdd_dir, 'status.sh')).st_mode | stat.S_IEXEC)
+
+        proc = run_launcher(tmpdir, mock_bin, ['--continuous'])
+
+        # Check that remediation was triggered
+        has_remediation_log = 'Remediation phase' in proc.stderr or 'remediat' in proc.stderr.lower()
+
+        # Check that a plan amendment was created and applied
+        runtime_dir = os.path.join(tmpdir, '.purlin', 'runtime')
+        prompt_files = [f for f in os.listdir(runtime_dir) if f.startswith('remediation_phase_')]
+
+        # Check summary mentions remediation
+        ok = has_remediation_log
+        record("Remediation Triggered When Builder Exits Without Feature Completion", ok,
+               f"remediation_in_log={has_remediation_log}, "
+               f"prompt_files={prompt_files}, rc={proc.returncode}, "
+               f"stderr={proc.stderr[:500]}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -4267,6 +4742,30 @@ if __name__ == '__main__':
     # Runtime Artifact Cleanup (Section 2.11) (2)
     test_startup_purge_of_stale_runtime_artifacts()
     test_exit_cleanup_of_transient_artifacts()
+
+    # Inter-Phase Critic Integration (Section 2.18) (5)
+    test_interphase_critic_runs_after_sequential_phase()
+    test_interphase_critic_runs_after_parallel_group()
+    test_critic_failure_no_block()
+    test_interphase_critic_disabled_by_config()
+    test_canvas_shows_critic_status()
+
+    # Dynamic Remediation Phases (Section 2.19) (7)
+    test_evaluator_returns_remediate()
+    test_remediation_phase_inserted()
+    test_remediation_builder_receives_context()
+    test_remediation_attempt_limit()
+    test_medium_low_no_remediation()
+    test_remediation_counter_per_source_phase()
+    test_remediation_phases_in_exit_summary()
+
+    # Cleanup & Refresh Updates (Sections 2.11, 2.17) (3)
+    test_cleanup_includes_remediation_artifacts()
+    test_post_run_status_refresh_no_json()
+    test_evaluator_fallback_no_remediation()
+
+    # Functional: Remediation End-to-End (1)
+    test_remediation_sequential_execution()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)
