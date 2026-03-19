@@ -6,4 +6,4 @@
 - **Expected Behavior:** Per Section 2.3 and the Manual Scenario: "The Architect halts the step and documents the base-layer conflict, And uses /pl-edit-base (Purlin repo) or reports to the framework maintainer (consumer project), And the release does not proceed until the conflict is resolved."
 - **Root Cause:** The `agent_instructions` field in `tools/release/global_steps.json` for step `purlin.instruction_audit` reads: "Fix any inconsistencies and commit." It does not distinguish between override-fixable issues and base-layer errors that cannot be corrected via override. The agent follows the instructions literally and tries to fix everything.
 - **Action Required:** Architect
-- **Status:** SPEC_UPDATED
+- **Status:** RESOLVED
