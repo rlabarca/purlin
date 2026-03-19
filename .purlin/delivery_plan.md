@@ -31,9 +31,9 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Remote Pull [IN_PROGRESS]
+## Phase 6 -- Remote Pull [COMPLETE]
 **Features:** pl_remote_pull.md
-**Completion Commit:** --
+**Completion Commit:** ef32a51
 **QA Bugs Addressed:** --
 
 ## Phase 7 -- Session Resume [COMPLETE]
