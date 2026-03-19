@@ -26,9 +26,9 @@
 **Completion Commit:** 360cb54
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Remote Push [IN_PROGRESS]
+## Phase 5 -- Remote Push [COMPLETE]
 **Features:** pl_remote_push.md
-**Completion Commit:** --
+**Completion Commit:** 75ab3e1
 **QA Bugs Addressed:** --
 
 ## Phase 6 -- Remote Pull [COMPLETE]
