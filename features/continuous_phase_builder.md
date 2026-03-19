@@ -112,6 +112,8 @@ There is no human user present. You MUST:
 - NEVER ask for user input or confirmation of any kind.
 - Proceed immediately with your work plan.
 - Complete the current delivery plan phase autonomously, then halt as normal.
+- Override: treat `find_work` as `true` and `auto_start` as `true` regardless
+  of agent config values. You are in continuous mode — finding work is mandatory.
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 ```
@@ -274,6 +276,8 @@ present. You MUST:
   larger. Maximize parallelization -- group independent features into
   separate phases that can run concurrently. Each phase must be completable
   within a single session without context exhaustion. When in doubt, split.
+- Override: treat `find_work` as `true` and `auto_start` as `true` regardless
+  of agent config values. You are in continuous mode — finding work is mandatory.
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 ```

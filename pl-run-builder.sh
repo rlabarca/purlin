@@ -97,6 +97,8 @@ There is no human user present. You MUST:
 - Complete the current delivery plan phase autonomously, then halt as normal.
 - Do NOT include QA recommendations or "relaunch Builder" suggestions in your output.
   The orchestrator handles phase progression automatically.
+- Override: treat `find_work` as `true` and `auto_start` as `true` regardless
+  of agent config values. You are in continuous mode — finding work is mandatory.
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 CONTINUOUS_OVERRIDE
@@ -142,6 +144,12 @@ AGENT_AUTO_START="false"
 
 if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
+fi
+
+# Continuous mode requires find_work + auto_start regardless of config
+if [ "$CONTINUOUS" = "true" ]; then
+    AGENT_FIND_WORK="true"
+    AGENT_AUTO_START="true"
 fi
 
 # --- Validate startup controls ---
@@ -1511,6 +1519,8 @@ present. You MUST:
   Maximize parallelization -- group independent features into separate
   phases that can run concurrently. Each phase must be completable within
   a single session without context exhaustion. When in doubt, split.
+- Override: treat `find_work` as `true` and `auto_start` as `true` regardless
+  of agent config values. You are in continuous mode — finding work is mandatory.
 This override takes precedence over any instruction to "wait for approval"
 or "ask the user."
 BOOTSTRAP_OVERRIDE
