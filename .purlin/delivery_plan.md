@@ -6,27 +6,27 @@
 ## Summary
 15 TODO features spanning CDD Dashboard, delivery tooling, agent skills, test infrastructure, and release steps. Phased for maximum parallelism: 9 independent foundation phases run concurrently, then 2 dependent phases, then 2 final phases. Three dependency chains drive ordering: cdd_status_monitor -> cdd_agent_configuration -> cdd_startup_controls, and phase_analyzer -> continuous_phase_builder -> terminal_identity.
 
-## Phase 1 -- CDD Status Monitor [PENDING]
+## Phase 1 -- CDD Status Monitor [IN_PROGRESS]
 **Features:** cdd_status_monitor.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Phase Analyzer [PENDING]
+## Phase 2 -- Phase Analyzer [IN_PROGRESS]
 **Features:** phase_analyzer.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Session Resume [PENDING]
+## Phase 3 -- Session Resume [IN_PROGRESS]
 **Features:** pl_session_resume.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Update Purlin [PENDING]
+## Phase 4 -- Update Purlin [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Web Test [PENDING]
+## Phase 5 -- Web Test [IN_PROGRESS]
 **Features:** pl_web_test.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
@@ -36,17 +36,17 @@
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Regression Testing [PENDING]
+## Phase 7 -- Regression Testing [IN_PROGRESS]
 **Features:** regression_testing.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Release Steps A [PENDING]
+## Phase 8 -- Release Steps A [IN_PROGRESS]
 **Features:** instruction_audit.md, release_record_version_notes.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Release Steps B [PENDING]
+## Phase 9 -- Release Steps B [IN_PROGRESS]
 **Features:** release_doc_consistency_check.md, release_submodule_safety_audit.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
