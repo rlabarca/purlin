@@ -79,11 +79,15 @@ class TestDetectProjectRootSubmodule(unittest.TestCase):
             # Submodule layout:
             #   tmpdir/consumer/.purlin/     (consumer project root)
             #   tmpdir/consumer/purlin/.purlin/  (submodule root)
+            #   tmpdir/consumer/purlin/.git   (file — submodule gitlink)
             #   tmpdir/consumer/purlin/tools/mod/  (script)
             consumer = os.path.join(tmpdir, 'consumer')
             submodule = os.path.join(consumer, 'purlin')
             os.makedirs(os.path.join(consumer, '.purlin'))
             os.makedirs(os.path.join(submodule, '.purlin'))
+            # .git as a file (submodule gitlink)
+            with open(os.path.join(submodule, '.git'), 'w') as f:
+                f.write('gitdir: ../.git/modules/purlin\n')
             script_dir = os.path.join(submodule, 'tools', 'mod')
             os.makedirs(script_dir)
             with patch.dict(os.environ, {}, clear=True):
@@ -91,6 +95,61 @@ class TestDetectProjectRootSubmodule(unittest.TestCase):
                 result = detect_project_root(script_dir)
                 self.assertEqual(result, consumer)
                 self.assertNotEqual(result, submodule)
+
+    def test_prefers_further_when_nearer_has_no_git(self):
+        """When both have .purlin/ but nearer has no .git, prefer further."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            consumer = os.path.join(tmpdir, 'consumer')
+            submodule = os.path.join(consumer, 'purlin')
+            os.makedirs(os.path.join(consumer, '.purlin'))
+            os.makedirs(os.path.join(submodule, '.purlin'))
+            # No .git at submodule level
+            script_dir = os.path.join(submodule, 'tools', 'mod')
+            os.makedirs(script_dir)
+            with patch.dict(os.environ, {}, clear=True):
+                os.environ.pop('PURLIN_PROJECT_ROOT', None)
+                result = detect_project_root(script_dir)
+                self.assertEqual(result, consumer)
+
+
+class TestDetectProjectRootStandaloneNested(unittest.TestCase):
+    """Scenario: Climbing Prefers Nearer Path When Standalone Repo Inside Parent Project"""
+
+    def test_prefers_nearer_when_standalone_repo(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Layout: standalone repo nested inside an unrelated parent project
+            #   tmpdir/parent/.purlin/         (unrelated parent project)
+            #   tmpdir/parent/myrepo/.purlin/  (standalone repo — our project)
+            #   tmpdir/parent/myrepo/.git/     (directory — standalone repo)
+            #   tmpdir/parent/myrepo/tools/mod/ (script)
+            parent = os.path.join(tmpdir, 'parent')
+            standalone = os.path.join(parent, 'myrepo')
+            os.makedirs(os.path.join(parent, '.purlin'))
+            os.makedirs(os.path.join(standalone, '.purlin'))
+            # .git as a directory (standalone repo, NOT a submodule)
+            os.makedirs(os.path.join(standalone, '.git'))
+            script_dir = os.path.join(standalone, 'tools', 'mod')
+            os.makedirs(script_dir)
+            with patch.dict(os.environ, {}, clear=True):
+                os.environ.pop('PURLIN_PROJECT_ROOT', None)
+                result = detect_project_root(script_dir)
+                self.assertEqual(result, standalone)
+                self.assertNotEqual(result, parent)
+
+    def test_does_not_return_unrelated_parent(self):
+        """Verify the further path (unrelated parent) is explicitly not returned."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            parent = os.path.join(tmpdir, 'parent')
+            standalone = os.path.join(parent, 'myrepo')
+            os.makedirs(os.path.join(parent, '.purlin'))
+            os.makedirs(os.path.join(standalone, '.purlin'))
+            os.makedirs(os.path.join(standalone, '.git'))
+            script_dir = os.path.join(standalone, 'tools', 'mod')
+            os.makedirs(script_dir)
+            with patch.dict(os.environ, {}, clear=True):
+                os.environ.pop('PURLIN_PROJECT_ROOT', None)
+                result = detect_project_root(script_dir)
+                self.assertNotEqual(result, parent)
 
 
 class TestAtomicWriteBasic(unittest.TestCase):

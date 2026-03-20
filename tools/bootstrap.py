@@ -33,15 +33,32 @@ def detect_project_root(script_dir=None):
 
     script_dir = os.path.abspath(script_dir)
 
-    # Climbing fallback: try further path first (submodule consumer root at
-    # 3 levels up), then nearer path (standalone root at 2 levels up).
-    for depth in ('../../../', '../../'):
-        candidate = os.path.abspath(os.path.join(script_dir, depth))
-        if os.path.isdir(os.path.join(candidate, '.purlin')):
-            return candidate
+    # Climbing fallback: check both candidate depths for .purlin/ marker.
+    # Further path (3 levels up) = consumer project root in submodule layout.
+    # Nearer path (2 levels up) = standalone project root.
+    further = os.path.abspath(os.path.join(script_dir, '../../..'))
+    nearer = os.path.abspath(os.path.join(script_dir, '../..'))
+
+    further_has = os.path.isdir(os.path.join(further, '.purlin'))
+    nearer_has = os.path.isdir(os.path.join(nearer, '.purlin'))
+
+    if further_has and nearer_has:
+        # Both candidates have .purlin/ — disambiguate via nearer's .git type.
+        # If nearer/.git is a directory, nearer is a standalone repo and the
+        # further .purlin/ belongs to an unrelated parent project.
+        # If nearer/.git is a file (submodule gitlink) or absent, prefer further
+        # (the normal submodule case).
+        nearer_git = os.path.join(nearer, '.git')
+        if os.path.isdir(nearer_git):
+            return nearer
+        return further
+    if further_has:
+        return further
+    if nearer_has:
+        return nearer
 
     # Last resort: 2 levels up from script_dir (preserving legacy behavior)
-    return os.path.abspath(os.path.join(script_dir, '../..'))
+    return nearer
 
 
 def load_config(project_root):
