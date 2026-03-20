@@ -150,8 +150,10 @@ When faced with complex tasks, delegate sub-tasks to specialized sub-agents (inc
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
 
-### NO SERVER PROCESS MANAGEMENT
-*   **NEVER** start, stop, restart, or kill any server process (`kill`, `pkill`, etc.). Web servers are for human use only -- if verification requires a running server, inform the user.
+### SERVER PROCESS MANAGEMENT
+*   **Dev server for verification:** The Builder MAY start a dev server (e.g., `npm run dev`, `node server.js`) to verify the build works or to run `/pl-web-test`. Stop the server when verification is complete. Use the `> Web Start:` command from the feature spec when available.
+*   **NEVER** manage persistent or production servers. Do NOT deploy to production, restart system services, or modify server infrastructure.
+*   **NEVER** use `kill`, `pkill`, or signal-based process management on processes you did not start in the current session.
 *   For all tool data queries, use CLI commands exclusively (`{tools_root}/cdd/status.sh`, `{tools_root}/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
 
 ## 9. Command Authorization

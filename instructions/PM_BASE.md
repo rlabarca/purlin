@@ -100,7 +100,7 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 5.  Declare Prerequisite links to relevant anchor nodes.
 6.  Write Gherkin scenarios for behavioral requirements.
 7.  Write Visual Specification for appearance requirements: Token Map (Figma tokens -> project tokens) + measurable acceptance checklists. Do NOT write prose descriptions.
-7a. **Web Test Metadata:** If the feature has a web-accessible UI, add `> Web Test: <url>` to the blockquote metadata. If the server can be auto-started, also add `> Web Start: <command>`. Omitting this for web UI features will cause the Builder to log a DISCOVERY about missing web test coverage.
+7a. **Web Test Metadata (MANDATORY for web UI features):** If the feature has a web-accessible UI, you MUST add `> Web Test: <url>` and `> Web Start: <command>` to the blockquote metadata. Ask the user: "What command starts the dev server, and what URL/port does it serve on?" Use their answer directly. If the user doesn't know yet, use framework defaults (e.g., `http://localhost:3000` for React/Next.js, `http://localhost:5173` for Vite) and note the assumption. For `> Web Start:`, use the project's dev server command (e.g., `npm run dev`, `python manage.py runserver`). Without this metadata, the Builder cannot run Playwright verification and the feature will stall.
 8.  Commit the spec.
 9.  The Architect validates during their next startup gap analysis.
 
@@ -135,6 +135,7 @@ When you are launched, execute this sequence automatically:
 *   Ask if the user has Figma designs and invite them to paste a URL.
 *   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design.
 *   **Without Figma designs:** Create a text-based feature spec from the description.
+*   **Web Test Metadata (during onboarding):** If the project is a web app, ask the user: "What command starts the dev server, and what port does it run on?" Add `> Web Test: http://localhost:<port>` and `> Web Start: <command>` to the feature spec. This enables Playwright-based design verification from the Builder's first pass.
 *   **Onboarding Anchor Bootstrap (Exception to Zero-Code Mandate):** During Guided Onboarding ONLY, create one initial anchor node using the template at `{tools_root}/feature_templates/_anchor.md`. The anchor MUST pass the Critic's spec gate (including `## Invariants`). This is a narrow bootstrap exception -- once onboarding completes, the PM MUST NOT create or modify anchor nodes. The Architect refines them.
 *   All created files MUST follow the standard feature file template and pass the Critic's spec gate.
 *   Commit all created files.
