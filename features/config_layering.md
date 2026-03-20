@@ -4,7 +4,7 @@
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/project_init.md
 
-[Complete]
+[TODO]
 
 ## 1. Overview
 
@@ -35,7 +35,7 @@ A shared Python utility at `tools/config/resolve_config.py` that centralizes all
 - **Copy-on-first-access:** When `config.local.json` does not exist but `config.json` does, copy `config.json` to `config.local.json` before returning the config. This ensures all subsequent reads and writes target the local file.
 - **Malformed JSON fallback:** If `config.local.json` exists but contains invalid JSON, fall back to `config.json` (log a warning to stderr).
 - **Python API:** Exposes `resolve_config(project_root: str) -> dict` for import by Python consumers.
-- **Sync API:** Exposes `sync_config(project_root: str) -> list[str]` that recursively walks `config.json` (shared), finds any keys missing from `config.local.json` (local), adds them with shared defaults, writes the updated local config, and returns a list of added key paths (dot-notation). If local doesn't exist, creates it as a full copy (returns all keys). If both have identical key structures, returns an empty list.
+- **Sync API:** Exposes `sync_config(project_root: str) -> list[str]` that recursively walks `config.json` (shared), finds any keys missing from `config.local.json` (local), adds them with shared defaults, writes the updated local config, and returns a list of added key paths (dot-notation). For array values containing objects with an `id` field (e.g., `models`), the sync performs id-based merging: entries from shared whose `id` does not appear in local are appended to the local array. Existing local entries (matched by `id`) are never modified or removed. If local doesn't exist, creates it as a full copy (returns all keys). If both have identical key structures and array contents, returns an empty list.
 - **CLI modes:** The script is also callable from the command line for shell consumers:
   - `--dump`: Print the full resolved config as JSON to stdout.
   - `--key <name>`: Print the value of a single top-level key to stdout.
@@ -77,7 +77,8 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 - Any keys present in `config.json` (shared) but missing from `config.local.json` (local) are added to local with the shared default values.
 - Existing local values are never overwritten.
 - The sync is recursive: nested objects are walked key-by-key, so a new agent role or a new nested key is added without disturbing sibling keys.
-- The user is informed what new keys were added (or that local config is already up to date).
+- **Array-aware merging for `models`:** The `models` array contains objects with a unique `id` field. During sync, entries from shared that have no matching `id` in local are appended to the local array. Existing local entries (matched by `id`) are never modified or removed. This ensures new model definitions introduced upstream are available locally without disturbing user customizations to existing model entries.
+- The user is informed what new keys were added (or that local config is already up to date). New model entries added via array merge are reported by model `id`.
 - If `config.local.json` doesn't exist, it is created as a full copy of `config.json`.
 
 ### 2.6 Gitignore
@@ -227,6 +228,23 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     When the config sync step executes
     Then config.local.json contains agents.architect.model: "opus" which is preserved
     And config.local.json contains agents.qa with the shared defaults which is added
+
+#### Scenario: Update Sync Adds New Model Entries to Models Array
+
+    Given config.local.json has models: [{"id": "claude-opus-4-6", ...}, {"id": "claude-sonnet-4-6", ...}]
+    And config.json has models with an additional entry: {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", ...}
+    When the config sync step executes
+    Then config.local.json models array contains the new "claude-opus-4-6[1m]" entry appended at the end
+    And the existing "claude-opus-4-6" and "claude-sonnet-4-6" entries are unchanged
+    And the user is informed: "Added new model: claude-opus-4-6[1m]"
+
+#### Scenario: Update Sync Preserves Existing Model Entries During Array Merge
+
+    Given config.local.json has models: [{"id": "claude-opus-4-6", "label": "My Custom Label", ...}]
+    And config.json has models: [{"id": "claude-opus-4-6", "label": "Opus 4.6", ...}]
+    When the config sync step executes
+    Then config.local.json models entry for "claude-opus-4-6" retains label "My Custom Label"
+    And config.local.json is unchanged (no new entries to add)
 
 #### Scenario: Update Sync Reports No Changes When Already Current
 
