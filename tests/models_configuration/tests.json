@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 31, "failed": 0, "total": 31, "test_file": "tools/test_agent_configuration.sh"}
+{"status": "PASS", "passed": 44, "failed": 0, "total": 44, "test_file": "tools/test_agent_configuration.sh"}

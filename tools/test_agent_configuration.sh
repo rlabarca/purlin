@@ -579,6 +579,258 @@ if [ $HAS_CASE -eq 0 ]; then
     log_pass "No launcher scripts reference 'provider'"
 fi
 
+# --- Scenario: Model With Warning Field Triggers Display at Configuration Surfaces ---
+echo ""
+echo "[Scenario] Model With Warning Field Triggers Display at Configuration Surfaces"
+
+# Test that resolve_config.py outputs AGENT_MODEL_WARNING for a model with a warning
+WARNING_SANDBOX="$(mktemp -d)"
+mkdir -p "$WARNING_SANDBOX/.purlin"
+cat > "$WARNING_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6", "label": "Opus 4.6", "capabilities": {"effort": true, "permissions": true}},
+        {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", "capabilities": {"effort": true, "permissions": true}, "warning": "Extended context costs extra.", "warning_dismissible": true}
+    ],
+    "agents": {
+        "architect": {"model": "claude-opus-4-6[1m]", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+WARN_OUTPUT=$(PURLIN_PROJECT_ROOT="$WARNING_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" architect 2>/dev/null)
+
+if echo "$WARN_OUTPUT" | grep -q 'AGENT_MODEL_WARNING="Extended context costs extra."'; then
+    log_pass "resolve_config.py outputs AGENT_MODEL_WARNING for model with warning"
+else
+    log_fail "AGENT_MODEL_WARNING not set correctly (output: $WARN_OUTPUT)"
+fi
+
+if echo "$WARN_OUTPUT" | grep -q 'AGENT_MODEL_WARNING_DISMISSED="false"'; then
+    log_pass "AGENT_MODEL_WARNING_DISMISSED is false when not acknowledged"
+else
+    log_fail "AGENT_MODEL_WARNING_DISMISSED not set correctly (output: $WARN_OUTPUT)"
+fi
+
+# Test that a model without a warning outputs empty AGENT_MODEL_WARNING
+# Remove local config created by copy-on-first-access from previous sub-test
+rm -f "$WARNING_SANDBOX/.purlin/config.local.json"
+cat > "$WARNING_SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6", "label": "Opus 4.6", "capabilities": {"effort": true, "permissions": true}}
+    ],
+    "agents": {
+        "architect": {"model": "claude-opus-4-6", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+NOWARN_OUTPUT=$(PURLIN_PROJECT_ROOT="$WARNING_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" architect 2>/dev/null)
+
+if echo "$NOWARN_OUTPUT" | grep -q 'AGENT_MODEL_WARNING=""'; then
+    log_pass "resolve_config.py outputs empty AGENT_MODEL_WARNING for model without warning"
+else
+    log_fail "AGENT_MODEL_WARNING should be empty for model without warning (output: $NOWARN_OUTPUT)"
+fi
+
+rm -rf "$WARNING_SANDBOX"
+
+# --- Scenario: Acknowledged Warning is Suppressed on Subsequent Access ---
+echo ""
+echo "[Scenario] Acknowledged Warning is Suppressed on Subsequent Access"
+
+ACK_SANDBOX="$(mktemp -d)"
+mkdir -p "$ACK_SANDBOX/.purlin"
+cat > "$ACK_SANDBOX/.purlin/config.local.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", "capabilities": {"effort": true, "permissions": true}, "warning": "Extended context costs extra.", "warning_dismissible": true}
+    ],
+    "agents": {
+        "architect": {"model": "claude-opus-4-6[1m]", "effort": "high", "bypass_permissions": true}
+    },
+    "acknowledged_warnings": ["claude-opus-4-6[1m]"]
+}
+EOF
+
+ACK_OUTPUT=$(PURLIN_PROJECT_ROOT="$ACK_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" architect 2>/dev/null)
+
+if echo "$ACK_OUTPUT" | grep -q 'AGENT_MODEL_WARNING_DISMISSED="true"'; then
+    log_pass "AGENT_MODEL_WARNING_DISMISSED is true when model ID is in acknowledged_warnings"
+else
+    log_fail "AGENT_MODEL_WARNING_DISMISSED should be true (output: $ACK_OUTPUT)"
+fi
+
+# Verify the warning text is still populated (dismissed just suppresses display)
+if echo "$ACK_OUTPUT" | grep -q 'AGENT_MODEL_WARNING="Extended context costs extra."'; then
+    log_pass "AGENT_MODEL_WARNING still contains the warning text even when dismissed"
+else
+    log_fail "AGENT_MODEL_WARNING should still be set (output: $ACK_OUTPUT)"
+fi
+
+rm -rf "$ACK_SANDBOX"
+
+# --- Scenario: Non-Dismissible Warning Always Displays ---
+echo ""
+echo "[Scenario] Non-Dismissible Warning Always Displays"
+
+ND_SANDBOX="$(mktemp -d)"
+mkdir -p "$ND_SANDBOX/.purlin"
+cat > "$ND_SANDBOX/.purlin/config.local.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-special", "label": "Special", "capabilities": {"effort": true, "permissions": true}, "warning": "This model is experimental.", "warning_dismissible": false}
+    ],
+    "agents": {
+        "builder": {"model": "claude-special", "effort": "high", "bypass_permissions": true}
+    },
+    "acknowledged_warnings": ["claude-special"]
+}
+EOF
+
+ND_OUTPUT=$(PURLIN_PROJECT_ROOT="$ND_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" builder 2>/dev/null)
+
+if echo "$ND_OUTPUT" | grep -q 'AGENT_MODEL_WARNING="This model is experimental."'; then
+    log_pass "Non-dismissible warning text is output"
+else
+    log_fail "Non-dismissible warning text not found (output: $ND_OUTPUT)"
+fi
+
+if echo "$ND_OUTPUT" | grep -q 'AGENT_MODEL_WARNING_DISMISSED="false"'; then
+    log_pass "AGENT_MODEL_WARNING_DISMISSED remains false for non-dismissible warning"
+else
+    log_fail "Non-dismissible warning should not be marked dismissed (output: $ND_OUTPUT)"
+fi
+
+rm -rf "$ND_SANDBOX"
+
+# --- Scenario: Launcher Prints Warning and Auto-Acknowledges on First Run ---
+echo ""
+echo "[Scenario] Launcher Prints Warning and Auto-Acknowledges on First Run"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", "capabilities": {"effort": true, "permissions": true}, "warning": "Extended context costs extra.", "warning_dismissible": true}
+    ],
+    "agents": {
+        "architect": {"model": "claude-opus-4-6[1m]", "effort": "high", "bypass_permissions": true}
+    }
+}
+EOF
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+if echo "$STDERR_CAPTURED" | grep -q "WARNING: Extended context costs extra."; then
+    log_pass "Launcher prints warning to stderr on first run"
+else
+    log_fail "Launcher did not print warning to stderr (stderr: $STDERR_CAPTURED)"
+fi
+
+if echo "$STDERR_CAPTURED" | grep -q "By continuing, you are acknowledging this warning."; then
+    log_pass "Launcher prints acknowledgment message"
+else
+    log_fail "Launcher did not print acknowledgment message (stderr: $STDERR_CAPTURED)"
+fi
+
+# Verify auto-acknowledge wrote to config.local.json
+if [ -f "$SANDBOX/.purlin/config.local.json" ]; then
+    if python3 -c "
+import json
+c = json.load(open('$SANDBOX/.purlin/config.local.json'))
+assert 'claude-opus-4-6[1m]' in c.get('acknowledged_warnings', [])
+" 2>/dev/null; then
+        log_pass "Auto-acknowledge added model ID to acknowledged_warnings in config.local.json"
+    else
+        log_fail "acknowledged_warnings not updated in config.local.json"
+    fi
+else
+    log_fail "config.local.json was not created by auto-acknowledge"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Launcher Suppresses Warning on Subsequent Runs ---
+echo ""
+echo "[Scenario] Launcher Suppresses Warning on Subsequent Runs"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.local.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", "capabilities": {"effort": true, "permissions": true}, "warning": "Extended context costs extra.", "warning_dismissible": true}
+    ],
+    "agents": {
+        "architect": {"model": "claude-opus-4-6[1m]", "effort": "high", "bypass_permissions": true}
+    },
+    "acknowledged_warnings": ["claude-opus-4-6[1m]"]
+}
+EOF
+
+STDERR_FILE="$MOCK_DIR/stderr_capture"
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>"$STDERR_FILE"
+STDERR_CAPTURED=$(cat "$STDERR_FILE" 2>/dev/null || echo "")
+
+if echo "$STDERR_CAPTURED" | grep -qv "WARNING:"; then
+    log_pass "Launcher does not print warning when already acknowledged"
+else
+    log_fail "Launcher should not print warning on subsequent run (stderr: $STDERR_CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: acknowledge_warning CLI subcommand ---
+echo ""
+echo "[Scenario] acknowledge_warning CLI subcommand"
+
+ACK_CLI_SANDBOX="$(mktemp -d)"
+mkdir -p "$ACK_CLI_SANDBOX/.purlin"
+cat > "$ACK_CLI_SANDBOX/.purlin/config.local.json" << 'EOF'
+{
+    "models": [
+        {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]", "capabilities": {"effort": true, "permissions": true}, "warning": "Test warning", "warning_dismissible": true}
+    ],
+    "agents": {}
+}
+EOF
+
+PURLIN_PROJECT_ROOT="$ACK_CLI_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" acknowledge_warning "claude-opus-4-6[1m]" 2>/dev/null
+
+if python3 -c "
+import json
+c = json.load(open('$ACK_CLI_SANDBOX/.purlin/config.local.json'))
+assert 'claude-opus-4-6[1m]' in c.get('acknowledged_warnings', [])
+" 2>/dev/null; then
+    log_pass "acknowledge_warning adds model ID to acknowledged_warnings"
+else
+    log_fail "acknowledge_warning did not update config.local.json"
+fi
+
+# Test idempotency (duplicate calls don't create duplicates)
+PURLIN_PROJECT_ROOT="$ACK_CLI_SANDBOX" python3 "$SCRIPT_DIR/config/resolve_config.py" acknowledge_warning "claude-opus-4-6[1m]" 2>/dev/null
+
+ACK_COUNT=$(python3 -c "
+import json
+c = json.load(open('$ACK_CLI_SANDBOX/.purlin/config.local.json'))
+print(c.get('acknowledged_warnings', []).count('claude-opus-4-6[1m]'))
+" 2>/dev/null)
+
+if [ "$ACK_COUNT" = "1" ]; then
+    log_pass "acknowledge_warning is idempotent (no duplicates)"
+else
+    log_fail "acknowledge_warning created duplicate entries (count: $ACK_COUNT)"
+fi
+
+rm -rf "$ACK_CLI_SANDBOX"
+
 ###############################################################################
 # Results
 ###############################################################################

@@ -47,9 +47,22 @@ AGENT_EFFORT=""
 AGENT_BYPASS="false"
 AGENT_FIND_WORK="true"
 AGENT_AUTO_START="false"
+AGENT_MODEL_WARNING=""
+AGENT_MODEL_WARNING_DISMISSED="false"
 
 if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
+fi
+
+# --- Model warning display and auto-acknowledge ---
+if [ -n "$AGENT_MODEL_WARNING" ] && [ "$AGENT_MODEL_WARNING_DISMISSED" != "true" ]; then
+    echo "============================================================" >&2
+    echo "WARNING: $AGENT_MODEL_WARNING" >&2
+    echo "By continuing, you are acknowledging this warning." >&2
+    echo "============================================================" >&2
+    if [ -f "$RESOLVER" ]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" acknowledge_warning "$AGENT_MODEL" 2>/dev/null
+    fi
 fi
 
 # --- Validate startup controls ---

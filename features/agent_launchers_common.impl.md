@@ -8,3 +8,6 @@ Submodule equivalents are produced by `tools/init.sh` (which superseded the reti
 
 ### AGENT_ROLE Export
 Each launcher exports `AGENT_ROLE` as an env var AND writes it to `.purlin/runtime/agent_role` so that PostToolUse hooks (which don't inherit env vars from Claude Code) can read it.
+
+### Model Warning Display and Auto-Acknowledge
+All launchers initialize `AGENT_MODEL_WARNING=""` and `AGENT_MODEL_WARNING_DISMISSED="false"` alongside the other default variables. After the `eval` of `resolve_config.py`, a common warning block checks: if `AGENT_MODEL_WARNING` is non-empty AND `AGENT_MODEL_WARNING_DISMISSED` is not `"true"`, the warning is printed to stderr in a bordered block and then auto-acknowledged by calling `resolve_config.py acknowledge_warning <model_id>`. This ensures the warning is shown once per model, per user.

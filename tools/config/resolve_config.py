@@ -210,18 +210,67 @@ def _cli_role(project_root, role):
     bp = 'true' if agent.get('bypass_permissions', False) else 'false'
     fw = 'true' if agent.get('find_work', True) else 'false'
     as_ = 'true' if agent.get('auto_start', False) else 'false'
+
+    # Look up model warning from the models array
+    warning = ''
+    warning_dismissible = False
+    for m in config.get('models', []):
+        if m.get('id') == model:
+            warning = m.get('warning', '')
+            warning_dismissible = bool(m.get('warning_dismissible', False))
+            break
+
+    # Check if warning has been acknowledged
+    acknowledged = config.get('acknowledged_warnings', [])
+    dismissed = 'false'
+    if warning and warning_dismissible and model in acknowledged:
+        dismissed = 'true'
+
     print(f'AGENT_MODEL="{model}"')
     print(f'AGENT_EFFORT="{effort}"')
     print(f'AGENT_BYPASS="{bp}"')
     print(f'AGENT_FIND_WORK="{fw}"')
     print(f'AGENT_AUTO_START="{as_}"')
+    print(f'AGENT_MODEL_WARNING="{warning}"')
+    print(f'AGENT_MODEL_WARNING_DISMISSED="{dismissed}"')
+
+
+def _cli_acknowledge_warning(project_root, model_id):
+    """Add a model ID to acknowledged_warnings in config.local.json."""
+    purlin_dir = os.path.join(project_root, '.purlin')
+    local_path = os.path.join(purlin_dir, 'config.local.json')
+
+    # Read existing local config (or start fresh)
+    config = {}
+    if os.path.exists(local_path):
+        try:
+            with open(local_path, 'r') as f:
+                config = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            config = {}
+
+    acknowledged = config.get('acknowledged_warnings', [])
+    if model_id not in acknowledged:
+        acknowledged.append(model_id)
+        config['acknowledged_warnings'] = acknowledged
+
+        # Write atomically
+        os.makedirs(purlin_dir, exist_ok=True)
+        tmp_path = local_path + '.tmp'
+        try:
+            with open(tmp_path, 'w') as f:
+                json.dump(config, f, indent=4)
+            os.replace(tmp_path, local_path)
+        except (IOError, OSError):
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
 
 def main():
     project_root = _find_project_root()
 
     if len(sys.argv) < 2:
-        print("Usage: resolve_config.py [--dump | --key <name> | <role>]",
+        print("Usage: resolve_config.py [--dump | --key <name> | <role> | acknowledge_warning <model_id>]",
               file=sys.stderr)
         sys.exit(1)
 
@@ -234,11 +283,17 @@ def main():
             print("Usage: resolve_config.py --key <name>", file=sys.stderr)
             sys.exit(1)
         _cli_key(project_root, sys.argv[2])
+    elif arg == 'acknowledge_warning':
+        if len(sys.argv) < 3:
+            print("Usage: resolve_config.py acknowledge_warning <model_id>",
+                  file=sys.stderr)
+            sys.exit(1)
+        _cli_acknowledge_warning(project_root, sys.argv[2])
     elif arg in ('architect', 'builder', 'qa', 'pm'):
         _cli_role(project_root, arg)
     else:
         print(f"Unknown argument: {arg}", file=sys.stderr)
-        print("Usage: resolve_config.py [--dump | --key <name> | <role>]",
+        print("Usage: resolve_config.py [--dump | --key <name> | <role> | acknowledge_warning <model_id>]",
               file=sys.stderr)
         sys.exit(1)
 
