@@ -1154,10 +1154,11 @@ def parse_builder_decisions(impl_notes):
         'DEVIATION': [],
         'DISCOVERY': [],
         'INFEASIBLE': [],
+        'SPEC_PROPOSAL': [],
     }
 
     pattern = re.compile(
-        r'\[(CLARIFICATION|AUTONOMOUS|DEVIATION|DISCOVERY|INFEASIBLE)\]')
+        r'\[(CLARIFICATION|AUTONOMOUS|DEVIATION|DISCOVERY|INFEASIBLE|SPEC_PROPOSAL)\]')
     for line in impl_notes.split('\n'):
         match = pattern.search(line)
         if match:
@@ -1185,7 +1186,7 @@ def check_builder_decisions(impl_notes):
 
     # Count acknowledged entries for HIGH-severity tags
     ack_counts = {}
-    for tag in ('DEVIATION', 'DISCOVERY'):
+    for tag in ('DEVIATION', 'DISCOVERY', 'SPEC_PROPOSAL'):
         ack_counts[tag] = sum(
             1 for entry in decisions[tag] if _is_acknowledged(entry))
     summary['acknowledged'] = ack_counts
@@ -1193,13 +1194,14 @@ def check_builder_decisions(impl_notes):
     has_infeasible = summary.get('INFEASIBLE', 0) > 0
     unack_deviation = summary['DEVIATION'] - ack_counts['DEVIATION']
     unack_discovery = summary['DISCOVERY'] - ack_counts['DISCOVERY']
+    unack_spec_proposal = summary['SPEC_PROPOSAL'] - ack_counts['SPEC_PROPOSAL']
     has_autonomous = summary.get('AUTONOMOUS', 0) > 0
 
-    if has_infeasible or unack_deviation > 0 or unack_discovery > 0:
+    if has_infeasible or unack_deviation > 0 or unack_discovery > 0 or unack_spec_proposal > 0:
         return {
             'status': 'FAIL',
             'summary': summary,
-            'detail': 'Has INFEASIBLE, DEVIATION, or unresolved DISCOVERY entries.',
+            'detail': 'Has INFEASIBLE, DEVIATION, unresolved DISCOVERY, or SPEC_PROPOSAL entries.',
         }
 
     if has_autonomous:
@@ -1493,6 +1495,19 @@ def generate_action_items(feature_result, cdd_status=None):
             'description': (
                 f'Acknowledge Builder decision in {feature_name}: '
                 f'unresolved DEVIATION/DISCOVERY'
+            ),
+        })
+
+    # Unacknowledged SPEC_PROPOSAL -> HIGH Architect (category: spec_proposal)
+    unack_spec_proposal = bd_summary.get('SPEC_PROPOSAL', 0) - ack.get('SPEC_PROPOSAL', 0)
+    if unack_spec_proposal > 0:
+        architect_items.append({
+            'priority': 'HIGH',
+            'category': 'spec_proposal',
+            'feature': feature_name,
+            'description': (
+                f'Review spec proposal in {feature_name}: '
+                f'unresolved SPEC_PROPOSAL'
             ),
         })
 
@@ -3298,7 +3313,7 @@ def generate_critic_report(results, untracked_items=None, orphan_items=None):
         bd = r['implementation_gate']['checks'].get('builder_decisions', {})
         summary = bd.get('summary', {})
         ack = summary.get('acknowledged', {})
-        for tag in ('INFEASIBLE', 'AUTONOMOUS', 'DEVIATION', 'DISCOVERY'):
+        for tag in ('INFEASIBLE', 'AUTONOMOUS', 'DEVIATION', 'DISCOVERY', 'SPEC_PROPOSAL'):
             count = summary.get(tag, 0)
             if count > 0:
                 if not has_decisions:
@@ -3310,7 +3325,7 @@ def generate_critic_report(results, untracked_items=None, orphan_items=None):
                     f'- **{r["feature_file"]}**: [{tag}] x{count}{ack_suffix}'
                 )
     if not has_decisions:
-        lines.append('No AUTONOMOUS, DEVIATION, or DISCOVERY entries found.')
+        lines.append('No AUTONOMOUS, DEVIATION, DISCOVERY, or SPEC_PROPOSAL entries found.')
     lines.append('')
 
     # Policy Violations

@@ -882,6 +882,33 @@ class TestBuilderDecisionAudit(unittest.TestCase):
         self.assertEqual(result['summary']['DEVIATION'], 2)
         self.assertEqual(result['summary']['acknowledged']['DEVIATION'], 1)
 
+    def test_spec_proposal_fails(self):
+        """Scenario: Unacknowledged SPEC_PROPOSAL Triggers FAIL"""
+        notes = '**[SPEC_PROPOSAL]** Propose new anchor node for logging.'
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['summary']['SPEC_PROPOSAL'], 1)
+        self.assertIn('SPEC_PROPOSAL', result['detail'])
+
+    def test_acknowledged_spec_proposal_passes(self):
+        """Scenario: Acknowledged SPEC_PROPOSAL Does Not Generate Architect Action Item"""
+        notes = '**[SPEC_PROPOSAL]** Propose new anchor node for logging. Acknowledged.'
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['summary']['SPEC_PROPOSAL'], 1)
+        self.assertEqual(result['summary']['acknowledged']['SPEC_PROPOSAL'], 1)
+
+    def test_spec_proposal_mixed_with_acknowledged(self):
+        """Scenario: Mixed SPEC_PROPOSAL Acknowledged and Unacknowledged"""
+        notes = (
+            '**[SPEC_PROPOSAL]** Propose anchor A. Acknowledged.\n'
+            '**[SPEC_PROPOSAL]** Propose anchor B.'
+        )
+        result = check_builder_decisions(notes)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['summary']['SPEC_PROPOSAL'], 2)
+        self.assertEqual(result['summary']['acknowledged']['SPEC_PROPOSAL'], 1)
+
 
 class TestLogicDriftDisabled(unittest.TestCase):
     """Scenario: Logic Drift Engine Disabled"""
@@ -2132,6 +2159,71 @@ class TestActionItemsBuilder(unittest.TestCase):
         self.assertTrue(len(deviation_items) > 0)
         self.assertEqual(deviation_items[0]['priority'], 'HIGH')
 
+    def test_unacknowledged_spec_proposal_generates_high_architect_item(self):
+        """Unacknowledged SPEC_PROPOSAL routes to Architect with category spec_proposal."""
+        result = {
+            'feature_file': 'features/test.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'FAIL',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0, 'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS', 'violations': [], 'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS', 'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'FAIL',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0,
+                                    'INFEASIBLE': 0, 'SPEC_PROPOSAL': 1,
+                                    'acknowledged': {'DEVIATION': 0, 'DISCOVERY': 0, 'SPEC_PROPOSAL': 0}},
+                        'detail': 'Has SPEC_PROPOSAL.',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [], 'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+        }
+        items = generate_action_items(result)
+        arch_items = items['architect']
+        proposal_items = [i for i in arch_items
+                          if i['category'] == 'spec_proposal']
+        self.assertEqual(len(proposal_items), 1)
+        self.assertEqual(proposal_items[0]['priority'], 'HIGH')
+        self.assertIn('SPEC_PROPOSAL', proposal_items[0]['description'])
+
+    def test_acknowledged_spec_proposal_no_architect_item(self):
+        """Acknowledged SPEC_PROPOSAL does not generate Architect action item."""
+        result = {
+            'feature_file': 'features/test.md',
+            'spec_gate': {'status': 'PASS', 'checks': {}},
+            'implementation_gate': {
+                'status': 'PASS',
+                'checks': {
+                    'traceability': {'status': 'PASS', 'coverage': 1.0, 'detail': 'OK'},
+                    'policy_adherence': {'status': 'PASS', 'violations': [], 'detail': 'OK'},
+                    'structural_completeness': {'status': 'PASS', 'detail': 'OK'},
+                    'builder_decisions': {
+                        'status': 'PASS',
+                        'summary': {'CLARIFICATION': 0, 'AUTONOMOUS': 0,
+                                    'DEVIATION': 0, 'DISCOVERY': 0,
+                                    'INFEASIBLE': 0, 'SPEC_PROPOSAL': 1,
+                                    'acknowledged': {'DEVIATION': 0, 'DISCOVERY': 0, 'SPEC_PROPOSAL': 1}},
+                        'detail': 'All entries are INFO/CLARIFICATION.',
+                    },
+                    'logic_drift': {'status': 'PASS', 'pairs': [], 'detail': 'OK'},
+                },
+            },
+            'user_testing': {'status': 'CLEAN', 'bugs': 0,
+                             'discoveries': 0, 'intent_drifts': 0,
+                             'spec_disputes': 0},
+        }
+        items = generate_action_items(result)
+        arch_items = items['architect']
+        proposal_items = [i for i in arch_items
+                          if i['category'] == 'spec_proposal']
+        self.assertEqual(len(proposal_items), 0)
 
 
 class TestActionItemsBugRoutingOverride(unittest.TestCase):
