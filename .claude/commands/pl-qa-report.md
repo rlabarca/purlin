@@ -4,7 +4,13 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ---
 
-Run `tools/cdd/status.sh --role qa` to get QA-filtered status. Then produce a structured summary:
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
+Run `${TOOLS_ROOT}/cdd/status.sh --role qa` to get QA-filtered status. Then produce a structured summary:
 
 **Output format:**
 

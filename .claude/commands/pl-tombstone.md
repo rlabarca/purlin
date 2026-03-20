@@ -4,6 +4,12 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 Given the feature name provided as an argument:
 
 1. Read `features/<name>.md` to understand what the feature does.
@@ -11,7 +17,7 @@ Given the feature name provided as an argument:
 3. After user confirmation, create `features/tombstones/<name>.md` using the canonical tombstone format below.
 4. Delete `features/<name>.md`.
 5. Commit both changes: `git commit -m "retire(<scope>): retire <name> + tombstone for Builder"`.
-6. Run `tools/cdd/status.sh` to update the Critic report.
+6. Run `${TOOLS_ROOT}/cdd/status.sh` to update the Critic report.
 
 **Canonical tombstone format:**
 

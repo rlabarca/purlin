@@ -100,6 +100,12 @@ You can now /clear or close the terminal. Run /pl-resume to recover.
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Restore Mode (`/pl-resume` or `/pl-resume <role>`)
 
 Execute this 8-step sequence:
@@ -144,7 +150,7 @@ Do NOT read or print the full command table file. The one-liner is sufficient fo
 
 ### Step 5 -- Gather Fresh Project State
 
-Run `tools/cdd/status.sh --startup <role>` (where `<role>` is the role detected in Step 1).
+Run `${TOOLS_ROOT}/cdd/status.sh --startup <role>` (where `<role>` is the role detected in Step 1).
 This single call runs the Critic and returns the full startup briefing with config, git state,
 feature summary, action items, dependency graph summary, and role-specific extensions
 (Builder: tombstones, anchor constraints, delivery plan state, phasing recommendation;

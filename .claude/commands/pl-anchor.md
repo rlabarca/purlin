@@ -4,6 +4,12 @@ If you are not operating as the Purlin Architect, respond: "This is an Architect
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 Given the topic provided as an argument, create or update an anchor node file in `features/`:
 
 ## Anchor Node Types
@@ -47,4 +53,4 @@ Note: `## 1. Overview` does NOT satisfy the `purpose` check.
 2. If **updating**: read the existing anchor node, identify the constraint to add or revise, apply the change, and identify all dependent features whose status will be reset to TODO.
 3. If **creating**: scaffold using the template above. Replace `Policy:` with `Architecture:` or `Design:` as appropriate.
 4. **Cascade awareness:** Editing an anchor node resets ALL dependent features to TODO. This triggers re-validation across the entire domain. Verify this is intended.
-5. After editing, commit the change and run `tools/cdd/status.sh`. The status run resets dependents and surfaces them as Builder action items.
+5. After editing, commit the change and run `${TOOLS_ROOT}/cdd/status.sh`. The status run resets dependents and surfaces them as Builder action items.

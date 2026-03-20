@@ -4,11 +4,17 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 Given the feature name provided as an argument, gate completion on all requirements:
 
 ## Completion Gates
 
-1.  **TESTING state:** Confirm the feature is in TESTING state (run `tools/cdd/status.sh` if needed).
+1.  **TESTING state:** Confirm the feature is in TESTING state (run `${TOOLS_ROOT}/cdd/status.sh` if needed).
 2.  **All scenarios verified:** Confirm all manual scenarios have been verified (PASS) in the current session or a prior session.
 3.  **Zero open discoveries:** Confirm there are zero OPEN or SPEC_UPDATED discoveries in `features/<name>.discoveries.md`. If the file is absent or empty, the gate passes.
 4.  **Delivery plan check:** Check `.purlin/delivery_plan.md`. If the feature appears in any PENDING phase, do NOT mark complete -- inform the user: "Feature X is deferred until all phases are delivered (appears in Phase N)."
@@ -22,7 +28,7 @@ If all gates pass:
 git commit --allow-empty -m "status(<scope>): [Complete features/<name>.md] [Verified]"
 ```
 
-Run `tools/cdd/status.sh` to confirm the feature transitions to COMPLETE.
+Run `${TOOLS_ROOT}/cdd/status.sh` to confirm the feature transitions to COMPLETE.
 
 ## Gate Failures
 

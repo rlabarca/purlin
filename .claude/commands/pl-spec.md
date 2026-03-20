@@ -4,12 +4,18 @@ If you are not operating as the Purlin PM or Architect, respond: "This is a PM/A
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 Given the topic provided as an argument:
 
 1. Run `/pl-find <topic>` logic first to determine if a spec already exists or needs updating.
 2. If updating: open the existing feature file, review its current state, identify gaps, and propose targeted additions or revisions. Apply changes after user confirmation.
 3. If creating: follow the template and format rules below.
-4. After editing, commit the change and run `tools/cdd/status.sh` to regenerate the Critic report.
+4. After editing, commit the change and run `${TOOLS_ROOT}/cdd/status.sh` to regenerate the Critic report.
 
 ---
 

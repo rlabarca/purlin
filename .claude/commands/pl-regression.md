@@ -4,6 +4,12 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Overview
 
 Regression Testing skill. QA owns the regression tier end-to-end: authoring scenario declarations, composing regression sets, and triaging results. Scenario files and harness scripts are behavioral verification artifacts, not application code -- the Builder does NOT write or modify them.
@@ -16,12 +22,12 @@ This skill is a **state machine** that detects the current project state and ent
 
 ## State Detection
 
-Run `tools/cdd/status.sh --role qa` and parse the output. Then evaluate these conditions in priority order:
+Run `${TOOLS_ROOT}/cdd/status.sh --role qa` and parse the output. Then evaluate these conditions in priority order:
 
 ### Prerequisite Check: Harness Runner Framework
 
 Before any mode, check whether the harness runner framework exists:
-- Check for `tools/test_support/harness_runner.py` (or the equivalent at the project's tools_root).
+- Check for `${TOOLS_ROOT}/test_support/harness_runner.py`.
 - If missing: print the **"harness runner missing" handoff message** (see Handoff Messages below) and STOP. No authoring or running is possible without the framework.
 
 ### Mode Selection
@@ -89,14 +95,14 @@ If `tests/qa/run_all.sh` does not exist, generate the thin wrapper:
 ```bash
 #!/usr/bin/env bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$(git rev-parse --show-toplevel)/purlin/tools/test_support/run_regression.sh" --scenarios-dir "$SCRIPT_DIR/scenarios"
+exec "$(git rev-parse --show-toplevel)/${TOOLS_ROOT}/test_support/run_regression.sh" --scenarios-dir "$SCRIPT_DIR/scenarios"
 ```
 
-Adjust the `purlin/` path to match the project's submodule location (or use `tools/` directly if standalone). Commit: `git commit -m "qa: generate regression runner wrapper"`.
+Adjust the path to match the project's `tools_root` configuration. Commit: `git commit -m "qa: generate regression runner wrapper"`.
 
 ### Step A4 -- Authoring Complete
 
-After all features are authored, print the **"authoring complete" handoff message** (see Handoff Messages below). Then run `tools/cdd/status.sh`.
+After all features are authored, print the **"authoring complete" handoff message** (see Handoff Messages below). Then run `${TOOLS_ROOT}/cdd/status.sh`.
 
 ---
 
@@ -140,7 +146,7 @@ Based on user selection, compose the run command.
 
 **Single feature (if scenario file exists):**
 ```
-tools/test_support/run_regression.sh --scenarios-dir tests/qa/scenarios
+${TOOLS_ROOT}/test_support/run_regression.sh --scenarios-dir tests/qa/scenarios
 ```
 
 Or for the consumer wrapper:
@@ -214,7 +220,7 @@ If `[SHALLOW]` applies, append:
 
 ### Step P4 -- Refresh
 
-Run `tools/cdd/status.sh` to refresh the Critic report.
+Run `${TOOLS_ROOT}/cdd/status.sh` to refresh the Critic report.
 
 Print the **"results processed" handoff message** if failures were found (see Handoff Messages below).
 
@@ -225,7 +231,7 @@ Print the **"results processed" handoff message** if failures were found (see Ha
 During Step A2, per feature, apply this decision logic:
 
 1. Does the `### Regression Testing` section reference fixture tags?
-   - Yes: Run `tools/test_support/fixture.sh list` to check if tags exist.
+   - Yes: Run `${TOOLS_ROOT}/test_support/fixture.sh list` to check if tags exist.
    - Tags exist: Use them in the scenario JSON `fixture_tag` field. Update `tests/qa/fixture_usage.json`.
    - Tags missing: Note the gap. The Critic already flags this as a Builder action item.
 

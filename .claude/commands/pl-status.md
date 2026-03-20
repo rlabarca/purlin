@@ -1,12 +1,18 @@
 **Purlin command: shared (all roles)**
 
-Run `tools/cdd/status.sh` and summarize:
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
+Run `${TOOLS_ROOT}/cdd/status.sh` and summarize:
 
 - Feature counts by status (TODO / TESTING / COMPLETE)
 - Your role-specific action items, highest priority first. Each item includes a reason (from `role_status_reason`) explaining WHY the status was assigned.
 - Any open discoveries or tombstones requiring attention
 
-**Role-filtered shortcut:** If you know your role, use `tools/cdd/status.sh --role <role>` for a filtered view containing only your features and action items.
+**Role-filtered shortcut:** If you know your role, use `${TOOLS_ROOT}/cdd/status.sh --role <role>` for a filtered view containing only your features and action items.
 
 **Status values and what they mean:**
 

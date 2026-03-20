@@ -4,10 +4,16 @@ If you are not operating as the Purlin Builder, respond: "This is a Builder comm
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Scope
 
 If an argument was provided, implement the named feature from `features/<arg>.md`.
-If no argument was provided, read `CRITIC_REPORT.md` (or `tools/cdd/status.sh --role builder` output), identify the highest-priority Builder action item, and begin implementing it.
+If no argument was provided, read `CRITIC_REPORT.md` (or `${TOOLS_ROOT}/cdd/status.sh --role builder` output), identify the highest-priority Builder action item, and begin implementing it.
 Check `features/tombstones/` first and process any pending tombstones before regular feature work.
 
 If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. Each phase is a separate session -- halt after completing a phase (see Step 4.E).
@@ -18,7 +24,7 @@ If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the curre
 
 If a delivery plan exists and the current phase has 2+ features:
 
-1. Run `python3 tools/delivery/phase_analyzer.py --intra-phase <current_phase>`.
+1. Run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py --intra-phase <current_phase>`.
 2. If a `parallel: true` group exists with 2+ features:
    - Announce: "Features X and Y are independent -- building in parallel."
    - Launch one Agent call per feature with `isolation: "worktree"`, each running Steps 0-2 only (see `instructions/references/phased_delivery.md` Section 10.13).
@@ -73,6 +79,9 @@ If a delivery plan exists and the current phase has 2+ features:
 
 ### Step 4 -- Status Tag Commit (SEPARATE COMMIT)
 
+*   **Pre-check -- Web Test Gate:**
+    *   If the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG and zero DRIFT verdicts this session before proceeding. If web test has not been run, block the status tag commit and run `/pl-web-test` first.
+    *   If the feature has `## Visual Specification` but no `> Web Test:` or `> AFT Web:` metadata, confirm a DISCOVERY about missing web test URL has been logged in the companion file. If the DISCOVERY is not recorded, block the status tag commit until it is.
 *   **A. Determine tag:**
     *   Zero manual scenarios + all verification passes: `[Complete features/FILENAME.md]` (COMPLETE). Do NOT include `[Verified]` -- reserved for QA.
     *   Has manual scenarios: `[Ready for Verification features/FILENAME.md]` (TESTING).
@@ -86,7 +95,7 @@ If a delivery plan exists and the current phase has 2+ features:
     | `dependency-only` | Prerequisite update, no direct code changes. |
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
-*   **D. Verify:** Run `tools/cdd/status.sh` and confirm expected state.
+*   **D. Verify:** Run `${TOOLS_ROOT}/cdd/status.sh` and confirm expected state.
 *   **E. Phase check:** If a delivery plan exists and this feature completes the current phase: update plan to COMPLETE, record commit hash, commit plan update. Then STOP the session:
     ```
     Phase N of M complete -- [short label]

@@ -69,4 +69,4 @@ If the script exits non-zero, print the error and suggest checking `.purlin/runt
 - The server runs in the background via `nohup` and persists after the agent session exits.
 - Process detection uses `ps` -- no PID files are involved.
 - `start.sh` handles restart-on-rerun internally: it detects existing instances, stops them, and restarts on the same port.
-- To use a specific port manually, invoke `start.sh` directly with `-p`: `bash tools/cdd/start.sh -p 9090`
+- To use a specific port manually, invoke `start.sh` directly with `-p`: `bash ${TOOLS_ROOT}/cdd/start.sh -p 9090`

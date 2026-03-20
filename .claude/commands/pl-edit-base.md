@@ -15,6 +15,12 @@ indicate this is a consumer project, not the Purlin repo itself).
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 **Protocol:**
 
 1. Confirm which base file to edit and what change is needed and why.
@@ -50,4 +56,4 @@ indicate this is a consumer project, not the Purlin repo itself).
 7. Show the proposed edit and ask for user confirmation before writing.
 8. After approval, apply and commit:
    `git commit -m "arch(instructions): <brief description of base file change>"`
-9. Run `tools/cdd/status.sh` to regenerate the Critic report.
+9. Run `${TOOLS_ROOT}/cdd/status.sh` to regenerate the Critic report.

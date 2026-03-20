@@ -14,6 +14,12 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Execution Protocol
 
 ### Step 1 — Discovery
@@ -24,7 +30,7 @@ If you are operating as the Purlin Architect Agent, respond: "This is a Builder/
 3. Extract the base URL from the metadata (or use the URL override argument if provided).
 
 **If no arguments were provided:**
-1. Run `tools/cdd/status.sh` and read `CRITIC_REPORT.md`.
+1. Run `${TOOLS_ROOT}/cdd/status.sh` and read `CRITIC_REPORT.md`.
 2. Identify features in TESTING state.
 3. For each TESTING feature, read the spec and check for `> Web Test: <url>` metadata.
 4. Only features with `> Web Test:` are eligible. Skip all others silently.
@@ -113,11 +119,11 @@ When a feature has both `> Web Test:` and `> Test Fixtures: <repo-url>` metadata
 
 **For each scenario with a fixture tag reference:**
 
-1. **Checkout:** Run `tools/test_support/fixture.sh checkout <repo-url> <tag>` via Bash to obtain the fixture state in a temp directory. The command prints the checkout path to stdout.
-2. **Start server:** Run `python3 tools/cdd/serve.py --project-root <fixture-dir> --port 0` via Bash (background). The `--port 0` flag binds an ephemeral port. Read the actual port from the server's stdout (e.g., `Serving on port 52341`).
+1. **Checkout:** Run `${TOOLS_ROOT}/test_support/fixture.sh checkout <repo-url> <tag>` via Bash to obtain the fixture state in a temp directory. The command prints the checkout path to stdout.
+2. **Start server:** Run `python3 ${TOOLS_ROOT}/cdd/serve.py --project-root <fixture-dir> --port 0` via Bash (background). The `--port 0` flag binds an ephemeral port. Read the actual port from the server's stdout (e.g., `Serving on port 52341`).
 3. **URL construction:** Use `http://localhost:<ephemeral-port>` as the test URL for this scenario. This overrides both the `> Web Test:` URL and runtime port file resolution entirely.
 4. **Execute scenario:** Run the scenario's When/Then steps against the fixture-backed server using Steps 5-6 below.
-5. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `tools/test_support/fixture.sh cleanup <fixture-dir>` via Bash.
+5. **Cleanup:** After the scenario completes (pass or fail), stop the fixture-backed server and run `${TOOLS_ROOT}/test_support/fixture.sh cleanup <fixture-dir>` via Bash.
 
 **Error handling:** If fixture checkout fails (tag not found, repo unreachable), mark the scenario as INCONCLUSIVE with a note: "Fixture checkout failed for tag `<tag>`: <error>". Continue with other scenarios in the feature normally.
 

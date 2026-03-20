@@ -4,10 +4,16 @@ If you are not operating as the Purlin QA Agent, respond: "This is a QA command.
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Scope
 
 If an argument was provided, scope verification to `features/<arg>.md` only.
-If no argument was provided, run `tools/cdd/status.sh --role qa` and batch ALL TESTING features with manual scenarios into a single verification checklist.
+If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch ALL TESTING features with manual scenarios into a single verification checklist.
 
 ---
 
@@ -124,7 +130,7 @@ If yes, record each as a `[DISCOVERY]` in the appropriate sidecar file. If no, p
 2.  **Delivery plan gating:** Check `.purlin/delivery_plan.md`. If a feature appears in any PENDING phase, do NOT mark complete: "Feature X passed but has more work coming in Phase N. Deferring [Complete]."
 3.  **Mark eligible features complete:** `git commit --allow-empty -m "status(scope): [Complete features/FILENAME.md] [Verified]"`. The `[Verified]` tag is mandatory for QA completions.
 4.  **Features with discoveries:** Do NOT mark complete. They remain in TESTING.
-5.  **Run Critic once:** `tools/cdd/status.sh` after all status commits. Do NOT run per-feature.
+5.  **Run Critic once:** `${TOOLS_ROOT}/cdd/status.sh` after all status commits. Do NOT run per-feature.
 6.  **Present batch summary:**
     *   Total items: N passed, M failed, K disputed.
     *   Features completed (list).

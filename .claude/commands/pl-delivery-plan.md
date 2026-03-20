@@ -4,6 +4,12 @@ If you are not operating as the Purlin Builder, respond: "This is a Builder comm
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 If a delivery plan already exists at `.purlin/delivery_plan.md`:
 
 - Read the plan and display the current phase, completed phases, and remaining phases.
@@ -12,13 +18,13 @@ If a delivery plan already exists at `.purlin/delivery_plan.md`:
 
 If no delivery plan exists:
 
-- Run `tools/cdd/status.sh` to get current feature status.
+- Run `${TOOLS_ROOT}/cdd/status.sh` to get current feature status.
 - Read `.purlin/cache/dependency_graph.json` and build a map of each feature's prerequisite features (direct and transitive). This gives you concrete data for phase assignment instead of relying on judgment alone.
-- After proposing phases, run `python3 tools/delivery/phase_analyzer.py --intra-phase <N>` for each proposed phase with 2+ features. Report in the plan presentation which phases have parallel B1 opportunities (independent features that can build concurrently) and which are fully sequential. This helps the user make informed phasing decisions.
+- After proposing phases, run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py --intra-phase <N>` for each proposed phase with 2+ features. Report in the plan presentation which phases have parallel B1 opportunities (independent features that can build concurrently) and which are fully sequential. This helps the user make informed phasing decisions.
 - Assess scope using the heuristics below.
 - Propose a phase breakdown grouped by dependency order, logical cohesion, and testability gates.
 - After user confirmation, create the delivery plan at `.purlin/delivery_plan.md` using the canonical format below.
-- **Validation gate:** After writing `delivery_plan.md` but BEFORE committing, run `python3 tools/delivery/phase_analyzer.py` and check the output. If the output contains "cycle detected" or ordering warnings, fix the plan to resolve them (typically by moving the offending feature to a later phase). Only commit after the analyzer exits cleanly with a valid execution group output.
+- **Validation gate:** After writing `delivery_plan.md` but BEFORE committing, run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py` and check the output. If the output contains "cycle detected" or ordering warnings, fix the plan to resolve them (typically by moving the offending feature to a later phase). Only commit after the analyzer exits cleanly with a valid execution group output.
 
 **Scope Assessment Heuristics:**
 *   2+ HIGH-complexity features (new implementations or major revisions) -> recommend phasing. A feature is HIGH-complexity if it meets any of: requires new infrastructure or foundational code (new modules, services, or data models), involves 5+ new or significantly rewritten functions, touches 3+ files beyond test files, or has material behavioral uncertainty (spec is new or recently revised).

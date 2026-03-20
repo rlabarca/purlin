@@ -1,5 +1,11 @@
 **Purlin command: shared (all roles) -- from main checkout only**
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 Generate a plain-English summary of what's different between the current HEAD and the remote collab branch (`origin/<branch>`).
 
 ## Steps
@@ -55,7 +61,7 @@ If SAME: print "HEAD is in sync with <session>. Nothing to summarize." Exit.
 Execute the generation shell script:
 
 ```
-tools/collab/generate_whats_different.sh <session>
+${TOOLS_ROOT}/collab/generate_whats_different.sh <session>
 ```
 
 This script runs the extraction tool and invokes the LLM to produce the digest. The output is written to `features/digests/whats-different.md`.

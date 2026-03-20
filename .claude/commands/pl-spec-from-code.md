@@ -10,6 +10,12 @@ Reverse-engineer feature specs from an existing codebase. Scans source directori
 
 ---
 
+## Path Resolution
+
+Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
 ## Resume Check
 
 Before starting, check for an existing state file at `.purlin/cache/sfc_state.json`.
@@ -84,7 +90,7 @@ Before starting, check for an existing state file at `.purlin/cache/sfc_state.js
 ### Step 1: Generate Anchor Nodes
 
 For each approved anchor node from the taxonomy:
-1. Read the canonical template at `tools/feature_templates/_anchor.md`.
+1. Read the canonical template at `${TOOLS_ROOT}/feature_templates/_anchor.md`.
 2. Create the anchor node file in `features/` using the correct prefix (`arch_`, `design_`, or `policy_`).
 3. Include:
    - Proper heading (`# Architecture:`, `# Policy:`, or `# Design:` matching prefix type)
@@ -99,7 +105,7 @@ Process categories in dependency order (categories with fewer anchor node depend
 
 For each category:
 1. If the category spans more than 5 source files, use an Explore sub-agent (Task tool, subagent_type: `Explore`) to read the relevant source. Otherwise read directly.
-2. Read the canonical template at `tools/feature_templates/_feature.md`.
+2. Read the canonical template at `${TOOLS_ROOT}/feature_templates/_feature.md`.
 3. For each feature in the category:
    - Create the feature file in `features/` from the template.
    - Include: `> Label:`, `> Category:`, and `> Prerequisite:` metadata linking to relevant anchor nodes.
@@ -121,7 +127,7 @@ For each category:
 
 ## Phase 4 — Finalization
 
-1. Run `tools/cdd/status.sh` to generate the initial Critic report and dependency graph.
+1. Run `${TOOLS_ROOT}/cdd/status.sh` to generate the initial Critic report and dependency graph.
 2. Summarize the results:
    - Total features created
    - Total anchor nodes created

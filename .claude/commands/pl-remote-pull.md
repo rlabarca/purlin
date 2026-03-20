@@ -162,9 +162,9 @@ After a successful merge (BEHIND fast-forward or DIVERGED clean merge), auto-gen
 
 1. Run the generation script:
 ```
-bash <tools_root>/collab/generate_whats_different.sh <branch>
+bash ${TOOLS_ROOT}/collab/generate_whats_different.sh <branch>
 ```
-where `<tools_root>` is from `.purlin/config.json` (default `tools`).
+where `TOOLS_ROOT` is resolved from `.purlin/config.json` `tools_root` (default `"tools"`).
 
 2. Read the generated file at `features/digests/whats-different.md` and display its content inline.
 
