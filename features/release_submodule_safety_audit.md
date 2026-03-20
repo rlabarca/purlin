@@ -59,6 +59,13 @@ Eight check categories, each grounded in the submodule safety contract:
   `../../.purlin/config.json` (standalone layout, 2 levels deep).
 - Nearer-first climbing order is **CRITICAL**: it will shadow the consumer project's config
   with the framework's own `.purlin/` in a submodule deployment.
+- **Nested-project disambiguation (Contract §2.11):** When BOTH the further and nearer
+  candidates have `.purlin/`, the tool MUST check `<nearer>/.git` type. If `.git` is a
+  regular file (submodule gitlink), further-first applies. If `.git` is a directory
+  (standalone repo), prefer the nearer path — the further candidate belongs to an unrelated
+  parent project. Absence of this disambiguation when both paths have `.purlin/` is
+  **CRITICAL**: it causes tools to operate against the wrong project (wrong features
+  directory, wrong port files, wrong config).
 
 #### Category 3: Artifact Write Locations (Contract §2.12)
 

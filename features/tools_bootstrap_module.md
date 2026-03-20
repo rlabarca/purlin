@@ -18,6 +18,10 @@ A shared Python module (`tools/bootstrap.py`) providing canonical implementation
 - The function MUST check the `PURLIN_PROJECT_ROOT` environment variable first. If set and the path is a valid directory, return it immediately.
 - If the env var is not set or invalid, the function MUST use a climbing fallback: walk up from `script_dir` looking for a `.purlin/` directory marker.
 - The climbing fallback MUST be submodule-aware: try the further path (3 levels up from `script_dir`) before the nearer path (2 levels up). This ensures the consumer project root is found before the submodule root.
+- **Nested-project disambiguation:** When BOTH the further and nearer candidates contain `.purlin/`, the function MUST check the type of `<nearer>/.git` to determine whether the nearer candidate is a submodule or a standalone repository:
+  - If `<nearer>/.git` is a **regular file** (a gitlink, indicating a submodule): prefer the further candidate. This is the normal submodule case — the consumer project root is at the further path.
+  - If `<nearer>/.git` is a **directory** (a standalone repository): prefer the nearer candidate. The further candidate's `.purlin/` belongs to an unrelated parent project that happens to contain the Purlin repo in its directory tree.
+  - If `<nearer>/.git` does not exist: prefer the further candidate (existing fallback behavior).
 - The function MUST return an absolute path.
 - If no `.purlin/` directory is found at any candidate, the function MUST fall back to 2 levels up from `script_dir` (preserving current behavior).
 
@@ -73,9 +77,19 @@ A shared Python module (`tools/bootstrap.py`) providing canonical implementation
 
     Given PURLIN_PROJECT_ROOT is not set
     And a .purlin/ directory exists both 2 levels and 3 levels above the script directory
+    And the 2-level-up directory has a .git file (submodule gitlink)
     When detect_project_root is called
     Then it returns the 3-level-up path (consumer project root)
     And the 2-level-up path (submodule root) is not returned
+
+#### Scenario: Climbing Prefers Nearer Path When Standalone Repo Inside Parent Project
+
+    Given PURLIN_PROJECT_ROOT is not set
+    And a .purlin/ directory exists both 2 levels and 3 levels above the script directory
+    And the 2-level-up directory has a .git directory (standalone repo, not a submodule)
+    When detect_project_root is called
+    Then it returns the 2-level-up path (the standalone repo root)
+    And the 3-level-up path (unrelated parent project) is not returned
 
 #### Scenario: Atomic Write Creates File Atomically
 
