@@ -6,9 +6,9 @@
 ## Summary
 Implementing model warning support across all configuration surfaces (config schema, launchers, CDD dashboard, agent-config skill). Phased because 4 features form a dependency chain where foundation work must stabilize before UI and skill layers.
 
-## Phase 1 -- Config & Launchers [IN_PROGRESS]
+## Phase 1 -- Config & Launchers [COMPLETE]
 **Features:** models_configuration.md, agent_launchers_common.md
-**Completion Commit:** --
+**Completion Commit:** 478bbeb
 **QA Bugs Addressed:** --
 
 ## Phase 2 -- Dashboard & Skill [PENDING]
