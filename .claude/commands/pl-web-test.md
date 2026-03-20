@@ -245,9 +245,21 @@ For each Token Map entry (e.g., `surface -> var(--bg)`):
    ```
    Commit discovery entries: `git commit -m "qa(<scope>): [BUG] - web-test findings"`
 
-4. **For STALE/DRIFT items:** Note as PM action items in the output. These are not BUG discoveries -- they indicate the spec needs re-ingestion or sync.
+4. **For STALE verdicts:** Automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`). Create the file if it does not exist. Use this format:
+   ```
+   ### [DISCOVERY] STALE: <checklist item text> (Discovered: YYYY-MM-DD)
+   - **Screen:** <screen name from Visual Specification>
+   - **Checklist Item:** <the STALE checklist item text>
+   - **Figma Reference:** <Figma frame URL from the screen's Reference link>
+   - **Detail:** Figma design updated after spec extraction — spec value is outdated.
+   - **Action Required:** PM
+   - **Status:** OPEN
+   ```
+   Commit discovery entries: `git commit -m "discovery(<scope>): [STALE] web-test findings for PM re-ingestion"`
 
-5. **For inconclusive items:** List them with recommendation: "The following items could not be automated. Use `/pl-verify` for manual verification."
+5. **For DRIFT items:** Note as PM action items in the output. These are not BUG discoveries -- they indicate the spec needs re-ingestion or sync.
+
+6. **For inconclusive items:** List them with recommendation: "The following items could not be automated. Use `/pl-verify` for manual verification."
 
 ### Step 8 — Completion Gate
 

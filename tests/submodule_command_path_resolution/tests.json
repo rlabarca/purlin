@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 8,
+  "passed": 9,
   "failed": 0,
-  "total": 8,
+  "total": 9,
   "details": [
     {
       "name": "no_hardcoded_tools_paths",
@@ -36,6 +36,11 @@
     },
     {
       "name": "build_flags_missing_web_test_metadata",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "web_test_stale_creates_discovery",
       "passed": true,
       "detail": ""
     },

@@ -185,6 +185,37 @@ def test_build_flags_missing_web_test_metadata():
     record("build_flags_missing_web_test_metadata", passed, detail)
 
 
+# --- Scenario 5: Web Test STALE Verdict Creates Discovery Sidecar Entry ---
+def test_web_test_stale_creates_discovery():
+    """pl-web-test.md must auto-record STALE verdicts as [DISCOVERY] in discovery sidecar."""
+    web_test_file = COMMANDS_DIR / "pl-web-test.md"
+    content = web_test_file.read_text()
+    has_stale_section = "For STALE verdicts:" in content
+    has_discovery_entry = "[DISCOVERY]" in content and "discoveries.md" in content
+    has_action_pm = "Action Required:** PM" in content or "Action Required: PM" in content
+    has_open_status = "Status:** OPEN" in content or "Status: OPEN" in content
+    has_figma_ref = "Figma Reference" in content or "Figma frame" in content
+    has_checklist_item = "checklist item" in content.lower()
+    passed = all([
+        has_stale_section, has_discovery_entry, has_action_pm,
+        has_open_status, has_figma_ref, has_checklist_item,
+    ])
+    detail = ""
+    if not has_stale_section:
+        detail = "Missing 'For STALE verdicts:' section"
+    elif not has_discovery_entry:
+        detail = "Missing [DISCOVERY] + discoveries.md reference"
+    elif not has_action_pm:
+        detail = "Missing 'Action Required: PM'"
+    elif not has_open_status:
+        detail = "Missing 'Status: OPEN'"
+    elif not has_figma_ref:
+        detail = "Missing Figma reference in discovery entry"
+    elif not has_checklist_item:
+        detail = "Missing checklist item text in discovery entry"
+    record("web_test_stale_creates_discovery", passed, detail)
+
+
 # --- Comprehensive coverage check ---
 def test_all_tool_referencing_files_converted():
     """Every file that originally had tools/ refs now uses ${TOOLS_ROOT}/."""
@@ -213,5 +244,6 @@ if __name__ == "__main__":
     test_resume_has_preamble()
     test_build_has_web_test_gate()
     test_build_flags_missing_web_test_metadata()
+    test_web_test_stale_creates_discovery()
     test_all_tool_referencing_files_converted()
     write_results()
