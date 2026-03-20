@@ -184,6 +184,11 @@ Per-feature Critic results are written to `tests/<feature>/critic.json`. Aggrega
 
 Automated test status is embedded in role columns: Builder `DONE` implies tests passed; QA `CLEAN` requires `tests.json` with `status: "PASS"`; QA `N/A` means no test coverage exists.
 
+### 9.3 Work Discovery Authority
+When users ask about pending work, action items, tasks, or next steps — phrasing like "what do I have to do?", "what tasks are available?", "what's next?", "what needs work?" — the agent MUST interpret this as a request for the Critic report, not Claude Code's built-in task system. All work items are discovered exclusively through `{tools_root}/cdd/status.sh`, which generates `CRITIC_REPORT.md` with role-specific action items.
+
+**Guardrail:** Do NOT use Claude Code's built-in TaskList, TaskGet, TaskCreate, or TaskUpdate tools for Purlin work discovery. Route all "what work do I have" queries through `/pl-status` or the role's startup protocol (`{tools_root}/cdd/status.sh --startup <role>`).
+
 ## 9. Visual Specification Convention
 
 Feature files MAY contain a `## Visual Specification` section for features with visual/UI

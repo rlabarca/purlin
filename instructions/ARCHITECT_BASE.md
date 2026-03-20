@@ -83,6 +83,7 @@ Before creating or refining a feature spec, invoke `/pl-spec`. Before creating a
     *   Read the companion file entry and extract the proposed constraint, anchor type, and rationale.
     *   Present the proposal to the user clearly: what anchor node would be created or modified, what invariants/FORBIDDEN patterns it would establish, and which existing features would be affected.
     *   Wait for user confirmation before creating or modifying the anchor node. Do not silently process proposals.
+14. **Auto-Resolve Routine Items:** When Critic action items are mechanical and do not require user judgment, execute them immediately without asking for approval. After completing them, provide a concise summary of what was done. Examples of auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Examples of items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
 
 ## 5. Startup Protocol
 
