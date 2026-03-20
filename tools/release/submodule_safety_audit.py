@@ -202,6 +202,19 @@ def check_climbing_priority(filepath, content, project_root):
                 line=nearer_line,
             ))
 
+        # Nested-project disambiguation: when both climbing depths exist,
+        # the code must check <nearer>/.git type (isdir vs file) to
+        # distinguish a standalone repo from a submodule.
+        has_git_check = '.git' in content and (
+            'isdir' in content or 'isfile' in content
+        )
+        if not has_git_check:
+            findings.append(make_finding(
+                "CRITICAL", "missing_git_disambiguation", rel,
+                "Climbing fallback uses both nearer and further paths but "
+                "does not check .git type for nested-project disambiguation",
+            ))
+
     return findings
 
 

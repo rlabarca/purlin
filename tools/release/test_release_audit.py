@@ -508,6 +508,44 @@ class TestSubmoduleSafetyGitignoreRefreshSkip(unittest.TestCase):
 
 
 # ===================================================================
+# Scenario: CRITICAL finding — missing nested-project disambiguation
+# ===================================================================
+
+class TestSubmoduleSafetyMissingDisambiguation(unittest.TestCase):
+    """Scenario: Climbing fallback without .git type disambiguation"""
+
+    def setUp(self):
+        self.root = create_fixture({
+            "tools/bad_tool/climber.py": (
+                'import os\n'
+                'SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))\n'
+                'PROJECT_ROOT = os.environ.get("PURLIN_PROJECT_ROOT", "")\n'
+                'if not PROJECT_ROOT:\n'
+                '    further = os.path.abspath(os.path.join(SCRIPT_DIR, "../../../"))\n'
+                '    nearer = os.path.abspath(os.path.join(SCRIPT_DIR, "../../"))\n'
+                '    if os.path.isdir(os.path.join(further, ".purlin")):\n'
+                '        PROJECT_ROOT = further\n'
+                '    elif os.path.isdir(os.path.join(nearer, ".purlin")):\n'
+                '        PROJECT_ROOT = nearer\n'
+            ),
+            ".purlin/config.json": '{}',
+        })
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_detects_missing_disambiguation(self):
+        result = submodule_safety_main(self.root)
+        disambig_findings = [
+            f for f in result["findings"]
+            if f["category"] == "missing_git_disambiguation"
+        ]
+        self.assertGreater(len(disambig_findings), 0,
+                           "Should detect missing .git disambiguation")
+        self.assertEqual(disambig_findings[0]["severity"], "CRITICAL")
+
+
+# ===================================================================
 # Scenario: Critic consistency detects deprecated terminology
 # ===================================================================
 
@@ -954,6 +992,7 @@ CLASS_FEATURE_MAP = {
     "TestSubmoduleSafetyGitignoreUncoveredArtifact": ["release_submodule_safety_audit"],
     "TestSubmoduleSafetyGitignoreHardcodedArray": ["release_submodule_safety_audit"],
     "TestSubmoduleSafetyGitignoreRefreshSkip": ["release_submodule_safety_audit"],
+    "TestSubmoduleSafetyMissingDisambiguation": ["release_submodule_safety_audit"],
     "TestCriticConsistencyDeprecated": ["release_critic_consistency_check"],
     "TestCriticConsistencyRouting": ["release_critic_consistency_check"],
     "TestCriticConsistencyWarningLevel": ["release_critic_consistency_check"],

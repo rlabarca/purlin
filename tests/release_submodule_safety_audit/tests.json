@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 7,
+  "passed": 8,
   "failed": 0,
-  "total": 7,
+  "total": 8,
   "test_file": "tools/release/test_release_audit.py",
   "details": [
     {
@@ -27,6 +27,10 @@
     },
     {
       "test": "test_detects_uncovered_artifact (__main__.TestSubmoduleSafetyGitignoreUncoveredArtifact.test_detects_uncovered_artifact)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_detects_missing_disambiguation (__main__.TestSubmoduleSafetyMissingDisambiguation.test_detects_missing_disambiguation)",
       "status": "PASS"
     },
     {
