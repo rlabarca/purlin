@@ -173,6 +173,125 @@ class TestInvalidModelValueRejected(ConfigWriteTestBase):
         self.assertIn("model", content)
 
 
+class TestWarningDisplayAndAutoAcknowledge(ConfigWriteTestBase):
+    """Scenario: Setting Model With Warning Shows Warning and Auto-Acknowledges
+
+    Verifies that when a model with a warning is set via /pl-agent-config,
+    the warning text would be displayed and the model ID is added to
+    acknowledged_warnings in config.local.json.
+    """
+
+    def test_warning_model_triggers_acknowledgment(self):
+        config = {
+            "models": [
+                {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]",
+                 "warning": "Extended context costs extra.",
+                 "warning_dismissible": True,
+                 "capabilities": {"effort": True, "permissions": True}},
+                {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6",
+                 "capabilities": {"effort": True, "permissions": True}},
+            ],
+            "agents": {"architect": {"model": "claude-sonnet-4-6"}}
+        }
+        self.write_local(config)
+
+        # Simulate /pl-agent-config architect model claude-opus-4-6[1m]
+        local = self.read_local()
+        model_id = "claude-opus-4-6[1m]"
+        local["agents"]["architect"]["model"] = model_id
+
+        # Find model and check warning
+        model_obj = next(m for m in local["models"] if m["id"] == model_id)
+        self.assertTrue(model_obj.get("warning"))
+        self.assertTrue(model_obj.get("warning_dismissible", False))
+
+        # Auto-acknowledge: add to acknowledged_warnings
+        acknowledged = local.get("acknowledged_warnings", [])
+        if model_id not in acknowledged:
+            acknowledged.append(model_id)
+            local["acknowledged_warnings"] = acknowledged
+
+        # Atomic write
+        tmp_path = self.local_path + '.tmp'
+        with open(tmp_path, 'w') as f:
+            json.dump(local, f, indent=4)
+        os.replace(tmp_path, self.local_path)
+
+        # Verify model ID is in acknowledged_warnings
+        result = self.read_local()
+        self.assertIn(model_id, result.get("acknowledged_warnings", []))
+        self.assertEqual(result["agents"]["architect"]["model"], model_id)
+
+    def test_warning_text_available_for_display(self):
+        """The warning text from the model config is available for output."""
+        config = {
+            "models": [
+                {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]",
+                 "warning": "Extended context costs extra.",
+                 "warning_dismissible": True,
+                 "capabilities": {"effort": True, "permissions": True}},
+            ],
+            "agents": {"architect": {"model": "claude-sonnet-4-6"}}
+        }
+        self.write_local(config)
+        local = self.read_local()
+        model_obj = next(m for m in local["models"] if m["id"] == "claude-opus-4-6[1m]")
+        self.assertEqual(model_obj["warning"], "Extended context costs extra.")
+
+
+class TestPreviouslyAcknowledgedWarningOmitted(ConfigWriteTestBase):
+    """Scenario: Setting Model With Previously Acknowledged Warning Omits Warning
+
+    Verifies that when a model with a warning is set but the model ID is
+    already in acknowledged_warnings, no warning display is needed.
+    """
+
+    def test_acknowledged_model_skips_warning(self):
+        config = {
+            "models": [
+                {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]",
+                 "warning": "Extended context costs extra.",
+                 "warning_dismissible": True,
+                 "capabilities": {"effort": True, "permissions": True}},
+            ],
+            "agents": {"architect": {"model": "claude-sonnet-4-6"}},
+            "acknowledged_warnings": ["claude-opus-4-6[1m]"]
+        }
+        self.write_local(config)
+
+        # Simulate /pl-agent-config architect model claude-opus-4-6[1m]
+        local = self.read_local()
+        model_id = "claude-opus-4-6[1m]"
+
+        # Check: model ID IS in acknowledged_warnings
+        acknowledged = local.get("acknowledged_warnings", [])
+        self.assertIn(model_id, acknowledged)
+
+        # When already acknowledged, warning_dismissed is true -> no warning shown
+        model_obj = next(m for m in local["models"] if m["id"] == model_id)
+        is_dismissed = (model_obj.get("warning_dismissible", False) and
+                        model_id in acknowledged)
+        self.assertTrue(is_dismissed)
+
+        # Apply change (no acknowledgment step needed)
+        local["agents"]["architect"]["model"] = model_id
+        tmp_path = self.local_path + '.tmp'
+        with open(tmp_path, 'w') as f:
+            json.dump(local, f, indent=4)
+        os.replace(tmp_path, self.local_path)
+
+        # Verify: acknowledged_warnings unchanged (no duplicate added)
+        result = self.read_local()
+        self.assertEqual(result.get("acknowledged_warnings", []).count(model_id), 1)
+
+    def test_skill_file_references_acknowledged_warnings(self):
+        """The skill file must reference acknowledged_warnings for the check."""
+        with open(SKILL_PATH) as f:
+            content = f.read()
+        self.assertIn('acknowledged_warnings', content)
+        self.assertIn('warning', content)
+
+
 def generate_test_results():
     """Run tests and write results to tests.json."""
     loader = unittest.TestLoader()

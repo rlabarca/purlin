@@ -528,6 +528,289 @@ class TestSectionVisualSeparation(unittest.TestCase):
         self.assertGreaterEqual(gap_px, 16, f"Gap is {gap_px}px, expected at least 16px")
 
 
+class TestModelWarningModalShown(unittest.TestCase):
+    """Scenario: Selecting Model With Warning Shows Confirmation Modal"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_warning_modal_overlay_exists(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('id="mw-overlay"', html)
+        self.assertIn('class="mw-overlay"', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_warning_modal_has_title_and_body(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('Model Warning', html)
+        self.assertIn('id="mw-body"', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_warning_modal_has_buttons(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('I Understand', html)
+        self.assertIn('Cancel', html)
+        self.assertIn('id="mw-confirm"', html)
+        self.assertIn('id="mw-cancel"', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_model_change_checks_warning(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # The model change handler should check for warnings via getModelObj
+        self.assertIn('getModelObj(newModel)', html)
+        self.assertIn('showModelWarningModal', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_model_change_stores_prev_model(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('dataset.prevModel', html)
+
+
+class TestModelWarningConfirm(unittest.TestCase):
+    """Scenario: Modal 'I Understand' Commits Selection and Acknowledges Warning"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_confirm_posts_acknowledge(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn("'/config/acknowledge-warning'", html)
+        self.assertIn('confirmModelWarning', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_confirm_schedules_save(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # After confirm, should commit the model change
+        import re
+        # confirmModelWarning should call scheduleAgentSave
+        confirm_fn = re.search(r'function confirmModelWarning\(\)\s*\{.*?\n\}', html, re.DOTALL)
+        self.assertIsNotNone(confirm_fn)
+        self.assertIn('scheduleAgentSave()', confirm_fn.group())
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_ack_warning.json')
+    def test_acknowledge_endpoint_adds_to_array(self):
+        """POST /config/acknowledge-warning adds model ID to acknowledged_warnings."""
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6[1m]', 'label': 'Opus 4.6 [1M]',
+                 'warning': 'Extended context costs extra.',
+                 'warning_dismissible': True,
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_ack_warning.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = serve.Handler.__new__(serve.Handler)
+        body = json.dumps({'model_id': 'claude-opus-4-6[1m]'}).encode('utf-8')
+        handler.path = '/config/acknowledge-warning'
+        handler.requestline = 'POST /config/acknowledge-warning HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        with patch('serve._resolve_config', return_value=config):
+            handler.do_POST()
+        handler.send_response.assert_called_with(200)
+        response = json.loads(handler.wfile.getvalue())
+        self.assertIn('claude-opus-4-6[1m]', response['acknowledged_warnings'])
+
+        # Verify persisted to disk
+        with open('/tmp/test_ack_warning.json') as f:
+            saved = json.load(f)
+        self.assertIn('claude-opus-4-6[1m]', saved.get('acknowledged_warnings', []))
+
+        os.remove('/tmp/test_ack_warning.json')
+
+
+class TestModelWarningCancel(unittest.TestCase):
+    """Scenario: Modal 'Cancel' Reverts Model Selection"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_cancel_reverts_dropdown(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        import re
+        cancel_fn = re.search(r'function cancelModelWarning\(\)\s*\{.*?\n\}', html, re.DOTALL)
+        self.assertIsNotNone(cancel_fn)
+        # Should revert to previous model value
+        self.assertIn('mwPrevModelId', cancel_fn.group())
+        self.assertIn('.value = mwPrevModelId', cancel_fn.group())
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_cancel_does_not_save(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        import re
+        cancel_fn = re.search(r'function cancelModelWarning\(\)\s*\{.*?\n\}', html, re.DOTALL)
+        self.assertIsNotNone(cancel_fn)
+        # Cancel must NOT call scheduleAgentSave or pendingWrites.set
+        self.assertNotIn('scheduleAgentSave', cancel_fn.group())
+        self.assertNotIn('pendingWrites.set', cancel_fn.group())
+
+
+class TestModelWarningAcknowledgedSkipsModal(unittest.TestCase):
+    """Scenario: Acknowledged Model Does Not Trigger Modal on Reselection"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_isModelAcknowledged_function_exists(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        self.assertIn('function isModelAcknowledged(modelId)', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_acknowledged_check_in_change_handler(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # Change handler should check isModelAcknowledged before showing modal
+        self.assertIn('isModelAcknowledged(newModel)', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_acknowledged_checks_config_array(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # isModelAcknowledged should read from agentsConfig.acknowledged_warnings
+        self.assertIn('acknowledged_warnings', html)
+
+
+class TestNonDismissibleWarningShowsEveryTime(unittest.TestCase):
+    """Scenario: Non-Dismissible Model Warning Shows Modal on Every Selection"""
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_non_dismissible_uses_continue_button(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # confirmBtn.textContent should change based on dismissible flag
+        self.assertIn("'Continue'", html)
+        self.assertIn("'I Understand'", html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_non_dismissible_check_in_handler(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        # The change handler should check warning_dismissible
+        self.assertIn('warning_dismissible', html)
+
+    @patch('serve.get_feature_status')
+    @patch('serve.run_command')
+    def test_non_dismissible_skips_acknowledge_post(self, mock_run, mock_status):
+        mock_status.return_value = ([], [], [])
+        mock_run.return_value = ""
+        html = serve.generate_html()
+        import re
+        confirm_fn = re.search(r'function confirmModelWarning\(\)\s*\{.*?\n\}', html, re.DOTALL)
+        self.assertIsNotNone(confirm_fn)
+        # Should conditionally post acknowledge only when dismissible
+        self.assertIn('mwIsDismissible', confirm_fn.group())
+
+
+class TestAcknowledgeWarningRejectsNonDismissible(unittest.TestCase):
+    """Scenario: POST /config/acknowledge-warning Rejects Non-Dismissible Model Warnings"""
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_ack_nondismiss.json')
+    def test_non_dismissible_returns_400(self):
+        config = {
+            'models': [
+                {'id': 'claude-special', 'label': 'Special',
+                 'warning': 'Always warn.',
+                 'warning_dismissible': False,
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_ack_nondismiss.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = serve.Handler.__new__(serve.Handler)
+        body = json.dumps({'model_id': 'claude-special'}).encode('utf-8')
+        handler.path = '/config/acknowledge-warning'
+        handler.requestline = 'POST /config/acknowledge-warning HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        with patch('serve._resolve_config', return_value=config):
+            handler.do_POST()
+        handler.send_response.assert_called_with(400)
+
+        # acknowledged_warnings should not be modified
+        with open('/tmp/test_ack_nondismiss.json') as f:
+            saved = json.load(f)
+        self.assertNotIn('acknowledged_warnings', saved)
+
+        os.remove('/tmp/test_ack_nondismiss.json')
+
+    @patch('serve.CONFIG_PATH', '/tmp/test_ack_unknown.json')
+    def test_unknown_model_returns_400(self):
+        config = {
+            'models': [
+                {'id': 'claude-opus-4-6', 'label': 'Opus 4.6',
+                 'capabilities': {'effort': True, 'permissions': True}},
+            ],
+            'agents': {}
+        }
+        with open('/tmp/test_ack_unknown.json', 'w') as f:
+            json.dump(config, f)
+
+        handler = serve.Handler.__new__(serve.Handler)
+        body = json.dumps({'model_id': 'nonexistent'}).encode('utf-8')
+        handler.path = '/config/acknowledge-warning'
+        handler.requestline = 'POST /config/acknowledge-warning HTTP/1.1'
+        handler.request_version = 'HTTP/1.1'
+        handler.command = 'POST'
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+        with patch('serve._resolve_config', return_value=config):
+            handler.do_POST()
+        handler.send_response.assert_called_with(400)
+
+        os.remove('/tmp/test_ack_unknown.json')
+
+
 # =============================================================================
 # Test runner: writes results to tests/cdd_agent_configuration/tests.json
 # =============================================================================

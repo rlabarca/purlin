@@ -2712,6 +2712,27 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
   border:2px solid var(--purlin-border);border-top-color:var(--purlin-accent);
   border-radius:50%;animation:bc-spin 0.8s linear infinite;
 }}
+/* Model Warning Modal */
+.mw-overlay{{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);z-index:1100;
+  justify-content:center;align-items:center;
+}}
+.mw-overlay.visible{{display:flex}}
+.mw-panel{{
+  background:var(--purlin-bg);border:1px solid var(--purlin-border);
+  border-radius:6px;max-width:420px;width:90%;padding:20px;
+}}
+.mw-title{{color:var(--purlin-primary);font-size:16px;font-weight:600;margin:0 0 12px 0}}
+.mw-body{{color:var(--purlin-muted);font-size:13px;line-height:1.5;margin:0 0 16px 0}}
+.mw-actions{{display:flex;justify-content:flex-end;gap:8px}}
+.mw-btn{{
+  padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;border:1px solid transparent;
+}}
+.mw-btn-primary{{background:var(--purlin-accent);color:var(--purlin-bg);border-color:var(--purlin-accent)}}
+.mw-btn-primary:hover{{opacity:0.9}}
+.mw-btn-cancel{{background:var(--purlin-border);color:var(--purlin-primary);border-color:var(--purlin-border)}}
+.mw-btn-cancel:hover{{opacity:0.9}}
 /* Text-Based Modal (shared base per design_modal_standards) */
 .modal-overlay{{
   display:none;position:fixed;inset:0;
@@ -2961,6 +2982,18 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
     <div id="bc-op-error" style="display:none;margin-top:8px;font-size:12px;color:var(--purlin-status-error)"></div>
     <div style="margin-top:12px;text-align:right">
       <button class="btn-critic" onclick="closeBcOpModal()" id="bc-op-modal-close" style="font-size:11px" disabled>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Model Warning Modal -->
+<div class="mw-overlay" id="mw-overlay">
+  <div class="mw-panel">
+    <p class="mw-title">Model Warning</p>
+    <p class="mw-body" id="mw-body"></p>
+    <div class="mw-actions">
+      <button class="mw-btn mw-btn-cancel" id="mw-cancel" onclick="cancelModelWarning()">Cancel</button>
+      <button class="mw-btn mw-btn-primary" id="mw-confirm" onclick="confirmModelWarning()">I Understand</button>
     </div>
   </div>
 </div>
@@ -5171,6 +5204,71 @@ function stopMapRefresh() {{
 var agentsConfig = null;
 var agentsSaveTimer = null;
 var pendingWrites = new Map();
+var mwPendingRole = null;
+var mwPendingModelId = null;
+var mwPrevModelId = null;
+var mwIsDismissible = true;
+
+function getModelObj(modelId) {{
+  var models = (agentsConfig && agentsConfig.models) || [];
+  for (var i = 0; i < models.length; i++) {{
+    if (models[i].id === modelId) return models[i];
+  }}
+  return null;
+}}
+
+function isModelAcknowledged(modelId) {{
+  var ack = (agentsConfig && agentsConfig.acknowledged_warnings) || [];
+  return ack.indexOf(modelId) !== -1;
+}}
+
+function showModelWarningModal(role, newModelId, prevModelId, warningText, dismissible) {{
+  mwPendingRole = role;
+  mwPendingModelId = newModelId;
+  mwPrevModelId = prevModelId;
+  mwIsDismissible = dismissible;
+  document.getElementById('mw-body').textContent = warningText;
+  var confirmBtn = document.getElementById('mw-confirm');
+  confirmBtn.textContent = dismissible ? 'I Understand' : 'Continue';
+  document.getElementById('mw-overlay').classList.add('visible');
+}}
+
+function confirmModelWarning() {{
+  document.getElementById('mw-overlay').classList.remove('visible');
+  var role = mwPendingRole;
+  var modelId = mwPendingModelId;
+  if (mwIsDismissible) {{
+    fetch('/config/acknowledge-warning', {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{model_id: modelId}})
+    }}).then(function(r) {{ return r.json(); }}).then(function(d) {{
+      if (d.acknowledged_warnings) {{
+        if (agentsConfig) agentsConfig.acknowledged_warnings = d.acknowledged_warnings;
+      }}
+    }}).catch(function() {{}});
+  }}
+  var modSel = document.getElementById('agent-model-' + role);
+  if (modSel) modSel.dataset.prevModel = modelId;
+  pendingWrites.set(role + '.model', modelId);
+  syncCapabilityControls(role);
+  scheduleAgentSave();
+  mwPendingRole = null;
+  mwPendingModelId = null;
+  mwPrevModelId = null;
+}}
+
+function cancelModelWarning() {{
+  document.getElementById('mw-overlay').classList.remove('visible');
+  if (mwPendingRole && mwPrevModelId !== null) {{
+    var modSel = document.getElementById('agent-model-' + mwPendingRole);
+    if (modSel) modSel.value = mwPrevModelId;
+    syncCapabilityControls(mwPendingRole);
+  }}
+  mwPendingRole = null;
+  mwPendingModelId = null;
+  mwPrevModelId = null;
+}}
 
 function applyPendingWrites() {{
   if (pendingWrites.size === 0) return;
@@ -5245,11 +5343,27 @@ function renderAgentsRows(cfg) {{
     var modSel = document.getElementById('agent-model-' + role);
     var effSel = document.getElementById('agent-effort-' + role);
     var bypassChk = document.getElementById('agent-bypass-' + role);
-    if (modSel) modSel.addEventListener('change', function() {{
-      pendingWrites.set(role + '.model', modSel.value);
-      syncCapabilityControls(role);
-      scheduleAgentSave();
-    }});
+    if (modSel) {{
+      modSel.dataset.prevModel = modSel.value;
+      modSel.addEventListener('change', function() {{
+        var newModel = modSel.value;
+        var prevModel = modSel.dataset.prevModel || '';
+        var modelObj = getModelObj(newModel);
+        var hasWarning = modelObj && modelObj.warning;
+        var dismissible = modelObj ? modelObj.warning_dismissible !== false : true;
+        var needsModal = hasWarning && (
+          !dismissible || !isModelAcknowledged(newModel)
+        );
+        if (needsModal) {{
+          showModelWarningModal(role, newModel, prevModel, modelObj.warning, dismissible);
+        }} else {{
+          modSel.dataset.prevModel = newModel;
+          pendingWrites.set(role + '.model', newModel);
+          syncCapabilityControls(role);
+          scheduleAgentSave();
+        }}
+      }});
+    }}
     if (effSel) effSel.addEventListener('change', function() {{
       pendingWrites.set(role + '.effort', effSel.value);
       scheduleAgentSave();
@@ -5299,6 +5413,7 @@ function diffUpdateAgentRows(cfg) {{
     if (!modSel) return;
     if (!pendingWrites.has(role + '.model') && modSel.value !== (acfg.model || '')) {{
       modSel.value = acfg.model || '';
+      modSel.dataset.prevModel = acfg.model || '';
     }}
     if (effSel && !pendingWrites.has(role + '.effort') && effSel.value !== (acfg.effort || 'high')) effSel.value = acfg.effort || 'high';
     var yoloMode = acfg.bypass_permissions === true;
@@ -5736,6 +5851,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(payload)
         elif self.path == '/config/agents':
             self._handle_config_agents()
+        elif self.path == '/config/acknowledge-warning':
+            self._handle_acknowledge_warning()
         elif self.path == '/release-checklist/config':
             self._handle_release_config()
         elif self.path == '/branch-collab/create':
@@ -5839,6 +5956,65 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         response = {'agents': current['agents']}
 
         self._send_json(200, response)
+
+    def _handle_acknowledge_warning(self):
+        """POST /config/acknowledge-warning — add model ID to acknowledged_warnings."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': f'Invalid JSON: {e}'})
+            return
+
+        model_id = body.get('model_id', '')
+        if not model_id:
+            self._send_json(400, {'error': 'model_id is required'})
+            return
+
+        # Load current config to validate model
+        current = _resolve_config(PROJECT_ROOT)
+        models = current.get('models', [])
+        model_obj = None
+        for m in models:
+            if m.get('id') == model_id:
+                model_obj = m
+                break
+
+        if model_obj is None:
+            self._send_json(400, {'error': f'Unknown model ID: {model_id}'})
+            return
+
+        # Must have warning_dismissible: true
+        if not model_obj.get('warning_dismissible', False):
+            self._send_json(400, {'error': f'Model {model_id} warning is not dismissible'})
+            return
+
+        # Read existing local config
+        local_config = {}
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, 'r') as f:
+                    local_config = json.load(f)
+            except (json.JSONDecodeError, IOError, OSError):
+                local_config = {}
+
+        acknowledged = local_config.get('acknowledged_warnings', [])
+        if model_id not in acknowledged:
+            acknowledged.append(model_id)
+            local_config['acknowledged_warnings'] = acknowledged
+
+            tmp = CONFIG_PATH + '.tmp'
+            try:
+                with open(tmp, 'w') as f:
+                    json.dump(local_config, f, indent=4)
+                os.replace(tmp, CONFIG_PATH)
+            except Exception as e:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+                self._send_json(500, {'error': str(e)})
+                return
+
+        self._send_json(200, {'acknowledged_warnings': acknowledged})
 
     def _serve_release_checklist(self):
         """GET /release-checklist — return resolved, ordered release steps."""

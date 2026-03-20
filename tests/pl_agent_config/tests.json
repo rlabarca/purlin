@@ -1,1 +1,7 @@
-{"status": "PASS", "passed": 23, "failed": 0, "total": 23}
+{
+  "status": "PASS",
+  "passed": 15,
+  "failed": 0,
+  "total": 15,
+  "details": []
+}
