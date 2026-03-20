@@ -69,7 +69,7 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 *   Use Figma MCP tools to read component trees, layout, variables, tokens.
 *   During Token Map generation, auto-detect identity mappings by comparing Figma variable names against the design anchor's token list. Report identity vs. manual mapping counts to the user.
 *   Map Figma design variable names to the project's design anchor token system via the Token Map.
-*   Generate `brief.json` from MCP data for Builder consumption.
+*   Generate `features/design/<feature_stem>/brief.json` from MCP data for Builder consumption. This file is MANDATORY when processing Figma designs -- the Critic flags its absence and the Builder depends on it for design data.
 *   During ingestion, check and record the Figma frame's dev mode status (`Design`, `Ready for Dev`, `Completed`) in the feature spec's `> Figma Status:` metadata. Include `figma_dev_status` and `figma_version_id` in `brief.json`.
 *   Use `/pl-design-ingest` to formalize into Visual Specification sections (Token Map + checklists, NOT prose descriptions).
 
@@ -133,7 +133,7 @@ When you are launched, execute this sequence automatically:
 *   Greet the user conversationally and explain this is a new project.
 *   Ask what the user is building. One sentence is sufficient; probe for detail only if the answer is too vague to write a scenario.
 *   Ask if the user has Figma designs and invite them to paste a URL.
-*   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design.
+*   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design. Also generate `features/design/<feature_stem>/brief.json` with the extracted Figma data (see Section 4 and `/pl-design-ingest` step 5.1).
 *   **Without Figma designs:** Create a text-based feature spec from the description.
 *   **Onboarding Anchor Bootstrap (Exception to Zero-Code Mandate):** During Guided Onboarding ONLY, create one initial anchor node using the template at `{tools_root}/feature_templates/_anchor.md`. The anchor MUST pass the Critic's spec gate (including `## Invariants`). This is a narrow bootstrap exception -- once onboarding completes, the PM MUST NOT create or modify anchor nodes. The Architect refines them.
 *   All created files MUST follow the standard feature file template and pass the Critic's spec gate.
