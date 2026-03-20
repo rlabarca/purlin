@@ -1,5 +1,25 @@
 # Release Notes
 
+### RC0.8.4 — 2026-03-20
+
+**Extended Context Models**
+- Opus 4.6 [1M] available as an agent model -- select it in the CDD Dashboard, `/pl-agent-config`, or launcher scripts
+- Cost warning shown once per model ("Extended context uses additional paid credits on Pro plans"), then auto-acknowledged
+- CDD Dashboard displays a confirmation modal when selecting a model with a warning
+
+**Builder Escalation Path**
+- Builders can now propose spec or anchor node changes with `[SPEC_PROPOSAL]` tags in companion files
+- The Critic routes unacknowledged proposals to the Architect as HIGH-priority action items
+- `/pl-propose` command for structured escalation of cross-cutting constraints
+
+**Config & Infrastructure**
+- Array-aware config merging -- when Purlin adds new models upstream, local config overrides are preserved instead of replaced
+- Nested-project disambiguation -- tools now correctly detect the project root when Purlin is a submodule inside a larger repository
+
+**Workflow**
+- STALE verdicts from `/pl-web-test` auto-record as PM-routed discovery sidecar entries -- no manual Builder action needed
+- Architect auto-resolves routine Critic items (untracked file triage, straightforward acknowledgments) silently, then summarizes
+
 ### v0.8.3 — 2026-03-19
 
 **New Commands**
