@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for config resolver (config_layering feature).
 
-Covers all 21 automated scenarios from features/config_layering.md.
+Covers all 23 automated scenarios from features/config_layering.md.
 """
 
 import json
@@ -355,6 +355,63 @@ class TestUpdateSyncNestedKeys(ResolverTestBase):
         self.assertEqual(local["agents"]["qa"]["model"], "haiku")
         # Check added keys contain the qa path
         self.assertTrue(any("qa" in k for k in added))
+
+
+class TestUpdateSyncAddsNewModelEntries(ResolverTestBase):
+    """Scenario: Update Sync Adds New Model Entries to Models Array"""
+
+    def test_sync_appends_new_model_by_id(self):
+        self.write_local({
+            "models": [
+                {"id": "claude-opus-4-6", "label": "Opus 4.6"},
+                {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6"}
+            ]
+        })
+        self.write_shared({
+            "models": [
+                {"id": "claude-opus-4-6", "label": "Opus 4.6"},
+                {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6"},
+                {"id": "claude-opus-4-6[1m]", "label": "Opus 4.6 [1M]"}
+            ]
+        })
+
+        added = sync_config(self.tmpdir)
+
+        local = self.read_local()
+        local_ids = [m["id"] for m in local["models"]]
+        # New entry appended
+        self.assertIn("claude-opus-4-6[1m]", local_ids)
+        # Existing entries unchanged
+        self.assertEqual(local["models"][0], {"id": "claude-opus-4-6", "label": "Opus 4.6"})
+        self.assertEqual(local["models"][1], {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6"})
+        # Added list reports the new model
+        self.assertTrue(any("claude-opus-4-6[1m]" in k for k in added))
+
+
+class TestUpdateSyncPreservesExistingModelEntries(ResolverTestBase):
+    """Scenario: Update Sync Preserves Existing Model Entries During Array Merge"""
+
+    def test_sync_does_not_overwrite_existing_model(self):
+        self.write_local({
+            "models": [
+                {"id": "claude-opus-4-6", "label": "My Custom Label"}
+            ]
+        })
+        self.write_shared({
+            "models": [
+                {"id": "claude-opus-4-6", "label": "Opus 4.6"}
+            ]
+        })
+
+        added = sync_config(self.tmpdir)
+
+        local = self.read_local()
+        # Local entry retains custom label
+        self.assertEqual(local["models"][0]["label"], "My Custom Label")
+        # No new entries added
+        self.assertEqual(len(local["models"]), 1)
+        # Nothing was added
+        self.assertEqual(added, [])
 
 
 class TestUpdateSyncNoChanges(ResolverTestBase):

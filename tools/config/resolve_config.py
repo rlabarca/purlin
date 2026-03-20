@@ -154,7 +154,12 @@ def sync_config(project_root):
 
 
 def _sync_recursive(shared, local, prefix, added):
-    """Recursively add keys from shared that are missing in local."""
+    """Recursively add keys from shared that are missing in local.
+
+    For array values containing objects with an 'id' field, performs id-based
+    merging: entries from shared whose id does not appear in local are appended.
+    Existing local entries (matched by id) are never modified or removed.
+    """
     for key, value in shared.items():
         full_key = f"{prefix}{key}" if not prefix else f"{prefix}.{key}"
         if key not in local:
@@ -165,6 +170,28 @@ def _sync_recursive(shared, local, prefix, added):
                 added.append(full_key)
         elif isinstance(value, dict) and isinstance(local[key], dict):
             _sync_recursive(value, local[key], full_key, added)
+        elif isinstance(value, list) and isinstance(local[key], list):
+            _sync_array(value, local[key], full_key, added)
+
+
+def _sync_array(shared_arr, local_arr, full_key, added):
+    """Id-based merge for arrays of objects with an 'id' field.
+
+    Entries from shared whose id is not present in local are appended to local.
+    Existing local entries are never modified or removed.
+    Non-id arrays are skipped (no merging).
+    """
+    # Only merge if both arrays contain dicts with 'id' fields
+    if not shared_arr or not isinstance(shared_arr[0], dict) or 'id' not in shared_arr[0]:
+        return
+    if local_arr and (not isinstance(local_arr[0], dict) or 'id' not in local_arr[0]):
+        return
+
+    local_ids = {item['id'] for item in local_arr if isinstance(item, dict) and 'id' in item}
+    for item in shared_arr:
+        if isinstance(item, dict) and 'id' in item and item['id'] not in local_ids:
+            local_arr.append(item)
+            added.append(f"{full_key}[id={item['id']}]")
 
 
 def _collect_all_keys(d, prefix=''):
