@@ -50,7 +50,13 @@ The setup script checks for missing tools and tells you how to install them. Whe
 
 The PM will ask what you're building. If you have Figma designs, paste the URL when asked. It creates your first spec and tells you what to do next.
 
-To see project status in your browser, type `/pl-cdd` inside the PM session. This starts the CDD Dashboard -- a live view of every feature's progress across all four agent roles.
+To see project status in your browser, type this inside the PM session:
+
+```
+/pl-cdd
+```
+
+This starts the CDD Dashboard -- a live view of every feature's progress across all four agent roles.
 
 ---
 
