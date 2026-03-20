@@ -42,12 +42,26 @@ The CDD Dashboard exposes agent model configuration (model, effort, permissions)
     *   Checkbox: Native with `accent-color: var(--purlin-accent)`.
     *   On focus: `border-color: var(--purlin-accent)`.
 
+### 2.1.1 Model Warning Modal
+
+*   When a user selects a model in the Model Dropdown that has a non-empty `warning` field, AND the model ID is NOT in `acknowledged_warnings`, a confirmation modal MUST appear before the selection is committed.
+*   **Modal content:**
+    *   Title: `"Model Warning"` in `var(--purlin-primary)` color.
+    *   Body: The model's `warning` text verbatim, displayed in `var(--purlin-muted)` color.
+    *   Two buttons: `"I Understand"` (primary action, `var(--purlin-accent)` background) and `"Cancel"` (secondary, `var(--purlin-border)` background).
+*   **Modal styling:** Dark overlay (`rgba(0,0,0,0.5)`) behind a centered panel using `var(--purlin-bg)` background and `var(--purlin-border)` border. Panel width: `max-width: 420px`.
+*   **"I Understand" action:** Sends `POST /config/acknowledge-warning` with the model ID. On success, the modal closes and the model selection is committed (triggers the normal `POST /config/agents` save). The warning will not appear again for this model.
+*   **"Cancel" action:** Reverts the dropdown to the previous model selection. The modal closes. No config changes are made.
+*   **Already acknowledged:** If the model ID is already in `acknowledged_warnings`, the dropdown change proceeds normally with no modal -- the warning was already seen and acknowledged.
+*   **Non-dismissible warnings (`warning_dismissible: false`):** The modal appears on every selection of that model. The "I Understand" button label changes to `"Continue"`. No `POST /config/acknowledge-warning` is sent -- the warning always shows.
+
 ### 2.2 Dashboard API Endpoints
 
 *   **`POST /config/agents`:** Accepts a JSON body with the full `agents` object (all four roles: `architect`, `builder`, `qa`, `pm` MUST be present). Validates that model IDs exist in the `models` array and effort values are one of `low`/`medium`/`high`. Writes atomically to `config.local.json` (temp file + rename). Returns updated config on success, 400 on validation failure. The `config.json` (shared/committed) is never modified by this endpoint.
     *   **Completeness check:** The backend MUST reject any request that is missing one or more of the four expected roles (`architect`, `builder`, `qa`, `pm`) with a 400 error: `"agents payload must include all roles: architect, builder, qa, pm"`. Partial saves that silently drop roles are not permitted.
     *   **Merge semantics:** The backend MUST merge incoming role configs into the existing `agents` object in `config.local.json` key-by-key, not replace the entire `agents` object wholesale. Any role present in the existing config but absent from the request MUST be preserved. This prevents a frontend rendering gap (a role's DOM element not being present) from silently erasing that role's saved configuration.
     *   **Frontend contract:** The frontend `saveAgentConfig()` function MUST always include all four roles in the payload before POSTing. If a role's DOM elements are not yet rendered, the save MUST be deferred until all elements are present -- it MUST NOT send a partial payload.
+*   **`POST /config/acknowledge-warning`:** Accepts `{"model_id": "<id>"}`. Reads `config.local.json`, appends the model ID to the `acknowledged_warnings` array (creating it if absent, deduplicating). Writes atomically. Returns 200 on success. Validates that the model ID exists in the `models` array and that the model has `warning_dismissible: true`. Returns 400 if the model ID is unknown or not dismissible.
 *   **`GET /config.json`:** Serves the resolved config (reads `config.local.json` if present, falls back to `config.json`) via the config resolver. This is transparent to the dashboard frontend.
 
 ### 2.3 Web-Verify Fixture Tags
@@ -103,6 +117,47 @@ The following fixture tags provide deterministic project states for web-verify t
     Then the Agents section heading element has a separator distinct from the Workspace section above it
     And the Agents section container is a separate DOM element from the Workspace section container
 
+#### Scenario: Selecting Model With Warning Shows Confirmation Modal
+    Given the models array contains a model with a non-empty warning field
+    And the model ID is not in acknowledged_warnings
+    When the user selects that model in the Model Dropdown
+    Then a confirmation modal appears with the model warning text
+    And the modal has "I Understand" and "Cancel" buttons
+
+#### Scenario: Modal "I Understand" Commits Selection and Acknowledges Warning
+    Given a confirmation modal is displayed for a model with warning_dismissible true
+    When the user clicks "I Understand"
+    Then POST /config/acknowledge-warning is sent with the model ID
+    And the model selection is committed via POST /config/agents
+    And the modal closes
+    And config.local.json acknowledged_warnings array contains the model ID
+
+#### Scenario: Modal "Cancel" Reverts Model Selection
+    Given a confirmation modal is displayed for a model with a warning
+    When the user clicks "Cancel"
+    Then the model dropdown reverts to the previous selection
+    And no config changes are made
+    And the modal closes
+
+#### Scenario: Acknowledged Model Does Not Trigger Modal on Reselection
+    Given a model warning has been acknowledged and the model ID is in acknowledged_warnings
+    When the user selects that model in the Model Dropdown
+    Then no confirmation modal appears
+    And the model selection proceeds normally
+
+#### Scenario: Non-Dismissible Model Warning Shows Modal on Every Selection
+    Given a model has a warning field and warning_dismissible false
+    And the model ID is in the acknowledged_warnings array
+    When the user selects that model in the Model Dropdown
+    Then a confirmation modal still appears with the warning text
+    And the button label is "Continue" instead of "I Understand"
+
+#### Scenario: POST /config/acknowledge-warning Rejects Non-Dismissible Model Warnings
+    Given a model has warning_dismissible false or absent
+    When a POST /config/acknowledge-warning is sent with that model ID
+    Then the endpoint returns 400
+    And the acknowledged_warnings array is not modified
+
 #### Scenario: Agents Section State Persists Across Reloads
     Given the user expands the Agents section
     When the page is reloaded
@@ -145,6 +200,14 @@ The following fixture tags provide deterministic project states for web-verify t
 - [ ] Changing a control value does not cause it to visibly revert and re-apply while the config write is in-flight
 - [ ] Changing a dropdown value does not cause other rows or columns to shift or resize
 - [ ] Section collapse/expand state persists across page reloads via localStorage
+- [ ] Selecting a model with an un-acknowledged `warning` field triggers a centered confirmation modal with a dark overlay
+- [ ] Modal panel uses `var(--purlin-bg)` background, `var(--purlin-border)` border, max-width 420px
+- [ ] Modal title ("Model Warning") uses `var(--purlin-primary)` color
+- [ ] Modal body displays the warning text verbatim in `var(--purlin-muted)` color
+- [ ] "I Understand" button uses `var(--purlin-accent)` background; "Cancel" button uses `var(--purlin-border)` background
+- [ ] Clicking "I Understand" closes the modal and commits the model selection
+- [ ] Clicking "Cancel" closes the modal and reverts the dropdown to the previous model
+- [ ] After acknowledgment, reselecting the same model does not trigger the modal
 
 
 ## Regression Guidance

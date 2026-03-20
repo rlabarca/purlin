@@ -37,7 +37,7 @@ The `/pl-agent-config` skill provides the ONLY sanctioned way for agents to modi
 
 The skill MUST reject unknown keys with a clear error. Valid keys for any role are:
 
-- `model` -- must match an `id` in the `models` array in config
+- `model` -- must match an `id` in the `models` array in config. When the matched model has a `warning` field and the model ID is NOT in `acknowledged_warnings`, the warning text MUST be displayed in the confirmation output AND the model ID is auto-acknowledged (added to `acknowledged_warnings` in `config.local.json`). See Section 2.5.
 - `effort` -- must be one of `low`, `medium`, `high`
 - `find_work` -- must be `true` or `false`
 - `auto_start` -- must be `true` or `false`
@@ -55,6 +55,23 @@ The skill writes config changes atomically:
 ### 2.4 No Commit (Gitignored File)
 
 Because `config.local.json` is gitignored, no git commit is made after writing. The skill confirms the change with a status message but does not invoke any git commands.
+
+### 2.5 Warning Display and Auto-Acknowledgment on Model Change
+
+When the `model` key is set and the matched model has a non-empty `warning` field:
+
+*   **First time (model ID NOT in `acknowledged_warnings`):** The confirmation output MUST include the warning text. If the model has `warning_dismissible: true`, the model ID is automatically added to `acknowledged_warnings` in `config.local.json` (creating the array if absent, deduplicating). The user does not need to take any additional action -- acknowledgment is implicit in setting the model.
+
+    ```
+    Updated: agents.<role>.model = <model_id>
+    Config:  <LOCAL_CONFIG_PATH>
+
+    WARNING: <warning text>
+    ```
+
+*   **Previously acknowledged (model ID in `acknowledged_warnings`):** The warning is omitted from the confirmation output.
+
+*   **Non-dismissible (`warning_dismissible: false`):** The warning is always displayed in the confirmation output regardless of `acknowledged_warnings`, and the array is not modified.
 
 ---
 
@@ -84,6 +101,19 @@ Because `config.local.json` is gitignored, no git commit is made after writing. 
     When /pl-agent-config architect model claude-gpt-5 is invoked
     Then the skill exits with an error listing valid model IDs
     And no config file is modified
+
+#### Scenario: Setting Model With Warning Shows Warning and Auto-Acknowledges
+    Given the models array contains a model with a warning field and warning_dismissible true
+    And the model ID is not in acknowledged_warnings
+    When /pl-agent-config architect model <model_id> is invoked
+    Then the confirmation output includes the warning text
+    And the model ID is added to acknowledged_warnings in config.local.json
+
+#### Scenario: Setting Model With Previously Acknowledged Warning Omits Warning
+    Given the models array contains a model with a warning field and warning_dismissible true
+    And the model ID is in the acknowledged_warnings array
+    When /pl-agent-config architect model <model_id> is invoked
+    Then the confirmation output does not include the warning text
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -18,6 +18,13 @@
             "id": "claude-haiku-4-5-20251001",
             "label": "Haiku 4.5",
             "capabilities": { "effort": true, "permissions": true }
+        },
+        {
+            "id": "claude-opus-4-6[1m]",
+            "label": "Opus 4.6 [1M]",
+            "capabilities": { "effort": true, "permissions": true },
+            "warning": "Extended context (1M tokens). On Pro plans, this uses additional paid credits beyond your subscription.",
+            "warning_dismissible": true
         }
     ],
     "agents": {

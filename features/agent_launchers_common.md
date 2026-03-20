@@ -28,14 +28,25 @@ Scripts are named `pl-run-<role>.sh` and live at the project root. Currently: `p
 5.  Each appended file is preceded by `printf "\n\n"` to ensure separation.
 
 ### 2.3 Config Reading
-*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_FIND_WORK`, and `AGENT_AUTO_START` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
+*   Read `AGENT_MODEL`, `AGENT_EFFORT`, `AGENT_BYPASS`, `AGENT_FIND_WORK`, `AGENT_AUTO_START`, `AGENT_MODEL_WARNING`, and `AGENT_MODEL_WARNING_DISMISSED` from the **resolved config** using the config resolver CLI (see `config_layering.md` Section 2.1 and 2.2).
 *   The generated launcher MUST call `resolve_config.py <role>` (via `$CORE_DIR/tools/config/resolve_config.py`) and `eval` the shell variable assignments it returns. It MUST NOT use an inline `python3 -c "import json; ..."` pattern that reads `config.json` directly.
-*   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_FIND_WORK="true"`, `AGENT_AUTO_START="false"`.
+*   `AGENT_MODEL_WARNING` contains the `warning` field value from the agent's assigned model (empty string if absent). `AGENT_MODEL_WARNING_DISMISSED` is `true` if the model ID appears in the top-level `acknowledged_warnings` array AND the model has `warning_dismissible: true`; `false` otherwise.
+*   Default values when the resolver is unavailable or config is absent: `AGENT_MODEL=""`, `AGENT_EFFORT=""`, `AGENT_BYPASS="false"`, `AGENT_FIND_WORK="true"`, `AGENT_AUTO_START="false"`, `AGENT_MODEL_WARNING=""`, `AGENT_MODEL_WARNING_DISMISSED="false"`.
 
 ### 2.4 Claude Dispatch
 ```
 claude [--model $AGENT_MODEL] [--effort $AGENT_EFFORT] [--dangerously-skip-permissions | --allowedTools ...] --append-system-prompt-file "$PROMPT_FILE" "<session message>"
 ```
+*   When `AGENT_MODEL_WARNING` is non-empty AND `AGENT_MODEL_WARNING_DISMISSED` is not `true`, the launcher MUST:
+    1.  Print to stderr before invoking `claude`:
+        ```
+        ============================================================
+        WARNING: <warning text>
+        By continuing, you are acknowledging this warning.
+        ============================================================
+        ```
+    2.  Auto-acknowledge the warning by calling `resolve_config.py acknowledge_warning <model_id>`, which adds the model ID to `acknowledged_warnings` in `config.local.json`. This ensures the warning is shown only once per model.
+*   When the warning has been acknowledged (`AGENT_MODEL_WARNING_DISMISSED=true`), no warning is printed and no acknowledgment write occurs.
 *   `--model` is passed only when `AGENT_MODEL` is non-empty.
 *   `--effort` is passed only when `AGENT_EFFORT` is non-empty.
 *   When `AGENT_BYPASS=true`: pass `--dangerously-skip-permissions`.
@@ -71,6 +82,21 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
     When any launcher script is executed
     Then it calls resolve_config.py with its role name to read agent settings
     And it does not read config.json directly via inline Python
+
+#### Scenario: Launcher Prints Warning and Auto-Acknowledges on First Run
+    Given the agent's assigned model has a non-empty warning field with warning_dismissible true
+    And the model ID is not in the acknowledged_warnings array
+    When the launcher script is executed
+    Then it prints the warning text to stderr in a bordered block before invoking claude
+    And the block includes "By continuing, you are acknowledging this warning."
+    And the model ID is added to acknowledged_warnings in config.local.json
+
+#### Scenario: Launcher Suppresses Warning on Subsequent Runs
+    Given the agent's assigned model has a non-empty warning field
+    And the model ID appears in the acknowledged_warnings array
+    And the model has warning_dismissible true
+    When the launcher script is executed
+    Then no warning is printed to stderr
 
 #### Scenario: Launcher Falls Back When Config is Absent
     Given config.json does not contain an agents section
