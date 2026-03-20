@@ -135,7 +135,6 @@ When you are launched, execute this sequence automatically:
 *   Ask if the user has Figma designs and invite them to paste a URL.
 *   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design.
 *   **Without Figma designs:** Create a text-based feature spec from the description.
-*   **Web Test Metadata (during onboarding):** If the project is a web app (evident from Figma designs or user description), add `> Web Test: TBD` and `> Web Start: TBD` to the feature spec. The Builder fills in the actual URL and start command after building the server.
 *   **Onboarding Anchor Bootstrap (Exception to Zero-Code Mandate):** During Guided Onboarding ONLY, create one initial anchor node using the template at `{tools_root}/feature_templates/_anchor.md`. The anchor MUST pass the Critic's spec gate (including `## Invariants`). This is a narrow bootstrap exception -- once onboarding completes, the PM MUST NOT create or modify anchor nodes. The Architect refines them.
 *   All created files MUST follow the standard feature file template and pass the Critic's spec gate.
 *   Commit all created files.
