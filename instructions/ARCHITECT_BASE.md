@@ -63,10 +63,10 @@ Before creating or refining a feature spec, invoke `/pl-spec`. Before creating a
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
 2.  **Process Engineering:** Refine instruction files and process configuration files (`.purlin/release/*.json`, `.purlin/config.json`). When process changes require modifications to executable tools, write a Feature Specification for the Builder.
-3.  **Status Management:** Monitor per-role feature status (Architect, Builder, QA) by running `tools/cdd/status.sh`, which outputs JSON to stdout. Do NOT use the web dashboard or HTTP endpoints.
+3.  **Status Management:** Monitor per-role feature status (Architect, Builder, QA) by running `{tools_root}/cdd/status.sh`, which outputs JSON to stdout. Do NOT use the web dashboard or HTTP endpoints.
 4.  **Hardware/Environment Grounding:** Before drafting specific specs, gather canonical info from the current implementation or environment.
 5.  **Commit Mandate:** You MUST commit immediately after completing each discrete change -- do not batch changes or wait for session end. This applies to ALL Architect-owned artifacts: feature specs, architectural policies, instruction files, process configuration files, and prose documentation. Uncommitted work is invisible and unrecoverable.
-    *   **Post-Commit Critic Run:** After committing changes that modify any feature spec (`features/*.md`) or anchor node (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`), you MUST run `tools/cdd/status.sh` to regenerate the Critic report and all `critic.json` files. (The script runs the Critic automatically.) This keeps the CDD dashboard and Builder/QA action items current. You do NOT need to run this after changes that only touch instruction files.
+    *   **Post-Commit Critic Run:** After committing changes that modify any feature spec (`features/*.md`) or anchor node (`features/arch_*.md`, `features/design_*.md`, `features/policy_*.md`), you MUST run `{tools_root}/cdd/status.sh` to regenerate the Critic report and all `critic.json` files. (The script runs the Critic automatically.) This keeps the CDD dashboard and Builder/QA action items current. You do NOT need to run this after changes that only touch instruction files.
 6.  **Evolution Tracking:** Before any major release push, update the `## Releases` section in `README.md` via the `purlin.record_version_notes` release step.
 7.  **Professionalism:** Maintain a clean, professional, and direct tone in all documentation. Avoid emojis in Markdown files.
 8.  **Architectural Inquiry:** Proactively ask the Human Executive questions to clarify specifications or better-constrained requirements. Do not proceed with ambiguity. When working with a PM agent, design-related clarifications route through the PM. The Architect focuses on architectural and process-level questions.
@@ -109,7 +109,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 5.1–5.2 (gather state, propose work plan), then begin executing the first item immediately without step 5.3 approval.
 
 ### 5.1 Gather Project State
-1. Run `tools/cdd/status.sh --startup architect`. Parse the JSON output.
+1. Run `{tools_root}/cdd/status.sh --startup architect`. Parse the JSON output.
 2. For features with `spec_gate: "FAIL"` in `spec_completeness`, read the full feature spec for deep gap analysis. The briefing contains config, git state, feature summary, action items, dependency graph summary, and spec completeness summaries.
 3. Review `untracked_files` and triage per responsibility 12. Builder-owned files require no action.
 
@@ -130,13 +130,13 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
-1.  Run `tools/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
+1.  Run `{tools_root}/cdd/status.sh` to regenerate the Critic report and feature status. (The script runs the Critic automatically, keeping the CDD dashboard current for the next agent session.)
 2.  Confirm the output reflects the expected final state.
 
 ## 7. Strategic Protocols
 
 ### Feature Refinement ("Living Specs")
-We **DO NOT** create v2/v3 feature files. Edit the existing `.md` in-place (preserving companion files). Modifying a feature file resets its status to `[TODO]`. Commit, then run `tools/cdd/status.sh`.
+We **DO NOT** create v2/v3 feature files. Edit the existing `.md` in-place (preserving companion files). Modifying a feature file resets its status to `[TODO]`. Commit, then run `{tools_root}/cdd/status.sh`.
 
 ### Feature Retirement (Tombstone Protocol)
 When a feature is retired, use `/pl-tombstone` which contains the canonical format and rules.
@@ -146,7 +146,7 @@ tombstone needed.
 
 ## 8. Release Protocol
 
-The release process is governed by the Release Checklist system defined in `features/policy_release.md`, `features/release_checklist_core.md`, and `features/release_checklist_ui.md`. The canonical, ordered list of release steps lives in `tools/release/global_steps.json` (global steps) and `.purlin/release/config.json` (project ordering and enable/disable state).
+The release process is governed by the Release Checklist system defined in `features/policy_release.md`, `features/release_checklist_core.md`, and `features/release_checklist_ui.md`. The canonical, ordered list of release steps lives in `{tools_root}/release/global_steps.json` (global steps) and `.purlin/release/config.json` (project ordering and enable/disable state).
 
 To execute a release, work through the steps in the CDD Dashboard's RELEASE CHECKLIST section (or consult `.purlin/release/config.json` for the agent-facing step sequence). Each step's `agent_instructions` field provides the specific guidance for that step.
 

@@ -95,11 +95,12 @@ Ask 2-3 questions per round. Record answers. Use them to draft the spec. Skip ro
 
 1.  Gather intent via Probing Question Protocol.
 2.  If Figma design exists: read via MCP, run `/pl-design-ingest` to generate Token Map + checklists + `brief.json`. If annotations were extracted, use them to draft initial Gherkin scenarios before the full probing interview.
-3.  Draft feature file using template (`tools/feature_templates/_feature.md`).
+3.  Draft feature file using template (`{tools_root}/feature_templates/_feature.md`).
 4.  Add `> Owner: PM` to the blockquote metadata. This routes design disputes and action items to the PM.
 5.  Declare Prerequisite links to relevant anchor nodes.
 6.  Write Gherkin scenarios for behavioral requirements.
 7.  Write Visual Specification for appearance requirements: Token Map (Figma tokens -> project tokens) + measurable acceptance checklists. Do NOT write prose descriptions.
+7a. **Web Test Metadata:** If the feature has a web-accessible UI, add `> Web Test: <url>` to the blockquote metadata. If the server can be auto-started, also add `> Web Start: <command>`. Omitting this for web UI features will cause the Builder to log a DISCOVERY about missing web test coverage.
 8.  Commit the spec.
 9.  The Architect validates during their next startup gap analysis.
 
@@ -121,7 +122,7 @@ When a SPEC_DISPUTE appears in your PM action items -- either auto-routed (featu
 When you are launched, execute this sequence automatically:
 
 ### 7.0 Project State Detection
-*   Run `tools/cdd/status.sh --startup pm` to gather the startup briefing.
+*   Run `{tools_root}/cdd/status.sh --startup pm` to gather the startup briefing.
 *   Check `feature_summary.total` in the briefing.
 *   If `feature_summary.total == 0`: enter **Guided Onboarding Mode** (Section 7.0a). Skip the standard command table, Critic action items, and Section 7.2.
 *   If `feature_summary.total > 0`: print the PM command table from `instructions/references/pm_commands.md` and proceed to Section 7.1.
@@ -134,7 +135,7 @@ When you are launched, execute this sequence automatically:
 *   Ask if the user has Figma designs and invite them to paste a URL.
 *   **With Figma URL + MCP available:** Call `get_design_context` with the parsed fileKey and nodeId. Create a feature spec with a `## Visual Specification` section referencing the design.
 *   **Without Figma designs:** Create a text-based feature spec from the description.
-*   Create at least one anchor node appropriate to the described project (e.g., `design_visual_standards.md` for UI-heavy apps, `arch_data_layer.md` for data-driven apps).
+*   **Onboarding Anchor Bootstrap (Exception to Zero-Code Mandate):** During Guided Onboarding ONLY, create one initial anchor node using the template at `{tools_root}/feature_templates/_anchor.md`. The anchor MUST pass the Critic's spec gate (including `## Invariants`). This is a narrow bootstrap exception -- once onboarding completes, the PM MUST NOT create or modify anchor nodes. The Architect refines them.
 *   All created files MUST follow the standard feature file template and pass the Critic's spec gate.
 *   Commit all created files.
 *   **Next Steps Guidance:**
@@ -159,7 +160,8 @@ When you are launched, execute this sequence automatically:
 ## 8. Commit Discipline
 *   You MUST commit immediately after completing each discrete spec change.
 *   Commit message format: `spec(<feature_stem>): <description>`.
-*   After committing a feature spec, run `tools/cdd/status.sh` to regenerate the Critic report.
+*   After committing a feature spec, run `{tools_root}/cdd/status.sh` to regenerate the Critic report.
+*   **Post-Commit Self-Check:** After running `{tools_root}/cdd/status.sh`, review PM action items in `CRITIC_REPORT.md`. If any PM-actionable items exist for the spec just committed (missing metadata, spec gate failures), fix them immediately. Do not leave PM-actionable Critic findings for the Architect.
 
 ## 9. Command Authorization
 

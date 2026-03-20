@@ -2,6 +2,8 @@
 
 > **Layered Instructions:** This file is the **base layer** of the workflow philosophy, provided by the Purlin framework. Project-specific workflow additions are defined in the **override layer** at `.purlin/HOW_WE_WORK_OVERRIDES.md`. At runtime, both layers are concatenated (base first, then overrides).
 
+> **Path Resolution:** All `tools/` references in this document resolve against the `tools_root` value from `.purlin/config.json`. Default: `tools/`.
+
 ## 1. Core Philosophy: Continuous Design-Driven (CDD)
 
 Purlin is **Continuously Design-Driven**: designs evolve in sync with code, never ahead of it and never behind it. Specifications are living documents that are refined as implementation reveals new constraints, discoveries, and insights. The design is never "done" -- it is continuously updated to reflect the current truth of the system.
@@ -21,6 +23,9 @@ Specifications are not static blueprints written once and handed off. They are c
 *   QA discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE) trigger spec revisions before code fixes.
 *   Anchor node changes cascade to all dependent features, triggering re-validation across the entire domain.
 *   The Feature Lifecycle (TODO -> TESTING -> COMPLETE) tracks the sync state between design and implementation at all times.
+
+### 1.3 Tool Path Resolution Protocol
+Every agent MUST resolve `tools_root` from `.purlin/config.json` at session start (default: `"tools"`). All `{tools_root}/` references in instruction files, command files, and process documents resolve against this value. In consumer projects where Purlin is a submodule, `tools_root` is typically set to `"purlin/tools"` -- this single config value ensures all tool invocations resolve correctly regardless of project structure.
 
 ## 2. Roles and Responsibilities
 
@@ -54,7 +59,7 @@ Specifications are not static blueprints written once and handed off. They are c
 *   **Duty:** Providing high-level goals, performing final verification (e.g., Hardware-in-the-Loop), and managing the Agentic Evolution.
 
 ### Commit Discipline (All Roles)
-Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream Critic regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `tools/cdd/status.sh`. When in doubt, commit.
+Agents MUST commit at logical milestones -- never deferring all commits until session end. Implementation work on a single feature MAY be batched into one or a small number of logical commits. Status tag commits (`[Complete]`, `[Ready for Verification]`) MUST remain separate, standalone commits. Commits that trigger downstream Critic regeneration (status tags, spec edits, anchor node edits) MUST be immediate and followed by `{tools_root}/cdd/status.sh`. When in doubt, commit.
 
 ## 3. The Lifecycle of a Feature
 1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
@@ -129,7 +134,7 @@ Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-disc
 | When you need to... | Do this |
 |---------------------|---------|
 | Implement a feature | Invoke `/pl-build` |
-| Understand Critic status | Run `tools/cdd/status.sh --role <role>` or invoke `/pl-status` |
+| Understand Critic status | Run `{tools_root}/cdd/status.sh --role <role>` or invoke `/pl-status` |
 | Create/refine a spec | Invoke `/pl-spec` |
 | Create/update an anchor node | Invoke `/pl-anchor` |
 | Record a QA discovery | Invoke `/pl-discovery` |
@@ -141,13 +146,13 @@ Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-disc
 Skills carry the complete workflow protocol. Invoke the skill before executing the workflow.
 
 ## 9. Critic-Driven Coordination
-The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `tools/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
+The Critic is the project coordination engine. It validates quality AND generates role-specific action items. Every agent runs the Critic at session start by invoking `{tools_root}/cdd/status.sh`, which automatically runs the Critic as a prerequisite and writes the aggregate report to `CRITIC_REPORT.md`. Each agent reads their role-specific subsection of that report before beginning work. The Critic is never invoked via HTTP — agents use the CLI interface exclusively.
 
 *   **CDD (Continuous Design-Driven) Monitor** shows what IS (per-role status: Architect, Builder, QA, PM columns).
 *   **Critic** shows what SHOULD BE DONE (role-specific action items).
 *   Agents consult `CRITIC_REPORT.md` for their role-specific priorities before starting work.
 *   CDD does NOT run the Critic. CDD reads pre-computed `role_status` from on-disk `critic.json` files to display role-based columns on the dashboard and in the `/status.json` API.
-*   **Agent Interface:** Agents access tool data via CLI commands (`tools/cdd/status.sh`, `tools/cdd/status.sh --graph`, `tools/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
+*   **Agent Interface:** Agents access tool data via CLI commands (`{tools_root}/cdd/status.sh`, `{tools_root}/cdd/status.sh --graph`, `{tools_root}/critic/run.sh`), never via HTTP servers. The CDD Dashboard web server is for human use only. This ensures agents can always access current data without depending on server state.
 
 ### 9.1 What the Critic Validates
 The Critic applies a **dual-gate model** to every feature:

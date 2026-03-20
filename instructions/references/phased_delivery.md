@@ -122,7 +122,7 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 
 0. **Bootstrap (if needed):** If no delivery plan exists when `--continuous` is invoked, the launcher runs a one-time bootstrap Builder session. This session runs the standard scope assessment and either creates a delivery plan autonomously or completes the work directly if phasing is not warranted. The bootstrap uses a conservative sizing bias (more/smaller phases, maximize parallelization) to prevent context exhaustion. After plan creation, the user is prompted to approve before the loop begins. See `features/continuous_phase_builder.md` Section 2.15.
 
-1. **Phase Analysis:** Before the first phase, the launcher runs `tools/delivery/phase_analyzer.py` to determine execution order and parallelization opportunities. The analyzer reads the delivery plan and dependency graph, topologically sorts phases by their inter-phase dependencies, and groups independent phases into parallel execution sets.
+1. **Phase Analysis:** Before the first phase, the launcher runs `{tools_root}/delivery/phase_analyzer.py` to determine execution order and parallelization opportunities. The analyzer reads the delivery plan and dependency graph, topologically sorts phases by their inter-phase dependencies, and groups independent phases into parallel execution sets.
 
 2. **Execution Loop:** The launcher iterates through execution groups sequentially. For single-phase groups, the Builder runs in `-p` mode (non-interactive). For multi-phase groups, each Builder runs in a separate git worktree (`-w` flag) and the worktree branches are merged back after all complete.
 
@@ -155,7 +155,7 @@ The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` fla
 
 ## 10.12 Plan Validation
 
-Every delivery plan MUST pass the phase analyzer (`tools/delivery/phase_analyzer.py`) before being committed. The analyzer validates that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
+Every delivery plan MUST pass the phase analyzer (`{tools_root}/delivery/phase_analyzer.py`) before being committed. The analyzer validates that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
 
 **When the Builder creates a plan** (via `/pl-delivery-plan`): The Builder reads `dependency_graph.json` to inform phase assignment, then runs the analyzer after writing the plan file. If cycles are detected, the Builder fixes the plan before committing.
 

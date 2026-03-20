@@ -3,7 +3,7 @@
 > This file is read by the QA Agent during the Startup Print Sequence (Section 3.0).
 > Print the appropriate variant verbatim based on the current branch.
 
-**CRITICAL:** Printing the command table means outputting the pre-formatted text block below **verbatim**. Do NOT invoke the `/pl-status` skill, do NOT call `tools/cdd/status.sh`, and do NOT use any tool during this step. Any tool or skill invocation before Section 3.0.1 is complete is a protocol violation.
+**CRITICAL:** Printing the command table means outputting the pre-formatted text block below **verbatim**. Do NOT invoke the `/pl-status` skill, do NOT call `{tools_root}/cdd/status.sh`, and do NOT use any tool during this step. Any tool or skill invocation before Section 3.0.1 is complete is a protocol violation.
 
 ## Main Branch Variant
 

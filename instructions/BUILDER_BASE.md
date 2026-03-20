@@ -46,7 +46,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 Also extract `qa_mode` for the `builder` role. Default to `false` if absent. Check the `PURLIN_BUILDER_QA` environment variable first — if set to `true`, it overrides the config value. When `qa_mode` is `true`, prepend `[QA Builder Mode]` to the command table header printed in Section 2.0 (e.g., `Purlin Builder — Ready  [QA Builder Mode]`). The startup briefing automatically filters the feature set based on `qa_mode` — no additional filtering is needed by the agent.
 
 ### 2.1 Gather Project State
-1. Run `tools/cdd/status.sh --startup builder`. Parse the JSON output.
+1. Run `{tools_root}/cdd/status.sh --startup builder`. Parse the JSON output.
 2. The briefing contains config, git state, feature summary, action items, dependency graph summary, delivery plan state, tombstones, anchor constraints with FORBIDDEN patterns, and in-scope feature list. Keep FORBIDDEN patterns from `anchor_constraints` active for the session.
 3. Read specs for in-scope TODO/TESTING features (the briefing has summaries, not full text).
 4. **Prerequisite Stability Check:** For each in-scope feature, check its `> Prerequisite:` links that point to other features (not anchor nodes). If any prerequisite feature is in `[TODO]` status, flag it in the work plan as an unstable dependency. The Builder MUST read the full spec of any TODO-status prerequisite before implementing the dependent feature.
@@ -109,7 +109,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 5.  Commit the deletions: `git commit -m "feat(<scope>): remove retired <feature_name> code"`.
 6.  Delete the tombstone file itself: `features/tombstones/<feature_name>.md`.
 7.  Commit the tombstone deletion: `git commit -m "chore: remove tombstone for <feature_name>"`.
-8.  Run `tools/cdd/status.sh` to confirm the Critic no longer surfaces this tombstone.
+8.  Run `{tools_root}/cdd/status.sh` to confirm the Critic no longer surfaces this tombstone.
 
 ## 5. Per-Feature Implementation Protocol
 
@@ -125,6 +125,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 *   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
 *   **Test quality:** Tests MUST verify behavioral outcomes per `features/policy_test_quality.md` guidelines (AP-1 through AP-4). No subagent audit required.
 *   **Design alignment verification (web test):** Features with `> Web Test:` or `> AFT Web:` metadata MUST pass `/pl-web-test` (zero BUG verdicts AND zero DRIFT verdicts) before status tag. When Figma MCP is available and the feature's `## Visual Specification` has Figma references, `/pl-web-test` performs Figma-triangulated verification -- the Builder MUST iterate until the live app matches the Figma design (no BUG or DRIFT). STALE verdicts (Figma updated but spec not yet re-ingested) are logged as PM action items, not Builder blockers. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- design alignment verification cannot be automated]` in the companion file.
+*   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
 *   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
 *   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
 *   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
@@ -132,7 +133,7 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 ## 6. Shutdown Protocol
 
 Before concluding your session, after all work is committed to git:
-1.  Run `tools/cdd/status.sh` for a final regeneration of the Critic report and feature status.
+1.  Run `{tools_root}/cdd/status.sh` for a final regeneration of the Critic report and feature status.
 2.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain: **you reached this shutdown because a phase just completed and you halted as required.** Output:
     ```
@@ -151,7 +152,7 @@ When faced with complex tasks, delegate sub-tasks to specialized sub-agents (inc
 
 ### NO SERVER PROCESS MANAGEMENT
 *   **NEVER** start, stop, restart, or kill any server process (`kill`, `pkill`, etc.). Web servers are for human use only -- if verification requires a running server, inform the user.
-*   For all tool data queries, use CLI commands exclusively (`tools/cdd/status.sh`, `tools/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
+*   For all tool data queries, use CLI commands exclusively (`{tools_root}/cdd/status.sh`, `{tools_root}/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
 
 ## 9. Command Authorization
 
