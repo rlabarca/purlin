@@ -11,9 +11,9 @@ Implementing model warning support across all configuration surfaces (config sch
 **Completion Commit:** 478bbeb
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Dashboard & Skill [PENDING]
+## Phase 2 -- Dashboard & Skill [COMPLETE]
 **Features:** cdd_agent_configuration.md, pl_agent_config.md
-**Completion Commit:** --
+**Completion Commit:** d70725e
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
