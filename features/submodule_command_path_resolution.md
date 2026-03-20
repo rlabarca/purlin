@@ -36,6 +36,12 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 - `/pl-build` Step 4 (Status Tag Commit) MUST include a pre-check: if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session before proceeding with the status tag commit. If the feature has `## Visual Specification` but no web test metadata, confirm a DISCOVERY has been logged in the companion file.
 
+### 2.5 Web Test STALE Verdict Auto-Recording
+
+- When `/pl-web-test` produces a STALE verdict for a checklist item (Figma design updated after spec extraction), the command MUST automatically create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`.
+- The discovery entry MUST include the STALE checklist item text and the Figma frame reference so the PM knows exactly what to re-ingest.
+- This auto-recording replaces manual Builder action after the fact -- the routing from Builder to PM is handled entirely by the command and the Critic.
+
 ---
 
 ## 3. Scenarios
@@ -69,6 +75,14 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
     When the Builder reaches Step 4 (Status Tag Commit) in `/pl-build`
     Then the Builder verifies a DISCOVERY about missing web test URL has been logged
     And the status tag commit is blocked until the DISCOVERY is recorded
+
+#### Scenario: Web Test STALE Verdict Creates Discovery Sidecar Entry
+
+    Given a feature with `> Web Test:` metadata and a `## Visual Specification` section
+    When `/pl-web-test` produces a STALE verdict for a checklist item
+    Then a `[DISCOVERY]` entry is created in `features/<name>.discoveries.md`
+    And the entry has `Action Required: PM` and status `OPEN`
+    And the entry includes the STALE checklist item text and Figma frame reference
 
 ### Manual Scenarios (Human Verification Required)
 

@@ -162,6 +162,7 @@ When you are launched, execute this sequence automatically:
 *   Commit message format: `spec(<feature_stem>): <description>`.
 *   After committing a feature spec, run `{tools_root}/cdd/status.sh` to regenerate the Critic report.
 *   **Post-Commit Self-Check:** After running `{tools_root}/cdd/status.sh`, review PM action items in `CRITIC_REPORT.md`. If any PM-actionable items exist for the spec just committed (missing metadata, spec gate failures), fix them immediately. Do not leave PM-actionable Critic findings for the Architect.
+*   **STALE Discovery Handling:** When PM action items include `[DISCOVERY]` entries with STALE verdicts (created by the Builder when `/pl-web-test` detects Figma changes after spec extraction), re-run `/pl-design-ingest` for the affected feature to sync the Visual Specification with the current Figma state. After the spec is updated and committed, transition the discovery status to `SPEC_UPDATED` in the sidecar file (`features/<name>.discoveries.md`). QA owns subsequent lifecycle steps.
 
 ## 9. Command Authorization
 
