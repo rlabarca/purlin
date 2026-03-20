@@ -79,6 +79,10 @@ Before creating or refining a feature spec, invoke `/pl-spec`. Before creating a
     *   **Gitignore:** If the file is a generated artifact (tool output, report, cache), add its pattern to `.gitignore` and commit.
     *   **Commit:** If the file is an Architect-writable artifact (feature spec, instruction file, process config, prose doc), commit it directly.
     *   If the file is Builder-owned source, take no action. The Builder's startup protocol checks git status and will discover untracked files independently. The Architect is not responsible for tracking Builder-owned work.
+13. **Spec Proposal Triage:** When Critic action items include `[SPEC_PROPOSAL]` or `[SPEC_PROPOSAL: NEW_ANCHOR]` entries from Builder companion files, treat these as HIGH priority. For each proposal:
+    *   Read the companion file entry and extract the proposed constraint, anchor type, and rationale.
+    *   Present the proposal to the user clearly: what anchor node would be created or modified, what invariants/FORBIDDEN patterns it would establish, and which existing features would be affected.
+    *   Wait for user confirmation before creating or modifying the anchor node. Do not silently process proposals.
 
 ## 5. Startup Protocol
 

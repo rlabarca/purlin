@@ -36,7 +36,7 @@ The Implementation Gate validates that the implementation aligns with the specif
 | Traceability | All automated scenarios have matching tests | >80% scenario coverage | <80% scenario coverage |
 | Policy adherence | No FORBIDDEN pattern violations | N/A | Any FORBIDDEN violation detected |
 | Structural completeness | `tests/<feature>/tests.json` exists with `"status": "PASS"`, `total > 0`, all required fields present, no internal inconsistencies, and at least one backing test file exists | Exists with `"status": "FAIL"` | Missing `tests.json`, OR `status: "PASS"` with `total: 0`, OR missing required fields (`status`, `passed`, `failed`, `total`), OR internal inconsistency (`status: "PASS"` with `failed > 0`), OR no backing test file found |
-| Builder decisions | All entries are INFO/CLARIFICATION | Has AUTONOMOUS entries | Has DEVIATION, unresolved DISCOVERY, or INFEASIBLE |
+| Builder decisions | All entries are INFO/CLARIFICATION | Has AUTONOMOUS entries | Has DEVIATION, unresolved DISCOVERY, SPEC_PROPOSAL, or INFEASIBLE |
 | Logic drift (LLM) | All pairs ALIGNED | Some PARTIAL | Any DIVERGENT |
 
 ### 2.3 Traceability Engine
@@ -142,6 +142,7 @@ The Critic MUST generate imperative action items for each of the four roles (Arc
 | **Architect** | OPEN SPEC_DISPUTE in User Testing | "Review disputed scenario in critic_tool: [dispute title]" |
 | **Architect** | `[INFEASIBLE]` tag in Implementation Notes | "Revise infeasible spec for submodule_sync: [rationale]" |
 | **Architect** | Unacknowledged `[DEVIATION]`/`[DISCOVERY]` tags | "Acknowledge Builder decision in critic_tool: [tag title]" |
+| **Architect** | Unacknowledged `[SPEC_PROPOSAL]` tags (category: `spec_proposal`) | "Review spec proposal in critic_tool: [proposal title]" |
 | **Architect** | Spec Gate WARN (no manual scenarios, empty impl notes) | "Improve spec: scenario_classification -- only Automated" |
 | **Architect** | Untracked files detected (Section 2.12) | "Triage untracked file: tests/critic_tool/critic.json" |
 | **Builder** | Feature in TODO lifecycle state with new scenarios (spec modified after last status commit) | "Implement spec changes for critic_tool: 4 new scenario(s) [Fixture Repo Not Found..., Convention Path...], 0 modified, 0 removed" |
@@ -162,7 +163,7 @@ The Critic MUST generate imperative action items for each of the four roles (Arc
 
 **Priority Levels:**
 *   **CRITICAL** -- `[INFEASIBLE]` tags (feature halted, Architect must revise spec).
-*   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs.
+*   **HIGH** -- Gate FAIL, OPEN BUGs, OPEN SPEC_DISPUTEs, unacknowledged DEVIATIONs/DISCOVERYs/SPEC_PROPOSALs.
 *   **HIGH** -- Feature in TODO lifecycle state (spec modified, implementation review needed).
 *   **MEDIUM** -- Traceability gaps, SPEC_UPDATED items awaiting QA re-verification, invalid targeted scope names.
 *   **LOW** -- Gate WARNs, informational items.

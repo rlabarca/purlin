@@ -35,10 +35,11 @@ The Builder MUST classify every non-trivial implementation decision using struct
 | `[DEVIATION]` | HIGH | Intentionally diverged from what the spec says. Requires Architect acknowledgment. |
 | `[DISCOVERY]` | HIGH | Found an unstated requirement during implementation. Requires Architect acknowledgment. |
 | `[INFEASIBLE]` | CRITICAL | Feature cannot be implemented as specified. Builder has halted work. Requires Architect to revise the spec. |
+| `[SPEC_PROPOSAL]` | HIGH | Proposes a new or modified spec/anchor node for Architect review. |
 
-**Constraint:** A feature with unacknowledged `[DEVIATION]` or `[DISCOVERY]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
+**Constraint:** A feature with unacknowledged `[DEVIATION]`, `[DISCOVERY]`, or `[SPEC_PROPOSAL]` entries generates HIGH-priority Architect action items in the Critic report. A feature with `[INFEASIBLE]` generates a CRITICAL-priority Architect action item and the Builder skips the feature entirely.
 
-**Acknowledgment Detection:** A bracket-tagged entry is considered acknowledged when its line contains `Acknowledged` (case-insensitive). Architect workflow: (1) update spec or confirm no change needed, (2) append `Acknowledged.` to the tag line in the companion file. Acknowledged entries are excluded from FAIL status and action item generation. Summary reports include both total and acknowledged counts for transparency.
+**Acknowledgment Detection:** A bracket-tagged entry is considered acknowledged when its line contains `Acknowledged` (case-insensitive). Architect workflow: (1) update spec or confirm no change needed, (2) append `Acknowledged.` to the tag line in the companion file. Acknowledged entries are excluded from FAIL status and action item generation. Summary reports include both total and acknowledged counts for transparency. `[SPEC_PROPOSAL]` entries follow the same acknowledgment convention as `[DEVIATION]` and `[DISCOVERY]`.
 
 **Scope:** The Builder Decision Audit MUST scan ALL files that contain a `## Implementation Notes` section — including anchor nodes (`arch_*.md`, `design_*.md`, `policy_*.md`). Builders may leave `[DISCOVERY]` or `[DEVIATION]` notes in anchor node Implementation Notes when they find anchor-level constraint gaps during implementation. These entries MUST be surfaced as HIGH-priority Architect action items just as they would be in regular feature files. Skipping anchor nodes in this scan is a Critic bug.
 
