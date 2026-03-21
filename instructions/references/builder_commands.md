@@ -29,6 +29,7 @@ Tell it what to build or let it pick up the next item.
   Implementation
   ──────
   /pl-build [name]           Implement pending work or a specific feature
+  /pl-unit-test [name]       Run unit test protocol with quality rubric
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)
@@ -74,6 +75,7 @@ Tell it what to build or let it pick up the next item.
   Implementation
   ──────
   /pl-build [name]           Implement pending work or a specific feature
+  /pl-unit-test [name]       Run unit test protocol with quality rubric
   /pl-delivery-plan          Create or review phased delivery plan
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-spec-code-audit        Full spec-code audit (plan mode)

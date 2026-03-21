@@ -39,7 +39,8 @@ Tests operate in three tiers with different triggers, owners, and performance pr
 
 **Tier rules:**
 
-- **Unit:** Always runs during Builder Step 3. Covers import-and-call, exit code, and value assertions.
+- **Unit:** Always runs during Builder Step 3. Covers import-and-call, exit code, and value assertions. Protocol: `/pl-unit-test`.
+- **Fixture scope:** The Builder does NOT set up fixtures during unit testing (Step 3). Fixture-backed testing is regression-tier (QA-owned).
 - **Spot Check:** Runs during Builder Step 3 ONLY for features with `> Web Test:` metadata AND a Visual Specification section. All other features skip spot checks during build.
 - **Regression:** QA-owned end-to-end. QA authors the harness scripts, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back via `tests.json`. The Builder's only role in regression is consuming results to fix code.
 

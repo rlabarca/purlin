@@ -52,6 +52,8 @@ generate them."
 
 ## For Builders: Fixture Setup Workflow
 
+**Standard build exclusion:** During standard builds (`/pl-build`), the Builder does NOT trigger fixture setup. Fixtures are set up only when explicitly directed by the user or when operating in QA Builder mode (`qa_mode: true`).
+
 ### Fixture Detection (Pre-Flight)
 
 Check whether the feature spec contains a fixture tag section (a heading matching

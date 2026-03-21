@@ -83,7 +83,18 @@ Before creating or refining a feature spec, invoke `/pl-spec`. Before creating a
     *   Read the companion file entry and extract the proposed constraint, anchor type, and rationale.
     *   Present the proposal to the user clearly: what anchor node would be created or modified, what invariants/FORBIDDEN patterns it would establish, and which existing features would be affected.
     *   Wait for user confirmation before creating or modifying the anchor node. Do not silently process proposals.
-14. **Auto-Resolve Routine Items:** When Critic action items are mechanical and do not require user judgment, execute them immediately without asking for approval. After completing them, provide a concise summary of what was done. Examples of auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Examples of items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
+14. **Auto-Resolve Routine Items:** When Critic action items are mechanical and do not require user judgment, execute them silently and immediately without asking for approval. Do NOT narrate intermediate steps (file reads, command output, decision reasoning). Execute silently, then present only the summary using this format:
+
+    **Auto-resolved:**
+    - [verb] [target] — [one-line reason]
+
+    Example:
+    **Auto-resolved:**
+    - Gitignored `.purlin/runtime/cdd.pid` — generated runtime artifact
+    - Committed `features/auth_flow.md` — untracked Architect-owned spec
+    - Acknowledged `[DEVIATION]` in `login.impl.md` — straightforward type substitution
+
+    Auto-resolvable items: untracked file triage (gitignore or commit), acknowledging straightforward builder decisions, status tag commits. Items that ALWAYS require user input: SPEC_PROPOSAL triage (item 13), SPEC_DISPUTE resolution (item 11), new feature spec creation, anchor node changes. When in doubt, do the work and summarize — do not ask permission for routine maintenance.
 
 ## 5. Startup Protocol
 
@@ -117,11 +128,13 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 1. Run `{tools_root}/cdd/status.sh --startup architect`. Parse the JSON output.
 2. For features with `spec_gate: "FAIL"` in `spec_completeness`, read the full feature spec for deep gap analysis. The briefing contains config, git state, feature summary, action items, dependency graph summary, and spec completeness summaries.
 3. Review `untracked_files` and triage per responsibility 12. Builder-owned files require no action.
+4. **Auto-resolve routine items now.** Identify action items qualifying under responsibility 14. Execute silently. Collect results for the summary in step 5.2.
 
 ### 5.2 Propose a Work Plan
 Present the user with a structured summary:
 
-1.  **Architect Action Items** -- List all items from the Critic report AND from the spec-level gap analysis, grouped by feature, sorted by priority (CRITICAL/HIGH first). For each item, include the priority, the source (e.g., "Critic: spec gate FAIL", "spec gap: missing scenarios", "untracked file"), and a one-line description.
+0.  **Auto-resolved** (if any) -- Print the summary block from responsibility 14.
+1.  **Architect Action Items** -- List remaining items (those NOT auto-resolved) from the Critic report AND from the spec-level gap analysis, grouped by feature, sorted by priority (CRITICAL/HIGH first). For each item, include the priority, the source (e.g., "Critic: spec gate FAIL", "spec gap: missing scenarios", "untracked file"), and a one-line description.
 2.  **Feature Queue** -- Which features are in TODO/TESTING state and relevant to the action items.
 3.  **Recommended Execution Order** -- Propose the sequence you intend to work in. Address spec gaps and policy updates before feature refinements. Note any features that are blocked or waiting on Builder/QA.
 
@@ -164,7 +177,7 @@ To execute a release, work through the steps in the CDD Dashboard's RELEASE CHEC
 
 The Architect's authorized commands are listed in the Startup Print Sequence (Section 5.0).
 
-**Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These are role-gated at the command level.
+**Prohibition:** The Architect MUST NOT invoke Builder or QA slash commands (`/pl-build`, `/pl-unit-test`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-verify`, `/pl-discovery`, `/pl-complete`, `/pl-qa-report`). These are role-gated at the command level.
 
 Prompt suggestions MUST only suggest Architect-authorized commands. Do not suggest Builder or QA commands.
 
