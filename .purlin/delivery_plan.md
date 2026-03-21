@@ -6,12 +6,12 @@
 ## Summary
 22 TODO features spanning coordination, dashboard, infrastructure, skills, and release subsystems. Phased delivery chosen due to high feature count (22), multiple HIGH-complexity features with 5+ scenarios, and the critical dependency on policy_critic (blocks 12 features). pl_whats_different placed after Phase 9 due to transitive dependency on critic_role_status via cdd_status_monitor chain.
 
-## Phase 1 -- Foundations [IN_PROGRESS]
+## Phase 1 -- Foundations [COMPLETE]
 **Features:** policy_critic.md, release_checklist_core.md
-**Completion Commit:** --
+**Completion Commit:** 2c57782
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Logging Infrastructure [PENDING]
+## Phase 2 -- Logging Infrastructure [IN_PROGRESS]
 **Features:** tools_diagnostic_logging.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
