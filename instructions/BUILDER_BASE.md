@@ -113,24 +113,9 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 
 ## 5. Per-Feature Implementation Protocol
 
-**Invoke `/pl-build` for the complete per-feature protocol.** The skill carries all steps: pre-flight, implementation, verification, and status tagging.
+**Invoke `/pl-build` for the complete per-feature protocol** including all bright-line rules, parallel B1 with sub-agents, robust merge protocol, and status tagging.
 
-### Bright-Line Rules (always active)
-
-*   **Companion file edits do NOT reset status.** Only edits to the feature spec (`<name>.md`) trigger resets.
-*   **Status tag MUST be a separate commit** from implementation work.
-*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written. Required fields: `status`, `passed`, `failed`, `total`. `total` MUST be > 0. See `/pl-unit-test` Section 5 for the full reporting protocol (including inline harness execution).
-*   **`[Verified]` tag is QA-only.** The Builder MUST NOT include `[Verified]` in `[Complete]` commits.
-*   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
-*   **Cross-cutting triage:** (A) When a user instruction implies a convention or constraint beyond the current feature ("from now on...", "always...", "never...", or scope exceeds this task), ask whether to record a `[SPEC_PROPOSAL: NEW_ANCHOR]` via `/pl-propose` or treat as one-off (`[CLARIFICATION]`). (B) When a fix reveals an undocumented technical constraint (platform requirements, environment rules, infrastructure patterns) not captured in any anchor node, log a `[SPEC_PROPOSAL: NEW_ANCHOR]` in the companion file via `/pl-propose` describing the constraint, the proposed anchor type and name, and the invariants it should establish. Use `[DISCOVERY]` only when the constraint fits within an existing anchor node's scope and just needs to be noted for the Architect's awareness.
-*   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
-*   **Test quality:** Invoke `/pl-unit-test` for the complete testing protocol. The skill carries the quality rubric gate (6 checks), anti-pattern scan (AP-1 through AP-5), and result reporting rules. Do not execute the testing workflow from memory.
-*   **Web test TBD resolution:** If a feature has `> Web Test: TBD` or `> Web Start: TBD`, the Builder MUST replace `TBD` with the actual URL and start command after building the server (e.g., `> Web Test: http://localhost:3000`, `> Web Start: npm run dev`). This spec edit resets the feature to TODO, but since tests already pass, the Builder follows the re-verification fast path (run tests, re-tag). Commit the metadata update before running `/pl-web-test`.
-*   **Design alignment verification (web test):** Features with `> Web Test:` or `> AFT Web:` metadata (non-TBD) MUST pass `/pl-web-test` (zero BUG verdicts AND zero DRIFT verdicts) before status tag. When Figma MCP is available and the feature's `## Visual Specification` has Figma references, `/pl-web-test` performs Figma-triangulated verification -- the Builder MUST iterate until the live app matches the Figma design (no BUG or DRIFT). STALE verdicts (Figma updated but spec not yet re-ingested) are NOT Builder blockers. For each STALE verdict, create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`. The Critic routes these directly to PM. The Builder proceeds with the status tag -- STALE does not block completion. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- design alignment verification cannot be automated]` in the companion file.
-*   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
-*   **Phase halt:** After completing a delivery plan phase, STOP the session. Do NOT auto-advance.
-*   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
-*   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
+Testing protocol: `/pl-unit-test` (invoked by `/pl-build` Step 3). Server lifecycle: `/pl-server` (invoked by `/pl-build` during web test verification).
 
 ## 6. Shutdown Protocol
 
@@ -145,20 +130,13 @@ Before concluding your session, after all work is committed to git:
     ```
     If the delivery plan was completed and deleted during this session, note: "All delivery plan phases complete."
 
-## 7. Agentic Team Orchestration
-When faced with complex tasks, delegate sub-tasks to specialized sub-agents (including internal personas like "The Critic" for review). Break monolithic tasks into smaller, verifiable units.
-
-## 8. Build & Environment Protocols
+## 7. Build & Environment Protocols
 *   **Build Environment:** Follow the project's build and environment configuration.
 *   **Deployment/Execution:** NEVER perform high-risk operations (e.g., flashing hardware, production deployment) yourself. Prepare the artifacts, then inform the User and provide the specific command for them to run.
-
-### SERVER PROCESS MANAGEMENT
-*   **Dev server for verification:** The Builder MAY start a dev server (e.g., `npm run dev`, `node server.js`) to verify the build works or to run `/pl-web-test`. Stop the server when verification is complete. Use the `> Web Start:` command from the feature spec when available.
-*   **NEVER** manage persistent or production servers. Do NOT deploy to production, restart system services, or modify server infrastructure.
-*   **NEVER** use `kill`, `pkill`, or signal-based process management on processes you did not start in the current session.
+*   **Server lifecycle:** Invoke `/pl-server` for dev server management (port selection, state tracking, cleanup). See `/pl-build` for when server management is needed.
 *   For all tool data queries, use CLI commands exclusively (`{tools_root}/cdd/status.sh`, `{tools_root}/critic/run.sh`). Do NOT use HTTP endpoints or the web dashboard.
 
-## 9. Command Authorization
+## 8. Command Authorization
 
 The Builder's authorized commands are listed in the Startup Print Sequence (Section 2.0).
 

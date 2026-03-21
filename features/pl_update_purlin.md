@@ -61,9 +61,9 @@ full analysis to Section 2.8.
 
 1. Read old SHA from `.purlin/.upstream_sha`
 2. Read new SHA (the target remote commit determined in Section 2.3)
-3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/` to identify upstream-changed command files in a single invocation. Also check launcher-relevant paths (`tools/init.sh`) in the same or a second `diff-tree` call.
-4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/` and no launcher-relevant paths changed, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
-5. For each `.claude/commands/pl-*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
+3. Run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify upstream-changed command and agent files in a single invocation. Also check launcher-relevant paths (`tools/init.sh`) in the same or a second `diff-tree` call.
+4. **Early exit:** If diff-tree returns zero changes in `.claude/commands/`, `.claude/agents/`, and no launcher-relevant paths changed, skip the per-file comparison entirely -- no local modifications can conflict. Proceed directly to Section 2.5.
+5. For each `.claude/commands/pl-*.md` or `.claude/agents/*.md` that appears in BOTH the consumer project AND the upstream diff-tree output (excluding `pl-edit-base.md`):
    - Compare local file against old upstream version: `git -C <submodule> show <old_sha>:.claude/commands/<file>`
    - If they differ, flag as "locally modified"
 6. For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
@@ -108,6 +108,7 @@ After prerequisite validation, run `<submodule>/tools/init.sh --quiet` to refres
 project-root artifacts:
 
 *   Command files (new/updated `.claude/commands/pl-*.md` are copied; locally modified files are preserved by init's timestamp logic)
+*   Agent files (new/updated `.claude/agents/*.md` are copied; locally modified files are preserved by init's timestamp logic)
 *   CDD convenience symlinks (repaired if missing or corrupted)
 *   Launcher scripts (`pl-run-*.sh` regenerated)
 *   Project-root shim (`pl-init.sh` updated with new SHA and version)
@@ -419,6 +420,21 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     When /pl-update-purlin is invoked
     Then the skill prints: "/pl-update-purlin is only for consumer projects using Purlin as a submodule."
     And the skill exits without making any changes
+
+#### Scenario: Unmodified Agent Files Auto-Updated
+    Given builder-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/builder-worker.md matches the old upstream version
+    When /pl-update-purlin is invoked and update completes
+    Then init.sh auto-copies builder-worker.md from submodule
+    And the report includes the updated file count
+
+#### Scenario: Modified Agent File with Upstream Conflict
+    Given builder-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/builder-worker.md has local modifications
+    When /pl-update-purlin is invoked and update completes
+    Then the skill shows a three-way diff for the agent file
+    And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
+    And waits for user decision
 
 #### Scenario: Fast Path Completes Without Conflict Analysis
     Given the submodule is behind by 5 commits

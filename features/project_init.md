@@ -40,6 +40,7 @@ When `.purlin/` is missing, the script MUST perform all of the following in orde
 4.  **Upstream SHA Recording:** Record the current submodule HEAD SHA to `.purlin/.upstream_sha` (40-character SHA, single line).
 5.  **Launcher Script Generation:** Generate `pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, and `pl-run-pm.sh` at the project root. Each launcher concatenates base + role instruction files with overrides and exports `PURLIN_PROJECT_ROOT`. All MUST be `chmod +x`.
 6.  **Command File Distribution:** Copy `.claude/commands/pl-*.md` from the submodule to `<project_root>/.claude/commands/`. `pl-edit-base.md` MUST NEVER be copied. If a destination file is newer than the source (local modification), skip it.
+6b. **Agent File Distribution:** Copy `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. If the destination directory does not exist, create it. If a destination file is newer than the source (local modification), skip it. Same skip logic as command files.
 7.  **Features Directory:** Create `features/` at the project root if it does not exist.
 8.  **Gitignore Handling:** Warn if `.purlin` appears in `.gitignore`. Read `purlin-config-sample/gitignore.purlin` from the submodule and merge patterns into the consumer's `.gitignore`. For each non-comment, non-blank line in the template, append it if not already present.
 9.  **Shim Generation:** Generate `pl-init.sh` at the project root (Section 2.5).
@@ -59,6 +60,7 @@ When `.purlin/` already exists, the script MUST perform only these updates:
     *   If the destination file exists AND is newer than the source (local modification): skip it.
     *   If the destination file exists AND is older than or same age as the source: overwrite it.
     *   `pl-edit-base.md` MUST NEVER be copied.
+1b. **Agent File Refresh:** Copy/update `.claude/agents/*.md` from the submodule to `<project_root>/.claude/agents/`. Same skip logic as command files: skip locally modified (newer) files, overwrite older or same-age files. If the destination directory does not exist, create it.
 2.  **Upstream SHA Update:** Update `.purlin/.upstream_sha` with the current submodule HEAD SHA.
 3.  **Shim Self-Update:** If `pl-init.sh` at the project root is stale (the embedded SHA or version differs from the current submodule state), regenerate it (Section 2.5).
 4.  **CDD Symlink Repair:** If either CDD convenience symlink is missing, recreate it (Section 2.6).
@@ -219,6 +221,12 @@ The test script MUST include assertions for all of the following. Each test MUST
 39. **Graceful skip when manifest file missing:** Remove `tools/mcp/manifest.json` from the submodule. Run `init.sh`. Assert init completes successfully. Assert an informational skip message is printed.
 40. **Post-install notes displayed for OAuth servers:** Run `init.sh` with a manifest containing a server with `post_install_notes`. Assert the notes text appears in the output.
 41. **Partial failure (one server fails, other still installs):** Configure the manifest so one server's install command fails. Run `init.sh`. Assert the other server is still installed. Assert the failure is reported but init completes successfully.
+
+**Agent File Tests:**
+
+28. **Agent files copied on full init:** Run `init.sh` in a clean sandbox with `.claude/agents/` containing test files. Assert `.claude/agents/` exists at the project root with the expected files.
+29b. **Agent files refreshed on refresh:** Add a new agent file to the submodule's `.claude/agents/`. Run refresh. Assert it appears at the project root.
+29c. **Locally modified agent files preserved on refresh:** Touch a project-root agent file to make it newer. Run refresh. Assert the file was NOT overwritten.
 
 **Standalone Guard Tests:**
 
@@ -487,6 +495,31 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     When the user inspects "purlin/pl-init.sh"
     Then it is a symlink pointing to "tools/init.sh"
     And running "purlin/pl-init.sh" behaves identically to running "purlin/tools/init.sh"
+
+#### Scenario: Full Init Copies Agent Files
+
+    Given Purlin is added as a submodule at "purlin/"
+    And the submodule has .claude/agents/builder-worker.md and verification-runner.md
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/agents/ exists at the project root
+    And .claude/agents/builder-worker.md is copied from the submodule
+    And .claude/agents/verification-runner.md is copied from the submodule
+
+#### Scenario: Refresh Mode Copies New Agent Files
+
+    Given .purlin/ already exists at the project root
+    And the submodule has a new agent file builder-worker.md in .claude/agents/
+    And no .claude/agents/ directory exists at the project root
+    When the user runs "purlin/tools/init.sh"
+    Then .claude/agents/ is created at the project root
+    And builder-worker.md is copied to .claude/agents/
+
+#### Scenario: Refresh Mode Preserves Locally Modified Agent Files
+
+    Given .purlin/ already exists at the project root
+    And .claude/agents/builder-worker.md at the project root has been locally modified (newer timestamp)
+    When the user runs "purlin/tools/init.sh"
+    Then builder-worker.md is NOT overwritten
 
 #### Scenario: Full Init Stages Only Created Files
 

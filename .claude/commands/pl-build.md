@@ -16,7 +16,7 @@ If an argument was provided, implement the named feature from `features/<arg>.md
 If no argument was provided, read `CRITIC_REPORT.md` (or `${TOOLS_ROOT}/cdd/status.sh --role builder` output), identify the highest-priority Builder action item, and begin implementing it.
 Check `features/tombstones/` first and process any pending tombstones before regular feature work.
 
-If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. Each phase is a separate session -- halt after completing a phase (see Step 4.E).
+If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the current phase only. When `auto_start` is `false` (default), halt after completing a phase (see Step 4.E). When `auto_start` is `true`, auto-advance to the next PENDING phase (see Step 4.E).
 
 ---
 
@@ -27,11 +27,24 @@ If a delivery plan exists and the current phase has 2+ features:
 1. Run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py --intra-phase <current_phase>`.
 2. If a `parallel: true` group exists with 2+ features:
    - Announce: "Features X and Y are independent -- building in parallel."
-   - Launch one Agent call per feature with `isolation: "worktree"`, each running Steps 0-2 only (see `instructions/references/phased_delivery.md` Section 10.13).
-   - Each agent prompt: "Implement feature X ONLY. Steps 0-2 only. No tests, no web tests, no status tags. Do NOT modify the delivery plan."
-   - Merge returned branches: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially.
+   - Spawn one `builder-worker` sub-agent per feature (see `.claude/agents/builder-worker.md`). Each sub-agent runs in an isolated worktree and executes Steps 0-2 only.
+   - Merge returned branches using the **Robust Merge Protocol** (below).
    - After all groups complete, proceed to B2 (full verification on merged code).
 3. If no `parallel: true` groups exist, or the phase has only 1 feature: use the existing sequential per-feature loop below.
+
+### Robust Merge Protocol
+
+After all parallel `builder-worker` sub-agents complete, merge branches sequentially:
+
+1. For each returned branch: `git rebase HEAD <branch>`.
+2. On rebase conflict: check if ALL conflicting files are in the **safe list**:
+   - **Safe files:** `.purlin/delivery_plan.md`, `CRITIC_REPORT.md`, `.purlin/cache/*`.
+   - Safe: auto-resolve by keeping main's version (`git checkout --ours <file>`, `git add <file>`, `git rebase --continue`).
+   - Unsafe (any non-safe file in conflict): `git rebase --abort`, fall back to sequential for THIS feature only.
+3. Loop up to 20 rebase iterations for multi-commit branches.
+4. After successful rebase: fast-forward merge (`git merge <branch> --no-edit`).
+5. On merge conflict: same safe-file auto-resolve, then complete merge. Unsafe conflict = sequential fallback.
+6. Already-merged features from other branches are preserved -- only the failing feature falls back.
 
 ---
 
@@ -99,8 +112,36 @@ If a delivery plan exists and the current phase has 2+ features:
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
 *   **D. Verify:** Run `${TOOLS_ROOT}/cdd/status.sh` and confirm expected state.
-*   **E. Phase check:** If a delivery plan exists and this feature completes the current phase: update plan to COMPLETE, record commit hash, commit plan update. Then STOP the session:
-    ```
-    Phase N of M complete -- [short label]
-    Recommended: run QA to verify Phase N. Relaunch Builder for Phase N+1.
-    ```
+*   **E. Phase check:** If a delivery plan exists and this feature completes the current phase: update plan to COMPLETE, record commit hash, commit plan update. Then check `auto_start`:
+    *   **`auto_start: false` (default):** STOP the session:
+        ```
+        Phase N of M complete -- [short label]
+        Recommended: run QA to verify Phase N. Relaunch Builder for Phase N+1.
+        ```
+    *   **`auto_start: true`:** Auto-advance to the next PENDING phase. Begin Parallel B1 Check or sequential loop for the next phase. Continue until all phases are complete or context is exhausted.
+
+---
+
+## Bright-Line Rules (always active)
+
+These rules are authoritative. They apply to all Builder work regardless of context.
+
+*   **Companion file edits do NOT reset status.** Only edits to the feature spec (`<name>.md`) trigger resets.
+*   **Status tag MUST be a separate commit** from implementation work.
+*   **`tests.json` MUST be produced by an actual test runner** -- never hand-written. Required fields: `status`, `passed`, `failed`, `total`. `total` MUST be > 0. See `/pl-unit-test` Section 5 for the full reporting protocol (including inline harness execution).
+*   **`[Verified]` tag is QA-only.** The Builder MUST NOT include `[Verified]` in `[Complete]` commits.
+*   **Chat is not a communication channel.** Use `/pl-propose` to record findings. The Critic routes them.
+*   **Cross-cutting triage:** (A) When a user instruction implies a convention or constraint beyond the current feature ("from now on...", "always...", "never...", or scope exceeds this task), ask whether to record a `[SPEC_PROPOSAL: NEW_ANCHOR]` via `/pl-propose` or treat as one-off (`[CLARIFICATION]`). (B) When a fix reveals an undocumented technical constraint (platform requirements, environment rules, infrastructure patterns) not captured in any anchor node, log a `[SPEC_PROPOSAL: NEW_ANCHOR]` in the companion file via `/pl-propose` describing the constraint, the proposed anchor type and name, and the invariants it should establish. Use `[DISCOVERY]` only when the constraint fits within an existing anchor node's scope and just needs to be noted for the Architect's awareness.
+*   **Re-verification, not re-implementation:** When the Critic shows `lifecycle_reset` with `has_passing_tests: true` and no scenario diff, run existing tests and re-tag. Do NOT re-implement existing code.
+*   **Test quality:** Invoke `/pl-unit-test` for the complete testing protocol. The skill carries the quality rubric gate (6 checks), anti-pattern scan (AP-1 through AP-5), and result reporting rules. Do not execute the testing workflow from memory.
+*   **Web test TBD resolution:** If a feature has `> Web Test: TBD` or `> Web Start: TBD`, the Builder MUST replace `TBD` with the actual URL and start command after building the server (e.g., `> Web Test: http://localhost:3000`, `> Web Start: npm run dev`). This spec edit resets the feature to TODO, but since tests already pass, the Builder follows the re-verification fast path (run tests, re-tag). Commit the metadata update before running `/pl-web-test`.
+*   **Design alignment verification (web test):** Features with `> Web Test:` or `> AFT Web:` metadata (non-TBD) MUST pass `/pl-web-test` (zero BUG verdicts AND zero DRIFT verdicts) before status tag. When Figma MCP is available and the feature's `## Visual Specification` has Figma references, `/pl-web-test` performs Figma-triangulated verification -- the Builder MUST iterate until the live app matches the Figma design (no BUG or DRIFT). STALE verdicts (Figma updated but spec not yet re-ingested) are NOT Builder blockers. For each STALE verdict, create a `[DISCOVERY]` entry in the feature's discovery sidecar (`features/<name>.discoveries.md`) with `Action Required: PM` and status `OPEN`. The Critic routes these directly to PM. The Builder proceeds with the status tag -- STALE does not block completion. Features with a `## Visual Specification` section but NO web test metadata (`> Web Test:` / `> AFT Web:`) MUST log `[DISCOVERY: feature has Visual Specification but no web test URL -- design alignment verification cannot be automated]` in the companion file.
+*   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
+*   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
+*   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
+
+---
+
+## Server Lifecycle
+
+For dev server management during web test verification, invoke `/pl-server`. The skill handles port management, state tracking, cleanup, and user visibility.

@@ -15,11 +15,13 @@ When the Architect introduces large-scale changes (multiple new feature files, m
 *   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
 
 ## 10.3 Cross-Session Resumption
-Each phase MUST be a separate Builder session. The Builder MUST NOT auto-advance to the next PENDING phase after completing the current one -- it halts and waits for the user to relaunch.
+When `auto_start` is `false` (default), each phase MUST be a separate Builder session. The Builder halts after completing a phase and waits for the user to relaunch.
+
+When `auto_start` is `true`, the Builder auto-advances to the next PENDING phase within the same session. This replaces the bash-based `--continuous` orchestrator with native multi-phase progression.
 
 When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
 
-**Continuous mode exception:** When `--continuous` mode is active, the orchestrator handles phase boundaries automatically. The Builder halts at phase completion as normal, and the orchestrator launches a new session for the next phase without human intervention. QA verification between phases is recommended but does not block subsequent phases -- only CRITICAL issues (INFEASIBLE escalations, missing prerequisites) stop the continuous loop.
+**`--continuous` deprecation:** The `--continuous` flag is deprecated. Use `auto_start: true` in agent config instead. See `features/subagent_parallel_builder.md` Section 2.9.
 
 **Scope Reset on Plan Completion:** When the Builder completes the final phase and deletes the delivery plan, the Builder MUST reset the `change_scope` to `full` for every feature that participated in the plan and still has `builder: "TODO"` status. Targeted scopes are artifacts of the phased delivery -- once the plan is gone, any remaining unbuilt work must be visible under a full scope. This prevents scenarios from becoming invisible to future Builder sessions after the delivery plan context is deleted.
 
@@ -114,11 +116,15 @@ When B2 finds failures, the Builder does NOT blindly attempt a fix. Instead:
 - Add approach guidance to the companion file (Builder reads it next session)
 - Acknowledge the Builder's workaround (unblocks `[Complete]`)
 
-## 10.11 Continuous Phase Mode
+## 10.11 Continuous Phase Mode (DEPRECATED)
 
-The Builder launcher (`pl-run-builder.sh`) supports an opt-in `--continuous` flag that automates the multi-phase delivery cycle. When active, the launcher progresses through all delivery plan phases without human intervention, using an LLM evaluator to decide the correct action after each Builder exit.
+> **Deprecated.** The `--continuous` flag is deprecated. Use `auto_start: true` in agent config instead. The interactive Builder now supports multi-phase auto-progression with `builder-worker` sub-agents. See `features/subagent_parallel_builder.md`. The `--continuous` flag prints a deprecation warning and exits.
 
-### How It Works
+The following describes the legacy behavior for reference during the migration period:
+
+The Builder launcher (`pl-run-builder.sh`) supported an opt-in `--continuous` flag that automated the multi-phase delivery cycle. When active, the launcher progressed through all delivery plan phases without human intervention, using an LLM evaluator to decide the correct action after each Builder exit.
+
+### How It Worked
 
 0. **Bootstrap (if needed):** If no delivery plan exists when `--continuous` is invoked, the launcher runs a one-time bootstrap Builder session. This session runs the standard scope assessment and either creates a delivery plan autonomously or completes the work directly if phasing is not warranted. The bootstrap uses a conservative sizing bias (more/smaller phases, maximize parallelization) to prevent context exhaustion. After plan creation, the user is prompted to approve before the loop begins. See `features/continuous_phase_builder.md` Section 2.15.
 
@@ -176,11 +182,9 @@ Within a single delivery phase, independent features can build in parallel using
 ### Protocol
 
 1. Run `phase_analyzer.py --intra-phase <current_phase>`.
-2. For each `parallel: true` group, launch one Agent call per feature in a single message, each with `isolation: "worktree"`.
-3. Each agent runs `/pl-build` Steps 0-2 for its assigned feature only. No Step 3 (verification), no Step 4 (status tags). The agent prompt includes:
-   - "Implement feature X ONLY. Steps 0-2 only. No tests, no web tests, no status tags."
-   - "Do NOT modify the delivery plan."
-4. After all agents in a group return, merge each worktree branch: `git merge <branch> --no-edit`. On conflict: `git merge --abort`, then re-run that feature sequentially in the main session.
+2. For each `parallel: true` group, spawn one `builder-worker` sub-agent per feature (see `.claude/agents/builder-worker.md`). Each sub-agent runs in an isolated worktree.
+3. Each sub-agent runs `/pl-build` Steps 0-2 for its assigned feature only. No Step 3 (verification), no Step 4 (status tags). The sub-agent definition enforces these constraints via its system prompt.
+4. After all sub-agents in a group return, merge branches using the **Robust Merge Protocol** (see `/pl-build`): rebase-before-merge with safe-file auto-resolve. Unsafe conflicts fall back to sequential for the affected feature only.
 5. Process `parallel: false` groups sequentially, using the standard per-feature loop (Steps 0-2).
 6. After all groups complete, proceed to B2. B2 runs full verification (tests, web tests, Figma) on the merged code in the main session.
 
@@ -190,11 +194,11 @@ Agent tool sub-agents do not have MCP connections. This is why verification is d
 
 ### Merge Conflict Strategy
 
-Merge conflict = sequential fallback. No complex escalation. If `git merge <branch> --no-edit` fails, run `git merge --abort` and re-run that feature sequentially in the main session. This is simple and reliable.
+Uses the **Robust Merge Protocol** defined in `/pl-build`: rebase-before-merge with safe-file auto-resolve. Safe files (`.purlin/delivery_plan.md`, `CRITIC_REPORT.md`, `.purlin/cache/*`) are auto-resolved by keeping main's version. Unsafe conflicts trigger sequential fallback for the affected feature only -- already-merged features are preserved.
 
-### Continuous Mode Cross-Reference
+### Sub-Agent Cross-Reference
 
-Both interactive and continuous mode Builders can use `--intra-phase` for feature-level parallelism within a phase. The execution mechanism differs (Agent tool with worktrees vs bash worktrees in the launcher) but the analyzer and protocol are shared.
+The interactive Builder uses `builder-worker` sub-agents (`.claude/agents/builder-worker.md`) for feature-level parallelism within a phase. The `--continuous` bash orchestrator is deprecated (see Section 10.11). The phase analyzer and protocol are shared across both mechanisms during the migration period.
 
 ### Cross-References
 
