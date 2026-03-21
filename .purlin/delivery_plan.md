@@ -11,12 +11,12 @@
 **Completion Commit:** 2c57782
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Logging Infrastructure [IN_PROGRESS]
+## Phase 2 -- Logging Infrastructure [COMPLETE]
 **Features:** tools_diagnostic_logging.md
-**Completion Commit:** --
+**Completion Commit:** 55fde17
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Config & Skills [PENDING]
+## Phase 3 -- Config & Skills [IN_PROGRESS]
 **Features:** builder_qa_mode.md, pl_cdd.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
