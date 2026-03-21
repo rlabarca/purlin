@@ -248,6 +248,21 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
 *   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
+### 2.14 Parallel Dispatch Bright-Line Rule
+
+The Parallel B1 Check MUST appear as a named bright-line rule in `/pl-build`,
+not only as a standalone section. The rule text:
+
+> **Parallel dispatch is mandatory for multi-feature phases.** When a delivery
+> plan phase has 2+ features, MUST run `phase_analyzer.py --intra-phase` and
+> spawn `builder-worker` sub-agents for any `parallel: true` group BEFORE
+> beginning Step 0 for any feature. Sequential processing of a multi-feature
+> phase without running the analyzer is a protocol violation.
+
+Additionally, Step 4.E auto-progression MUST explicitly reference the Parallel
+B1 Check as mandatory when entering a new phase with 2+ features.
+
+
 ---
 
 ## 3. Scenarios
@@ -516,6 +531,14 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
     When the CDD status computation runs
     Then terminal_identity.md remains in COMPLETE state
     And no Builder action item is generated for it
+
+#### Scenario: Parallel dispatch bright-line rule exists in /pl-build
+
+    Given /pl-build is read
+    When the Bright-Line Rules section is inspected
+    Then it contains a rule about parallel dispatch being mandatory
+    And the rule requires running phase_analyzer.py before Step 0
+    And the rule labels sequential processing of multi-feature phases as a protocol violation
 
 ### Manual Scenarios (Human Verification Required)
 
