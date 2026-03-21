@@ -173,6 +173,21 @@ Run this in a separate terminal:
 Tell me when it finishes.
 ```
 
+### Step R3.5 -- Productive Wait
+
+After printing the command block, offer concurrent work:
+
+```
+While tests run, I can:
+  - Author regression scenarios for other features
+  - Review open discoveries
+  - Generate a QA report (/pl-qa-report)
+
+Say "continue" for other work, or tell me when tests finish.
+```
+
+If the user says "continue", proceed with regression authoring for other features (if any) or discovery review. When the user reports test completion, enter Process Mode for the completed results.
+
 ---
 
 ## Process Mode
