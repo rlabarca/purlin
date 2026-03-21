@@ -81,7 +81,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
     - Each `manual_visual` item: ~1 minute
     - Each `manual_hardware` scenario: ~5 minutes
     Present total: `"Estimated: ~N minutes for M features"`. Consumer projects may override these multipliers in `QA_OVERRIDES.md`.
-*   **Tier classification:** Read `QA_OVERRIDES.md` for a `## Test Priority Tiers` section. If present, parse the feature-to-tier table. Features not listed default to `standard`. Three tiers: `smoke` (critical, verify first), `standard` (default), `full-only` (verify last or skip in quick passes).
+*   **Tier classification:** Read `QA_OVERRIDES.md` for a `## Test Priority Tiers` section. If present, parse the feature-to-tier table (format: `| feature_name | tier |`). Features not listed default to `standard`. Three tiers: `smoke` (critical, verify first), `standard` (default), `full-only` (verify last or skip in quick passes). The Architect classifies tiers during feature design; QA consumes the table. Consumer projects may also customize smoke-only behavior (e.g., verify only the first scenario per smoke feature) and override time estimation multipliers in the same section.
 *   **Verification order:** Present features in this order:
     1. Builder-verified features (auto-pass, zero human time)
     2. Smoke-tier features (shortest first within tier)

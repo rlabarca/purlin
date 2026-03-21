@@ -22,35 +22,5 @@ What IS permitted:
 If the framework itself needs to change, communicate that need to the user.
 Changes to Purlin must be made in the Purlin repository.
 
-## Test Priority Tiers
-
-Classify features for QA verification ordering. QA verifies smoke first,
-standard next, full-only last. Features not listed default to standard.
-
-| Feature | Tier |
-|---------|------|
-<!-- Example:
-| login_flow | smoke |
-| dashboard_core | smoke |
-| user_settings | standard |
-| tooltip_animations | full-only |
--->
-
-### Smoke Tier Behavior (Optional Customization)
-
-<!-- Uncomment to customize smoke-only mode behavior:
-For smoke-tier features in "just smoke" mode, QA may:
-- Verify only the first scenario per feature (quick sanity)
-- Skip visual items (focus on behavioral correctness)
--->
-
-### Time Estimation Multipliers (Optional)
-
-<!-- Uncomment to override default per-item time estimates:
-- manual_interactive: 2 minutes (default)
-- manual_visual: 1 minute (default)
-- manual_hardware: 5 minutes (default)
--->
-
 ## Content Guidance
 This file carries project-specific verification rules and domain context. Workflow procedures and multi-step protocols belong in skill files (`.claude/commands/pl-*.md`), not here.
