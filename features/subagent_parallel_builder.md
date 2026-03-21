@@ -238,7 +238,11 @@ On resume, the Builder:
 *   `/pl-update-purlin` extends conflict detection to also scan `.claude/agents/` for local modifications vs upstream changes.
 *   Same resolution options: "Accept upstream", "Keep current", "Smart merge".
 
-### 2.12 Sync Invariants
+### 2.12 Lifecycle Metadata Hash Exemption
+
+The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value` at the top of feature files) when determining whether a feature spec has changed. Only body content (Overview, Requirements, Scenarios, Visual Specification) contributes to the hash. This uses an explicit allow-list of known metadata keys (`Label`, `Category`, `Prerequisite`, `Owner`, `Web Test`, `Web Start`, `AFT Web`, `AFT Start`, `Test Fixtures`, `Figma Status`, `Regression Coverage`). Unknown blockquote keys are preserved in the hash (conservative).
+
+### 2.13 Sync Invariants
 
 *   `/pl-build` preloading by `builder-worker` auto-syncs all conventions (bright-line rules, commit formats, decision tags) to sub-agents.
 *   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
@@ -504,6 +508,14 @@ On resume, the Builder:
     When /pl-resume restores the session
     Then the checkpoint shows parallel B1 completed
     And the Builder proceeds directly to B2 verification
+
+#### Scenario: Metadata-only spec edit does not reset lifecycle
+
+    Given terminal_identity.md is in COMPLETE state
+    And its only change is removing a > Prerequisite: line
+    When the CDD status computation runs
+    Then terminal_identity.md remains in COMPLETE state
+    And no Builder action item is generated for it
 
 ### Manual Scenarios (Human Verification Required)
 
