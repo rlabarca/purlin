@@ -46,12 +46,12 @@
 **Completion Commit:** 29cfd53
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Critic Routing [IN_PROGRESS]
+## Phase 9 -- Critic Routing [COMPLETE]
 **Features:** critic_role_status.md
-**Completion Commit:** --
+**Completion Commit:** 13e85d9
 **QA Bugs Addressed:** --
 
-## Phase 10 -- Dashboard Cache [PENDING]
+## Phase 10 -- Dashboard Cache [IN_PROGRESS]
 **Features:** git_operation_cache.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
