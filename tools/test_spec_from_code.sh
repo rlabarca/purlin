@@ -179,10 +179,10 @@ else
     log_fail "Anchor template not referenced"
 fi
 
-if grep -q "tools/feature_templates/" "$COMMAND_FILE"; then
-    log_pass "Template path references tools/feature_templates/"
+if grep -q "feature_templates/" "$COMMAND_FILE"; then
+    log_pass "Template path references feature_templates/"
 else
-    log_fail "Template path does not reference tools/feature_templates/"
+    log_fail "Template path does not reference feature_templates/"
 fi
 
 # Check templates actually exist
@@ -261,7 +261,7 @@ else
     log_fail "Phase 4 section missing"
 fi
 
-if grep -q "tools/cdd/status.sh" "$COMMAND_FILE"; then
+if grep -q "cdd/status.sh" "$COMMAND_FILE"; then
     log_pass "CDD status tool referenced for finalization"
 else
     log_fail "CDD status tool not referenced"
@@ -338,7 +338,7 @@ else
 fi
 
 # Verify the command covers all end-to-end outputs: inventory, taxonomy, features, anchors, companion files, CDD status
-E2E_KEYWORDS=("sfc_inventory.md" "sfc_taxonomy.md" "_feature.md" "_anchor.md" "impl.md" "tools/cdd/status.sh" "TODO")
+E2E_KEYWORDS=("sfc_inventory.md" "sfc_taxonomy.md" "_feature.md" "_anchor.md" "impl.md" "cdd/status.sh" "TODO")
 E2E_PASS=true
 for kw in "${E2E_KEYWORDS[@]}"; do
     if ! grep -q "$kw" "$COMMAND_FILE"; then
