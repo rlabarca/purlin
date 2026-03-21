@@ -6,6 +6,32 @@ The test fixture system provides deterministic, reproducible project state for a
 testing. Fixture states are immutable git tags in a dedicated bare repo. See
 `features/test_fixture_repo.md` for the full specification.
 
+## Fixture Lifecycle Summary
+
+    Architect defines fixture tags in feature spec
+      -> Builder creates setup script + fixture repo + tags
+        -> QA references tags in regression scenario JSON
+          -> Harness runner checks out tags at test time
+            -> Fixture cleanup after each scenario
+
+## When Fixtures Are Needed
+
+Fixtures are needed when a test scenario requires specific, controlled project state that cannot be constructed reliably at test time (specific git history, branch topologies, config combinations, database states). If a scenario's Given steps can be satisfied by simple inline setup (create a file, set an env var), fixtures are overkill.
+
+**Decision tree for QA (during `/pl-regression` authoring):**
+1. Does the scenario need controlled project state? No -> use inline `setup_commands` in scenario JSON.
+2. Is the state simple (one file, one config value)? Yes -> use inline `setup_commands`.
+3. Is the state complex (git history, multiple branches, full project snapshot)? Yes -> needs a fixture.
+4. Does a fixture repo exist? Check three-tier resolution:
+   - Per-feature: `> Test Fixtures: <url>` metadata
+   - Project-level: `fixture_repo_url` in `.purlin/config.json`
+   - Convention path: `.purlin/runtime/fixture-repo`
+5. If no fixture repo exists, present options to the user:
+   - **Option A (recommended):** "I'll have the Builder create a local fixture repo at `.purlin/runtime/fixture-repo`. It stays on your machine and is gitignored."
+   - **Option B:** "If you have a shared git repo for fixtures, give me the URL and I'll configure it in `.purlin/config.json`."
+   - **Option C:** "Skip fixtures for now. These scenarios stay as manual verification until fixtures are set up."
+6. Record the decision in `tests/qa/fixture_recommendations.md` for the Builder.
+
 ## For Architects: Fixture-Aware Feature Design
 
 ### When to Use Fixtures
