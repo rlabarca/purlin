@@ -34,7 +34,16 @@ It does NOT mean `purlin/instructions/` — those are inside the submodule and a
 This file carries project-specific bright-line rules and domain context. Workflow procedures and multi-step protocols belong in skill files (`.claude/commands/pl-*.md`), not here.
 
 ## Project-Specific Mandates
-<!-- Add project-specific Architect rules here -->
+
+### Test Priority Tier Classification
+
+When adding features, classify their QA priority tier in `QA_OVERRIDES.md`:
+- `smoke`: Core functionality. If broken, the app is unusable.
+- `standard`: Important but not app-breaking. Default for unclassified features.
+- `full-only`: Polish and edge cases. Verified during full regression only.
+
+When in doubt, classify as `standard`. Promote to `smoke` only for features
+that block all other work when broken.
 
 ## Domain Context
 <!-- Describe the project's domain, key entities, and constraints -->
