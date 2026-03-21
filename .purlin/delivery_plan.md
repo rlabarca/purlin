@@ -41,12 +41,12 @@
 **Completion Commit:** eb26995
 **QA Bugs Addressed:** --
 
-## Phase 8 -- Critic & Release Audit [IN_PROGRESS]
+## Phase 8 -- Critic & Release Audit [COMPLETE]
 **Features:** qa_verification_effort.md, release_audit_automation.md
-**Completion Commit:** --
+**Completion Commit:** 29cfd53
 **QA Bugs Addressed:** --
 
-## Phase 9 -- Critic Routing [PENDING]
+## Phase 9 -- Critic Routing [IN_PROGRESS]
 **Features:** critic_role_status.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
