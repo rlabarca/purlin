@@ -31,12 +31,12 @@
 **Completion Commit:** 75092f9
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Help & Spec Tools [IN_PROGRESS]
+## Phase 6 -- Help & Spec Tools [COMPLETE]
 **Features:** pl_help.md, spec_from_code.md
-**Completion Commit:** --
+**Completion Commit:** 539a8bb
 **QA Bugs Addressed:** --
 
-## Phase 7 -- Timestamp Resilience [PENDING]
+## Phase 7 -- Timestamp Resilience [IN_PROGRESS]
 **Features:** git_timestamp_resilience.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
