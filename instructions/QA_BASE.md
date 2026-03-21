@@ -76,14 +76,37 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   How many features are in TESTING state.
 *   **Per-feature effort:** `"Feature X: Nm manual"` -- only QA-owned manual categories from the `verification_effort` block. Builder-verified features (zero manual scenarios) show as `"builder-verified"`. Include scope mode in parentheses for non-full scopes (e.g., `(targeted: A, B)`, `(cosmetic)`, `(dependency-only)`). See Section 5.0 for scope mode details.
 *   **Total batch size:** Sum all testable items (manual scenarios + visual checklist items) across all TESTING features after scope filtering. Present as: `"Total: N items across M features"`.
+*   **Estimated time:** Compute per-feature estimated verification time from effort data:
+    - Each `manual_interactive` scenario: ~2 minutes
+    - Each `manual_visual` item: ~1 minute
+    - Each `manual_hardware` scenario: ~5 minutes
+    Present total: `"Estimated: ~N minutes for M features"`. Consumer projects may override these multipliers in `QA_OVERRIDES.md`.
+*   **Tier classification:** Read `QA_OVERRIDES.md` for a `## Test Priority Tiers` section. If present, parse the feature-to-tier table. Features not listed default to `standard`. Three tiers: `smoke` (critical, verify first), `standard` (default), `full-only` (verify last or skip in quick passes).
+*   **Verification order:** Present features in this order:
+    1. Builder-verified features (auto-pass, zero human time)
+    2. Smoke-tier features (shortest first within tier)
+    3. Standard-tier features (shortest first within tier)
+    4. Full-only features (last)
+    This ordering knocks items off the list quickly, giving early progress signals.
+*   **Quick mode:** If the user says "just smoke" at any point before or during target identification, filter to smoke-tier features only. Standard and full-only are skipped with: `"Skipping N standard and M full-only features (smoke-only mode)."` If no tier table exists, inform the user: `"No tier classification found in QA_OVERRIDES.md. Verifying all features."`.
 *   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
 *   If a delivery plan exists at `.purlin/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
 *   **Regression authoring targets:** Features with `### Regression Testing` or `## Regression Guidance` sections (or `> Web Test:` metadata), where Builder status is DONE and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. Present alongside verification: `"Regression: N features need scenario authoring"`.
 
 ### 3.3 Execute Verification
-*   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). Auto-verified categories (Web:Test, TestOnly, Skip) are Builder-owned -- QA does not re-verify them. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
+*   **3.3a Auto pass:** Acknowledge Builder-completed features (no QA action needed) and skip cosmetic-scoped features (log skip). Auto-verified categories (Web:Test, TestOnly, Skip) are Builder-owned -- QA does not re-verify them. For features with BOTH Builder-verified items (Web:Test) AND QA-owned items (manual scenarios): credit the visual verification from the Builder's `/pl-web-test` pass. The QA checklist includes only the manual scenarios -- visual items on web-test features are auto-credited. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
 *   **3.3b Interactive pass:** Proceed to human-required items using the batched verification workflow (Section 5). All TESTING features with manual scenarios or visual items are assembled into a single checklist for efficient batch verification.
 *   **3.3c Regression authoring:** If regression authoring targets were discovered in 3.2, invoke `/pl-regression` (enters author mode automatically). For `auto_start: true`, execute after 3.3a auto-pass.
+
+### 3.4 External Execution Protocol
+
+When QA needs the user to run a command externally (regression tests, fixture setup, hardware verification):
+
+1. **Print the exact command** in a fenced code block. Never describe the command in prose -- the user should copy-paste, not assemble.
+2. **Estimate duration** if possible: `"This typically takes ~N minutes for M scenarios."`
+3. **Offer concurrent work:** `"While that runs, I can [author regression scenarios for other features / review open discoveries / generate a QA report]. Say 'continue' for other work, or tell me when the command finishes."`
+4. **When the user reports completion**, resume the paused workflow (process results, continue verification, etc.).
+5. **If the user says the command failed**, ask for the error output and record a `[BUG]` discovery with `Action Required: Builder`.
 
 ## 4. Discovery Protocol
 

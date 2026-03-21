@@ -64,7 +64,7 @@ Agents MUST commit at logical milestones -- never deferring all commits until se
 ## 3. The Lifecycle of a Feature
 1.  **Design:** PM and/or Architect creates/refines a feature file in `features/`. When a PM is active, the PM shapes the initial spec and Visual Specification; the Architect validates it during gap analysis.
 2.  **Implementation:** Builder reads the feature and implementation notes, writes code/tests, and verifies locally.
-3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed.
+3.  **Verification:** QA Agent executes manual scenarios and records discoveries. Human Executive performs final verification as needed. See Section 7.3 for when to invoke QA versus letting the Builder complete features directly.
 4.  **Completion:** If the feature has no manual scenarios, the Builder marks `[Complete]`. If it has manual scenarios, the QA Agent marks `[Complete]` after clean verification.
 5.  **Synchronization:** Architect updates documentation and regenerates the dependency graph.
 
@@ -128,6 +128,16 @@ User Testing Discoveries are stored in **sidecar files** (`features/<name>.disco
 *   **[SPEC_DISPUTE]** -- The user disagrees with a scenario's expected behavior. The spec itself is wrong or undesirable.
 
 Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-discovery` for the full recording and lifecycle protocol.
+
+### 7.3 Testing Responsibility Split
+
+The Builder and QA Agent have non-overlapping testing domains. No test is verified twice.
+
+*   **Builder-owned testing:** Unit tests (`/pl-unit-test`) and web tests (`/pl-web-test`). Results are written to `tests.json`. If all scenarios are automated (no manual scenarios in the spec), the Builder marks `[Complete]` directly -- QA is never invoked.
+*   **QA-owned testing:** Manual scenarios requiring human judgment (`@manual-interactive`, `@manual-visual`, `@manual-hardware`). QA assembles these into a batched checklist via `/pl-verify`. Features with BOTH automated and manual scenarios: QA auto-credits the Builder's automated results and presents only the manual items.
+*   **Handoff signal:** `[Ready for Verification]` = manual scenarios exist, QA needed. `[Complete]` = Builder verified everything, QA not needed.
+*   **Dedup invariant:** QA MUST NOT re-verify Builder-completed automated tests. The auto-pass in QA startup (Section 3.3a of QA_BASE) enforces this.
+*   **Tier-based prioritization:** Consumer projects MAY define test priority tiers (`smoke`, `standard`, `full-only`) in `QA_OVERRIDES.md`. QA reads the tier table and orders verification accordingly. "Just smoke" mode filters to smoke-tier only. See QA_BASE Section 3.2 for details.
 
 ## 8. Protocol Quick Reference
 
