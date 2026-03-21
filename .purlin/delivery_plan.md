@@ -16,12 +16,12 @@
 **Completion Commit:** 55fde17
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Config & Skills [IN_PROGRESS]
+## Phase 3 -- Config & Skills [COMPLETE]
 **Features:** builder_qa_mode.md, pl_cdd.md
-**Completion Commit:** --
+**Completion Commit:** fdb58cd
 **QA Bugs Addressed:** --
 
-## Phase 4 -- Terminal Identity [PENDING]
+## Phase 4 -- Terminal Identity [IN_PROGRESS]
 **Features:** terminal_identity.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
