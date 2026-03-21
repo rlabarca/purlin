@@ -15,6 +15,7 @@ if [ -f "$CORE_DIR/tools/terminal/identity.sh" ]; then
 fi
 
 # --- Parse launcher flags ---
+CONTINUOUS_MODE="false"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --continuous)
@@ -33,6 +34,13 @@ cleanup() {
     rm -f "$PROMPT_FILE"
 }
 trap cleanup EXIT
+
+graceful_stop() {
+    type clear_agent_identity >/dev/null 2>&1 && clear_agent_identity
+    trap - INT
+    kill -INT $$
+}
+trap graceful_stop INT
 
 cat "$CORE_DIR/instructions/HOW_WE_WORK_BASE.md" > "$PROMPT_FILE"
 printf "\n\n" >> "$PROMPT_FILE"
@@ -90,7 +98,40 @@ if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 fi
 
-# --- Launch interactive Builder session ---
-type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
-claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
-exit $?
+# --- Launch ---
+if [ "$CONTINUOUS_MODE" = "true" ]; then
+    # --- Continuous mode (activated by subagent_parallel_builder) ---
+    # Bootstrap phase
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Bootstrap"
+    # (bootstrap work placeholder)
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+
+    # Phase loop
+    PHASE_NUM=0
+    TOTAL_PHASE_COUNT=0
+    PHASE_DISPLAY=""
+    while true; do
+        # Sequential phase execution
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Phase ${PHASE_NUM}/${TOTAL_PHASE_COUNT}"
+
+        # Parallel group execution
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Phases $PHASE_DISPLAY"
+
+        # Evaluator (sequential path)
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
+        # (evaluate sequential)
+
+        # Evaluator (parallel path)
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder: Evaluating"
+        # (evaluate parallel)
+
+        # Between phases reset
+        type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+        break  # placeholder -- real loop logic in subagent_parallel_builder
+    done
+else
+    # --- Non-continuous mode
+    type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Builder"
+    claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Builder session."
+    exit $?
+fi
