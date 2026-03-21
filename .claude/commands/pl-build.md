@@ -46,7 +46,6 @@ If a delivery plan exists and the current phase has 2+ features:
 *   **Companion File:** Read `features/<name>.impl.md` if it exists. Also read prerequisite companion files.
 *   **Prerequisite Stability:** For each `> Prerequisite:` link to a non-anchor feature, check if that feature is in `[TODO]` status. If so, read its full spec (`features/<prereq>.md`) to understand the unstable contract. Log `[CLARIFICATION] Prerequisite <name> is in TODO -- reviewed spec for stability` in the companion file.
 *   **Verify Status:** Confirm the target feature is in the expected state per CDD status.
-*   **Fixture Detection:** If the spec contains a fixture tag section (`### 2.x ... Fixture Tags`), run `/pl-fixture` for setup.
 *   **New Scenario Detection:** Diff `#### Scenario:` headings against existing tests. New headings without coverage = real work. When `tests.json` reports `total: 0` or is missing, treat as "no tests exist."
 
 ### Step 1 -- Acknowledge and Plan
@@ -71,10 +70,14 @@ If a delivery plan exists and the current phase has 2+ features:
 
 ### Step 3 -- Verify Locally
 
-*   **Tests:** Run feature-specific tests. Results to `tests/<feature_name>/tests.json` with `{"status": "PASS", "passed": N, "failed": 0, "total": N}`. `total` MUST be > 0. File MUST be produced by an actual test runner (anti-stub mandate).
-*   **Test Quality Self-Audit:** Audit each test against `features/policy_test_quality.md`: (1) Deletion test -- would it fail if implementation deleted? (2) Anti-pattern scan (AP-1 through AP-5). (3) Value assertion check. Record audit in companion file under `### Test Quality Audit`.
-*   **Design alignment verification (if eligible):** For features with `> Web Test:` or `> AFT Web:`, run `/pl-web-test` and iterate until zero BUG and DRIFT verdicts (see bright-line rules). When the feature has Figma-referenced Visual Specifications, this step verifies the implementation matches the Figma design.
-*   **Self-Test Completeness:** Validate `tests.json`: required fields present, `total > 0`, no inconsistencies.
+*   **Unit tests:** Invoke `/pl-unit-test` for the complete testing protocol
+    (quality rubric, anti-pattern checks, result reporting). The skill writes
+    `tests/<feature_name>/tests.json` upon successful rubric gate passage.
+*   **Design alignment verification (if eligible):** For features with
+    `> Web Test:` or `> AFT Web:`, run `/pl-web-test` and iterate until zero
+    BUG and DRIFT verdicts (see bright-line rules). When the feature has
+    Figma-referenced Visual Specifications, this step verifies the
+    implementation matches the Figma design.
 *   If tests fail, fix and repeat from Step 2.
 
 ### Step 4 -- Status Tag Commit (SEPARATE COMMIT)
