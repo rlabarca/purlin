@@ -118,7 +118,7 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
         Phase N of M complete -- [short label]
         Recommended: run QA to verify Phase N. Relaunch Builder for Phase N+1.
         ```
-    *   **`auto_start: true`:** Auto-advance to the next PENDING phase. Begin Parallel B1 Check or sequential loop for the next phase. Continue until all phases are complete or context is exhausted.
+    *   **`auto_start: true`:** Auto-advance to the next PENDING phase. If the next phase has 2+ features, the Parallel B1 Check is mandatory (see bright-line rule: "Parallel dispatch is mandatory for multi-feature phases"). Begin Parallel B1 Check or sequential loop for the next phase. Continue until all phases are complete or context is exhausted.
 
 ---
 
@@ -139,6 +139,7 @@ These rules are authoritative. They apply to all Builder work regardless of cont
 *   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
 *   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
 *   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
+*   **Parallel dispatch is mandatory for multi-feature phases.** When a delivery plan phase has 2+ features, MUST run `phase_analyzer.py --intra-phase` and spawn `builder-worker` sub-agents for any `parallel: true` group BEFORE beginning Step 0 for any feature. Sequential processing of a multi-feature phase without running the analyzer is a protocol violation.
 
 ---
 

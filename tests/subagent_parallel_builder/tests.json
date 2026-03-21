@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 41, "failed": 0, "total": 41, "test_file": "tools/test_subagent_parallel_builder.sh"}
+{"status": "PASS", "passed": 51, "failed": 0, "total": 51, "test_file": "tools/test_subagent_parallel_builder.sh"}

@@ -329,6 +329,45 @@ fi
 
 ###############################################################################
 echo ""
+echo "=== Parallel Dispatch Bright-Line Rule Tests ==="
+###############################################################################
+
+# --- Scenario: Parallel dispatch bright-line rule exists in /pl-build ---
+echo ""
+echo "[Scenario] Parallel dispatch bright-line rule exists in /pl-build"
+
+PB_FILE="$PROJECT_ROOT/.claude/commands/pl-build.md"
+
+# Rule about parallel dispatch being mandatory must exist in Bright-Line Rules section
+if grep -q 'Parallel dispatch is mandatory for multi-feature phases' "$PB_FILE" 2>/dev/null; then
+    log_pass "/pl-build contains parallel dispatch bright-line rule"
+else
+    log_fail "/pl-build missing parallel dispatch bright-line rule"
+fi
+
+# Rule must require running phase_analyzer.py before Step 0
+if grep -q 'phase_analyzer.py --intra-phase' "$PB_FILE" 2>/dev/null && grep -q 'BEFORE beginning Step 0' "$PB_FILE" 2>/dev/null; then
+    log_pass "Rule requires running phase_analyzer.py before Step 0"
+else
+    log_fail "Rule missing requirement to run phase_analyzer.py before Step 0"
+fi
+
+# Rule must label sequential processing as protocol violation
+if grep -q 'protocol violation' "$PB_FILE" 2>/dev/null; then
+    log_pass "Rule labels sequential processing as protocol violation"
+else
+    log_fail "Rule missing protocol violation label"
+fi
+
+# Step 4.E auto-progression must reference the Parallel B1 Check
+if grep -qi 'Parallel B1 Check is mandatory' "$PB_FILE" 2>/dev/null; then
+    log_pass "Step 4.E references Parallel B1 Check for multi-feature phases"
+else
+    log_fail "Step 4.E missing Parallel B1 Check reference"
+fi
+
+###############################################################################
+echo ""
 echo "=== Architect Tool Enforcement Tests ==="
 ###############################################################################
 
@@ -348,6 +387,63 @@ if grep -q 'Write,Edit,NotebookEdit' "$ARCH_LAUNCHER" 2>/dev/null; then
     log_pass "Architect --disallowedTools blocks Write,Edit,NotebookEdit"
 else
     log_fail "Architect --disallowedTools has wrong value"
+fi
+
+# --- Scenario: Hook fallback blocks Write/Edit when AGENT_ROLE is architect ---
+echo ""
+echo "[Scenario] Hook fallback blocks Write/Edit when AGENT_ROLE is architect"
+
+SETTINGS_FILE="$PROJECT_ROOT/.claude/settings.json"
+
+if grep -q 'PreToolUse' "$SETTINGS_FILE" 2>/dev/null; then
+    log_pass "settings.json contains PreToolUse hook section"
+else
+    log_fail "settings.json missing PreToolUse hook section"
+fi
+
+if grep -q 'AGENT_ROLE.*architect' "$SETTINGS_FILE" 2>/dev/null; then
+    log_pass "PreToolUse hook checks AGENT_ROLE for architect"
+else
+    log_fail "PreToolUse hook missing AGENT_ROLE architect check"
+fi
+
+if grep -q 'Write|Edit|NotebookEdit' "$SETTINGS_FILE" 2>/dev/null || grep -q 'Write.*Edit.*NotebookEdit' "$SETTINGS_FILE" 2>/dev/null; then
+    log_pass "PreToolUse hook blocks Write/Edit/NotebookEdit for architect"
+else
+    log_fail "PreToolUse hook missing Write/Edit/NotebookEdit block"
+fi
+
+if grep -q 'exit 2' "$SETTINGS_FILE" 2>/dev/null; then
+    log_pass "PreToolUse hook exits with code 2"
+else
+    log_fail "PreToolUse hook missing exit code 2"
+fi
+
+###############################################################################
+echo ""
+echo "=== Resume Protocol Tests ==="
+###############################################################################
+
+# --- Scenario: Resume checkpoint format includes Parallel B1 State ---
+echo ""
+echo "[Scenario] Resume checkpoint includes Parallel B1 State field"
+
+RESUME_FILE="$PROJECT_ROOT/.claude/commands/pl-resume.md"
+
+if grep -q 'Parallel B1 State' "$RESUME_FILE" 2>/dev/null; then
+    log_pass "pl-resume checkpoint includes Parallel B1 State field"
+else
+    log_fail "pl-resume checkpoint missing Parallel B1 State field"
+fi
+
+# --- Scenario: Resume includes orphaned worktree branch recovery ---
+echo ""
+echo "[Scenario] Resume includes orphaned sub-agent branch recovery"
+
+if grep -qi 'worktree-\*\|orphaned.*worktree\|Orphaned Sub-Agent' "$RESUME_FILE" 2>/dev/null; then
+    log_pass "pl-resume includes orphaned worktree branch recovery"
+else
+    log_fail "pl-resume missing orphaned worktree branch recovery"
 fi
 
 ###############################################################################

@@ -57,6 +57,7 @@ Append these sections after the common fields:
 ## Builder Context
 **Protocol Step:** <0-preflight | 1-acknowledge/plan | 2-implement/document | 3-verify locally | 4-commit status tag>
 **Delivery Plan:** <Phase X of Y -- STATUS, or "No delivery plan">
+**Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
 **Work Queue:**
 1. [PRIORITY] feature_name.md
 **Pending Decisions:** <decisions not yet recorded in companion files, or "None">
@@ -147,6 +148,17 @@ When the system prompt already contains the role instructions (agent was started
 Print a single line: `Commands: /pl-help for full list`
 
 Do NOT read or print the full command table file. The one-liner is sufficient for resumed sessions.
+
+### Step 4b -- Orphaned Sub-Agent Branch Recovery (Builder only)
+
+On resume, the Builder MUST check for orphaned worktree branches matching the pattern `worktree-*`:
+
+```bash
+git branch --list 'worktree-*'
+```
+
+*   **If found:** Attempt to merge them using the Robust Merge Protocol from `/pl-build`. After successful merges, continue with remaining work.
+*   **If not found:** The sub-agents either completed and merged, or never started. The delivery plan + Critic state tells the Builder what remains.
 
 ### Step 5 -- Gather Fresh Project State
 
