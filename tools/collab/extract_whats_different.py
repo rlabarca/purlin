@@ -38,7 +38,12 @@ def _run_git(args, cwd=None):
 
 def compute_sync_state(branch_name):
     """Determine SAME/AHEAD/BEHIND/DIVERGED between HEAD and remote branch."""
-    remote_ref = f'{REMOTE}/{branch_name}'
+    # Try collab/ prefix first (convention), then bare name
+    collab_ref = f'{REMOTE}/collab/{branch_name}'
+    bare_ref = f'{REMOTE}/{branch_name}'
+    # Use collab ref if it exists, otherwise bare
+    check = _run_git(['rev-parse', '--verify', collab_ref])
+    remote_ref = collab_ref if check.strip() else bare_ref
     local_ref = 'HEAD'
 
     # Commits HEAD has that remote does not
