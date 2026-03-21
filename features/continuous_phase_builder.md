@@ -160,7 +160,7 @@ During execution, the continuous builder creates transient runtime artifacts in 
 
 - **Exit cleanup:** After the exit summary prints (which is the last consumer of these files), delete all transient artifacts: `phase_*_meta`, `canvas_frozen_*`, `retry_count_*`, `plan_amendment_phase_*.json`, `approval_table_lines`, `canvas_state`, `remediation_attempt_*`, `interphase_critic_summary.md`, `remediation_phase_*_prompt.txt`. Log files are preserved after exit — the exit summary references their paths, and the user may want to inspect them. The next startup purge will delete them.
 
-**Not cleaned up (intentional):** Log files are preserved after exit but purged on the next startup. The `agent_role` file and `term_width` file (Section 2.17) persist across runs by design.
+**Not cleaned up (intentional):** Log files are preserved after exit but purged on the next startup. The `term_width` file (Section 2.17) persists across runs by design.
 
 ### 2.12 Default Behavior Preservation
 
