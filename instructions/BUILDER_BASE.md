@@ -107,9 +107,14 @@ For each tombstone in `features/tombstones/`, execute this protocol before start
 3.  Update or remove any code in "Dependencies to Check" that referenced the deleted code.
 4.  Run the project's test suite to confirm nothing is broken.
 5.  Commit the deletions: `git commit -m "feat(<scope>): remove retired <feature_name> code"`.
-6.  Delete the tombstone file itself: `features/tombstones/<feature_name>.md`.
-7.  Commit the tombstone deletion: `git commit -m "chore: remove tombstone for <feature_name>"`.
-8.  Run `{tools_root}/cdd/status.sh` to confirm the Critic no longer surfaces this tombstone.
+6.  Delete ALL remaining artifacts for the retired feature:
+    *   `features/tombstones/<feature_name>.md` (the tombstone itself)
+    *   `features/<feature_name>.md` (the feature spec)
+    *   `features/<feature_name>.impl.md` (companion file, if exists)
+    *   `features/<feature_name>.discoveries.md` (discovery sidecar, if exists)
+    *   `tests/<feature_name>/` (test directory, if exists)
+7.  Commit the cleanup: `git commit -m "chore: remove tombstone and spec for <feature_name>"`.
+8.  Run `{tools_root}/cdd/status.sh` to confirm the Critic no longer surfaces this feature.
 
 ## 5. Per-Feature Implementation Protocol
 

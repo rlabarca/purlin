@@ -1,1 +1,0 @@
-{"status": "PASS", "passed": 1, "failed": 0, "total": 1, "test_file": "tools/test_subagent_parallel_builder.sh", "note": "Feature retired via tombstone 2026-03-21. Deprecation flag test in subagent_parallel_builder validates --continuous exits with warning."}
