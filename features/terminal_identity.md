@@ -3,7 +3,6 @@
 > Label: "Tool: Terminal Identity (Title + Badge)"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/agent_launchers_common.md
-> Prerequisite: features/continuous_phase_builder.md
 > Prerequisite: features/project_init.md
 
 ## 1. Overview
