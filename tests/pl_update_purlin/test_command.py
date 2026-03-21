@@ -36,6 +36,8 @@ Covers automated scenarios from features/pl_update_purlin.md:
 - Removed MCP Server Generates Advisory
 - Changed MCP Server Configuration Advisory
 - No MCP Output When Manifest Unchanged
+- Unmodified Agent Files Auto-Updated
+- Modified Agent File with Upstream Conflict
 
 The agent command is a Claude skill defined in .claude/commands/pl-update-purlin.md.
 These tests verify the command file structure, referenced infrastructure,
@@ -531,7 +533,7 @@ class TestDiffTreeEarlyExitSkipsPerFileScan(unittest.TestCase):
         """Command instructs skipping per-file scan when diff-tree shows no changes."""
         content = _get_command_content()
         self.assertIn(
-            'no command files or launcher scripts changed upstream, '
+            'no command files, agent files, or launcher scripts changed upstream, '
             'skip the remainder of this step',
             content.lower())
 
@@ -556,7 +558,7 @@ class TestDiffTreeNarrowsPerFileScan(unittest.TestCase):
         """Command instructs checking only files that appear in diff-tree output."""
         content = _get_command_content()
         self.assertIn(
-            'files that appear in both the consumer project and the diff-tree output',
+            'that appear in both the consumer project and the diff-tree output',
             content.lower())
 
     def test_command_compares_against_old_upstream_version(self):
@@ -1009,6 +1011,70 @@ class TestNoMCPOutputWhenManifestUnchanged(unittest.TestCase):
             'diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> '
             '-- tools/mcp/manifest.json',
             content)
+
+
+class TestUnmodifiedAgentFilesAutoUpdated(unittest.TestCase):
+    """Scenario: Unmodified Agent Files Auto-Updated
+
+    Given builder-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/builder-worker.md matches the old upstream version
+    When /pl-update-purlin is invoked and update completes
+    Then init.sh auto-copies builder-worker.md from submodule
+    And the report includes the updated file count
+    """
+
+    def test_command_scans_agent_files_in_diff_tree(self):
+        """Command's diff-tree invocation includes .claude/agents/ path."""
+        content = _get_command_content()
+        self.assertIn('.claude/agents/', content)
+
+    def test_command_references_agent_file_comparison(self):
+        """Command references comparing agent files against old upstream version."""
+        content = _get_command_content()
+        self.assertIn('agent files', content.lower())
+
+    def test_init_sh_handles_agent_file_distribution(self):
+        """init.sh has copy_agent_files function for agent file distribution."""
+        init_path = os.path.join(PROJECT_ROOT, 'tools', 'init.sh')
+        with open(init_path) as f:
+            init_content = f.read()
+        self.assertIn('copy_agent_files', init_content)
+
+    def test_agents_directory_exists(self):
+        """The .claude/agents/ directory exists in the framework."""
+        agents_dir = os.path.join(PROJECT_ROOT, '.claude', 'agents')
+        self.assertTrue(os.path.isdir(agents_dir))
+
+
+class TestModifiedAgentFileWithUpstreamConflict(unittest.TestCase):
+    """Scenario: Modified Agent File with Upstream Conflict
+
+    Given builder-worker.md changed upstream in .claude/agents/
+    And the consumer's .claude/agents/builder-worker.md has local modifications
+    When /pl-update-purlin is invoked and update completes
+    Then the skill shows a three-way diff for the agent file
+    And offers merge strategies: "Accept upstream", "Keep current", "Smart merge"
+    And waits for user decision
+    """
+
+    def test_command_handles_agent_file_conflicts(self):
+        """Command's conflict resolution covers agent files."""
+        content = _get_command_content()
+        # Conflict resolution step should mention agent files
+        self.assertIn('agent file', content.lower())
+
+    def test_command_offers_merge_strategies_for_agent_files(self):
+        """Command offers the same merge strategies for agent files as command files."""
+        content = _get_command_content()
+        self.assertIn('Accept upstream', content)
+        self.assertIn('Keep current', content)
+        self.assertIn('Smart merge', content)
+
+    def test_conflict_resolution_covers_both_command_and_agent(self):
+        """Conflict resolution step handles both command and agent files."""
+        content = _get_command_content()
+        # Step 5 should reference both command and agent files
+        self.assertIn('command or agent file', content.lower())
 
 
 if __name__ == '__main__':

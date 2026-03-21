@@ -20,11 +20,14 @@ Update the Purlin submodule to the latest version with automatic artifact refres
 
 2. **Pre-Update Conflict Scan:**
    - Read old SHA from `.purlin/.upstream_sha`
-   - First, run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/` to identify which command files changed upstream (single invocation). Also check launcher-relevant paths (e.g., `tools/init.sh`).
+   - First, run `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- .claude/commands/ .claude/agents/` to identify which command and agent files changed upstream (single invocation). Also check launcher-relevant paths (e.g., `tools/init.sh`).
    - Also check if `tools/mcp/manifest.json` changed: `git -C <submodule> diff-tree --no-commit-id --name-status -r <old_sha> <new_sha> -- tools/mcp/manifest.json`. Record whether the MCP manifest changed (used in step 4b).
-   - **If no command files or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict. (The MCP manifest check above is independent and does not affect this early-exit.)
-   - For files that appear in BOTH the consumer project AND the diff-tree output (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
+   - **If no command files, agent files, or launcher scripts changed upstream, skip the remainder of this step** -- no local modifications can conflict. (The MCP manifest check above is independent and does not affect this early-exit.)
+   - For command files (`.claude/commands/pl-*.md`) that appear in BOTH the consumer project AND the diff-tree output (excluding `pl-edit-base.md` which is NEVER synced to consumer projects):
      - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/commands/<file>`)
+     - If they differ, flag as "locally modified" for post-update merge
+   - For agent files (`.claude/agents/*.md`) that appear in BOTH the consumer project AND the diff-tree output:
+     - Compare local file against old upstream version (`git -C <submodule> show <old_sha>:.claude/agents/<file>`)
      - If they differ, flag as "locally modified" for post-update merge
    - For each launcher script (`pl-run-architect.sh`, `pl-run-builder.sh`, `pl-run-qa.sh`, `pl-run-pm.sh`):
      - Only check if launcher-relevant paths appeared in the diff-tree output
@@ -61,10 +64,10 @@ Update the Purlin submodule to the latest version with automatic artifact refres
      4. If ANY MCP changes occurred (added, removed, or changed), append to the summary: `"Restart Claude Code to load MCP changes."`
 
 5. **Conflict Resolution (only if step 2 found locally modified files):**
-   - For each flagged command file where upstream ALSO changed the file:
+   - For each flagged command or agent file where upstream ALSO changed the file:
      - Show three-way diff: old upstream, new upstream, local
      - Offer: "Accept upstream", "Keep current", or "Smart merge"
-   - For each flagged command file where upstream did NOT change: no action needed
+   - For each flagged command or agent file where upstream did NOT change: no action needed
    - For each flagged launcher script: same three-way approach
    - **Deleted-upstream commands** (file no longer in upstream):
      - Unmodified locally: auto-delete, report "Removed: <filename>"
