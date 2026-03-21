@@ -34,6 +34,7 @@ from serve import (
     _is_feature_complete,
     _feature_urgency,
     strip_discoveries_section,
+    strip_metadata_lines,
     spec_content_unchanged,
     _qa_badge_html,
 )
@@ -500,6 +501,199 @@ class TestStripDiscoveriesSection(unittest.TestCase):
         content = "# Feature\n\n## 2. Requirements\nReqs.\n"
         result = strip_discoveries_section(content)
         self.assertEqual(result, content)
+
+
+class TestStripMetadataLines(unittest.TestCase):
+    """Unit tests for strip_metadata_lines helper."""
+
+    def test_strips_label(self):
+        content = '> Label: "Foo"\n## 1. Overview\n'
+        result = strip_metadata_lines(content)
+        self.assertNotIn("Label", result)
+        self.assertIn("Overview", result)
+
+    def test_strips_category(self):
+        content = '> Category: "Bar"\n## 1. Overview\n'
+        result = strip_metadata_lines(content)
+        self.assertNotIn("Category", result)
+        self.assertIn("Overview", result)
+
+    def test_strips_prerequisite(self):
+        content = '> Prerequisite: features/foo.md\n## 1. Overview\n'
+        result = strip_metadata_lines(content)
+        self.assertNotIn("Prerequisite", result)
+        self.assertIn("Overview", result)
+
+    def test_strips_web_test(self):
+        content = '> Web Test: http://localhost:3000\n## 1. Overview\n'
+        result = strip_metadata_lines(content)
+        self.assertNotIn("Web Test", result)
+        self.assertIn("Overview", result)
+
+    def test_strips_multiple(self):
+        content = (
+            '> Label: "Tool: Foo"\n'
+            '> Category: "Install"\n'
+            '> Prerequisite: features/arch_data_layer.md\n'
+            '> Prerequisite: features/bar.md\n'
+            '> Web Test: http://localhost:8080\n'
+            '> Owner: PM\n'
+            '\n'
+            '## 1. Overview\nOverview text.\n\n'
+            '## 2. Requirements\nReqs.\n'
+        )
+        result = strip_metadata_lines(content)
+        self.assertNotIn("Label", result)
+        self.assertNotIn("Category", result)
+        self.assertNotIn("Prerequisite", result)
+        self.assertNotIn("Web Test", result)
+        self.assertNotIn("Owner", result)
+        self.assertIn("Overview text.", result)
+        self.assertIn("Reqs.", result)
+
+    def test_preserves_unknown_blockquote(self):
+        content = '> NewThing: value\n## 1. Overview\n'
+        result = strip_metadata_lines(content)
+        self.assertIn("NewThing", result)
+        self.assertIn("Overview", result)
+
+    def test_preserves_body_content(self):
+        content = (
+            '> Label: "Foo"\n\n'
+            '## 2. Requirements\n'
+            'The system MUST do X.\n\n'
+            '## 3. Scenarios\n'
+            '#### Scenario: Test\n'
+            '    Given something\n'
+            '    Then something else\n'
+        )
+        result = strip_metadata_lines(content)
+        self.assertIn("The system MUST do X.", result)
+        self.assertIn("#### Scenario: Test", result)
+        self.assertIn("Given something", result)
+
+
+class TestLifecyclePreservedOnMetadataChange(unittest.TestCase):
+    """Scenario: Metadata-only spec edit does not reset lifecycle.
+
+    When a feature is COMPLETE and the only change is to blockquote metadata
+    lines (e.g., removing a > Prerequisite: line), the feature stays COMPLETE.
+    """
+
+    @patch('serve.run_command')
+    def test_metadata_only_change_preserves_status(self, mock_run):
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "> Label: \"Tool: Test\"\n"
+                "> Prerequisite: features/old_dep.md\n"
+                "> Prerequisite: features/other_dep.md\n"
+                "\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## 2. Requirements\nReqs.\n"
+            )
+            # Only metadata changed: removed one prerequisite
+            modified_content = (
+                "# Feature: Test\n\n"
+                "> Label: \"Tool: Test\"\n"
+                "> Prerequisite: features/other_dep.md\n"
+                "\n"
+                "## 1. Overview\nOverview.\n\n"
+                "## 2. Requirements\nReqs.\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(complete), 1)
+                self.assertEqual(complete[0][0], "test.md")
+                self.assertEqual(len(todo), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
+
+    @patch('serve.run_command')
+    def test_body_change_still_resets(self, mock_run):
+        """Regression guard: body changes still reset to TODO."""
+        test_dir = tempfile.mkdtemp()
+        try:
+            features_abs = os.path.join(test_dir, "features")
+            os.makedirs(features_abs)
+
+            committed_content = (
+                "# Feature: Test\n\n"
+                "> Label: \"Tool: Test\"\n"
+                "\n"
+                "## 1. Overview\nOriginal overview.\n\n"
+                "## 2. Requirements\nOriginal reqs.\n"
+            )
+            modified_content = (
+                "# Feature: Test\n\n"
+                "> Label: \"Tool: Test\"\n"
+                "\n"
+                "## 1. Overview\nModified overview.\n\n"
+                "## 2. Requirements\nNew requirements added.\n"
+            )
+            fpath = os.path.join(features_abs, "test.md")
+            with open(fpath, "w") as f:
+                f.write(modified_content)
+
+            os.utime(fpath, (3000000000, 3000000000))
+
+            cache = {
+                "features/test.md": {
+                    'complete_ts': 2000000000, 'complete_hash': 'abc123',
+                    'testing_ts': 0, 'testing_hash': '',
+                    'scope': None,
+                }
+            }
+
+            def mock_git(cmd):
+                if "git show abc123:" in cmd:
+                    return committed_content
+                return ""
+            mock_run.side_effect = mock_git
+
+            import serve
+            orig_root = serve.PROJECT_ROOT
+            serve.PROJECT_ROOT = test_dir
+            try:
+                complete, testing, todo = get_feature_status(
+                    "features", features_abs, cache)
+                self.assertEqual(len(todo), 1)
+                self.assertEqual(todo[0], "test.md")
+                self.assertEqual(len(complete), 0)
+            finally:
+                serve.PROJECT_ROOT = orig_root
+        finally:
+            shutil.rmtree(test_dir)
 
 
 class TestLifecyclePreservedOnlyDiscoveriesChange(unittest.TestCase):

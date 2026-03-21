@@ -137,11 +137,13 @@ def _get_current_head():
 
 
 def _compute_spec_hash(content):
-    """Compute SHA-256 of spec content stripped of the Discoveries section.
+    """Compute SHA-256 of spec content stripped of non-behavioral sections.
 
-    Encodes as UTF-8 before hashing to handle Unicode correctly.
+    Strips the Discoveries section and blockquote metadata lines before
+    hashing, so edits to coordination data do not trigger lifecycle resets.
     """
-    stripped = strip_discoveries_section(content).rstrip()
+    stripped = strip_discoveries_section(content)
+    stripped = strip_metadata_lines(stripped).rstrip()
     return hashlib.sha256(stripped.encode('utf-8')).hexdigest()
 
 
@@ -434,6 +436,22 @@ def strip_discoveries_section(content):
     return content[:match.start()]
 
 
+def strip_metadata_lines(content):
+    """Strip blockquote metadata lines from spec content before hashing.
+
+    Metadata lines (> Label:, > Category:, > Prerequisite:, etc.) are
+    non-behavioral coordination data. Edits to them should not trigger
+    lifecycle resets. Uses an explicit allow-list -- unknown blockquote
+    keys are NOT stripped (conservative).
+    """
+    return re.sub(
+        r'^>\s*(?:Label|Category|Prerequisite|Owner|'
+        r'Web Test|Web Start|AFT Web|AFT Start|'
+        r'Test Fixtures|Figma Status|Regression Coverage)\s*:.*\n?',
+        '', content, flags=re.MULTILINE
+    )
+
+
 def spec_content_unchanged(f_path, commit_hash):
     """Check if spec content (above Discoveries section) is unchanged since commit.
 
@@ -474,8 +492,8 @@ def spec_content_unchanged(f_path, commit_hash):
     except (IOError, OSError):
         return False
 
-    committed_spec = strip_discoveries_section(committed_content).rstrip()
-    current_spec = strip_discoveries_section(current_content).rstrip()
+    committed_spec = strip_metadata_lines(strip_discoveries_section(committed_content)).rstrip()
+    current_spec = strip_metadata_lines(strip_discoveries_section(current_content)).rstrip()
     return committed_spec == current_spec
 
 
@@ -5249,7 +5267,7 @@ function confirmModelWarning() {{
     }}).catch(function() {{}});
   }}
   var modSel = document.getElementById('agent-model-' + role);
-  if (modSel) modSel.dataset.prevModel = modelId;
+  if (modSel) {{ modSel.value = modelId; modSel.dataset.prevModel = modelId; }}
   pendingWrites.set(role + '.model', modelId);
   syncCapabilityControls(role);
   scheduleAgentSave();
