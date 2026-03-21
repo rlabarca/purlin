@@ -333,6 +333,31 @@ copy_command_files() {
     fi
 }
 
+# Copy agent definition files from submodule to consumer project.
+# Same skip logic as copy_command_files: preserve locally modified (newer) files.
+copy_agent_files() {
+    local AGENTS_SRC="$SUBMODULE_DIR/.claude/agents"
+    local AGENTS_DST="$PROJECT_ROOT/.claude/agents"
+    AGENT_COPIED=0
+    AGENT_SKIPPED=0
+
+    if [ -d "$AGENTS_SRC" ]; then
+        mkdir -p "$AGENTS_DST"
+        for src_file in "$AGENTS_SRC"/*.md; do
+            [ -f "$src_file" ] || continue
+            local fname
+            fname="$(basename "$src_file")"
+            local dst_file="$AGENTS_DST/$fname"
+            if [ -f "$dst_file" ] && [ "$dst_file" -nt "$src_file" ]; then
+                AGENT_SKIPPED=$((AGENT_SKIPPED + 1))
+            else
+                cp "$src_file" "$dst_file"
+                AGENT_COPIED=$((AGENT_COPIED + 1))
+            fi
+        done
+    fi
+}
+
 # Record the current submodule HEAD SHA.
 record_upstream_sha() {
     local sha
@@ -733,6 +758,9 @@ else:
     # 3.6 Command File Distribution
     copy_command_files
 
+    # 3.6b Agent File Distribution (project_init.md §2.3 step 6b)
+    copy_agent_files
+
     # 3.7 Features Directory
     if [ ! -d "$PROJECT_ROOT/features" ]; then
         mkdir "$PROJECT_ROOT/features"
@@ -799,6 +827,7 @@ else:
     git -C "$PROJECT_ROOT" add .purlin/ 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .claude/commands/ 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add .claude/agents/ 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .claude/settings.json 2>/dev/null || true
     git -C "$PROJECT_ROOT" add .gitignore 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-init.sh 2>/dev/null || true
@@ -860,6 +889,9 @@ else
 
     # 4.1 Command File Refresh
     copy_command_files
+
+    # 4.1b Agent File Refresh (project_init.md §2.4 step 1b)
+    copy_agent_files
 
     # 4.2 Upstream SHA Update
     CURRENT_SHA="$(record_upstream_sha)"

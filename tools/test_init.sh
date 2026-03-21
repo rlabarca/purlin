@@ -59,6 +59,11 @@ setup_sandbox() {
     if [ -f "$SUBMODULE_SRC/purlin-config-sample/CLAUDE.md.purlin" ]; then
         cp "$SUBMODULE_SRC/purlin-config-sample/CLAUDE.md.purlin" "$PROJECT/purlin/purlin-config-sample/CLAUDE.md.purlin"
     fi
+    # Copy agent files if they exist
+    if [ -d "$SUBMODULE_SRC/.claude/agents" ]; then
+        mkdir -p "$PROJECT/purlin/.claude/agents"
+        cp "$SUBMODULE_SRC/.claude/agents/"*.md "$PROJECT/purlin/.claude/agents/" 2>/dev/null || true
+    fi
     chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
     # Create submodule root symlink
@@ -1991,6 +1996,88 @@ else
 fi
 
 rm -rf "$MOCK_DIR"
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Agent File Tests ==="
+###############################################################################
+
+# --- Test: Agent files copied on full init ---
+echo ""
+echo "[Test] Agent files copied on full init"
+setup_sandbox
+
+# Create mock agent files in the submodule
+mkdir -p "$PROJECT/purlin/.claude/agents"
+echo "# builder-worker" > "$PROJECT/purlin/.claude/agents/builder-worker.md"
+echo "# verification-runner" > "$PROJECT/purlin/.claude/agents/verification-runner.md"
+
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -d "$PROJECT/.claude/agents" ]; then
+    log_pass "Agent directory .claude/agents/ created at project root"
+else
+    log_fail "Agent directory .claude/agents/ NOT created at project root"
+fi
+
+if [ -f "$PROJECT/.claude/agents/builder-worker.md" ] && [ -f "$PROJECT/.claude/agents/verification-runner.md" ]; then
+    log_pass "Agent files copied from submodule to project root"
+else
+    log_fail "Agent files NOT copied from submodule to project root"
+fi
+
+cleanup_sandbox
+
+# --- Test: Agent files refreshed on refresh (new files copied) ---
+echo ""
+echo "[Test] Agent files refreshed on refresh (new files copied)"
+setup_sandbox
+
+# First run: no agent files in submodule
+"$INIT_SH" > /dev/null 2>&1
+
+# Now add agent files to the submodule
+mkdir -p "$PROJECT/purlin/.claude/agents"
+echo "# builder-worker" > "$PROJECT/purlin/.claude/agents/builder-worker.md"
+
+# Refresh
+"$INIT_SH" > /dev/null 2>&1
+
+if [ -f "$PROJECT/.claude/agents/builder-worker.md" ]; then
+    log_pass "New agent file copied during refresh"
+else
+    log_fail "New agent file NOT copied during refresh"
+fi
+
+cleanup_sandbox
+
+# --- Test: Locally modified agent files preserved on refresh ---
+echo ""
+echo "[Test] Locally modified agent files preserved on refresh"
+setup_sandbox
+
+# Create agent file in submodule
+mkdir -p "$PROJECT/purlin/.claude/agents"
+echo "# original" > "$PROJECT/purlin/.claude/agents/builder-worker.md"
+
+# Full init
+"$INIT_SH" > /dev/null 2>&1
+
+# Modify the local copy (make it newer)
+sleep 1
+echo "# locally modified" > "$PROJECT/.claude/agents/builder-worker.md"
+
+# Refresh
+"$INIT_SH" > /dev/null 2>&1
+
+CONTENT="$(cat "$PROJECT/.claude/agents/builder-worker.md")"
+if [ "$CONTENT" = "# locally modified" ]; then
+    log_pass "Locally modified agent file preserved on refresh"
+else
+    log_fail "Locally modified agent file was overwritten on refresh (expected '# locally modified', got '$CONTENT')"
+fi
+
 cleanup_sandbox
 
 ###############################################################################
