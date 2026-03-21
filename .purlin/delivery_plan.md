@@ -12,12 +12,12 @@ Implements sub-agent parallel builder infrastructure with supporting changes acr
 **Completion Commit:** c93c97b
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Sub-Agent Infrastructure [IN_PROGRESS]
+## Phase 2 -- Sub-Agent Infrastructure [COMPLETE]
 **Features:** subagent_parallel_builder.md
-**Completion Commit:** --
+**Completion Commit:** 63215a7
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Update Integration [PENDING]
+## Phase 3 -- Update Integration [IN_PROGRESS]
 **Features:** pl_update_purlin.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
