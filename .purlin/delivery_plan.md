@@ -26,12 +26,12 @@
 **Completion Commit:** 57c0c18
 **QA Bugs Addressed:** --
 
-## Phase 5 -- Modal Base [IN_PROGRESS]
+## Phase 5 -- Modal Base [COMPLETE]
 **Features:** cdd_modal_base.md
-**Completion Commit:** --
+**Completion Commit:** 75092f9
 **QA Bugs Addressed:** --
 
-## Phase 6 -- Help & Spec Tools [PENDING]
+## Phase 6 -- Help & Spec Tools [IN_PROGRESS]
 **Features:** pl_help.md, spec_from_code.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
