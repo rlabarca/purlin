@@ -10,6 +10,10 @@ PASS=0
 FAIL=0
 ERRORS=""
 
+# Separate counters for context_recovery_hook feature tests
+CRH_PASS=0
+CRH_FAIL=0
+
 ###############################################################################
 # Helpers
 ###############################################################################
@@ -50,6 +54,10 @@ setup_sandbox() {
     mkdir -p "$PROJECT/purlin/tools/mcp"
     if [ -f "$SUBMODULE_SRC/tools/mcp/manifest.json" ]; then
         cp "$SUBMODULE_SRC/tools/mcp/manifest.json" "$PROJECT/purlin/tools/mcp/manifest.json"
+    fi
+    # Copy CLAUDE.md.purlin template
+    if [ -f "$SUBMODULE_SRC/purlin-config-sample/CLAUDE.md.purlin" ]; then
+        cp "$SUBMODULE_SRC/purlin-config-sample/CLAUDE.md.purlin" "$PROJECT/purlin/purlin-config-sample/CLAUDE.md.purlin"
     fi
     chmod +x "$PROJECT/purlin/tools/init.sh" "$PROJECT/purlin/tools/resolve_python.sh"
 
@@ -1136,6 +1144,453 @@ fi
 
 cleanup_sandbox
 
+# Snapshot counters before context_recovery_hook tests
+CRH_PASS_BEFORE=$PASS
+CRH_FAIL_BEFORE=$FAIL
+
+# --- Scenario: Consumer Full Init Installs Compact Hook ---
+echo ""
+echo "[Scenario] Consumer Full Init Installs Compact Hook"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+SETTINGS_FILE="$PROJECT/.claude/settings.json"
+
+# Check for compact matcher
+if python3 -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+found = any(e.get('matcher') == 'compact' for e in hooks if isinstance(e, dict))
+sys.exit(0 if found else 1)
+" 2>/dev/null; then
+    log_pass "SessionStart hook with matcher 'compact' present"
+else
+    log_fail "SessionStart hook with matcher 'compact' NOT found"
+fi
+
+# Check compact hook echoes role guard rails and /pl-resume
+if python3 -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+for entry in hooks:
+    if isinstance(entry, dict) and entry.get('matcher') == 'compact':
+        for h in entry.get('hooks', []):
+            cmd = h.get('command', '')
+            if 'pl-resume' in cmd and 'role' in cmd.lower():
+                sys.exit(0)
+sys.exit(1)
+" 2>/dev/null; then
+    log_pass "Compact hook echoes role guard rails and /pl-resume directive"
+else
+    log_fail "Compact hook does NOT echo role guard rails and /pl-resume"
+fi
+
+# Verify both clear and compact exist
+if python3 -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+has_clear = any(e.get('matcher') == 'clear' for e in hooks if isinstance(e, dict))
+has_compact = any(e.get('matcher') == 'compact' for e in hooks if isinstance(e, dict))
+sys.exit(0 if has_clear and has_compact else 1)
+" 2>/dev/null; then
+    log_pass "Both 'clear' and 'compact' hooks present after full init"
+else
+    log_fail "Missing either 'clear' or 'compact' hook after full init"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Compact Hook Idempotent on Refresh ---
+echo ""
+echo "[Scenario] Compact Hook Idempotent on Refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+FIRST_CONTENT="$(cat "$PROJECT/.claude/settings.json")"
+
+# Run again (refresh mode)
+"$INIT_SH" > /dev/null 2>&1
+
+SECOND_CONTENT="$(cat "$PROJECT/.claude/settings.json")"
+
+if [ "$FIRST_CONTENT" = "$SECOND_CONTENT" ]; then
+    log_pass "settings.json unchanged after second run (compact hook idempotent)"
+else
+    log_fail "settings.json changed after second run (compact hook not idempotent)"
+fi
+
+# Verify exactly one compact entry
+COMPACT_COUNT=$(python3 -c "
+import json
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+print(sum(1 for e in hooks if isinstance(e, dict) and e.get('matcher') == 'compact'))
+" 2>/dev/null)
+
+if [ "$COMPACT_COUNT" = "1" ]; then
+    log_pass "Exactly one SessionStart compact hook entry (no duplicates)"
+else
+    log_fail "Expected 1 SessionStart compact hook, found $COMPACT_COUNT"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Compact Hook Merges with Existing Hooks ---
+echo ""
+echo "[Scenario] Compact Hook Merges with Existing Hooks"
+setup_sandbox
+
+# Create settings.json with a custom SessionStart hook BEFORE init
+mkdir -p "$PROJECT/.claude"
+cat > "$PROJECT/.claude/settings.json" << 'HOOK_CUSTOM_EOF'
+{
+    "hooks": {
+        "SessionStart": [
+            {
+                "matcher": "custom",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "echo custom hook"
+                    }
+                ]
+            }
+        ]
+    }
+}
+HOOK_CUSTOM_EOF
+
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that all three hooks are present
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+matchers = set(e.get('matcher') for e in hooks if isinstance(e, dict))
+sys.exit(0 if {'custom', 'clear', 'compact'}.issubset(matchers) else 1)
+" 2>/dev/null; then
+    log_pass "All three hooks present: custom, clear, and compact"
+else
+    log_fail "Missing one or more hooks (expected custom, clear, compact)"
+fi
+
+# Check custom hook is unchanged
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+for e in hooks:
+    if isinstance(e, dict) and e.get('matcher') == 'custom':
+        cmd = e.get('hooks', [{}])[0].get('command', '')
+        sys.exit(0 if cmd == 'echo custom hook' else 1)
+sys.exit(1)
+" 2>/dev/null; then
+    log_pass "Existing custom hook is unchanged"
+else
+    log_fail "Existing custom hook was modified"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== CLAUDE.md Installation Tests ==="
+###############################################################################
+
+# --- Scenario: Full Init Creates CLAUDE.md via Template ---
+echo ""
+echo "[Scenario] Full Init Creates CLAUDE.md via Template"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+CLAUDE_MD="$PROJECT/CLAUDE.md"
+
+if [ -f "$CLAUDE_MD" ]; then
+    log_pass "CLAUDE.md exists after full init"
+else
+    log_fail "CLAUDE.md missing after full init"
+fi
+
+if grep -q '<!-- purlin:start -->' "$CLAUDE_MD" && grep -q '<!-- purlin:end -->' "$CLAUDE_MD"; then
+    log_pass "CLAUDE.md contains purlin markers"
+else
+    log_fail "CLAUDE.md missing purlin markers"
+fi
+
+# Check content between markers matches template
+if grep -q 'Role Boundaries' "$CLAUDE_MD" && grep -q 'Context Recovery' "$CLAUDE_MD" && grep -q '/pl-resume' "$CLAUDE_MD" && grep -q '/pl-help' "$CLAUDE_MD"; then
+    log_pass "CLAUDE.md contains role boundary text and context recovery directive"
+else
+    log_fail "CLAUDE.md missing expected template content"
+fi
+
+# Verify all four roles mentioned
+if grep -q 'Architect' "$CLAUDE_MD" && grep -q 'Builder' "$CLAUDE_MD" && grep -q 'QA' "$CLAUDE_MD" && grep -q 'PM' "$CLAUDE_MD"; then
+    log_pass "CLAUDE.md contains role boundary text for all four roles"
+else
+    log_fail "CLAUDE.md missing one or more role references"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: CLAUDE.md Replaces Marked Block on Refresh ---
+echo ""
+echo "[Scenario] CLAUDE.md Replaces Marked Block on Refresh"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Add user content outside markers and modify content inside markers
+cat > "$PROJECT/CLAUDE.md" << 'CLAUDEMD_EOF'
+# My Custom Project Notes
+
+This is user content above the markers.
+
+<!-- purlin:start -->
+OUTDATED CONTENT THAT SHOULD BE REPLACED
+<!-- purlin:end -->
+
+## My Workflows
+
+This is user content below the markers.
+CLAUDEMD_EOF
+
+# Run refresh
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that content between markers is updated
+if grep -q 'OUTDATED CONTENT' "$PROJECT/CLAUDE.md"; then
+    log_fail "Outdated content still present between markers"
+else
+    log_pass "Content between markers was replaced with current template"
+fi
+
+# Check user content outside markers is preserved
+if grep -q 'My Custom Project Notes' "$PROJECT/CLAUDE.md" && grep -q 'My Workflows' "$PROJECT/CLAUDE.md"; then
+    log_pass "User content outside markers is preserved"
+else
+    log_fail "User content outside markers was lost"
+fi
+
+# Check template content is now between markers
+if grep -q 'Role Boundaries' "$PROJECT/CLAUDE.md" && grep -q '/pl-resume' "$PROJECT/CLAUDE.md"; then
+    log_pass "Template content now present between markers"
+else
+    log_fail "Template content NOT present between markers after refresh"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: CLAUDE.md Appends Block When No Markers Exist ---
+echo ""
+echo "[Scenario] CLAUDE.md Appends Block When No Markers Exist"
+setup_sandbox
+
+# Create CLAUDE.md with user content but no purlin markers BEFORE init
+cat > "$PROJECT/CLAUDE.md" << 'CLAUDEMD_NOMARK_EOF'
+# My Project
+
+This is my existing CLAUDE.md with custom instructions.
+CLAUDEMD_NOMARK_EOF
+
+"$INIT_SH" > /dev/null 2>&1
+
+# Check original content is preserved
+if grep -q 'My Project' "$PROJECT/CLAUDE.md" && grep -q 'custom instructions' "$PROJECT/CLAUDE.md"; then
+    log_pass "Original CLAUDE.md content preserved"
+else
+    log_fail "Original CLAUDE.md content was lost"
+fi
+
+# Check purlin block was appended
+if grep -q '<!-- purlin:start -->' "$PROJECT/CLAUDE.md" && grep -q '<!-- purlin:end -->' "$PROJECT/CLAUDE.md"; then
+    log_pass "Purlin marked block appended"
+else
+    log_fail "Purlin marked block NOT appended"
+fi
+
+# Check template content is present
+if grep -q 'Role Boundaries' "$PROJECT/CLAUDE.md" && grep -q '/pl-resume' "$PROJECT/CLAUDE.md"; then
+    log_pass "Template content present in appended block"
+else
+    log_fail "Template content NOT present in appended block"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: CLAUDE.md Installation Is Idempotent ---
+echo ""
+echo "[Scenario] CLAUDE.md Installation Is Idempotent"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+FIRST_CONTENT="$(cat "$PROJECT/CLAUDE.md")"
+
+# Run init again (refresh)
+"$INIT_SH" > /dev/null 2>&1
+
+SECOND_CONTENT="$(cat "$PROJECT/CLAUDE.md")"
+
+if [ "$FIRST_CONTENT" = "$SECOND_CONTENT" ]; then
+    log_pass "CLAUDE.md unchanged after second run (idempotent)"
+else
+    log_fail "CLAUDE.md changed after second run (not idempotent)"
+fi
+
+# Verify no duplicate markers
+MARKER_COUNT=$(grep -c '<!-- purlin:start -->' "$PROJECT/CLAUDE.md" || true)
+if [ "$MARKER_COUNT" = "1" ]; then
+    log_pass "Exactly one purlin:start marker (no duplicates)"
+else
+    log_fail "Expected 1 purlin:start marker, found $MARKER_COUNT"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: CLAUDE.md Preserves User Content Outside Markers ---
+echo ""
+echo "[Scenario] CLAUDE.md Preserves User Content Outside Markers"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+# Add user content both above and below the markers
+python3 -c "
+with open('$PROJECT/CLAUDE.md', 'r') as f:
+    content = f.read()
+
+# Add content before the purlin block
+new_content = '# My Custom Header\n\nUser content above.\n\n' + content + '\n## User Footer\n\nUser content below.\n'
+
+with open('$PROJECT/CLAUDE.md', 'w') as f:
+    f.write(new_content)
+"
+
+# Run refresh
+"$INIT_SH" > /dev/null 2>&1
+
+# Verify both user sections preserved
+if grep -q 'My Custom Header' "$PROJECT/CLAUDE.md" && grep -q 'User content above' "$PROJECT/CLAUDE.md"; then
+    log_pass "User content above markers preserved after refresh"
+else
+    log_fail "User content above markers lost after refresh"
+fi
+
+if grep -q 'User Footer' "$PROJECT/CLAUDE.md" && grep -q 'User content below' "$PROJECT/CLAUDE.md"; then
+    log_pass "User content below markers preserved after refresh"
+else
+    log_fail "User content below markers lost after refresh"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== CLAUDE.md Staging Tests ==="
+###############################################################################
+
+# --- Scenario: CLAUDE.md Is Staged in Post-Init Git Add ---
+echo ""
+echo "[Scenario] CLAUDE.md Is Staged in Post-Init Git Add"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+STAGED="$(git -C "$PROJECT" diff --cached --name-only)"
+if echo "$STAGED" | grep -q "CLAUDE.md"; then
+    log_pass "CLAUDE.md appears in the git staging area"
+else
+    log_fail "CLAUDE.md NOT in the git staging area"
+fi
+
+cleanup_sandbox
+
+###############################################################################
+echo ""
+echo "=== Launcher agent_role Removal Tests ==="
+###############################################################################
+
+# --- Scenario: Launcher Scripts No Longer Write agent_role ---
+echo ""
+echo "[Scenario] Launcher Scripts No Longer Write agent_role"
+
+LAUNCHERS_PASS=true
+for LAUNCHER in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
+    LAUNCHER_PATH="$SUBMODULE_SRC/$LAUNCHER"
+    if [ ! -f "$LAUNCHER_PATH" ]; then
+        log_fail "$LAUNCHER does not exist"
+        LAUNCHERS_PASS=false
+        continue
+    fi
+
+    # Check no agent_role file write
+    if grep -q 'agent_role' "$LAUNCHER_PATH"; then
+        log_fail "$LAUNCHER still references agent_role"
+        LAUNCHERS_PASS=false
+    fi
+
+    # Check AGENT_ROLE export still present
+    if grep -q 'AGENT_ROLE' "$LAUNCHER_PATH"; then
+        :  # good
+    else
+        log_fail "$LAUNCHER missing AGENT_ROLE export"
+        LAUNCHERS_PASS=false
+    fi
+done
+
+if [ "$LAUNCHERS_PASS" = true ]; then
+    log_pass "No launcher writes to .purlin/runtime/agent_role"
+    log_pass "All launchers still export AGENT_ROLE"
+fi
+
+# --- Scenario: Generated Launchers Omit agent_role Write ---
+echo ""
+echo "[Scenario] Generated Launchers Omit agent_role Write"
+setup_sandbox
+"$INIT_SH" > /dev/null 2>&1
+
+GEN_PASS=true
+for LAUNCHER in pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh; do
+    LAUNCHER_PATH="$PROJECT/$LAUNCHER"
+    if [ ! -f "$LAUNCHER_PATH" ]; then
+        log_fail "Generated $LAUNCHER does not exist"
+        GEN_PASS=false
+        continue
+    fi
+
+    # Check no agent_role file write
+    if grep -q 'runtime/agent_role' "$LAUNCHER_PATH"; then
+        log_fail "Generated $LAUNCHER writes to agent_role"
+        GEN_PASS=false
+    fi
+
+    # Check AGENT_ROLE export still present
+    if grep -q 'AGENT_ROLE' "$LAUNCHER_PATH"; then
+        :  # good
+    else
+        log_fail "Generated $LAUNCHER missing AGENT_ROLE"
+        GEN_PASS=false
+    fi
+done
+
+if [ "$GEN_PASS" = true ]; then
+    log_pass "Generated launchers do not write to agent_role"
+    log_pass "Generated launchers export AGENT_ROLE"
+fi
+
+cleanup_sandbox
+
+# Compute context_recovery_hook test results
+CRH_PASS=$((PASS - CRH_PASS_BEFORE))
+CRH_FAIL=$((FAIL - CRH_FAIL_BEFORE))
+
 ###############################################################################
 echo ""
 echo "=== Post-Init Staging Tests ==="
@@ -1558,6 +2013,13 @@ RESULT_JSON="{\"status\": \"$([ $FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"pa
 OUTDIR="$TESTS_DIR/project_init"
 mkdir -p "$OUTDIR"
 echo "$RESULT_JSON" > "$OUTDIR/tests.json"
+
+# Write context_recovery_hook tests.json
+CRH_TOTAL=$((CRH_PASS + CRH_FAIL))
+CRH_RESULT_JSON="{\"status\": \"$([ $CRH_FAIL -eq 0 ] && echo PASS || echo FAIL)\", \"passed\": $CRH_PASS, \"failed\": $CRH_FAIL, \"total\": $CRH_TOTAL, \"test_file\": \"tools/test_init.sh\"}"
+CRH_OUTDIR="$TESTS_DIR/context_recovery_hook"
+mkdir -p "$CRH_OUTDIR"
+echo "$CRH_RESULT_JSON" > "$CRH_OUTDIR/tests.json"
 
 echo ""
 if [ $FAIL -eq 0 ]; then

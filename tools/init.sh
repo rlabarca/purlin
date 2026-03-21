@@ -217,6 +217,8 @@ AGENT_EFFORT=""
 AGENT_BYPASS="false"
 AGENT_FIND_WORK="true"
 AGENT_AUTO_START="false"
+AGENT_MODEL_WARNING=""
+AGENT_MODEL_WARNING_DISMISSED="false"
 
 if [ -f "$RESOLVER" ]; then
     eval "$(PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" "$AGENT_ROLE" 2>/dev/null)"
@@ -236,6 +238,21 @@ if [ -z "$AGENT_MODEL" ] && [ -z "$AGENT_EFFORT" ]; then
 fi
 LAUNCHER_EOF
     fi
+
+    # Part 4c3: Model warning display and auto-acknowledge (literal)
+    cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+
+# --- Model warning display and auto-acknowledge ---
+if [ -n "$AGENT_MODEL_WARNING" ] && [ "$AGENT_MODEL_WARNING_DISMISSED" != "true" ]; then
+    echo "============================================================" >&2
+    echo "WARNING: $AGENT_MODEL_WARNING" >&2
+    echo "By continuing, you are acknowledging this warning." >&2
+    echo "============================================================" >&2
+    if [ -f "$RESOLVER" ]; then
+        PURLIN_PROJECT_ROOT="$SCRIPT_DIR" python3 "$RESOLVER" acknowledge_warning "$AGENT_MODEL" 2>/dev/null
+    fi
+fi
+LAUNCHER_EOF
 
     # Part 4d0: Validate startup controls (literal)
     cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
@@ -411,12 +428,22 @@ import json, os, sys
 
 settings_path = sys.argv[1]
 
-hook_entry = {
+clear_entry = {
     'matcher': 'clear',
     'hooks': [
         {
             'type': 'command',
             'command': \"echo 'IMPORTANT: Context was cleared. Run /pl-resume immediately to restore session context.'\"
+        }
+    ]
+}
+
+compact_entry = {
+    'matcher': 'compact',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': \"echo 'IMPORTANT: Context was compacted. This project uses role-restricted Purlin agents. Role boundaries: Architect/PM never write code; Builder never writes specs; QA never writes app code. Run /pl-resume immediately to restore session context.'\"
         }
     ]
 }
@@ -436,15 +463,23 @@ if 'hooks' not in settings:
 if 'SessionStart' not in settings['hooks']:
     settings['hooks']['SessionStart'] = []
 
-# Check if a 'clear' matcher already exists
+# Add clear matcher if not present
 has_clear = any(
     entry.get('matcher') == 'clear'
     for entry in settings['hooks']['SessionStart']
     if isinstance(entry, dict)
 )
-
 if not has_clear:
-    settings['hooks']['SessionStart'].append(hook_entry)
+    settings['hooks']['SessionStart'].append(clear_entry)
+
+# Add compact matcher if not present
+has_compact = any(
+    entry.get('matcher') == 'compact'
+    for entry in settings['hooks']['SessionStart']
+    if isinstance(entry, dict)
+)
+if not has_compact:
+    settings['hooks']['SessionStart'].append(compact_entry)
 
 # Validate and write atomically
 result = json.dumps(settings, indent=4)
@@ -456,6 +491,57 @@ with open(tmp_path, 'w') as f:
     f.write('\n')
 os.replace(tmp_path, settings_path)
 " "$SETTINGS_FILE"
+}
+
+# Install or update CLAUDE.md at the project root from the purlin template.
+# Uses <!-- purlin:start --> / <!-- purlin:end --> markers for safe coexistence
+# with user-written content. Idempotent on refresh.
+install_claude_md() {
+    local CLAUDE_MD="$PROJECT_ROOT/CLAUDE.md"
+    local TEMPLATE="$SUBMODULE_DIR/purlin-config-sample/CLAUDE.md.purlin"
+
+    # Guard: skip if template doesn't exist
+    if [ ! -f "$TEMPLATE" ]; then
+        return 0
+    fi
+
+    local TEMPLATE_CONTENT
+    TEMPLATE_CONTENT="$(cat "$TEMPLATE")"
+
+    local MARKED_BLOCK
+    MARKED_BLOCK="<!-- purlin:start -->
+${TEMPLATE_CONTENT}
+<!-- purlin:end -->"
+
+    if [ ! -f "$CLAUDE_MD" ]; then
+        # No CLAUDE.md exists: create with marked block
+        printf '%s\n' "$MARKED_BLOCK" > "$CLAUDE_MD"
+    elif grep -q '<!-- purlin:start -->' "$CLAUDE_MD" && grep -q '<!-- purlin:end -->' "$CLAUDE_MD"; then
+        # Markers exist: replace content between them
+        "$PYTHON_EXE" -c "
+import sys
+
+claude_path = sys.argv[1]
+marked_block = sys.argv[2]
+
+with open(claude_path, 'r') as f:
+    content = f.read()
+
+start_marker = '<!-- purlin:start -->'
+end_marker = '<!-- purlin:end -->'
+
+start_idx = content.index(start_marker)
+end_idx = content.index(end_marker) + len(end_marker)
+
+new_content = content[:start_idx] + marked_block + content[end_idx:]
+
+with open(claude_path, 'w') as f:
+    f.write(new_content)
+" "$CLAUDE_MD" "$MARKED_BLOCK"
+    else
+        # No markers: append marked block
+        printf '\n%s\n' "$MARKED_BLOCK" >> "$CLAUDE_MD"
+    fi
 }
 
 # Install MCP servers from the framework manifest (§2.16).
@@ -702,10 +788,13 @@ else:
     # 3.12 Claude Code Hook Installation (project_init.md §2.15)
     install_session_hook
 
-    # 3.13 MCP Server Installation (project_init.md §2.16)
+    # 3.13 CLAUDE.md Installation (context_recovery_hook.md §2.3)
+    install_claude_md
+
+    # 3.14 MCP Server Installation (project_init.md §2.16)
     install_mcp_servers
 
-    # 3.14 Post-Init Staging (project_init.md §2.3 step 14)
+    # 3.15 Post-Init Staging (project_init.md §2.3 step 14)
     # Stage exactly the files created by init — never git add -A or git add .
     git -C "$PROJECT_ROOT" add .purlin/ 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh pl-run-pm.sh 2>/dev/null || true
@@ -714,8 +803,9 @@ else:
     git -C "$PROJECT_ROOT" add .gitignore 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-init.sh 2>/dev/null || true
     git -C "$PROJECT_ROOT" add pl-cdd-start.sh pl-cdd-stop.sh 2>/dev/null || true
+    git -C "$PROJECT_ROOT" add CLAUDE.md 2>/dev/null || true
 
-    # 3.15 Summary Output — "What's Next" Narrative (init_preflight_checks.md §2.4)
+    # 3.16 Summary Output — "What's Next" Narrative (init_preflight_checks.md §2.4)
     say ""
     say "════════════════════════════════════════════════════════════════"
     say "  Purlin initialized. Files staged."
@@ -815,7 +905,10 @@ else
     # 4.6 Claude Code Hook Installation (project_init.md §2.15)
     install_session_hook
 
-    # 4.7 Gitignore Pattern Sync (project_init.md §2.4 step 7)
+    # 4.7 CLAUDE.md Installation (context_recovery_hook.md §2.3)
+    install_claude_md
+
+    # 4.8 Gitignore Pattern Sync (project_init.md §2.4 step 7)
     GITIGNORE="$PROJECT_ROOT/.gitignore"
     GITIGNORE_TEMPLATE="$SUBMODULE_DIR/purlin-config-sample/gitignore.purlin"
 
@@ -839,10 +932,10 @@ else
         cp "$GITIGNORE_TEMPLATE" "$GITIGNORE"
     fi
 
-    # 4.8 MCP Server Installation (project_init.md §2.16)
+    # 4.9 MCP Server Installation (project_init.md §2.16)
     install_mcp_servers
 
-    # 4.9 Refresh Summary (init_preflight_checks.md §2.4 — abbreviated)
+    # 4.10 Refresh Summary (init_preflight_checks.md §2.4 — abbreviated)
     MCP_NOTE=""
     if [ "$MCP_ATTEMPTED" = true ] && [ "$MCP_INSTALLED" -gt 0 ]; then
         MCP_NOTE=" MCP: $MCP_INSTALLED installed."
