@@ -38,17 +38,22 @@ Collect all testable items across TESTING features into a single flat-numbered l
 2.  Auto-skip builder-verified features (zero manual scenarios, zero visual items).
 3.  Assign flat sequential numbers (1, 2, ... N) across all features. Do not restart numbering per feature.
 4.  Visual items from `## Visual Specification` sections are interleaved under their feature, tagged with `[V]` prefix, sharing the numbering sequence.
-5.  **Condensing rule:** For each functional scenario, produce a two-line entry: line 1 = **what to do** (setup + action, imperative voice), line 2 = **what to verify** (expected outcome). Strip Gherkin boilerplate but keep essential setup context. Visual items use `[V]` prefix with verbatim checklist text (single line).
-6.  Cross-validation warnings: insert an advisory line before affected feature's items.
-7.  Fixture awareness: if Critic report includes `fixture_repo_unavailable` for a feature, append `[fixture N/A]` to affected scenarios.
-8.  Large visual batches (50+ visual items for one feature): offer grouped sub-prompt by screen.
+5.  **Web-test visual dedup:** For features with `> Web Test:` metadata, exclude visual `[V]` items from the QA checklist. These were verified by the Builder via `/pl-web-test` during Step 3. Include only manual scenarios that require human interaction. If a web-test feature has zero manual scenarios remaining after this exclusion, auto-skip it: `"Feature X: visual items builder-verified via /pl-web-test. Auto-pass."`
+6.  **Tier labels:** If tier classification exists in `QA_OVERRIDES.md`, prefix each feature group with its tier: `[SMOKE]`, `[STD]`, or `[FULL]`.
+7.  **Condensing rule:** For each functional scenario, produce a two-line entry: line 1 = **what to do** (setup + action, imperative voice), line 2 = **what to verify** (expected outcome). Strip Gherkin boilerplate but keep essential setup context. Visual items use `[V]` prefix with verbatim checklist text (single line).
+8.  Cross-validation warnings: insert an advisory line before affected feature's items.
+9.  Fixture awareness: if Critic report includes `fixture_repo_unavailable` for a feature, append `[fixture N/A]` to affected scenarios.
+10. Large visual batches (50+ visual items for one feature): offer grouped sub-prompt by screen.
 
 ### Step 3 -- Checklist Presentation
+
+*   **Ordering:** Sort features: smoke first, then standard, then full-only. Within each tier group, sort ascending by estimated verification time (shortest first).
 
 Output the checklist as a numbered list grouped by feature:
 
 ```
-**Verification Checklist** -- N items across M features
+**Verification Checklist** -- N items across M features (~X min estimated)
+Tiers: S smoke, T standard, F full-only
 Default: PASS. Reply "all pass", or list failures: "F3, F7"
 "help N" = I'll walk you through testing it | /pl-discovery = issues outside this list
 
@@ -66,7 +71,7 @@ Default: PASS. Reply "all pass", or list failures: "F3, F7"
 Reply "all pass", list failures ("F3, F7"), or "help N" for testing assistance.
 ```
 
-**Format rules:** Feature headers are bold with priority tag. One blank line between groups. Functional items: `N. **Do:** ...` / `   **Verify:** ...`. Visual items: `N. [V] ...`. Imperative voice. End with response prompt + help offer.
+**Format rules:** Feature headers are bold with priority tag. One blank line between groups. Functional items: `N. **Do:** ...` / `   **Verify:** ...`. Visual items: `N. [V] ...`. Imperative voice. End with response prompt + help offer. If no tier classification exists in `QA_OVERRIDES.md`, omit the Tiers line from the header.
 
 **Zero testable items:** If all TESTING features are builder-verified or cosmetic-scoped, skip the checklist. Output: "All TESTING features are builder-verified. No manual verification needed." Proceed to Step 7.
 
