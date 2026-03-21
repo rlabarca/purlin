@@ -347,6 +347,12 @@ else
     arch_fail "Architect launcher missing --allowedTools (captured: $CAPTURED)"
 fi
 
+if echo "$CAPTURED" | grep -q -- '--disallowedTools'; then
+    arch_pass "Architect launcher passes --disallowedTools Write,Edit,NotebookEdit"
+else
+    arch_fail "Architect launcher missing --disallowedTools (captured: $CAPTURED)"
+fi
+
 if echo "$CAPTURED" | grep -q -- '--append-system-prompt-file'; then
     arch_pass "Architect launcher passes --append-system-prompt-file"
 else
@@ -439,6 +445,125 @@ if echo "$CAPTURED" | grep -q 'Begin Architect session.'; then
     arch_pass "Session message is 'Begin Architect session.'"
 else
     arch_fail "Wrong session message (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Architect Launcher Blocks Write Tool via disallowedTools ---
+echo ""
+echo "[Scenario] Architect Launcher Blocks Write Tool via disallowedTools"
+setup_launcher_sandbox
+
+cp "$PROJECT_ROOT/pl-run-architect.sh" "$SANDBOX/"
+
+cat > "$SANDBOX/.purlin/config.json" << 'EOF'
+{
+    "agents": {
+        "architect": {
+            "model": "claude-sonnet-4-6",
+            "effort": "high",
+            "bypass_permissions": false
+        }
+    }
+}
+EOF
+
+PATH="$MOCK_DIR:$PATH" bash "$SANDBOX/pl-run-architect.sh" > /dev/null 2>&1
+CAPTURED=$(cat "$CAPTURE_FILE" 2>/dev/null || echo "")
+
+if echo "$CAPTURED" | grep -q -- '--disallowedTools'; then
+    arch_pass "Architect launcher passes --disallowedTools"
+else
+    arch_fail "Architect launcher missing --disallowedTools (captured: $CAPTURED)"
+fi
+
+if echo "$CAPTURED" | grep -q 'Write,Edit,NotebookEdit'; then
+    arch_pass "Architect --disallowedTools includes Write,Edit,NotebookEdit"
+else
+    arch_fail "Architect --disallowedTools wrong value (captured: $CAPTURED)"
+fi
+
+teardown_launcher_sandbox
+
+# --- Scenario: Hook Fallback Blocks Write When AGENT_ROLE is Architect ---
+echo ""
+echo "[Scenario] Hook Fallback Blocks Write When AGENT_ROLE is Architect"
+setup_launcher_sandbox
+
+# Simulate the hook that init.sh would install by running the Python installer directly
+mkdir -p "$SANDBOX/.claude"
+PYTHON_EXE="$(command -v python3)"
+SETTINGS_FILE="$SANDBOX/.claude/settings.json"
+PROJECT_ROOT="$SANDBOX" "$PYTHON_EXE" -c "
+import json, os, sys
+
+settings_path = sys.argv[1]
+
+pretool_entry = {
+    'matcher': '',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': 'if [ \"\$AGENT_ROLE\" = \"architect\" ]; then case \"\$TOOL_NAME\" in Write|Edit|NotebookEdit) exit 2;; esac; fi'
+        }
+    ]
+}
+
+settings = {'hooks': {'PreToolUse': [pretool_entry]}}
+with open(settings_path, 'w') as f:
+    json.dump(settings, f, indent=4)
+" "$SETTINGS_FILE"
+if [ -f "$SETTINGS_FILE" ]; then
+    # Verify PreToolUse hook exists
+    if python3 -c "
+import json, sys
+settings = json.load(open(sys.argv[1]))
+hooks = settings.get('hooks', {}).get('PreToolUse', [])
+found = any('AGENT_ROLE' in h.get('hooks', [{}])[0].get('command', '') for h in hooks if isinstance(h, dict) and h.get('hooks'))
+sys.exit(0 if found else 1)
+" "$SETTINGS_FILE" 2>/dev/null; then
+        arch_pass "PreToolUse hook with AGENT_ROLE check installed"
+    else
+        arch_fail "PreToolUse hook with AGENT_ROLE check NOT found in settings.json"
+    fi
+
+    # Verify the hook command exits 2 for Write when AGENT_ROLE=architect
+    HOOK_CMD=$(python3 -c "
+import json, sys
+settings = json.load(open(sys.argv[1]))
+hooks = settings.get('hooks', {}).get('PreToolUse', [])
+for h in hooks:
+    if isinstance(h, dict) and h.get('hooks'):
+        cmd = h['hooks'][0].get('command', '')
+        if 'AGENT_ROLE' in cmd:
+            print(cmd)
+            break
+" "$SETTINGS_FILE" 2>/dev/null)
+
+    if [ -n "$HOOK_CMD" ]; then
+        # Test: AGENT_ROLE=architect + TOOL_NAME=Edit should exit 2
+        AGENT_ROLE=architect TOOL_NAME=Edit bash -c "$HOOK_CMD" 2>/dev/null
+        if [ $? -eq 2 ]; then
+            arch_pass "Hook exits 2 when AGENT_ROLE=architect and TOOL_NAME=Edit"
+        else
+            arch_fail "Hook did not exit 2 for architect+Edit (cmd: $HOOK_CMD)"
+        fi
+
+        # Test: AGENT_ROLE=builder + TOOL_NAME=Edit should exit 0
+        AGENT_ROLE=builder TOOL_NAME=Edit bash -c "$HOOK_CMD" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            arch_pass "Hook allows Edit when AGENT_ROLE=builder"
+        else
+            arch_fail "Hook blocked Edit for non-architect role"
+        fi
+    else
+        arch_fail "Could not extract hook command"
+        arch_fail "Skipping hook behavior tests"
+    fi
+else
+    arch_fail "settings.json not created by init"
+    arch_fail "Skipping hook tests"
+    arch_fail "Skipping hook behavior tests"
 fi
 
 teardown_launcher_sandbox

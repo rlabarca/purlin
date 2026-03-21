@@ -78,5 +78,6 @@ if [ "$AGENT_BYPASS" = "true" ]; then
 else
     CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
 fi
+CLI_ARGS+=(--disallowedTools "Write,Edit,NotebookEdit")
 type set_agent_identity >/dev/null 2>&1 && set_agent_identity "Architect"
 claude "${CLI_ARGS[@]}" --append-system-prompt-file "$PROMPT_FILE" "Begin Architect session."

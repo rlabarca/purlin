@@ -284,8 +284,17 @@ else
     CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
 fi
 LAUNCHER_EOF
+    elif [ "$ROLE" = "architect" ]; then
+        cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
+if [ "$AGENT_BYPASS" = "true" ]; then
+    CLI_ARGS+=(--dangerously-skip-permissions)
+else
+    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
+fi
+CLI_ARGS+=(--disallowedTools "Write,Edit,NotebookEdit")
+LAUNCHER_EOF
     else
-        # architect (default)
+        # pm (default — same as architect minus disallowedTools)
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
@@ -505,6 +514,28 @@ has_compact = any(
 )
 if not has_compact:
     settings['hooks']['SessionStart'].append(compact_entry)
+
+# Add PreToolUse hook for Architect tool enforcement (fallback for --disallowedTools)
+pretool_entry = {
+    'matcher': '',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': 'if [ \"\$AGENT_ROLE\" = \"architect\" ]; then case \"\$TOOL_NAME\" in Write|Edit|NotebookEdit) exit 2;; esac; fi'
+        }
+    ]
+}
+
+if 'PreToolUse' not in settings['hooks']:
+    settings['hooks']['PreToolUse'] = []
+
+has_pretool_architect = any(
+    'AGENT_ROLE' in (entry.get('hooks', [{}])[0].get('command', '') if entry.get('hooks') else '')
+    for entry in settings['hooks']['PreToolUse']
+    if isinstance(entry, dict)
+)
+if not has_pretool_architect:
+    settings['hooks']['PreToolUse'].append(pretool_entry)
 
 # Validate and write atomically
 result = json.dumps(settings, indent=4)
