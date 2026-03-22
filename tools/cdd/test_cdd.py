@@ -2571,95 +2571,63 @@ class TestServerStartStopLifecycle(unittest.TestCase):
 # ===================================================================
 
 class TestQaBadgeHtml(unittest.TestCase):
-    """Scenarios: QA TODO/AUTO badge and effort tooltip."""
+    """Scenarios: QA badge with two-line effort display."""
 
-    def test_fully_auto_shows_auto_badge(self):
-        """Scenario: Fully auto-resolvable feature shows AUTO."""
+    def test_auto_status_displays_with_green_badge(self):
+        """Scenario: AUTO status displays with green badge."""
         entry = {
-            "qa": "TODO",
-            "verification_effort": {
-                "web_test": 3, "test_only": 2, "skip": 0,
-                "manual_interactive": 0, "manual_visual": 0,
-                "manual_hardware": 0,
-                "total_auto": 5, "total_manual": 0,
-                "summary": "5 auto, 0 manual",
-            },
+            "qa": "AUTO",
+            "verification_effort": {"summary": "3 auto"},
         }
         html = _qa_badge_html(entry)
         self.assertIn("AUTO", html)
         self.assertIn("st-auto", html)
-        self.assertNotIn("TODO", html)
-        self.assertIn("effort-breakdown", html)
 
-    def test_auto_badge_has_tooltip(self):
-        """AUTO badge shows effort tooltip on hover."""
+    def test_todo_status_with_effort_shows_subline(self):
+        """Scenario: TODO status with effort shows sub-line."""
         entry = {
             "qa": "TODO",
-            "verification_effort": {
-                "web_test": 3, "test_only": 2, "skip": 0,
-                "manual_interactive": 0, "manual_visual": 0,
-                "manual_hardware": 0,
-                "total_auto": 5, "total_manual": 0,
-                "summary": "5 auto, 0 manual",
-            },
-        }
-        html = _qa_badge_html(entry)
-        self.assertIn("data-effort-tooltip", html)
-        self.assertIn("3 web", html)
-        self.assertIn("2 test-only", html)
-
-    def test_mixed_effort_shows_todo(self):
-        """Scenario: Mixed effort feature shows TODO."""
-        entry = {
-            "qa": "TODO",
-            "verification_effort": {
-                "web_test": 3, "test_only": 0, "skip": 0,
-                "manual_interactive": 2, "manual_visual": 4,
-                "manual_hardware": 0,
-                "total_auto": 3, "total_manual": 6,
-                "summary": "3 auto, 6 manual",
-            },
+            "verification_effort": {"summary": "2 auto, 4 manual"},
         }
         html = _qa_badge_html(entry)
         self.assertIn("TODO", html)
         self.assertIn("st-todo", html)
-        self.assertNotIn("AUTO", html)
-        self.assertIn("effort-breakdown", html)
+        self.assertIn('class="effort-subline"', html)
+        self.assertIn("2 auto, 4 manual", html)
+
+    def test_auto_status_with_effort_shows_subline(self):
+        """Scenario: AUTO status with effort shows sub-line."""
+        entry = {
+            "qa": "AUTO",
+            "verification_effort": {"summary": "3 auto"},
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("AUTO", html)
+        self.assertIn('class="effort-subline"', html)
+        self.assertIn("3 auto", html)
 
     def test_todo_zero_effort_shows_plain_todo(self):
         """Scenario: QA TODO with zero effort shows plain TODO."""
         entry = {
             "qa": "TODO",
-            "verification_effort": {
-                "web_test": 0, "test_only": 0, "skip": 0,
-                "manual_interactive": 0, "manual_visual": 0,
-                "manual_hardware": 0,
-                "total_auto": 0, "total_manual": 0,
-                "summary": "awaiting builder",
-            },
+            "verification_effort": {"summary": "awaiting builder"},
         }
         html = _qa_badge_html(entry)
         self.assertIn("TODO", html)
-        self.assertNotIn("effort-breakdown", html)
+        self.assertNotIn("effort-subline", html)
 
-    def test_non_todo_no_effort(self):
-        """Scenario: Non-TODO QA status is unchanged."""
+    def test_non_todo_auto_no_subline(self):
+        """Scenario: Non-TODO/AUTO QA status has no sub-line."""
         entry = {"qa": "CLEAN"}
         html = _qa_badge_html(entry)
         self.assertIn("CLEAN", html)
-        self.assertNotIn("effort-breakdown", html)
+        self.assertNotIn("effort-subline", html)
 
     def test_auto_badge_uses_status_auto_color(self):
-        """AUTO badge uses var(--purlin-status-auto) color, not warning."""
+        """AUTO badge uses var(--purlin-status-auto) color (green)."""
         entry = {
-            "qa": "TODO",
-            "verification_effort": {
-                "web_test": 3, "test_only": 2, "skip": 0,
-                "manual_interactive": 0, "manual_visual": 0,
-                "manual_hardware": 0,
-                "total_auto": 5, "total_manual": 0,
-                "summary": "5 auto, 0 manual",
-            },
+            "qa": "AUTO",
+            "verification_effort": {"summary": "5 auto"},
         }
         html = _qa_badge_html(entry)
         self.assertIn('class="st-auto"', html)
@@ -2669,7 +2637,6 @@ class TestQaBadgeHtml(unittest.TestCase):
             source = f.read()
         self.assertIn(
             '.st-auto{{color:var(--purlin-status-auto)', source)
-        # Must NOT use --purlin-status-warning for AUTO
         self.assertNotIn(
             '.st-auto{{color:var(--purlin-status-warning)', source)
 
@@ -2678,37 +2645,43 @@ class TestQaBadgeHtml(unittest.TestCase):
         serve_path = os.path.join(os.path.dirname(__file__), "serve.py")
         with open(serve_path) as f:
             source = f.read()
-        # Dark theme (Blueprint) — :root block
         self.assertIn('--purlin-status-auto:#A3E635', source)
-        # Light theme (Architect) — [data-theme='light'] block
         self.assertIn('--purlin-status-auto:#65A30D', source)
 
     def test_todo_no_verification_effort_key(self):
+        """TODO with no verification_effort shows plain badge."""
         entry = {"qa": "TODO"}
         html = _qa_badge_html(entry)
         self.assertIn("TODO", html)
-        self.assertNotIn("effort-breakdown", html)
+        self.assertNotIn("effort-subline", html)
 
-    def test_tooltip_includes_category_breakdown(self):
+    def test_no_tooltip_in_effort_display(self):
+        """Sub-line replaces tooltip -- no data-effort-tooltip attribute."""
         entry = {
             "qa": "TODO",
-            "verification_effort": {
-                "web_test": 3, "test_only": 0, "skip": 0,
-                "manual_interactive": 2, "manual_visual": 4,
-                "manual_hardware": 0,
-                "total_auto": 3, "total_manual": 6,
-                "summary": "3 auto, 6 manual",
-            },
+            "verification_effort": {"summary": "3 manual"},
         }
         html = _qa_badge_html(entry)
-        self.assertIn("data-effort-tooltip", html)
-        self.assertIn("3 web", html)
-        self.assertIn("2 interactive", html)
-        self.assertIn("4 visual", html)
-        # Zero categories omitted
-        self.assertNotIn("hardware", html)
-        self.assertNotIn("test-only", html)
-        self.assertNotIn("skip", html)
+        self.assertNotIn("data-effort-tooltip", html)
+
+    def test_no_subline_for_no_qa_items(self):
+        """No sub-line when summary is 'no QA items'."""
+        entry = {
+            "qa": "TODO",
+            "verification_effort": {"summary": "no QA items"},
+        }
+        html = _qa_badge_html(entry)
+        self.assertIn("TODO", html)
+        self.assertNotIn("effort-subline", html)
+
+    def test_subline_css_class_exists(self):
+        """effort-subline CSS class is defined in serve.py."""
+        serve_path = os.path.join(os.path.dirname(__file__), "serve.py")
+        with open(serve_path) as f:
+            source = f.read()
+        self.assertIn('.effort-subline{', source)
+        self.assertIn('font-size:10px', source)
+        self.assertIn('var(--purlin-dim)', source)
 
 
 class TestVerificationEffortInApiStatus(unittest.TestCase):

@@ -1972,61 +1972,31 @@ def _role_badge_html(status):
 
 
 def _qa_badge_html(entry):
-    """Returns a QA badge with AUTO status and effort tooltip.
+    """Returns a QA badge with two-line effort display.
 
-    When QA is TODO and verification_effort is fully auto-resolvable
-    (total_manual==0, total_auto>0), displays AUTO in green.
-    Hovering over TODO or AUTO shows the full effort breakdown tooltip.
+    AUTO is a real Critic-computed QA status (read from role_status.qa).
+    For TODO and AUTO statuses, a second sub-line shows the effort summary
+    from verification_effort.summary (10px, var(--purlin-dim)).
+    No sub-line when summary is "awaiting builder" or "no QA items".
+    Non-TODO/AUTO statuses show plain badge with no sub-line.
     """
     qa = entry.get("qa")
-    if qa != "TODO":
+    if qa not in ("TODO", "AUTO"):
         return _role_badge_html(qa)
+
+    badge_css = ROLE_BADGE_CSS.get(qa, "st-na")
 
     ve = entry.get("verification_effort")
-    if not ve:
-        return _role_badge_html(qa)
+    summary = ve.get("summary", "") if ve else ""
 
-    total_auto = ve.get("total_auto", 0)
-    total_manual = ve.get("total_manual", 0)
-    if total_auto == 0 and total_manual == 0:
-        return _role_badge_html(qa)
+    # No sub-line for non-actionable summaries
+    if summary in ("awaiting builder", "no QA items", ""):
+        return f'<span class="{badge_css}">{qa}</span>'
 
-    # Determine display label: AUTO when fully auto-resolvable, else TODO
-    if total_manual == 0 and total_auto > 0:
-        display_label = "AUTO"
-    else:
-        display_label = "TODO"
-
-    badge_css = ROLE_BADGE_CSS.get(display_label, "st-na")
-
-    # Build tooltip with full category breakdown (omit zero categories)
-    auto_parts = []
-    if ve.get("web_test", 0) > 0:
-        auto_parts.append(f'{ve["web_test"]} web')
-    if ve.get("test_only", 0) > 0:
-        auto_parts.append(f'{ve["test_only"]} test-only')
-    if ve.get("skip", 0) > 0:
-        auto_parts.append(f'{ve["skip"]} skip')
-
-    manual_parts = []
-    if ve.get("manual_interactive", 0) > 0:
-        manual_parts.append(f'{ve["manual_interactive"]} interactive')
-    if ve.get("manual_visual", 0) > 0:
-        manual_parts.append(f'{ve["manual_visual"]} visual')
-    if ve.get("manual_hardware", 0) > 0:
-        manual_parts.append(f'{ve["manual_hardware"]} hardware')
-
-    # Build tooltip HTML lines for the custom popup
-    tooltip_lines = []
-    if auto_parts:
-        tooltip_lines.append(f'<b>Auto:</b> {", ".join(auto_parts)}')
-    if manual_parts:
-        tooltip_lines.append(f'<b>Manual:</b> {", ".join(manual_parts)}')
-    tooltip_html = "<br>".join(tooltip_lines)
-
+    # Two-line layout: badge on line 1, effort summary sub-line on line 2
     return (
-        f'<span class="effort-breakdown" data-effort-tooltip="{tooltip_html}">'
-        f'<span class="{badge_css}">{display_label}</span></span>'
+        f'<span class="{badge_css}">{qa}</span>'
+        f'<div class="effort-subline">{summary}</div>'
     )
 
 
@@ -2747,8 +2717,7 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
 .st-auto{{color:var(--purlin-status-auto);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
-.effort-breakdown{{cursor:help;position:relative}}
-.effort-tooltip{{position:fixed;z-index:2000;background:var(--purlin-surface);border:1px solid var(--purlin-border);border-radius:4px;padding:6px 10px;font-size:12px;font-weight:normal;color:var(--purlin-text);white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:none;line-height:1.6}}
+.effort-subline{{font-size:10px;color:var(--purlin-dim);font-weight:normal;line-height:1.2;margin-top:1px}}
 /* Branch Collaboration Operation Modal Spinner */
 @keyframes bc-spin{{ from{{transform:rotate(0deg)}} to{{transform:rotate(360deg)}} }}
 .bc-op-spinner{{
@@ -3136,28 +3105,6 @@ function adjustModalFont(delta) {{
 // ============================
 // State
 // ============================
-// Effort tooltip singleton
-var effortTip = document.createElement('div');
-effortTip.className = 'effort-tooltip';
-document.body.appendChild(effortTip);
-document.addEventListener('mouseover', function(e) {{
-  var el = e.target.closest('.effort-breakdown[data-effort-tooltip]');
-  if (!el) {{ effortTip.style.display = 'none'; return; }}
-  effortTip.innerHTML = el.getAttribute('data-effort-tooltip');
-  effortTip.style.display = 'block';
-  var r = el.getBoundingClientRect();
-  var tw = effortTip.offsetWidth, th = effortTip.offsetHeight;
-  var left = r.left - tw - 8;
-  if (left < 4) left = r.right + 8;
-  var top = r.top + (r.height / 2) - (th / 2);
-  if (top + th > window.innerHeight - 4) top = window.innerHeight - th - 4;
-  if (top < 4) top = 4;
-  effortTip.style.left = left + 'px';
-  effortTip.style.top = top + 'px';
-}});
-document.addEventListener('mouseout', function(e) {{
-  if (e.target.closest('.effort-breakdown[data-effort-tooltip]')) effortTip.style.display = 'none';
-}});
 var currentView = 'status';
 var cy = null;
 var graphData = null;
