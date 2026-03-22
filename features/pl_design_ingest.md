@@ -110,7 +110,8 @@ After ingestion of a Figma URL with MCP available, the PM may optionally attach 
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Ingest Local Image Artifact
 
     Given a feature file "features/my_feature.md" exists with no Visual Specification section
@@ -233,6 +234,7 @@ After ingestion of a Figma URL with MCP available, the PM may optionally attach 
     Then the feature spec does NOT contain a "> Figma Status:" line
     And brief.json contains "figma_dev_status": null
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.
 

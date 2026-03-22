@@ -138,7 +138,7 @@ All feature nodes share a single, uniform appearance. The ONLY color distinction
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
 These scenarios are validated by the Builder's automated test suite.
 
 #### Scenario: Update Feature Graph
@@ -339,7 +339,8 @@ These scenarios are validated by the Builder's automated test suite.
     And the User adjusts the font size slider
     Then all text elements in the modal body scale together
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.
 
 ## Visual Specification

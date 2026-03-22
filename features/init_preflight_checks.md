@@ -50,7 +50,8 @@ Before running any initialization logic, `tools/init.sh` validates that required
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: All prerequisites present
 
     Given git, claude, and node are installed
@@ -128,5 +129,6 @@ Before running any initialization logic, `tools/init.sh` validates that required
     Then no preflight warnings appear on stdout
     And initialization completes (git is present)
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

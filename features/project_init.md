@@ -341,7 +341,8 @@ On both full init and refresh, the script MUST install MCP servers declared in t
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Full Init Creates All Artifacts
 
     Given Purlin is added as a submodule at "purlin/"
@@ -633,5 +634,6 @@ On both full init and refresh, the script MUST install MCP servers declared in t
     Then "playwright" is installed via claude mcp add
     And the refresh summary includes MCP installation results
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

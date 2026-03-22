@@ -46,7 +46,8 @@ Adds structured error logging and startup health checks to the shell scripts tha
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Critic Errors Logged to File
 
     Given tools/critic/run.sh encounters a Python error during critic execution
@@ -116,5 +117,6 @@ Adds structured error logging and startup health checks to the shell scripts tha
     Then both flags are processed correctly
     And verbose diagnostic output appears on the terminal
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

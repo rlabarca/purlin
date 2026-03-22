@@ -76,7 +76,8 @@ Example output:
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: resolve_python Uses AGENTIC_PYTHON Override
     Given AGENTIC_PYTHON is set to a valid Python interpreter path
     And a .venv/ exists at the project root
@@ -170,6 +171,6 @@ Example output:
     When tools/init.sh completes full-init successfully
     Then the summary output does not include a venv setup suggestion
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 

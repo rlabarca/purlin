@@ -98,7 +98,8 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Resolver Returns Local Config When Local Exists
 
     Given config.local.json exists with {"cdd_port": 9999}
@@ -259,5 +260,6 @@ When `/pl-update-purlin` runs (pulling a new Purlin version), the resolver's `sy
     Then a fresh config.local.json is created from config.json
     And the tool reads the shared defaults
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

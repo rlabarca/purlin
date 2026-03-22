@@ -66,7 +66,7 @@ Regression tests verify the architect agent correctly generates release notes.
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
 None. All verification is manual (Architect-executed release step).
 
 ### QA Scenarios

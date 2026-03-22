@@ -68,7 +68,8 @@ The CDD status engine and Critic tool spawn numerous git subprocesses on every i
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Cache write on first build
 
     Given a repository with 5 features (2 Complete, 1 Testing, 2 TODO)
@@ -263,5 +264,6 @@ The CDD status engine and Critic tool spawn numerous git subprocesses on every i
     Then both see identical filtered results
     And .DS_Store and .purlin/cache entries are excluded
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

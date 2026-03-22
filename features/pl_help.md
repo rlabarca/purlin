@@ -60,7 +60,8 @@ Agents print their command vocabulary table at startup, but there is no way to r
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Architect re-displays command table (auto-test-only)
 
     Given an Architect session on the main branch
@@ -93,5 +94,6 @@ Agents print their command vocabulary table at startup, but there is no way to r
     When the agent invokes /pl-help
     Then the output includes pl-run-builder.sh with --continuous documented
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

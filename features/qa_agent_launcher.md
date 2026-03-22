@@ -40,7 +40,8 @@ When `agents.qa` is absent from the resolved config:
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: QA Launcher Dispatches with Config
     Given the resolved config contains agents.qa with model "claude-sonnet-4-6", effort "medium", bypass_permissions false
     When pl-run-qa.sh is executed
@@ -64,5 +65,5 @@ When `agents.qa` is absent from the resolved config:
     And the session prompt includes QA_BASE.md content
     And the session prompt includes QA_OVERRIDES.md content
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
 None.

@@ -85,7 +85,8 @@ Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that i
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Config Schema Validates All Agent Roles
     Given config.json contains agents with keys architect, builder, qa, and pm
     When each agent entry is read
@@ -119,6 +120,6 @@ Purlin agents (Architect, Builder, QA, PM) are launched via shell scripts that i
     When the PM launcher reads config
     Then it falls back to default PM values (model claude-sonnet-4-6, effort medium)
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated.
 

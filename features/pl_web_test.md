@@ -44,7 +44,7 @@ This is an alternative *execution method* for Manual Scenarios and Visual Specs,
 
 ### 2.4 Pre-flight
 
-- For each eligible feature, extract: base URL from `> Web Test:` (or URL override argument), QA Scenarios under `### QA Scenarios`, Visual Specification items under `## Visual Specification`, and regression scope from `tests/<feature_name>/critic.json`.
+- For each eligible feature, extract: base URL from `> Web Test:` (or URL override argument), Manual Scenarios under `### Manual Scenarios`, Visual Specification items under `## Visual Specification`, and regression scope from `tests/<feature_name>/critic.json`.
 - Respect `targeted:` scoping (only verify named scenarios/screens).
 - Respect `cosmetic` scope (skip feature).
 - Respect `dependency-only` scope (verify only listed scenarios).
@@ -240,7 +240,8 @@ The following instruction files MUST be updated by the Builder to reference the 
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Auto-discover web-testable features
 
     Given the Critic report shows features in TESTING state
@@ -471,7 +472,8 @@ The following instruction files MUST be updated by the Builder to reference the 
     And the old skill file `.claude/commands/pl-web-verify.md` does not exist
     And the test directory is `tests/pl_web_test/` (not `tests/pl_web_verify/`)
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.
 
 

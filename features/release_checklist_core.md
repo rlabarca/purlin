@@ -170,7 +170,8 @@ The `order` field is a derived value computed after the resolution algorithm (Se
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Full resolution with defaults
 Given `global_steps.json` contains 6 step definitions and `local_steps.json` is absent or empty, and `config.json` is absent,
 When the checklist is loaded,
@@ -211,5 +212,5 @@ When the checklist is loaded,
 Then an error is raised identifying `purlin.custom_deploy` as using the reserved `purlin.` prefix,
 And that step is excluded from the resolved list.
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
 None. All scenarios for this feature are fully automated (unit tests against the data loading and resolution logic).

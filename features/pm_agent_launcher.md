@@ -44,7 +44,8 @@ The PM defaults to Sonnet 4.6 (creative iteration is fast and conversational).
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: PM Launcher Dispatches with Config
     Given the resolved config contains agents.pm with model "claude-sonnet-4-6", effort "medium", bypass_permissions true
     When pl-run-pm.sh is executed
@@ -72,5 +73,5 @@ The PM defaults to Sonnet 4.6 (creative iteration is fast and conversational).
     Then pl-run-pm.sh is created alongside other agent launchers
     And pl-run-pm.sh has executable permissions
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
 None.

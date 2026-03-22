@@ -176,7 +176,8 @@ The following ~5 scenarios require human judgment and stay manual:
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Dependency integrity script detects cycle
 
     Given the fixture tag "main/release_verify_deps/cycle-in-prerequisites" is checked out
@@ -273,5 +274,6 @@ The following ~5 scenarios require human judgment and stay manual:
     Then stdout contains valid JSON parseable by python3 json.loads
     And the JSON contains "step", "status", "findings", and "summary" keys
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

@@ -298,7 +298,8 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Auto-Fetch and Update When Behind
     Given the submodule's local HEAD is behind the remote tracking branch by 3 commits
     And .purlin/.upstream_sha contains the old SHA
@@ -581,7 +582,8 @@ During the pre-update conflict scan (Section 2.4), the skill MUST also check if
     Then no MCP-related output appears in the summary
     And no "Restart Claude Code" notice is shown for MCP reasons
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 #### Scenario: Complex Three-Way Merge
     Given a command file has been modified both upstream and locally in conflicting ways
     When /pl-update-purlin offers "Smart merge" option

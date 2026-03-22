@@ -64,7 +64,8 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Compact Hook Present in This Repository
 
     Given the Purlin repository .claude/settings.json exists
@@ -154,5 +155,6 @@ Ensures that role-restricted Purlin agents recover their identity and write-acce
     Then generated launcher scripts at the project root do not write to .purlin/runtime/agent_role
     And each generated launcher exports AGENT_ROLE
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.

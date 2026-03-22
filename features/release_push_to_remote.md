@@ -49,7 +49,8 @@ This step may be set to `enabled: false` in `.purlin/release/config.json`. When 
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Remote is ahead of local
 
     Given the remote branch has commits not present locally
@@ -110,5 +111,6 @@ This step may be set to `enabled: false` in `.purlin/release/config.json`. When 
     And the warning message contains "collab/v0.6-sprint"
     And the Architect must confirm before proceeding
 
-### QA Scenarios
+### Manual Scenarios (Architect Execution)
+
 None

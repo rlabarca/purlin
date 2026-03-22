@@ -61,7 +61,8 @@ The Architect commits with message `docs(readme): update Role of the Critic sect
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: Clean audit — README updated (auto-test-only)
@@ -89,5 +90,6 @@ When the Architect completes Phase 1,
 Then the Architect proceeds to Phase 2 (README update) after reporting the warning,
 And notes the warning in the README update commit message.
 
-### QA Scenarios
+### Manual Scenarios (Architect Execution)
+
 None.

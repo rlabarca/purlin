@@ -153,7 +153,8 @@ The following fixture tags provide deterministic project states for web-verify t
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Collapsed Badge Shows Enabled and Disabled Counts
     Given the release checklist has 7 enabled steps and 2 disabled steps
     When the dashboard HTML is generated
@@ -223,7 +224,8 @@ And rows whose content did not change appear visually undisturbed.
     Then the modal width is 70% of the viewport width
     And a font size adjustment control (minus, slider, plus) is visible in the modal header
 
-### QA Scenarios
+### Manual Scenarios (Human Verification Required)
+
 None.
 
 ## Visual Specification

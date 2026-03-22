@@ -133,7 +133,8 @@ After any successful operation, confirm the outcome and note that the CDD Dashbo
 
 ## 3. Scenarios
 
-### Unit Tests
+### Automated Scenarios
+
 #### Scenario: Create valid local step
 Given `local_steps.json` is absent and `config.json` is absent,
 When `manage_step.py create --id "my_step" --name "My Step" --desc "Does something"` is run,
@@ -211,5 +212,5 @@ When `manage_step.py modify my_step --code "echo bye" --clear-code` is run,
 Then the tool exits with code 1,
 And stderr identifies `--code` and `--clear-code` as mutually exclusive.
 
-### QA Scenarios
+### Manual Scenarios
 None. All verification is automated.
