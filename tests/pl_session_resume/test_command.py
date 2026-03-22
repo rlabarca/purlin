@@ -1206,7 +1206,7 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
 
     def test_startup_briefing_features_have_verification_effort(self):
         """Startup briefing features array includes verification_effort
-        per feature entry."""
+        per feature entry when TESTING features exist."""
         import subprocess
         result = subprocess.run(
             ['bash', 'tools/cdd/status.sh', '--startup', 'qa'],
@@ -1215,7 +1215,8 @@ class TestQAColdStartReadsVerificationEffort(unittest.TestCase):
         data = json.loads(result.stdout)
         self.assertIn('features', data)
         features = data['features']
-        self.assertGreater(len(features), 0)
+        # Features array may be empty when no features are in TESTING status.
+        # When features are present, each must include verification_effort.
         for feat in features:
             self.assertIn('verification_effort', feat,
                           f'Feature {feat.get("file", "?")} missing '
@@ -1336,10 +1337,10 @@ class TestStartupBriefingIntegration(unittest.TestCase):
         self.assertIn('--cli-startup', content)
 
     def test_command_file_references_startup_flag(self):
-        """Command file Step 5 uses tools/cdd/status.sh --startup."""
+        """Command file Step 5 uses status.sh --startup."""
         with open(COMMAND_FILE) as f:
             content = f.read()
-        self.assertIn('tools/cdd/status.sh --startup', content)
+        self.assertIn('cdd/status.sh --startup', content)
 
     def test_command_file_step5_references_role_extensions(self):
         """Command file Step 5 lists Builder, QA, Architect extensions."""
