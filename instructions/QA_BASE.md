@@ -70,7 +70,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 
 *   **If `find_work: false`:** Output `"find_work disabled -- awaiting instruction."` and await user input. Do NOT proceed with steps 3.1–3.3.
 *   **If `find_work: true` and `auto_start: false`:** Proceed with steps 3.1–3.3 in full (gather state, identify targets, wait for approval before executing verification).
-*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 3.1–3.2 (gather state, identify targets), then begin executing verification immediately without step 3.3 approval. The 3.3a auto-pass runs unconditionally under `find_work: true`.
+*   **If `find_work: true` and `auto_start: true`:** Proceed with steps 3.1–3.2 (gather state, identify targets), then begin executing verification immediately without step 3.3 approval. Present the Step 3.2 summary as informational only — do NOT ask "shall I proceed?", "ready to begin?", or any approval question. Invoke `/pl-verify` and execute Phase A fully without user prompts (see Phase A auto-start behavior in `/pl-verify`). The 3.3a auto-pass runs unconditionally under `find_work: true`.
 
 ### 3.1 Gather Project State
 1. Run `{tools_root}/cdd/status.sh --startup qa`. Parse the JSON output.
@@ -96,7 +96,15 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   **Quick mode:** If the user says "just smoke" at any point before or during target identification, filter to smoke-tier features only. Standard and full-only are skipped with: `"Skipping N standard and M full-only features (smoke-only mode)."` If no tier table exists, inform the user: `"No tier classification found in QA_OVERRIDES.md. Verifying all features."`.
 *   SPEC_UPDATED discoveries awaiting re-verification and OPEN discoveries.
 *   If a delivery plan exists at `.purlin/delivery_plan.md`, read it and classify each TESTING feature as **fully delivered** (eligible for `[Complete]`) or **more work coming** (not eligible). Present phase context: "Delivery Plan active: Phase N of M."
-*   **Regression authoring targets:** Features with `### Regression Testing` or `## Regression Guidance` sections (or `> Web Test:` metadata), where Builder status is DONE and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. Present alongside verification: `"Regression: N features need scenario authoring"`.
+*   **Regression authoring targets:** Features with `### Regression Testing` or `## Regression Guidance` sections (or `> Web Test:` metadata), where Builder status is DONE and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. Present as a separate table:
+    ```
+    Regression Authoring Needed: N features
+    | Feature | Harness Type | Notes |
+    |---------|-------------|-------|
+    | <name>  | web_test    | Web Test: <url> |
+    | <name>  | agent_behavior | — |
+    ```
+    When `auto_start` is `true`: QA authors regression JSON for all targets immediately via `/pl-regression` during Phase A Step 3 — no user prompt needed. When `auto_start` is `false`: present the table and include in the approval prompt.
 
 ### 3.3 Execute Verification (Auto-First Protocol)
 > **Canonical definition.** `/pl-verify` implements this protocol as Phase A. Both must stay in sync. If they diverge, this section is authoritative.

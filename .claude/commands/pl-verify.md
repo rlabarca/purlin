@@ -25,6 +25,14 @@ Execute these steps IN ORDER before assembling the manual checklist. Do NOT skip
 
 > **Canonical source:** QA_BASE Section 3.3 defines the Auto-First Protocol. This phase implements it. If they diverge, QA_BASE Section 3.3 is authoritative.
 
+> **Auto-start behavior:** When `auto_start` is `true` for the QA role,
+> execute ALL Phase A steps without user prompts. Do not present
+> approval gates or "shall I proceed?" questions — just execute.
+> Steps 1-3 and 5 run silently and report results in the Phase A
+> Summary. Step 4 auto-classifies without per-scenario proposals:
+> automation-feasible scenarios become `@auto` (author regression JSON
+> + run immediately), infeasible become `@manual`.
+
 ### Step 0 -- Scoped Verification Modes
 
 Before any execution, check each in-scope feature's regression scope from `tests/<feature_name>/critic.json`:
@@ -96,6 +104,12 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
 
 For each QA scenario in scope with NO tag (neither `@auto` nor `@manual`) that was NOT already handled in Step 2 (smoke gate):
 
+> **Auto-start override:** When `auto_start` is `true`, skip the
+> per-scenario user proposal (substeps 2-5 below). Instead: auto-classify
+> each scenario — if automation-feasible, author via `/pl-regression`, run
+> via harness, and tag `@auto`; if not feasible, tag `@manual`. Batch-commit
+> all tag changes. Report all classifications in the Phase A Summary.
+
 1.  **Evaluate automation feasibility:** Can the scenario be automated? Criteria: deterministic assertions (no subjective judgment), no physical hardware required, no interactive multi-step human workflow.
 
 2.  **Propose to user:**
@@ -142,11 +156,34 @@ Smoke gate:      [ran M smoke scenarios / skipped (no tier table)]
 @auto executed:  X scenarios — Y passed, Z failed
 Classified:      A scenarios (B → @auto, C → @manual, D skipped)
 Visual smoke:    E items checked
+Regression:      R authored this session, S pre-existing
 
 Remaining for manual verification: F items across G features.
 Proceeding to Phase B.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**Regression gap table** (print only if features have regression guidance but
+no harness JSON and the gap was NOT resolved during Phase A):
+
+```
+Regression gaps requiring Builder: T features
+| Feature | Harness Type | Blocker |
+|---------|-------------|---------|
+| <name>  | <type>      | <why>   |
+```
+
+**Decision point** (only when BOTH regression gaps needing Builder AND manual
+items remain):
+```
+T features need Builder work for regression infrastructure.
+M manual items remain for human verification.
+→ [exit] Return to Builder for regression work
+→ [continue] Proceed to Phase B manual verification
+→ [both] Author what's possible now, then manual
+```
+When `auto_start` is `true`, default to `[both]` without prompting.
+When `auto_start` is `false`, wait for user choice.
 
 If zero manual items remain after Phase A:
 ```
