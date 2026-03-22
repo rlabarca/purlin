@@ -639,6 +639,25 @@ def get_delivery_phase():
               file=sys.stderr)
         return None
 
+    # Parse features per phase: find **Features:** lines after each heading
+    features_pattern = re.compile(
+        r'\*\*Features:\*\*\s*(.+)', re.MULTILINE)
+    # Build a map: phase_number -> list of feature filenames
+    phase_features_map = {}
+    lines = content.split('\n')
+    current_phase_num = None
+    for line in lines:
+        heading = phase_pattern.match(line)
+        if heading:
+            current_phase_num = int(heading.group(1))
+        elif current_phase_num is not None:
+            feat_match = features_pattern.match(line.strip())
+            if feat_match:
+                raw = feat_match.group(1)
+                feats = [f.strip() for f in raw.split(',') if f.strip()
+                         and f.strip() != '--']
+                phase_features_map[current_phase_num] = feats
+
     # Count by status
     counts = {"COMPLETE": 0, "IN_PROGRESS": 0, "PENDING": 0, "REMOVED": 0}
     phases = []
@@ -650,6 +669,7 @@ def get_delivery_phase():
             "number": int(phase_num_str),
             "label": label.strip(),
             "status": s,
+            "features": phase_features_map.get(int(phase_num_str), []),
         })
 
     # Omit when all phases are COMPLETE or REMOVED
@@ -1278,17 +1298,25 @@ def generate_startup_briefing(role, cache=None):
         # Delivery plan state (Section 2.15.2)
         delivery = get_delivery_phase()
         if delivery:
-            # Find current phase (first IN_PROGRESS or first PENDING)
-            current_phase = None
+            # Collect all IN_PROGRESS phases (execution group)
+            in_progress = [p for p in delivery.get("phases", [])
+                           if p["status"] == "IN_PROGRESS"]
+            if in_progress:
+                current_phases = [p["number"] for p in in_progress]
+            else:
+                # No IN_PROGRESS: first PENDING phase
+                pending = [p for p in delivery.get("phases", [])
+                           if p["status"] == "PENDING"]
+                current_phases = ([pending[0]["number"]]
+                                  if pending else [])
+            # Collect features from all current phases
             phase_features_list = []
             for p in delivery.get("phases", []):
-                if p["status"] in ("IN_PROGRESS", "PENDING"):
-                    if current_phase is None:
-                        current_phase = p["number"]
-                    break
+                if p["number"] in current_phases:
+                    phase_features_list.extend(p.get("features", []))
             result["delivery_plan_state"] = {
                 "exists": True,
-                "current_phase": current_phase,
+                "current_phases": current_phases,
                 "phase_features": phase_features_list,
             }
         else:

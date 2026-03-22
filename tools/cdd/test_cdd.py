@@ -3672,8 +3672,67 @@ class TestStartupBriefingNoDeliveryPlan(unittest.TestCase):
 
             dp = result["delivery_plan_state"]
             self.assertFalse(dp["exists"])
-            self.assertNotIn("current_phase", dp)
+            self.assertNotIn("current_phases", dp)
             self.assertNotIn("phase_features", dp)
+
+
+class TestStartupBriefingWithExecutionGroup(unittest.TestCase):
+    """Scenario: Startup Briefing with Execution Group"""
+
+    @patch('serve.TESTS_DIR')
+    @patch('serve.FEATURES_ABS')
+    def test_execution_group_multiple_in_progress(self, mock_fabs, mock_tdir):
+        """When multiple phases are IN_PROGRESS, current_phases is an array."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plan = (
+                "# Delivery Plan\n\n"
+                "**Created:** 2026-03-22\n"
+                "**Total Phases:** 3\n\n"
+                "## Phase 1 -- Foundation [COMPLETE]\n"
+                "**Features:** foundation.md\n\n"
+                "## Phase 2 -- UI [IN_PROGRESS]\n"
+                "**Features:** feat_a.md, feat_b.md\n\n"
+                "## Phase 3 -- API [IN_PROGRESS]\n"
+                "**Features:** feat_c.md\n"
+            )
+            env = _make_startup_env(tmpdir, features={
+                "feat_a": {"label": "A",
+                           "role_status": {"architect": "DONE",
+                                           "builder": "TODO",
+                                           "qa": "N/A", "pm": "N/A"}},
+                "feat_b": {"label": "B",
+                           "role_status": {"architect": "DONE",
+                                           "builder": "TODO",
+                                           "qa": "N/A", "pm": "N/A"}},
+                "feat_c": {"label": "C",
+                           "role_status": {"architect": "DONE",
+                                           "builder": "TODO",
+                                           "qa": "N/A", "pm": "N/A"}},
+            }, delivery_plan=plan)
+
+            with patch('serve.FEATURES_ABS', env["features_dir"]), \
+                 patch('serve.FEATURES_REL', 'features'), \
+                 patch('serve.TESTS_DIR', env["tests_dir"]), \
+                 patch('serve.CACHE_DIR', env["cache_dir"]), \
+                 patch('serve.DEPENDENCY_GRAPH_PATH',
+                       os.path.join(env["cache_dir"],
+                                    "dependency_graph.json")), \
+                 patch('serve.CONFIG', env["config"]), \
+                 patch('serve.PROJECT_ROOT', env["project_root"]), \
+                 patch('serve.build_status_commit_cache', return_value={}), \
+                 patch('serve.run_command') as mock_cmd:
+                mock_cmd.side_effect = lambda c: {
+                    "git rev-parse --abbrev-ref HEAD": "main",
+                    "git status --porcelain": "",
+                }.get(c.strip(), "")
+                result = generate_startup_briefing("builder")
+
+            dp = result["delivery_plan_state"]
+            self.assertTrue(dp["exists"])
+            self.assertEqual(dp["current_phases"], [2, 3])
+            self.assertIn("feat_a.md", dp["phase_features"])
+            self.assertIn("feat_b.md", dp["phase_features"])
+            self.assertIn("feat_c.md", dp["phase_features"])
 
 
 class TestStartupBriefingPhasingRecommendation(unittest.TestCase):
