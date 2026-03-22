@@ -93,9 +93,14 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 
     (Use "None." if no QA scenarios.)
 
-**`@auto` tag:** QA Scenarios MAY include `@auto` as a suffix on the `#### Scenario:` heading (e.g., `#### Scenario: Widget renders @auto`). This tag means "QA should automate this." When QA encounters an `@auto` scenario without regression JSON, it invokes `/pl-regression` to author the automation before running. A scenario is untagged (manual by default) until QA adds `@auto`.
+**Scenario classification tags (`@auto`, `@manual`):** QA Scenarios start **untagged** when the Architect or PM writes them. On QA's first verification pass, every untagged scenario gets classified:
 
-**`@manual` tag:** QA Scenarios MAY include `@manual` as a suffix (e.g., `#### Scenario: Hardware calibration check @manual`). This tag means "always requires human judgment — never propose automation." QA skips the automation check entirely for `@manual` scenarios. Use this for scenarios involving physical hardware, subjective judgment, or complex human interaction that cannot be captured in assertions.
+*   **`@auto`** — QA determined the scenario can be automated and authored regression JSON for it. On future sessions, the harness runner executes it without human involvement. Example: `#### Scenario: Widget renders correctly @auto`
+*   **`@manual`** — QA determined the scenario requires human judgment, or the user declined automation. QA never re-proposes automation for `@manual` scenarios. Example: `#### Scenario: Hardware calibration check @manual`
+
+**Lifecycle:** `untagged` (Architect/PM writes) → QA proposes automation → `@auto` (if feasible and approved) or `@manual` (if declined or infeasible). No scenario stays untagged after QA's first pass.
+
+**Architects and PMs MUST NOT add `@auto` or `@manual` tags.** These are QA-authored classification outputs, not spec inputs. Write scenarios untagged; QA classifies them.
 
 **Gradual migration:** The Critic accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 
