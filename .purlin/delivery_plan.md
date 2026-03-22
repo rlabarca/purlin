@@ -12,44 +12,44 @@ All 55 in-scope features reset to TODO after spec heading migration commits (d4b
 ## Execution Group 1 — Layer 0 Foundation (Phases 1-8)
 All phases in this group are independent and can build in parallel.
 
-## Phase 1 — Core Infrastructure [IN_PROGRESS]
+## Phase 1 — Core Infrastructure [COMPLETE]
 **Features:** project_init.md, agent_launchers_common.md, models_configuration.md
-**Completion Commit:** --
+**Completion Commit:** fd187c3
 **QA Bugs Addressed:** --
 
-## Phase 2 — Lifecycle Foundation [PENDING]
+## Phase 2 — Lifecycle Foundation [COMPLETE]
 **Features:** impl_notes_companion.md, git_timestamp_resilience.md
-**Completion Commit:** --
+**Completion Commit:** 8e32ad7
 **QA Bugs Addressed:** --
 
-## Phase 3 — Tools Foundation [PENDING]
+## Phase 3 — Tools Foundation [COMPLETE]
 **Features:** tools_bootstrap_module.md, tools_diagnostic_logging.md
-**Completion Commit:** --
+**Completion Commit:** 38431b6
 **QA Bugs Addressed:** --
 
-## Phase 4 — CDD Modal Foundation [PENDING]
+## Phase 4 — CDD Modal Foundation [COMPLETE]
 **Features:** cdd_modal_base.md
-**Completion Commit:** --
+**Completion Commit:** 967605d
 **QA Bugs Addressed:** --
 
-## Phase 5 — Agent Skills A [PENDING]
+## Phase 5 — Agent Skills A [COMPLETE]
 **Features:** pl_help.md, pl_remote_pull.md, submodule_command_path_resolution.md
-**Completion Commit:** --
+**Completion Commit:** 8b678ad
 **QA Bugs Addressed:** --
 
-## Phase 6 — Agent Skills B: Verification [PENDING]
+## Phase 6 — Agent Skills B: Verification [COMPLETE]
 **Features:** pl_session_resume.md, pl_web_test.md
-**Completion Commit:** --
+**Completion Commit:** 8469e27
 **QA Bugs Addressed:** --
 
-## Phase 7 — Agent Skills C: Design [PENDING]
+## Phase 7 — Agent Skills C: Design [COMPLETE]
 **Features:** pl_design_audit.md, pl_design_ingest.md
-**Completion Commit:** --
+**Completion Commit:** f5d0cb9
 **QA Bugs Addressed:** --
 
-## Phase 8 — Release Foundation [PENDING]
+## Phase 8 — Release Foundation [COMPLETE]
 **Features:** release_checklist_core.md, release_audit_automation.md
-**Completion Commit:** --
+**Completion Commit:** 8da88ad
 **QA Bugs Addressed:** --
 
 ## Execution Group 2 — Layer 1 Dependents (Phases 9-19)
