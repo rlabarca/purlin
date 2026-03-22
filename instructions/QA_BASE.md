@@ -86,7 +86,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
     - Each `manual_visual` item: ~1 minute
     - Each `manual_hardware` scenario: ~5 minutes
     Present total: `"Estimated: ~N minutes for M features"`. Consumer projects may override these multipliers in `QA_OVERRIDES.md`.
-*   **Tier classification:** Read `QA_OVERRIDES.md` for a `## Test Priority Tiers` section. If present, parse the feature-to-tier table (format: `| feature_name | tier |`). Features not listed default to `standard`. Three tiers: `smoke` (critical, verify first), `standard` (default), `full-only` (verify last or skip in quick passes). The Architect classifies tiers during feature design; QA consumes the table. Consumer projects may also customize smoke-only behavior (e.g., verify only the first scenario per smoke feature) and override time estimation multipliers in the same section.
+*   **Tier classification:** Read `QA_OVERRIDES.md` for a `## Test Priority Tiers` section. If present, parse the feature-to-tier table (format: `| feature_name | tier |`). Features not listed default to `standard`. Three tiers: `smoke` (critical, verify first), `standard` (default), `full-only` (verify last or skip in quick passes). The Architect classifies tiers during feature design. QA consumes the table for verification ordering. **Tier proposals:** When QA identifies TESTING features not in the tier table that warrant `smoke` or `full-only` classification, QA proposes the change during target identification: `"Tier proposal: <feature> -> smoke (rationale: <why>). Add? [yes/no]"`. If approved, QA writes the row to `## Test Priority Tiers` in `QA_OVERRIDES.md` and commits. The Architect may reclassify later. QA MUST NOT remove or downgrade existing entries -- only add or upgrade. Consumer projects may also customize smoke-only behavior (e.g., verify only the first scenario per smoke feature) and override time estimation multipliers in the same section.
 *   **Verification order:** Present features in this order:
     1. Builder-verified features (auto-pass, zero human time)
     2. Smoke-tier features (shortest first within tier)
@@ -99,6 +99,8 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   **Regression authoring targets:** Features with `### Regression Testing` or `## Regression Guidance` sections (or `> Web Test:` metadata), where Builder status is DONE and no corresponding `tests/qa/scenarios/<feature_name>.json` exists. Present alongside verification: `"Regression: N features need scenario authoring"`.
 
 ### 3.3 Execute Verification (Auto-First Protocol)
+> **Canonical definition.** `/pl-verify` implements this protocol as Phase A. Both must stay in sync. If they diverge, this section is authoritative.
+
 *   **Step 1 — Auto pass:** Credit Builder-verified features (TestOnly, Skip). No QA action needed. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
 *   **Step 2 — Smoke gate:** If a tier table exists in `QA_OVERRIDES.md`, identify smoke-tier features with QA work (TODO or AUTO status). Run their scenarios first — both `@auto` (via harness runner) and `@manual`/untagged (manual verification with human). If ANY smoke-tier scenario fails, halt and report: `"Smoke failure: <feature> — <scenario>. Fix before continuing full verification? [yes to stop / no to continue]"`. This catches catastrophic breakage before committing to the full batch. If no tier table exists, skip this step.
 *   **Step 3 — Run @auto scenarios:** For each `@auto`-tagged QA scenario (already classified from a prior session):
@@ -157,7 +159,7 @@ Status progression: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Invoke `/pl-di
 
 ## 5. Batched Verification Workflow
 
-**Invoke `/pl-verify` for the complete batched verification workflow.** The skill carries all steps: scoped verification modes, checklist assembly, presentation template, response processing, failure handling, visual verification integration, exploratory testing, and batch completion.
+**Invoke `/pl-verify` for the complete batched verification workflow.** The skill implements the Auto-First Protocol (Section 3.3) as Phase A, followed by manual checklist assembly and presentation as Phase B. All auto-first steps execute before any manual checklist is presented to the user.
 
 ### Bright-Line Rules (always active)
 
