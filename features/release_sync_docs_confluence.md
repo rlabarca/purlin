@@ -99,10 +99,10 @@ On first execution, the step detects missing prerequisites and guides the user t
 
 1. **Confluence MCP check:** Attempt to list Confluence spaces. If the MCP server is unavailable:
    - Check if `.mcp.json` in the project root already contains an `atlassian` entry.
-   - If not configured, run `claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp` to configure it automatically (per `policy_release.md` Invariant 2.7).
+   - If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` to configure it automatically (per `policy_release.md` Invariant 2.7).
    - Whether newly configured or already configured, MCP servers load at session start. Inform the user that a restart is needed and halt. Do NOT ask the user to run any CLI commands.
-   - After restart, verify by confirming the `PRODENG` space is accessible via the MCP. The MCP handles OAuth 2.1 automatically (a browser window opens if needed).
-2. **API token check:** Read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
+   - After restart, verify by confirming the `PRODENG` space is accessible via the MCP. The MCP uses OAuth 2.1 automatically (a browser window opens if needed for authorization). No API token or credentials file is needed for MCP operations.
+2. **API token check (image uploads only):** The image upload script (`dev/confluence_upload_images.py`) requires REST API credentials stored at `.purlin/runtime/confluence/credentials.json`. This check is deferred to Phase 2 and only applies when images are found. If the credentials file is missing when needed, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
 
 ### 2.6 Doc Freshness Review
 
@@ -180,10 +180,9 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image 
 
 1. Check Confluence MCP availability: search for Atlassian MCP tools in the current session.
    - If available: proceed to step 2.
-   - If unavailable: check `.mcp.json` for existing `atlassian` entry. If not configured, run `claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp` automatically. Then inform the user a restart is needed and halt (per `policy_release.md` Invariant 2.7). Do NOT ask the user to run any commands.
-2. Check API token: read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory and ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
-3. Verify Confluence access: list spaces via Atlassian MCP and confirm `PRODENG` space is accessible. The MCP handles OAuth automatically. Halt if not accessible.
-4. If all prerequisites pass: proceed.
+   - If unavailable: check `.mcp.json` for existing `atlassian` entry. If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` automatically. Then inform the user a restart is needed and halt (per `policy_release.md` Invariant 2.7). Do NOT ask the user to run any commands.
+2. Verify Confluence access: use the Atlassian MCP to list accessible Atlassian resources and confirm the `PRODENG` space is reachable. The MCP uses OAuth 2.1 -- a browser window will open automatically on first use for authorization. No API token or credentials file is needed for MCP operations. Halt if not accessible.
+3. If all prerequisites pass: proceed.
 
 **Phase 1: Doc Freshness Review**
 
@@ -196,7 +195,9 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image 
 **Phase 2: Image Upload**
 
 1. Scan all markdown files for `![alt](path)` image references.
-2. If images found: determine target page ID for each image (the child page it belongs to), run `python3 dev/confluence_upload_images.py --page-id <id> --files <paths>`, collect URL mapping.
+2. If images found:
+   a. Check credentials for the REST API image uploader: read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
+   b. Determine target page ID for each image (the child page it belongs to), run `python3 dev/confluence_upload_images.py --page-id <id> --files <paths>`, collect URL mapping.
 3. If no images: skip to Phase 3.
 
 **Phase 3: Confluence Page Sync**
@@ -255,14 +256,15 @@ Print the change-focused summary per Section 2.10. Include Recommendations secti
 
     Given the Atlassian MCP server is not configured in Claude Code
     When the step executes Phase 0
-    Then the step runs "claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp" automatically
+    Then the step runs "claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp" automatically
     And informs the user that a session restart is needed for the MCP to load
     And the step halts without asking the user to run any CLI commands
 
-#### Scenario: Missing credentials file triggers token setup
+#### Scenario: Missing credentials file triggers token setup during image upload
 
     Given .purlin/runtime/confluence/credentials.json does not exist
-    When the step executes Phase 0
+    And markdown files contain image references
+    When the step executes Phase 2 image upload
     Then the step guides the user to create an API token
     And collects the user's email and token
     And writes the credentials file to .purlin/runtime/confluence/credentials.json
