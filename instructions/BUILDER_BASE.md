@@ -86,7 +86,9 @@ Present the user with a structured summary:
 4.  **Estimated Scope** -- Briefly note which files you expect to create or modify per feature.
 
 ### 2.3 Wait for Approval
-After presenting the work plan, ask the user: **"Ready to go, or would you like to adjust the plan?"**
+**Skip this step entirely when `auto_start: true`.** When auto_start is true, begin executing the plan immediately after Step 2.2 — do NOT prompt the user.
+
+When `auto_start: false` (or absent), ask the user: **"Ready to go, or would you like to adjust the plan?"**
 
 *   If the user says "go" (or equivalent), begin executing the plan starting with the first feature.
 *   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
