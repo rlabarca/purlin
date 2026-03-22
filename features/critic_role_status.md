@@ -181,6 +181,9 @@ When a feature's lifecycle resets to TODO (spec file modified after status commi
 }
 ```
 
+**Field definitions:**
+*   `has_passing_tests`: `true` when `tests/<feature>/tests.json` exists AND contains `"status": "PASS"`. The timestamp of `tests.json` relative to the spec file is irrelevant — only the content matters. A cosmetic spec touch (heading rename, whitespace edit) MUST NOT invalidate passing tests.
+
 **Description generation rules based reset context:**
 *   If `has_passing_tests && !scenario_diff.has_diff && !requirements_changed`: `"Re-verify and re-tag <feature_name> (spec touched, no behavioral changes, implementation exists)"`
 *   If `scenario_diff.has_diff`: `"Implement spec changes for <feature_name>: N new scenario(s) [titles], M modified [titles], K removed [titles]"` (existing behavior)
