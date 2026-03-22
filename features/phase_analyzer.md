@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads the delivery plan and dependency graph to determine correct phase execution order and identify parallelization opportunities. The tool detects when phases are ordered incorrectly relative to their feature dependencies, computes a topologically-sorted execution order, and groups independent phases into parallel execution sets. Output is structured JSON to stdout, suitable for consumption by the continuous phase builder orchestration loop.
+A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads the delivery plan and dependency graph to determine correct phase execution order and identify parallelization opportunities. The tool detects when phases are ordered incorrectly relative to their feature dependencies, computes a topologically-sorted execution order, and groups independent phases into parallel execution sets. For intra-phase analysis, the tool also performs implementation coupling detection to warn when spec-independent features share source files, enabling the Builder to make informed parallelization decisions while relying on the merge protocol as the ultimate safety net. Output is structured JSON to stdout, suitable for consumption by the continuous phase builder orchestration loop.
 
 ---
 
@@ -105,19 +105,98 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
   "parallel_groups": [
     {"features": ["feature_a.md", "feature_b.md"], "parallel": true},
     {"features": ["feature_c.md"], "parallel": false, "depends_on": ["feature_a.md"]}
-  ]
+  ],
+  "coupling_warnings": []
 }
 ```
 
 - `parallel_groups` is ordered: groups with no intra-phase dependencies come first, followed by groups that depend on earlier groups.
 - A group with a single feature has `parallel: false`. A group with 2+ independent features has `parallel: true`.
 - The `depends_on` field lists features from earlier groups that this group's features transitively depend on. Omitted when the group has no intra-phase dependencies.
+- The `coupling_warnings` array is populated by the implementation coupling detection system (Section 2.10).
+
+### 2.10 Implementation Coupling Detection (Intra-Phase)
+
+When running `--intra-phase`, the analyzer MUST additionally check for implementation-level coupling between features that are spec-independent. This detection is **advisory** — coupling warnings inform the Builder but do NOT block parallel execution. The robust merge protocol (per `subagent_parallel_builder.md` Section 2.4) is the safety net; sequential fallback occurs only when merge actually fails.
+
+#### 2.10.1 Philosophy: Optimistic Parallelism
+
+Spec-level dependencies (prerequisite graph) remain the only **hard gate** on parallelization. All implementation coupling signals are **soft** — they produce warnings but the analyzer still reports features as parallel. The Builder sees the warnings, proceeds with parallel execution, and relies on the merge protocol to handle conflicts. This avoids over-conservative sequentialization while giving the Builder situational awareness.
+
+#### 2.10.2 Coupling Detection Tiers
+
+The analyzer checks coupling signals in order from least conservative (cheapest, most permissive) to most conservative (most expensive, most likely to flag false positives). Detection stops at the first tier that reports **no coupling** for a given feature pair.
+
+| Tier | Signal | Method | Cost |
+|------|--------|--------|------|
+| 1 | Spec-level dependency | Prerequisite graph (existing Section 2.9 logic) | Cheap |
+| 2 | Test file source imports | Parse `tests/<feature>/tests.json` for `test_file`/`test_files`, then parse Python import statements from each test file to extract imported source modules. Two features are coupled if their imported source module sets overlap. | Moderate |
+| 3 | Git commit file overlap | Find commits matching `feat(<feature_stem>)` in git log, extract the set of files modified across those commits. Two features are coupled if their modified file sets overlap. | Expensive |
+
+**Decision logic for each feature pair:**
+
+1. **Tier 1 — Spec dependency** (hard gate): If a prerequisite link exists between the features, they MUST be sequential. No further checks. This is existing behavior.
+2. **Tier 2 — Test imports**: If both features have `tests.json` with test file references, parse the test files for Python imports (or use parent directory for shell test files) and compute the set of imported source modules for each feature. If the sets are disjoint → no coupling detected at this tier → skip Tier 3 and report parallel with no warning.
+3. **Tier 3 — Git history**: If Tier 2 detected coupling (overlapping imports) or if Tier 2 could not run (no `tests.json` for one or both features), check git commit history. Find commits whose message matches `feat(<feature_stem>)` or status commits referencing the feature file. Extract the set of modified files. If the sets are disjoint → no coupling → report parallel with no warning. If overlap exists → report parallel WITH a coupling warning.
+
+**Tier skip rule:** If Tier 2 says "no coupling" (disjoint source imports), Tier 3 is skipped entirely. The rationale: test imports are a precise signal about which source modules a feature exercises. If two features' tests don't share source modules, git history overlap (which may include incidental file touches like docs or configs) is noise.
+
+**No-data fallback:** If a feature has no `tests.json` AND no matching git commits (never implemented), coupling detection cannot run for pairs involving that feature. The analyzer reports parallel with no coupling warning — same as current behavior.
+
+#### 2.10.3 Source Module Extraction
+
+For **Python test files** (`.py`):
+- Parse `import` and `from ... import` statements.
+- Exclude standard library modules and test framework imports (`pytest`, `unittest`, `mock`).
+- Resolve relative imports against the test file's location.
+- The resulting set of module file paths is the feature's **implementation surface**.
+
+For **shell test files** (`.sh`, `.bats`):
+- Use the test file's parent directory as a proxy for the implementation surface.
+- All non-test files (`*` excluding `test_*`) in that directory are included in the surface.
+
+#### 2.10.4 Output Extension
+
+The `--intra-phase` output includes a `coupling_warnings` array at the top level:
+
+```json
+{
+  "phase": 2,
+  "features": ["feature_a.md", "feature_b.md"],
+  "parallel_groups": [
+    {"features": ["feature_a.md", "feature_b.md"], "parallel": true}
+  ],
+  "coupling_warnings": [
+    {
+      "features": ["feature_a.md", "feature_b.md"],
+      "tier": 2,
+      "shared_files": ["tools/critic/critic.py"],
+      "detail": "test files for both features import from tools/critic/critic"
+    }
+  ]
+}
+```
+
+- `features`: The pair of features with detected coupling.
+- `tier`: Which detection tier found the coupling (2 or 3).
+- `shared_files`: The list of source files or modules shared between the features.
+- `detail`: Human-readable explanation of the coupling signal.
+
+Note: `parallel_groups` still reports `parallel: true` for spec-independent features even when coupling is detected. The warnings are advisory. The Builder and merge protocol decide whether to proceed.
+
+#### 2.10.5 Integration Test Fixture Tags
+
+| Tag | State Description |
+|-----|-------------------|
+| `main/phase_analyzer/coupling-via-imports` | Two features with test files that import from the same source module |
+| `main/phase_analyzer/coupling-via-git` | Two features with git commits that modified the same file, but disjoint test imports |
+| `main/phase_analyzer/no-coupling-data` | Feature with no tests.json and no matching git commits |
 
 ---
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Analyze Delivery Plan with Correct Ordering
     Given a delivery plan with Phases 1, 2, 3 in PENDING status
@@ -232,7 +311,78 @@ A dependency-aware analysis tool (`tools/delivery/phase_analyzer.py`) that reads
     When phase_analyzer.py --intra-phase 1 is run
     Then parallel_groups contains one group with parallel false
 
-### Manual Scenarios (Human Verification Required)
+#### Scenario: Coupling detected via shared test imports (Tier 2)
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And no transitive spec dependency exists between them
+    And tests/feature_a/tests.json has test_file "tools/critic/test_a.py"
+    And tests/feature_b/tests.json has test_file "tools/critic/test_b.py"
+    And both test files import from "tools/critic/critic.py"
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups reports both features as parallel true
+    And coupling_warnings contains one entry with tier 2
+    And shared_files includes "tools/critic/critic.py"
+
+#### Scenario: No coupling when test imports are disjoint
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And tests/feature_a/tests.json has test_file "tools/critic/test_a.py" importing "tools/critic/critic.py"
+    And tests/feature_b/tests.json has test_file "tools/cdd/test_b.py" importing "tools/cdd/monitor.py"
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups reports both features as parallel true
+    And coupling_warnings is empty
+
+#### Scenario: Tier 2 no-coupling skips Tier 3 entirely
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And their test file imports are disjoint (Tier 2 says no coupling)
+    And their git commit histories overlap on a shared config file
+    When phase_analyzer.py --intra-phase 2 is run
+    Then coupling_warnings is empty
+    And Tier 3 git analysis was not performed
+
+#### Scenario: Coupling detected via git history (Tier 3) when no tests exist
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And neither feature has a tests.json file
+    And git log contains commits "feat(feature_a): ..." modifying tools/shared/utils.py
+    And git log contains commits "feat(feature_b): ..." also modifying tools/shared/utils.py
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups reports both features as parallel true
+    And coupling_warnings contains one entry with tier 3
+    And shared_files includes "tools/shared/utils.py"
+
+#### Scenario: Coupling via git history when Tier 2 detects overlap
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And both features have test files importing from the same source module
+    When phase_analyzer.py --intra-phase 2 is run
+    Then Tier 3 is also checked for additional context
+    And coupling_warnings contains an entry with the highest-signal tier
+
+#### Scenario: No coupling data available for never-implemented feature
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And feature_a.md has no tests.json and no matching git commits
+    And feature_b.md has tests.json with test imports
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups reports both features as parallel true
+    And coupling_warnings is empty
+
+#### Scenario: Shell test files use directory proximity for surface detection
+    Given Phase 2 contains feature_a.md and feature_b.md
+    And feature_a.md has test_file "tools/release/test_a.sh"
+    And feature_b.md has test_file "tools/release/test_b.sh"
+    When phase_analyzer.py --intra-phase 2 is run
+    Then the implementation surface for both features includes non-test files in tools/release/
+    And coupling_warnings contains an entry if they share that directory
+
+#### Scenario: Coupling warnings do not change parallel grouping
+    Given Phase 2 contains feature_a.md, feature_b.md, feature_c.md
+    And all three are spec-independent
+    And feature_a.md and feature_b.md have Tier 2 coupling (shared imports)
+    And feature_c.md has no coupling with either
+    When phase_analyzer.py --intra-phase 2 is run
+    Then parallel_groups contains one group with all three features and parallel true
+    And coupling_warnings contains one entry for feature_a.md and feature_b.md
+    And feature_c.md does not appear in any coupling warning
+
+### QA Scenarios
+
 None.
 
 ## Regression Guidance
@@ -241,3 +391,4 @@ None.
 - PURLIN_PROJECT_ROOT used for path resolution (submodule safe)
 - Only PENDING phases included; COMPLETE and IN_PROGRESS excluded
 - Empty plan (no PENDING phases) exits successfully with empty groups
+- Coupling warnings are advisory only — they never change parallel_groups decisions
