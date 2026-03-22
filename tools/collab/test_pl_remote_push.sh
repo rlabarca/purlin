@@ -316,10 +316,10 @@ fi
 cleanup_sandbox
 
 ###############################################################################
-# Scenario: pl-remote-push Offers gh Repo Create When gh CLI Available
+# Scenario: pl-remote-push Shows Hosting Hints When Available
 ###############################################################################
 echo ""
-echo "[Scenario] pl-remote-push Offers gh Repo Create When gh CLI Available"
+echo "[Scenario] pl-remote-push Shows Hosting Hints When Available"
 SANDBOX="$(mktemp -d)"
 trap cleanup_sandbox EXIT
 LOCAL_DIR="$SANDBOX/local"
@@ -332,18 +332,100 @@ echo "init" > file.txt && git add file.txt && git commit -q -m "initial commit"
 mkdir -p .purlin/runtime
 # No remotes configured
 REMOTES=$(git remote -v 2>/dev/null)
-GH_AVAILABLE=false
-if command -v gh &>/dev/null; then
-    GH_AVAILABLE=true
-fi
-if [[ -z "$REMOTES" && "$GH_AVAILABLE" == "true" ]]; then
-    # gh is available and no remotes => offer both options
-    log_pass "gh CLI available, would offer 'Create a new GitHub repository' and 'Add an existing remote URL'"
-elif [[ -z "$REMOTES" && "$GH_AVAILABLE" == "false" ]]; then
-    # gh is NOT available => only prompt for remote URL
-    log_pass "gh CLI not available, would prompt for remote URL only (gh not installed)"
-else
+if [[ -n "$REMOTES" ]]; then
     log_fail "Expected no remotes, got: $REMOTES"
+else
+    # Create a mock ~/.ssh/config in a temp location
+    MOCK_SSH_DIR="$SANDBOX/mock_ssh"
+    mkdir -p "$MOCK_SSH_DIR"
+    cat > "$MOCK_SSH_DIR/config" <<'SSHEOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+
+Host gitlab.example.com
+    HostName gitlab.example.com
+    User git
+SSHEOF
+    # Simulate the hosting hint scan: parse Host entries from ssh config
+    KNOWN_HOSTS=("github.com" "gitlab.com" "bitbucket.org")
+    HINTS=()
+    while IFS= read -r line; do
+        # Extract host value from "Host <value>" lines (skip wildcards)
+        if [[ "$line" =~ ^[[:space:]]*Host[[:space:]]+([^*]+)$ ]]; then
+            SSH_HOST=$(echo "${BASH_REMATCH[1]}" | tr -d '[:space:]')
+            for kh in "${KNOWN_HOSTS[@]}"; do
+                if [[ "$SSH_HOST" == "$kh" ]]; then
+                    HINTS+=("$kh")
+                fi
+            done
+        fi
+    done < "$MOCK_SSH_DIR/config"
+    # Verify github.com was detected
+    FOUND_GITHUB=false
+    for h in "${HINTS[@]}"; do
+        if [[ "$h" == "github.com" ]]; then
+            FOUND_GITHUB=true
+        fi
+    done
+    if [[ "$FOUND_GITHUB" == "true" ]]; then
+        HINT_MSG="Detected: github.com (SSH key)"
+        log_pass "Hosting hint detected from ssh config: $HINT_MSG"
+    else
+        log_fail "Expected github.com hosting hint from mock ssh config, hints found: ${HINTS[*]}"
+    fi
+    # Verify non-known hosts are NOT included (gitlab.example.com is not in KNOWN_HOSTS)
+    FOUND_UNKNOWN=false
+    for h in "${HINTS[@]}"; do
+        if [[ "$h" == "gitlab.example.com" ]]; then
+            FOUND_UNKNOWN=true
+        fi
+    done
+    if [[ "$FOUND_UNKNOWN" == "false" ]]; then
+        log_pass "Non-standard host gitlab.example.com correctly excluded from hints"
+    else
+        log_fail "gitlab.example.com should not appear in hosting hints"
+    fi
+fi
+cleanup_sandbox
+
+###############################################################################
+# Scenario: pl-remote-push Verifies Remote Connectivity
+###############################################################################
+echo ""
+echo "[Scenario] pl-remote-push Verifies Remote Connectivity"
+SANDBOX="$(mktemp -d)"
+trap cleanup_sandbox EXIT
+# Create a valid bare remote
+REMOTE_DIR="$SANDBOX/remote.git"
+git init --bare -q "$REMOTE_DIR"
+LOCAL_DIR="$SANDBOX/local"
+mkdir -p "$LOCAL_DIR"
+cd "$LOCAL_DIR"
+git init -q
+git config user.email "test@test.com"
+git config user.name "Test"
+echo "init" > file.txt && git add file.txt && git commit -q -m "initial commit"
+mkdir -p .purlin/runtime
+# Test 1: valid remote -- git ls-remote should succeed
+git remote add origin "$REMOTE_DIR"
+LS_OUTPUT=$(git ls-remote origin 2>&1)
+LS_EXIT=$?
+if [[ $LS_EXIT -eq 0 ]]; then
+    log_pass "Connectivity verified: git ls-remote succeeds on valid local bare remote"
+else
+    log_fail "git ls-remote should succeed on valid bare remote, got exit=$LS_EXIT output=$LS_OUTPUT"
+fi
+git remote remove origin
+# Test 2: invalid remote -- git ls-remote should fail
+git remote add badremote "/nonexistent/path/to/repo.git"
+LS_OUTPUT=$(git ls-remote badremote 2>&1)
+LS_EXIT=$?
+if [[ $LS_EXIT -ne 0 ]]; then
+    log_pass "Connectivity check fails on unreachable remote: exit=$LS_EXIT"
+else
+    log_fail "git ls-remote should fail on invalid remote path"
 fi
 cleanup_sandbox
 
