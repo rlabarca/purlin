@@ -329,41 +329,34 @@ fi
 
 ###############################################################################
 echo ""
-echo "=== Parallel Dispatch Bright-Line Rule Tests ==="
+echo "=== Execution Group Dispatch Bright-Line Rule Tests ==="
 ###############################################################################
 
-# --- Scenario: Parallel dispatch bright-line rule exists in /pl-build ---
+# --- Scenario: Execution group dispatch bright-line rule exists in /pl-build ---
 echo ""
-echo "[Scenario] Parallel dispatch bright-line rule exists in /pl-build"
+echo "[Scenario] Execution group dispatch bright-line rule exists in /pl-build"
 
 PB_FILE="$PROJECT_ROOT/.claude/commands/pl-build.md"
 
-# Rule about parallel dispatch being mandatory must exist in Bright-Line Rules section
-if grep -q 'Parallel dispatch is mandatory for multi-feature phases' "$PB_FILE" 2>/dev/null; then
-    log_pass "/pl-build contains parallel dispatch bright-line rule"
+# Rule about execution group dispatch being mandatory must exist in Bright-Line Rules section
+if grep -q 'Execution group dispatch is mandatory for multi-feature groups' "$PB_FILE" 2>/dev/null; then
+    log_pass "/pl-build contains execution group dispatch bright-line rule"
 else
-    log_fail "/pl-build missing parallel dispatch bright-line rule"
+    log_fail "/pl-build missing execution group dispatch bright-line rule"
 fi
 
-# Rule must require running phase_analyzer.py before Step 0
-if grep -q 'phase_analyzer.py --intra-phase' "$PB_FILE" 2>/dev/null && grep -q 'BEFORE beginning Step 0' "$PB_FILE" 2>/dev/null; then
-    log_pass "Rule requires running phase_analyzer.py before Step 0"
+# Rule must require reading dependency_graph.json before Step 0
+if grep -q 'dependency_graph.json' "$PB_FILE" 2>/dev/null && grep -q 'BEFORE beginning Step 0' "$PB_FILE" 2>/dev/null; then
+    log_pass "Rule requires reading dependency_graph.json before Step 0"
 else
-    log_fail "Rule missing requirement to run phase_analyzer.py before Step 0"
+    log_fail "Rule missing requirement to read dependency_graph.json before Step 0"
 fi
 
-# Rule must label sequential processing as protocol violation
+# Rule must label sequential processing of independent features as protocol violation
 if grep -q 'protocol violation' "$PB_FILE" 2>/dev/null; then
     log_pass "Rule labels sequential processing as protocol violation"
 else
     log_fail "Rule missing protocol violation label"
-fi
-
-# Step 4.E auto-progression must reference the Parallel B1 Check
-if grep -qi 'Parallel B1 Check is mandatory' "$PB_FILE" 2>/dev/null; then
-    log_pass "Step 4.E references Parallel B1 Check for multi-feature phases"
-else
-    log_fail "Step 4.E missing Parallel B1 Check reference"
 fi
 
 ###############################################################################
