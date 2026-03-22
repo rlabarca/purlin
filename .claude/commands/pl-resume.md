@@ -175,7 +175,8 @@ QA: testing features, discovery summary; Architect: spec completeness, untracked
 - The startup briefing provides fresh project state. The work plan comes from the
   checkpoint's "Next" list.
 - Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, check
-  `delivery_plan_state` in the briefing.
+  `delivery_plan_state` in the briefing. The briefing uses `current_phases` (array of
+  phase numbers in the current execution group) instead of the older `current_phase`.
 
 **When no checkpoint exists (cold start):** additionally:
 - Use the briefing to generate a full work plan.
