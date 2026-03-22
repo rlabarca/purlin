@@ -3053,14 +3053,9 @@ def compute_role_status(feature_result, cdd_status=None):
     has_spec_updated_qa = any(
         e['status'] == 'SPEC_UPDATED' for e in _ut_entries)
 
-<<<<<<< HEAD
-    # Pre-compute: is this a TESTING feature with manual scenarios?
-    # Also detect whether ALL manual scenarios are @auto-tagged (Section 2.14).
-=======
     # Pre-compute: is this a TESTING feature with QA items (manual scenarios
     # or visual spec items)?
     # Also detect whether ALL QA items are @auto-tagged or auto-classified.
->>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     testing_with_manual = False
     testing_all_auto = False
     if lifecycle_state == 'testing':
@@ -3068,14 +3063,6 @@ def compute_role_status(feature_result, cdd_status=None):
         manual_scenarios_list = [
             s for s in scenarios if s.get('is_manual', False)]
         manual_count = len(manual_scenarios_list)
-<<<<<<< HEAD
-        testing_with_manual = manual_count > 0
-        if testing_with_manual:
-            non_auto_manual = sum(
-                1 for s in manual_scenarios_list
-                if not s.get('is_auto', False))
-            testing_all_auto = non_auto_manual == 0
-=======
 
         # Check visual spec items classification
         _vis = feature_result.get('visual_spec', {})
@@ -3098,7 +3085,6 @@ def compute_role_status(feature_result, cdd_status=None):
                 if not s.get('is_auto', False))
             testing_all_auto = (non_auto_manual == 0
                                 and _manual_visual_items == 0)
->>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
 
     # Pre-compute: COMPLETE feature that bypassed QA verification
     # (Section 2.16 QA Verification Integrity)
@@ -3120,15 +3106,10 @@ def compute_role_status(feature_result, cdd_status=None):
     # Per spec Section 2.11 "QA Actionability Principle": QA=TODO only when
     # QA has work to do RIGHT NOW. OPEN items routing to other roles are not
     # QA-actionable.
-<<<<<<< HEAD
-    # AUTO (Section 2.14): TESTING feature where all manual scenarios have
-    # @auto tag -- QA has automatable work but no human-judgment scenarios.
-=======
     # AUTO: TESTING feature where all manual scenarios have @auto tag and
     # all visual items are auto-classified (web-test features). No human
     # judgment QA work.
     qa_reason = ''
->>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     if has_open_bugs_qa:
         qa_status = 'FAIL'
         _bug_count = sum(1 for e in _ut_entries
@@ -3143,10 +3124,7 @@ def compute_role_status(feature_result, cdd_status=None):
     elif has_spec_updated_qa and lifecycle_state == 'testing':
         # TODO condition (b): SPEC_UPDATED items in TESTING lifecycle only
         qa_status = 'TODO'
-<<<<<<< HEAD
-=======
         qa_reason = 'has SPEC_UPDATED items in TESTING lifecycle'
->>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     elif testing_with_manual and not testing_all_auto:
         # TODO condition (a): TESTING with non-auto manual scenarios
         qa_status = 'TODO'
@@ -3155,17 +3133,11 @@ def compute_role_status(feature_result, cdd_status=None):
         # TODO condition (c): COMPLETE with manual scenarios but no
         # TESTING-phase commit (Section 2.16 bypassed verification)
         qa_status = 'TODO'
-<<<<<<< HEAD
-    elif testing_all_auto:
-        # AUTO: TESTING with all @auto manual scenarios (Section 2.14)
-        qa_status = 'AUTO'
-=======
         qa_reason = 'bypassed QA verification'
     elif testing_all_auto:
         # AUTO: TESTING with all @auto manual scenarios
         qa_status = 'AUTO'
         qa_reason = 'all QA scenarios are auto'
->>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     elif struct_status == 'PASS':
         # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
         qa_status = 'CLEAN'
