@@ -101,7 +101,19 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
    - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
-### 2.8 Integration with /pl-aft-web
+### 2.8 QA Workflow
+
+QA MAY create and manage fixtures directly during regression authoring (`/pl-regression` author mode). This eliminates the handoff delay between QA discovering a fixture need and Builder creating it.
+
+1. During regression authoring, QA evaluates fixture needs per the decision logic in `regression_testing.md` Section 2.10.1.
+2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.
+3. QA uses `fixture add-tag` to create fixture tags from constructed state directories.
+4. QA records fixture usage in `tests/qa/fixture_usage.json`.
+5. For complex fixtures requiring elaborate git history that QA cannot construct, QA writes a recommendation to `tests/qa/fixture_recommendations.md` for the Builder to handle in a `-qa` session.
+
+**Ownership note:** QA creates fixtures as test infrastructure (alongside scenario JSON files and harness scripts). The Builder creates fixtures when the setup requires application-level knowledge (complex build states, database migrations, etc.). Both use the same `fixture init` / `fixture add-tag` tool.
+
+### 2.9 Integration with /pl-aft-web
 
 For CDD dashboard scenarios needing fixture state:
 
@@ -110,7 +122,7 @@ For CDD dashboard scenarios needing fixture state:
 3. `/pl-aft-web` runs against that server instance.
 4. Cleanup via `fixture cleanup`.
 
-### 2.9 Integration with Agent Behavior Tests
+### 2.10 Integration with Agent Behavior Tests
 
 For agent startup/resume scenarios:
 
@@ -120,7 +132,7 @@ For agent startup/resume scenarios:
 4. Assert output patterns.
 5. Cleanup.
 
-### 2.10 Critic Validation
+### 2.11 Critic Validation
 
 The Critic MUST validate that declared fixture tags exist for features that reference them. When a feature spec contains a fixture tag section (e.g., `### 2.x Web-Verify Fixture Tags` or `### 2.x Integration Test Fixture Tags`) listing expected tags, the Critic checks `fixture list` output to confirm each tag exists. Missing tags produce a MEDIUM-priority Builder action item: the fixture infrastructure must be created before the feature can pass the Implementation Gate.
 
@@ -133,7 +145,7 @@ The Critic handles two distinct states when fixture tags are declared:
 1. **Fixture repo accessible:** Normal path — the Critic resolves the repo via the three-tier lookup (per-feature metadata → config → convention path), then validates each declared tag against `fixture list` output. Missing tags produce MEDIUM Builder action items.
 2. **Fixture repo not found:** No tier in the resolution order points to an accessible git repo (typically because the setup script hasn't been run yet). The Critic generates a MEDIUM Builder action item (category: `fixture_repo_unavailable`) instructing the Builder to run the setup script to create the repo at `.purlin/runtime/fixture-repo`. Individual tag validation is skipped (repo must be created first).
 
-### 2.11 Fixture Usage Tracking
+### 2.12 Fixture Usage Tracking
 
 QA maintains a usage tracker at `tests/qa/fixture_usage.json` (committed, QA-owned) that records which fixtures are used by which regression scenarios. This file is updated during regression scenario authoring (see `features/regression_testing.md` Section 2.10).
 
@@ -159,7 +171,7 @@ QA maintains a usage tracker at `tests/qa/fixture_usage.json` (committed, QA-own
 
 QA announces fixture usage during authoring: `"Using fixture tag main/instruction_audit/override-contradiction (local repo)"`.
 
-### 2.12 Fixture Recommendations
+### 2.13 Fixture Recommendations
 
 QA records fixture infrastructure recommendations in `tests/qa/fixture_recommendations.md` (committed, QA-owned). This file persists across sessions and tells future QA, Builder, and Architect agents what fixture work is pending.
 
@@ -181,7 +193,7 @@ During regression scenario authoring (see `features/regression_testing.md` Secti
 
 The Builder reads this file when running with `--qa` flag and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
 
-### 2.13 Remote Fixture Awareness
+### 2.14 Remote Fixture Awareness
 
 When `fixture_repo_url` is configured in `.purlin/config.json`, QA uses the remote URL for fixture checkout during regression scenario authoring. QA recommends remote fixture repos but does not manage them directly -- the human sets up the remote repo, and the Builder creates fixture tags within it.
 
@@ -195,7 +207,7 @@ When QA identifies features needing complex state fixtures:
 4. The Builder (with `--qa` flag) creates fixture tags in the configured repo.
 5. QA's next authoring session uses the fixtures automatically via the fixture resolution order.
 
-### 2.14 Integration Test Fixture Tags
+### 2.15 Integration Test Fixture Tags
 
 | Tag | State Description |
 |-----|-------------------|
@@ -207,7 +219,7 @@ When QA identifies features needing complex state fixtures:
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Checkout creates temp directory with fixture state
 
@@ -358,6 +370,6 @@ When QA identifies features needing complex state fixtures:
     Then the Builder can read the recommendation file
     And identify which fixture tags need to be created
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.

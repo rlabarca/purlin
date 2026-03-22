@@ -261,11 +261,13 @@ QA authors scenario files one feature at a time during `/pl-regression` author m
 
 Per feature, QA applies this decision logic:
 
-1. Does the `### Regression Testing` section reference fixture tags?
-   - Yes: Check if tags exist via `fixture list`. Tags exist -> use them in scenario JSON. Tags missing -> flag for Builder to create (Critic handles this).
-2. No explicit fixture tags, but scenario needs controlled state?
+1. **Fixture repo check:** If no fixture repo exists at the convention path and the feature needs controlled state, QA prompts the user to create a local repo (via `fixture init`), configure a remote repo URL, or skip fixtures.
+2. Does the `### Regression Testing` section reference fixture tags?
+   - Yes: Check if tags exist via `fixture list`. Tags exist -> use them in scenario JSON. Tags missing -> QA creates them directly via `fixture add-tag` if the state can be constructed. For complex state requiring Builder expertise, flag for Builder.
+3. No explicit fixture tags, but scenario needs controlled state?
    - Simple state (single config, no git history): Use inline `setup_commands` in the scenario JSON.
-   - Complex state (elaborate git history, multiple branches, config combinations): Suggest a remote fixture repo. Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.12).
+   - Moderate state (specific file content, config combinations): QA creates a fixture tag directly via `fixture add-tag`, then references it in the scenario JSON.
+   - Complex state (elaborate git history, build artifacts, database state): Record the recommendation in `tests/qa/fixture_recommendations.md` (see `features/test_fixture_repo.md` Section 2.13) for Builder to handle in a `-qa` session.
 
 ### 2.11 Builder Feedback Protocol
 
@@ -320,8 +322,8 @@ has not been built yet.
 
 NEXT STEP:
   Launch Builder with --qa flag:
-      Set PURLIN_BUILDER_QA=true (or /pl-agent-config -> qa_mode: true)
-      Then launch Builder -- it will build the harness runner framework.
+      Run ./pl-run-builder.sh -qa
+      The Builder will build the harness runner framework.
   After Builder finishes, re-run QA to author scenarios.
 ```
 
@@ -333,7 +335,7 @@ Recorded recommendations in tests/qa/fixture_recommendations.md.
 
 NEXT STEP:
   Launch Builder with --qa flag:
-      Set PURLIN_BUILDER_QA=true (or /pl-agent-config -> qa_mode: true)
+      Run ./pl-run-builder.sh -qa
       Tell it: "Create fixture tags for features listed in
       tests/qa/fixture_recommendations.md"
   After Builder finishes, re-run QA to continue authoring.
@@ -382,7 +384,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Watch mode polls and executes trigger
 
@@ -538,7 +540,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And failed entries include expected and actual_excerpt fields
     And the standard status, passed, failed, total fields are present
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.
 

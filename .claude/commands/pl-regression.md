@@ -245,26 +245,46 @@ Print the **"results processed" handoff message** if failures were found (see Ha
 
 During Step A2, per feature, apply this decision logic:
 
+### Step F0 — Fixture Repo Check
+
+Before evaluating per-feature fixture needs, check whether a fixture repo exists:
+
+1. Check convention path: `.purlin/runtime/fixture-repo`
+2. Check config: `fixture_repo_url` in `.purlin/config.json`
+3. Check per-feature: `> Test Fixtures:` metadata
+
+If none resolves to an accessible repo AND the current feature needs controlled state, prompt the user:
+
+```
+This feature needs controlled test state, but no fixture repo exists.
+
+Options:
+  1. Create a local fixture repo (I'll set it up at .purlin/runtime/fixture-repo)
+  2. Use a remote repo (provide the git URL)
+  3. Skip fixtures for now (use inline setup_commands instead)
+
+Choice? [1 / 2 <url> / 3]
+```
+
+- **Option 1:** Run `${TOOLS_ROOT}/test_support/fixture.sh init`. Announce: `"Created local fixture repo at .purlin/runtime/fixture-repo"`.
+- **Option 2:** Record the URL in `.purlin/config.local.json` under `fixture_repo_url`. Run `${TOOLS_ROOT}/test_support/fixture.sh init --path` if the URL is a local path. Announce: `"Configured remote fixture repo: <url>"`.
+- **Option 3:** Fall through to inline `setup_commands`.
+
+### Step F1 — Per-Feature Fixture Evaluation
+
 1. Does the `### Regression Testing` section reference fixture tags?
    - Yes: Run `${TOOLS_ROOT}/test_support/fixture.sh list` to check if tags exist.
    - Tags exist: Use them in the scenario JSON `fixture_tag` field. Update `tests/qa/fixture_usage.json`.
-   - Tags missing: Note the gap. The Critic already flags this as a Builder action item.
+   - Tags missing: QA creates them directly via `fixture add-tag` if the state can be constructed. For complex state requiring Builder expertise, note the gap for Builder.
 
 2. No explicit fixture tags, but scenario needs controlled state?
    - Simple state (single config, no git history): Use `setup_commands` in the scenario JSON.
-   - Complex state (multiple branches, divergent history): Print a recommendation to the user:
-     ```
-     Feature "<name>" needs complex git state fixtures.
-     Dynamic creation would be slow and fragile.
-
-     Recommendation: Set up a persistent fixture repo.
-       1. Create an empty git repo (local or remote)
-       2. Set fixture_repo_url in .purlin/config.local.json
-       3. Direct Builder to create fixture tags (--qa)
-
-     Record this recommendation? [yes / skip]
-     ```
-   - If yes: Write to `tests/qa/fixture_recommendations.md` and commit.
+   - Moderate state (specific file content, config combinations): QA creates a fixture tag directly:
+     1. Construct the state in a temp directory.
+     2. Run `fixture add-tag main/<feature>/<slug> --from-dir <temp-dir>`.
+     3. Reference the tag in the scenario JSON.
+     4. Update `tests/qa/fixture_usage.json`.
+   - Complex state (elaborate git history, build artifacts, database state): Print a recommendation to the user and record in `tests/qa/fixture_recommendations.md` for Builder to handle in a `-qa` session.
 
 3. Announce fixture usage: `"Using fixture tag main/<feature>/<slug> (local repo)"`
 
@@ -301,14 +321,14 @@ NEXT STEP:
   After Builder finishes, re-run QA to author scenarios.
 ```
 
-### Fixtures Needed But Missing
+### Complex Fixtures Needed (Builder Required)
 
 ```
-N features need fixture repos before regression scenarios can be authored.
+N features need complex fixture state that requires Builder expertise.
 Recorded recommendations in tests/qa/fixture_recommendations.md.
 
 NEXT STEP:
-  Launch Builder with --qa flag:
+  Launch Builder with -qa flag:
       Run ./pl-run-builder.sh -qa
       Tell it: "Create fixture tags for features listed in
       tests/qa/fixture_recommendations.md"

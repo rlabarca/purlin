@@ -16,3 +16,15 @@ Report any submodule-specific failures as `[BUG]` with the tag "submodule-compat
 
 ## Application Code Location
 In this repository, Builder-owned application code lives in `tools/` (consumer-facing framework tools) and `dev/` (Purlin-dev maintenance scripts).
+
+## Test Priority Tiers
+
+<!-- Architect maintains this table. QA reads it to order verification (smoke first). -->
+<!-- Features not listed default to 'standard'. -->
+
+| Feature | Tier |
+|---------|------|
+| policy_critic | smoke |
+| critic_role_status | smoke |
+| cdd_status_monitor | smoke |
+| config_layering | smoke |
