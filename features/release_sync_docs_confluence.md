@@ -272,7 +272,7 @@ Print the change-focused summary per Section 2.9.
 
 ### QA Scenarios
 
-#### Scenario: End-to-end sync creates correct Confluence hierarchy
+#### @manual Scenario: End-to-end sync creates correct Confluence hierarchy
 
     Given the MCP server and API token are configured
     And docs/ contains guides/testing-workflow-guide.md and reference/parallel-execution-guide.md
@@ -281,7 +281,7 @@ Print the change-focused summary per Section 2.9.
     And "Guides" has child page "Testing Workflow Guide" with content matching the markdown
     And "Technical Reference" has child page "Parallel Execution Guide" with content matching the markdown
 
-#### Scenario: Image renders correctly in Confluence
+#### @manual Scenario: Image renders correctly in Confluence
 
     Given a markdown file references a local image that was uploaded as an attachment
     When the page is viewed in Confluence

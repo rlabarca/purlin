@@ -55,7 +55,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Empty project triggers guided mode
 
@@ -125,9 +125,9 @@ When the PM agent launches into an empty project (zero feature specs), it enters
     And the user has not mentioned Figma
     Then no Figma health check message is displayed
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
-#### Scenario: End-to-end first session walkthrough
+#### @manual Scenario: End-to-end first session walkthrough
 
     Given a freshly initialized Purlin project with zero features
     And Figma MCP is configured and authenticated
@@ -140,7 +140,7 @@ When the PM agent launches into an empty project (zero feature specs), it enters
     And clearly explains what to do next (Builder, dashboard)
     And the created spec passes the Critic spec gate when tools/cdd/status.sh runs
 
-#### Scenario: First session without Figma
+#### @manual Scenario: First session without Figma
 
     Given a freshly initialized Purlin project with zero features
     And Figma MCP is NOT configured

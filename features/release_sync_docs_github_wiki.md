@@ -226,7 +226,7 @@ Print the change-focused summary per Section 2.10.
 
 ### QA Scenarios
 
-#### Scenario: End-to-end sync creates correct wiki structure
+#### @manual Scenario: End-to-end sync creates correct wiki structure
 
     Given the github remote and wiki repo are accessible
     And docs/ contains testing-workflow-guide.md and parallel-execution-guide.md
@@ -234,7 +234,7 @@ Print the change-focused summary per Section 2.10.
     Then the wiki repo contains Testing-Workflow-Guide.md, Parallel-Execution-Guide.md, Home.md, and _Sidebar.md
     And the wiki is accessible at https://github.com/rlabarca/purlin/wiki
 
-#### Scenario: Wiki pages render correctly on GitHub
+#### @manual Scenario: Wiki pages render correctly on GitHub
 
     Given the wiki has been synced with current docs
     When the wiki is viewed on GitHub

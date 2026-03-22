@@ -75,7 +75,7 @@ The following fixture tags provide deterministic project states for web-verify t
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Agents Section Displays Four Agent Rows in Spec Order
     Given a valid resolved config with four agents (architect, builder, qa, pm)
@@ -164,9 +164,9 @@ The following fixture tags provide deterministic project states for web-verify t
     Then the Agents section is still expanded
     And the expanded/collapsed state is read from localStorage
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
-#### Scenario: Pending Change is Not Overwritten by Concurrent State Updates
+#### @manual Scenario: Pending Change is Not Overwritten by Concurrent State Updates
     Given the user changes the architect threshold to 50
     And a POST /config/agents request is in-flight for that change
     And the user then changes the builder threshold to 30 before the POST response arrives

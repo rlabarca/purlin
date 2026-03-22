@@ -233,7 +233,7 @@ Regression tests verify the architect agent correctly identifies submodule safet
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
@@ -282,9 +282,9 @@ When the Architect executes the `submodule_safety_audit` step,
 Then the Architect reports a CRITICAL finding in Check Category 8c,
 And halts the release.
 
-### Manual Scenarios (Architect Execution)
+### QA Scenarios
 
-#### Scenario: WARNING finding — unguarded json.load confirmed by user
+#### @manual Scenario: WARNING finding — unguarded json.load confirmed by user
 Given a Python tool calls json.load() on a config file without a try/except block,
 When the Architect executes the `submodule_safety_audit` step,
 Then the Architect identifies the file and line number and reports a WARNING in Check Category 4,

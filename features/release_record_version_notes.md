@@ -69,28 +69,28 @@ Regression tests verify the architect agent correctly generates release notes.
 ### Automated Scenarios
 None. All verification is manual (Architect-executed release step).
 
-### Manual Scenarios (Architect Execution)
+### QA Scenarios
 
-#### Scenario: No prior release tags
+#### @manual Scenario: No prior release tags
 Given the repository has no git tags,
 When the Architect executes the `purlin.record_version_notes` step,
 Then the Architect presents commit candidates from the full git log,
 And asks the user for version number and release notes,
 And inserts the new entry into README.md under `## Releases`.
 
-#### Scenario: Prior release tag exists
+#### @manual Scenario: Prior release tag exists
 Given the repository has a most-recent tag of `v1.0.0`,
 When the Architect executes the `purlin.record_version_notes` step,
 Then the Architect presents only commits after `v1.0.0` as candidates,
 And asks the user for the new version number and confirmed notes,
 And inserts the new entry at the top of the `## Releases` section.
 
-#### Scenario: User writes custom notes
+#### @manual Scenario: User writes custom notes
 Given the Architect presents suggested release notes from git history,
 When the user provides their own text rather than selecting from suggestions,
 Then the Architect uses the user-provided text verbatim in the README.md entry.
 
-#### Scenario: README.md lacks ## Releases heading
+#### @manual Scenario: README.md lacks ## Releases heading
 Given README.md does not contain a `## Releases` section,
 When the Architect records the version notes,
 Then the Architect creates the `## Releases` heading in README.md,

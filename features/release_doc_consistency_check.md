@@ -74,7 +74,7 @@ Regression tests verify the architect agent correctly identifies documentation i
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
@@ -102,9 +102,9 @@ When the Architect executes the `purlin.doc_consistency_check` step,
 Then the Architect updates the path to its current correct location,
 And commits with message `docs(<scope>): update stale path reference`.
 
-### Manual Scenarios (Architect Execution)
+### QA Scenarios
 
-#### Scenario: Coverage gaps exist and user approves some additions
+#### @manual Scenario: Coverage gaps exist and user approves some additions
 Given the feature set contains areas not represented in README.md,
 When the Architect completes the consistency pass,
 Then the Architect presents a coverage gap table listing each undocumented area with a gap summary and suggested action,
@@ -113,13 +113,13 @@ And for each approved item targeting an existing section, adds content within th
 And for each approved item requiring a new section, confirms the section name and placement before creating it,
 And commits the additions with message `docs(readme): add coverage for <scope>`.
 
-#### Scenario: Coverage gaps exist and user declines all additions
+#### @manual Scenario: Coverage gaps exist and user declines all additions
 Given the feature set contains areas not represented in README.md,
 When the Architect presents the coverage gap table and the user declines all suggestions,
 Then the Architect makes no further changes to README.md,
 And reports "Documentation check: CLEAN — consistency pass complete, no coverage additions requested."
 
-#### Scenario: New major section added without user confirmation (prohibited)
+#### @manual Scenario: New major section added without user confirmation (prohibited)
 Given the consistency pass reveals a documentation gap that seems to warrant a new section,
 When the Architect has not received explicit user confirmation for the section name and placement,
 Then the Architect MUST NOT create the new `##` heading,

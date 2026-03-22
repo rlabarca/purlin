@@ -271,7 +271,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Parallel features use builder-worker sub-agent
 
@@ -544,9 +544,9 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And the rule requires reading dependency_graph.json before Step 0
     And the rule labels sequential processing of independent features as a protocol violation
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
-#### Scenario: Sub-agent parallel build end-to-end
+#### @manual Scenario: Sub-agent parallel build end-to-end
 
     Given a delivery plan phase has 3 independent features
     When the Builder executes the phase with parallel sub-agents
@@ -554,7 +554,7 @@ Group Dispatch as mandatory when entering a new group with 2+ features.
     And the merge produced no regressions
     And the CDD status shows expected states
 
-#### Scenario: Robust merge handles real-world conflicts
+#### @manual Scenario: Robust merge handles real-world conflicts
 
     Given two sub-agents modified overlapping non-safe files
     When the merge protocol falls back to sequential

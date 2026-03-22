@@ -62,7 +62,7 @@ Regression tests verify the architect agent correctly identifies instruction fil
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
@@ -85,9 +85,9 @@ When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect updates the path reference to the correct current location,
 And commits with message `fix(overrides): update stale path reference in <file>`.
 
-### Manual Scenarios (Architect Execution)
+### QA Scenarios
 
-#### Scenario: Audit blocked by unresolvable base-layer conflict
+#### @manual Scenario: Audit blocked by unresolvable base-layer conflict
 Given an override rule reveals a genuine error in the base layer that cannot be corrected in the override alone,
 When the Architect executes the `purlin.instruction_audit` step,
 Then the Architect halts the step and documents the base-layer conflict,

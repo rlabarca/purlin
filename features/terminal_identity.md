@@ -79,7 +79,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: Title escape sequence emitted for any terminal
 
@@ -147,9 +147,9 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     When launchers are generated for each role
     Then architect uses "Architect", builder uses "Builder", qa uses "QA", pm uses "PM"
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
-#### Scenario: Title and badge appear on start and clear on exit
+#### @manual Scenario: Title and badge appear on start and clear on exit
 
     Given iTerm2 is the active terminal
     When the user runs ./pl-run-architect.sh and the agent session starts
@@ -159,7 +159,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
 
-#### Scenario: Title and badge clear on Ctrl+C
+#### @manual Scenario: Title and badge clear on Ctrl+C
 
     Given iTerm2 is the active terminal
     And an agent session is running via ./pl-run-builder.sh
@@ -167,7 +167,7 @@ Both title and badge update together via `set_agent_identity` at each phase tran
     Then the terminal tab title resets to its default
     And the iTerm2 badge is cleared
 
-#### Scenario: Builder title and badge update during continuous mode phase transitions
+#### @manual Scenario: Builder title and badge update during continuous mode phase transitions
 
     Given iTerm2 is the active terminal
     And a delivery plan exists with at least 3 phases
