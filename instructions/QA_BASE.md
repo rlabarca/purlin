@@ -100,19 +100,22 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 
 ### 3.3 Execute Verification (Auto-First Protocol)
 *   **Step 1 — Auto pass:** Credit Builder-verified features (TestOnly, Skip). No QA action needed. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
-*   **Step 2 — Run @auto scenarios:** For each `@auto`-tagged QA scenario (already classified from a prior session):
+*   **Step 2 — Smoke gate:** If a tier table exists in `QA_OVERRIDES.md`, identify smoke-tier features with QA work (TODO or AUTO status). Run their scenarios first — both `@auto` (via harness runner) and `@manual`/untagged (manual verification with human). If ANY smoke-tier scenario fails, halt and report: `"Smoke failure: <feature> — <scenario>. Fix before continuing full verification? [yes to stop / no to continue]"`. This catches catastrophic breakage before committing to the full batch. If no tier table exists, skip this step.
+*   **Step 3 — Run @auto scenarios:** For each `@auto`-tagged QA scenario (already classified from a prior session):
     *   Invoke the harness runner: `python3 {tools_root}/test_support/harness_runner.py tests/qa/scenarios/<feature>.json`. The harness runner handles fixture checkout, execution, assertion evaluation, and `tests.json` writing.
     *   If the regression JSON is unexpectedly missing for an `@auto` scenario, invoke `/pl-regression` (author mode) to recreate it, then run.
     *   Start servers if needed (port safety + cleanup mandate per SERVER MANAGEMENT rules).
-*   **Step 3 — Classify untagged scenarios:** For each QA scenario with NO tag (neither `@auto` nor `@manual`), QA attempts to automate it BEFORE running manually:
+    *   Smoke-tier `@auto` scenarios already ran in Step 2 — skip them here.
+*   **Step 4 — Classify untagged scenarios:** For each QA scenario with NO tag (neither `@auto` nor `@manual`), QA attempts to automate it BEFORE running manually:
     1.  **Propose automation:** QA evaluates whether the scenario can be automated (deterministic assertions, no subjective judgment, no physical hardware). If feasible, QA proposes the approach to the user: harness type, fixture needs, assertions.
     2.  **User approves:** QA invokes `/pl-regression` (author mode) to create the regression JSON, runs it via the harness runner, and adds the `@auto` tag to the scenario heading. The scenario is now automated for all future sessions.
-    3.  **User declines or not feasible:** QA adds the `@manual` tag to the scenario heading. The scenario enters the manual verification path (Step 6). QA never re-proposes automation for `@manual` scenarios.
+    3.  **User declines or not feasible:** QA adds the `@manual` tag to the scenario heading. The scenario enters the manual verification path (Step 7). QA never re-proposes automation for `@manual` scenarios.
     *   **Every untagged scenario gets classified.** After QA's first pass, no scenario remains untagged.
-*   **Step 4 — Visual smoke:** For `> Web Test:` features, invoke `/pl-web-test` to take a Playwright screenshot and check the Visual Specification checklist. This is a smoke check, not a replacement for the Builder's full web test during implementation. For non-web features, request a screenshot from the human. Detailed visual comparison deferred to Step 7.
-*   **Step 5 — LLM delegation:** For tests needing Claude (complex analysis, multi-step reasoning), compose the command and have the human run it. QA evaluates the output. (Runtime detection -- only applies when the scenario requires LLM capabilities.)
-*   **Step 6 — Smoke-tier manual first:** Verify smoke-tier `@manual` scenarios, then standard-tier, then full-only.
-*   **Step 7 — Manual pass:** Optimized batches. Visual checklists grouped by screen (show screenshot once, verify multiple items). `@manual` scenarios step-by-step.
+    *   Smoke-tier untagged scenarios already ran in Step 2 — skip them here.
+*   **Step 5 — Visual smoke:** For `> Web Test:` features, invoke `/pl-web-test` to take a Playwright screenshot and check the Visual Specification checklist. This is a smoke check, not a replacement for the Builder's full web test during implementation. For non-web features, request a screenshot from the human. Detailed visual comparison deferred to Step 8.
+*   **Step 6 — LLM delegation:** For tests needing Claude (complex analysis, multi-step reasoning), compose the command and have the human run it. QA evaluates the output. (Runtime detection -- only applies when the scenario requires LLM capabilities.)
+*   **Step 7 — Standard and full-only manual:** Verify remaining `@manual` scenarios: standard-tier first, then full-only.
+*   **Step 8 — Full manual pass:** Optimized batches. Visual checklists grouped by screen (show screenshot once, verify multiple items). `@manual` scenarios step-by-step.
 
 ### 3.4 External Execution Protocol
 

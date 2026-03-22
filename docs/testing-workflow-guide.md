@@ -97,17 +97,29 @@ Launch a QA session. QA finds all `[Ready for Verification]` features automatica
 
 ### The Auto-First Protocol
 
-QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through seven steps:
+QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through eight steps:
 
 #### Step 1 -- Credit Builder Work
 
 Features the Builder already completed (unit-tests-only, cosmetic changes) are auto-credited. No human time.
 
-#### Step 2 -- Run Existing Automations
+#### Step 2 -- Smoke Gate
 
-Scenarios tagged `@auto` from a prior QA session already have regression JSON. QA invokes the harness runner. No human involvement. These accumulate over time -- each QA session gets faster.
+If a tier table exists in `QA_OVERRIDES.md`, QA identifies smoke-tier features first and runs ALL their scenarios -- `@auto`, untagged, and `@manual` alike. This is a fast check of the most critical features.
 
-#### Step 3 -- Classify New Scenarios
+If any smoke scenario **fails**, QA halts and asks:
+```
+Smoke failure: policy_critic -- "Spec Gate validates prerequisites"
+Fix before continuing full verification? [yes to stop / no to continue]
+```
+
+This catches catastrophic breakage before you spend time on the full batch. If there's no tier table, this step is skipped.
+
+#### Step 3 -- Run Existing Automations
+
+Scenarios tagged `@auto` from a prior QA session already have regression JSON. QA invokes the harness runner. No human involvement. Smoke-tier `@auto` scenarios already ran in Step 2 -- they're skipped here.
+
+#### Step 4 -- Classify New Scenarios
 
 This is the key step. For every QA Scenario that has **no tag** yet (Architect/PM wrote it, QA hasn't seen it):
 
@@ -125,24 +137,24 @@ This is the key step. For every QA Scenario that has **no tag** yet (Architect/P
 
 4. **You say no** (or it's not feasible): QA adds `@manual` to the scenario heading. It enters the manual verification path. QA never asks about this scenario again.
 
-**After this step, every scenario is tagged.** Nothing stays untagged.
+**After this step, every scenario is tagged.** Nothing stays untagged. Smoke-tier untagged scenarios already classified in Step 2 -- skipped here.
 
-#### Step 4 -- Visual Smoke
+#### Step 5 -- Visual Smoke
 
 - **Web features** (`> Web Test:` metadata): QA runs `/pl-web-test` for a Playwright screenshot and quick checklist check.
 - **Non-web features**: QA asks you for a screenshot.
 
-Detailed visual comparison happens in Step 7.
+Detailed visual comparison happens in Step 8.
 
-#### Step 5 -- LLM Delegation
+#### Step 6 -- LLM Delegation
 
 Some scenarios need Claude to analyze output (complex reasoning, multi-step evaluation). QA composes the exact command and asks you to run it in a separate terminal.
 
-#### Step 6 -- Smoke Manual First
+#### Step 7 -- Standard and Full-Only Manual
 
-QA presents `@manual` scenarios ordered by priority tier: smoke first (most critical), then standard, then full-only.
+QA presents remaining `@manual` scenarios: standard-tier first, then full-only.
 
-#### Step 7 -- Full Manual Pass
+#### Step 8 -- Full Manual Pass
 
 Visual checklists grouped by screen (one screenshot, verify multiple items). `@manual` scenarios walked through step-by-step.
 
