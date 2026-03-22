@@ -30,7 +30,7 @@ The Critic recognizes four agent roles: **PM**, **Architect**, **Builder**, **QA
 |------|----------------|
 | **Architect** | `DONE`, `TODO` |
 | **Builder** | `DONE`, `TODO`, `FAIL`, `INFEASIBLE`, `BLOCKED` |
-| **QA** | `CLEAN`, `TODO`, `FAIL`, `DISPUTED`, `N/A` |
+| **QA** | `CLEAN`, `TODO`, `AUTO`, `FAIL`, `DISPUTED`, `N/A` |
 | **PM** | `DONE`, `TODO`, `N/A` |
 
 ### 2.4 Role Status Computation
@@ -51,11 +51,12 @@ Builder Precedence (highest wins): INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 **QA Status:**
 *   `FAIL`: Has OPEN BUGs in discovery sidecar. (Lifecycle-independent.)
 *   `DISPUTED`: Has OPEN SPEC_DISPUTEs in discovery sidecar (no BUGs). (Lifecycle-independent.)
-*   `TODO`: Any of: (a) Feature in TESTING lifecycle state with at least one manual scenario; (b) Has SPEC_UPDATED items AND feature is in TESTING lifecycle state.
-*   `CLEAN`: `tests/<feature>/tests.json` exists with `status: "PASS"`, AND no FAIL/DISPUTED/TODO conditions matched.
-*   `N/A`: No FAIL/DISPUTED/TODO/CLEAN conditions matched.
+*   `TODO`: Any of: (a) Feature in TESTING lifecycle state with at least one manual QA item (QA scenario without `@auto` tag, or visual spec item on non-web feature); (b) Has SPEC_UPDATED items AND feature is in TESTING lifecycle state. Mixed auto+manual = TODO.
+*   `AUTO`: Feature in TESTING lifecycle state with QA scenarios, ALL of which are `@auto`-tagged or auto-classified (visual spec items on `> Web Test:` features). Zero manual QA items.
+*   `CLEAN`: `tests/<feature>/tests.json` exists with `status: "PASS"`, AND no FAIL/DISPUTED/TODO/AUTO conditions matched.
+*   `N/A`: No FAIL/DISPUTED/TODO/AUTO/CLEAN conditions matched.
 
-QA Precedence (highest wins): FAIL > DISPUTED > TODO > CLEAN > N/A.
+QA Precedence (highest wins): FAIL > DISPUTED > TODO > AUTO > CLEAN > N/A.
 
 **PM Status:**
 *   `DONE`: No PM action items for this feature.
@@ -142,7 +143,7 @@ The per-feature `critic.json` MUST include all four roles in `action_items`, `ro
     "role_status": {
         "architect": "DONE | TODO",
         "builder": "DONE | TODO | FAIL | INFEASIBLE | BLOCKED",
-        "qa": "CLEAN | TODO | FAIL | DISPUTED | N/A",
+        "qa": "CLEAN | TODO | AUTO | FAIL | DISPUTED | N/A",
         "pm": "DONE | TODO | N/A"
     },
     "role_status_reason": {
@@ -199,7 +200,7 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: SPEC_DISPUTE on PM-owned feature routes to PM
 
@@ -302,10 +303,10 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     Then a Builder action item is created with priority HIGH
     And role_status.builder is TODO
 
-#### Scenario: QA action item from TESTING status with manual scenarios
+#### Scenario: QA action item from TESTING status with manual QA items
 
     Given a feature is in TESTING state per CDD feature_status.json
-    And the feature has 3 manual scenarios
+    And the feature has 3 manual QA scenarios
     When the Critic generates action items
     Then a QA action item is created identifying the feature and scenario count
 
@@ -404,6 +405,34 @@ Visual SPEC_DISPUTEs are detected by checking the dispute title for: `Visual:` p
     And reset_context.structural_completeness is "MISSING"
     And the description follows the existing format "Implement spec changes for <feature_name>"
 
-### Manual Scenarios (Human Verification Required)
+#### Scenario: QA AUTO when all QA scenarios are @auto
+
+    Given a feature is in TESTING lifecycle state
+    And the feature has 3 QA scenarios, all with @auto tag
+    And the feature has no manual QA items
+    When the Critic computes role status
+    Then role_status.qa is AUTO
+    And role_status_reason.qa describes "all QA scenarios are auto"
+
+#### Scenario: QA TODO when mixed auto and manual QA scenarios
+
+    Given a feature is in TESTING lifecycle state
+    And the feature has 2 QA scenarios with @auto tag
+    And the feature has 1 QA scenario without @auto tag
+    When the Critic computes role status
+    Then role_status.qa is TODO
+    And role_status_reason.qa describes "has manual QA items"
+
+#### Scenario: QA AUTO with visual spec on Web Test feature
+
+    Given a feature is in TESTING lifecycle state
+    And the feature has `> Web Test:` metadata
+    And the feature has a Visual Specification with 3 checklist items
+    And the feature has no QA scenarios without @auto tag
+    When the Critic computes role status
+    Then role_status.qa is AUTO
+    And visual spec items are classified as auto (web test)
+
+### QA Scenarios
 
 None.

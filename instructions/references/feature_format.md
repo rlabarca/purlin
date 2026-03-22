@@ -75,15 +75,25 @@ to the best-fitting category.
 
 NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
 
-**Manual scenario block:**
+**Scenario section headings (new names):**
 
-    ### Manual Scenarios (Human Verification Required)
+    ### Unit Tests
 
     #### Scenario: Title
+        ...
 
-        Given ...
+    ### QA Scenarios
 
-    (Use "None." if no manual scenarios.)
+    #### Scenario: Title
+        ...
+    #### Scenario: Title @auto
+        ...
+
+    (Use "None." if no QA scenarios.)
+
+**`@auto` tag:** QA Scenarios MAY include `@auto` as a suffix on the `#### Scenario:` heading (e.g., `#### Scenario: Widget renders @auto`). This tag means "QA can run this without human judgment." It does not dictate execution mechanism. A scenario is `manual` until QA adds `@auto`.
+
+**Gradual migration:** The Critic accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 
 ## Anchor Nodes (arch_*, design_*, policy_*)
 

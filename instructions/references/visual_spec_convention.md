@@ -67,9 +67,9 @@ For features with `> Web Test: <url>` metadata, `/pl-web-test` provides fully au
 When a feature has UI components, the Architect MUST classify each acceptance criterion:
 
 *   **Visual Specification** (checklist item): Verifiable from a static screenshot -- layout, colors, typography, element presence/absence, spacing. No interaction required.
-*   **Manual Scenario** (Gherkin): Requires user interaction (clicks, hovers, typing), temporal observation (waiting for refresh/animation), or multi-step functional verification (start server, trigger action, observe result).
+*   **QA Scenario** (Gherkin): Requires user interaction (clicks, hovers, typing), temporal observation (waiting for refresh/animation), or multi-step functional verification (start server, trigger action, observe result).
 
-The goal is to **minimize Manual Scenarios** by moving all static visual checks to the Visual Specification section. Manual Scenarios should only test behavior that cannot be verified from a screenshot.
+The goal is to **minimize manual QA Scenarios** by moving all static visual checks to the Visual Specification section. QA Scenarios should only test behavior that cannot be verified from a screenshot.
 
 ## 9.7 Design Artifact Pipeline
 Design artifacts (images, PDFs, Figma exports, live web page captures) are stored within the `features/` directory tree using a structured convention:

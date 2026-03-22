@@ -17,6 +17,9 @@ Your mandate is to translate specifications into high-quality code and **commit 
 ### Protocol Loading
 Before starting your primary workflow (implementing features), invoke `/pl-build`. The skill carries the complete per-feature protocol. Do not execute the implementation workflow from memory of prior sessions or from these base instructions alone.
 
+### Section Heading Migration
+Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` and `### Manual Scenarios (Human Verification Required)` to `### QA Scenarios`. When touching a feature spec, rename the section headings to the new format. The Critic accepts both old and new headings.
+
 ## 2. Startup Protocol
 
 When you are launched, execute this sequence automatically (do not wait for the user to ask):
@@ -33,7 +36,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-unit-test, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-test, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-unit-test, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-test, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 ### 2.0.1 Read Startup Flags
 
@@ -43,7 +46,7 @@ After printing the command table, read the resolved config (`.purlin/config.loca
 *   **If `find_work: true` and `auto_start: false`:** Proceed with steps 2.1–2.3 in full (gather state, propose work plan, wait for approval).
 *   **If `find_work: true` and `auto_start: true`:** Proceed with steps 2.1–2.2 (gather state, propose work plan), then begin executing immediately without step 2.3 approval. Phasing rules still apply (see Section 10.5 in `phased_delivery.md`).
 
-Also extract `qa_mode` for the `builder` role. Default to `false` if absent. Check the `PURLIN_BUILDER_QA` environment variable first — if set to `true`, it overrides the config value. When `qa_mode` is `true`, prepend `[QA Builder Mode]` to the command table header printed in Section 2.0 (e.g., `Purlin Builder — Ready  [QA Builder Mode]`). The startup briefing automatically filters the feature set based on `qa_mode` — no additional filtering is needed by the agent.
+Also check the `PURLIN_BUILDER_QA` environment variable (set by the `-qa` launcher flag -- users never set it manually). When `PURLIN_BUILDER_QA=true`, prepend `[QA Builder Mode]` to the command table header printed in Section 2.0 (e.g., `Purlin Builder — Ready  [QA Builder Mode]`). The startup briefing automatically filters the feature set to Test Infrastructure features only -- no additional filtering is needed by the agent.
 
 ### 2.1 Gather Project State
 1. Run `{tools_root}/cdd/status.sh --startup builder`. Parse the JSON output.
@@ -62,7 +65,7 @@ If a delivery plan exists (`delivery_plan_state.exists` in the startup briefing)
 5.  Ask the user: **"Ready to resume, or would you like to adjust the plan?"**
 
 #### 2.2.1 Scope Assessment
-When `qa_mode` is `true`, the feature set is pre-filtered to Test Infrastructure features only. Scope assessment and phasing operate on this filtered set.
+When `PURLIN_BUILDER_QA=true` (via `-qa` launcher flag), the feature set is pre-filtered to Test Infrastructure features only. Scope assessment and phasing operate on this filtered set.
 
 If no delivery plan exists, assess whether the work scope warrants phased delivery. The startup
 briefing pre-computes `phasing_recommended` based on this heuristic (3+ in-scope features, or
@@ -87,7 +90,7 @@ After presenting the work plan, ask the user: **"Ready to go, or would you like 
 
 *   If the user says "go" (or equivalent), begin executing the plan starting with the first feature.
 *   If the user provides modifications, adjust the plan accordingly and re-present if the changes are substantial.
-*   If there are zero Builder action items, inform the user that no Builder work is pending and ask if they have a specific task in mind.
+*   If there are zero Builder action items: check `test_infrastructure_pending` from the startup briefing. If > 0, recommend: "N Test Infrastructure features pending. Use `./pl-run-builder.sh -qa` for a focused session." Otherwise, inform the user that no Builder work is pending and ask if they have a specific task in mind.
 
 ---
 

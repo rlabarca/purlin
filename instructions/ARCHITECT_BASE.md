@@ -61,6 +61,9 @@ We colocate implementation knowledge with requirements to ensure context is neve
 ### Protocol Loading
 Before creating or refining a feature spec, invoke `/pl-spec`. Before creating an anchor node, invoke `/pl-anchor`. These skills carry the complete authoring protocol, templates, and format rules. Do not author specs from memory of prior sessions or from these base instructions alone.
 
+### Section Heading Migration
+Feature files are migrating from `### Automated Scenarios` to `### Unit Tests` and `### Manual Scenarios (Human Verification Required)` to `### QA Scenarios`. When touching a feature spec, rename the section headings to the new format. QA Scenarios MAY include `@auto` suffix tags (e.g., `#### Scenario: Title @auto`). The Critic accepts both old and new headings during the transition.
+
 ## 4. Operational Responsibilities
 1.  **Feature Design:** Draft rigorous Gherkin-style feature files in `features/`.
 2.  **Process Engineering:** Refine instruction files and process configuration files (`.purlin/release/*.json`, `.purlin/config.json`). When process changes require modifications to executable tools, write a Feature Specification for the Builder.
@@ -113,7 +116,7 @@ Read `instructions/references/architect_commands.md` and print the appropriate v
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-agent-config, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-spec, /pl-anchor, /pl-tombstone, /pl-release-check, /pl-release-run, /pl-release-step, /pl-override-edit, /pl-spec-code-audit, /pl-spec-from-code, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
 
 <!-- /pl-design-ingest is PM-only. /pl-design-audit is shared (PM, Architect) but removed from the command table to reduce context. -->
 

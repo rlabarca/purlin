@@ -180,20 +180,22 @@ The Critic MUST compute a `verification_effort` block for each feature, classify
 
 | Category | Key | Owner | Condition |
 |----------|-----|-------|-----------|
-| Web:Test | `web_test` | **Builder** | Visual spec items on `> Web Test:` features |
-| TestOnly | `test_only` | **Builder** | Feature has only automated scenarios, tests pass, no manual/visual items |
+| TestOnly | `test_only` | **Builder** | Feature has only Unit Tests, tests pass, no QA scenarios or visual items |
 | Skip | `skip` | **Builder** | Regression scope is `cosmetic` (not escalated) |
-| Manual:Interactive | `manual_interactive` | **QA** | Manual scenarios on non-web features |
-| Manual:Visual | `manual_visual` | **QA** | Visual spec items on non-web features |
-| Manual:Hardware | `manual_hardware` | **QA** | Scenarios with hardware/device keywords on non-web features |
+| Auto | `auto` | **QA** | QA Scenarios with `@auto` tag, or visual spec items on `> Web Test:` features |
+| Manual | `manual` | **QA** | QA Scenarios without `@auto` tag, or visual spec items on non-web features |
 
-Auto-verified categories are Builder-owned. They are computed for status tracking but do NOT generate QA action items. Auto-verified items route to Builder action items. When the Builder marks `[Complete]` with zero manual scenarios, `qa: "N/A"`.
+Builder-owned categories (TestOnly, Skip) are computed for status tracking but do NOT generate QA action items. Builder-owned items route to Builder action items. When the Builder marks `[Complete]` with zero QA scenarios, `qa: "N/A"`.
 
-Derived fields: `total_auto`, `total_manual`, `summary` (human-readable string). QA's `verification_effort` summary only counts QA-owned categories. Summary format: `"N manual"` (not `"M auto, N manual"`). When a feature is `[Complete]` via Builder (no `[Verified]`), summary = `"builder-verified"`.
+**`@auto` Tag Detection:** The Critic parses `@auto` as a suffix on `#### Scenario:` headings under `### QA Scenarios`. A scenario heading like `#### Scenario: Widget renders correctly @auto` is classified as auto. Scenarios without the tag default to manual. The `@auto` tag is QA-authored -- it indicates "QA can run this without human judgment." It does not dictate execution mechanism.
+
+Derived fields: `summary` (human-readable string). Summary format: `"N manual"` when manual items exist, `"N auto"` when only auto items exist. When a feature is `[Complete]` via Builder (no `[Verified]`), summary = `"builder-verified"`.
 
 **Backward compatibility:** The Critic parser MUST accept both `> AFT Web:` and `> Web Test:` metadata for web test detection during the transition period.
 
-The block is only meaningful for TESTING features (qa: TODO). Non-TESTING features report zeroed counts with `summary` of `"no QA items"` or `"awaiting builder"` as appropriate.
+**Section Heading Migration:** The Critic MUST accept both old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) section headings. Both are parsed identically. Agents rename headings to the new format when touching a spec.
+
+The block is only meaningful for TESTING features (qa: TODO or AUTO). Non-TESTING features report zeroed counts with `summary` of `"no QA items"` or `"awaiting builder"` as appropriate.
 
 See `features/qa_verification_effort.md` for the full classification rules, output schema, and scenarios.
 
@@ -230,7 +232,7 @@ The `[Verified]` tag is a boolean signal. Its presence in the most recent `[Comp
 
 **Verification Effort Consistency:** The `verification_effort` computation (Section 2.14) MUST also recognize this case. When a COMPLETE feature has `qa_status = 'TODO'` due to bypassed verification, `verification_effort` MUST compute the full classification (interactive/visual/hardware counts) rather than returning zeroed values. The lifecycle gating in `verification_effort` MUST treat "COMPLETE with bypassed QA" equivalently to TESTING for classification purposes.
 
-**Precedence:** This check slots into the existing QA precedence chain as: `FAIL > DISPUTED > TODO (SPEC_UPDATED) > TODO (TESTING with manual) > TODO (bypassed verification: no TESTING commit) > TODO (bypassed verification: missing [Verified]) > CLEAN > N/A`. The existing FAIL and DISPUTED conditions take priority -- a feature with OPEN BUGs or SPEC_DISPUTEs is already surfaced as FAIL/DISPUTED regardless of verification history.
+**Precedence:** This check slots into the existing QA precedence chain as: `FAIL > DISPUTED > TODO (SPEC_UPDATED) > TODO (TESTING with manual) > TODO (bypassed verification: no TESTING commit) > TODO (bypassed verification: missing [Verified]) > AUTO > CLEAN > N/A`. The existing FAIL and DISPUTED conditions take priority -- a feature with OPEN BUGs or SPEC_DISPUTEs is already surfaced as FAIL/DISPUTED regardless of verification history.
 
 **Rationale:** The workflow (HOW_WE_WORK_BASE Section 3, step 4) mandates that features with manual scenarios are completed by the QA Agent after clean verification, not by the Builder. When a Builder commits `[Complete]` on such a feature, the TESTING phase is skipped and QA verification never occurs. Without this invariant, the Critic silently marks QA as CLEAN based solely on passing automated tests, masking untested manual scenarios.
 

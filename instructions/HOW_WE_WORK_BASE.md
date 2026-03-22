@@ -49,10 +49,10 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 
 ### The QA Agent
 *   **Focus:** "The Verification and The Feedback".
-*   **Ownership:** Discovery sidecar files (`features/<name>.discoveries.md`) with exclusive lifecycle management, QA verification scripts (`tests/qa/`), manual verification execution, and discovery lifecycle management.
-*   **Key Duty:** Executing manual Gherkin scenarios, recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle.
-*   **Does NOT:** Write or modify application/tool code (Builder), or modify Gherkin scenarios or requirements (Architect).
-*   **Status Commits:** QA makes `[Complete]` status commits for features that have manual scenarios, after all manual scenarios pass with zero discoveries. Features with no manual scenarios are completed by the Builder.
+*   **Ownership:** Discovery sidecar files (`features/<name>.discoveries.md`) with exclusive lifecycle management, QA verification scripts (`tests/qa/`), QA scenario authoring (under `### QA Scenarios`), `@auto` tag management, and discovery lifecycle management.
+*   **Key Duty:** Executing QA scenarios (auto and manual), recording structured discoveries (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE), and tracking their resolution through the lifecycle. QA MAY start servers for verification (port safety + cleanup mandate).
+*   **Scenario Writes:** QA MAY add new scenarios under `### QA Scenarios` and add `@auto` tags to existing QA scenarios. QA MUST NOT modify Unit Tests, Requirements, Overview, or Visual Specification sections.
+*   **Status Commits:** QA makes `[Complete]` status commits for features that have QA scenarios, after all QA scenarios pass with zero discoveries. Features with no QA scenarios are completed by the Builder.
 
 ### The Human Executive
 *   **Focus:** "The Intent and The Review".
@@ -133,10 +133,10 @@ Discovery lifecycle: `OPEN -> SPEC_UPDATED -> RESOLVED -> PRUNED`. Use `/pl-disc
 
 The Builder and QA Agent have non-overlapping testing domains. No test is verified twice.
 
-*   **Builder-owned testing:** Unit tests (`/pl-unit-test`) and web tests (`/pl-web-test`). Results are written to `tests.json`. If all scenarios are automated (no manual scenarios in the spec), the Builder marks `[Complete]` directly -- QA is never invoked.
-*   **QA-owned testing:** Manual scenarios requiring human judgment (`@manual-interactive`, `@manual-visual`, `@manual-hardware`). QA assembles these into a batched checklist via `/pl-verify`. Features with BOTH automated and manual scenarios: QA auto-credits the Builder's automated results and presents only the manual items.
-*   **Handoff signal:** `[Ready for Verification]` = manual scenarios exist, QA needed. `[Complete]` = Builder verified everything, QA not needed.
-*   **Dedup invariant:** QA MUST NOT re-verify Builder-completed automated tests. The auto-pass in QA startup (Section 3.3a of QA_BASE) enforces this.
+*   **Builder-owned testing:** Unit Tests (`### Unit Tests` section, `/pl-unit-test`) and web tests (`/pl-web-test`). Results are written to `tests.json`. If all scenarios are Unit Tests (no QA scenarios in the spec), the Builder marks `[Complete]` directly -- QA is never invoked.
+*   **QA-owned testing:** QA Scenarios (`### QA Scenarios` section). Scenarios are classified as `auto` (`@auto` tag -- QA can run without human judgment) or `manual` (default -- requires human interaction). QA assembles these into a batched checklist via `/pl-verify`, following the auto-first protocol (QA_BASE Section 3.3). Features with BOTH Unit Tests and QA Scenarios: QA auto-credits the Builder's Unit Test results and presents only the QA items.
+*   **Handoff signal:** `[Ready for Verification]` = QA scenarios exist, QA needed. `[Complete]` = Builder verified everything (Unit Tests only), QA not needed.
+*   **Dedup invariant:** QA MUST NOT re-verify Builder-completed Unit Tests. The auto-pass in QA startup (Step 1 of QA_BASE Section 3.3) enforces this.
 *   **Tier-based prioritization:** Consumer projects MAY define test priority tiers (`smoke`, `standard`, `full-only`) in `QA_OVERRIDES.md`. QA reads the tier table and orders verification accordingly. "Just smoke" mode filters to smoke-tier only. See QA_BASE Section 3.2 for details.
 
 ## 8. Protocol Quick Reference
