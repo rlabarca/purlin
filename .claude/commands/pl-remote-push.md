@@ -46,11 +46,21 @@ git remote -v
 
 If no remotes exist, guide the user through setup:
 
-1. Check `gh` CLI availability (`command -v gh`).
-2. If `gh` available: offer two options — "Create a new GitHub repository" (`gh repo create`) or "Add an existing remote URL".
-3. If `gh` unavailable: prompt for remote URL and name (default "origin").
-4. Execute `git remote add <name> <url>` (or `gh repo create`).
-5. Proceed to push.
+1. Scan for hosting hints:
+   - Check `~/.ssh/config` for configured hosts (e.g., `github.com`, `gitlab.com`, `bitbucket.org`).
+   - Check git credential helpers: `git config --global --get-regexp credential`.
+   - Check for hosting CLIs: `gh` (GitHub), `glab` (GitLab).
+2. Present the user with a prompt:
+   ```
+   No remote configured. Enter a git remote URL
+   (SSH or HTTPS — any git-compatible host):
+   ```
+   If hosting hints were found in step 1, list them as informational suggestions below the prompt (e.g., "Detected: github.com (SSH key)"). Do not auto-select any host.
+3. Accept any valid git URL format: `git@host:user/repo.git`, `https://host/user/repo.git`, `ssh://...`, or local paths.
+4. Ask for the remote name (default `"origin"`).
+5. Execute `git remote add <name> <url>`.
+6. Verify connectivity: `git ls-remote <name>`. If it fails, report the error and let the user correct the URL.
+7. Proceed to push.
 
 ### 3. Load Config
 
@@ -138,7 +148,7 @@ On failure: Print the git error message. Exit with failure.
 
 - Does NOT merge anything. Use `/pl-remote-pull` first if behind or diverged.
 - Branches are created via the CDD dashboard, not this command.
-- **Mode 1 (no remote):** Detected after the branch guard passes. Guides through `gh repo create` or manual remote add.
+- **Mode 1 (no remote):** Detected after the branch guard passes. Scans for hosting hints (SSH keys, credential helpers, CLIs) and prompts for any git-compatible remote URL.
 - **Mode 2 (direct mode):** No active branch file → resolves to `main`. Pushes main directly.
 - **Mode 3 (collaboration mode):** Active branch file present → pushes that branch.
 - If the remote branch does not exist, `git push` creates it automatically. The first-push safety confirmation applies.

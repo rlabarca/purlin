@@ -62,11 +62,16 @@ git remote -v
 
 If no remotes exist, guide the user through setup:
 
-1. Check `gh` CLI availability (`command -v gh`).
-2. If `gh` available: offer two options -- "Create a new GitHub repository" (`gh repo create`) or "Add an existing remote URL".
-3. If `gh` unavailable: prompt for remote URL and name (default "origin").
-4. Execute `git remote add <name> <url>` (or `gh repo create`).
-5. Proceed to push.
+1. Scan for hosting hints that may help the user identify available remotes:
+   - Check `~/.ssh/config` for configured hosts (e.g., `github.com`, `gitlab.com`, `bitbucket.org`).
+   - Check git credential helpers via `git config --global --get-regexp credential`.
+   - Check for hosting CLIs: `gh` (GitHub), `glab` (GitLab).
+2. Present the user with a prompt asking for a git remote URL (SSH or HTTPS -- any git-compatible host). If hosting hints were found in step 1, list them as informational suggestions below the prompt (e.g., "Detected: github.com (SSH key), bitbucket.org (SSH key)"). Do not auto-select any host.
+3. Accept any valid git URL format: `git@host:user/repo.git`, `https://host/user/repo.git`, `ssh://...`, or local paths.
+4. Ask for the remote name (default `"origin"`).
+5. Execute `git remote add <name> <url>`.
+6. Verify connectivity: `git ls-remote <name>`. If it fails, report the error and let the user correct the URL.
+7. Proceed to push.
 
 ### 2.5 Shared Preconditions
 
@@ -113,7 +118,7 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
 
 ## 3. Scenarios
 
-### Automated Scenarios
+### Unit Tests
 
 #### Scenario: pl-remote-push Resolves To Main When No Active Branch
 
@@ -144,14 +149,24 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     Then the command detects no remotes via git remote -v
     And prompts the user to add a remote
 
-#### Scenario: pl-remote-push Offers gh Repo Create When gh CLI Available
+#### Scenario: pl-remote-push Shows Hosting Hints When Available
 
     Given no git remotes are configured
     And the current branch is main
-    And the gh CLI is available
+    And ~/.ssh/config contains a Host entry for github.com
     When /pl-remote-push is invoked and detects no remotes
-    Then the command offers "Create a new GitHub repository" as an option
-    And offers "Add an existing remote URL" as an option
+    Then the command prompts for a git remote URL
+    And displays "Detected: github.com (SSH key)" as an informational hint
+    And does not auto-select any host
+
+#### Scenario: pl-remote-push Verifies Remote Connectivity
+
+    Given no git remotes are configured
+    And the current branch is main
+    And the user provides a remote URL
+    When the remote is added via git remote add
+    Then the command runs git ls-remote to verify connectivity
+    And reports an error if the remote is unreachable
 
 #### Scenario: pl-remote-push First Push To Empty Remote Succeeds
 
@@ -255,6 +270,6 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     Then the command prints "Already in sync. Nothing to push."
     And no git push is executed
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 
 None.

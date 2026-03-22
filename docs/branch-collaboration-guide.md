@@ -14,12 +14,9 @@ This guide walks through the full workflow -- from first-time remote setup throu
 
 Before any branch collaboration can happen, your project needs a remote repository that both machines can reach.
 
-If your project does not yet have a remote, run `/pl-remote-push`. Purlin checks whether the `gh` CLI is available:
+If your project does not yet have a remote, run `/pl-remote-push`. Purlin scans for hosting hints (SSH keys in `~/.ssh/config`, credential helpers, hosting CLIs) and prompts you for a git remote URL. Any git-compatible host works -- GitHub, GitLab, Bitbucket, self-hosted, or even a local bare repo.
 
-- **If `gh` is available:** Purlin offers to create a new GitHub repository for you, or you can enter a remote URL manually.
-- **If `gh` is not available:** You enter the remote URL directly.
-
-Behind the scenes, this executes `git remote add <name> <url>`. The default remote name is `origin`, configured in `.purlin/config.json` under `branch_collab.remote`.
+Behind the scenes, this executes `git remote add <name> <url>` and verifies connectivity with `git ls-remote`. The default remote name is `origin`, configured in `.purlin/config.json` under `branch_collab.remote`.
 
 **You only need to do this once per project.** After the remote is configured, both machines use it automatically.
 
