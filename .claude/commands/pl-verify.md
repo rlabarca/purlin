@@ -13,7 +13,7 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 ## Scope
 
 If an argument was provided, scope verification to `features/<arg>.md` only.
-If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch ALL TESTING features with manual scenarios into a single verification checklist.
+If no argument was provided, run `${TOOLS_ROOT}/cdd/status.sh --role qa` and batch ALL TESTING features into a single verification pass. Phase A executes @auto scenarios; Phase B presents remaining manual items.
 
 Phase A and Phase B both respect this scope. In scoped mode, all steps target only the scoped feature.
 
