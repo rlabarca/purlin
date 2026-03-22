@@ -33,6 +33,10 @@
       "enabled": true
     },
     {
+      "id": "sync_docs_to_confluence",
+      "enabled": true
+    },
+    {
       "id": "purlin.record_version_notes",
       "enabled": true
     },
