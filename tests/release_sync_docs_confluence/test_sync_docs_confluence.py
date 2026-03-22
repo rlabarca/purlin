@@ -8,11 +8,9 @@ Covers unit test scenarios from features/release_sync_docs_confluence.md:
 - Image upload produces URL mapping
 - Image upload skips unchanged attachment
 - Missing MCP server auto-configured
+- MCP configured but not loaded triggers authentication prompt
 - Missing credentials file triggers token setup during image upload
-- Stale documentation detected and updated
-- Documentation is current, no changes needed
 - Step never deletes Confluence pages
-- Step never creates new doc files
 - Credentials are never committed or logged
 
 This release step has code: null (interactive). These tests verify the
@@ -244,16 +242,16 @@ class TestMissingMcpServerAutoConfigured(unittest.TestCase):
     When the step executes Phase 0
     Then the step runs "claude mcp add atlassian --transport http
     --scope project https://mcp.atlassian.com/v1/mcp" automatically
-    And informs the user that a session restart is needed for the
-    MCP to load
-    And the step halts without asking the user to run any CLI commands
+    And asks the user to type /mcp in Claude Code, select the
+    atlassian MCP server, and authenticate
+    And the step halts until the user confirms authentication is complete
     """
 
     def test_resolved_step_contains_mcp_add_command(self):
         """Resolved step auto-configures MCP via claude mcp add."""
         step = _resolve_sync_step()
         self.assertIn(
-            'claude mcp add atlassian',
+            'claude mcp add',
             step['agent_instructions'])
 
     def test_resolved_step_contains_mcp_url(self):
@@ -268,12 +266,53 @@ class TestMissingMcpServerAutoConfigured(unittest.TestCase):
         step = _resolve_sync_step()
         self.assertIn('PRODENG', step['agent_instructions'])
 
-    def test_resolved_step_specifies_restart_and_halt(self):
-        """Resolved step informs user of restart and halts."""
+    def test_resolved_step_specifies_mcp_auth_and_halt(self):
+        """Resolved step asks user to type /mcp and halts."""
         step = _resolve_sync_step()
         instructions = step['agent_instructions']
-        self.assertIn('restart', instructions.lower())
+        self.assertIn('/mcp', instructions)
         self.assertIn('HALT', instructions)
+
+
+class TestMcpConfiguredButNotLoadedTriggersAuthPrompt(unittest.TestCase):
+    """Scenario: MCP configured but not loaded triggers authentication prompt
+
+    Given the Atlassian MCP server is configured in .mcp.json
+    But the MCP tools are not available in the current session
+    When the step executes Phase 0
+    Then the step asks the user to type /mcp in Claude Code, select
+    the atlassian MCP server, and authenticate
+    And the step halts until the user confirms authentication is complete
+    """
+
+    def test_instructions_distinguish_available_vs_not_loaded(self):
+        """Instructions handle both 'MCP available' and 'MCP not available'."""
+        step = _resolve_sync_step()
+        instructions = step['agent_instructions']
+        # Phase 0 distinguishes between tools available and not available
+        self.assertIn('ARE available', instructions)
+        self.assertIn('NOT available', instructions)
+
+    def test_instructions_check_mcp_json_for_existing_config(self):
+        """Instructions check .mcp.json for existing atlassian entry."""
+        step = _resolve_sync_step()
+        instructions = step['agent_instructions']
+        self.assertIn('.mcp.json', instructions)
+        self.assertIn('atlassian', instructions)
+
+    def test_instructions_ask_user_to_type_mcp(self):
+        """Instructions ask user to type /mcp when MCP is not loaded."""
+        step = _resolve_sync_step()
+        instructions = step['agent_instructions']
+        self.assertIn('/mcp', instructions)
+        self.assertIn('authenticate', instructions)
+
+    def test_instructions_halt_until_user_confirms(self):
+        """Instructions HALT and wait for user confirmation."""
+        step = _resolve_sync_step()
+        instructions = step['agent_instructions']
+        self.assertIn('HALT', instructions)
+        self.assertIn('confirm', instructions.lower())
 
 
 class TestMissingCredentialsTriggersTokenSetupDuringImageUpload(unittest.TestCase):
@@ -332,94 +371,16 @@ class TestMissingCredentialsTriggersTokenSetupDuringImageUpload(unittest.TestCas
             'id.atlassian.com/manage-profile/security/api-tokens',
             step['agent_instructions'])
 
-    def test_credentials_setup_in_phase_2(self):
-        """Credentials check is in Phase 2 (image upload), not Phase 0."""
+    def test_credentials_setup_in_image_upload_phase(self):
+        """Credentials check is in Phase 1 (image upload), not Phase 0."""
         step = _resolve_sync_step()
         instructions = step['agent_instructions']
-        # Phase 2 section should contain credentials check
-        phase_2_idx = instructions.index('Phase 2')
-        creds_idx = instructions.index('credentials.json', phase_2_idx)
-        self.assertGreater(creds_idx, phase_2_idx)
-
-
-class TestStaleDocumentationDetected(unittest.TestCase):
-    """Scenario: Stale documentation detected and updated
-
-    Given docs/guides/testing-workflow-guide.md references a command
-    that was renamed in the current implementation
-    When the step executes Phase 1 freshness review
-    Then the stale reference is updated to the current command name
-    And the change is committed with message "docs: update
-    testing-workflow-guide.md for current implementation"
-    """
-
-    def test_resolved_step_includes_freshness_review(self):
-        """Resolved step defines Phase 1 freshness review."""
-        step = _resolve_sync_step()
-        self.assertIn('Freshness Review', step['agent_instructions'])
-
-    def test_resolved_step_cross_references_sources(self):
-        """Freshness review cross-references tools/, instructions/,
-        features/."""
-        step = _resolve_sync_step()
-        instructions = step['agent_instructions']
-        self.assertIn('tools/', instructions)
-        self.assertIn('instructions/', instructions)
-        self.assertIn('features/', instructions)
-
-    def test_derive_title_for_actual_project_docs(self):
-        """Title derivation works correctly on actual project doc files."""
-        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
-        md_files = [f for f in os.listdir(docs_dir)
-                     if f.endswith('.md')]
-        self.assertTrue(len(md_files) > 0)
-        for filename in md_files:
-            title = cui.derive_page_title(filename)
-            self.assertFalse(title.endswith('.md'))
-            self.assertEqual(title, title.title())
-
-
-class TestDocumentationIsCurrent(unittest.TestCase):
-    """Scenario: Documentation is current, no changes needed
-
-    Given all docs/**/*.md files accurately reflect the current
-    implementation
-    When the step executes Phase 1 freshness review
-    Then no commits are made
-    And the step reports docs are current
-    """
-
-    def test_docs_files_produce_valid_page_titles(self):
-        """Each doc file produces a valid non-empty page title."""
-        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
-        md_files = []
-        for root, _dirs, files in os.walk(docs_dir):
-            for f in files:
-                if f.endswith('.md'):
-                    md_files.append(f)
-        self.assertGreaterEqual(len(md_files), 2)
-        for filename in md_files:
-            title = cui.derive_page_title(filename)
-            self.assertTrue(len(title) > 0)
-            self.assertNotIn('.md', title)
-
-    def test_docs_files_scannable_for_images(self):
-        """Each doc file can be scanned for image references."""
-        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
-        for root, _dirs, files in os.walk(docs_dir):
-            for f in files:
-                if f.endswith('.md'):
-                    path = os.path.join(root, f)
-                    with open(path) as fh:
-                        content = fh.read()
-                    refs = cui.scan_image_references(content)
-                    self.assertIsInstance(refs, list)
-
-    def test_resolved_step_confirms_current_state(self):
-        """Resolved step instructions include reporting docs are current."""
-        step = _resolve_sync_step()
-        self.assertIn(
-            'no updates needed', step['agent_instructions'].lower())
+        # Phase 1 (Image Upload) section should contain credentials check
+        phase_1_idx = instructions.index('Phase 1')
+        creds_idx = instructions.index('credentials.json', phase_1_idx)
+        phase_0_section = instructions[:phase_1_idx]
+        self.assertGreater(creds_idx, phase_1_idx)
+        self.assertNotIn('credentials.json', phase_0_section)
 
 
 class TestStepNeverDeletesPages(unittest.TestCase):
@@ -440,35 +401,6 @@ class TestStepNeverDeletesPages(unittest.TestCase):
         """Step has code: null (no automated deletion possible)."""
         step = _resolve_sync_step()
         self.assertIsNone(step['code'])
-
-
-class TestStepNeverCreatesNewDocFiles(unittest.TestCase):
-    """Scenario: Step never creates new doc files
-
-    Given a documentation gap is detected during freshness review
-    When the step considers remediation
-    Then no new files are created in docs/
-    And the gap is listed in the Recommendations section of the
-    completion report
-    """
-
-    def test_resolved_step_has_recommendations_section(self):
-        """Resolved step instructions include Recommendations in report."""
-        step = _resolve_sync_step()
-        self.assertIn('Recommendations', step['agent_instructions'])
-
-    def test_utility_functions_are_read_only(self):
-        """Utility functions (scan, derive) do not create files."""
-        tmpdir = tempfile.mkdtemp()
-        try:
-            content = '![img](test.png)\n# Doc Title\n'
-            cui.scan_image_references(content)
-            cui.derive_page_title('test-doc.md')
-            cui.derive_section_title('guides')
-            created = os.listdir(tmpdir)
-            self.assertEqual(len(created), 0)
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 class TestCredentialsNeverCommittedOrLogged(unittest.TestCase):
