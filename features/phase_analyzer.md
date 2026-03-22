@@ -4,7 +4,7 @@
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/policy_critic.md
 
-[TODO]
+[Complete]
 
 ## 1. Overview
 
