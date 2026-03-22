@@ -1186,6 +1186,19 @@ def generate_startup_briefing(role, cache=None):
             item for item in role_data.get("action_items", [])
             if item.get("feature", "") in visible_stems
             or not item.get("feature")]
+
+        # Normal mode: count pending Test Infrastructure features and
+        # recommend -qa when all normal TODO items are done (Section 2.3)
+        if not qa_mode:
+            all_role_features = []
+            for feat in role_data.get("features", []):
+                entry = dict(feat)
+                all_role_features.append(entry)
+
+            test_infra_pending = sum(
+                1 for f in all_role_features
+                if f.get("category") == _TEST_INFRA_CATEGORY
+                and f.get("builder") not in _TERMINAL_STATUSES)
     else:
         action_items = role_data.get("action_items", [])
 
@@ -1248,6 +1261,19 @@ def generate_startup_briefing(role, cache=None):
 
         # in_scope_features: same as features but explicitly named
         result["in_scope_features"] = features_with_count
+
+        # Test infrastructure pending count and recommendation (Section 2.3)
+        if not qa_mode:
+            result["test_infrastructure_pending"] = test_infra_pending
+            # Check if all normal TODO items are done
+            normal_todo = sum(
+                1 for f in features_with_count
+                if f.get("builder") not in _TERMINAL_STATUSES)
+            if normal_todo == 0 and test_infra_pending > 0:
+                result["qa_mode_recommendation"] = (
+                    f"{test_infra_pending} Test Infrastructure features "
+                    f"pending. Use ./pl-run-builder.sh -qa for a focused "
+                    f"session.")
 
         # Delivery plan state (Section 2.15.2)
         delivery = get_delivery_phase()

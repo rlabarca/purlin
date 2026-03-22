@@ -1,6 +1,6 @@
 """Unit tests for Builder QA Mode feature.
 
-Covers automated scenarios from features/builder_qa_mode.md.
+Covers the 6 automated scenarios from features/builder_qa_mode.md.
 Outputs test results to tests/builder_qa_mode/tests.json.
 """
 
@@ -72,8 +72,7 @@ def _make_qa_mode_env(tmpdir, features=None, config=None):
     resolved_config = config or {
         "agents": {
             "builder": {"find_work": True, "auto_start": True,
-                        "model": "test-model", "effort": "high",
-                        "qa_mode": False},
+                        "model": "test-model", "effort": "high"},
             "qa": {"find_work": True, "auto_start": False,
                    "model": "test-model", "effort": "medium"},
             "architect": {"find_work": False, "auto_start": False,
@@ -194,7 +193,7 @@ class TestDefaultModeHidesTestInfrastructure(unittest.TestCase):
     """Scenario: Default mode hides test infrastructure features
 
     Given the project has 10 features, 2 in "Test Infrastructure" category
-    And qa_mode is false (default)
+    And PURLIN_BUILDER_QA is not set
     When the Builder runs startup find_work
     Then 8 features appear in the work plan
     And the 2 Test Infrastructure features are not listed
@@ -240,34 +239,21 @@ class TestDefaultModeHidesTestInfrastructure(unittest.TestCase):
         self.assertNotIn("Test Fixture Repo", in_scope_labels)
 
 
-class TestQaModeShowsOnlyTestInfrastructure(unittest.TestCase):
-    """Scenario: QA mode shows only test infrastructure features
+class TestQaFlagShowsOnlyTestInfrastructure(unittest.TestCase):
+    """Scenario: -qa flag shows only test infrastructure features
 
     Given the project has 10 features, 2 in "Test Infrastructure" category
-    And qa_mode is true
+    And PURLIN_BUILDER_QA=true is set (via -qa flag)
     When the Builder runs startup find_work
     Then only the 2 Test Infrastructure features appear in the work plan
     And the 8 non-test features are not listed
     """
 
-    def test_qa_mode_includes_only_test_infra(self):
+    def test_qa_flag_includes_only_test_infra(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES,
-                                    config=config)
-            result = _run_briefing(env)
+            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
+            result = _run_briefing(env,
+                                   env_vars={"PURLIN_BUILDER_QA": "true"})
 
         features = result["features"]
         feature_labels = [f["label"] for f in features]
@@ -281,25 +267,12 @@ class TestQaModeShowsOnlyTestInfrastructure(unittest.TestCase):
         self.assertNotIn("App Auth", feature_labels)
         self.assertNotIn("App Dashboard", feature_labels)
 
-    def test_qa_mode_filters_action_items_to_test_infra(self):
+    def test_qa_flag_filters_action_items_to_test_infra(self):
         """Only Test Infrastructure action items are returned."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES,
-                                    config=config)
-            result = _run_briefing(env)
+            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
+            result = _run_briefing(env,
+                                   env_vars={"PURLIN_BUILDER_QA": "true"})
 
         action_features = {item.get("feature") for item in result["action_items"]}
         # Only test infra features should have action items
@@ -308,10 +281,10 @@ class TestQaModeShowsOnlyTestInfrastructure(unittest.TestCase):
                 self.assertIn(f, {"test_fixture_repo", "regression_harness"})
 
 
-class TestQaModePrintsHeaderIndicator(unittest.TestCase):
-    """Scenario: QA mode prints header indicator
+class TestQaFlagPrintsHeaderIndicator(unittest.TestCase):
+    """Scenario: -qa flag prints header indicator
 
-    Given qa_mode is true
+    Given PURLIN_BUILDER_QA=true is set
     When the Builder prints its startup command table
     Then the header includes "[QA Builder Mode]"
 
@@ -319,29 +292,16 @@ class TestQaModePrintsHeaderIndicator(unittest.TestCase):
     Builder agent can prepend [QA Builder Mode] to its header.
     """
 
-    def test_config_block_includes_qa_mode_true(self):
+    def test_config_block_includes_qa_mode_true_via_env_var(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES,
-                                    config=config)
-            result = _run_briefing(env)
+            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
+            result = _run_briefing(env,
+                                   env_vars={"PURLIN_BUILDER_QA": "true"})
 
         self.assertIn("qa_mode", result["config"])
         self.assertTrue(result["config"]["qa_mode"])
 
-    def test_config_block_includes_qa_mode_false(self):
+    def test_config_block_includes_qa_mode_false_by_default(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
             result = _run_briefing(env)
@@ -350,62 +310,177 @@ class TestQaModePrintsHeaderIndicator(unittest.TestCase):
         self.assertFalse(result["config"]["qa_mode"])
 
 
-class TestEnvironmentVariableOverridesConfig(unittest.TestCase):
-    """Scenario: Environment variable overrides config
+class TestNormalModeShowsTestInfrastructurePendingCount(unittest.TestCase):
+    """Scenario: Normal mode shows test_infrastructure_pending count
 
-    Given .purlin/config.json has qa_mode: false
-    And PURLIN_BUILDER_QA=true is set in the environment
-    When the Builder reads startup flags
-    Then qa_mode is true
-    And only Test Infrastructure features are visible
+    Given the project has 3 Test Infrastructure features in TODO state
+    And PURLIN_BUILDER_QA is not set
+    When the Builder reads the startup briefing
+    Then test_infrastructure_pending is 3
     """
 
-    def test_env_var_overrides_config_false(self):
+    def test_test_infrastructure_pending_count(self):
+        features = {
+            "app_auth": {
+                "label": "App Auth",
+                "category": "Agent Skills",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "test_fixture_repo": {
+                "label": "Test Fixture Repo",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "regression_harness": {
+                "label": "Regression Harness",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "test_quality": {
+                "label": "Test Quality",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+        }
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Config has qa_mode: false
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env)
+
+        self.assertIn("test_infrastructure_pending", result)
+        self.assertEqual(result["test_infrastructure_pending"], 3)
+
+    def test_completed_test_infra_not_counted(self):
+        """Test Infrastructure features with DONE status are not counted."""
+        features = {
+            "app_auth": {
+                "label": "App Auth",
+                "category": "Agent Skills",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "test_fixture_repo": {
+                "label": "Test Fixture Repo",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "regression_harness": {
+                "label": "Regression Harness",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "DONE",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env)
+
+        # Only test_fixture_repo is TODO; regression_harness is DONE
+        self.assertEqual(result["test_infrastructure_pending"], 1)
+
+    def test_pending_count_with_mixed_features(self):
+        """Standard 10-feature set has 2 pending test infra features."""
+        with tempfile.TemporaryDirectory() as tmpdir:
             env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
-            # But env var says true
-            result = _run_briefing(env, env_vars={"PURLIN_BUILDER_QA": "true"})
+            result = _run_briefing(env)
 
-        # qa_mode should be true
-        self.assertTrue(result["config"]["qa_mode"])
+        self.assertEqual(result["test_infrastructure_pending"], 2)
 
-        # Only Test Infrastructure features visible
-        features = result["features"]
-        self.assertEqual(len(features), 2)
-        feature_labels = [f["label"] for f in features]
-        self.assertIn("Test Fixture Repo", feature_labels)
-        self.assertIn("Regression Harness", feature_labels)
 
-    def test_env_var_false_does_not_override(self):
-        """PURLIN_BUILDER_QA=false doesn't force qa_mode on."""
+class TestNormalModeRecommendsQaAfterZeroTodo(unittest.TestCase):
+    """Scenario: Normal mode recommends -qa after zero TODO
+
+    Given the Builder has completed all non-Test-Infrastructure TODO features
+    And test_infrastructure_pending is 2
+    When the Builder presents the work plan
+    Then the plan includes a recommendation:
+      "2 Test Infrastructure features pending.
+       Use ./pl-run-builder.sh -qa for a focused session."
+    """
+
+    def test_recommendation_when_all_normal_done(self):
+        features = {
+            "app_auth": {
+                "label": "App Auth",
+                "category": "Agent Skills",
+                "role_status": {"architect": "DONE", "builder": "DONE",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "app_dashboard": {
+                "label": "App Dashboard",
+                "category": "CDD Dashboard",
+                "role_status": {"architect": "DONE", "builder": "DONE",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "test_fixture_repo": {
+                "label": "Test Fixture Repo",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "regression_harness": {
+                "label": "Regression Harness",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+        }
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES,
-                                    config=config)
-            # env var set to false — falls through to config which says true
-            result = _run_briefing(env, env_vars={"PURLIN_BUILDER_QA": "false"})
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env)
 
-        # Config says true, env var says false, so falls through to config
-        self.assertTrue(result["config"]["qa_mode"])
+        self.assertIn("qa_mode_recommendation", result)
+        expected = ("2 Test Infrastructure features pending. "
+                    "Use ./pl-run-builder.sh -qa for a focused session.")
+        self.assertEqual(result["qa_mode_recommendation"], expected)
+
+    def test_no_recommendation_when_normal_todo_remains(self):
+        """No recommendation when normal features still have TODO work."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
+            result = _run_briefing(env)
+
+        # Normal features still TODO, so no recommendation
+        self.assertNotIn("qa_mode_recommendation", result)
+
+    def test_no_recommendation_when_no_test_infra_pending(self):
+        """No recommendation when test infra count is zero."""
+        features = {
+            "app_auth": {
+                "label": "App Auth",
+                "category": "Agent Skills",
+                "role_status": {"architect": "DONE", "builder": "DONE",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env)
+
+        self.assertNotIn("qa_mode_recommendation", result)
+        self.assertEqual(result["test_infrastructure_pending"], 0)
 
 
-class TestQaModeComposesWithContinuousMode(unittest.TestCase):
-    """Scenario: QA mode composes with continuous mode
+class TestQaFlagComposesWithContinuousMode(unittest.TestCase):
+    """Scenario: -qa flag composes with continuous mode
 
-    Given qa_mode is true
+    Given PURLIN_BUILDER_QA=true is set
     And the continuous phase flag is active
     And there are 4 Test Infrastructure features in TODO state
     When the Builder creates a delivery plan
@@ -413,12 +488,12 @@ class TestQaModeComposesWithContinuousMode(unittest.TestCase):
     And phase analysis operates on the filtered set
 
     Implementation: The startup briefing returns only Test Infrastructure
-    features when qa_mode is true. The continuous phase builder consumes
-    this filtered list to create the delivery plan. We verify the
+    features when PURLIN_BUILDER_QA=true. The continuous phase builder
+    consumes this filtered list to create the delivery plan. We verify the
     briefing output is correctly filtered with 4 TI features.
     """
 
-    def test_qa_mode_with_multiple_test_infra_features(self):
+    def test_qa_flag_with_multiple_test_infra_features(self):
         features = {
             "app_auth": {
                 "label": "App Auth",
@@ -464,21 +539,9 @@ class TestQaModeComposesWithContinuousMode(unittest.TestCase):
             },
         }
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=features, config=config)
-            result = _run_briefing(env)
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env,
+                                   env_vars={"PURLIN_BUILDER_QA": "true"})
 
         # Only Test Infrastructure features visible
         visible = result["features"]
@@ -495,60 +558,33 @@ class TestQaModeComposesWithContinuousMode(unittest.TestCase):
         # (4 features >= 3 threshold)
         self.assertTrue(result.get("phasing_recommended", False))
 
-
-class TestAgentConfigCommandTogglesQaMode(unittest.TestCase):
-    """Scenario: Agent config command toggles QA mode
-
-    Given qa_mode is currently false in .purlin/config.local.json
-    When the user runs /pl-agent-config and sets qa_mode to true
-    Then .purlin/config.local.json contains "qa_mode": true under builder
-    And the next Builder session will enter QA builder mode
-
-    Implementation: This tests that the config is correctly read by
-    generate_startup_briefing and that qa_mode in config drives filtering.
-    The /pl-agent-config command itself is an instruction-level skill,
-    so we test the config -> behavior pipeline.
-    """
-
-    def test_config_qa_mode_true_activates_filtering(self):
-        """Setting qa_mode: true in config activates Test Infrastructure filter."""
+    def test_qa_flag_excludes_non_test_features_from_scope(self):
+        """Non-test features are fully excluded from in_scope_features."""
+        features = {
+            "app_auth": {
+                "label": "App Auth",
+                "category": "Agent Skills",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+            "test_fixture_repo": {
+                "label": "Test Fixture Repo",
+                "category": "Test Infrastructure",
+                "role_status": {"architect": "DONE", "builder": "TODO",
+                                "qa": "N/A", "pm": "N/A"},
+                "scenarios": ["S1"],
+            },
+        }
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = {
-                "agents": {
-                    "builder": {"find_work": True, "auto_start": True,
-                                "model": "test-model", "effort": "high",
-                                "qa_mode": True},
-                    "qa": {"find_work": True, "auto_start": False,
-                           "model": "test-model", "effort": "medium"},
-                    "architect": {"find_work": False, "auto_start": False,
-                                  "model": "test-model", "effort": "high"},
-                    "pm": {"find_work": False, "auto_start": False,
-                           "model": "test-model", "effort": "high"},
-                }
-            }
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES,
-                                    config=config)
-            result = _run_briefing(env)
+            env = _make_qa_mode_env(tmpdir, features=features)
+            result = _run_briefing(env,
+                                   env_vars={"PURLIN_BUILDER_QA": "true"})
 
-        # qa_mode reflected in config block
-        self.assertTrue(result["config"]["qa_mode"])
-
-        # Only Test Infrastructure features
-        self.assertEqual(len(result["features"]), 2)
-        labels = {f["label"] for f in result["features"]}
-        self.assertEqual(labels, {"Test Fixture Repo", "Regression Harness"})
-
-    def test_config_qa_mode_false_hides_test_infra(self):
-        """Setting qa_mode: false in config hides Test Infrastructure."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            env = _make_qa_mode_env(tmpdir, features=_MIXED_FEATURES)
-            result = _run_briefing(env)
-
-        self.assertFalse(result["config"]["qa_mode"])
-        self.assertEqual(len(result["features"]), 8)
-        labels = {f["label"] for f in result["features"]}
-        self.assertNotIn("Test Fixture Repo", labels)
-        self.assertNotIn("Regression Harness", labels)
+        in_scope_labels = [f["label"] for f in result["in_scope_features"]]
+        self.assertEqual(len(in_scope_labels), 1)
+        self.assertIn("Test Fixture Repo", in_scope_labels)
+        self.assertNotIn("App Auth", in_scope_labels)
 
 
 class TestExtractCategory(unittest.TestCase):
@@ -575,27 +611,6 @@ class TestExtractCategory(unittest.TestCase):
     def test_returns_uncategorized_for_nonexistent_file(self):
         result = extract_category("/nonexistent/path.md")
         self.assertEqual(result, "Uncategorized")
-
-
-class TestCategoryInApiStatus(unittest.TestCase):
-    """Verify category field is present in API status features."""
-
-    def test_category_included_in_features(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            env = _make_qa_mode_env(tmpdir, features={
-                "feat_a": {
-                    "label": "Feature A",
-                    "category": "Agent Skills",
-                    "role_status": {"architect": "DONE", "builder": "TODO",
-                                    "qa": "N/A", "pm": "N/A"},
-                    "scenarios": ["S1"],
-                },
-            })
-            result = _run_briefing(env)
-
-        self.assertTrue(len(result["features"]) > 0)
-        feat = result["features"][0]
-        self.assertEqual(feat["category"], "Agent Skills")
 
 
 # ===================================================================

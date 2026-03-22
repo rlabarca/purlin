@@ -18,6 +18,7 @@ fi
 CONTINUOUS_MODE="false"
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -qa) export PURLIN_BUILDER_QA=true; shift ;;
         --continuous)
             echo "The --continuous flag is deprecated. Set \`auto_start: true\` in agent config and relaunch the interactive Builder." >&2
             exit 1
