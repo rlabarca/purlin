@@ -30,6 +30,7 @@ tools/critic/.cache/
 # Web-verify screenshots
 *.png
 !assets/*.png
+!docs/images/*.png
 *.jpeg
 
 # Temp
