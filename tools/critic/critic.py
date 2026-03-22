@@ -133,7 +133,16 @@ def parse_sections(content):
 def parse_scenarios(content):
     """Extract scenarios from the feature file.
 
-    Returns list of dicts: [{"title": str, "is_manual": bool, "body": str}]
+    Returns list of dicts: [{"title": str, "is_manual": bool, "is_auto": bool, "body": str}]
+
+    Section heading migration (policy_critic Section 2.14): Accepts both old
+    (``### Automated Scenarios``, ``### Manual Scenarios``) and new
+    (``### Unit Tests``, ``### QA Scenarios``) headings.  Both are parsed
+    identically.
+
+    ``@auto`` tag detection (Section 2.14): A scenario heading like
+    ``#### Scenario: Widget renders correctly @auto`` is classified with
+    ``is_auto = True``.  The ``@auto`` suffix is stripped from the stored title.
     """
     scenarios = []
     in_manual_section = False
@@ -143,16 +152,22 @@ def parse_scenarios(content):
     while i < len(lines):
         line = lines[i]
 
-        # Track manual vs automated section
-        if re.match(r'^###\s+Manual\s+Scenarios', line, re.IGNORECASE):
+        # Track manual vs automated section -- accept both old and new headings
+        if re.match(r'^###\s+(?:Manual\s+Scenarios|QA\s+Scenarios)', line, re.IGNORECASE):
             in_manual_section = True
-        elif re.match(r'^###\s+Automated\s+Scenarios', line, re.IGNORECASE):
+        elif re.match(r'^###\s+(?:Automated\s+Scenarios|Unit\s+Tests)', line, re.IGNORECASE):
             in_manual_section = False
 
-        # Match scenario headings (#### Scenario: Title)
+        # Match scenario headings (#### Scenario: Title [@auto])
         scenario_match = re.match(r'^####\s+Scenario:\s*(.+)', line)
         if scenario_match:
-            title = scenario_match.group(1).strip()
+            raw_title = scenario_match.group(1).strip()
+            # Detect and strip @auto tag
+            is_auto = raw_title.endswith('@auto')
+            if is_auto:
+                title = raw_title[:-len('@auto')].strip()
+            else:
+                title = raw_title
             body_lines = []
             i += 1
             while i < len(lines):
@@ -163,6 +178,7 @@ def parse_scenarios(content):
             scenarios.append({
                 'title': title,
                 'is_manual': in_manual_section,
+                'is_auto': is_auto,
                 'body': '\n'.join(body_lines).strip(),
             })
             continue
@@ -846,9 +862,13 @@ def check_scenario_classification(scenarios, content=''):
 
 
 def _has_explicit_none_manual(content):
-    """Check if Manual Scenarios subsection explicitly declares 'None'."""
+    """Check if Manual/QA Scenarios subsection explicitly declares 'None'.
+
+    Accepts both old (``### Manual Scenarios``) and new (``### QA Scenarios``)
+    headings per Section 2.14 heading migration.
+    """
     match = re.search(
-        r'^###\s+Manual\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
+        r'^###\s+(?:Manual\s+Scenarios|QA\s+Scenarios).*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
         content, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if match:
         body = match.group(1).strip()
@@ -857,9 +877,13 @@ def _has_explicit_none_manual(content):
 
 
 def _has_explicit_none_automated(content):
-    """Check if Automated Scenarios subsection explicitly declares 'None'."""
+    """Check if Automated Scenarios/Unit Tests subsection explicitly declares 'None'.
+
+    Accepts both old (``### Automated Scenarios``) and new (``### Unit Tests``)
+    headings per Section 2.14 heading migration.
+    """
     match = re.search(
-        r'^###\s+Automated\s+Scenarios.*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
+        r'^###\s+(?:Automated\s+Scenarios|Unit\s+Tests).*?\n(.*?)(?=\n###\s|\n##\s|\Z)',
         content, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if match:
         body = match.group(1).strip()
@@ -2190,6 +2214,23 @@ def _get_file_at_commit(feature_file, commit_hash, project_root=None):
         return None
 
 
+def _resolve_abbreviated_scope(commit_msg, project_root=None):
+    """Resolve a feature file from abbreviated commit scope.
+
+    Abbreviated format: ``<type>(<scope>):`` -> ``features/<scope>.md``.
+    Returns the feature reference (e.g., ``features/my_feature.md``) if the
+    resolved file exists on disk, or None if it cannot be resolved.
+    """
+    root = project_root or PROJECT_ROOT
+    scope_match = re.match(r'\w+\((\w+)\):', commit_msg)
+    if scope_match:
+        scope = scope_match.group(1)
+        candidate = f'features/{scope}.md'
+        if os.path.isfile(os.path.join(root, candidate)):
+            return candidate
+    return None
+
+
 def _has_testing_phase_commit(feature_file, project_root=None):
     """Check if a valid (post-reset) TESTING-phase commit exists for a feature.
 
@@ -2198,6 +2239,10 @@ def _has_testing_phase_commit(feature_file, project_root=None):
     The reset point is the timestamp of the latest commit that modified the
     feature spec file.  A stale TESTING-phase commit from before the reset
     does NOT satisfy the invariant.
+
+    Supports both canonical (``[Ready for \\w+ features/<name>.md]``) and
+    abbreviated (``[Ready for Verification]`` / ``[Ready for Testing]`` with
+    conventional commit scope) formats per Section 2.16.
 
     Returns True if a post-reset TESTING-phase commit exists, False otherwise.
     """
@@ -2232,17 +2277,29 @@ def _has_testing_phase_commit(feature_file, project_root=None):
         if result.returncode != 0 or not result.stdout.strip():
             return False
         # Step 3: Check each matching commit -- must reference this feature
-        # AND have a timestamp at or after the reset point.
+        # (canonical or abbreviated) AND have a timestamp at or after the
+        # reset point.
         for line in result.stdout.strip().split('\n'):
-            if feature_ref not in line:
-                continue
             parts = line.split(' ', 1)
+            if len(parts) < 2:
+                continue
             try:
                 commit_ts = int(parts[0])
             except (ValueError, IndexError):
                 continue
-            if commit_ts >= reset_timestamp:
-                return True
+            msg = parts[1]
+            # Canonical: feature_ref appears directly in the message
+            if feature_ref in msg:
+                if commit_ts >= reset_timestamp:
+                    return True
+                continue
+            # Abbreviated: [Ready for Verification] or [Ready for Testing]
+            # without inline file path -- resolve from commit scope
+            if ('[Ready for Verification]' in msg
+                    or '[Ready for Testing]' in msg):
+                resolved = _resolve_abbreviated_scope(msg, root)
+                if resolved == feature_ref and commit_ts >= reset_timestamp:
+                    return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return False
@@ -2255,6 +2312,9 @@ def _has_verified_complete_commit(feature_file, project_root=None):
     a valid TESTING-phase commit exists, the most recent post-reset [Complete]
     commit must contain the [Verified] tag. A [Complete] without [Verified]
     indicates the Builder completed the feature without QA verification.
+
+    Supports both canonical (``[Complete features/<name>.md]``) and abbreviated
+    (``[Complete]`` with conventional commit scope) formats per Section 2.16.
 
     Returns True if a post-reset [Complete] commit with [Verified] exists,
     False otherwise.
@@ -2289,18 +2349,29 @@ def _has_verified_complete_commit(feature_file, project_root=None):
         if result.returncode != 0 or not result.stdout.strip():
             return False
         # Step 3: Check each matching commit -- must reference this feature
-        # AND have a timestamp at or after the reset point
-        # AND contain the [Verified] tag.
+        # (canonical or abbreviated) AND have a timestamp at or after the
+        # reset point AND contain the [Verified] tag.
         for line in result.stdout.strip().split('\n'):
-            if feature_ref not in line:
-                continue
             parts = line.split(' ', 1)
+            if len(parts) < 2:
+                continue
             try:
                 commit_ts = int(parts[0])
             except (ValueError, IndexError):
                 continue
-            if commit_ts >= reset_timestamp and '[Verified]' in line:
-                return True
+            msg = parts[1]
+            # Canonical: feature_ref appears directly in the message
+            if feature_ref in msg:
+                if commit_ts >= reset_timestamp and '[Verified]' in msg:
+                    return True
+                continue
+            # Abbreviated: [Complete] without inline file path
+            if '[Complete]' in msg and feature_ref not in msg:
+                resolved = _resolve_abbreviated_scope(msg, root)
+                if (resolved == feature_ref
+                        and commit_ts >= reset_timestamp
+                        and '[Verified]' in msg):
+                    return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return False
@@ -2721,7 +2792,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     Returns dict with category counts, totals, and summary.
     """
     zeroed = {
-        'web_test': 0, 'test_only': 0, 'skip': 0,
+        'web_test': 0, 'test_only': 0, 'skip': 0, 'auto': 0,
         'manual_interactive': 0, 'manual_visual': 0, 'manual_hardware': 0,
         'total_auto': 0, 'total_manual': 0, 'summary': 'no QA items',
     }
@@ -2794,7 +2865,9 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
             return zeroed
 
     # Classify manual scenarios and visual items
+    # @auto tagged scenarios (Section 2.14) are QA-owned but automatable
     web_test_count = 0
+    auto_count = 0
     manual_interactive = 0
     manual_visual = 0
     manual_hardware = 0
@@ -2803,32 +2876,44 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         r'\b(hardware|serial|GPIO|USB|device|physical)\b', re.IGNORECASE)
 
     if is_web:
-        # Web test: visual items -> web_test; manual scenarios classified normally
+        # Web test: visual items -> web_test (auto); manual scenarios classified
         web_test_count = visual_items
         for s in manual_scenarios:
-            if hardware_keywords.search(s.get('body', '')):
+            if s.get('is_auto', False):
+                auto_count += 1
+            elif hardware_keywords.search(s.get('body', '')):
                 manual_hardware += 1
             else:
                 manual_interactive += 1
     else:
         # Non-web: classify manual scenarios
         for s in manual_scenarios:
-            if hardware_keywords.search(s.get('body', '')):
+            if s.get('is_auto', False):
+                auto_count += 1
+            elif hardware_keywords.search(s.get('body', '')):
                 manual_hardware += 1
             else:
                 manual_interactive += 1
         # Non-web visual items -> manual_visual
         manual_visual = visual_items
 
-    total_auto = web_test_count
+    total_auto = web_test_count + auto_count
     total_manual = manual_interactive + manual_visual + manual_hardware
 
-    summary = f'{total_manual} manual'
+    # Summary format per Section 2.14:
+    # "N manual" when manual items exist, "N auto" when only auto items exist
+    if total_manual > 0:
+        summary = f'{total_manual} manual'
+    elif total_auto > 0:
+        summary = f'{total_auto} auto'
+    else:
+        summary = 'no QA items'
 
     return {
         'web_test': web_test_count,
         'test_only': 0,
         'skip': 0,
+        'auto': auto_count,
         'manual_interactive': manual_interactive,
         'manual_visual': manual_visual,
         'manual_hardware': manual_hardware,
@@ -2949,12 +3034,20 @@ def compute_role_status(feature_result, cdd_status=None):
         e['status'] == 'SPEC_UPDATED' for e in _ut_entries)
 
     # Pre-compute: is this a TESTING feature with manual scenarios?
+    # Also detect whether ALL manual scenarios are @auto-tagged (Section 2.14).
     testing_with_manual = False
+    testing_all_auto = False
     if lifecycle_state == 'testing':
         scenarios = parse_scenarios(_content)
-        manual_count = sum(
-            1 for s in scenarios if s.get('is_manual', False))
+        manual_scenarios_list = [
+            s for s in scenarios if s.get('is_manual', False)]
+        manual_count = len(manual_scenarios_list)
         testing_with_manual = manual_count > 0
+        if testing_with_manual:
+            non_auto_manual = sum(
+                1 for s in manual_scenarios_list
+                if not s.get('is_auto', False))
+            testing_all_auto = non_auto_manual == 0
 
     # Pre-compute: COMPLETE feature that bypassed QA verification
     # (Section 2.16 QA Verification Integrity)
@@ -2972,10 +3065,12 @@ def compute_role_status(feature_result, cdd_status=None):
             elif not _has_verified_complete_commit(feature_path):
                 bypassed_verification = True
 
-    # Apply precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+    # Apply precedence: FAIL > DISPUTED > TODO > AUTO > CLEAN > N/A
     # Per spec Section 2.11 "QA Actionability Principle": QA=TODO only when
     # QA has work to do RIGHT NOW. OPEN items routing to other roles are not
     # QA-actionable.
+    # AUTO (Section 2.14): TESTING feature where all manual scenarios have
+    # @auto tag -- QA has automatable work but no human-judgment scenarios.
     if has_open_bugs_qa:
         qa_status = 'FAIL'
     elif has_open_disputes_qa:
@@ -2983,13 +3078,16 @@ def compute_role_status(feature_result, cdd_status=None):
     elif has_spec_updated_qa and lifecycle_state == 'testing':
         # TODO condition (b): SPEC_UPDATED items in TESTING lifecycle only
         qa_status = 'TODO'
-    elif testing_with_manual:
-        # TODO condition (a): TESTING with manual scenarios
+    elif testing_with_manual and not testing_all_auto:
+        # TODO condition (a): TESTING with non-auto manual scenarios
         qa_status = 'TODO'
     elif bypassed_verification:
         # TODO condition (c): COMPLETE with manual scenarios but no
         # TESTING-phase commit (Section 2.16 bypassed verification)
         qa_status = 'TODO'
+    elif testing_all_auto:
+        # AUTO: TESTING with all @auto manual scenarios (Section 2.14)
+        qa_status = 'AUTO'
     elif struct_status == 'PASS':
         # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
         qa_status = 'CLEAN'
@@ -3175,7 +3273,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     _nonterminal = {
         'architect': {'TODO'},
         'builder': {'TODO', 'FAIL', 'INFEASIBLE', 'BLOCKED'},
-        'qa': {'TODO', 'FAIL', 'DISPUTED'},
+        'qa': {'TODO', 'FAIL', 'DISPUTED', 'AUTO'},
         'pm': {'TODO'},
     }
     for role, nonterminal_states in _nonterminal.items():
@@ -3203,6 +3301,7 @@ def generate_critic_json(feature_path, cdd_status=None):
     result.pop('_visual_ref_items', None)
     result.pop('_fixture_data', None)
     result.pop('_owner', None)
+    result.pop('_figma_status', None)
     # Remove internal role_status keys used for cross-function communication
     result['role_status'].pop('_bypassed_verification', None)
     result['role_status'].pop('_bypassed_manual_count', None)
