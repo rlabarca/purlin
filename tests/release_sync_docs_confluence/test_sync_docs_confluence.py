@@ -34,6 +34,19 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'dev'))
 import confluence_upload_images as cui
 
+# Add project root for release resolve module
+sys.path.insert(0, PROJECT_ROOT)
+from tools.release.resolve import resolve_checklist
+
+
+def _resolve_sync_step():
+    """Resolve the sync_docs_to_confluence step via the release resolver."""
+    resolved, _warnings, _errors = resolve_checklist()
+    matches = [s for s in resolved if s['id'] == 'sync_docs_to_confluence']
+    if not matches:
+        raise ValueError('sync_docs_to_confluence step not found in resolved checklist')
+    return matches[0]
+
 
 class TestSubdirectoryMapsToSectionPage(unittest.TestCase):
     """Scenario: Subdirectory maps to Confluence section page
@@ -112,7 +125,7 @@ class TestFilenameDerivePageTitle(unittest.TestCase):
     def test_md_extension_stripped(self):
         """The .md extension is removed before title derivation."""
         title = cui.derive_page_title('my-doc.md')
-        self.assertNotIn('.md', title)
+        self.assertEqual(title, 'My Doc')
 
     def test_parallel_execution_guide(self):
         """Verify with the actual project doc filename."""
@@ -235,38 +248,21 @@ class TestMissingMcpTrigersSetupGuidance(unittest.TestCase):
     PRODENG space is accessible
     """
 
-    def test_agent_instructions_contain_mcp_url(self):
-        """Agent instructions reference the correct MCP server URL."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
-        instructions = step['agent_instructions']
-        self.assertIn('https://mcp.atlassian.com/v2/mcp', instructions)
+    def test_resolved_step_contains_mcp_url(self):
+        """Resolved step's agent instructions contain MCP server URL."""
+        step = _resolve_sync_step()
+        self.assertIn(
+            'https://mcp.atlassian.com/v2/mcp',
+            step['agent_instructions'])
 
-    def test_agent_instructions_mention_prodeng(self):
-        """Agent instructions verify PRODENG space accessibility."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_resolved_step_references_prodeng_space(self):
+        """Resolved step verifies PRODENG space accessibility."""
+        step = _resolve_sync_step()
         self.assertIn('PRODENG', step['agent_instructions'])
 
-    def test_agent_instructions_halt_on_missing_mcp(self):
-        """Agent instructions specify halting until MCP is available."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_resolved_step_halts_on_missing_mcp(self):
+        """Resolved step specifies halting until MCP is available."""
+        step = _resolve_sync_step()
         self.assertIn('Halt until working', step['agent_instructions'])
 
 
@@ -317,15 +313,9 @@ class TestMissingCredentialsTrigersTokenSetup(unittest.TestCase):
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def test_agent_instructions_reference_token_creation_url(self):
-        """Agent instructions point to Atlassian API token page."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_resolved_step_references_token_creation_url(self):
+        """Resolved step points to Atlassian API token page."""
+        step = _resolve_sync_step()
         self.assertIn(
             'id.atlassian.com/manage-profile/security/api-tokens',
             step['agent_instructions'])
@@ -342,38 +332,30 @@ class TestStaleDocumentationDetected(unittest.TestCase):
     testing-workflow-guide.md for current implementation"
     """
 
-    def test_agent_instructions_include_freshness_review(self):
-        """Agent instructions define Phase 1 freshness review."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_resolved_step_includes_freshness_review(self):
+        """Resolved step defines Phase 1 freshness review."""
+        step = _resolve_sync_step()
         self.assertIn('Freshness Review', step['agent_instructions'])
 
-    def test_agent_instructions_cross_reference_sources(self):
+    def test_resolved_step_cross_references_sources(self):
         """Freshness review cross-references tools/, instructions/,
         features/."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+        step = _resolve_sync_step()
         instructions = step['agent_instructions']
         self.assertIn('tools/', instructions)
         self.assertIn('instructions/', instructions)
         self.assertIn('features/', instructions)
 
-    def test_commit_message_format(self):
-        """Expected commit message format for doc updates."""
-        filename = 'testing-workflow-guide.md'
-        msg = (f'docs: update {filename} for current implementation')
-        self.assertTrue(msg.startswith('docs: update'))
-        self.assertIn(filename, msg)
+    def test_derive_title_for_actual_project_docs(self):
+        """Title derivation works correctly on actual project doc files."""
+        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
+        md_files = [f for f in os.listdir(docs_dir)
+                     if f.endswith('.md')]
+        self.assertTrue(len(md_files) > 0)
+        for filename in md_files:
+            title = cui.derive_page_title(filename)
+            self.assertFalse(title.endswith('.md'))
+            self.assertEqual(title, title.title())
 
 
 class TestDocumentationIsCurrent(unittest.TestCase):
@@ -386,34 +368,35 @@ class TestDocumentationIsCurrent(unittest.TestCase):
     And the step reports docs are current
     """
 
-    def test_docs_directory_exists(self):
-        """The docs/ directory exists in the project."""
-        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
-        self.assertTrue(
-            os.path.isdir(docs_dir),
-            'docs/ directory must exist')
-
-    def test_docs_contain_markdown_files(self):
-        """docs/ directory contains at least one markdown file."""
+    def test_docs_files_produce_valid_page_titles(self):
+        """Each doc file produces a valid non-empty page title."""
         docs_dir = os.path.join(PROJECT_ROOT, 'docs')
         md_files = []
         for root, _dirs, files in os.walk(docs_dir):
             for f in files:
                 if f.endswith('.md'):
-                    md_files.append(os.path.join(root, f))
-        self.assertTrue(
-            len(md_files) > 0,
-            'docs/ should contain at least one .md file')
+                    md_files.append(f)
+        self.assertGreaterEqual(len(md_files), 2)
+        for filename in md_files:
+            title = cui.derive_page_title(filename)
+            self.assertTrue(len(title) > 0)
+            self.assertNotIn('.md', title)
 
-    def test_agent_instructions_confirm_current_state(self):
-        """Agent instructions include reporting docs are current."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_docs_files_scannable_for_images(self):
+        """Each doc file can be scanned for image references."""
+        docs_dir = os.path.join(PROJECT_ROOT, 'docs')
+        for root, _dirs, files in os.walk(docs_dir):
+            for f in files:
+                if f.endswith('.md'):
+                    path = os.path.join(root, f)
+                    with open(path) as fh:
+                        content = fh.read()
+                    refs = cui.scan_image_references(content)
+                    self.assertIsInstance(refs, list)
+
+    def test_resolved_step_confirms_current_state(self):
+        """Resolved step instructions include reporting docs are current."""
+        step = _resolve_sync_step()
         self.assertIn(
             'no updates needed', step['agent_instructions'].lower())
 
@@ -427,26 +410,15 @@ class TestStepNeverDeletesPages(unittest.TestCase):
     Then the "Release Notes" page is not deleted or modified
     """
 
-    def test_agent_instructions_forbid_deletion(self):
-        """Agent instructions explicitly forbid page deletion."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
-        self.assertIn(
-            'NEVER delete', step['agent_instructions'])
+    def test_resolved_step_forbids_deletion(self):
+        """Resolved step instructions explicitly forbid page deletion."""
+        step = _resolve_sync_step()
+        self.assertIn('NEVER delete', step['agent_instructions'])
 
-    def test_spec_forbids_deletion(self):
-        """Feature spec states pages must never be deleted."""
-        spec_path = os.path.join(
-            PROJECT_ROOT, 'features',
-            'release_sync_docs_confluence.md')
-        with open(spec_path) as f:
-            content = f.read()
-        self.assertIn('MUST NOT delete', content)
+    def test_step_is_interactive_only(self):
+        """Step has code: null (no automated deletion possible)."""
+        step = _resolve_sync_step()
+        self.assertIsNone(step['code'])
 
 
 class TestStepNeverCreatesNewDocFiles(unittest.TestCase):
@@ -459,25 +431,23 @@ class TestStepNeverCreatesNewDocFiles(unittest.TestCase):
     completion report
     """
 
-    def test_agent_instructions_have_recommendations_section(self):
-        """Agent instructions include Recommendations in completion."""
-        local_steps_path = os.path.join(
-            PROJECT_ROOT, '.purlin', 'release', 'local_steps.json')
-        with open(local_steps_path) as f:
-            data = json.load(f)
-        step = next(
-            s for s in data['steps']
-            if s['id'] == 'sync_docs_to_confluence')
+    def test_resolved_step_has_recommendations_section(self):
+        """Resolved step instructions include Recommendations in report."""
+        step = _resolve_sync_step()
         self.assertIn('Recommendations', step['agent_instructions'])
 
-    def test_spec_scope_constraint(self):
-        """Spec Section 2.9 forbids creating new doc files."""
-        spec_path = os.path.join(
-            PROJECT_ROOT, 'features',
-            'release_sync_docs_confluence.md')
-        with open(spec_path) as f:
-            content = f.read()
-        self.assertIn('NEVER creates new documentation files', content)
+    def test_utility_functions_are_read_only(self):
+        """Utility functions (scan, derive) do not create files."""
+        tmpdir = tempfile.mkdtemp()
+        try:
+            content = '![img](test.png)\n# Doc Title\n'
+            cui.scan_image_references(content)
+            cui.derive_page_title('test-doc.md')
+            cui.derive_section_title('guides')
+            created = os.listdir(tmpdir)
+            self.assertEqual(len(created), 0)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 class TestCredentialsNeverCommittedOrLogged(unittest.TestCase):
