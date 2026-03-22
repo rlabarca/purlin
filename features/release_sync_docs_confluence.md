@@ -4,11 +4,11 @@
 > Category: "Release Process"
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
-> Prerequisite: features/release_doc_consistency_check.md
+> Prerequisite: features/release_refresh_docs.md
 
 ## 1. Overview
 
-This feature defines the `sync_docs_to_confluence` local release step: a hybrid sync that publishes project documentation from `docs/` to Confluence as child pages under a designated parent page. Text and page operations use the Atlassian MCP server (which accepts markdown natively). Image uploads use a lightweight Python script (`dev/confluence_upload_images.py`) calling the Confluence REST API v1, since the MCP server has no attachment upload capability. The step includes first-time setup assistance for both the MCP server and API token credentials.
+This feature defines the `sync_docs_to_confluence` local release step: a hybrid sync that publishes project documentation from `docs/` to Confluence as child pages under a designated parent page. Text and page operations use the Atlassian MCP server (which accepts markdown natively). Image uploads use a lightweight Python script (`dev/confluence_upload_images.py`) calling the Confluence REST API v1, since the MCP server has no attachment upload capability. The step includes first-time setup assistance for both the MCP server and API token credentials. Doc freshness is handled by the upstream `refresh_docs` step.
 
 ---
 
@@ -101,18 +101,9 @@ On first execution, the step detects missing prerequisites and guides the user t
    - Check if `.mcp.json` in the project root already contains an `atlassian` entry.
    - If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` to configure it automatically (per `policy_release.md` Invariant 2.7).
    - Whether newly configured or already present in `.mcp.json`, the MCP is not loaded in the current session. Ask the user to type `/mcp` in Claude Code, select the `atlassian` MCP server from the list, and authenticate when prompted (OAuth 2.1 -- a browser window opens for authorization). HALT and wait for the user to confirm authentication is complete. No API token or credentials file is needed for MCP operations.
-2. **API token check (image uploads only):** The image upload script (`dev/confluence_upload_images.py`) requires REST API credentials stored at `.purlin/runtime/confluence/credentials.json`. This check is deferred to Phase 2 and only applies when images are found. If the credentials file is missing when needed, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
+2. **API token check (image uploads only):** The image upload script (`dev/confluence_upload_images.py`) requires REST API credentials stored at `.purlin/runtime/confluence/credentials.json`. This check is deferred to Phase 1 and only applies when images are found. If the credentials file is missing when needed, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
 
-### 2.6 Doc Freshness Review
-
-Before syncing, the step reviews each `docs/**/*.md` file against the current implementation:
-
-1. Cross-reference content against `tools/`, `instructions/`, and `features/`.
-2. Check for stale command references, outdated workflow descriptions, and removed/renamed concepts.
-3. Update stale content and commit: `docs: update <filename> for current implementation`.
-4. If no updates needed, confirm docs are current.
-
-### 2.7 Image Upload Flow
+### 2.6 Image Upload Flow
 
 1. Scan all markdown files for `![alt](path)` image references.
 2. Resolve paths relative to the markdown file's directory.
@@ -123,27 +114,23 @@ Before syncing, the step reviews each `docs/**/*.md` file against the current im
 
 If no images are found, skip directly to page sync.
 
-### 2.8 Confluence Page Sync
+### 2.7 Confluence Page Sync
 
 1. Search for existing child pages under parent page `4011458562`.
 2. For each subdirectory in `docs/`: find or create a section page as a child of the parent page (directory name to title-case, with `reference` mapping to "Technical Reference").
 3. For each `*.md` file: derive page title from filename, read content, apply image URL replacements if any, and create or update the child page under its section page via MCP.
 4. NEVER delete pages that have no local counterpart.
 
-### 2.9 Scope Constraint
+### 2.8 Scope Constraint
 
 This step syncs whatever docs exist in `docs/` at execution time. It NEVER creates new documentation files. It MAY recommend new docs the user should consider writing, presented in the completion report's Recommendations section.
 
-### 2.10 Completion Report
+### 2.9 Completion Report
 
 After sync, print a change-focused summary:
 
 ```
 -- Confluence Docs Sync ------------------------------------
-
-Local updates (committed):
-  CHANGED  guides/testing-workflow-guide.md -- <description>
-  OK       reference/parallel-execution-guide.md
 
 Images:
   UPLOADED  guides/images/agent-sequence.png (12 KB)
@@ -154,26 +141,21 @@ Confluence sync:
   CREATED  Technical Reference / Parallel Execution Guide
 
 2 pages synced -> trustengine.atlassian.net/wiki/spaces/PRODENG/pages/4011458562
-
--- Recommendations -----------------------------------------
-Consider adding (will auto-sync on next release):
-  - guides/release-process-guide.md
-  - reference/critic-guide.md
 -----------------------------------------------------------
 ```
 
-Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image attachments, `CREATED`/`UPDATED` for Confluence pages. Recommendations section appears only if gaps are detected.
+Status tags: `UPLOADED`/`SKIPPED` for image attachments, `CREATED`/`UPDATED` for Confluence pages.
 
-### 2.11 Step Metadata
+### 2.10 Step Metadata
 
 | Field | Value |
 |-------|-------|
 | ID | `sync_docs_to_confluence` |
 | Friendly Name | `Sync Docs to Confluence` |
 | Code | `null` (interactive step requiring MCP and user interaction) |
-| Agent Instructions | See Section 2.12 |
+| Agent Instructions | See Section 2.11 |
 
-### 2.12 Agent Instructions (Release Step Content)
+### 2.11 Agent Instructions (Release Step Content)
 
 **Phase 0: Prerequisites and First-Time Setup**
 
@@ -183,32 +165,34 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image 
 2. Verify Confluence access: use the Atlassian MCP to list accessible Atlassian resources and confirm the `PRODENG` space is reachable. No API token or credentials file is needed for MCP operations. Halt if not accessible.
 3. If all prerequisites pass: proceed.
 
-**Phase 1: Doc Freshness Review**
-
-1. Read each `docs/**/*.md` file.
-2. Cross-reference against current implementation in `tools/`, `instructions/`, and `features/`.
-3. Check for: stale command references, outdated workflow descriptions, removed/renamed concepts.
-4. Update stale content and commit: `docs: update <filename> for current implementation`.
-5. If no updates needed, confirm docs are current.
-
-**Phase 2: Image Upload**
+**Phase 1: Image Upload**
 
 1. Scan all markdown files for `![alt](path)` image references.
 2. If images found:
-   a. Check credentials for the REST API image uploader: read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
+   a. Check credentials for the REST API image uploader: read `.purlin/runtime/confluence/credentials.json`.
+      - If present with 'email' and 'api_token' keys: proceed.
+      - If missing: run `mkdir -p .purlin/runtime/confluence/`, then ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
    b. Determine target page ID for each image (the child page it belongs to), run `python3 dev/confluence_upload_images.py --page-id <id> --files <paths>`, collect URL mapping.
-3. If no images: skip to Phase 3.
+3. If no images: skip to Phase 2.
 
-**Phase 3: Confluence Page Sync**
+**Phase 2: Confluence Page Sync**
 
 1. Search for existing child pages under parent page `4011458562`.
 2. For each subdirectory in `docs/`: derive section page title (directory name to title-case; `reference` maps to "Technical Reference"), find or create section page as child of parent.
 3. For each `*.md` file: derive page title from filename (hyphens to spaces, title-case), read markdown content, replace local image paths with Confluence URLs if applicable, create or update child page under section page via MCP.
 4. NEVER delete pages without a local counterpart.
 
-**Phase 4: Completion Report**
+**Phase 2.5: Parent Page Table of Contents**
 
-Print the change-focused summary per Section 2.10. Include Recommendations section only if documentation gaps were detected during freshness review.
+After all child pages are synced, update the parent page (ID: 4011458562, "Purlin Agentic Development") with:
+1. A short introduction paragraph explaining that this space contains the Purlin framework's documentation for the agentic development workflow.
+2. A table of contents organized by logical sections. Group child pages under descriptive section headings based on their content. Each entry links to the child page.
+3. Read the current parent page content first. If it already has an introduction and TOC, update them to reflect the current set of child pages. If it is empty or placeholder content, replace it entirely.
+4. Use markdown content format when updating the parent page via MCP.
+
+**Phase 3: Completion Report**
+
+Print the change-focused summary per Section 2.9. Include Recommendations section only if documentation gaps were detected.
 
 ---
 
@@ -271,38 +255,17 @@ Print the change-focused summary per Section 2.10. Include Recommendations secti
 
     Given .purlin/runtime/confluence/credentials.json does not exist
     And markdown files contain image references
-    When the step executes Phase 2 image upload
+    When the step executes Phase 1 image upload
     Then the step guides the user to create an API token
     And collects the user's email and token
     And writes the credentials file to .purlin/runtime/confluence/credentials.json
     And verifies the credentials with a test API call
-
-#### Scenario: Stale documentation detected and updated
-
-    Given docs/guides/testing-workflow-guide.md references a command that was renamed in the current implementation
-    When the step executes Phase 1 freshness review
-    Then the stale reference is updated to the current command name
-    And the change is committed with message "docs: update testing-workflow-guide.md for current implementation"
-
-#### Scenario: Documentation is current, no changes needed
-
-    Given all docs/**/*.md files accurately reflect the current implementation
-    When the step executes Phase 1 freshness review
-    Then no commits are made
-    And the step reports docs are current
 
 #### Scenario: Step never deletes Confluence pages
 
     Given the parent page has a manually-created child page "Release Notes" with no local counterpart
     When the step syncs docs/ to Confluence
     Then the "Release Notes" page is not deleted or modified
-
-#### Scenario: Step never creates new doc files
-
-    Given a documentation gap is detected during freshness review
-    When the step considers remediation
-    Then no new files are created in docs/
-    And the gap is listed in the Recommendations section of the completion report
 
 #### Scenario: Credentials are never committed or logged
 

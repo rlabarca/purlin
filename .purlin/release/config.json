@@ -33,7 +33,15 @@
       "enabled": true
     },
     {
+      "id": "refresh_docs",
+      "enabled": true
+    },
+    {
       "id": "sync_docs_to_confluence",
+      "enabled": true
+    },
+    {
+      "id": "sync_docs_to_github_wiki",
       "enabled": true
     },
     {

@@ -1,0 +1,242 @@
+# Feature: Sync Docs to GitHub Wiki
+
+> Label: "Release Step: Sync Docs to GitHub Wiki"
+> Category: "Release Process"
+> Prerequisite: features/policy_release.md
+> Prerequisite: features/release_checklist_core.md
+> Prerequisite: features/release_refresh_docs.md
+
+## 1. Overview
+
+This feature defines the `sync_docs_to_github_wiki` local release step: a direct-push sync that publishes project documentation from `docs/` to the GitHub Wiki repository. The wiki repo is cloned to a temporary directory, docs are copied as wiki pages, a Home page (index/TOC) and sidebar navigation are generated, and the changes are committed and pushed. The step includes first-time setup assistance for wiki access.
+
+---
+
+## 2. Requirements
+
+### 2.1 Wiki Repository Convention
+
+The GitHub Wiki is a separate git repository derived from the project's `github` remote. If the remote URL is `git@github.com:rlabarca/purlin.git`, the wiki repo is `git@github.com:rlabarca/purlin.wiki.git`. The wiki repo uses its default branch (typically `master` or `main`).
+
+### 2.2 Wiki Page Structure
+
+Docs are organized as wiki pages following GitHub Wiki conventions:
+
+```
+purlin.wiki/
+├── Home.md                          (index page with TOC)
+├── _Sidebar.md                      (navigation sidebar)
+├── Testing-Workflow-Guide.md        (from docs/testing-workflow-guide.md)
+├── Parallel-Execution-Guide.md      (from docs/parallel-execution-guide.md)
+└── images/                          (if any images exist)
+```
+
+Page names are derived from filenames: remove `.md` extension, replace spaces with hyphens, title-case each word, rejoin with hyphens. GitHub Wiki renders `Testing-Workflow-Guide` as "Testing Workflow Guide" in navigation.
+
+### 2.3 Home Page (Index)
+
+`Home.md` serves as the wiki landing page. It contains:
+
+1. A short introduction paragraph explaining that this wiki contains the Purlin framework's documentation for the agentic development workflow.
+2. A table of contents organized by logical sections. If `docs/` has subdirectories (`guides/`, `reference/`), group pages under section headings. Each entry links to the wiki page using `[[Page Name]]` wiki link syntax.
+3. Generated automatically from the current `docs/` directory structure on each sync.
+
+### 2.4 Sidebar Navigation
+
+`_Sidebar.md` provides persistent navigation visible on every wiki page. It contains:
+
+1. A "Purlin Docs" heading.
+2. Wiki links (`[[Page Name]]`) for each page, grouped by section if subdirectories exist.
+3. Generated automatically on each sync.
+
+### 2.5 Image Handling
+
+1. Scan all markdown files for `![alt](path)` image references.
+2. Copy referenced images into the wiki repo, preserving relative paths where possible.
+3. Adjust image references in the wiki markdown copies if path structure differs from source.
+
+### 2.6 First-Time Setup Flow
+
+On first execution, the step detects missing prerequisites and guides the user through setup:
+
+1. **Remote check:** Verify the `github` remote exists (`git remote get-url github`). If not configured, halt and report.
+2. **Wiki repo clone test:** Attempt to clone the wiki repo to a temporary directory. If the clone fails:
+   - The wiki may not be enabled on the repository. Direct the user to enable it: GitHub repo Settings, Features, Wikis, check the box.
+   - If enabled but empty, GitHub requires at least one page to initialize the wiki repo. Direct the user to create the initial Home page via the GitHub web UI (repo, Wiki tab, "Create the first page", save with any content).
+   - Halt until the clone succeeds.
+
+### 2.7 Sync Behavior
+
+1. Clone the wiki repo to a temporary directory.
+2. Identify previously-synced pages by scanning for `<!-- purlin-sync: ... -->` markers at the end of each file.
+3. Remove previously-synced pages (those with markers) to ensure a clean state.
+4. For each `docs/**/*.md` file: derive the wiki page name, copy content with the derived name, and append a `<!-- purlin-sync: <source-path> -->` marker at the bottom.
+5. Generate `Home.md` and `_Sidebar.md` with `<!-- purlin-sync: _generated -->` markers.
+6. Copy images if any.
+7. Commit with message: `docs: sync from purlin main (<short-sha>)`.
+8. Push to the wiki repo.
+9. Clean up the temporary directory.
+
+The step MUST NOT delete wiki pages that have no local counterpart and no purlin-sync marker. Manually-managed wiki content is preserved.
+
+### 2.8 Tracking Synced Pages
+
+To distinguish synced pages from manually-created wiki pages, the step appends a metadata comment at the bottom of each synced page:
+
+```markdown
+<!-- purlin-sync: <source-path> -->
+```
+
+On subsequent syncs, only pages with this marker are eligible for update or removal. Pages without the marker are treated as manually-managed and never touched.
+
+### 2.9 Scope Constraint
+
+This step syncs whatever docs exist in `docs/` at execution time. It NEVER creates new documentation files in the source repository. The `refresh_docs` step (which runs before this step) handles doc freshness.
+
+### 2.10 Completion Report
+
+After sync, print a change-focused summary:
+
+```
+-- GitHub Wiki Sync ----------------------------------------
+
+Wiki sync:
+  UPDATED  Testing-Workflow-Guide
+  CREATED  Parallel-Execution-Guide
+  UPDATED  Home (index)
+  UPDATED  _Sidebar (navigation)
+
+Images:
+  COPIED   images/agent-sequence.png (12 KB)
+  SKIPPED  images/merge-protocol.png (unchanged)
+
+4 pages synced -> https://github.com/rlabarca/purlin/wiki
+-----------------------------------------------------------
+```
+
+Status tags: `CREATED`/`UPDATED` for wiki pages, `COPIED`/`SKIPPED` for images.
+
+### 2.11 Step Metadata
+
+| Field | Value |
+|-------|-------|
+| ID | `sync_docs_to_github_wiki` |
+| Friendly Name | `Sync Docs to GitHub Wiki` |
+| Code | `null` (interactive step) |
+| Agent Instructions | See Section 2.12 |
+
+### 2.12 Agent Instructions (Release Step Content)
+
+**Phase 0: Prerequisites and First-Time Setup**
+
+1. Verify the `github` remote exists: `git remote get-url github`. If not configured, halt and report.
+2. Derive the wiki repo URL: take the github remote URL and replace `.git` with `.wiki.git`.
+3. Clone the wiki repo to a temporary directory: `git clone <wiki-url> /tmp/purlin-wiki-sync-$$`.
+   - If clone fails: guide the user to enable the wiki feature on GitHub (Settings, Features, Wikis) and create an initial page via the web UI. Halt until clone succeeds.
+4. If clone succeeds: proceed to Phase 1.
+
+**Phase 1: Wiki Page Generation**
+
+1. Read the current wiki repo contents. Identify pages with `<!-- purlin-sync: ... -->` markers (previously synced) vs. manually-created pages.
+2. Remove previously-synced pages (those with markers) to ensure clean state.
+3. For each `docs/**/*.md` file:
+   a. Derive the wiki page name: remove `.md` extension, title-case each hyphen-separated word, rejoin with hyphens (e.g., `testing-workflow-guide.md` becomes `Testing-Workflow-Guide.md`).
+   b. Copy content to the wiki repo with the derived name.
+   c. Append `<!-- purlin-sync: <original-relative-path> -->` at the bottom.
+   d. If the doc contains image references, copy images to the wiki repo and adjust paths if needed.
+4. Generate `Home.md`:
+   a. Short intro paragraph about Purlin framework documentation.
+   b. Table of contents with `[[Page Name]]` wiki links, grouped by section if subdirectories exist in `docs/`.
+   c. Append `<!-- purlin-sync: _generated -->` marker.
+5. Generate `_Sidebar.md`:
+   a. "Purlin Docs" heading.
+   b. `[[Page Name]]` links for all pages, grouped by section.
+   c. Append `<!-- purlin-sync: _generated -->` marker.
+
+**Phase 2: Commit and Push**
+
+1. Stage all changes in the wiki repo: `git add -A`.
+2. Check if there are any changes to commit (`git status --porcelain`). If no changes, report wiki is up to date and skip push.
+3. Configure git author: read `git config user.name` and `git config user.email` from the main repo, apply to the wiki repo.
+4. Commit: `docs: sync from purlin main (<short-sha>)` where `<short-sha>` is from `git rev-parse --short HEAD` in the main repo.
+5. Push to the wiki repo.
+6. Clean up the temporary directory (`rm -rf /tmp/purlin-wiki-sync-*`).
+
+**Phase 3: Completion Report**
+
+Print the change-focused summary per Section 2.10.
+
+---
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Wiki repo URL derived from github remote
+
+    Given the github remote is "git@github.com:rlabarca/purlin.git"
+    When the step derives the wiki repo URL
+    Then the URL is "git@github.com:rlabarca/purlin.wiki.git"
+
+#### Scenario: Filename derives correct wiki page name
+
+    Given a markdown file named "testing-workflow-guide.md" in docs/
+    When the step derives the wiki page name
+    Then the page name is "Testing-Workflow-Guide.md"
+
+#### Scenario: Home page generated with TOC
+
+    Given docs/ contains "testing-workflow-guide.md" and "parallel-execution-guide.md"
+    When the step generates Home.md
+    Then Home.md contains wiki links [[Testing-Workflow-Guide]] and [[Parallel-Execution-Guide]]
+    And Home.md contains a purlin-sync marker
+
+#### Scenario: Sidebar generated with navigation
+
+    Given docs/ contains "testing-workflow-guide.md" and "parallel-execution-guide.md"
+    When the step generates _Sidebar.md
+    Then _Sidebar.md contains wiki links for both pages
+    And _Sidebar.md contains a purlin-sync marker
+
+#### Scenario: Synced pages have tracking markers
+
+    Given docs/testing-workflow-guide.md is synced to the wiki
+    When the wiki page is generated
+    Then the page ends with "<!-- purlin-sync: testing-workflow-guide.md -->"
+
+#### Scenario: Manually-created wiki pages are preserved
+
+    Given the wiki contains a page "Custom-Notes.md" without a purlin-sync marker
+    When the step syncs docs/ to the wiki
+    Then "Custom-Notes.md" is not modified or deleted
+
+#### Scenario: Wiki not enabled triggers setup guidance
+
+    Given the github remote exists but the wiki repo clone fails
+    When the step executes Phase 0
+    Then the step directs the user to enable the wiki in GitHub Settings
+    And the step halts until the clone succeeds
+
+#### Scenario: No changes results in skip
+
+    Given all docs/ files match the current wiki pages exactly
+    When the step checks for changes after generation
+    Then no commit is created
+    And the step reports the wiki is up to date
+
+### QA Scenarios
+
+#### Scenario: End-to-end sync creates correct wiki structure
+
+    Given the github remote and wiki repo are accessible
+    And docs/ contains testing-workflow-guide.md and parallel-execution-guide.md
+    When the full release step executes
+    Then the wiki repo contains Testing-Workflow-Guide.md, Parallel-Execution-Guide.md, Home.md, and _Sidebar.md
+    And the wiki is accessible at https://github.com/rlabarca/purlin/wiki
+
+#### Scenario: Wiki pages render correctly on GitHub
+
+    Given the wiki has been synced with current docs
+    When the wiki is viewed on GitHub
+    Then all pages render with correct formatting
+    And all wiki links in Home.md and _Sidebar.md navigate to the correct pages
