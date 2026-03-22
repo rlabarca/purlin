@@ -7,8 +7,8 @@ Covers unit test scenarios from features/release_sync_docs_confluence.md:
 - Filename derives correct page title
 - Image upload produces URL mapping
 - Image upload skips unchanged attachment
-- Missing MCP server triggers setup guidance
-- Missing credentials file triggers token setup
+- Missing MCP server auto-configured
+- Missing credentials file triggers token setup during image upload
 - Stale documentation detected and updated
 - Documentation is current, no changes needed
 - Step never deletes Confluence pages
@@ -237,22 +237,30 @@ class TestImageUploadSkipsUnchanged(unittest.TestCase):
             cui.should_upload(self.test_file, {}))
 
 
-class TestMissingMcpTrigersSetupGuidance(unittest.TestCase):
-    """Scenario: Missing MCP server triggers setup guidance
+class TestMissingMcpServerAutoConfigured(unittest.TestCase):
+    """Scenario: Missing MCP server auto-configured
 
     Given the Atlassian MCP server is not configured in Claude Code
     When the step executes Phase 0
-    Then the step instructs the user to add the MCP server at
-    "https://mcp.atlassian.com/v2/mcp"
-    And the step halts until the MCP server is available and
-    PRODENG space is accessible
+    Then the step runs "claude mcp add atlassian --transport http
+    --scope project https://mcp.atlassian.com/v1/mcp" automatically
+    And informs the user that a session restart is needed for the
+    MCP to load
+    And the step halts without asking the user to run any CLI commands
     """
 
-    def test_resolved_step_contains_mcp_url(self):
-        """Resolved step's agent instructions contain MCP server URL."""
+    def test_resolved_step_contains_mcp_add_command(self):
+        """Resolved step auto-configures MCP via claude mcp add."""
         step = _resolve_sync_step()
         self.assertIn(
-            'https://mcp.atlassian.com/v2/mcp',
+            'claude mcp add atlassian',
+            step['agent_instructions'])
+
+    def test_resolved_step_contains_mcp_url(self):
+        """Resolved step's agent instructions contain correct MCP URL."""
+        step = _resolve_sync_step()
+        self.assertIn(
+            'https://mcp.atlassian.com/v1/mcp',
             step['agent_instructions'])
 
     def test_resolved_step_references_prodeng_space(self):
@@ -260,17 +268,21 @@ class TestMissingMcpTrigersSetupGuidance(unittest.TestCase):
         step = _resolve_sync_step()
         self.assertIn('PRODENG', step['agent_instructions'])
 
-    def test_resolved_step_halts_on_missing_mcp(self):
-        """Resolved step specifies halting until MCP is available."""
+    def test_resolved_step_specifies_restart_and_halt(self):
+        """Resolved step informs user of restart and halts."""
         step = _resolve_sync_step()
-        self.assertIn('Halt until working', step['agent_instructions'])
+        instructions = step['agent_instructions']
+        self.assertIn('restart', instructions.lower())
+        self.assertIn('HALT', instructions)
 
 
-class TestMissingCredentialsTrigersTokenSetup(unittest.TestCase):
-    """Scenario: Missing credentials file triggers token setup
+class TestMissingCredentialsTriggersTokenSetupDuringImageUpload(unittest.TestCase):
+    """Scenario: Missing credentials file triggers token setup during
+    image upload
 
     Given .purlin/runtime/confluence/credentials.json does not exist
-    When the step executes Phase 0
+    And markdown files contain image references
+    When the step executes Phase 2 image upload
     Then the step guides the user to create an API token
     And collects the user's email and token
     And writes the credentials file to
@@ -319,6 +331,15 @@ class TestMissingCredentialsTrigersTokenSetup(unittest.TestCase):
         self.assertIn(
             'id.atlassian.com/manage-profile/security/api-tokens',
             step['agent_instructions'])
+
+    def test_credentials_setup_in_phase_2(self):
+        """Credentials check is in Phase 2 (image upload), not Phase 0."""
+        step = _resolve_sync_step()
+        instructions = step['agent_instructions']
+        # Phase 2 section should contain credentials check
+        phase_2_idx = instructions.index('Phase 2')
+        creds_idx = instructions.index('credentials.json', phase_2_idx)
+        self.assertGreater(creds_idx, phase_2_idx)
 
 
 class TestStaleDocumentationDetected(unittest.TestCase):
