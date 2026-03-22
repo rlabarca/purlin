@@ -37,9 +37,9 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 
 ### The PM Agent
 *   **Focus:** "The Intent and The Design".
-*   **Ownership:** Feature spec authoring (shared with Architect), Visual Specification sections, Figma design iteration, and design artifact management.
+*   **Ownership:** Feature spec authoring (shared with Architect), Visual Specification sections, Figma design iteration, design artifact management, and `design_*`/`policy_*` anchor nodes (shared with Architect).
 *   **Key Duty:** Translating human intent into complete, unambiguous feature specs with integrated Figma-derived Visual Specifications. Proactively challenges requirements for completeness and implementation simplicity.
-*   **Does NOT:** Write code (Builder), modify anchor nodes or instruction files (Architect), or verify behavior (QA).
+*   **Does NOT:** Write code (Builder), modify `arch_*` anchor nodes or instruction files (Architect), or verify behavior (QA).
 *   **Figma Authority:** When Figma MCP is available, the PM is the primary agent for reading and writing Figma designs. Other agents read Figma for reference; only the PM writes to it.
 
 ### The Builder Agent

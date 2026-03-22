@@ -1,12 +1,20 @@
-**Purlin command owner: Architect**
+**Purlin command owner: PM, Architect**
 
-If you are not operating as the Purlin Architect, respond: "This is an Architect command. Ask your Architect agent to run /pl-anchor instead." and stop.
+If you are not operating as the Purlin PM or Architect, respond: "This is a PM/Architect command. Ask your PM or Architect agent to run /pl-anchor instead." and stop.
+
+**PM prefix restriction:** The PM may only create or modify `design_*` and `policy_*` anchor nodes. If the PM attempts to create or modify an `arch_*` anchor, respond: "Architecture anchors (`arch_*`) are Architect-only. The PM may author `design_*` and `policy_*` anchors." and stop.
 
 ---
 
 ## Path Resolution
 
 Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolve project root via `PURLIN_PROJECT_ROOT` env var or by climbing from CWD until `.purlin/` is found. Set `TOOLS_ROOT = <project_root>/<tools_root>`.
+
+---
+
+## Required Reading
+
+Before creating or updating any anchor node, read `instructions/references/spec_authoring_guide.md` — specifically Section 3 (Anchor Node Classification Guide) — for detailed domain classification, boundary-case heuristics, and sizing guidance.
 
 ---
 

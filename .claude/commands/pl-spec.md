@@ -10,6 +10,12 @@ Read `.purlin/config.json` and extract `tools_root` (default: `"tools"`). Resolv
 
 ---
 
+## Required Reading
+
+Before authoring or refining any spec, read `instructions/references/spec_authoring_guide.md` for shared authoring principles, role focus, and anchor classification guidance. This guide applies to both PM and Architect.
+
+---
+
 Given the topic provided as an argument:
 
 1. Run `/pl-find <topic>` logic first to determine if a spec already exists or needs updating.

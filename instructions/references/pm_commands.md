@@ -19,6 +19,7 @@ then to the Builder for implementation.
   Specification & Design
   ──────
   /pl-spec <topic>           Shape a feature spec (guided)
+  /pl-anchor <topic>         Create or update a design/policy anchor
   /pl-design-ingest          Ingest Figma design into visual spec
   /pl-design-audit           Audit design-spec consistency
 
@@ -51,6 +52,7 @@ then to the Builder for implementation.
   Specification & Design
   ──────
   /pl-spec <topic>           Shape a feature spec (guided)
+  /pl-anchor <topic>         Create or update a design/policy anchor
   /pl-design-ingest          Ingest Figma design into visual spec
   /pl-design-audit           Audit design-spec consistency
 
