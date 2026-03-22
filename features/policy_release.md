@@ -44,6 +44,12 @@ This policy establishes the governance rules and invariants for the Purlin relea
 
 Both the Architect (via `/pl-release-step`) and the CDD Dashboard (via user drag-reorder or toggle in the UI) may write to `config.json`. Last-write-wins; no lock mechanism is required. The CDD Dashboard reads `config.json` from disk before each write to incorporate any manual or Architect edits since the last Dashboard write.
 
+### 2.7 Self-Contained Prerequisite Setup
+*   Release steps that depend on external tools, services, or MCP servers MUST auto-configure those prerequisites programmatically when they are missing. The agent MUST NOT ask the user to run CLI commands or perform manual setup steps.
+*   When a prerequisite requires a session restart to take effect (e.g., MCP servers load at session start), the agent MUST complete all configuration first, then inform the user that a single restart is needed. The user should never be asked to restart more than once per missing prerequisite.
+*   Credentials and secrets are the sole exception: the agent MUST ask the user for secret values (never guess or generate them), but MUST write the resulting config files automatically.
+*   Step `agent_instructions` encode the complete setup procedure. If a step's prerequisites change, the `agent_instructions` MUST be updated to reflect the new auto-configuration flow.
+
 ## 3. FORBIDDEN Patterns
 
 *   `purlin.` prefix in local step IDs (Invariant 2.1). Pattern: `"id"\s*:\s*"purlin\.[^"]*"` in `.purlin/release/local_steps.json`.

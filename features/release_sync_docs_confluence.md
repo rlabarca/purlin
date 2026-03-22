@@ -97,8 +97,12 @@ This path is gitignored via the existing `.purlin/runtime/` pattern. The step MU
 
 On first execution, the step detects missing prerequisites and guides the user through setup:
 
-1. **Confluence MCP check:** Attempt to list Confluence spaces. If the MCP server is unavailable, instruct the user to add the Atlassian MCP server to their Claude Code MCP settings (server URL: `https://mcp.atlassian.com/v2/mcp`, HTTP transport), walk through OAuth 2.1 browser authentication, and verify by confirming the `PRODENG` space is accessible. Halt until working.
-2. **API token check:** Read `.purlin/runtime/confluence/credentials.json`. If missing, guide the user to create an API token at `https://id.atlassian.com/manage-profile/security/api-tokens` (label: "purlin-docs-sync"), collect their email and token, write the credentials file, and verify with a test API call. Halt until working.
+1. **Confluence MCP check:** Attempt to list Confluence spaces. If the MCP server is unavailable:
+   - Check if `.mcp.json` in the project root already contains an `atlassian` entry.
+   - If not configured, run `claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp` to configure it automatically (per `policy_release.md` Invariant 2.7).
+   - Whether newly configured or already configured, MCP servers load at session start. Inform the user that a restart is needed and halt. Do NOT ask the user to run any CLI commands.
+   - After restart, verify by confirming the `PRODENG` space is accessible via the MCP. The MCP handles OAuth 2.1 automatically (a browser window opens if needed).
+2. **API token check:** Read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
 
 ### 2.6 Doc Freshness Review
 
@@ -174,9 +178,12 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image 
 
 **Phase 0: Prerequisites and First-Time Setup**
 
-1. Check Confluence MCP: attempt to list spaces via the Atlassian MCP server. If unavailable, tell the user to add the Atlassian MCP server (URL: `https://mcp.atlassian.com/v2/mcp`, HTTP transport) to Claude Code MCP settings, walk through OAuth 2.1 browser authentication, verify `PRODENG` space is accessible. Halt until working.
-2. Check API token: read `.purlin/runtime/confluence/credentials.json`. If missing, guide user to create a token at `https://id.atlassian.com/manage-profile/security/api-tokens` (label: "purlin-docs-sync"), collect email and token, write credentials file, verify with a test API call. Halt until working.
-3. If both available: proceed.
+1. Check Confluence MCP availability: search for Atlassian MCP tools in the current session.
+   - If available: proceed to step 2.
+   - If unavailable: check `.mcp.json` for existing `atlassian` entry. If not configured, run `claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp` automatically. Then inform the user a restart is needed and halt (per `policy_release.md` Invariant 2.7). Do NOT ask the user to run any commands.
+2. Check API token: read `.purlin/runtime/confluence/credentials.json`. If missing, create the directory and ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
+3. Verify Confluence access: list spaces via Atlassian MCP and confirm `PRODENG` space is accessible. The MCP handles OAuth automatically. Halt if not accessible.
+4. If all prerequisites pass: proceed.
 
 **Phase 1: Doc Freshness Review**
 
@@ -244,12 +251,13 @@ Print the change-focused summary per Section 2.10. Include Recommendations secti
     Then the script skips the upload for that file
     And the output mapping still contains the existing Confluence URL
 
-#### Scenario: Missing MCP server triggers setup guidance
+#### Scenario: Missing MCP server auto-configured
 
     Given the Atlassian MCP server is not configured in Claude Code
     When the step executes Phase 0
-    Then the step instructs the user to add the MCP server at "https://mcp.atlassian.com/v2/mcp"
-    And the step halts until the MCP server is available and PRODENG space is accessible
+    Then the step runs "claude mcp add --transport http --scope project atlassian https://mcp.atlassian.com/v2/mcp" automatically
+    And informs the user that a session restart is needed for the MCP to load
+    And the step halts without asking the user to run any CLI commands
 
 #### Scenario: Missing credentials file triggers token setup
 
