@@ -49,8 +49,7 @@ If all features satisfy the conditions, the Architect reports the total feature 
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: All features satisfy zero-queue conditions (auto-test-only)
@@ -77,6 +76,5 @@ When the Architect executes the `purlin.verify_zero_queue` step,
 Then the Architect reports the specific feature(s) blocking the release,
 And halts without proceeding to subsequent release steps.
 
-### Manual Scenarios (Architect Execution)
-
+### QA Scenarios
 None.

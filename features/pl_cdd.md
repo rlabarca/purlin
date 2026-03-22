@@ -63,8 +63,7 @@ The CDD server persists after the agent session exits. This is already handled b
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Start when not running
 
     Given no CDD server is running for this project
@@ -104,6 +103,5 @@ The CDD server persists after the agent session exits. This is already handled b
     Then the output contains "Error: Unknown argument 'badarg'"
     And "Valid: stop, restart" is included
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

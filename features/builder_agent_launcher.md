@@ -40,8 +40,7 @@ When `agents.builder` is absent from the resolved config:
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Builder Launcher Dispatches with Config
     Given the resolved config contains agents.builder with model "claude-opus-4-6", effort "high", bypass_permissions true
     When pl-run-builder.sh is executed
@@ -65,5 +64,5 @@ When `agents.builder` is absent from the resolved config:
     And the session prompt includes BUILDER_BASE.md content
     And the session prompt includes BUILDER_OVERRIDES.md content
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 None.

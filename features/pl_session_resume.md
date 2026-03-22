@@ -236,8 +236,7 @@ Uncommitted:    [none | summary]
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Save Writes Role-Scoped Checkpoint File
 
     Given an agent is in an active session with role "builder"
@@ -397,8 +396,7 @@ Uncommitted:    [none | summary]
     And the agent does not auto-generate a full work plan
     And the agent awaits user direction
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.
 
 ## Regression Guidance

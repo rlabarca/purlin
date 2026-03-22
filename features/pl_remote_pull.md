@@ -119,8 +119,7 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: pl-remote-pull Resolves To Main When No Active Branch
 
     Given no file exists at .purlin/runtime/active_branch
@@ -233,6 +232,5 @@ The command MUST NOT execute any operation that violates the FORBIDDEN patterns 
     Then the command prints "Local feature/auth is already in sync with remote"
     And no git merge is executed
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

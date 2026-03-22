@@ -46,8 +46,7 @@ When `agents.architect` is absent from the resolved config:
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Architect Launcher Dispatches with Config
     Given the resolved config contains agents.architect with model "claude-sonnet-4-6", effort "high", bypass_permissions false
     When pl-run-architect.sh is executed
@@ -85,5 +84,5 @@ When `agents.architect` is absent from the resolved config:
     And the session prompt includes ARCHITECT_BASE.md content
     And the session prompt includes ARCHITECT_OVERRIDES.md content
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 None.

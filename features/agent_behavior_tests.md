@@ -131,8 +131,7 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Test runner checks out fixture and constructs prompt
 
     Given the fixture repo has tag "main/cdd_startup_controls/expert-mode"
@@ -191,6 +190,5 @@ The Builder MUST create these fixture tags in the Purlin fixture repo:
     And the fixture repo is created with all required tags
     And tests proceed normally after setup
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

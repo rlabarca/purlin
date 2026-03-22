@@ -57,8 +57,7 @@ The classification is a judgment call by the Architect. The audit reports all ma
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: Graph is current and valid (auto-test-only)
@@ -100,6 +99,5 @@ Given no parent feature body-references any of its children,
 When the Architect executes the `purlin.verify_dependency_integrity` step,
 Then the Architect reports "reverse reference audit: clean" and proceeds.
 
-### Manual Scenarios (Architect Execution)
-
+### QA Scenarios
 None.

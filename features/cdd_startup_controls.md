@@ -107,8 +107,7 @@ Purlin Builder — Ready
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Launcher Rejects Invalid Flag Combination
     Given config.json contains agents.builder with find_work false and auto_start true
     When pl-run-builder.sh is executed
@@ -180,8 +179,7 @@ Purlin Builder — Ready
     Then the Auto Start checkbox for that agent is immediately disabled and unchecked
     And POST /config/agents is called with find_work false and auto_start false for that agent
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.
 
 ## Regression Guidance

@@ -73,8 +73,7 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Modal Width Is 70% of Viewport
 
     Given the CDD Dashboard is open in a browser
@@ -183,8 +182,7 @@ The CDD Modal Base provides the shared modal infrastructure that all text-based 
     When the modal is displayed with default font size settings
     Then the modal title computed font size is 4 points larger than the default body font size
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.
 
 ## Visual Specification

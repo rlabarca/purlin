@@ -172,8 +172,7 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Role gate rejects non-Architect/Builder invocation
 
     Given a QA agent session
@@ -438,6 +437,5 @@ The command MUST assess each feature against these 11 dimensions (dimensions 1-1
     And the gap description identifies orphan_spec.md as an unused spec
     And the gap severity is LOW
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

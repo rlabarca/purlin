@@ -50,8 +50,7 @@ Any inconsistency found is corrected using `/pl-edit-base` (for base instruction
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 Automated detection via release_audit_automation scripts. See release_audit_automation.md.
 
 #### Scenario: All instruction files are internally consistent (auto-test-only)
@@ -80,6 +79,5 @@ Then the Architect identifies the specific discrepancy,
 And updates README.md to match the current instruction content,
 And commits the correction.
 
-### Manual Scenarios (Architect Execution)
-
+### QA Scenarios
 None.

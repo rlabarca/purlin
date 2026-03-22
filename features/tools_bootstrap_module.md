@@ -57,8 +57,7 @@ A shared Python module (`tools/bootstrap.py`) providing canonical implementation
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Detect Project Root via Environment Variable
 
     Given PURLIN_PROJECT_ROOT is set to a valid directory path
@@ -138,6 +137,5 @@ A shared Python module (`tools/bootstrap.py`) providing canonical implementation
     When the full test suite is run
     Then all existing tests pass without modification
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

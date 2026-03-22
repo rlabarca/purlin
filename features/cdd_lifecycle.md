@@ -105,8 +105,7 @@ The start script follows this sequence:
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Start prints clickable URL with auto-selected port
 
     Given no CDD server is running for this project
@@ -193,6 +192,5 @@ The start script follows this sequence:
     Then the server starts successfully with an auto-selected port
     And no error about missing cdd_port is raised
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

@@ -43,8 +43,7 @@ Git commit timestamps have one-second granularity. When a status commit and a sp
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Same-second TESTING commit is recognized
 
     Given a feature spec-modifying commit at Unix timestamp 1700000000
@@ -95,6 +94,5 @@ Git commit timestamps have one-second granularity. When a status commit and a sp
     Then the fast path returns the cached status
     And spec_content_unchanged() is not invoked
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

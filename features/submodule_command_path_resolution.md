@@ -46,8 +46,7 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Command Files Use tools_root Notation
 
     Given any `.claude/commands/pl-*.md` file
@@ -84,6 +83,5 @@ When Purlin is consumed as a git submodule, command files (`.claude/commands/*.m
     And the entry has `Action Required: PM` and status `OPEN`
     And the entry includes the STALE checklist item text and Figma frame reference
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

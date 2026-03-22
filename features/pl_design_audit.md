@@ -92,8 +92,7 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Inventory Scan Discovers All Visual Specs
 
     Given three feature files exist with Visual Specification sections
@@ -190,6 +189,5 @@ When `brief.json` contains a `figma_version_id` field, compare against the curre
     Then the audit reports "All design artifacts clean"
     And no CRITICAL or WARNING items are listed
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None.

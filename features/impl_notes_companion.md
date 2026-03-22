@@ -74,8 +74,7 @@ The CDD Dashboard exposes companion file content via:
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 ##### Scenario: Feature Scanning Excludes Companion Files
 Given a features directory with `critic_tool.md` and `critic_tool.impl.md`
 When the Critic scans for feature files
@@ -125,8 +124,7 @@ Given a feature `policy_critic.md` without a companion file
 When the CDD Dashboard requests `/impl-notes?file=features/policy_critic.md`
 Then a 404 status is returned
 
-### Manual Scenarios
-
+### QA Scenarios
 None
 
 ## Implementation Notes

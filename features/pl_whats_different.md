@@ -47,8 +47,7 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Exits When Branch Is Not Main
 
     Given the current branch is "feature/auth"
@@ -92,6 +91,5 @@ The `/pl-whats-different` agent command generates a plain-English summary of wha
     And features/digests/whats-different.md is written to disk
     And the digest content is displayed inline
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None

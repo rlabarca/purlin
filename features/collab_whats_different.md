@@ -327,8 +327,7 @@ The deep analysis is derived from the same extraction data as the standard diges
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Extraction Tool Produces Correct JSON for SAME State
 
     Given local the collaboration branch (from .purlin/runtime/active_branch) and origin/the collaboration branch (from .purlin/runtime/active_branch) are at the same commit
@@ -608,8 +607,7 @@ The deep analysis is derived from the same extraction data as the standard diges
     And the User reopens the What's Different modal
     Then the font size slider position is retained at the previously set value
 
-### Manual Scenarios (Human Verification Required)
-
+### QA Scenarios
 None
 
 ---

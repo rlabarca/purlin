@@ -64,8 +64,7 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
 
 ## 3. Scenarios
 
-### Automated Scenarios
-
+### Unit Tests
 #### Scenario: Launcher Exports PURLIN_PROJECT_ROOT
     Given a launcher script is invoked from any working directory
     When any launcher script (pl-run-architect.sh, pl-run-builder.sh, pl-run-qa.sh, pl-run-pm.sh) is executed
@@ -104,5 +103,5 @@ See: `architect_agent_launcher.md`, `builder_agent_launcher.md`, `qa_agent_launc
     When any launcher script is executed
     Then it uses default values (empty model, empty effort, bypass false)
 
-### Manual Scenarios (Human Verification Required)
+### QA Scenarios
 None. All scenarios for this feature are fully automated.
