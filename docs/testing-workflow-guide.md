@@ -2,6 +2,14 @@
 
 How to take a feature from idea to verified, automated regression coverage.
 
+> **Implementation status:** The auto-first protocol, `@auto`/`@manual` scenario
+> classification, `-qa` launcher flag, and two-line QA dashboard display are
+> specified and partially implemented. The core mechanisms (AUTO status, `@auto`
+> parsing, harness runner, fixture tools, two-line display) are working. The
+> `@manual` tag parsing and the untagged-scenario classification flow (Step 3)
+> are specified but pending Builder implementation. Until then, QA classifies
+> scenarios via `/pl-regression` author mode and manual tagging.
+
 ---
 
 ## Overview
