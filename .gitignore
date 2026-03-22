@@ -37,3 +37,4 @@ tmp/
 dist/
 build/
 .playwright-mcp/
+.mcp.json
