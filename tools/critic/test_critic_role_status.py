@@ -1177,6 +1177,428 @@ Reqs.
 
 
 # ===================================================================
+# Scenario: QA action item from TESTING status with manual QA items
+#           (targeted: verifies scenario count in description)
+# ===================================================================
+
+class TestQAActionItemScenarioCount(unittest.TestCase):
+    """A feature in TESTING state with 3 manual QA scenarios generates
+    a QA action item identifying the feature and scenario count."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        feature_content = """\
+# Feature: QA Count Feature
+
+> Label: "QA Count Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Auto Test
+    Given X
+    When Y
+    Then Z
+
+### QA Scenarios
+
+#### Scenario: Manual Check One
+    Given a running system
+    When the user inspects the output
+    Then the display is correct
+
+#### Scenario: Manual Check Two
+    Given a running system
+    When the user clicks submit
+    Then the form saves correctly
+
+#### Scenario: Manual Check Three
+    Given a running system
+    When the user refreshes
+    Then data is preserved
+"""
+        with open(os.path.join(
+                self.features_dir, 'qa_count_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+        self.cdd_status = {
+            'features': {
+                'todo': [],
+                'testing': [{'file': 'features/qa_count_feature.md'}],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_qa_item_identifies_feature_and_count(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/qa_count_feature.md'
+            items = generate_action_items(
+                result, cdd_status=self.cdd_status)
+            qa_items = [i for i in items['qa']
+                        if i.get('category') == 'testing_status']
+            self.assertTrue(len(qa_items) > 0,
+                            'TESTING with 3 manual scenarios should '
+                            'create QA item')
+            desc = qa_items[0]['description']
+            self.assertIn('qa_count_feature', desc,
+                          'QA action item should identify the feature')
+            self.assertIn('3 manual scenario', desc,
+                          'QA action item should include scenario count')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: QA AUTO when all QA scenarios are @auto
+# ===================================================================
+
+class TestQAAutoWhenAllAutoTagged(unittest.TestCase):
+    """Feature in TESTING with all @auto QA scenarios -> qa is AUTO."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        feature_content = """\
+# Feature: All Auto Feature
+
+> Label: "All Auto Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+### QA Scenarios
+
+#### Scenario: Auto Check One @auto
+    Given a running system
+    When the user inspects the output
+    Then the display is correct
+
+#### Scenario: Auto Check Two @auto
+    Given a running system
+    When the user clicks submit
+    Then the form saves correctly
+
+#### Scenario: Auto Check Three @auto
+    Given a running system
+    When the user refreshes
+    Then data is preserved
+"""
+        with open(os.path.join(
+                self.features_dir, 'all_auto_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+        self.cdd_status = {
+            'features': {
+                'todo': [],
+                'testing': [{'file': 'features/all_auto_feature.md'}],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_all_auto_gives_qa_auto(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/all_auto_feature.md'
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            self.assertEqual(status['qa'], 'AUTO')
+        finally:
+            critic.FEATURES_DIR = orig
+
+    def test_all_auto_reason_describes_auto(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/all_auto_feature.md'
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            reason = status.get('role_status_reason', {}).get('qa', '')
+            self.assertIn('all QA scenarios are auto', reason)
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: QA TODO when mixed auto and manual QA scenarios
+# ===================================================================
+
+class TestQATodoWhenMixedAutoManual(unittest.TestCase):
+    """Feature in TESTING with 2 @auto + 1 non-@auto -> qa is TODO."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        feature_content = """\
+# Feature: Mixed Auto Feature
+
+> Label: "Mixed Auto Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+### QA Scenarios
+
+#### Scenario: Auto Check One @auto
+    Given a running system
+    When the user inspects the output
+    Then the display is correct
+
+#### Scenario: Auto Check Two @auto
+    Given a running system
+    When the user clicks submit
+    Then the form saves correctly
+
+#### Scenario: Manual Only Check
+    Given a running system
+    When the user refreshes
+    Then data is preserved
+"""
+        with open(os.path.join(
+                self.features_dir, 'mixed_auto_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+        self.cdd_status = {
+            'features': {
+                'todo': [],
+                'testing': [{'file': 'features/mixed_auto_feature.md'}],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_mixed_auto_gives_qa_todo(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/mixed_auto_feature.md'
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            self.assertEqual(status['qa'], 'TODO')
+        finally:
+            critic.FEATURES_DIR = orig
+
+    def test_mixed_auto_reason_describes_manual(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/mixed_auto_feature.md'
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            reason = status.get('role_status_reason', {}).get('qa', '')
+            self.assertIn('manual QA items', reason)
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
+# Scenario: QA AUTO with visual spec on Web Test feature
+# ===================================================================
+
+class TestQAAutoWithVisualSpecOnWebTest(unittest.TestCase):
+    """Feature in TESTING with > Web Test: and visual spec items
+    (no non-@auto QA) -> qa is AUTO, visual items classified as auto."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.root, 'features')
+        os.makedirs(self.features_dir)
+
+        feature_content = """\
+# Feature: Web Visual Feature
+
+> Label: "Web Visual Feature"
+> Web Test: http://localhost:3000
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** N/A
+- **Description:** Layout description.
+- [ ] Check layout alignment
+- [ ] Check color contrast
+- [ ] Check typography
+"""
+        with open(os.path.join(
+                self.features_dir, 'web_visual_feature.md'), 'w') as f:
+            f.write(feature_content)
+
+        self.cdd_status = {
+            'features': {
+                'todo': [],
+                'testing': [{'file': 'features/web_visual_feature.md'}],
+                'complete': [],
+            }
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_web_test_visual_gives_qa_auto(self):
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            result = _make_base_result()
+            result['feature_file'] = 'features/web_visual_feature.md'
+            result['visual_spec'] = parse_visual_spec("""\
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** N/A
+- **Description:** Layout description.
+- [ ] Check layout alignment
+- [ ] Check color contrast
+- [ ] Check typography
+""")
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            self.assertEqual(status['qa'], 'AUTO',
+                             'Web Test feature with visual spec items '
+                             'should be QA AUTO')
+        finally:
+            critic.FEATURES_DIR = orig
+
+    def test_non_web_visual_gives_qa_todo(self):
+        """Same feature WITHOUT > Web Test: should be QA TODO because
+        visual items on non-web features are manual."""
+        import critic
+        orig = critic.FEATURES_DIR
+        critic.FEATURES_DIR = self.features_dir
+        try:
+            # Create a non-web version of the feature
+            feature_content = """\
+# Feature: Non-Web Visual Feature
+
+> Label: "Non-Web Visual Feature"
+
+## 1. Overview
+Overview.
+
+## 2. Requirements
+Reqs.
+
+## 3. Scenarios
+
+### Unit Tests
+
+#### Scenario: Unit Test One
+    Given X
+    When Y
+    Then Z
+
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** N/A
+- **Description:** Layout description.
+- [ ] Check layout alignment
+- [ ] Check color contrast
+- [ ] Check typography
+"""
+            with open(os.path.join(
+                    self.features_dir, 'nonweb_visual.md'), 'w') as f:
+                f.write(feature_content)
+            self.cdd_status['features']['testing'] = [
+                {'file': 'features/nonweb_visual.md'}]
+
+            result = _make_base_result()
+            result['feature_file'] = 'features/nonweb_visual.md'
+            result['visual_spec'] = parse_visual_spec("""\
+## Visual Specification
+
+### Screen: Dashboard
+- **Reference:** N/A
+- **Description:** Layout description.
+- [ ] Check layout alignment
+- [ ] Check color contrast
+- [ ] Check typography
+""")
+            status = compute_role_status(
+                result, cdd_status=self.cdd_status)
+            # Non-web features with visual items should NOT be AUTO
+            # (visual items are manual on non-web features)
+            self.assertNotEqual(status['qa'], 'AUTO',
+                                'Non-web feature with visual spec items '
+                                'should NOT be QA AUTO')
+        finally:
+            critic.FEATURES_DIR = orig
+
+
+# ===================================================================
 # Test runner with output to tests/critic_role_status/tests.json
 # ===================================================================
 

@@ -2944,13 +2944,15 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
 def compute_role_status(feature_result, cdd_status=None):
     """Compute role_status for a feature based on analysis results.
 
-    Returns dict with 'architect', 'builder', 'qa' status strings.
+    Returns dict with 'architect', 'builder', 'qa', 'pm' status strings,
+    plus 'role_status_reason' dict with human-readable reasons.
 
     Architect: TODO | DONE
     Builder: DONE | TODO | FAIL | INFEASIBLE | BLOCKED
       Precedence: INFEASIBLE > BLOCKED > FAIL > TODO > DONE
-    QA: CLEAN | TODO | FAIL | DISPUTED | N/A
-      Precedence: FAIL > DISPUTED > TODO > CLEAN > N/A
+    QA: CLEAN | TODO | AUTO | FAIL | DISPUTED | N/A
+      Precedence: FAIL > DISPUTED > TODO > AUTO > CLEAN > N/A
+    PM: DONE | TODO | N/A
     """
     spec_gate = feature_result['spec_gate']
     impl_gate = feature_result['implementation_gate']
@@ -3051,8 +3053,14 @@ def compute_role_status(feature_result, cdd_status=None):
     has_spec_updated_qa = any(
         e['status'] == 'SPEC_UPDATED' for e in _ut_entries)
 
+<<<<<<< HEAD
     # Pre-compute: is this a TESTING feature with manual scenarios?
     # Also detect whether ALL manual scenarios are @auto-tagged (Section 2.14).
+=======
+    # Pre-compute: is this a TESTING feature with QA items (manual scenarios
+    # or visual spec items)?
+    # Also detect whether ALL QA items are @auto-tagged or auto-classified.
+>>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     testing_with_manual = False
     testing_all_auto = False
     if lifecycle_state == 'testing':
@@ -3060,12 +3068,37 @@ def compute_role_status(feature_result, cdd_status=None):
         manual_scenarios_list = [
             s for s in scenarios if s.get('is_manual', False)]
         manual_count = len(manual_scenarios_list)
+<<<<<<< HEAD
         testing_with_manual = manual_count > 0
         if testing_with_manual:
             non_auto_manual = sum(
                 1 for s in manual_scenarios_list
                 if not s.get('is_auto', False))
             testing_all_auto = non_auto_manual == 0
+=======
+
+        # Check visual spec items classification
+        _vis = feature_result.get('visual_spec', {})
+        _vis_items = _vis.get('items', 0)
+        _has_web_test = _parse_web_test(_content) is not None
+        if _has_web_test:
+            # Visual items on web-test features are auto-classified
+            _manual_visual_items = 0
+        else:
+            # Visual items on non-web features are manual QA items
+            _manual_visual_items = _vis_items
+
+        # Total QA items: manual scenarios + manual visual items
+        _has_any_qa_items = (manual_count > 0 or _vis_items > 0)
+        testing_with_manual = (manual_count > 0 or _manual_visual_items > 0)
+
+        if _has_any_qa_items:
+            non_auto_manual = sum(
+                1 for s in manual_scenarios_list
+                if not s.get('is_auto', False))
+            testing_all_auto = (non_auto_manual == 0
+                                and _manual_visual_items == 0)
+>>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
 
     # Pre-compute: COMPLETE feature that bypassed QA verification
     # (Section 2.16 QA Verification Integrity)
@@ -3087,30 +3120,59 @@ def compute_role_status(feature_result, cdd_status=None):
     # Per spec Section 2.11 "QA Actionability Principle": QA=TODO only when
     # QA has work to do RIGHT NOW. OPEN items routing to other roles are not
     # QA-actionable.
+<<<<<<< HEAD
     # AUTO (Section 2.14): TESTING feature where all manual scenarios have
     # @auto tag -- QA has automatable work but no human-judgment scenarios.
+=======
+    # AUTO: TESTING feature where all manual scenarios have @auto tag and
+    # all visual items are auto-classified (web-test features). No human
+    # judgment QA work.
+    qa_reason = ''
+>>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     if has_open_bugs_qa:
         qa_status = 'FAIL'
+        _bug_count = sum(1 for e in _ut_entries
+                         if e['type'] == 'BUG' and e['status'] == 'OPEN')
+        qa_reason = f'{_bug_count} open BUG(s) in discovery sidecar'
     elif has_open_disputes_qa:
         qa_status = 'DISPUTED'
+        _disp_count = sum(
+            1 for e in _ut_entries
+            if e['type'] == 'SPEC_DISPUTE' and e['status'] == 'OPEN')
+        qa_reason = f'{_disp_count} OPEN SPEC_DISPUTE(s)'
     elif has_spec_updated_qa and lifecycle_state == 'testing':
         # TODO condition (b): SPEC_UPDATED items in TESTING lifecycle only
         qa_status = 'TODO'
+<<<<<<< HEAD
+=======
+        qa_reason = 'has SPEC_UPDATED items in TESTING lifecycle'
+>>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     elif testing_with_manual and not testing_all_auto:
         # TODO condition (a): TESTING with non-auto manual scenarios
         qa_status = 'TODO'
+        qa_reason = 'has manual QA items'
     elif bypassed_verification:
         # TODO condition (c): COMPLETE with manual scenarios but no
         # TESTING-phase commit (Section 2.16 bypassed verification)
         qa_status = 'TODO'
+<<<<<<< HEAD
     elif testing_all_auto:
         # AUTO: TESTING with all @auto manual scenarios (Section 2.14)
         qa_status = 'AUTO'
+=======
+        qa_reason = 'bypassed QA verification'
+    elif testing_all_auto:
+        # AUTO: TESTING with all @auto manual scenarios
+        qa_status = 'AUTO'
+        qa_reason = 'all QA scenarios are auto'
+>>>>>>> 335eb33 (feat(critic_role_status): implement QA AUTO status and manual scenario action items)
     elif struct_status == 'PASS':
         # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
         qa_status = 'CLEAN'
+        qa_reason = 'tests pass, no discoveries'
     else:
         qa_status = 'N/A'
+        qa_reason = 'no QA conditions matched'
 
     # --- PM status ---
     # PM is relevant when: feature has Owner: PM, or has Visual Specification,
@@ -3131,11 +3193,39 @@ def compute_role_status(feature_result, cdd_status=None):
     else:
         pm_status = 'DONE'
 
+    # --- Role status reasons ---
+    arch_reason = ('no action items' if architect_status == 'DONE'
+                   else 'has HIGH/CRITICAL action items')
+    if builder_status == 'DONE':
+        builder_reason = 'all tests pass, no open items'
+    elif builder_status == 'INFEASIBLE':
+        builder_reason = 'INFEASIBLE tag in Implementation Notes'
+    elif builder_status == 'BLOCKED':
+        builder_reason = 'OPEN SPEC_DISPUTE blocks implementation'
+    elif builder_status == 'FAIL':
+        builder_reason = 'tests.json has FAIL status'
+    elif builder_status == 'TODO' and lifecycle_is_todo:
+        builder_reason = 'spec modified after status commit'
+    else:
+        builder_reason = 'has open Builder action items'
+    if pm_status == 'N/A':
+        pm_reason = 'no visual or design work'
+    elif pm_status == 'DONE':
+        pm_reason = 'no PM action items'
+    else:
+        pm_reason = 'has pending PM work'
+
     return {
         'architect': architect_status,
         'builder': builder_status,
         'qa': qa_status,
         'pm': pm_status,
+        'role_status_reason': {
+            'architect': arch_reason,
+            'builder': builder_reason,
+            'qa': qa_reason,
+            'pm': pm_reason,
+        },
         '_bypassed_verification': bypassed_verification,
         '_bypassed_manual_count': bypassed_manual_count,
     }
