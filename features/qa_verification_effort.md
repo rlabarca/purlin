@@ -33,7 +33,7 @@ Builder-owned categories (TestOnly, Skip) are computed but NOT shown as QA actio
 
 *   **Web test detection:** A feature is web-test-eligible if it contains a `> Web Test:` metadata line (or legacy `> AFT Web:` for backward compatibility). The Critic already parses this metadata for other purposes.
 *   **QA scenario count:** The number of `#### Scenario:` headings under `### QA Scenarios` (or legacy `### Manual Scenarios (Human Verification Required)`).
-*   **@auto detection:** A QA scenario heading containing `@auto` as a suffix (e.g., `#### Scenario: Title @auto`) is classified as auto. QA scenarios without the tag are classified as manual.
+*   **@auto detection:** A QA scenario heading containing `@auto` as a suffix (e.g., `#### Scenario: Title @auto`) is classified as auto. A heading containing `@manual` is classified as manual (force-manual). QA scenarios without either tag default to manual.
 *   **Visual checklist item count:** The number of `- [ ]` items under `## Visual Specification`.
 *   **Test-only detection:** A feature is `test_only` when it has Unit Tests, zero QA scenarios, zero visual spec items, and `tests/<feature>/tests.json` exists with `status: "PASS"`.
 *   **Cosmetic detection:** A feature is `skip` when its `regression_scope.change_scope` is `"cosmetic"` AND the cosmetic first-pass guard (policy_critic.md Section 2.8) did not escalate it to `full`.

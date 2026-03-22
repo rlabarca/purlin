@@ -100,16 +100,14 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 
 ### 3.3 Execute Verification (Auto-First Protocol)
 *   **Step 1 — Auto pass:** Credit Builder-verified features (TestOnly, Skip). No QA action needed. When `find_work` is `true`, execute acknowledgments without asking. When `false`, present the list and wait for user confirmation.
-*   **Step 2 — Run @auto scenarios:** QA executes `@auto`-tagged QA scenarios directly. Two execution paths:
-    *   **Scenario has regression JSON** (`tests/qa/scenarios/<feature>.json`): Invoke the harness runner: `python3 {tools_root}/test_support/harness_runner.py tests/qa/scenarios/<feature>.json`. The harness runner handles fixture checkout, execution, assertion evaluation, and `tests.json` writing.
-    *   **Scenario has no regression JSON**: QA runs the scenario manually (following the Gherkin steps), evaluates the result, and if it passes cleanly, authors the regression JSON via `/pl-regression` (author mode) and adds the `@auto` tag. This promotes manual → auto incrementally.
+*   **Step 2 — Automate @auto scenarios:** For each `@auto`-tagged QA scenario, QA attempts automated execution before falling back to manual:
+    1.  **Regression JSON exists** (`tests/qa/scenarios/<feature>.json`): Invoke the harness runner directly: `python3 {tools_root}/test_support/harness_runner.py tests/qa/scenarios/<feature>.json`. The harness runner handles fixture checkout, execution, assertion evaluation, and `tests.json` writing.
+    2.  **No regression JSON exists**: Invoke `/pl-regression` (author mode) to create the regression JSON for this scenario. QA proposes an automation approach to the user (harness type, fixture needs, assertions). If the user approves, QA authors the JSON and runs it. If the user declines or automation is not feasible, QA falls back to manual execution for this session and removes the `@auto` tag (the scenario was incorrectly tagged).
     *   Start servers if needed (port safety + cleanup mandate per SERVER MANAGEMENT rules).
 *   **Step 3 — Visual smoke:** For `> Web Test:` features, invoke `/pl-web-test` to take a Playwright screenshot and check the Visual Specification checklist. This is a smoke check, not a replacement for the Builder's full web test during implementation. For non-web features, request a screenshot from the human. Detailed visual comparison deferred to Step 6.
 *   **Step 4 — LLM delegation:** For tests needing Claude (complex analysis, multi-step reasoning), compose the command and have the human run it. QA evaluates the output. (Runtime detection -- only applies when the scenario requires LLM capabilities.)
-*   **Step 5 — Smoke-tier manual first:** Verify smoke-tier manual scenarios, then standard-tier, then full-only.
-*   **Step 6 — Manual pass:** Optimized batches. Visual checklists grouped by screen (show screenshot once, verify multiple items). Manual scenarios step-by-step.
-*   **Step 7 — Automation opportunity:** After completing verification, if manual scenarios could be automated: add `@auto` tag and optionally author the automation script, OR request Builder infrastructure via a discovery.
-*   **3.3c Regression authoring:** If regression authoring targets were discovered in 3.2, invoke `/pl-regression` (enters author mode automatically). For `auto_start: true`, execute after Step 1 auto-pass.
+*   **Step 5 — Smoke-tier manual first:** Verify smoke-tier manual scenarios (those without `@auto` tag), then standard-tier, then full-only. Scenarios tagged `@manual` are always in this path — QA never proposes automation for them.
+*   **Step 6 — Manual pass:** Optimized batches. Visual checklists grouped by screen (show screenshot once, verify multiple items). Manual scenarios step-by-step. After a manual scenario passes cleanly, QA MAY propose automation: "This scenario could be automated. Add @auto and author regression JSON? [yes / no]". If yes, invoke `/pl-regression` for that scenario. If no, optionally add `@manual` to prevent future proposals.
 
 ### 3.4 External Execution Protocol
 

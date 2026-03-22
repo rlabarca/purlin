@@ -187,7 +187,9 @@ The Critic MUST compute a `verification_effort` block for each feature, classify
 
 Builder-owned categories (TestOnly, Skip) are computed for status tracking but do NOT generate QA action items. Builder-owned items route to Builder action items. When the Builder marks `[Complete]` with zero QA scenarios, `qa: "N/A"`.
 
-**`@auto` Tag Detection:** The Critic parses `@auto` as a suffix on `#### Scenario:` headings under `### QA Scenarios`. A scenario heading like `#### Scenario: Widget renders correctly @auto` is classified as auto. Scenarios without the tag default to manual. The `@auto` tag is QA-authored -- it indicates "QA can run this without human judgment." It does not dictate execution mechanism.
+**`@auto` and `@manual` Tag Detection:** The Critic parses `@auto` and `@manual` as suffixes on `#### Scenario:` headings under `### QA Scenarios`. A scenario heading like `#### Scenario: Widget renders correctly @auto` is classified as auto. A heading like `#### Scenario: Hardware check @manual` is classified as manual (force-manual — QA never proposes automation). Scenarios without either tag default to manual. The `@auto` tag indicates "QA should automate this." The `@manual` tag indicates "always requires human judgment."
+
+**Classification precedence:** `@manual` > `@auto` > untagged (default manual). If both tags appear on the same scenario (error), `@manual` wins.
 
 Derived fields: `summary` (human-readable string). Summary format: `"N manual"` when manual items exist, `"N auto"` when only auto items exist. When a feature is `[Complete]` via Builder (no `[Verified]`), summary = `"builder-verified"`.
 

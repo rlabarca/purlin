@@ -88,10 +88,14 @@ NOT valid: `**Scenario: Title**`, `### Scenario: Title`, `- Scenario: Title`
         ...
     #### Scenario: Title @auto
         ...
+    #### Scenario: Title @manual
+        ...
 
     (Use "None." if no QA scenarios.)
 
-**`@auto` tag:** QA Scenarios MAY include `@auto` as a suffix on the `#### Scenario:` heading (e.g., `#### Scenario: Widget renders @auto`). This tag means "QA can run this without human judgment." It does not dictate execution mechanism. A scenario is `manual` until QA adds `@auto`.
+**`@auto` tag:** QA Scenarios MAY include `@auto` as a suffix on the `#### Scenario:` heading (e.g., `#### Scenario: Widget renders @auto`). This tag means "QA should automate this." When QA encounters an `@auto` scenario without regression JSON, it invokes `/pl-regression` to author the automation before running. A scenario is untagged (manual by default) until QA adds `@auto`.
+
+**`@manual` tag:** QA Scenarios MAY include `@manual` as a suffix (e.g., `#### Scenario: Hardware calibration check @manual`). This tag means "always requires human judgment — never propose automation." QA skips the automation check entirely for `@manual` scenarios. Use this for scenarios involving physical hardware, subjective judgment, or complex human interaction that cannot be captured in assertions.
 
 **Gradual migration:** The Critic accepts BOTH old (`### Automated Scenarios`, `### Manual Scenarios (Human Verification Required)`) and new (`### Unit Tests`, `### QA Scenarios`) headings. Agents rename to the new format when touching a spec.
 

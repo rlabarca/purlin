@@ -104,9 +104,9 @@ QA follows a 7-step verification protocol, designed to minimize human effort by 
 
 **Step 1 -- Auto pass:** Credit Builder-verified features (Unit Tests only, cosmetic changes). Zero human time.
 
-**Step 2 -- Run @auto scenarios:** Execute QA Scenarios tagged with `@auto` directly:
-- If a regression JSON file exists (`tests/qa/scenarios/<feature>.json`), QA invokes the harness runner automatically.
-- If no regression JSON exists, QA runs the scenario manually first. If it passes cleanly, QA authors the regression JSON and adds the `@auto` tag -- promoting it from manual to automated for next time.
+**Step 2 -- Automate @auto scenarios:** For each QA Scenario tagged `@auto`:
+- If a regression JSON file exists (`tests/qa/scenarios/<feature>.json`), QA invokes the harness runner automatically. Done.
+- If no regression JSON exists, QA invokes `/pl-regression` to author the automation (proposes harness type, fixture needs, assertions to the user). Once authored, QA runs it immediately. If the user declines automation or it's not feasible, QA runs it manually this session and removes the `@auto` tag.
 
 **Step 3 -- Visual smoke:** For web features (`> Web Test:`), QA invokes `/pl-web-test` for a quick Playwright screenshot and checklist check. For non-web features, QA asks you for a screenshot.
 
@@ -116,7 +116,7 @@ QA follows a 7-step verification protocol, designed to minimize human effort by 
 
 **Step 6 -- Full manual pass:** Visual checklists grouped by screen (one screenshot, multiple checks). Manual scenarios step-by-step.
 
-**Step 7 -- Automation opportunity:** After verification, QA identifies scenarios that could be automated. Adds `@auto` tags and/or authors regression JSON files for future runs.
+**Step 6 follow-up -- Automation proposals:** After a manual scenario passes cleanly, QA asks: "This scenario could be automated. Add @auto and author regression JSON?" If you say yes, QA authors it via `/pl-regression`. If you say no, QA can add `@manual` to prevent the question from coming up again.
 
 ### What you do:
 
@@ -257,6 +257,7 @@ Fixture tags are immutable git tags in a dedicated bare repo. Each tag is a snap
 
 - **Each agent self-discovers work.** You do not need to tell the Builder what to implement -- it reads the Critic report and finds TODO features automatically.
 - **Commits are the coordination mechanism.** Agents communicate through git commits and the Critic report, not chat.
-- **`@auto` tags are incremental.** A scenario starts manual. QA promotes it to `@auto` after it passes cleanly and regression JSON is authored. Over time, more scenarios become automated.
+- **`@auto` means "automate this."** When QA sees `@auto`, it tries to run the scenario via the harness runner. If no regression JSON exists yet, QA authors it first (via `/pl-regression`), then runs. Over time, more scenarios get `@auto` tags and run without human involvement.
+- **`@manual` means "always human."** Tag scenarios with `@manual` when they require physical hardware, subjective judgment, or complex interaction. QA will never propose automation for these.
 - **The `-qa` flag is for test infrastructure only.** Normal Builder sessions hide Test Infrastructure features. Use `-qa` when QA needs fixture or harness work done.
 - **Smoke tier = verify first.** The Architect classifies features as smoke/standard/full-only. QA verifies smoke features first -- these are the ones that break everything if they fail.
