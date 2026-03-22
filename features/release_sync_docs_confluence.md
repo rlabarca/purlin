@@ -170,8 +170,8 @@ Status tags: `UPLOADED`/`SKIPPED` for image attachments, `CREATED`/`UPDATED` for
 1. Scan all markdown files for `![alt](path)` image references.
 2. If images found:
    a. Check credentials for the REST API image uploader: read `.purlin/runtime/confluence/credentials.json`.
-      - If present with 'email' and 'api_token' keys: proceed.
-      - If missing: run `mkdir -p .purlin/runtime/confluence/`, then ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file automatically. Verify with a test API call. Halt until working.
+      - If present with 'email', 'token', and 'base_url' keys: proceed.
+      - If missing: run `mkdir -p .purlin/runtime/confluence/`, then ask the user for their Atlassian email and API token (direct to `https://id.atlassian.com/manage-profile/security/api-tokens`, label: "purlin-docs-sync"). Write the credentials file with keys `email`, `token`, and `base_url` (e.g., `https://trustengine.atlassian.net`). Verify with a test API call. Halt until working.
    b. Determine target page ID for each image (the child page it belongs to), run `python3 dev/confluence_upload_images.py --page-id <id> --files <paths>`, collect URL mapping.
 3. If no images: skip to Phase 2.
 
