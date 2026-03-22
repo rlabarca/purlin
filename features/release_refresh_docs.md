@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This feature defines the `refresh_docs` local release step: a local-only documentation freshness review that cross-references each `docs/**/*.md` file against the current implementation state and updates stale content. This step is intentionally decoupled from any publishing destination (Confluence, GitHub Wiki, etc.) so that downstream publishing steps can depend on it without duplicating the freshness logic.
+This feature defines the `refresh_docs` local release step: a local-only documentation freshness review that cross-references each `docs/**/*.md` file against the current implementation state, updates stale content, and generates an index page (`docs/index.md`) that serves as the table of contents for all documentation. This step is intentionally decoupled from any publishing destination (Confluence, GitHub Wiki, etc.) so that downstream publishing steps can depend on it without duplicating the freshness or index logic.
 
 ---
 
@@ -16,7 +16,7 @@ This feature defines the `refresh_docs` local release step: a local-only documen
 
 ### 2.1 Doc Freshness Review
 
-The step reviews each `docs/**/*.md` file against the current implementation:
+The step reviews each `docs/**/*.md` file (excluding `docs/index.md`) against the current implementation:
 
 1. Cross-reference content against `tools/`, `instructions/`, and `features/`.
 2. Check for stale command references, outdated workflow descriptions, and removed/renamed concepts.
@@ -25,18 +25,49 @@ The step reviews each `docs/**/*.md` file against the current implementation:
 
 ### 2.2 Freshness Detection Method
 
-For each `docs/**/*.md` file:
+For each `docs/**/*.md` file (excluding `docs/index.md`):
 
 1. Find the last commit date: `git log -1 --format="%ci" -- <doc_path>`.
 2. Read the doc and identify which features, tools, and workflows it describes. Extract a list of the key spec files and implementation files the doc covers.
 3. For each referenced file, check what has changed since the doc was last updated: `git log --oneline --since="<doc_last_commit_date>" -- <referenced_file>`.
 4. If commits exist, read the current version of those files and diff against what the doc describes. Identify specific discrepancies: renamed commands, changed workflows, new capabilities, removed features, changed file paths, updated terminology.
 
-### 2.3 Scope Constraint
+### 2.3 Index Page Generation
 
-This step NEVER creates new documentation files. It only updates existing ones. Documentation gaps are noted in the completion report's Recommendations section.
+After the freshness review, the step generates or updates `docs/index.md`. This file serves as the root table of contents for all documentation and is used by downstream publishing steps as the landing page content (Confluence parent page, GitHub Wiki Home page, etc.).
 
-### 2.4 Completion Report
+The index page contains:
+
+1. A short introduction paragraph explaining that this is the Purlin framework's documentation for the agentic development workflow.
+2. A table of contents organized into four fixed sections, with each doc listed under exactly one section (no duplicates):
+
+| Section | Description | Docs |
+|---------|-------------|------|
+| **Agent Use** | How to interact with individual agents | Guides about using specific agents (PM, Builder, etc.) |
+| **CDD Dashboard** | Features of the CDD Dashboard UI | Guides about dashboard panels, visualizations, and configuration accessed through the dashboard |
+| **Workflow & Process** | End-to-end workflows spanning multiple agents | Guides about testing, parallel execution, release processes |
+| **Collaboration** | Multi-machine and team coordination | Guides about branch collaboration, remote push/pull |
+
+3. Each entry uses a standard markdown relative link: `[Page Title](filename.md)` followed by a one-line description.
+4. If `docs/index.md` already exists, it is regenerated from the current `docs/` directory contents. The introduction text is preserved if present; the TOC sections are always rebuilt.
+5. After generation, commit: `docs: update index.md`.
+
+### 2.4 Section Classification Rules
+
+When classifying a doc into a section:
+
+- A doc about a CDD Dashboard panel or feature (agent config, spec map, release checklist UI) goes in **CDD Dashboard**.
+- A doc about how to use or interact with a specific agent role goes in **Agent Use**.
+- A doc about an end-to-end workflow that spans multiple agents or describes a process goes in **Workflow & Process**.
+- A doc about remote branch collaboration, push/pull, or multi-machine coordination goes in **Collaboration**.
+
+Each doc appears in exactly one section. If a doc could fit multiple sections, prefer the most specific match.
+
+### 2.5 Scope Constraint
+
+This step NEVER creates new documentation files other than `docs/index.md`. Existing doc updates and index generation are the only write operations. Documentation gaps are noted in the completion report's Recommendations section.
+
+### 2.6 Completion Report
 
 After review, print a change-focused summary:
 
@@ -44,43 +75,61 @@ After review, print a change-focused summary:
 -- Doc Freshness Review ------------------------------------
 
 Local updates (committed):
-  CHANGED  guides/testing-workflow-guide.md -- <description>
-  OK       reference/parallel-execution-guide.md
+  CHANGED  testing-workflow-guide.md -- <description>
+  OK       parallel-execution-guide.md
+  UPDATED  index.md -- regenerated TOC
 
 -- Recommendations -----------------------------------------
 Consider adding (will auto-sync on next release):
-  - guides/release-process-guide.md
-  - reference/critic-guide.md
+  - release-process-guide.md
+  - critic-guide.md
 -----------------------------------------------------------
 ```
 
-Status tags: `CHANGED`/`OK` for local freshness. Recommendations section appears only if gaps are detected.
+Status tags: `CHANGED`/`OK` for local freshness, `UPDATED` for index.md. Recommendations section appears only if gaps are detected.
 
-### 2.5 Step Metadata
+### 2.7 Step Metadata
 
 | Field | Value |
 |-------|-------|
 | ID | `refresh_docs` |
 | Friendly Name | `Refresh Documentation` |
 | Code | `null` (interactive step) |
-| Agent Instructions | See Section 2.6 |
+| Agent Instructions | See Section 2.8 |
 
-### 2.6 Agent Instructions (Release Step Content)
+### 2.8 Agent Instructions (Release Step Content)
 
-1. Read each `docs/**/*.md` file.
+**Phase 1: Doc Freshness Review**
+
+1. Read each `docs/**/*.md` file (skip `docs/index.md`).
 2. For each doc:
    a. Find the last commit date: `git log -1 --format="%ci" -- <doc_path>`.
-   b. Read the doc and identify which features, tools, and workflows it describes. Extract a list of the key spec files and implementation files the doc covers (e.g., a doc about parallel execution covers `tools/delivery/phase_analyzer.py`, `features/phase_analyzer.md`, `instructions/BUILDER_BASE.md` sections on parallel execution).
+   b. Read the doc and identify which features, tools, and workflows it describes. Extract a list of the key spec files and implementation files the doc covers.
    c. For each referenced file, check what has changed since the doc was last updated: `git log --oneline --since="<doc_last_commit_date>" -- <referenced_file>`.
-   d. If commits exist, read the current version and diff against what the doc describes. Identify specific discrepancies: renamed commands, changed workflows, new capabilities, removed features, changed file paths, updated terminology.
+   d. If commits exist, read the current version and diff against what the doc describes. Identify specific discrepancies.
 3. Present a per-doc freshness report:
    | Doc | Last Updated | Referenced Files Changed | Stale Areas |
 4. For docs with identified staleness:
    a. Read the current version of all referenced spec and implementation files in full.
-   b. Update the doc content to reflect the current state. Preserve the doc's existing structure and voice — only change what is factually outdated.
+   b. Update the doc content to reflect the current state. Preserve existing structure and voice.
    c. Commit each doc update separately: `docs: update <filename> for current implementation`.
 5. For docs with no staleness: confirm they are current.
-6. Print the completion report per Section 2.4.
+
+**Phase 2: Index Page Generation**
+
+1. Scan `docs/` for all `*.md` files (excluding `index.md` itself and any files in `images/`).
+2. For each doc, read the first heading (`# Title`) to derive the display title.
+3. Read the first paragraph or overview section to derive a one-line description.
+4. Classify each doc into one of the four sections per Section 2.4.
+5. Generate `docs/index.md` with:
+   a. Introduction paragraph about Purlin framework documentation.
+   b. Four sections in order: Agent Use, CDD Dashboard, Workflow & Process, Collaboration.
+   c. Each entry as: `* [Title](filename.md) -- one-line description`.
+6. Commit: `docs: update index.md`.
+
+**Phase 3: Completion Report**
+
+Print the change-focused summary per Section 2.6.
 
 ---
 
@@ -90,7 +139,7 @@ Status tags: `CHANGED`/`OK` for local freshness. Recommendations section appears
 
 #### Scenario: Stale documentation detected and updated
 
-    Given docs/guides/testing-workflow-guide.md references a command that was renamed in the current implementation
+    Given docs/testing-workflow-guide.md references a command that was renamed in the current implementation
     When the step executes the freshness review
     Then the stale reference is updated to the current command name
     And the change is committed with message "docs: update testing-workflow-guide.md for current implementation"
@@ -99,15 +148,37 @@ Status tags: `CHANGED`/`OK` for local freshness. Recommendations section appears
 
     Given all docs/**/*.md files accurately reflect the current implementation
     When the step executes the freshness review
-    Then no commits are made
+    Then no commits are made for freshness updates
     And the step reports docs are current
 
-#### Scenario: Step never creates new doc files
+#### Scenario: Step never creates new doc files other than index
 
     Given a documentation gap is detected during freshness review
     When the step considers remediation
-    Then no new files are created in docs/
+    Then no new files are created in docs/ other than index.md
     And the gap is listed in the Recommendations section of the completion report
+
+#### Scenario: Index page generated with four sections
+
+    Given docs/ contains pm-agent-guide.md, agent-configuration-guide.md, spec-map-guide.md, testing-workflow-guide.md, parallel-execution-guide.md, and branch-collaboration-guide.md
+    When the step generates docs/index.md
+    Then index.md contains sections "Agent Use", "CDD Dashboard", "Workflow & Process", and "Collaboration"
+    And pm-agent-guide.md appears under "Agent Use"
+    And agent-configuration-guide.md and spec-map-guide.md appear under "CDD Dashboard"
+    And testing-workflow-guide.md and parallel-execution-guide.md appear under "Workflow & Process"
+    And branch-collaboration-guide.md appears under "Collaboration"
+
+#### Scenario: No doc appears in multiple sections
+
+    Given docs/ contains six documentation files
+    When the step generates docs/index.md
+    Then each doc filename appears exactly once in the index
+
+#### Scenario: Index uses relative markdown links
+
+    Given docs/ contains pm-agent-guide.md
+    When the step generates docs/index.md
+    Then the entry for PM Agent Guide uses the link format "[PM Agent Guide](pm-agent-guide.md)"
 
 ### QA Scenarios
 
