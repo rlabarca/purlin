@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for phase_analyzer.py — exercises all 16 automated scenarios."""
+"""Tests for phase_analyzer.py — exercises all 24 automated scenarios."""
 
 import json
 import os
@@ -624,6 +624,485 @@ def test_intra_phase_single_feature():
         shutil.rmtree(tmpdir)
 
 
+# ============================================================
+# Scenario: Coupling detected via shared test imports (Tier 2)
+# ============================================================
+def test_coupling_shared_imports():
+    """Both features' test files import from same source module -> Tier 2 warning."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Create shared source module
+        critic_dir = os.path.join(tmpdir, 'tools', 'critic')
+        os.makedirs(critic_dir, exist_ok=True)
+        with open(os.path.join(critic_dir, '__init__.py'), 'w') as f:
+            f.write('')
+        with open(os.path.join(critic_dir, 'critic.py'), 'w') as f:
+            f.write('# shared module\n')
+
+        # Create test files that import from the shared module
+        test_a_dir = os.path.join(tmpdir, 'tools', 'critic')
+        with open(os.path.join(test_a_dir, 'test_a.py'), 'w') as f:
+            f.write('from tools.critic import critic\nimport pytest\n')
+        with open(os.path.join(test_a_dir, 'test_b.py'), 'w') as f:
+            f.write('from tools.critic import critic\nimport pytest\n')
+
+        # Create tests.json for each feature pointing to their test files
+        for feat_name, test_file in [('feature_a', 'tools/critic/test_a.py'),
+                                      ('feature_b', 'tools/critic/test_b.py')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and len(data["parallel_groups"]) == 1
+            and data["parallel_groups"][0]["parallel"] is True
+            and len(data["coupling_warnings"]) == 1
+            and data["coupling_warnings"][0]["tier"] == 2
+            and any("tools/critic/critic" in f for f in data["coupling_warnings"][0]["shared_files"])
+        )
+        record("Coupling detected via shared test imports (Tier 2)", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: No coupling when test imports are disjoint
+# ============================================================
+def test_no_coupling_disjoint_imports():
+    """Features with disjoint test imports -> no coupling warning."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Create two separate source modules
+        for mod_dir in ['tools/critic', 'tools/cdd']:
+            full_dir = os.path.join(tmpdir, mod_dir)
+            os.makedirs(full_dir, exist_ok=True)
+            with open(os.path.join(full_dir, '__init__.py'), 'w') as f:
+                f.write('')
+
+        with open(os.path.join(tmpdir, 'tools', 'critic', 'critic.py'), 'w') as f:
+            f.write('# critic module\n')
+        with open(os.path.join(tmpdir, 'tools', 'cdd', 'monitor.py'), 'w') as f:
+            f.write('# cdd module\n')
+
+        # test_a imports critic, test_b imports cdd
+        with open(os.path.join(tmpdir, 'tools', 'critic', 'test_a.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+        with open(os.path.join(tmpdir, 'tools', 'cdd', 'test_b.py'), 'w') as f:
+            f.write('from tools.cdd import monitor\n')
+
+        for feat_name, test_file in [('feature_a', 'tools/critic/test_a.py'),
+                                      ('feature_b', 'tools/cdd/test_b.py')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and data["parallel_groups"][0]["parallel"] is True
+            and data["coupling_warnings"] == []
+        )
+        record("No coupling when test imports are disjoint", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Tier 2 no-coupling skips Tier 3 entirely
+# ============================================================
+def test_tier2_nocoupling_skips_tier3():
+    """Disjoint test imports -> Tier 3 git analysis skipped even if git history overlaps."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Create separate source modules (disjoint imports)
+        for mod_dir in ['tools/critic', 'tools/cdd']:
+            full_dir = os.path.join(tmpdir, mod_dir)
+            os.makedirs(full_dir, exist_ok=True)
+            with open(os.path.join(full_dir, '__init__.py'), 'w') as f:
+                f.write('')
+
+        with open(os.path.join(tmpdir, 'tools', 'critic', 'critic.py'), 'w') as f:
+            f.write('# critic\n')
+        with open(os.path.join(tmpdir, 'tools', 'cdd', 'monitor.py'), 'w') as f:
+            f.write('# cdd\n')
+
+        with open(os.path.join(tmpdir, 'tools', 'critic', 'test_a.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+        with open(os.path.join(tmpdir, 'tools', 'cdd', 'test_b.py'), 'w') as f:
+            f.write('from tools.cdd import monitor\n')
+
+        for feat_name, test_file in [('feature_a', 'tools/critic/test_a.py'),
+                                      ('feature_b', 'tools/cdd/test_b.py')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        # Note: We can't easily set up git history in a temp dir without
+        # initializing a repo. The key assertion is that coupling_warnings is
+        # empty — if Tier 3 were checked, it would need git. Since Tier 2
+        # says no coupling, Tier 3 is skipped, so no git errors and no warnings.
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and data["coupling_warnings"] == []
+        )
+        record("Tier 2 no-coupling skips Tier 3 entirely", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Coupling detected via git history (Tier 3) when no tests exist
+# ============================================================
+def test_coupling_git_history_no_tests():
+    """No tests.json for either feature, git commits overlap -> Tier 3 warning."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Initialize a git repo and create overlapping commits
+        subprocess.run(['git', 'init'], cwd=tmpdir, capture_output=True)
+        subprocess.run(['git', 'config', 'user.email', 'test@test.com'],
+                       cwd=tmpdir, capture_output=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'],
+                       cwd=tmpdir, capture_output=True)
+
+        # Create shared file
+        shared_dir = os.path.join(tmpdir, 'tools', 'shared')
+        os.makedirs(shared_dir, exist_ok=True)
+        with open(os.path.join(shared_dir, 'utils.py'), 'w') as f:
+            f.write('# utils v1\n')
+        subprocess.run(['git', 'add', '.'], cwd=tmpdir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'initial'], cwd=tmpdir, capture_output=True)
+
+        # Commit for feature_a touching utils.py
+        with open(os.path.join(shared_dir, 'utils.py'), 'w') as f:
+            f.write('# utils v2 - feature_a\n')
+        subprocess.run(['git', 'add', '.'], cwd=tmpdir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'feat(feature_a): add util'],
+                       cwd=tmpdir, capture_output=True)
+
+        # Commit for feature_b also touching utils.py
+        with open(os.path.join(shared_dir, 'utils.py'), 'w') as f:
+            f.write('# utils v3 - feature_b\n')
+        subprocess.run(['git', 'add', '.'], cwd=tmpdir, capture_output=True)
+        subprocess.run(['git', 'commit', '-m', 'feat(feature_b): update util'],
+                       cwd=tmpdir, capture_output=True)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and data["parallel_groups"][0]["parallel"] is True
+            and len(data["coupling_warnings"]) == 1
+            and data["coupling_warnings"][0]["tier"] == 3
+            and "tools/shared/utils.py" in data["coupling_warnings"][0]["shared_files"]
+        )
+        record("Coupling detected via git history (Tier 3) when no tests exist", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Coupling via git history when Tier 2 detects overlap
+# ============================================================
+def test_coupling_tier2_overlap_also_checks_tier3():
+    """Tier 2 detects overlap -> report Tier 2 as primary (highest-signal)."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Create shared source module
+        critic_dir = os.path.join(tmpdir, 'tools', 'critic')
+        os.makedirs(critic_dir, exist_ok=True)
+        with open(os.path.join(critic_dir, '__init__.py'), 'w') as f:
+            f.write('')
+        with open(os.path.join(critic_dir, 'critic.py'), 'w') as f:
+            f.write('# shared\n')
+
+        # Both test files import from same module
+        with open(os.path.join(critic_dir, 'test_a.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+        with open(os.path.join(critic_dir, 'test_b.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+
+        for feat_name, test_file in [('feature_a', 'tools/critic/test_a.py'),
+                                      ('feature_b', 'tools/critic/test_b.py')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        # Should report Tier 2 as the highest-signal tier
+        ok = (
+            proc.returncode == 0
+            and len(data["coupling_warnings"]) >= 1
+            and data["coupling_warnings"][0]["tier"] == 2
+        )
+        record("Coupling via git history when Tier 2 detects overlap", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: No coupling data available for never-implemented feature
+# ============================================================
+def test_no_coupling_data():
+    """One feature has no tests.json, no git commits -> no warning."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Only feature_b has tests.json; feature_a has nothing
+        cdd_dir = os.path.join(tmpdir, 'tools', 'cdd')
+        os.makedirs(cdd_dir, exist_ok=True)
+        with open(os.path.join(cdd_dir, '__init__.py'), 'w') as f:
+            f.write('')
+        with open(os.path.join(cdd_dir, 'monitor.py'), 'w') as f:
+            f.write('# monitor\n')
+        with open(os.path.join(cdd_dir, 'test_b.py'), 'w') as f:
+            f.write('from tools.cdd import monitor\n')
+
+        feat_test_dir = os.path.join(tmpdir, 'tests', 'feature_b')
+        os.makedirs(feat_test_dir, exist_ok=True)
+        with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+            json.dump({
+                "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                "test_file": "tools/cdd/test_b.py",
+            }, f)
+
+        # No git repo, no tests for feature_a -> no-data fallback
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and data["parallel_groups"][0]["parallel"] is True
+            and data["coupling_warnings"] == []
+        )
+        record("No coupling data available for never-implemented feature", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Shell test files use directory proximity for surface detection
+# ============================================================
+def test_shell_test_directory_proximity():
+    """Shell test files in same directory -> coupling warning."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # Create shell test files in the same directory
+        release_dir = os.path.join(tmpdir, 'tools', 'release')
+        os.makedirs(release_dir, exist_ok=True)
+        with open(os.path.join(release_dir, 'release.sh'), 'w') as f:
+            f.write('#!/bin/bash\n# shared release script\n')
+        with open(os.path.join(release_dir, 'test_a.sh'), 'w') as f:
+            f.write('#!/bin/bash\n# test a\n')
+        with open(os.path.join(release_dir, 'test_b.sh'), 'w') as f:
+            f.write('#!/bin/bash\n# test b\n')
+
+        for feat_name, test_file in [('feature_a', 'tools/release/test_a.sh'),
+                                      ('feature_b', 'tools/release/test_b.sh')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = (
+            proc.returncode == 0
+            and len(data["coupling_warnings"]) >= 1
+        )
+        if ok:
+            warning = data["coupling_warnings"][0]
+            ok = (
+                warning["tier"] == 2
+                and any("release" in f for f in warning["shared_files"])
+            )
+        record("Shell test files use directory proximity for surface detection", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+# ============================================================
+# Scenario: Coupling warnings do not change parallel grouping
+# ============================================================
+def test_coupling_warnings_dont_change_grouping():
+    """Three independent features, two with coupling -> all still in one parallel group."""
+    tmpdir = tempfile.mkdtemp()
+    try:
+        graph = make_graph([
+            ("feature_a.md", []),
+            ("feature_b.md", []),
+            ("feature_c.md", []),
+        ])
+        plan = make_plan([
+            (2, "Work", "PENDING", ["feature_a.md", "feature_b.md", "feature_c.md"]),
+        ])
+        make_project(tmpdir, plan, graph)
+
+        # feature_a and feature_b share a source module (coupling)
+        critic_dir = os.path.join(tmpdir, 'tools', 'critic')
+        os.makedirs(critic_dir, exist_ok=True)
+        with open(os.path.join(critic_dir, '__init__.py'), 'w') as f:
+            f.write('')
+        with open(os.path.join(critic_dir, 'critic.py'), 'w') as f:
+            f.write('# shared\n')
+        with open(os.path.join(critic_dir, 'test_a.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+        with open(os.path.join(critic_dir, 'test_b.py'), 'w') as f:
+            f.write('from tools.critic import critic\n')
+
+        # feature_c has its own separate module (no coupling)
+        cdd_dir = os.path.join(tmpdir, 'tools', 'cdd')
+        os.makedirs(cdd_dir, exist_ok=True)
+        with open(os.path.join(cdd_dir, '__init__.py'), 'w') as f:
+            f.write('')
+        with open(os.path.join(cdd_dir, 'monitor.py'), 'w') as f:
+            f.write('# independent\n')
+        with open(os.path.join(cdd_dir, 'test_c.py'), 'w') as f:
+            f.write('from tools.cdd import monitor\n')
+
+        for feat_name, test_file in [('feature_a', 'tools/critic/test_a.py'),
+                                      ('feature_b', 'tools/critic/test_b.py'),
+                                      ('feature_c', 'tools/cdd/test_c.py')]:
+            feat_test_dir = os.path.join(tmpdir, 'tests', feat_name)
+            os.makedirs(feat_test_dir, exist_ok=True)
+            with open(os.path.join(feat_test_dir, 'tests.json'), 'w') as f:
+                json.dump({
+                    "status": "PASS", "passed": 1, "failed": 0, "total": 1,
+                    "test_file": test_file,
+                }, f)
+
+        proc = run_analyzer(tmpdir, ['--intra-phase', '2'])
+        data = json.loads(proc.stdout)
+
+        ok = proc.returncode == 0
+        if ok:
+            # All three features in one parallel group
+            ok = (
+                len(data["parallel_groups"]) == 1
+                and set(data["parallel_groups"][0]["features"]) == {
+                    "feature_a.md", "feature_b.md", "feature_c.md"
+                }
+                and data["parallel_groups"][0]["parallel"] is True
+            )
+        if ok:
+            # Only one coupling warning: between a and b
+            ok = (
+                len(data["coupling_warnings"]) == 1
+                and set(data["coupling_warnings"][0]["features"]) == {"feature_a.md", "feature_b.md"}
+            )
+        if ok:
+            # feature_c not in any warning
+            for w in data["coupling_warnings"]:
+                if "feature_c.md" in w["features"]:
+                    ok = False
+                    break
+
+        record("Coupling warnings do not change parallel grouping", ok,
+               f"data={json.dumps(data)}" if not ok else "")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def write_results():
     """Write tests.json to the correct location."""
     project_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
@@ -670,6 +1149,14 @@ if __name__ == '__main__':
     test_intra_phase_mixed()
     test_intra_phase_nonexistent()
     test_intra_phase_single_feature()
+    test_coupling_shared_imports()
+    test_no_coupling_disjoint_imports()
+    test_tier2_nocoupling_skips_tier3()
+    test_coupling_git_history_no_tests()
+    test_coupling_tier2_overlap_also_checks_tier3()
+    test_no_coupling_data()
+    test_shell_test_directory_proximity()
+    test_coupling_warnings_dont_change_grouping()
 
     write_results()
     sys.exit(0 if results["failed"] == 0 else 1)

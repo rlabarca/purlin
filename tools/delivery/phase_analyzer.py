@@ -15,9 +15,12 @@ Environment:
 """
 
 import argparse
+import ast
+import glob as glob_mod
 import json
 import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
 
@@ -441,6 +444,269 @@ def compute_feature_independence(features, closure):
     return groups
 
 
+def extract_python_imports(test_file_path):
+    """Parse Python import statements and return set of imported module file paths.
+
+    Excludes standard library modules and test framework imports (pytest, unittest, mock).
+    Returns set of resolved file paths relative to project root.
+    """
+    EXCLUDED_MODULES = {
+        'pytest', 'unittest', 'mock', 'unittest.mock',
+        'os', 'sys', 'json', 're', 'io', 'copy', 'math', 'random',
+        'collections', 'itertools', 'functools', 'operator',
+        'pathlib', 'tempfile', 'shutil', 'subprocess', 'argparse',
+        'datetime', 'time', 'typing', 'abc', 'enum', 'dataclasses',
+        'contextlib', 'textwrap', 'string', 'glob', 'fnmatch',
+        'hashlib', 'hmac', 'secrets', 'logging', 'warnings',
+        'traceback', 'inspect', 'importlib', 'pkgutil',
+        'http', 'urllib', 'socket', 'ssl', 'email',
+        'csv', 'configparser', 'xml', 'html',
+        'threading', 'multiprocessing', 'concurrent',
+        'ast', 'dis', 'token', 'tokenize',
+        'pprint', 'difflib', 'struct', 'codecs',
+        'signal', 'errno', 'stat', 'posixpath', 'ntpath',
+        'platform', 'locale', 'gettext',
+    }
+
+    try:
+        with open(test_file_path, 'r') as f:
+            source = f.read()
+    except (IOError, OSError):
+        return set()
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+
+    modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name.split('.')[0]
+                if top not in EXCLUDED_MODULES:
+                    modules.add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                top = node.module.split('.')[0]
+                if top not in EXCLUDED_MODULES:
+                    modules.add(node.module)
+                    # Also resolve 'from X import Y' as potential submodule X.Y
+                    for alias in node.names:
+                        submod = f"{node.module}.{alias.name}"
+                        modules.add(submod)
+
+    # Resolve module names to file paths
+    resolved = set()
+    for mod in modules:
+        # Convert dotted module to path: tools.critic.critic -> tools/critic/critic
+        mod_path = mod.replace('.', '/')
+        # Check for .py file
+        if os.path.isfile(mod_path + '.py'):
+            resolved.add(mod_path + '.py')
+        elif os.path.isdir(mod_path):
+            resolved.add(mod_path)
+        else:
+            # Try relative to test file's directory
+            test_dir = os.path.dirname(test_file_path)
+            rel_path = os.path.join(test_dir, mod_path)
+            if os.path.isfile(rel_path + '.py'):
+                resolved.add(os.path.relpath(rel_path + '.py'))
+            elif os.path.isdir(rel_path):
+                resolved.add(os.path.relpath(rel_path))
+            else:
+                # Keep the dotted path as-is for matching purposes
+                resolved.add(mod_path)
+
+    return resolved
+
+
+def get_shell_test_surface(test_file_path):
+    """Use directory proximity for shell test files.
+
+    Returns set of non-test file paths in the test file's parent directory.
+    """
+    test_dir = os.path.dirname(test_file_path)
+    if not os.path.isdir(test_dir):
+        return set()
+
+    surface = set()
+    for entry in os.listdir(test_dir):
+        full = os.path.join(test_dir, entry)
+        if os.path.isfile(full) and not os.path.basename(entry).startswith('test_'):
+            surface.add(os.path.relpath(full))
+    return surface
+
+
+def get_feature_implementation_surface(feature_stem, project_root):
+    """Get the implementation surface for a feature from its tests.json.
+
+    Returns (set of source file paths, bool: had_test_data).
+    """
+    tests_json_path = os.path.join(project_root, 'tests', feature_stem, 'tests.json')
+    try:
+        with open(tests_json_path, 'r') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return set(), False
+
+    # Extract test file paths
+    test_files = []
+    if 'test_file' in data:
+        test_files.append(data['test_file'])
+    if 'test_files' in data:
+        test_files.extend(data['test_files'])
+
+    if not test_files:
+        return set(), False
+
+    surface = set()
+    for tf in test_files:
+        # Resolve relative to project root
+        tf_abs = os.path.join(project_root, tf) if not os.path.isabs(tf) else tf
+        if tf.endswith('.py'):
+            surface |= extract_python_imports(tf_abs)
+        elif tf.endswith(('.sh', '.bats')):
+            surface |= get_shell_test_surface(tf_abs)
+
+    return surface, True
+
+
+def detect_git_coupling(stem_a, stem_b, project_root):
+    """Detect coupling via git commit file overlap (Tier 3).
+
+    Returns (set of shared files, bool: had_git_data).
+    """
+    def get_files_for_stem(stem):
+        """Find files modified in commits matching feat(<stem>)."""
+        try:
+            result = subprocess.run(
+                ['git', 'log', '--all', '--pretty=format:%H',
+                 f'--grep=feat({stem})', '--'],
+                capture_output=True, text=True, cwd=project_root
+            )
+            if result.returncode != 0 or not result.stdout.strip():
+                return set(), False
+
+            commits = result.stdout.strip().split('\n')
+            files = set()
+            for commit_hash in commits:
+                diff_result = subprocess.run(
+                    ['git', 'diff-tree', '--no-commit-id', '-r', '--name-only', commit_hash],
+                    capture_output=True, text=True, cwd=project_root
+                )
+                if diff_result.returncode == 0 and diff_result.stdout.strip():
+                    files |= set(diff_result.stdout.strip().split('\n'))
+            return files, True
+        except (OSError, FileNotFoundError):
+            return set(), False
+
+    files_a, had_a = get_files_for_stem(stem_a)
+    files_b, had_b = get_files_for_stem(stem_b)
+
+    if not had_a and not had_b:
+        return set(), False
+
+    shared = files_a & files_b
+    return shared, True
+
+
+def detect_coupling_warnings(features, project_root):
+    """Detect implementation coupling between spec-independent features.
+
+    Implements the tiered detection system from Section 2.10:
+    - Tier 2: Test file source imports
+    - Tier 3: Git commit file overlap
+
+    Tier 1 (spec dependencies) is handled by compute_feature_independence().
+    This function only processes pairs that are already known to be spec-independent.
+
+    Returns list of coupling warning dicts.
+    """
+    warnings = []
+
+    # Extract feature stems from bare filenames
+    stems = {}
+    for feat in features:
+        bare = os.path.basename(feat) if '/' in feat else feat
+        stem = bare.replace('.md', '')
+        stems[bare] = stem
+
+    # Get implementation surfaces (Tier 2 data)
+    surfaces = {}
+    had_test_data = {}
+    for bare, stem in stems.items():
+        surface, had_data = get_feature_implementation_surface(stem, project_root)
+        surfaces[bare] = surface
+        had_test_data[bare] = had_data
+
+    # Check all pairs
+    feat_list = sorted(stems.keys())
+    for i in range(len(feat_list)):
+        for j in range(i + 1, len(feat_list)):
+            fa, fb = feat_list[i], feat_list[j]
+            stem_a, stem_b = stems[fa], stems[fb]
+
+            # Tier 2: Test import overlap
+            both_have_tests = had_test_data[fa] and had_test_data[fb]
+            if both_have_tests:
+                shared = surfaces[fa] & surfaces[fb]
+                if shared:
+                    # Tier 2 coupling detected — also check Tier 3 for context
+                    git_shared, _ = detect_git_coupling(stem_a, stem_b, project_root)
+                    # Report Tier 2 as primary signal
+                    shared_list = sorted(shared)
+                    warnings.append({
+                        "features": [fa, fb],
+                        "tier": 2,
+                        "shared_files": shared_list,
+                        "detail": (
+                            f"test files for both features import from "
+                            f"{', '.join(shared_list)}"
+                        ),
+                    })
+                    continue
+                else:
+                    # Tier 2 says no coupling — skip Tier 3
+                    continue
+
+            # Tier 2 could not run (missing test data for one or both)
+            # Fall through to Tier 3
+            if not had_test_data[fa] and not had_test_data[fb]:
+                # Neither has test data — try git
+                git_shared, had_git = detect_git_coupling(stem_a, stem_b, project_root)
+                if had_git and git_shared:
+                    shared_list = sorted(git_shared)
+                    warnings.append({
+                        "features": [fa, fb],
+                        "tier": 3,
+                        "shared_files": shared_list,
+                        "detail": (
+                            f"git commits for both features modified "
+                            f"{', '.join(shared_list)}"
+                        ),
+                    })
+                # else: no data at all — no warning (no-data fallback)
+                continue
+
+            # One has test data, the other doesn't — Tier 2 can't compare
+            # Try Tier 3
+            git_shared, had_git = detect_git_coupling(stem_a, stem_b, project_root)
+            if had_git and git_shared:
+                shared_list = sorted(git_shared)
+                warnings.append({
+                    "features": [fa, fb],
+                    "tier": 3,
+                    "shared_files": shared_list,
+                    "detail": (
+                        f"git commits for both features modified "
+                        f"{', '.join(shared_list)}"
+                    ),
+                })
+
+    return warnings
+
+
 def main():
     parser = argparse.ArgumentParser(description='Phase Analyzer')
     parser.add_argument(
@@ -496,10 +762,24 @@ def main():
             target_phase["features"], closure
         )
 
+        # Detect implementation coupling for spec-independent features
+        # Only check pairs that are in parallel groups
+        independent_features = []
+        for group in parallel_groups:
+            if group["parallel"] and len(group["features"]) >= 2:
+                independent_features.extend(group["features"])
+
+        coupling_warnings = []
+        if independent_features:
+            coupling_warnings = detect_coupling_warnings(
+                independent_features, project_root
+            )
+
         result = {
             "phase": target_phase["number"],
             "features": sorted(target_phase["features"]),
             "parallel_groups": parallel_groups,
+            "coupling_warnings": coupling_warnings,
         }
         json.dump(result, sys.stdout, indent=2)
         print()
