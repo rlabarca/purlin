@@ -100,8 +100,7 @@ On first execution, the step detects missing prerequisites and guides the user t
 1. **Confluence MCP check:** Attempt to list Confluence spaces. If the MCP server is unavailable:
    - Check if `.mcp.json` in the project root already contains an `atlassian` entry.
    - If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` to configure it automatically (per `policy_release.md` Invariant 2.7).
-   - Whether newly configured or already configured, MCP servers load at session start. Inform the user that a restart is needed and halt. Do NOT ask the user to run any CLI commands.
-   - After restart, verify by confirming the `PRODENG` space is accessible via the MCP. The MCP uses OAuth 2.1 automatically (a browser window opens if needed for authorization). No API token or credentials file is needed for MCP operations.
+   - Whether newly configured or already present in `.mcp.json`, the MCP is not loaded in the current session. Ask the user to type `/mcp` in Claude Code, select the `atlassian` MCP server from the list, and authenticate when prompted (OAuth 2.1 -- a browser window opens for authorization). HALT and wait for the user to confirm authentication is complete. No API token or credentials file is needed for MCP operations.
 2. **API token check (image uploads only):** The image upload script (`dev/confluence_upload_images.py`) requires REST API credentials stored at `.purlin/runtime/confluence/credentials.json`. This check is deferred to Phase 2 and only applies when images are found. If the credentials file is missing when needed, create the directory (`mkdir -p .purlin/runtime/confluence/`), ask the user for their Atlassian email and API token (direct them to `https://id.atlassian.com/manage-profile/security/api-tokens` to create one with label "purlin-docs-sync"), write the credentials file automatically, and verify with a test API call. Halt until working.
 
 ### 2.6 Doc Freshness Review
@@ -180,8 +179,8 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPLOADED`/`SKIPPED` for image 
 
 1. Check Confluence MCP availability: search for Atlassian MCP tools in the current session.
    - If available: proceed to step 2.
-   - If unavailable: check `.mcp.json` for existing `atlassian` entry. If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` automatically. Then inform the user a restart is needed and halt (per `policy_release.md` Invariant 2.7). Do NOT ask the user to run any commands.
-2. Verify Confluence access: use the Atlassian MCP to list accessible Atlassian resources and confirm the `PRODENG` space is reachable. The MCP uses OAuth 2.1 -- a browser window will open automatically on first use for authorization. No API token or credentials file is needed for MCP operations. Halt if not accessible.
+   - If unavailable: check `.mcp.json` for existing `atlassian` entry. If not configured, run `claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp` automatically. Whether newly configured or already present, ask the user to type `/mcp` in Claude Code, select the `atlassian` MCP server, and authenticate (OAuth 2.1). HALT until the user confirms authentication is complete.
+2. Verify Confluence access: use the Atlassian MCP to list accessible Atlassian resources and confirm the `PRODENG` space is reachable. No API token or credentials file is needed for MCP operations. Halt if not accessible.
 3. If all prerequisites pass: proceed.
 
 **Phase 1: Doc Freshness Review**
@@ -257,8 +256,16 @@ Print the change-focused summary per Section 2.10. Include Recommendations secti
     Given the Atlassian MCP server is not configured in Claude Code
     When the step executes Phase 0
     Then the step runs "claude mcp add atlassian --transport http --scope project https://mcp.atlassian.com/v1/mcp" automatically
-    And informs the user that a session restart is needed for the MCP to load
-    And the step halts without asking the user to run any CLI commands
+    And asks the user to type /mcp in Claude Code, select the atlassian MCP server, and authenticate
+    And the step halts until the user confirms authentication is complete
+
+#### Scenario: MCP configured but not loaded triggers authentication prompt
+
+    Given the Atlassian MCP server is configured in .mcp.json
+    But the MCP tools are not available in the current session
+    When the step executes Phase 0
+    Then the step asks the user to type /mcp in Claude Code, select the atlassian MCP server, and authenticate
+    And the step halts until the user confirms authentication is complete
 
 #### Scenario: Missing credentials file triggers token setup during image upload
 
