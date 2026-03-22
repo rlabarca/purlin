@@ -24,7 +24,7 @@ automatically -- there is no save button.
 Open the CDD Dashboard and look for the **Agent Config** section below the
 Workspace section. It is collapsed by default; click the heading to expand it.
 
-![CDD Dashboard Agent Config Section](../images/cdd-dashboard-overview.png)
+![CDD Dashboard Agent Config Section](images/cdd-dashboard-overview.png)
 
 When expanded, the panel displays a grid with a header row and four agent rows:
 

@@ -26,7 +26,7 @@ Use the Spec Map to:
 On first load the graph auto-fits to the viewport so every node and category
 is visible.
 
-![Spec Map overview](../images/cdd-spec-map.png)
+![Spec Map overview](images/cdd-spec-map.png)
 
 The screenshot above shows a typical project with categories such as "Common
 Design Standards", "Coordination & Lifecycle", "CDD Dashboard", "Agent
