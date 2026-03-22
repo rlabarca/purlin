@@ -2792,7 +2792,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     Returns dict with category counts, totals, and summary.
     """
     zeroed = {
-        'web_test': 0, 'test_only': 0, 'skip': 0, 'auto': 0,
+        'web_test': 0, 'test_only': 0, 'skip': 0, 'auto': 0, 'manual': 0,
         'manual_interactive': 0, 'manual_visual': 0, 'manual_hardware': 0,
         'total_auto': 0, 'total_manual': 0, 'summary': 'no QA items',
     }
@@ -2832,8 +2832,17 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
 
     # Determine in-scope manual scenarios based on regression scope
     scoped_scenarios = regression_scope.get('scenarios', [])
-    if declared == 'full' or declared == 'dependency-only':
+    if declared == 'full':
         manual_scenarios = [s for s in scenarios if s.get('is_manual')]
+    elif declared == 'dependency-only':
+        scoped_set = set(scoped_scenarios)
+        if scoped_set:
+            manual_scenarios = [
+                s for s in scenarios
+                if s.get('is_manual') and s['title'] in scoped_set
+            ]
+        else:
+            manual_scenarios = [s for s in scenarios if s.get('is_manual')]
     elif declared.startswith('targeted:'):
         scoped_set = set(scoped_scenarios)
         manual_scenarios = [
@@ -2900,11 +2909,19 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
     total_auto = web_test_count + auto_count
     total_manual = manual_interactive + manual_visual + manual_hardware
 
-    # Summary format per Section 2.14:
-    # "N manual" when manual items exist, "N auto" when only auto items exist
-    if total_manual > 0:
+    # Summary format per qa_verification_effort.md Section 2.3:
+    # The summary reflects QA-facing work.  Visual items on web-test features
+    # are auto-verified by the Builder's web test pass and do not generate QA
+    # action items, so they are excluded from the summary text.  Only @auto-
+    # tagged QA scenarios appear as "auto" in the summary.
+    if auto_count > 0 and total_manual > 0:
+        summary = f'{auto_count} auto, {total_manual} manual'
+    elif total_manual > 0:
         summary = f'{total_manual} manual'
+    elif auto_count > 0:
+        summary = f'{auto_count} auto'
     elif total_auto > 0:
+        # All auto items are visual/web-test (no @auto scenarios)
         summary = f'{total_auto} auto'
     else:
         summary = 'no QA items'
@@ -2914,6 +2931,7 @@ def compute_verification_effort(content, lifecycle_state, regression_scope,
         'test_only': 0,
         'skip': 0,
         'auto': auto_count,
+        'manual': total_manual,
         'manual_interactive': manual_interactive,
         'manual_visual': manual_visual,
         'manual_hardware': manual_hardware,

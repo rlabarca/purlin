@@ -1,1 +1,1 @@
-{"status": "PASS", "passed": 371, "failed": 0, "total": 371, "test_file": "tools/critic/test_critic.py"}
+{"status": "PASS", "passed": 9, "failed": 0, "total": 9, "test_file": "tests/qa_verification_effort/test_verification_effort.py"}

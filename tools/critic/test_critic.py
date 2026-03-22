@@ -6964,6 +6964,8 @@ class TestVerificationEffortInCriticJson(unittest.TestCase):
             self.assertIn('web_test', ve)
             self.assertIn('test_only', ve)
             self.assertIn('skip', ve)
+            self.assertIn('auto', ve)
+            self.assertIn('manual', ve)
             self.assertIn('manual_interactive', ve)
             self.assertIn('manual_visual', ve)
             self.assertIn('manual_hardware', ve)
