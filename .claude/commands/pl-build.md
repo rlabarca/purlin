@@ -20,17 +20,28 @@ If a delivery plan exists at `.purlin/delivery_plan.md`, scope work to the curre
 
 ---
 
-## Parallel B1 Check (delivery plan phases with 2+ features)
+## Execution Group Dispatch (delivery plan with 2+ features)
 
-If a delivery plan exists and the current phase has 2+ features:
+If a delivery plan exists and has PENDING phases:
 
-1. Run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py --intra-phase <current_phase>`.
-2. If a `parallel: true` group exists with 2+ features:
-   - Announce: "Features X and Y are independent -- building in parallel."
-   - Spawn one `builder-worker` sub-agent per feature (see `.claude/agents/builder-worker.md`). Each sub-agent runs in an isolated worktree and executes Steps 0-2 only.
+1. **Build execution groups:** Read `.purlin/cache/dependency_graph.json` and the delivery plan. For each pair of PENDING phases, check if any feature in Phase A depends (transitively) on any feature in Phase B. Group phases with no cross-dependencies into execution groups. Phases are authoring units; groups are scheduling units.
+2. **Identify the current group:** The first group containing non-COMPLETE phases is the active execution group.
+3. **Dispatch the group:**
+   - Mark all phases in the group as IN_PROGRESS in the delivery plan.
+   - Collect all features across all member phases.
+   - Check pairwise feature independence within the group using the dependency graph.
+   - For independent features (2+): announce "Features X and Y are independent -- building in parallel." Spawn one `builder-worker` sub-agent per feature (see `.claude/agents/builder-worker.md`). Each sub-agent runs in an isolated worktree and executes Steps 0-2 only.
+   - For dependent features or single features: use the sequential per-feature loop below.
    - Merge returned branches using the **Robust Merge Protocol** (below).
-   - After all groups complete, proceed to B2 (full verification on merged code).
-3. If no `parallel: true` groups exist, or the phase has only 1 feature: use the existing sequential per-feature loop below.
+   - After all features complete, run B2 across all group features.
+4. **Coupling detection (advisory):** Use Grep to scan test files for shared source imports and `git log` for commit file overlap between parallel features. Report findings as advisory warnings -- they do NOT block parallel dispatch. The merge protocol is the safety net.
+5. **Phase completion within groups:** Individual phases within a group complete independently. If one phase's features all pass while another has a stuck feature, the completed phase is marked COMPLETE and QA can verify it immediately. The incomplete phase becomes a singleton group on the next session.
+6. **Group boundary:** When all phases in a group are COMPLETE, check `auto_start`:
+   - `auto_start: false` (default): STOP the session (see Step 4.E).
+   - `auto_start: true`: advance to the next execution group.
+7. **Worktree branch naming:** Encode the phase in the branch name: `worktree-phase<N>-<feature_stem>`.
+
+If the delivery plan has only 1 PENDING phase with 1 feature, skip group analysis and use the sequential per-feature loop directly.
 
 ### Robust Merge Protocol
 
@@ -112,13 +123,13 @@ After all parallel `builder-worker` sub-agents complete, merge branches sequenti
 
 *   **C. Commit:** `git commit --allow-empty -m "status(scope): TAG [Scope: <type>]"`
 *   **D. Verify:** Run `${TOOLS_ROOT}/cdd/status.sh` and confirm expected state.
-*   **E. Phase check:** If a delivery plan exists and this feature completes the current phase: update plan to COMPLETE, record commit hash, commit plan update. Then check `auto_start`:
+*   **E. Group check:** If a delivery plan exists and this feature completes a phase within the current execution group: update the phase status to COMPLETE in the plan, record commit hash, commit plan update. If the entire execution group is now complete, check `auto_start`:
     *   **`auto_start: false` (default):** STOP the session:
         ```
-        Phase N of M complete -- [short label]
-        Recommended: run QA to verify Phase N. Relaunch Builder for Phase N+1.
+        Execution group complete (Phases N, M of T) -- [short label]
+        Recommended: run QA to verify completed phases. Relaunch Builder for next group.
         ```
-    *   **`auto_start: true`:** Auto-advance to the next PENDING phase. If the next phase has 2+ features, the Parallel B1 Check is mandatory (see bright-line rule: "Parallel dispatch is mandatory for multi-feature phases"). Begin Parallel B1 Check or sequential loop for the next phase. Continue until all phases are complete or context is exhausted.
+    *   **`auto_start: true`:** Auto-advance to the next execution group. If the next group has 2+ features total, the Execution Group Dispatch is mandatory (see bright-line rule). Begin dispatch or sequential loop for the next group. Continue until all groups are complete or context is exhausted.
 
 ---
 
@@ -139,7 +150,7 @@ These rules are authoritative. They apply to all Builder work regardless of cont
 *   **Status tag pre-check gate:** Before composing any status tag commit, verify: (1) if the feature has `> Web Test:` or `> AFT Web:` metadata, confirm `/pl-web-test` passed with zero BUG/DRIFT verdicts this session; (2) if the feature has `## Visual Specification` but no web test metadata, confirm the DISCOVERY has been logged. Do NOT proceed with the status tag until these checks pass.
 *   **Regression feedback:** When processing regression `tests.json` results and a test failure is caused by a stale scenario assertion (not a code bug), create a `[BUG]` discovery with `Action Required: QA` and title prefix `test-scenario:`. Do NOT modify scenario JSON files or harness scripts -- these are QA-owned.
 *   **Regression handoff:** When regression-related work completes (result processing, harness framework building, or fixture tag creation), print the appropriate handoff message per `features/regression_testing.md` Section 2.12 before concluding the session.
-*   **Parallel dispatch is mandatory for multi-feature phases.** When a delivery plan phase has 2+ features, MUST run `phase_analyzer.py --intra-phase` and spawn `builder-worker` sub-agents for any `parallel: true` group BEFORE beginning Step 0 for any feature. Sequential processing of a multi-feature phase without running the analyzer is a protocol violation.
+*   **Execution group dispatch is mandatory for multi-feature groups.** When an execution group contains 2+ independent features (across all its member phases), MUST read `dependency_graph.json`, check pairwise independence, and spawn `builder-worker` sub-agents for independent features BEFORE beginning Step 0 for any feature. Sequential processing of independent features without checking the dependency graph is a protocol violation.
 
 ---
 

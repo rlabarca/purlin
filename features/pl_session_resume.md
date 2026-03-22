@@ -55,6 +55,7 @@ When the saving agent is the Builder, the checkpoint MUST additionally include:
 
 - **Protocol Step** (current step in the per-feature implementation protocol: 0-preflight, 1-acknowledge/plan, 2-implement/document, 3-verify locally, 4-commit status tag)
 - **Delivery Plan Context** (current phase number, phase status, features completed this phase)
+- **Execution Group** (current execution group: which phases are in the group, group number, or "N/A" if no delivery plan)
 - **Work Queue** (remaining features in priority order with priority labels)
 - **Pending Decisions** (builder decisions not yet recorded in companion files)
 
@@ -114,6 +115,7 @@ The checkpoint is human-readable Markdown. The structure uses headings and label
 
 ## Delivery Plan
 Phase 2 of 3 -- IN_PROGRESS
+Execution Group: Group 2 (Phases 2, 3)
 Completed this phase: cdd_status_monitor.md
 Remaining: cdd_spec_map.md, cdd_qa_effort_display.md
 
@@ -180,7 +182,8 @@ feature summary, action items, dependency graph summary, and role-specific exten
 - The startup briefing provides fresh project state. The work plan comes from the checkpoint's
   "Next" list (not the briefing's action items).
 - Exception: if the checkpoint's `## Builder Context` lacks delivery plan info, check
-  `delivery_plan_state` in the briefing.
+  `delivery_plan_state` in the briefing. The briefing uses `current_phases` (array of
+  phase numbers in the current execution group) instead of the older `current_phase`.
 
 **Cold start (no checkpoint):**
 - Use the briefing to generate a full work plan, following the role's base instruction file
@@ -403,4 +406,3 @@ None.
 - Corrupt or missing checkpoint gracefully handled with informative error
 - Checkpoint survives /clear and terminal restarts (written to .purlin/cache/, gitignored)
 - find_work=false respected during restore (no auto-generated work plan)
-

@@ -57,6 +57,7 @@ Append these sections after the common fields:
 ## Builder Context
 **Protocol Step:** <0-preflight | 1-acknowledge/plan | 2-implement/document | 3-verify locally | 4-commit status tag>
 **Delivery Plan:** <Phase X of Y -- STATUS, or "No delivery plan">
+**Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
 **Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
 **Work Queue:**
 1. [PRIORITY] feature_name.md
@@ -159,6 +160,8 @@ git branch --list 'worktree-*'
 
 *   **If found:** Attempt to merge them using the Robust Merge Protocol from `/pl-build`. After successful merges, continue with remaining work.
 *   **If not found:** The sub-agents either completed and merged, or never started. The delivery plan + Critic state tells the Builder what remains.
+
+Branch names encode the phase: `worktree-phase<N>-<feature_stem>`. This allows attribution of orphaned branches to specific phases within an execution group.
 
 ### Step 5 -- Gather Fresh Project State
 

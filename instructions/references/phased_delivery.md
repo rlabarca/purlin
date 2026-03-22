@@ -19,12 +19,16 @@ When `auto_start` is `false` (default), each phase MUST be a separate Builder se
 
 When `auto_start` is `true`, the Builder auto-advances to the next PENDING phase within the same session.
 
+When execution groups are in use, groups are the session boundaries (not individual phases). With `auto_start: false`, the Builder halts at group boundaries. With `auto_start: true`, the Builder auto-advances to the next group. Multiple phases within a group are processed in a single session, with independent features built in parallel.
+
 When a delivery plan exists at session start, the Builder resumes from the next PENDING phase. QA bugs recorded during prior phases are addressed first, before new phase work begins. If the IN_PROGRESS phase was interrupted mid-session, the Builder resumes that phase, skipping features already in TESTING state.
 
 **Scope Reset on Plan Completion:** When the Builder completes the final phase and deletes the delivery plan, the Builder MUST reset the `change_scope` to `full` for every feature that participated in the plan and still has `builder: "TODO"` status. Targeted scopes are artifacts of the phased delivery -- once the plan is gone, any remaining unbuilt work must be visible under a full scope. This prevents scenarios from becoming invisible to future Builder sessions after the delivery plan context is deleted.
 
 ## 10.4 QA Interaction
 The QA Agent MUST check for a delivery plan at `.purlin/delivery_plan.md` during startup. If the plan exists, QA classifies each TESTING feature as either "fully delivered" (appears only in COMPLETE phases) or "more work coming" (appears in a PENDING phase). QA MUST NOT mark a feature as `[Complete]` if it appears in any PENDING phase of the delivery plan, even if all currently-delivered scenarios pass. QA informs the user which features are phase-gated.
+
+When execution groups complete, QA can verify all phases in the completed group simultaneously. If a group partially completes (one phase done, another stuck), QA can verify the completed phase immediately while the stuck phase continues in the next Builder session.
 
 ## 10.5 Phasing is Optional
 Phased delivery is never automatic unless the user has opted into autonomous execution. The Builder proposes phasing based on scope assessment, and the user decides whether to accept phasing, modify the phase breakdown, or proceed with a single-session delivery. At any approval checkpoint, the user may collapse remaining phases, re-split, or abandon phasing entirely.
@@ -119,41 +123,26 @@ The `--continuous` flag has been removed from `pl-run-builder.sh`. Use `auto_sta
 
 ## 10.12 Plan Validation
 
-Every delivery plan MUST pass the phase analyzer (`{tools_root}/delivery/phase_analyzer.py`) before being committed. The analyzer validates that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
+Every delivery plan MUST be validated before being committed. The Builder reads `.purlin/cache/dependency_graph.json` and checks that no dependency cycles exist between phases and that phase ordering respects the feature dependency graph.
 
-**When the Builder creates a plan** (via `/pl-delivery-plan`): The Builder reads `dependency_graph.json` to inform phase assignment, then runs the analyzer after writing the plan file. If cycles are detected, the Builder fixes the plan before committing.
+**When the Builder creates a plan** (via `/pl-delivery-plan`): The Builder reads `dependency_graph.json` to inform phase assignment, then validates the plan after writing it. If cycles are detected, the Builder fixes the plan before committing.
 
 **Common cycle cause:** A feature placed in Phase N that depends on a feature in Phase M (where M > N). The fix is to move the dependent feature to Phase M or later.
 
-## 10.13 Feature-Level B1 Parallelism
+## 10.13 Execution Groups
 
-Within a single delivery phase, independent features can build in parallel using worktree-isolated agents.
+Execution groups combine phasing and parallelization into a single scheduling model. Phases remain the authoring unit (how work is organized in the delivery plan). Execution groups are the scheduling unit (how phases are dispatched for building).
 
-### Eligibility
+**Concept:** After computing transitive dependencies between phases, phases with no cross-dependencies are grouped together. All phases in a group execute in the same Builder session, with independent features across the group built in parallel via `builder-worker` sub-agents.
 
-- The current phase has 2+ features.
-- `phase_analyzer.py --intra-phase <N>` returns a `parallel: true` group with 2+ features.
-- The user has not opted for sequential execution.
+**Example:** A 5-phase plan where Phases 2 and 3 are independent of each other but both depend on Phase 1, and Phase 4 depends on both:
+- Group 1: Phase 1 (sequential foundation)
+- Group 2: Phases 2, 3 (parallel -- no cross-dependencies)
+- Group 3: Phase 4 (depends on Group 2)
 
-### Protocol
-
-1. Run `phase_analyzer.py --intra-phase <current_phase>`.
-2. For each `parallel: true` group, spawn one `builder-worker` sub-agent per feature (see `.claude/agents/builder-worker.md`). Each sub-agent runs in an isolated worktree.
-3. Each sub-agent runs `/pl-build` Steps 0-2 for its assigned feature only. No Step 3 (verification), no Step 4 (status tags). The sub-agent definition enforces these constraints via its system prompt.
-4. After all sub-agents in a group return, merge branches using the **Robust Merge Protocol** (see `/pl-build`): rebase-before-merge with safe-file auto-resolve. Unsafe conflicts fall back to sequential for the affected feature only.
-5. Process `parallel: false` groups sequentially, using the standard per-feature loop (Steps 0-2).
-6. After all groups complete, proceed to B2. B2 runs full verification (tests, web tests, Figma) on the merged code in the main session.
-
-### MCP Note
-
-Agent tool sub-agents do not have MCP connections. This is why verification is deferred to B2 — the main session retains MCP access for web tests and Figma checks.
-
-### Merge Conflict Strategy
-
-Uses the **Robust Merge Protocol** defined in `/pl-build`: rebase-before-merge with safe-file auto-resolve. Safe files (`.purlin/delivery_plan.md`, `CRITIC_REPORT.md`, `.purlin/cache/*`) are auto-resolved by keeping main's version. Unsafe conflicts trigger sequential fallback for the affected feature only -- already-merged features are preserved.
+For the complete dispatch protocol, see `/pl-build` (Execution Group Dispatch section). For plan creation and validation, see `/pl-delivery-plan`.
 
 ### Cross-References
 
-- Phase analyzer spec: `features/phase_analyzer.md`
 - Sub-agent spec: `features/subagent_parallel_builder.md`
 - Builder launcher spec: `features/builder_agent_launcher.md`

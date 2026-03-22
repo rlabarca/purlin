@@ -3,7 +3,6 @@
 > Label: "Tool: Sub-Agent Parallel Builder"
 > Category: "Install, Update & Scripts"
 > Prerequisite: features/builder_agent_launcher.md
-> Prerequisite: features/phase_analyzer.md
 
 ## 1. Overview
 
@@ -40,6 +39,7 @@ Replaces ad-hoc Agent tool calls for intra-phase parallel feature building.
     - MUST NOT modify the delivery plan (`.purlin/delivery_plan.md`).
     - MUST NOT spawn nested sub-agents (no Agent tool access).
     - Commit with `feat(scope): implement FEATURE_NAME`.
+    - Branch naming: `worktree-phase<N>-<feature_stem>` (encodes phase for orphan attribution).
 
 #### 2.1.2 `verification-runner.md`
 
@@ -65,16 +65,18 @@ Runs automated tests in background during B2, keeping test output out of main Bu
 
 ### 2.2 Parallel B1 Protocol
 
-When a delivery plan phase has 2+ features, the Builder MUST use `builder-worker` sub-agents instead of ad-hoc Agent tool calls:
+When a delivery plan exists, the Builder MUST use `builder-worker` sub-agents for parallel feature building. The execution group dispatch protocol in `/pl-build` determines which features are independent:
 
-1.  Run `python3 ${TOOLS_ROOT}/delivery/phase_analyzer.py --intra-phase <current_phase>`.
-2.  If a `parallel: true` group exists with 2+ features:
+1.  Read `.purlin/cache/dependency_graph.json` and the delivery plan.
+2.  Compute execution groups: group PENDING phases with no cross-dependencies.
+3.  For the current execution group, collect all features across member phases and check pairwise independence.
+4.  If independent features exist (2+):
     - Announce: "Features X and Y are independent -- building in parallel."
     - Spawn one `builder-worker` sub-agent per feature.
     - Each sub-agent runs Steps 0-2 only.
     - Merge returned branches using the robust merge protocol (Section 2.4).
     - After all groups complete, proceed to B2.
-3.  If no `parallel: true` groups exist, or the phase has only 1 feature: use the sequential per-feature loop.
+5.  If no independent features exist, or only 1 feature: use the sequential per-feature loop.
 
 ### 2.3 B2 Verification with verification-runner
 
@@ -212,6 +214,7 @@ On `/pl-resume`, the Builder MUST check for orphaned worktree branches matching 
 Add to the Builder Context section of the checkpoint:
 ```markdown
 **Parallel B1 State:** <"idle" | "spawned N sub-agents for features [A, B]" | "merging N branches">
+**Execution Group:** <"N/A" | "Group K: Phases [X, Y] -- N features">
 ```
 
 #### 2.10.3 Auto-Progression Continuity
@@ -248,19 +251,20 @@ The lifecycle content hash MUST exclude blockquote metadata lines (`> Key: Value
 *   `/pl-unit-test` preloading by `verification-runner` auto-syncs the testing protocol.
 *   When a convention changes in the skill file, sub-agents inherit the change on next invocation with zero manual propagation.
 
-### 2.14 Parallel Dispatch Bright-Line Rule
+### 2.14 Execution Group Dispatch Bright-Line Rule
 
-The Parallel B1 Check MUST appear as a named bright-line rule in `/pl-build`,
+The Execution Group Dispatch MUST appear as a named bright-line rule in `/pl-build`,
 not only as a standalone section. The rule text:
 
-> **Parallel dispatch is mandatory for multi-feature phases.** When a delivery
-> plan phase has 2+ features, MUST run `phase_analyzer.py --intra-phase` and
-> spawn `builder-worker` sub-agents for any `parallel: true` group BEFORE
-> beginning Step 0 for any feature. Sequential processing of a multi-feature
-> phase without running the analyzer is a protocol violation.
+> **Execution group dispatch is mandatory for multi-feature groups.** When an execution
+> group contains 2+ independent features (across all its member phases), MUST read
+> `dependency_graph.json`, check pairwise independence, and spawn `builder-worker`
+> sub-agents for independent features BEFORE beginning Step 0 for any feature.
+> Sequential processing of independent features without checking the dependency graph
+> is a protocol violation.
 
-Additionally, Step 4.E auto-progression MUST explicitly reference the Parallel
-B1 Check as mandatory when entering a new phase with 2+ features.
+Additionally, Step 4.E auto-progression MUST explicitly reference the Execution
+Group Dispatch as mandatory when entering a new group with 2+ features.
 
 
 ---
@@ -272,7 +276,7 @@ B1 Check as mandatory when entering a new phase with 2+ features.
 #### Scenario: Parallel features use builder-worker sub-agent
 
     Given a delivery plan phase has features A and B
-    And phase_analyzer.py --intra-phase returns a parallel group with A and B
+    And the dependency graph shows A and B have no cross-dependencies
     When the Builder begins B1 for the phase
     Then the Builder spawns one builder-worker sub-agent per feature
     And each sub-agent runs in an isolated worktree
@@ -532,13 +536,13 @@ B1 Check as mandatory when entering a new phase with 2+ features.
     Then terminal_identity.md remains in COMPLETE state
     And no Builder action item is generated for it
 
-#### Scenario: Parallel dispatch bright-line rule exists in /pl-build
+#### Scenario: Execution group dispatch bright-line rule exists in /pl-build
 
     Given /pl-build is read
     When the Bright-Line Rules section is inspected
-    Then it contains a rule about parallel dispatch being mandatory
-    And the rule requires running phase_analyzer.py before Step 0
-    And the rule labels sequential processing of multi-feature phases as a protocol violation
+    Then it contains a rule about execution group dispatch being mandatory
+    And the rule requires reading dependency_graph.json before Step 0
+    And the rule labels sequential processing of independent features as a protocol violation
 
 ### Manual Scenarios (Human Verification Required)
 

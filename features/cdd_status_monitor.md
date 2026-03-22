@@ -356,7 +356,7 @@ When `role` is `builder`, the briefing adds:
 *   `tombstones` -- Array of pending tombstone files with `file` and `label`.
 *   `anchor_constraints` -- Object keyed by anchor filename, each containing `label` and `forbidden_patterns` (array of `{pattern, scope}` extracted from anchor files).
 *   `in_scope_features` -- Filtered features list with `scenario_count` for scoping work.
-*   `delivery_plan_state` -- Object with `exists` (bool), and when true: `current_phase` (number) and `phase_features` (array of feature filenames in the current phase).
+*   `delivery_plan_state` -- Object with `exists` (bool), and when true: `current_phases` (array of phase numbers in the current execution group) and `phase_features` (array of feature filenames across all phases in the current execution group). When only one phase is active, the array has one element -- backward compatible for consumers reading `current_phases[0]`.
 *   `phasing_recommended` -- Boolean. When `delivery_plan_state.exists` is false, the tool pre-computes the phasing heuristic: true if 3+ in-scope features exist, or 2+ features have `scenario_count >= 5` (HIGH-complexity proxy). Always false when a delivery plan already exists.
 
 #### 2.15.3 Architect Extension
@@ -851,6 +851,14 @@ These scenarios are validated by the Builder's automated test suite.
     When an agent runs tools/cdd/status.sh --startup builder
     Then delivery_plan_state has exists set to false
     And no current_phase or phase_features fields are present
+
+#### Scenario: Startup Briefing with Execution Group
+    Given a delivery plan exists with Phase 2 and Phase 3 both IN_PROGRESS
+    And both phases belong to the same execution group
+    When an agent runs tools/cdd/status.sh --startup builder
+    Then delivery_plan_state has exists set to true
+    And current_phases is an array containing both phase numbers
+    And phase_features includes features from both Phase 2 and Phase 3
 
 #### Scenario: Startup Briefing Phasing Recommendation
     Given no delivery plan exists at .purlin/delivery_plan.md
