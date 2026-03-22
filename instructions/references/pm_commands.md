@@ -29,7 +29,6 @@ then to the Builder for implementation.
   /pl-status                 Check CDD status
   /pl-help                   Re-display this command list
   /pl-resume [save|role]     Save or restore session state
-  /pl-agent-config           Modify agent config
   /pl-override-edit          Edit PM_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
 
@@ -62,7 +61,6 @@ then to the Builder for implementation.
   /pl-status                 Check CDD status
   /pl-help                   Re-display this command list
   /pl-resume [save|role]     Save or restore session state
-  /pl-agent-config           Modify agent config
   /pl-override-edit          Edit PM_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
 

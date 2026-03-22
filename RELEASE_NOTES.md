@@ -3,7 +3,7 @@
 ### RC0.8.4 — 2026-03-20
 
 **Extended Context Models**
-- Opus 4.6 [1M] available as an agent model -- select it in the CDD Dashboard, `/pl-agent-config`, or launcher scripts
+- Opus 4.6 [1M] available as an agent model -- select it in the CDD Dashboard or launcher scripts
 - Cost warning shown once per model ("Extended context uses additional paid credits on Pro plans"), then auto-acknowledged
 - CDD Dashboard displays a confirmation modal when selecting a model with a warning
 
@@ -172,7 +172,7 @@
 - `/pl-isolated-push` and `/pl-isolated-pull` for merge-before-proceed workflow
 
 **Agent Configuration**
-- Dashboard panel and `/pl-agent-config` for per-agent model, effort, permissions, and startup settings
+- Dashboard panel for per-agent model, effort, permissions, and startup settings
 
 **Other Highlights**
 - Spec Map (renamed from Software Map): interactive dependency graph with position persistence

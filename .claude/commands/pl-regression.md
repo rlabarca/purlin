@@ -259,7 +259,7 @@ During Step A2, per feature, apply this decision logic:
 
      Recommendation: Set up a persistent fixture repo.
        1. Create an empty git repo (local or remote)
-       2. Run: /pl-agent-config to set fixture_repo_url
+       2. Set fixture_repo_url in .purlin/config.local.json
        3. Direct Builder to create fixture tags (--qa)
 
      Record this recommendation? [yes / skip]
@@ -296,8 +296,8 @@ has not been built yet.
 
 NEXT STEP:
   Launch Builder with --qa flag:
-      Set PURLIN_BUILDER_QA=true (or /pl-agent-config -> qa_mode: true)
-      Then launch Builder -- it will build the harness runner framework.
+      Run ./pl-run-builder.sh -qa
+      The Builder will build the harness runner framework.
   After Builder finishes, re-run QA to author scenarios.
 ```
 
@@ -309,7 +309,7 @@ Recorded recommendations in tests/qa/fixture_recommendations.md.
 
 NEXT STEP:
   Launch Builder with --qa flag:
-      Set PURLIN_BUILDER_QA=true (or /pl-agent-config -> qa_mode: true)
+      Run ./pl-run-builder.sh -qa
       Tell it: "Create fixture tags for features listed in
       tests/qa/fixture_recommendations.md"
   After Builder finishes, re-run QA to continue authoring.

@@ -121,7 +121,6 @@ Each role can read everything but only writes to its own domain. The Purlin subm
 | `/pl-help` | Re-display the command list for the current role |
 | `/pl-find <topic>` | Discover where a topic belongs in the spec system |
 | `/pl-cdd` | Start, stop, or check the CDD Dashboard |
-| `/pl-agent-config` | Modify per-agent settings (model, effort, permissions) |
 | `/pl-override-edit` | Edit an override file with conflict scanning |
 | `/pl-update-purlin` | Update the Purlin submodule with semantic analysis |
 | `/pl-remote-push` | Push collaboration branch to remote |
