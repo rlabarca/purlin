@@ -11,12 +11,12 @@ QA status rework across the Critic, CDD dashboard, and Builder launcher. Phased 
 **Completion Commit:** 88b794a
 **QA Bugs Addressed:** --
 
-## Phase 2 -- Critic QA Status [IN_PROGRESS]
+## Phase 2 -- Critic QA Status [COMPLETE]
 **Features:** qa_verification_effort.md, critic_role_status.md
-**Completion Commit:** --
+**Completion Commit:** 14c3a40
 **QA Bugs Addressed:** --
 
-## Phase 3 -- Dashboard Display [PENDING]
+## Phase 3 -- Dashboard Display [IN_PROGRESS]
 **Features:** cdd_qa_effort_display.md
 **Completion Commit:** --
 **QA Bugs Addressed:** --
