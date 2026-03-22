@@ -1,12 +1,12 @@
 # Purlin Testing Workflow Guide
 
-A step-by-step guide to the full testing lifecycle: from design through verification to automated regression.
+How to take a feature from idea to verified, automated regression coverage.
 
 ---
 
-## The Big Picture
+## Overview
 
-Purlin uses four specialized agents that work in sequence. Each agent self-discovers work from the previous agent's commits via the Critic -- no manual coordination needed.
+Four agents work in sequence. You launch them one at a time. Each agent discovers its own work from the previous agent's commits -- you don't coordinate between them.
 
 ```
 PM --> Architect --> Builder --> QA
@@ -14,254 +14,318 @@ PM --> Architect --> Builder --> QA
  +-------- discoveries ----------+
 ```
 
-You launch agents one at a time. Each one finds its own work, does it, commits, and tells you what to do next.
+**PM** writes the spec. **Architect** validates it. **Builder** implements it. **QA** verifies it and automates what it can. Discoveries (bugs, disputes) flow back upstream.
 
 ---
 
-## Phase 1: Design (PM Agent)
+## 1. Write the Spec
 
-**When:** You have a Figma design or a feature idea.
+### With Figma (PM Agent)
 
-**Launch:** Start a Claude session with PM instructions loaded.
+Launch a PM session. Give it a Figma URL.
 
-### What the PM does:
+The PM reads the design via Figma MCP and produces a complete feature spec:
 
-1. **Spec authoring** -- Creates or refines `features/<name>.md` with:
-   - Requirements (what the feature does)
-   - Visual Specification (what it looks like -- Token Map, checklists)
-   - QA Scenarios (how to verify it)
-   - Unit Tests (what the Builder automates)
+- **Requirements** -- behavioral rules
+- **Visual Specification** -- Token Map (Figma tokens mapped to your project's design tokens), screen-by-screen checklists
+- **QA Scenarios** -- verification steps (written untagged -- QA classifies them later)
+- **Unit Tests** -- what the Builder will automate
 
-2. **Design ingestion** (if Figma is available) -- `/pl-design-ingest`:
-   - Reads Figma designs via MCP
-   - Generates Token Map (Figma tokens to project tokens)
-   - Creates `brief.json` with structured design data
-   - Populates Visual Specification checklists
+The PM also generates `brief.json` -- structured design data the Builder reads instead of needing Figma access.
 
-3. **Output:** A complete feature spec at `[TODO]` status.
+**Your role:** Provide the Figma URL, answer clarifying questions, approve the spec.
 
-### What you do:
+### Without Figma (Architect Agent)
 
-- Provide Figma URLs or describe the feature
-- Answer clarifying questions
-- Approve the spec
+Launch an Architect session. Describe the feature.
+
+The Architect writes the spec directly: requirements, scenarios, prerequisites. No Visual Specification unless you provide mockups.
+
+**Your role:** Describe what you want, answer questions, approve.
 
 ---
 
-## Phase 2: Validation (Architect Agent)
+## 2. Validate and Classify
 
-**When:** PM has committed feature specs.
+### Architect Agent
 
-**Launch:** Start a Claude session with Architect instructions loaded.
+The Architect runs automatically after specs exist. It:
 
-### What the Architect does:
+1. **Reads every spec** and checks for gaps -- missing scenarios, broken prerequisite links, ambiguous requirements.
+2. **Assigns QA priority tiers** in `QA_OVERRIDES.md`:
+   - `smoke` -- core functionality. If broken, the app is unusable. Verified first.
+   - `standard` -- important but not app-breaking. Default.
+   - `full-only` -- polish and edge cases. Verified last or skipped in quick passes.
+3. **Commits and regenerates the Critic report** so the Builder knows what to build.
 
-1. **Gap analysis** -- Reads specs, checks for missing scenarios, broken prerequisites, structural issues.
-2. **Tier classification** -- Assigns each feature a QA priority tier (`smoke`, `standard`, `full-only`) in `QA_OVERRIDES.md`. This controls the order QA verifies things.
-3. **Anchor node maintenance** -- Updates architectural constraints if needed.
-4. **Commits and runs the Critic** -- Regenerates status for the next agent.
-
-### What you do:
-
-- Approve the work plan
-- Answer architectural questions
+**Your role:** Approve the work plan. Answer architectural questions.
 
 ---
 
-## Phase 3: Implementation (Builder Agent)
+## 3. Build and Test
 
-**When:** Specs are validated (Architect status = DONE).
+### Builder Agent
 
-**Launch:** `./pl-run-builder.sh`
+Launch: `./pl-run-builder.sh`
 
-### What the Builder does:
+The Builder discovers TODO features from the Critic report and for each one:
 
-1. **Reads specs** -- Discovers TODO features from the Critic report.
-2. **Implements** -- Writes application code, scripts, and config.
-3. **Unit tests** (`/pl-unit-test`) -- Writes and runs tests against a 6-point quality rubric. Results go to `tests/<feature>/tests.json`.
-4. **Web tests** (`/pl-web-test`) -- For features with `> Web Test:` metadata and Visual Specification, runs Playwright-based visual verification.
-5. **Status commits:**
-   - Features with **only Unit Tests** (no QA Scenarios): Builder marks `[Complete]` directly. QA is never invoked.
-   - Features with **QA Scenarios**: Builder marks `[Ready for Verification]`. QA picks these up next.
+1. **Implements** -- application code, scripts, config files.
+2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`.
+3. **Runs web tests** -- for features with `> Web Test:` metadata and a Visual Specification, the Builder runs Playwright-based visual verification via `/pl-web-test`.
+4. **Commits a status tag:**
+   - **Unit Tests only** (no QA Scenarios in the spec): Builder marks `[Complete]`. Done. QA never sees this feature.
+   - **Has QA Scenarios**: Builder marks `[Ready for Verification]`. QA picks it up next.
 
-### What you do:
-
-- Approve the work plan
-- Answer implementation questions
-- Run any commands the Builder asks you to execute externally
+**Your role:** Approve the work plan. Answer implementation questions. Run external commands when asked.
 
 ---
 
-## Phase 4: Verification (QA Agent)
+## 4. Verify
 
-**When:** Builder has marked features `[Ready for Verification]`.
+### QA Agent
 
-**Launch:** Start a Claude session with QA instructions loaded.
+Launch a QA session. QA finds all `[Ready for Verification]` features automatically.
 
 ### The Auto-First Protocol
 
-QA follows a 7-step verification protocol, designed to minimize human effort by automating everything it can:
+QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through seven steps:
 
-**Step 1 -- Auto pass:** Credit Builder-verified features (Unit Tests only, cosmetic changes). Zero human time.
+#### Step 1 -- Credit Builder Work
 
-**Step 2 -- Run @auto scenarios:** Scenarios already tagged `@auto` from a prior session have regression JSON authored. QA invokes the harness runner automatically. No human involvement.
+Features the Builder already completed (unit-tests-only, cosmetic changes) are auto-credited. No human time.
 
-**Step 3 -- Classify untagged scenarios:** This is where the magic happens. For each QA Scenario that has **no tag** (first time QA sees it):
-- QA evaluates whether it can be automated (deterministic? no hardware? no subjective judgment?)
-- If yes, QA proposes the automation approach to you (harness type, fixtures, assertions)
-- **You approve:** QA authors regression JSON via `/pl-regression`, runs it, and adds `@auto`. Automated forever.
-- **You decline (or not feasible):** QA adds `@manual`. It enters the manual path and QA never asks again.
-- **Every scenario gets classified.** After QA's first pass, nothing is untagged.
+#### Step 2 -- Run Existing Automations
 
-**Step 4 -- Visual smoke:** For web features (`> Web Test:`), QA invokes `/pl-web-test` for a quick Playwright screenshot and checklist check. For non-web features, QA asks you for a screenshot.
+Scenarios tagged `@auto` from a prior QA session already have regression JSON. QA invokes the harness runner. No human involvement. These accumulate over time -- each QA session gets faster.
 
-**Step 5 -- LLM delegation:** For scenarios needing Claude's analysis capabilities, QA composes the command and asks you to run it.
+#### Step 3 -- Classify New Scenarios
 
-**Step 6 -- Smoke-tier manual first:** QA verifies `@manual` scenarios in priority order: smoke tier first, then standard, then full-only.
+This is the key step. For every QA Scenario that has **no tag** yet (Architect/PM wrote it, QA hasn't seen it):
 
-**Step 7 -- Full manual pass:** Visual checklists grouped by screen (one screenshot, multiple checks). `@manual` scenarios step-by-step.
+1. QA evaluates whether the scenario can be automated: Are the assertions deterministic? No physical hardware? No subjective judgment?
 
-### What you do:
+2. **If automatable**, QA proposes the approach:
+   ```
+   Scenario "Dashboard shows correct feature count" looks automatable.
 
-- Perform the manual verification steps QA describes
-- Say PASS or FAIL for each item
+   Proposed: web_test harness, no fixtures needed, 2 assertions (Tier 2).
+   Author regression JSON and add @auto? [yes / no]
+   ```
+
+3. **You say yes**: QA authors the regression JSON via `/pl-regression`, runs it via the harness runner, and adds `@auto` to the scenario heading. Automated for every future session.
+
+4. **You say no** (or it's not feasible): QA adds `@manual` to the scenario heading. It enters the manual verification path. QA never asks about this scenario again.
+
+**After this step, every scenario is tagged.** Nothing stays untagged.
+
+#### Step 4 -- Visual Smoke
+
+- **Web features** (`> Web Test:` metadata): QA runs `/pl-web-test` for a Playwright screenshot and quick checklist check.
+- **Non-web features**: QA asks you for a screenshot.
+
+Detailed visual comparison happens in Step 7.
+
+#### Step 5 -- LLM Delegation
+
+Some scenarios need Claude to analyze output (complex reasoning, multi-step evaluation). QA composes the exact command and asks you to run it in a separate terminal.
+
+#### Step 6 -- Smoke Manual First
+
+QA presents `@manual` scenarios ordered by priority tier: smoke first (most critical), then standard, then full-only.
+
+#### Step 7 -- Full Manual Pass
+
+Visual checklists grouped by screen (one screenshot, verify multiple items). `@manual` scenarios walked through step-by-step.
+
+### What You Do During Verification
+
+- Perform the steps QA describes and say PASS or FAIL
 - Provide screenshots when asked
-- Run external commands when asked (copy-paste from QA's output)
+- Copy-paste and run commands QA prints
+- Say "yes" or "no" when QA proposes automation (Step 3)
 
-### Completion:
+### After Verification
 
-- Features with zero discoveries: QA marks `[Complete] [Verified]`
-- Features with discoveries: QA records BUGs/DISCOVERYs, routes to Builder/Architect
-
----
-
-## Phase 5: Regression (QA Agent -- `/pl-regression`)
-
-**When:** Features are verified and you want automated regression coverage.
-
-**Launch:** Same QA session, or a new one. QA auto-detects regression work.
-
-### The regression flow has three modes:
-
-### Author Mode
-
-QA discovers features that need regression scenario files and authors them one at a time.
-
-**Fixture setup** -- When a scenario needs controlled project state:
-
-1. **QA checks for a fixture repo.** If none exists, QA asks you:
-   ```
-   This feature needs controlled test state, but no fixture repo exists.
-
-   Options:
-     1. Create a local fixture repo (at .purlin/runtime/fixture-repo)
-     2. Use a remote repo (provide the git URL)
-     3. Skip fixtures for now (use inline setup instead)
-
-   Choice? [1 / 2 <url> / 3]
-   ```
-
-2. **For Option 1:** QA runs `fixture init` and creates the local repo immediately.
-
-3. **For Option 2:** You provide a git URL (any empty git repo works -- GitHub, GitLab, local bare repo). QA configures it.
-
-4. **QA creates fixture tags** (`fixture add-tag`) for simple/moderate state directly. Each tag is an immutable snapshot of project state for one test scenario. Tags follow the convention: `main/<feature-name>/<scenario-slug>`.
-
-5. **For complex fixtures** (elaborate git history, database state): QA records a recommendation and routes to the Builder via a `-qa` session.
-
-After authoring, QA gives you a handoff message:
-```
-Regression scenarios authored: 8 features.
-
-NEXT STEPS:
-  1. Run regression tests:
-         ./tests/qa/run_all.sh
-  2. When tests finish, launch Builder to process results and fix failures.
-```
-
-### Run Mode
-
-QA composes a copy-pasteable command for you to run in a separate terminal. You run it, tell QA when it finishes.
-
-### Process Mode
-
-QA reads the results, creates BUG discoveries for failures, reports tier distribution (Tier 1 = keyword match, Tier 2 = specific finding, Tier 3 = state verification), and flags shallow suites.
+- **Zero discoveries**: QA marks the feature `[Complete] [Verified]`.
+- **Bugs found**: QA records them as discoveries and routes to Builder (code bugs) or Architect (spec issues).
 
 ---
 
-## Phase 6: Test Infrastructure (Builder -- `-qa` flag)
+## 5. Set Up Fixtures
 
-**When:** QA has recorded fixture recommendations that need Builder expertise, or regression harness infrastructure needs building.
+### When QA Needs Controlled State
 
-**Launch:** `./pl-run-builder.sh -qa`
+Some scenarios need a specific project state to test against -- particular config values, git history, branch structures. Purlin uses **fixture tags**: immutable git tags in a dedicated repo, each representing a snapshot of project state.
 
-### What happens:
+When QA encounters a scenario that needs fixtures during regression authoring, it checks for a fixture repo. If none exists:
 
-- Builder sees **only** Test Infrastructure category features.
-- Reads `tests/qa/fixture_recommendations.md` for pending fixture work.
-- Creates complex fixture tags, builds harness runner infrastructure, etc.
-- Normal features are completely hidden -- no risk of mixing concerns.
+```
+This feature needs controlled test state, but no fixture repo exists.
 
-After completing, the Builder recommends returning to QA:
+Options:
+  1. Create a local fixture repo (at .purlin/runtime/fixture-repo)
+  2. Use a remote repo (provide the git URL)
+  3. Skip fixtures for now (use inline setup instead)
+
+Choice? [1 / 2 <url> / 3]
+```
+
+- **Option 1** -- QA creates a local bare git repo immediately. Good for most projects.
+- **Option 2** -- You provide any git URL (GitHub, GitLab, Bitbucket, local bare repo). QA configures it. Good for team-shared fixtures.
+- **Option 3** -- QA uses inline setup commands in the regression JSON. Good for simple state.
+
+### How Fixture Tags Work
+
+```
+.purlin/runtime/fixture-repo/        <-- bare git repo
+  tags:
+    main/cdd_branch_collab/sync-ahead
+    main/cdd_branch_collab/sync-diverged
+    main/cdd_startup/expert-mode
+```
+
+**Naming:** `main/<feature-name>/<scenario-slug>`
+
+Each tag is an immutable snapshot. The harness runner checks out the tag into a temp directory, runs the test against that state, and cleans up.
+
+### Who Creates Fixture Tags
+
+**QA** creates most fixtures directly during regression authoring (`fixture add-tag`). For each scenario, QA constructs the needed project state in a temp directory and tags it.
+
+**Builder** (launched with `./pl-run-builder.sh -qa`) handles complex fixtures that need application-level knowledge -- elaborate build states, database migrations, multi-branch git histories. QA records these as recommendations in `tests/qa/fixture_recommendations.md`.
+
+### Fixture Lifecycle
+
+- Tags are **immutable** -- once created, they never change.
+- When a feature is retired, `fixture prune` identifies orphan tags for cleanup.
+- A setup script can regenerate all tags deterministically from project files, so the fixture repo is derived (not precious state).
+
+---
+
+## 6. Build Test Infrastructure
+
+### Builder with `-qa` Flag
+
+Launch: `./pl-run-builder.sh -qa`
+
+This is a separate mode. The Builder sees **only** Test Infrastructure features -- normal application features are hidden. Use it when:
+
+- QA recorded fixture recommendations that need Builder expertise
+- The regression harness runner framework needs to be built
+- Test support tooling needs updates
+
+The Builder reads `tests/qa/fixture_recommendations.md`, creates the requested fixture tags, and hands back to QA:
+
 ```
 Created fixture tags for 3 features in .purlin/runtime/fixture-repo.
 
 NEXT STEP:
   Launch QA to continue regression scenario authoring.
-  QA will use the new fixtures automatically.
+```
+
+After normal Builder work is done, the Builder also tells you if test infrastructure is waiting:
+
+```
+All application features complete.
+3 Test Infrastructure features pending. Use ./pl-run-builder.sh -qa for a focused session.
 ```
 
 ---
 
-## Quick Reference: Agent Sequencing
+## 7. Run Regression
 
-| Situation | Launch |
-|-----------|--------|
-| New feature from Figma | PM, then Architect, then Builder, then QA |
-| New feature, no design | Architect, then Builder, then QA |
-| Bug found in QA | Builder (fixes code), then QA (re-verifies) |
-| Spec dispute | Architect (resolves), then Builder, then QA |
-| Regression authoring | QA with `/pl-regression` |
-| Complex fixture creation | Builder with `-qa` flag |
-| All features done, ready to ship | Architect with `/pl-release-run` |
+### Executing the Suite
+
+After QA has authored regression scenarios, you run them yourself in a separate terminal:
+
+```bash
+./tests/qa/run_all.sh
+```
+
+This discovers all scenario JSON files in `tests/qa/scenarios/`, runs each one via the harness runner, continues past failures, and prints a summary:
+
+```
+Regression Summary:
+  PASS  instruction_audit (5/5)
+  FAIL  branch_collab (3/5)
+  PASS  cdd_startup (8/8)
+
+Total: 16/18 passed (3 features, 1 failure)
+```
+
+### Processing Results
+
+Launch QA after the run completes. QA reads the results, creates BUG discoveries for failures, and reports assertion quality:
+
+```
+Tier Distribution: T1=3  T2=12  T3=6  (untagged=0)
+```
+
+- **Tier 1** -- keyword presence ("found the word `error`"). Vulnerable to false positives.
+- **Tier 2** -- specific finding (exact file name, defect identifier). Reliable.
+- **Tier 3** -- state verification (checked the agent's output artifact). Most robust.
+
+Suites with >50% Tier 1 assertions get flagged as `[SHALLOW]`.
+
+### The Feedback Loop
+
+```
+QA authors scenarios --> you run tests --> failures?
+                                            |
+                              yes: launch Builder to fix code
+                                    then re-run tests
+                              no:  done, ship it
+```
+
+If a test failure is actually a broken test (not a code bug), Builder flags it for QA with `Action Required: QA`. QA fixes the scenario JSON.
 
 ---
 
-## How Fixture Tags Work
+## Quick Reference
 
-Fixture tags are immutable git tags in a dedicated bare repo. Each tag is a snapshot of project state needed for one test scenario.
+### Agent Sequence by Situation
+
+| You want to... | Launch sequence |
+|----------------|-----------------|
+| Build a new feature from Figma | PM, Architect, Builder, QA |
+| Build a feature without design | Architect, Builder, QA |
+| Fix bugs found during QA | Builder, then QA |
+| Resolve a spec dispute | Architect, then Builder, then QA |
+| Set up regression coverage | QA (auto-detects via `/pl-regression`) |
+| Create complex test fixtures | Builder with `-qa` |
+| Ship a release | Architect with `/pl-release-run` |
+
+### Scenario Tag Lifecycle
 
 ```
-.purlin/runtime/fixture-repo/     <-- bare git repo (local)
-  tags:
-    main/cdd_branch_collab/sync-state-ahead
-    main/cdd_branch_collab/sync-state-diverged
-    main/cdd_startup/expert-mode
+Architect/PM writes scenario
+        |
+   (untagged)
+        |
+  QA first encounter
+        |
+  "Can this be automated?"
+       / \
+     yes   no
+      |     |
+   @auto  @manual
 ```
 
-**Tag naming:** `<project-ref>/<feature-name>/<scenario-slug>`
+- **Untagged** -- not yet seen by QA. Treated as manual for planning.
+- **@auto** -- QA authored regression JSON. Harness runner executes it automatically.
+- **@manual** -- requires human judgment. QA never re-proposes automation.
 
-**Who creates them:**
-- **QA** creates simple/moderate fixtures during regression authoring
-- **Builder** (in `-qa` mode) creates complex fixtures requiring application knowledge
+Tags are QA outputs. Architects and PMs write scenarios without tags.
 
-**Who consumes them:**
-- The **harness runner** checks out a tag, runs the test, cleans up
-- The **Critic** validates declared tags exist (flags missing ones)
+### Key Commands
 
-**Lifecycle:**
-- Tags are immutable -- once created, they do not change
-- When a feature is retired (tombstoned), `fixture prune` flags orphan tags
-- A setup script can regenerate all tags deterministically from project files
-
----
-
-## Tips
-
-- **Each agent self-discovers work.** You do not need to tell the Builder what to implement -- it reads the Critic report and finds TODO features automatically.
-- **Commits are the coordination mechanism.** Agents communicate through git commits and the Critic report, not chat.
-- **Scenarios start untagged.** Architect/PM writes them without tags. QA classifies them on first encounter: `@auto` (automated) or `@manual` (human-only). Over time, your `@auto` count grows and verification gets faster.
-- **`@auto` = regression JSON exists.** The harness runner executes these without human involvement. QA authored the automation when it first classified the scenario.
-- **`@manual` = human judgment required.** QA will never re-propose automation for these. Use for hardware tests, subjective visual checks, or complex multi-step interactions.
-- **The `-qa` flag is for test infrastructure only.** Normal Builder sessions hide Test Infrastructure features. Use `-qa` when QA needs fixture or harness work done.
-- **Smoke tier = verify first.** The Architect classifies features as smoke/standard/full-only. QA verifies smoke features first -- these are the ones that break everything if they fail.
+| Command | Who | What it does |
+|---------|-----|-------------|
+| `./pl-run-builder.sh` | Builder | Normal implementation session |
+| `./pl-run-builder.sh -qa` | Builder | Test infrastructure only |
+| `./tests/qa/run_all.sh` | You (terminal) | Run full regression suite |
+| `/pl-verify` | QA | Batched verification workflow |
+| `/pl-regression` | QA | Author/run/process regression scenarios |
+| `/pl-web-test` | Builder, QA | Playwright visual verification |
+| `/pl-status` | Any agent | Show Critic report and feature status |
