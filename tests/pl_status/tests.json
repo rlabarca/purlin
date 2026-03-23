@@ -1,0 +1,73 @@
+{
+  "status": "PASS",
+  "passed": 16,
+  "failed": 0,
+  "total": 16,
+  "test_file": "tools/test_support/test_pl_status.py",
+  "details": [
+    {
+      "test": "test_first_line_declares_shared_all_roles (__main__.TestAllRolesCanInvoke.test_first_line_declares_shared_all_roles)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_is_purlin_command_declaration (__main__.TestAllRolesCanInvoke.test_first_line_is_purlin_command_declaration)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_role_gate_pattern (__main__.TestAllRolesCanInvoke.test_no_role_gate_pattern)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_owned_files_listed (__main__.TestArchitectSeesUncommittedChangesCheck.test_architect_owned_files_listed)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_specific_section_present (__main__.TestArchitectSeesUncommittedChangesCheck.test_architect_specific_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_commit_message_proposal (__main__.TestArchitectSeesUncommittedChangesCheck.test_commit_message_proposal)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_git_diff_check_present (__main__.TestArchitectSeesUncommittedChangesCheck.test_git_diff_check_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_git_status_check_present (__main__.TestArchitectSeesUncommittedChangesCheck.test_git_status_check_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_feature_counts_instruction (__main__.TestOutputIncludesFeatureCountsByStatus.test_feature_counts_instruction)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_mentions_complete_status (__main__.TestOutputIncludesFeatureCountsByStatus.test_mentions_complete_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_mentions_testing_status (__main__.TestOutputIncludesFeatureCountsByStatus.test_mentions_testing_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_mentions_todo_status (__main__.TestOutputIncludesFeatureCountsByStatus.test_mentions_todo_status)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_references_status_sh (__main__.TestOutputIncludesFeatureCountsByStatus.test_references_status_sh)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_filtered_view_documented (__main__.TestRoleFilteredView.test_filtered_view_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_flag_present (__main__.TestRoleFilteredView.test_role_flag_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_role_flag_used_with_status_sh (__main__.TestRoleFilteredView.test_role_flag_used_with_status_sh)",
+      "status": "PASS"
+    }
+  ]
+}
