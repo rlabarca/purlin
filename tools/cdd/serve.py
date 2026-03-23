@@ -2000,13 +2000,13 @@ def _role_badge_html(status):
 
 
 def _qa_badge_html(entry):
-    """Returns a QA badge with two-line effort display.
+    """Returns a QA badge with effort summary as tooltip.
 
     AUTO is a real Critic-computed QA status (read from role_status.qa).
-    For TODO and AUTO statuses, a second sub-line shows the effort summary
-    from verification_effort.summary (10px, var(--purlin-dim)).
-    No sub-line when summary is "awaiting builder" or "no QA items".
-    Non-TODO/AUTO statuses show plain badge with no sub-line.
+    For TODO and AUTO statuses, the effort summary from
+    verification_effort.summary is rendered as a title attribute (tooltip)
+    on the badge span. Single-line only -- no sub-line divs (Section 2.2.2).
+    Non-TODO/AUTO statuses show plain badge with no tooltip.
     """
     qa = entry.get("qa")
     if qa not in ("TODO", "AUTO"):
@@ -2017,15 +2017,12 @@ def _qa_badge_html(entry):
     ve = entry.get("verification_effort")
     summary = ve.get("summary", "") if ve else ""
 
-    # No sub-line for non-actionable summaries
+    # No tooltip for non-actionable summaries
     if summary in ("awaiting builder", "no QA items", ""):
         return f'<span class="{badge_css}">{qa}</span>'
 
-    # Two-line layout: badge on line 1, effort summary sub-line on line 2
-    return (
-        f'<span class="{badge_css}">{qa}</span>'
-        f'<div class="effort-subline">{summary}</div>'
-    )
+    # Single-line badge with effort summary as tooltip
+    return f'<span class="{badge_css}" title="{summary}">{qa}</span>'
 
 
 def _format_category_counts(counts):
@@ -2745,7 +2742,6 @@ pre{{background:var(--purlin-bg);padding:6px;border-radius:3px;white-space:pre-w
 .st-disputed{{color:var(--purlin-status-warning);font-weight:bold}}
 .st-auto{{color:var(--purlin-status-auto);font-weight:bold}}
 .st-na{{color:var(--purlin-dim);font-weight:bold}}
-.effort-subline{{font-size:10px;color:var(--purlin-dim);font-weight:normal;line-height:1.2;margin-top:1px}}
 /* Branch Collaboration Operation Modal Spinner */
 @keyframes bc-spin{{ from{{transform:rotate(0deg)}} to{{transform:rotate(360deg)}} }}
 .bc-op-spinner{{
