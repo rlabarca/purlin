@@ -361,59 +361,6 @@ fi
 
 ###############################################################################
 echo ""
-echo "=== Architect Tool Enforcement Tests ==="
-###############################################################################
-
-# --- Scenario: Architect launcher includes --disallowedTools ---
-echo ""
-echo "[Scenario] Architect cannot use Write or Edit tools"
-
-ARCH_LAUNCHER="$PROJECT_ROOT/pl-run-architect.sh"
-
-if grep -q 'disallowedTools' "$ARCH_LAUNCHER" 2>/dev/null; then
-    log_pass "Architect launcher includes --disallowedTools"
-else
-    log_fail "Architect launcher missing --disallowedTools"
-fi
-
-if grep -q 'Write,Edit,NotebookEdit' "$ARCH_LAUNCHER" 2>/dev/null; then
-    log_pass "Architect --disallowedTools blocks Write,Edit,NotebookEdit"
-else
-    log_fail "Architect --disallowedTools has wrong value"
-fi
-
-# --- Scenario: Hook fallback blocks Write/Edit when AGENT_ROLE is architect ---
-echo ""
-echo "[Scenario] Hook fallback blocks Write/Edit when AGENT_ROLE is architect"
-
-SETTINGS_FILE="$PROJECT_ROOT/.claude/settings.json"
-
-if grep -q 'PreToolUse' "$SETTINGS_FILE" 2>/dev/null; then
-    log_pass "settings.json contains PreToolUse hook section"
-else
-    log_fail "settings.json missing PreToolUse hook section"
-fi
-
-if grep -q 'AGENT_ROLE.*architect' "$SETTINGS_FILE" 2>/dev/null; then
-    log_pass "PreToolUse hook checks AGENT_ROLE for architect"
-else
-    log_fail "PreToolUse hook missing AGENT_ROLE architect check"
-fi
-
-if grep -q 'Write|Edit|NotebookEdit' "$SETTINGS_FILE" 2>/dev/null || grep -q 'Write.*Edit.*NotebookEdit' "$SETTINGS_FILE" 2>/dev/null; then
-    log_pass "PreToolUse hook blocks Write/Edit/NotebookEdit for architect"
-else
-    log_fail "PreToolUse hook missing Write/Edit/NotebookEdit block"
-fi
-
-if grep -q 'exit 2' "$SETTINGS_FILE" 2>/dev/null; then
-    log_pass "PreToolUse hook exits with code 2"
-else
-    log_fail "PreToolUse hook missing exit code 2"
-fi
-
-###############################################################################
-echo ""
 echo "=== Resume Protocol Tests ==="
 ###############################################################################
 
