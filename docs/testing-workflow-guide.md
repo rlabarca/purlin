@@ -3,12 +3,12 @@
 How to take a feature from idea to verified, automated regression coverage.
 
 > **Implementation status:** The auto-first protocol, `@auto`/`@manual` scenario
-> classification, `-qa` launcher flag, and two-line QA dashboard display are
-> specified and partially implemented. The core mechanisms (AUTO status, `@auto`
-> parsing, harness runner, fixture tools, two-line display) are working. The
-> `@manual` tag parsing and the untagged-scenario classification flow (Step 3)
-> are specified but pending Builder implementation. Until then, QA classifies
-> scenarios via `/pl-regression` author mode and manual tagging.
+> classification, and two-line QA dashboard display are specified and partially
+> implemented. The core mechanisms (AUTO status, `@auto` parsing, harness runner,
+> fixture tools, two-line display) are working. The `@manual` tag parsing and
+> the untagged-scenario classification flow (Step 3) are specified but pending
+> Builder implementation. Until then, QA classifies scenarios via
+> `/pl-regression-author` and manual tagging.
 
 ---
 
@@ -133,7 +133,7 @@ This is the key step. For every QA Scenario that has **no tag** yet (Architect/P
    Author regression JSON and add @auto? [yes / no]
    ```
 
-3. **You say yes**: QA authors the regression JSON via `/pl-regression`, runs it via the harness runner, and adds `@auto` to the scenario heading. Automated for every future session.
+3. **You say yes**: QA authors the regression JSON via `/pl-regression-author`, runs it via the harness runner, and adds `@auto` to the scenario heading. Automated for every future session.
 
 4. **You say no** (or it's not feasible): QA adds `@manual` to the scenario heading. It enters the manual verification path. QA never asks about this scenario again.
 
@@ -282,7 +282,7 @@ If a test failure is actually a broken test (not a code bug), Builder flags it f
 | Build a feature without design | Architect, Builder, QA |
 | Fix bugs found during QA | Builder, then QA |
 | Resolve a spec dispute | Architect, then Builder, then QA |
-| Set up regression coverage | QA (auto-detects via `/pl-regression`) |
+| Set up regression coverage | QA (via `/pl-regression-author`) |
 | Create complex test fixtures | Builder |
 | Ship a release | Architect with `/pl-release-run` |
 
@@ -315,6 +315,8 @@ Tags are QA outputs. Architects and PMs write scenarios without tags.
 | `./pl-run-builder.sh` | Builder | Implementation session |
 | `./tests/qa/run_all.sh` | You (terminal) | Run full regression suite |
 | `/pl-verify` | QA | Batched verification workflow |
-| `/pl-regression` | QA | Author/run/process regression scenarios |
+| `/pl-regression-author` | QA | Author regression scenario JSON files |
+| `/pl-regression-run` | QA | Execute existing regression scenarios |
+| `/pl-regression-evaluate` | QA | Process results, create BUG discoveries |
 | `/pl-web-test` | Builder | Visual verification via Playwright |
 | `/pl-status` | Any agent | Show Critic report and feature status |

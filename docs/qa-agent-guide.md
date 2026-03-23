@@ -241,7 +241,9 @@ If you need to stop mid-session, respond with `stop` or `partial` during Phase B
 | `/pl-verify [name]` | Run interactive verification (scoped or batch mode). |
 | `/pl-complete <name>` | Mark a verified feature as complete. |
 | `/pl-discovery [name]` | Record a structured discovery (BUG, DISCOVERY, INTENT_DRIFT, SPEC_DISPUTE). |
-| `/pl-regression` | Author, run, or process regression scenarios. |
+| `/pl-regression-author` | Author regression scenario JSON files. |
+| `/pl-regression-run` | Execute existing regression scenarios. |
+| `/pl-regression-evaluate` | Process regression results, create BUG discoveries. |
 | `/pl-web-test [name]` | Run Playwright visual verification. |
 | `/pl-qa-report` | Summary of open discoveries and QA status. |
 | `/pl-status` | Check CDD status and action items. |

@@ -74,7 +74,7 @@ For each `@auto`-tagged QA scenario (classified in a prior session) that was NOT
 
 1.  **Check for regression JSON:** Look for `tests/qa/scenarios/<feature_name>.json`.
     *   If found: proceed to invocation.
-    *   If missing: invoke `/pl-regression` (author mode) to create the regression JSON for this feature. Then proceed to invocation.
+    *   If missing: invoke `/pl-regression-author` to create the regression JSON for this feature. Then proceed to invocation.
 
 2.  **Start servers if needed:** If the scenario requires a running server (e.g., feature has `> Web Test:` metadata or regression JSON has `setup_commands`):
     *   Check target port is not in use.
@@ -106,7 +106,7 @@ For each QA scenario in scope with NO tag (neither `@auto` nor `@manual`) that w
 
 > **Auto-start override:** When `auto_start` is `true`, skip the
 > per-scenario user proposal (substeps 2-5 below). Instead: auto-classify
-> each scenario — if automation-feasible, author via `/pl-regression`, run
+> each scenario — if automation-feasible, author via `/pl-regression-author`, run
 > via harness, and tag `@auto`; if not feasible, tag `@manual`. Batch-commit
 > all tag changes. Report all classifications in the Phase A Summary.
 
@@ -120,7 +120,7 @@ For each QA scenario in scope with NO tag (neither `@auto` nor `@manual`) that w
     ```
 
 3.  **If user approves ("yes"):**
-    *   Invoke `/pl-regression` (author mode) to create or append to the regression JSON.
+    *   Invoke `/pl-regression-author` to create or append to the regression JSON.
     *   Run the new scenario via the harness runner (same process as Step 3).
     *   Add `@auto` tag to the scenario heading in the feature file.
     *   Commit the tag change and regression JSON.
