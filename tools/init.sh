@@ -528,27 +528,18 @@ has_compact = any(
 if not has_compact:
     settings['hooks']['SessionStart'].append(compact_entry)
 
-# Add PreToolUse hook for Architect tool enforcement (fallback for --disallowedTools)
-pretool_entry = {
-    'matcher': '',
-    'hooks': [
-        {
-            'type': 'command',
-            'command': 'if [ \"\$AGENT_ROLE\" = \"architect\" ]; then case \"\$TOOL_NAME\" in Write|Edit|NotebookEdit) exit 2;; esac; fi'
-        }
+# Remove stale PreToolUse architect hook (legacy tool enforcement, now instruction-based)
+if 'PreToolUse' in settings['hooks']:
+    settings['hooks']['PreToolUse'] = [
+        entry for entry in settings['hooks']['PreToolUse']
+        if not (
+            isinstance(entry, dict)
+            and any('AGENT_ROLE' in h.get('command', '') for h in entry.get('hooks', []) if isinstance(h, dict))
+        )
     ]
-}
-
-if 'PreToolUse' not in settings['hooks']:
-    settings['hooks']['PreToolUse'] = []
-
-has_pretool_architect = any(
-    'AGENT_ROLE' in (entry.get('hooks', [{}])[0].get('command', '') if entry.get('hooks') else '')
-    for entry in settings['hooks']['PreToolUse']
-    if isinstance(entry, dict)
-)
-if not has_pretool_architect:
-    settings['hooks']['PreToolUse'].append(pretool_entry)
+    # Clean up empty PreToolUse array
+    if not settings['hooks']['PreToolUse']:
+        del settings['hooks']['PreToolUse']
 
 # Validate and write atomically
 result = json.dumps(settings, indent=4)

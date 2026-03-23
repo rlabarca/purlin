@@ -1003,18 +1003,18 @@ echo ""
 echo "[Scenario] Hook Merges Into Existing Settings"
 setup_sandbox
 
-# Create existing settings.json with a custom PreToolUse hook BEFORE init
+# Create existing settings.json with a custom PostToolUse hook BEFORE init
 mkdir -p "$PROJECT/.claude"
 cat > "$PROJECT/.claude/settings.json" << 'HOOK_EOF'
 {
     "hooks": {
-        "PreToolUse": [
+        "PostToolUse": [
             {
                 "matcher": "custom_tool",
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "echo custom pre-tool hook"
+                        "command": "echo custom post-tool hook"
                     }
                 ]
             }
@@ -1040,18 +1040,18 @@ else
     log_fail "Purlin SessionStart clear hook NOT added"
 fi
 
-# Check that the PreToolUse hook is preserved
+# Check that the PostToolUse hook is preserved
 if python3 -c "
 import json, sys
 with open('$PROJECT/.claude/settings.json') as f:
     s = json.load(f)
-pre_hooks = s.get('hooks', {}).get('PreToolUse', [])
-found = any(e.get('matcher') == 'custom_tool' for e in pre_hooks if isinstance(e, dict))
+post_hooks = s.get('hooks', {}).get('PostToolUse', [])
+found = any(e.get('matcher') == 'custom_tool' for e in post_hooks if isinstance(e, dict))
 sys.exit(0 if found else 1)
 " 2>/dev/null; then
-    log_pass "Pre-existing PreToolUse hook preserved"
+    log_pass "Pre-existing PostToolUse hook preserved"
 else
-    log_fail "Pre-existing PreToolUse hook was lost"
+    log_fail "Pre-existing PostToolUse hook was lost"
 fi
 
 # Check that customSetting is preserved
@@ -1145,6 +1145,102 @@ sys.exit(0 if has_custom and has_clear else 1)
     log_pass "Both existing 'custom' and Purlin 'clear' hooks present"
 else
     log_fail "Missing either 'custom' or 'clear' hook in SessionStart"
+fi
+
+cleanup_sandbox
+
+# --- Scenario: Refresh Removes Stale PreToolUse Architect Hook ---
+echo ""
+echo "[Scenario] Refresh Removes Stale PreToolUse Architect Hook"
+setup_sandbox
+
+# First run: full init
+"$INIT_SH" > /dev/null 2>&1
+
+# Inject a stale PreToolUse architect hook AND a user's custom PreToolUse hook
+python3 -c "
+import json, sys
+
+settings_path = sys.argv[1]
+with open(settings_path, 'r') as f:
+    settings = json.load(f)
+
+# Add stale architect hook
+stale_hook = {
+    'matcher': '',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': 'if [ \"\$AGENT_ROLE\" = \"architect\" ]; then case \"\$TOOL_NAME\" in Write|Edit|NotebookEdit) exit 2;; esac; fi'
+        }
+    ]
+}
+
+# Add user's custom PreToolUse hook
+user_hook = {
+    'matcher': 'custom_lint',
+    'hooks': [
+        {
+            'type': 'command',
+            'command': 'echo user linting hook'
+        }
+    ]
+}
+
+settings.setdefault('hooks', {})
+settings['hooks']['PreToolUse'] = [stale_hook, user_hook]
+
+with open(settings_path, 'w') as f:
+    json.dump(settings, f, indent=4)
+    f.write('\n')
+" "$PROJECT/.claude/settings.json"
+
+# Run refresh
+"$INIT_SH" > /dev/null 2>&1
+
+# Check that the stale architect hook was removed
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+pre_hooks = s.get('hooks', {}).get('PreToolUse', [])
+found = any(
+    any('AGENT_ROLE' in h.get('command', '') for h in entry.get('hooks', []) if isinstance(h, dict))
+    for entry in pre_hooks if isinstance(entry, dict)
+)
+sys.exit(1 if found else 0)
+" 2>/dev/null; then
+    log_pass "Stale PreToolUse architect hook removed on refresh"
+else
+    log_fail "Stale PreToolUse architect hook still present after refresh"
+fi
+
+# Check that user's custom PreToolUse hook is preserved
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+pre_hooks = s.get('hooks', {}).get('PreToolUse', [])
+found = any(e.get('matcher') == 'custom_lint' for e in pre_hooks if isinstance(e, dict))
+sys.exit(0 if found else 1)
+" 2>/dev/null; then
+    log_pass "User's custom PreToolUse hook preserved"
+else
+    log_fail "User's custom PreToolUse hook was removed"
+fi
+
+# Check that SessionStart hooks remain intact
+if python3 -c "
+import json, sys
+with open('$PROJECT/.claude/settings.json') as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('SessionStart', [])
+has_clear = any(e.get('matcher') == 'clear' for e in hooks if isinstance(e, dict))
+sys.exit(0 if has_clear else 1)
+" 2>/dev/null; then
+    log_pass "SessionStart hooks remain intact after stale hook removal"
+else
+    log_fail "SessionStart hooks damaged during stale hook removal"
 fi
 
 cleanup_sandbox
