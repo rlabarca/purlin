@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "passed": 13,
+  "failed": 0,
+  "total": 13,
+  "test_file": "tools/test_support/test_pl_propose.py",
+  "details": [
+    {
+      "test": "test_anchor_tag_appears_after_general_proposal (__main__.TestAnchorNodeProposalUsesCorrectTag.test_anchor_tag_appears_after_general_proposal)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_new_anchor_tag_present (__main__.TestAnchorNodeProposalUsesCorrectTag.test_new_anchor_tag_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_visibility_via_critic (__main__.TestProposalCommittedToGit.test_architect_visibility_via_critic)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_chat_not_durable_channel (__main__.TestProposalCommittedToGit.test_chat_not_durable_channel)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_commit_instruction_present (__main__.TestProposalCommittedToGit.test_commit_instruction_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_committed_entry_is_only_valid_output (__main__.TestProposalCommittedToGit.test_committed_entry_is_only_valid_output)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_companion_file_recording_described (__main__.TestProposalRecordedInCompanionFile.test_companion_file_recording_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_proposed_change_described (__main__.TestProposalRecordedInCompanionFile.test_proposed_change_described)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_rationale_required (__main__.TestProposalRecordedInCompanionFile.test_rationale_required)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_spec_proposal_tag_present (__main__.TestProposalRecordedInCompanionFile.test_spec_proposal_tag_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_builder_owner (__main__.TestRoleGateRejectsNonBuilderInvocation.test_first_line_declares_builder_owner)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_mentions_builder_role (__main__.TestRoleGateRejectsNonBuilderInvocation.test_redirect_mentions_builder_role)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_builder (__main__.TestRoleGateRejectsNonBuilderInvocation.test_redirect_message_for_non_builder)",
+      "status": "PASS"
+    }
+  ]
+}
