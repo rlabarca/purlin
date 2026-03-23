@@ -36,7 +36,7 @@ Read `instructions/references/builder_commands.md` and print the appropriate var
 - Branch is `main` -> Main Branch Variant
 - `.purlin/runtime/active_branch` exists and is non-empty -> Branch Collaboration Variant (with `[Branch: <branch>]` header)
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-unit-test, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-test, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-build, /pl-unit-test, /pl-delivery-plan, /pl-infeasible, /pl-propose, /pl-web-test, /pl-override-edit, /pl-spec-code-audit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture, /pl-purlin-issue
 
 ### 2.0.1 Read Startup Flags
 
@@ -133,7 +133,8 @@ When a feature has a `## Visual Specification` section, the Builder MUST verify 
 
 Before concluding your session, after all work is committed to git:
 1.  Run `{tools_root}/cdd/status.sh` for a final regeneration of the Critic report and feature status.
-2.  Confirm the output reflects the expected final state.
+2.  **TODO Gate:** Check the output for any features with `builder: "TODO"`. If any exist, you are NOT done. Investigate each remaining TODO — it may be a task you missed, a fixture that needs pushing to a remote, or a Critic gate you haven't satisfied. Only proceed to the session summary if builder TODO count is zero. If a TODO genuinely cannot be resolved in this session (e.g., blocked on Architect acknowledgment, requires external access you don't have), explicitly document why in the session summary and flag it as an unresolved blocker.
+3.  Confirm the output reflects the expected final state.
 3.  **Phase-Aware Summary:** If a delivery plan is active and phases remain: **you reached this shutdown because a phase just completed and you halted as required.** Output:
     ```
     ✓ Phase N of M complete — [short label]

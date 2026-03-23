@@ -67,6 +67,7 @@ The commit message MUST describe the state it represents (e.g., "Project with lo
 - `fixture checkout <repo-url> <tag> [--dir <path>]` -- Shallow clone at the specified tag into a temp directory (or the path specified by `--dir`). Prints the checkout path to stdout. Uses `git clone --depth 1 --branch <tag>` for efficiency.
 - `fixture cleanup <path>` -- Remove the checked-out fixture directory (`rm -rf`). Validates the path is under `/tmp/` or the system temp directory before removing, as a safety guard.
 - `fixture list <repo-url> [--ref <project-ref>]` -- List available fixture tags via `git ls-remote --tags`. Optionally filter by `<project-ref>/` prefix. Output: one tag per line, sorted alphabetically.
+- `fixture push <remote-url> [--tag <tag>]` -- Push fixture tags from the local convention-path repo to a remote git URL. When `--tag` is specified, pushes only that tag; otherwise pushes all tags. If push fails due to authentication, prints a diagnostic message guiding the user through setting up git push access (SSH key, token, etc.) and exits non-zero. The agent retries after the user confirms access is configured. This command enables the workflow where tags are created locally (via `fixture add-tag`) and then synced to a shared remote repo.
 - `fixture prune <repo-url> [--ref <project-ref>]` -- Cross-reference fixture tags against active feature files in the current project's `features/` directory. List orphan tags (feature no longer exists or has a tombstone). Prompt for confirmation before deleting remote tags.
 
 **Submodule safety:**
@@ -105,12 +106,13 @@ Fixtures are recommended and created by different agents at different stages. Th
 ### 2.6.2 Builder Workflow
 
 1. The Builder reads the feature spec and identifies fixture tag sections declaring needed states.
-2. The Builder MUST check whether the fixture repo exists at the convention path (or per-feature override). If it does not exist, the Builder runs the setup script (see step 6) or creates one. The Builder MUST prompt the user when the fixture repo is missing and explain what will be created.
+2. The Builder MUST check whether the fixture repo exists at the convention path (or per-feature override). If it does not exist, the Builder runs the setup script (see step 7) or creates one. The Builder MUST prompt the user when the fixture repo is missing and explain what will be created.
 3. The Builder uses `fixture init` to create the bare repo (if not already present) and `fixture add-tag` to create each declared tag from a constructed state directory.
 4. Each tag points to a commit containing the project state for that scenario.
 5. Each tagged commit has a clear message describing the state it represents.
-6. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
-7. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
+6. **Remote push:** If the feature spec declares `> Test Fixtures: <remote-url>`, the Builder MUST push tags to the remote via `fixture push <remote-url>`. The Critic validates against the remote URL, so tags that exist only locally will not satisfy the Critic gate. If push fails, guide the user through access setup and retry (see Section 2.12).
+7. The Builder writes the automated test code that checks out the tag, runs the check, and asserts results.
+8. The Builder creates a setup script that deterministically generates the fixture repo from the project's own files. This script IS the portable fixture definition -- the repo is derived, not stored. The setup script MUST use `fixture init` and `fixture add-tag` subcommands. Test runners MUST check for the fixture repo and run the setup script when it is missing.
    - **Purlin framework repo:** Setup scripts go in `dev/` (e.g., `dev/setup_fixture_repo.sh`). These are Purlin-specific and not distributed to consumers.
    - **Consumer projects:** Setup scripts go in a project-appropriate location (e.g., `scripts/`, `dev/`, or `tests/`). The location is a Builder decision. The script MUST create the repo at the convention path (`.purlin/runtime/fixture-repo`) so the Critic and test tools can find it without configuration.
 
@@ -206,19 +208,36 @@ During regression scenario authoring (see `features/regression_testing.md` Secti
 
 The Builder reads this file during normal startup and creates the recommended fixture tags. After creation, QA updates the status to CREATED.
 
-### 2.12 Remote Fixture Awareness
+### 2.12 Remote Fixture Repos
 
-When `fixture_repo_url` is configured in `.purlin/config.json`, QA uses the remote URL for fixture checkout during regression scenario authoring. QA recommends remote fixture repos but does not manage them directly -- the human sets up the remote repo, and the Builder creates fixture tags within it.
+When a feature spec declares `> Test Fixtures: <remote-url>`, the Critic validates tags against the remote repo (via `git ls-remote --tags`). Tags must exist on the remote for the Critic to clear them. The local convention-path repo is a staging area; the remote is the source of truth for declared fixtures.
 
-**QA recommendation flow:**
+**Builder push workflow:**
 
-When QA identifies features needing complex state fixtures:
+When creating fixtures for a feature with `> Test Fixtures: <remote-url>`:
 
-1. QA prints a recommendation describing what fixture state is needed and why.
-2. If the user approves, QA records the recommendation in `tests/qa/fixture_recommendations.md`.
-3. The human creates the repo (or uses an existing one) and configures `fixture_repo_url` via `/pl-agent-config`.
-4. The Builder (with `--qa` flag) creates fixture tags in the configured repo.
-5. QA's next authoring session uses the fixtures automatically via the fixture resolution order.
+1. Create tags locally via `fixture add-tag` (existing workflow — tags land in `.purlin/runtime/fixture-repo`).
+2. Push tags to the remote via `fixture push <remote-url>` (or `--tag <specific-tag>` for individual tags).
+3. If the push fails (authentication, permissions), the Builder:
+   a. Prints a clear diagnostic: what failed, what access is needed.
+   b. Guides the user through setting up push access (SSH key, personal access token, repo permissions).
+   c. After the user confirms access is configured, retries the push.
+   d. Does NOT ask the user to push manually — the Builder pushes once it has access.
+4. After successful push, verify with `fixture list <remote-url>` that the tags are visible.
+5. Re-run `tools/cdd/status.sh` to confirm the Critic clears the fixture validation.
+
+**Remote repo creation flow:**
+
+When a feature needs a fixture repo and no remote URL is declared:
+
+1. The Builder prompts: "This feature needs fixture tags. Would you like to use a remote repo (shared, Critic-validated) or local only?"
+2. If the user provides a remote URL, the Builder records it as `> Test Fixtures: <url>` in the feature spec (via DISCOVERY escalation to Architect if the Builder cannot edit specs), or in `.purlin/config.json` under `fixture_repo_url` for project-wide use.
+3. If the user wants to create a new remote repo, the Builder guides them: "Create an empty git repo at your preferred host (GitHub, GitLab, etc.) and give me the URL."
+4. Once the URL is known, the Builder runs `fixture push <url>` to sync local tags.
+
+**Checkout from remote:**
+
+`fixture checkout` already supports remote URLs. When a remote URL is the resolved fixture repo (via the three-tier lookup), `fixture checkout <remote-url> <tag>` performs a shallow clone from the remote. No local convention-path repo is needed for checkout — only for tag creation.
 
 ### 2.13 Integration Test Fixture Tags
 
@@ -356,6 +375,31 @@ When QA identifies features needing complex state fixtures:
     Then the command exits 0
     And the tag `main/test_feature/existing-state` points to a new commit
     And checking out that tag yields the updated files
+
+#### Scenario: Push syncs all tags to remote
+
+    Given a fixture repo exists at the convention path with tags main/feat_a/s1 and main/feat_a/s2
+    And a remote git repo exists at <remote-url> with no tags
+    When `fixture push <remote-url>` is run
+    Then both tags are pushed to the remote
+    And `fixture list <remote-url>` shows main/feat_a/s1 and main/feat_a/s2
+
+#### Scenario: Push syncs a specific tag to remote
+
+    Given a fixture repo exists at the convention path with tags main/feat_a/s1 and main/feat_a/s2
+    And a remote git repo exists at <remote-url> with no tags
+    When `fixture push <remote-url> --tag main/feat_a/s1` is run
+    Then only main/feat_a/s1 is pushed to the remote
+    And `fixture list <remote-url>` shows main/feat_a/s1
+
+#### Scenario: Push fails gracefully on auth error
+
+    Given a fixture repo exists at the convention path with tags
+    And a remote git repo exists at <remote-url> but push access is not configured
+    When `fixture push <remote-url>` is run
+    Then the command exits with a non-zero status
+    And prints a diagnostic message about authentication failure
+    And suggests steps to configure push access
 
 #### Scenario: QA records fixture usage during scenario authoring
 
