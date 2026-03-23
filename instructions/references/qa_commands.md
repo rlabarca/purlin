@@ -27,6 +27,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate QA_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Verification
   ──────
@@ -34,7 +35,9 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
-  /pl-regression             Author, run, or process regression scenarios
+  /pl-regression-author      Author regression scenario JSON files
+  /pl-regression-run         Execute existing regression scenarios
+  /pl-regression-evaluate    Process results, create BUG discoveries
   /pl-fixture                Test fixture convention reference
 
   Cross-Agent Communication
@@ -72,6 +75,7 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate QA_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Verification
   ──────
@@ -79,7 +83,9 @@ Spotted a bug? Use /pl-discovery anytime to log it.
   /pl-web-test [name]     Run web test verification via Playwright
   /pl-complete <name>        Mark a verified feature as complete
   /pl-qa-report              Summary of open discoveries and features
-  /pl-regression             Author, run, or process regression scenarios
+  /pl-regression-author      Author regression scenario JSON files
+  /pl-regression-run         Execute existing regression scenarios
+  /pl-regression-evaluate    Process results, create BUG discoveries
   /pl-fixture                Test fixture convention reference
 
   Cross-Agent Communication

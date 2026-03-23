@@ -116,7 +116,7 @@ Fixtures are recommended and created by different agents at different stages. Th
 
 ### 2.6.3 QA Workflow
 
-QA MAY create and manage fixtures directly during regression authoring (`/pl-regression` author mode). This eliminates the handoff delay between QA discovering a fixture need and Builder creating it.
+QA MAY create and manage fixtures directly during regression authoring (`/pl-regression-author`). This eliminates the handoff delay between QA discovering a fixture need and Builder creating it.
 
 1. During regression authoring, QA evaluates fixture needs per the decision logic in `regression_testing.md` Section 2.10.1.
 2. If fixtures are needed and the fixture repo does not exist, QA runs `fixture init` to create it at the convention path.

@@ -64,7 +64,7 @@ Read `instructions/references/qa_commands.md` and print the appropriate variant 
 
 Do NOT invoke the `/pl-status` skill, do NOT call `{tools_root}/cdd/status.sh`, and do NOT use any tool other than the Read tool during this step.
 
-**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-test, /pl-discovery, /pl-complete, /pl-qa-report, /pl-regression-author, /pl-regression-run, /pl-regression-evaluate, /pl-override-edit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture
+**Authorized commands:** /pl-status, /pl-resume, /pl-help, /pl-find, /pl-verify, /pl-web-test, /pl-discovery, /pl-complete, /pl-qa-report, /pl-regression-author, /pl-regression-run, /pl-regression-evaluate, /pl-override-edit, /pl-update-purlin, /pl-cdd, /pl-whats-different, /pl-remote-push, /pl-remote-pull, /pl-fixture, /pl-purlin-issue
 
 ### 3.0.1 Read Startup Flags
 
@@ -106,7 +106,7 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
     | <name>  | web_test    | Web Test: <url> |
     | <name>  | agent_behavior | — |
     ```
-    When `auto_start` is `true`: QA authors regression JSON for all targets immediately via `/pl-regression` during Phase A Step 3 — no user prompt needed. When `auto_start` is `false`: present the table and include in the approval prompt.
+    When `auto_start` is `true`: QA authors regression JSON for all targets immediately via `/pl-regression-author` during Phase A Step 3 — no user prompt needed. When `auto_start` is `false`: present the table and include in the approval prompt.
 
 ### 3.3 Execute Verification (Auto-First Protocol)
 > **Canonical definition.** `/pl-verify` implements this protocol as Phase A. Both must stay in sync. If they diverge, this section is authoritative.
@@ -115,14 +115,14 @@ Review QA action items in `CRITIC_REPORT.md` under `### QA`. For each TESTING fe
 *   **Step 2 — Smoke gate:** If a tier table exists in `QA_OVERRIDES.md`, identify smoke-tier features with QA work (TODO or AUTO status). Run their scenarios first — both `@auto` (via harness runner) and `@manual`/untagged (manual verification with human). If ANY smoke-tier scenario fails, halt and report: `"Smoke failure: <feature> — <scenario>. Fix before continuing full verification? [yes to stop / no to continue]"`. This catches catastrophic breakage before committing to the full batch. If no tier table exists, skip this step.
 *   **Step 3 — Run @auto scenarios:** For each `@auto`-tagged QA scenario (already classified from a prior session):
     *   Invoke the harness runner: `python3 {tools_root}/test_support/harness_runner.py tests/qa/scenarios/<feature>.json`. The harness runner handles fixture checkout, execution, assertion evaluation, and `tests.json` writing.
-    *   If the regression JSON is unexpectedly missing for an `@auto` scenario, invoke `/pl-regression` (author mode) to recreate it, then run.
+    *   If the regression JSON is unexpectedly missing for an `@auto` scenario, invoke `/pl-regression-author` to recreate it, then run.
     *   Start servers if needed (port safety + cleanup mandate per SERVER MANAGEMENT rules).
     *   Smoke-tier `@auto` scenarios already ran in Step 2 — skip them here.
-    *   **Regression guidance authoring (MANDATORY):** For EVERY feature with pending regression guidance (Critic `qa_reason` = `"regression harness authoring pending"`), invoke `/pl-regression` (author mode) to create `tests/qa/scenarios/<feature>.json`. This applies to ALL such features — not just those with `@auto` scenarios. Do NOT defer to after Phase B. Do NOT present as a "gap table" for future sessions. When `auto_start` is `true`, author all harnesses sequentially without user prompt. When `auto_start` is `false`, present the authoring table and wait for approval. After authoring, the harness file satisfies the Critic gate and the feature clears to `qa=CLEAN`.
+    *   **Regression guidance authoring (MANDATORY):** For EVERY feature with pending regression guidance (Critic `qa_reason` = `"regression harness authoring pending"`), invoke `/pl-regression-author`  to create `tests/qa/scenarios/<feature>.json`. This applies to ALL such features — not just those with `@auto` scenarios. Do NOT defer to after Phase B. Do NOT present as a "gap table" for future sessions. When `auto_start` is `true`, author all harnesses sequentially without user prompt. When `auto_start` is `false`, present the authoring table and wait for approval. After authoring, the harness file satisfies the Critic gate and the feature clears to `qa=CLEAN`.
 *   **Step 4 — Classify untagged scenarios:** For each QA scenario with NO tag (neither `@auto` nor `@manual`), QA attempts to automate it BEFORE running manually:
     1.  **Propose automation:** QA evaluates whether the scenario can be automated (deterministic assertions, no subjective judgment, no physical hardware).
-    2.  **When `auto_start` is `true`:** For feasible scenarios, QA invokes `/pl-regression` (author mode) immediately — no user prompt. Create the regression JSON, run it via the harness runner, and add the `@auto` tag. For infeasible scenarios, add `@manual` silently. Do NOT ask "shall I proceed?" or present individual proposals.
-    3.  **When `auto_start` is `false`:** QA proposes the approach to the user (harness type, fixture needs, assertions). If approved, QA invokes `/pl-regression` (author mode) to create the regression JSON, runs it via the harness runner, and adds the `@auto` tag. If declined or not feasible, QA adds `@manual`. The scenario enters the manual verification path (Step 7). QA never re-proposes automation for `@manual` scenarios.
+    2.  **When `auto_start` is `true`:** For feasible scenarios, QA invokes `/pl-regression-author`  immediately — no user prompt. Create the regression JSON, run it via the harness runner, and add the `@auto` tag. For infeasible scenarios, add `@manual` silently. Do NOT ask "shall I proceed?" or present individual proposals.
+    3.  **When `auto_start` is `false`:** QA proposes the approach to the user (harness type, fixture needs, assertions). If approved, QA invokes `/pl-regression-author`  to create the regression JSON, runs it via the harness runner, and adds the `@auto` tag. If declined or not feasible, QA adds `@manual`. The scenario enters the manual verification path (Step 7). QA never re-proposes automation for `@manual` scenarios.
     *   **Every untagged scenario gets classified.** After QA's first pass, no scenario remains untagged.
     *   **Commit format:** When committing tag classification changes, the commit message MUST include `[QA-Tags]` as a trailer (e.g., `qa(<feature>): classify N QA scenarios [QA-Tags]`). This signals CDD to skip lifecycle reset for this commit.
     *   Smoke-tier untagged scenarios already ran in Step 2 — skip them here.
