@@ -303,12 +303,11 @@ LAUNCHER_EOF
 if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
 else
-    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep")
+    CLI_ARGS+=(--allowedTools "Bash(git *)" "Bash(bash *)" "Bash(python3 *)" "Read" "Glob" "Grep" "Write" "Edit")
 fi
-CLI_ARGS+=(--disallowedTools "Write,Edit,NotebookEdit")
 LAUNCHER_EOF
     else
-        # pm (default — same as architect minus disallowedTools)
+        # pm (default — read-only tools without Write/Edit)
         cat >> "$OUTPUT_FILE" << 'LAUNCHER_EOF'
 if [ "$AGENT_BYPASS" = "true" ]; then
     CLI_ARGS+=(--dangerously-skip-permissions)
