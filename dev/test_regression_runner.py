@@ -241,11 +241,11 @@ class TestWatchModePollAndExecute(unittest.TestCase):
 class TestQASkillIdentifiesEligible(unittest.TestCase):
     """Scenario: QA skill identifies regression-eligible features."""
 
-    def test_skill_file_exists_and_has_discovery_flow(self):
-        """The QA regression skill file exists and contains the
+    def test_run_skill_file_exists_and_has_discovery_flow(self):
+        """The QA regression-run skill file exists and contains the
         discovery and selection flow."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-run.md')
         self.assertTrue(os.path.isfile(skill_path))
         with open(skill_path) as f:
             content = f.read()
@@ -254,15 +254,15 @@ class TestQASkillIdentifiesEligible(unittest.TestCase):
         self.assertIn('STALE', content)
         self.assertIn('FAIL', content)
         self.assertIn('NOT_RUN', content)
-        self.assertIn('staleness', content.lower())
+        self.assertIn('stale', content.lower())
         # Interactive selection
         self.assertIn('all', content)
         self.assertIn('skip', content)
 
-    def test_skill_identifies_web_test_metadata_features(self):
-        """The skill references Web Test metadata and Regression Testing sections."""
+    def test_author_skill_identifies_web_test_metadata_features(self):
+        """The author skill references Web Test metadata and Regression Testing sections."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-author.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('Web Test:', content)
@@ -273,19 +273,18 @@ class TestQASkillComposesCommand(unittest.TestCase):
     """Scenario: QA skill composes external command for selected features."""
 
     def test_qa_skill_composes_run_command(self):
-        """QA skill composes the run_regression.sh or run_all.sh command."""
+        """QA run skill composes the run_regression.sh or run_all.sh command."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-run.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('run_regression.sh', content)
-        self.assertIn('--write-results', content)
         self.assertIn('run_all.sh', content)
 
     def test_qa_skill_composes_copy_pasteable_command(self):
-        """QA skill prints copy-pasteable command for external terminal."""
+        """QA run skill prints copy-pasteable command for external terminal."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-run.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('copy-paste', content.lower().replace('-', '-'))
@@ -296,10 +295,10 @@ class TestQASkillCreatesBugDiscoveries(unittest.TestCase):
     """Scenario: QA skill creates BUG discoveries for regression failures."""
 
     def test_skill_has_bug_discovery_creation_protocol(self):
-        """The skill documents how to create [BUG] sidecar entries
+        """The evaluate skill documents how to create [BUG] sidecar entries
         from enriched regression results."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-evaluate.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('[BUG]', content)
@@ -439,10 +438,10 @@ class TestShallowAssertionSuite(unittest.TestCase):
         self.assertEqual(tiers['untagged'], 1)
 
     def test_skill_has_shallow_indicator_documentation(self):
-        """The regression skill documents the [SHALLOW] indicator
+        """The evaluate skill documents the [SHALLOW] indicator
         and tier distribution reporting."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-evaluate.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('SHALLOW', content)
@@ -846,14 +845,13 @@ class TestQAAuthoringWorkflow(unittest.TestCase):
     """Scenario: QA authors scenario file during regression authoring."""
 
     def test_skill_documents_authoring_flow(self):
-        """The pl-regression skill documents the author mode flow:
+        """The pl-regression-author skill documents the authoring flow:
         reading the spec, writing a scenario JSON, and committing."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-author.md')
         with open(skill_path) as f:
             content = f.read()
-        # Author mode documented
-        self.assertIn('Author mode', content)
+        # Authoring flow documented
         self.assertIn('Author Scenario File', content)
         # Scenario JSON file path convention
         self.assertIn('tests/qa/scenarios/', content)
@@ -866,18 +864,18 @@ class TestQAAuthoringWorkflow(unittest.TestCase):
         self.assertIn('remaining', content)
 
     def test_skill_has_harness_prerequisite_check(self):
-        """The skill checks for harness_runner.py before authoring."""
+        """The author skill checks for harness_runner.py before authoring."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-author.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('harness_runner.py', content)
         self.assertIn('harness runner framework', content.lower())
 
     def test_scenario_json_schema_documented(self):
-        """The skill references the scenario JSON schema from the spec."""
+        """The author skill references the scenario JSON schema from the spec."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-author.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('harness_type', content)
@@ -1004,10 +1002,10 @@ class TestBuilderFlagsBrokenScenario(unittest.TestCase):
         self.assertIn('[BUG]', content)
 
     def test_skill_documents_bug_discovery_format(self):
-        """The QA skill documents the discovery format for failures
+        """The evaluate skill documents the discovery format for failures
         including scenario_ref routing and OPEN status."""
         skill_path = os.path.join(
-            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-evaluate.md')
         with open(skill_path) as f:
             content = f.read()
         self.assertIn('[BUG]', content)
@@ -1025,6 +1023,101 @@ class TestBuilderFlagsBrokenScenario(unittest.TestCase):
             content = f.read()
         self.assertIn('Critic routing', content)
         self.assertIn('QA column', content)
+
+
+class TestRegressionSkillSplit(unittest.TestCase):
+    """Validates the /pl-regression split into three explicit skills."""
+
+    def test_three_skill_files_exist(self):
+        """All three split skill files exist."""
+        for name in ('pl-regression-author.md',
+                     'pl-regression-run.md',
+                     'pl-regression-evaluate.md'):
+            path = os.path.join(
+                PROJECT_ROOT, '.claude', 'commands', name)
+            self.assertTrue(os.path.isfile(path), f"Missing: {name}")
+
+    def test_retired_unified_skill_deleted(self):
+        """The old unified pl-regression.md is deleted."""
+        path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression.md')
+        self.assertFalse(os.path.isfile(path))
+
+    def test_author_skill_is_qa_owned(self):
+        """Author skill has QA ownership header."""
+        path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-author.md')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('Purlin command owner: QA', content)
+
+    def test_run_skill_has_frequency_filter(self):
+        """Run skill documents --frequency flag for pre-release filtering."""
+        path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-run.md')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('--frequency', content)
+        self.assertIn('pre-release', content)
+        self.assertIn('per-feature', content)
+
+    def test_evaluate_skill_has_tier_distribution(self):
+        """Evaluate skill documents tier distribution reporting."""
+        path = os.path.join(
+            PROJECT_ROOT, '.claude', 'commands', 'pl-regression-evaluate.md')
+        with open(path) as f:
+            content = f.read()
+        self.assertIn('Tier Distribution', content)
+        self.assertIn('SHALLOW', content)
+
+
+class TestFrequencyFieldSupport(unittest.TestCase):
+    """Validates that harness runner handles the frequency field gracefully."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.features_dir = os.path.join(self.tmpdir, 'features')
+        os.makedirs(self.features_dir)
+        with open(os.path.join(self.features_dir, 'freq_test.md'), 'w') as f:
+            f.write('# Feature: Frequency Test\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_harness_runner_ignores_frequency_field(self):
+        """Harness runner processes scenario JSON with frequency field
+        without errors -- frequency filtering is QA skill responsibility."""
+        scenario = {
+            'feature': 'freq_test',
+            'harness_type': 'custom_script',
+            'frequency': 'pre-release',
+            'scenarios': [{
+                'name': 'freq-test',
+                'script_path': 'tests/qa/noop.sh',
+                'assertions': [],
+            }]
+        }
+        # Create a noop script
+        script_dir = os.path.join(self.tmpdir, 'tests', 'qa')
+        os.makedirs(script_dir, exist_ok=True)
+        noop_path = os.path.join(script_dir, 'noop.sh')
+        with open(noop_path, 'w') as f:
+            f.write('#!/usr/bin/env bash\nexit 0\n')
+        os.chmod(noop_path, 0o755)
+
+        scenario_path = os.path.join(self.tmpdir, 'scenario.json')
+        with open(scenario_path, 'w') as f:
+            json.dump(scenario, f)
+
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'tools', 'test_support'))
+        try:
+            import harness_runner
+            feature_name, details, passed, failed = \
+                harness_runner.process_scenario_file(scenario_path, self.tmpdir)
+            self.assertEqual(feature_name, 'freq_test')
+            self.assertEqual(failed, 0)
+        finally:
+            sys.path.pop(0)
 
 
 # ===================================================================
