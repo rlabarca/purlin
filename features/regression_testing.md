@@ -106,7 +106,35 @@ Three QA-owned slash commands that replace the former unified `/pl-regression` s
 5. Run `tools/cdd/status.sh` to refresh the Critic report.
 6. Print handoff message if failures were found (see Section 2.12).
 
-#### 2.2.4 `/pl-regression` -- RETIRED
+#### 2.2.4 Regression Suite Status in `/pl-verify` Phase A Summary
+
+After Phase A completes (auto-pass, smoke gate, @auto scenarios, classification), `/pl-verify` MUST scan for existing regression scenario JSON files and present a status table showing outstanding regression suites. This ensures the user is aware of regression tests that exist but haven't been run (or have stale results).
+
+**Behavior:**
+
+1. Scan `tests/qa/scenarios/*.json` for all scenario files.
+2. For each, check the corresponding `tests/<feature>/tests.json` for result status (PASS/FAIL/NOT_RUN/STALE).
+3. Group by frequency (`per-feature` vs `pre-release`).
+4. Print the table in the Phase A Summary, after the existing summary block:
+
+```
+Regression suites:
+  per-feature:
+    [PASS]    instruction_audit (5/5, 2h ago)
+    [STALE]   critic_tool (3/3, but source modified since)
+    [NOT_RUN] terminal_identity
+
+  pre-release:
+    [NOT_RUN] skill_behavior_regression (9 scenarios)
+
+Run regression suites? [all / per-feature / pre-release / skip]
+```
+
+5. If the user selects a group, QA invokes `/pl-regression-run` with the appropriate `--frequency` filter. If "all", run without filter.
+6. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
+7. When `auto_start` is `true`, skip per-feature suites that are PASS (not stale). Run STALE and NOT_RUN per-feature suites automatically. Print the pre-release table but do NOT auto-run pre-release suites (they are long-running and require explicit opt-in).
+
+#### 2.2.5 `/pl-regression` -- RETIRED
 
 The former unified state-machine skill is deleted. The three explicit skills above replace it entirely. No auto-detect alias is provided.
 
