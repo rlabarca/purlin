@@ -6,7 +6,7 @@
 > Prerequisite: features/policy_critic.md
 > Prerequisite: features/design_artifact_pipeline.md
 
-[Testing]
+[Complete]
 
 ## 1. Overview
 
