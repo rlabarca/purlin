@@ -1,0 +1,23 @@
+{
+  "feature": "collab_whats_different",
+  "harness_type": "web_test",
+  "scenarios": [
+    {
+      "name": "whats_different_diverged",
+      "fixture_tag": "main/collab_whats_different/divergent-branches",
+      "web_test_url": "http://localhost:9086",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(different|diverge|ahead|behind|branch|collab|sync)",
+          "context": "dashboard shows branch sync state or what's different content"
+        },
+        {
+          "tier": 1,
+          "pattern": "(?i)(feature|change|commit|status)",
+          "context": "dashboard renders feature or change information"
+        }
+      ]
+    }
+  ]
+}

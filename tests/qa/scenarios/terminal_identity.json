@@ -1,0 +1,17 @@
+{
+  "feature": "terminal_identity",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "terminal_identity_suite",
+      "script_path": "tests/qa/test_terminal_identity_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "terminal identity regression suite ran to completion"
+        }
+      ]
+    }
+  ]
+}

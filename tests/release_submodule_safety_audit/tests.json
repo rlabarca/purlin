@@ -1,41 +1,16 @@
 {
   "status": "PASS",
-  "passed": 8,
+  "passed": 1,
   "failed": 0,
-  "total": 8,
-  "test_file": "tools/release/test_release_audit.py",
+  "total": 1,
+  "test_file": "tests/qa/scenarios/release_submodule_safety_audit.json",
   "details": [
     {
-      "test": "test_submodule_safety_audit (__main__.TestAllScriptsValidJSON.test_submodule_safety_audit)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_artifact_in_tools (__main__.TestSubmoduleSafetyArtifactInTools.test_detects_artifact_in_tools)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_passes_clean (__main__.TestSubmoduleSafetyClean.test_passes_clean)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_hardcoded_array (__main__.TestSubmoduleSafetyGitignoreHardcodedArray.test_detects_hardcoded_array)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_refresh_skips_gitignore (__main__.TestSubmoduleSafetyGitignoreRefreshSkip.test_detects_refresh_skips_gitignore)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_uncovered_artifact (__main__.TestSubmoduleSafetyGitignoreUncoveredArtifact.test_detects_uncovered_artifact)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_missing_disambiguation (__main__.TestSubmoduleSafetyMissingDisambiguation.test_detects_missing_disambiguation)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_missing_env (__main__.TestSubmoduleSafetyMissingEnv.test_detects_missing_env)",
-      "status": "PASS"
+      "name": "release_submodule_safety_audit_suite:submodule safety audit detection suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/release_submodule_safety_audit.md:release_submodule_safety_audit_suite",
+      "expected": "submodule safety audit detection suite ran to completion",
+      "assertion_tier": 2
     }
   ]
 }

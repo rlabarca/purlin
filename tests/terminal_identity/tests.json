@@ -1,121 +1,16 @@
 {
   "status": "PASS",
-  "passed": 28,
+  "passed": 1,
   "failed": 0,
-  "total": 28,
-  "test_file": "tools/terminal/test_terminal_identity.py",
+  "total": 1,
+  "test_file": "tests/qa/scenarios/terminal_identity.json",
   "details": [
     {
-      "name": "Title escape sequence emitted for any terminal",
-      "status": "PASS"
-    },
-    {
-      "name": "Badge escape sequence emitted for iTerm2",
-      "status": "PASS"
-    },
-    {
-      "name": "Badge is no-op when not iTerm2",
-      "status": "PASS"
-    },
-    {
-      "name": "Badge is no-op when TERM_PROGRAM is unset",
-      "status": "PASS"
-    },
-    {
-      "name": "Base64 encoding round-trips correctly",
-      "status": "PASS"
-    },
-    {
-      "name": "set_agent_identity calls both title and badge",
-      "status": "PASS"
-    },
-    {
-      "name": "clear_agent_identity calls both clear functions",
-      "status": "PASS"
-    },
-    {
-      "name": "Generated launcher contains set_agent_identity call",
-      "status": "PASS"
-    },
-    {
-      "name": "Generated launcher EXIT trap contains clear_agent_identity",
-      "status": "PASS"
-    },
-    {
-      "name": "Generated launcher uses correct display name per role",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-builder.sh sources identity helper",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-builder.sh cleanup clears identity",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-builder.sh graceful_stop clears identity",
-      "status": "PASS"
-    },
-    {
-      "name": "Bootstrap phase sets identity to Builder: Bootstrap",
-      "status": "PASS"
-    },
-    {
-      "name": "Sequential phase sets identity with phase number",
-      "status": "PASS"
-    },
-    {
-      "name": "Parallel execution sets identity with phase list",
-      "status": "PASS"
-    },
-    {
-      "name": "Evaluator sets identity to Builder: Evaluating",
-      "status": "PASS"
-    },
-    {
-      "name": "Between phases resets identity to Builder",
-      "status": "PASS"
-    },
-    {
-      "name": "Non-continuous mode sets Builder identity",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-architect.sh sources identity helper",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-architect.sh sets identity to Architect",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-architect.sh cleanup clears identity",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-qa.sh sources identity helper",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-qa.sh sets identity to QA",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-qa.sh cleanup clears identity",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-pm.sh sources identity helper",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-pm.sh sets identity to PM",
-      "status": "PASS"
-    },
-    {
-      "name": "pl-run-pm.sh cleanup clears identity",
-      "status": "PASS"
+      "name": "terminal_identity_suite:terminal identity regression suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/terminal_identity.md:terminal_identity_suite",
+      "expected": "terminal identity regression suite ran to completion",
+      "assertion_tier": 2
     }
   ]
 }

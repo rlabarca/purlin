@@ -1,1 +1,17 @@
-{"status": "PASS", "passed": 33, "failed": 0, "total": 33, "test_file": "dev/test_regression_runner.py"}
+{
+  "status": "FAIL",
+  "passed": 0,
+  "failed": 1,
+  "total": 1,
+  "test_file": "tests/qa/scenarios/regression_testing.json",
+  "details": [
+    {
+      "name": "regression_testing_suite:regression testing infrastructure suite ran to completion",
+      "status": "FAIL",
+      "scenario_ref": "features/regression_testing.md:regression_testing_suite",
+      "expected": "regression testing infrastructure suite ran to completion",
+      "assertion_tier": 2,
+      "actual_excerpt": "Error: custom_script timed out after 300s"
+    }
+  ]
+}

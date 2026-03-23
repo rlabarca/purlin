@@ -1,0 +1,17 @@
+{
+  "feature": "pl_update_purlin",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "pl_update_purlin_suite",
+      "script_path": "tests/qa/test_pl_update_purlin_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "pl-update-purlin standalone guard and behavior suite ran to completion"
+        }
+      ]
+    }
+  ]
+}

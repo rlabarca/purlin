@@ -1,0 +1,17 @@
+{
+  "feature": "pl_session_resume",
+  "harness_type": "custom_script",
+  "scenarios": [
+    {
+      "name": "pl_session_resume_suite",
+      "script_path": "tests/qa/test_pl_session_resume_regression.sh",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "Results: \\d+/\\d+ tests passed",
+          "context": "session resume checkpoint infrastructure suite ran to completion"
+        }
+      ]
+    }
+  ]
+}

@@ -1,25 +1,16 @@
 {
   "status": "PASS",
-  "passed": 4,
+  "passed": 1,
   "failed": 0,
-  "total": 4,
-  "test_file": "tools/release/test_release_audit.py",
+  "total": 1,
+  "test_file": "tests/qa/scenarios/release_doc_consistency_check.json",
   "details": [
     {
-      "test": "test_doc_consistency_check (__main__.TestAllScriptsValidJSON.test_doc_consistency_check)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_coverage_gap (__main__.TestDocConsistencyCoverageGap.test_detects_coverage_gap)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_stale_reference (__main__.TestDocConsistencyStaleRef.test_detects_stale_reference)",
-      "status": "PASS"
-    },
-    {
-      "test": "test_detects_tombstone_reference (__main__.TestDocConsistencyTombstone.test_detects_tombstone_reference)",
-      "status": "PASS"
+      "name": "release_doc_consistency_check_suite:documentation consistency check suite ran to completion",
+      "status": "PASS",
+      "scenario_ref": "features/release_doc_consistency_check.md:release_doc_consistency_check_suite",
+      "expected": "documentation consistency check suite ran to completion",
+      "assertion_tier": 2
     }
   ]
 }

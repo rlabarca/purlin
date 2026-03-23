@@ -1,0 +1,23 @@
+{
+  "feature": "cdd_startup_controls",
+  "harness_type": "web_test",
+  "scenarios": [
+    {
+      "name": "startup_controls_render",
+      "fixture_tag": "main/cdd_startup_controls/all-disabled",
+      "web_test_url": "http://localhost:9086",
+      "assertions": [
+        {
+          "tier": 2,
+          "pattern": "(?i)(find.work|auto.start|startup|start.up)",
+          "context": "dashboard renders startup control labels (find_work, auto_start)"
+        },
+        {
+          "tier": 1,
+          "pattern": "(?i)(checkbox|checked|disabled|enabled)",
+          "context": "dashboard contains checkbox controls for startup flags"
+        }
+      ]
+    }
+  ]
+}
