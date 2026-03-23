@@ -80,7 +80,7 @@ The Builder discovers TODO features from the Critic report and for each one:
 
 1. **Implements** -- application code, scripts, config files.
 2. **Writes unit tests** -- tested against a 6-point quality rubric. No grep-the-source-code shortcuts. Results land in `tests/<feature>/tests.json`.
-3. **Runs web tests** -- for features with `> Web Test:` metadata and a Visual Specification, the Builder runs Playwright-based visual verification via `/pl-web-test`.
+3. **Verifies visual specs** -- for features with a Visual Specification section, the Builder verifies ALL visual checklist items. Web test features (`> Web Test:` metadata) are verified via Playwright (`/pl-web-test`). Non-web features are verified by inspecting the running application or output. Visual verification is Builder-owned -- QA does not re-verify visual items.
 4. **Commits a status tag:**
    - **Unit Tests only** (no QA Scenarios in the spec): Builder marks `[Complete]`. Done. QA never sees this feature.
    - **Has QA Scenarios**: Builder marks `[Ready for Verification]`. QA picks it up next.
@@ -97,7 +97,7 @@ Launch a QA session. QA finds all `[Ready for Verification]` features automatica
 
 ### The Auto-First Protocol
 
-QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through eight steps:
+QA's goal is to automate as much as possible on the first pass, so future sessions run faster. It works through seven steps:
 
 #### Step 1 -- Credit Builder Work
 
@@ -139,31 +139,23 @@ This is the key step. For every QA Scenario that has **no tag** yet (Architect/P
 
 **After this step, every scenario is tagged.** Nothing stays untagged. Smoke-tier untagged scenarios already classified in Step 2 -- skipped here.
 
-#### Step 5 -- Visual Smoke
-
-- **Web features** (`> Web Test:` metadata): QA runs `/pl-web-test` for a Playwright screenshot and quick checklist check.
-- **Non-web features**: QA asks you for a screenshot.
-
-Detailed visual comparison happens in Step 8.
-
-#### Step 6 -- LLM Delegation
+#### Step 5 -- LLM Delegation
 
 Some scenarios need Claude to analyze output (complex reasoning, multi-step evaluation). QA composes the exact command and asks you to run it in a separate terminal.
 
-#### Step 7 -- Standard and Full-Only Manual
+#### Step 6 -- Standard and Full-Only Manual
 
 QA presents remaining `@manual` scenarios: standard-tier first, then full-only.
 
-#### Step 8 -- Full Manual Pass
+#### Step 7 -- Full Manual Pass
 
-Visual checklists grouped by screen (one screenshot, verify multiple items). `@manual` scenarios walked through step-by-step.
+`@manual` scenarios walked through step-by-step with grouped batches for efficiency.
 
 ### What You Do During Verification
 
 - Perform the steps QA describes and say PASS or FAIL
-- Provide screenshots when asked
 - Copy-paste and run commands QA prints
-- Say "yes" or "no" when QA proposes automation (Step 3)
+- Say "yes" or "no" when QA proposes automation (Step 4)
 
 ### After Verification
 
@@ -347,5 +339,5 @@ Tags are QA outputs. Architects and PMs write scenarios without tags.
 | `./tests/qa/run_all.sh` | You (terminal) | Run full regression suite |
 | `/pl-verify` | QA | Batched verification workflow |
 | `/pl-regression` | QA | Author/run/process regression scenarios |
-| `/pl-web-test` | Builder, QA | Playwright visual verification |
+| `/pl-web-test` | Builder | Visual verification via Playwright |
 | `/pl-status` | Any agent | Show Critic report and feature status |
