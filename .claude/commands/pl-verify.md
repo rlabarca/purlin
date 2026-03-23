@@ -163,6 +163,45 @@ Proceeding to Phase B.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+**Regression suite status table** (print after the summary block):
+
+1. Scan `tests/qa/scenarios/*.json` for all existing scenario files.
+2. For each, check the corresponding `tests/<feature>/tests.json`:
+   - `status: "PASS"` and source NOT modified since mtime → **PASS**
+   - `status: "PASS"` but source modified since mtime → **STALE**
+   - `status: "FAIL"` → **FAIL**
+   - Missing or `total: 0` → **NOT_RUN**
+3. Read `QA_OVERRIDES.md` `## Test Priority Tiers` table (if it exists) to determine each feature's test priority tier (smoke, standard, full-only).
+4. Read each scenario file's `frequency` field (`per-feature` default, or `pre-release`).
+5. Group by frequency. Within each group, sort by tier (smoke first, then standard, then full-only). Mark smoke-tier features with a `[smoke]` indicator.
+6. Print the table:
+
+```
+Regression suites:
+  per-feature:
+    [STALE]   critic_tool (3/3, but source modified since) [smoke]
+    [PASS]    instruction_audit (5/5, 2h ago)
+    [NOT_RUN] terminal_identity
+
+  pre-release:
+    [NOT_RUN] skill_behavior_regression (9 scenarios)
+
+Run regression suites? [all / per-feature / pre-release / skip]
+```
+
+7. **User selection handling:**
+   - If the user selects a group (`per-feature` or `pre-release`): invoke `/pl-regression-run` with `--frequency <selected>`.
+   - If the user selects `all`: invoke `/pl-regression-run` without frequency filter.
+   - If the user selects `skip`: proceed to Phase B (or the regression gap table / decision point below). The table served its purpose — the user is now aware.
+
+8. **`auto_start` behavior:** When `auto_start` is `true`:
+   - Run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped).
+   - Skip non-smoke per-feature suites that are PASS (not stale).
+   - Run STALE and NOT_RUN standard per-feature suites automatically.
+   - Print the pre-release table but do NOT auto-run pre-release suites (they are long-running and require explicit opt-in).
+
+If no scenario files exist in `tests/qa/scenarios/`, skip the regression suite status table entirely.
+
 **Regression gap table** (print only if features have regression guidance but
 no harness JSON and the gap was NOT resolved during Phase A):
 
