@@ -52,7 +52,7 @@ when working on collaboration branches.
 ## The Four Role Columns
 
 Each feature row has four status columns. The values in each column reflect
-the Critic's analysis of that feature for that role.
+[the Critic](critic-and-cdd-guide.md)'s analysis of that feature for that role.
 
 ### Architect Column
 
@@ -77,7 +77,7 @@ column turns yellow.
 | **BLOCKED** | Red | An open SPEC_DISPUTE exists. The Builder cannot proceed until the dispute is resolved. |
 | **??** | Gray | No `critic.json` exists for this feature yet. |
 
-The Builder column reflects the **Implementation Gate** and the feature's
+The Builder column reflects the **[Implementation Gate](critic-and-cdd-guide.md)** and the feature's
 lifecycle state. The precedence order is:
 INFEASIBLE > BLOCKED > FAIL > TODO > DONE.
 

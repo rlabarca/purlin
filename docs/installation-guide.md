@@ -20,9 +20,9 @@ This guide covers three scenarios:
 ### Prerequisites
 
 - Git (any recent version)
-- Python 3.8+ (used by Critic and CDD tooling)
+- Python 3.8+ (used by [Critic](critic-and-cdd-guide.md) and CDD tooling)
 - Claude Code CLI (`claude`) installed and authenticated
-- Node.js (optional, for the CDD Dashboard web UI)
+- Node.js (optional, for the [CDD Dashboard](status-grid-guide.md) web UI)
 
 ### Step-by-Step
 

@@ -3,7 +3,7 @@
 ## Overview
 
 Purlin runs four AI agents -- PM, Architect, Builder, and QA -- each with its own
-role and responsibilities. The Agent Config panel in the CDD Dashboard lets you
+role and responsibilities. The Agent Config panel in the [CDD Dashboard](status-grid-guide.md) lets you
 control how each agent behaves: which Claude model it uses, how much optimization
 effort it applies, whether it asks for permission before using tools, and how
 autonomously it operates at session start.
@@ -109,7 +109,7 @@ troubleshooting.
 ### Find Work
 
 When **checked**, the agent runs its full startup orientation at session start:
-it checks CDD status, reads the Critic report, analyzes dependencies, and
+it checks CDD status, reads [the Critic](critic-and-cdd-guide.md) report, analyzes dependencies, and
 presents a prioritized work plan for your review.
 
 When **unchecked**, the agent skips all orientation. After printing its command

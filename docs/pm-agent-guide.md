@@ -16,7 +16,7 @@ The PM agent:
 - **Asks structured questions** to refine vague ideas into precise, testable specs.
 - **Never writes code.** The PM owns specs and design artifacts. Code is the Builder's job.
 
-By default, the PM agent uses Claude Sonnet 4.6 for fast, conversational iteration. You can change this in your project's CDD Dashboard configuration.
+By default, the PM agent uses Claude Sonnet 4.6 for fast, conversational iteration. You can change this in your project's [CDD Dashboard](status-grid-guide.md) configuration.
 
 ---
 
@@ -39,7 +39,7 @@ If your project has zero feature specs (a brand-new project), the PM enters **Gu
 1. The PM greets you and explains that this is a new project.
 2. It asks what you are building. A single sentence is enough -- the PM will probe for details.
 3. It asks if you have Figma designs. If you do, paste a URL. If not, the PM works from your text description.
-4. The PM creates your first feature spec and at least one anchor node (a shared design standard document).
+4. The PM creates your first feature spec and at least one [anchor node](critic-and-cdd-guide.md) (a shared design standard document).
 5. It commits the files and tells you what to do next.
 
 After onboarding, you will see something like:
@@ -325,7 +325,7 @@ Use the "reprocess" keyword to re-ingest a specific screen:
 
 When the Builder or QA flags a discrepancy between the spec and the implementation, entries tagged `SPEC_DISPUTE` are routed to the PM. You own the resolution:
 
-1. Check the Critic report (`/pl-status`) for any SPEC_DISPUTE items.
+1. Check [the Critic](critic-and-cdd-guide.md) report (`/pl-status`) for any SPEC_DISPUTE items.
 2. Review the disputed section of the spec.
 3. Update the spec if the design intent was misunderstood, or confirm the spec is correct and the implementation needs to change.
 
@@ -366,6 +366,6 @@ This runs the CDD status tool and shows the current state of all features -- whi
 | `/pl-status` | Check CDD status: feature states, Critic action items, and overall project health. |
 | `/pl-help` | Display the full command list. |
 | `/pl-resume [save\|role]` | Save or restore PM session state. |
-| `/pl-agent-config` | Modify PM agent configuration (model, effort, permissions). |
+| `/pl-agent-config` | Modify PM [agent configuration](agent-configuration-guide.md) (model, effort, permissions). |
 | `/pl-override-edit` | Edit PM_OVERRIDES.md to customize PM behavior for your project. |
 | `/pl-update-purlin` | Update the Purlin submodule with intelligent conflict handling. |

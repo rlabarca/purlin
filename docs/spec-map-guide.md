@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Spec Map is an interactive dependency graph built into the CDD Dashboard.
+The Spec Map is an interactive dependency graph built into the [CDD Dashboard](status-grid-guide.md).
 It visualizes every feature file in `features/` as a node and draws directed
 arrows between them to show prerequisite relationships. Features are clustered
 into category groups so you can see, at a glance, how work is organized and
@@ -11,7 +11,7 @@ where bottlenecks exist.
 Use the Spec Map to:
 
 - Understand which features must be completed before others can begin.
-- Identify anchor nodes (architectural, design, and policy foundations).
+- Identify [anchor nodes](critic-and-cdd-guide.md) (architectural, design, and policy foundations).
 - Navigate quickly to any feature's detail view.
 - Spot isolated features that have no dependencies.
 

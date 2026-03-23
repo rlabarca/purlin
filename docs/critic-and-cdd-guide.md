@@ -45,7 +45,7 @@ What it checks:
 - Required sections are present (Overview, Requirements, Scenarios).
 - Gherkin scenarios are well-formed (Given/When/Then structure).
 - Prerequisite anchor nodes are declared via `> Prerequisite:` metadata.
-- Fixture tags reference fixtures that actually exist.
+- [Fixture tags](testing-workflow-guide.md) reference fixtures that actually exist.
 
 A Spec Gate failure generates an Architect action item -- the spec needs
 work before the Builder can implement it.
@@ -136,7 +136,7 @@ The two systems are deliberately decoupled:
    `tools/cdd/status.sh`, which calls `tools/critic/run.sh` as a
    prerequisite. It writes `critic.json` files to disk.
 
-2. **CDD reads from disk.** The CDD Dashboard reads the pre-computed
+2. **CDD reads from disk.** The [CDD Dashboard](status-grid-guide.md) reads the pre-computed
    `role_status` values from those `critic.json` files. CDD never runs
    the Critic itself.
 
@@ -174,7 +174,7 @@ several flags:
 | *(none)* | Outputs `status.json` to stdout (default) |
 | `--startup <role>` | Startup briefing tailored to the given agent role (`architect`, `builder`, `qa`, `pm`) |
 | `--role <role>` | Role-filtered status output for the given role |
-| `--graph` | Outputs the dependency graph (`dependency_graph.json`) to stdout |
+| `--graph` | Outputs the [dependency graph](spec-map-guide.md) (`dependency_graph.json`) to stdout |
 | `--incomplete` | Lists features where any role column is not in its "done" state |
 | `--verbose` | Shows diagnostic stderr on the terminal (see [Error Logging](#error-logging) below) |
 

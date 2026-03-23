@@ -4,7 +4,7 @@
 
 Purlin uses named git branches as integration points for multi-machine collaboration. When a PM and an engineer need to work together on the same project from different machines, they share a branch: one person creates it, the other joins it, and both push and pull changes through a shared remote repository.
 
-Each machine tracks one active collaboration branch at a time, stored in `.purlin/runtime/active_branch` (this file is gitignored, so it is always local to the machine). The CDD Dashboard provides a visual interface for creating branches, joining branches, checking sync status, and understanding what changed since your last pull.
+Each machine tracks one active collaboration branch at a time, stored in `.purlin/runtime/active_branch` (this file is gitignored, so it is always local to the machine). The [CDD Dashboard](status-grid-guide.md) provides a visual interface for creating branches, joining branches, checking sync status, and understanding what changed since your last pull.
 
 This guide walks through the full workflow -- from first-time remote setup through daily collaboration -- so that a PM and an engineer can stay in sync without stepping on each other's work.
 

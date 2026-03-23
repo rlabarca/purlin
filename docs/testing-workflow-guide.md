@@ -64,7 +64,7 @@ The Architect runs automatically after specs exist. It:
    - `smoke` -- core functionality. If broken, the app is unusable. Verified first.
    - `standard` -- important but not app-breaking. Default.
    - `full-only` -- polish and edge cases. Verified last or skipped in quick passes.
-3. **Commits and regenerates the Critic report** so the Builder knows what to build.
+3. **Commits and regenerates [the Critic](critic-and-cdd-guide.md) report** so the Builder knows what to build.
 
 **Your role:** Approve the work plan. Answer architectural questions.
 
