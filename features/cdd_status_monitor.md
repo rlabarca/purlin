@@ -66,6 +66,7 @@ The Status view is the default view (`/#status`).
 *   **Active Section Sorting:** Features sorted by urgency: any red state (FAIL, INFEASIBLE) first, then any yellow/orange state (TODO, DISPUTED), then alphabetical.
 *   **Feature Click:** Clicking a feature name in the status table opens the shared feature detail modal (Section 2.2.4).
 *   **Compact Design:** Minimal padding and margins to ensure the dashboard fits in a small window.
+*   **Single-Line Status Cells:** Every status badge cell (PM, Architect, Builder, QA) MUST render as a single line. No sub-line divs, effort annotations, or secondary labels beneath the badge. Supplementary context (e.g., verification effort summary like "3m manual", "builder-verified", "2 auto") MUST be rendered as a tooltip (`title` attribute on the badge `<span>`) only. This keeps row heights uniform across all features.
 *   **Badge Color Mapping:**
 
 | Badge | Color | Roles |
