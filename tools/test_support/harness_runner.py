@@ -11,11 +11,16 @@ Usage:
     python3 tools/test_support/harness_runner.py <scenario_json_path> [--project-root <path>]
 """
 
+import atexit
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
+import time
+import urllib.parse
+import urllib.request
 
 
 def resolve_project_root(explicit=None):
@@ -101,6 +106,120 @@ def run_setup_commands(commands, cwd=None):
     return True
 
 
+def parse_port_from_url(url):
+    """Extract port number from a URL like http://localhost:9086/path."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        return parsed.port
+    except (ValueError, AttributeError):
+        return None
+
+
+def check_server_responsive(port):
+    """Check if an HTTP server is responsive on the given port."""
+    try:
+        req = urllib.request.Request(
+            f'http://localhost:{port}/status.json', method='GET')
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def find_free_port():
+    """Get a free port from the OS."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
+
+def poll_server_ready(port, attempts=10, interval=1):
+    """Poll for server readiness. Returns True if server responds within attempts."""
+    for i in range(attempts):
+        if check_server_responsive(port):
+            return True
+        if i < attempts - 1:
+            time.sleep(interval)
+    return False
+
+
+def read_port_file(root_dir):
+    """Read the CDD port file. Returns port number or None."""
+    port_file = os.path.join(root_dir, '.purlin', 'runtime', 'cdd.port')
+    try:
+        with open(port_file) as f:
+            return int(f.read().strip())
+    except (IOError, OSError, ValueError):
+        return None
+
+
+def start_cdd_server(project_root, port=None, target_dir=None):
+    """Start a CDD server via start.sh.
+
+    Args:
+        project_root: The actual project root (where tools/ lives).
+        port: Port to use (None for auto-select).
+        target_dir: Directory to serve (fixture_dir or project_root).
+                    If None, uses project_root.
+
+    Returns:
+        The port the server started on, or None if failed.
+    """
+    target = target_dir or project_root
+    start_sh = os.path.join(project_root, 'tools', 'cdd', 'start.sh')
+
+    if not os.path.isfile(start_sh):
+        return None
+
+    # Ensure .purlin/ exists in target dir (needed for start.sh root detection)
+    os.makedirs(os.path.join(target, '.purlin'), exist_ok=True)
+
+    cmd = ['bash', start_sh]
+    if port:
+        cmd.extend(['-p', str(port)])
+
+    env = {**os.environ, 'PURLIN_PROJECT_ROOT': target}
+
+    try:
+        subprocess.run(
+            cmd, capture_output=True, text=True, timeout=30,
+            cwd=project_root, env=env,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    # Read the actual port from the port file
+    actual_port = read_port_file(target)
+    if actual_port is None:
+        return None
+
+    # Poll for readiness (Section 2.8.1: 10 attempts, 1 second apart)
+    if not poll_server_ready(actual_port):
+        return None
+
+    return actual_port
+
+
+def stop_cdd_server(project_root, target_dir=None):
+    """Stop the CDD server for a target directory."""
+    target = target_dir or project_root
+    stop_sh = os.path.join(project_root, 'tools', 'cdd', 'stop.sh')
+
+    if not os.path.isfile(stop_sh):
+        return
+
+    env = {**os.environ, 'PURLIN_PROJECT_ROOT': target}
+
+    try:
+        subprocess.run(
+            ['bash', stop_sh],
+            capture_output=True, text=True, timeout=15,
+            cwd=project_root, env=env,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+
 def execute_agent_behavior(scenario, project_root, fixture_dir=None):
     """Execute an agent_behavior scenario. Returns (output, success)."""
     role = scenario.get('role', 'BUILDER')
@@ -131,16 +250,18 @@ def execute_agent_behavior(scenario, project_root, fixture_dir=None):
         return (f"Error: {e}", False)
 
 
-def execute_web_test(scenario, project_root):
-    """Execute a web_test scenario. Returns (output, success)."""
-    url = scenario.get('web_test_url', '')
+def execute_web_test(scenario, project_root, url_override=None):
+    """Execute a web_test scenario. Returns (output, success).
+
+    Args:
+        url_override: If provided, use this URL instead of scenario's web_test_url.
+                      Used when a fixture server runs on a different port.
+    """
+    url = url_override or scenario.get('web_test_url', '')
     if not url:
         return ("Error: web_test scenario requires 'web_test_url' field", False)
 
-    # Web tests delegate to the web test infrastructure
-    # For now, attempt a basic HTTP check and assertion evaluation
     try:
-        import urllib.request
         req = urllib.request.Request(url, method='GET')
         with urllib.request.urlopen(req, timeout=30) as resp:
             output = resp.read().decode('utf-8', errors='replace')
@@ -207,89 +328,186 @@ def process_scenario_file(scenario_path, project_root):
     total_passed = 0
     total_failed = 0
 
-    for scenario in scenarios:
-        name = scenario.get('name', 'unnamed')
-        fixture_tag = scenario.get('fixture_tag')
-        setup_commands = scenario.get('setup_commands', [])
-        assertions = scenario.get('assertions', [])
+    # Web test server lifecycle management (Section 2.8.1)
+    base_server_started = False
+    base_server_port = None
 
-        fixture_dir = None
-
-        # Step a: Fixture checkout
-        if fixture_tag:
-            fixture_dir = run_fixture_checkout(project_root, fixture_tag)
-
-        # Step b: Setup commands
-        if setup_commands:
-            setup_cwd = fixture_dir or project_root
-            run_setup_commands(setup_commands, cwd=setup_cwd)
-
-        # Step c: Dispatch based on harness_type
-        output = ''
-        exec_success = True
-
-        if harness_type == 'agent_behavior':
-            output, exec_success = execute_agent_behavior(
-                scenario, project_root, fixture_dir)
-        elif harness_type == 'web_test':
-            output, exec_success = execute_web_test(scenario, project_root)
-        elif harness_type == 'custom_script':
-            output, exec_success, _ = execute_custom_script(
-                scenario, project_root)
-        else:
-            output = f"Error: unknown harness_type: {harness_type}"
-            exec_success = False
-
-        # Step d: Evaluate assertions
-        if assertions and exec_success:
-            assertion_results = evaluate_assertions(output, assertions)
-        elif assertions:
-            # Execution failed, all assertions fail
-            assertion_results = [
-                (a, False, output[:500] if output else '(execution failed)')
-                for a in assertions
-            ]
-        else:
-            # No assertions defined - pass/fail based on execution
-            assertion_results = []
-
-        # Build detail entries - one per assertion
-        if assertion_results:
-            for assertion, passed, excerpt in assertion_results:
-                tier = assertion.get('tier')
-                context = assertion.get('context', '')
-                detail = {
-                    'name': f"{name}:{context}" if context else name,
-                    'status': 'PASS' if passed else 'FAIL',
-                    'scenario_ref': f"features/{feature_name}.md:{name}",
-                    'expected': context,
-                }
-                if tier in (1, 2, 3):
-                    detail['assertion_tier'] = tier
-                if not passed:
-                    detail['actual_excerpt'] = excerpt
-                    total_failed += 1
+    try:
+        # For web_test: set up base server for non-fixture scenarios
+        if harness_type == 'web_test':
+            has_non_fixture = any(
+                not s.get('fixture_tag') for s in scenarios)
+            if has_non_fixture:
+                existing_port = read_port_file(project_root)
+                if existing_port and check_server_responsive(existing_port):
+                    # Reuse existing server
+                    base_server_port = existing_port
                 else:
-                    total_passed += 1
-                details.append(detail)
-        else:
-            # No assertions - single entry based on execution success
-            detail = {
-                'name': name,
-                'status': 'PASS' if exec_success else 'FAIL',
-                'scenario_ref': f"features/{feature_name}.md:{name}",
-                'expected': 'Scenario executes successfully',
-            }
-            if not exec_success:
-                detail['actual_excerpt'] = output[:500] if output else '(no output)'
-                total_failed += 1
-            else:
-                total_passed += 1
-            details.append(detail)
+                    # Start a new server
+                    desired_port = None
+                    for s in scenarios:
+                        if not s.get('fixture_tag'):
+                            desired_port = parse_port_from_url(
+                                s.get('web_test_url', ''))
+                            break
+                    actual = start_cdd_server(
+                        project_root, port=desired_port)
+                    if actual:
+                        base_server_started = True
+                        base_server_port = actual
 
-        # Step e: Fixture cleanup
-        if fixture_dir:
-            run_fixture_cleanup(project_root, fixture_dir)
+        for scenario in scenarios:
+            name = scenario.get('name', 'unnamed')
+            fixture_tag = scenario.get('fixture_tag')
+            setup_commands = scenario.get('setup_commands', [])
+            assertions = scenario.get('assertions', [])
+
+            fixture_dir = None
+            fixture_server_started = False
+
+            try:
+                # Step a: Fixture checkout
+                if fixture_tag:
+                    fixture_dir = run_fixture_checkout(
+                        project_root, fixture_tag)
+
+                # Step b: Setup commands
+                if setup_commands:
+                    setup_cwd = fixture_dir or project_root
+                    run_setup_commands(setup_commands, cwd=setup_cwd)
+
+                # Step c: Dispatch based on harness_type
+                output = ''
+                exec_success = True
+
+                if harness_type == 'agent_behavior':
+                    output, exec_success = execute_agent_behavior(
+                        scenario, project_root, fixture_dir)
+                elif harness_type == 'web_test':
+                    url_override = None
+
+                    if fixture_dir:
+                        # Fixture case: start separate server (Section 2.8.1)
+                        web_url = scenario.get('web_test_url', '')
+                        url_port = parse_port_from_url(web_url)
+
+                        # Avoid port conflict with existing server
+                        if url_port and check_server_responsive(url_port):
+                            fixture_port = find_free_port()
+                        else:
+                            fixture_port = url_port
+
+                        started_port = start_cdd_server(
+                            project_root, port=fixture_port,
+                            target_dir=fixture_dir)
+                        if started_port:
+                            fixture_server_started = True
+                            # Adjust URL to use fixture server port
+                            if web_url:
+                                parsed = urllib.parse.urlparse(web_url)
+                                url_override = parsed._replace(
+                                    netloc=f"localhost:{started_port}"
+                                ).geturl()
+                            else:
+                                url_override = \
+                                    f"http://localhost:{started_port}/"
+                        else:
+                            output = ("Error: CDD server did not become "
+                                      "ready within 10 seconds")
+                            exec_success = False
+                    elif base_server_port:
+                        # Non-fixture: use base server, adjust URL if
+                        # port differs
+                        web_url = scenario.get('web_test_url', '')
+                        url_port = parse_port_from_url(web_url)
+                        if (url_port and
+                                url_port != base_server_port):
+                            parsed = urllib.parse.urlparse(web_url)
+                            url_override = parsed._replace(
+                                netloc=f"localhost:{base_server_port}"
+                            ).geturl()
+                    else:
+                        # No server available for non-fixture scenario
+                        if not fixture_dir:
+                            output = ("Error: CDD server did not become "
+                                      "ready within 10 seconds")
+                            exec_success = False
+
+                    if exec_success:
+                        output, exec_success = execute_web_test(
+                            scenario, project_root,
+                            url_override=url_override)
+                elif harness_type == 'custom_script':
+                    output, exec_success, _ = execute_custom_script(
+                        scenario, project_root)
+                else:
+                    output = f"Error: unknown harness_type: {harness_type}"
+                    exec_success = False
+
+                # Step d: Evaluate assertions
+                if assertions and exec_success:
+                    assertion_results = evaluate_assertions(
+                        output, assertions)
+                elif assertions:
+                    # Execution failed, all assertions fail
+                    assertion_results = [
+                        (a, False,
+                         output[:500] if output else '(execution failed)')
+                        for a in assertions
+                    ]
+                else:
+                    # No assertions defined - pass/fail based on execution
+                    assertion_results = []
+
+                # Build detail entries - one per assertion
+                if assertion_results:
+                    for assertion, passed, excerpt in assertion_results:
+                        tier = assertion.get('tier')
+                        context = assertion.get('context', '')
+                        detail = {
+                            'name': (f"{name}:{context}"
+                                     if context else name),
+                            'status': 'PASS' if passed else 'FAIL',
+                            'scenario_ref':
+                                f"features/{feature_name}.md:{name}",
+                            'expected': context,
+                        }
+                        if tier in (1, 2, 3):
+                            detail['assertion_tier'] = tier
+                        if not passed:
+                            detail['actual_excerpt'] = excerpt
+                            total_failed += 1
+                        else:
+                            total_passed += 1
+                        details.append(detail)
+                else:
+                    # No assertions - single entry based on exec success
+                    detail = {
+                        'name': name,
+                        'status': 'PASS' if exec_success else 'FAIL',
+                        'scenario_ref':
+                            f"features/{feature_name}.md:{name}",
+                        'expected': 'Scenario executes successfully',
+                    }
+                    if not exec_success:
+                        detail['actual_excerpt'] = (
+                            output[:500] if output else '(no output)')
+                        total_failed += 1
+                    else:
+                        total_passed += 1
+                    details.append(detail)
+
+            finally:
+                # Step e: Cleanup (try/finally for cleanup mandate)
+                if fixture_server_started:
+                    stop_cdd_server(project_root, target_dir=fixture_dir)
+                if fixture_dir:
+                    run_fixture_cleanup(project_root, fixture_dir)
+
+    finally:
+        # File-level cleanup: stop base server if we started it
+        if base_server_started:
+            stop_cdd_server(project_root)
 
     return feature_name, details, total_passed, total_failed
 

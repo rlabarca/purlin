@@ -12,5 +12,13 @@
 
 **[CLARIFICATION]** The `web_test` harness type uses Python's `urllib.request` for basic HTTP checks. Full web test delegation (Playwright, browser automation) is handled by the consuming project's web test infrastructure; the harness runner provides the dispatch and assertion pipeline. (Severity: INFO)
 
+**[CLARIFICATION]** Web test server lifecycle (Section 2.8.1): the harness runner manages CDD server start/stop for `web_test` scenarios. For no-fixture scenarios, it checks `.purlin/runtime/cdd.port` and reuses a responsive server or starts a new one via `tools/cdd/start.sh`. For fixture scenarios, it starts a separate server with `PURLIN_PROJECT_ROOT` pointed at the fixture directory (the spec says `--project-root <fixture_dir>` on start.sh, but start.sh doesn't have that flag — instead we set the env var, which start.sh already uses for root detection). Cleanup uses try/finally to ensure servers started by the harness are always stopped. (Severity: INFO)
+
 **[CLARIFICATION]** The meta-runner (`tools/test_support/run_regression.sh`) uses `find` with `-print0` and `sort -z` for null-safe scenario file discovery, ensuring correct handling of filenames with special characters. (Severity: INFO)
+
+### Test Quality Audit
+- Rubric: 6/6 PASS
+- Tests: 40 total, 40 passed
+- AP scan: clean
+- Date: 2026-03-23
 
