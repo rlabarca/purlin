@@ -146,22 +146,22 @@ Phases 20-25 are independent within the group. Depends on Group 2.
 ## Execution Group 4 — Layer 3 Integration (Phases 26-27)
 Depends on Group 3.
 
-## Phase 26 — CDD Startup & Controls [PENDING]
+## Phase 26 — CDD Startup & Controls [COMPLETE]
 **Features:** cdd_startup_controls.md, pl_cdd.md
-**Completion Commit:** --
+**Completion Commit:** 0a33c22
 **QA Bugs Addressed:** --
 
-## Phase 27 — Collaboration Views [PENDING]
+## Phase 27 — Collaboration Views [COMPLETE]
 **Features:** collab_whats_different.md
-**Completion Commit:** --
+**Completion Commit:** 0a33c22
 **QA Bugs Addressed:** --
 
 ## Execution Group 5 — Layer 4 Final (Phase 28)
 Depends on Group 4.
 
-## Phase 28 — What's Different [PENDING]
+## Phase 28 — What's Different [COMPLETE]
 **Features:** pl_whats_different.md
-**Completion Commit:** --
+**Completion Commit:** 0a33c22
 **QA Bugs Addressed:** --
 
 ## Plan Amendments
