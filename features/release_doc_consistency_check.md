@@ -5,6 +5,8 @@
 > Prerequisite: features/policy_release.md
 > Prerequisite: features/release_checklist_core.md
 
+[Complete]
+
 ## 1. Overview
 
 This feature defines the `purlin.doc_consistency_check` release step: an audit that verifies README.md and any project documentation accurately reflect the current feature set. Outdated documentation misleads users and consumers of the project.
