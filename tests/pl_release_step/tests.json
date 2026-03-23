@@ -1,0 +1,141 @@
+{
+  "status": "PASS",
+  "passed": 33,
+  "failed": 0,
+  "total": 33,
+  "test_file": "tools/test_support/test_pl_release_step.py",
+  "details": [
+    {
+      "test": "test_all_three_operations_present (__main__.TestCommandFileRoleAndStructure.test_all_three_operations_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_architect_role_ownership (__main__.TestCommandFileRoleAndStructure.test_architect_role_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_path_resolution_section_present (__main__.TestCommandFileRoleAndStructure.test_path_resolution_section_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tools_root_resolution (__main__.TestCommandFileRoleAndStructure.test_tools_root_resolution)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_create_delegates_to_manage_step (__main__.TestCreateValidLocalStep.test_create_delegates_to_manage_step)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_create_operation_documented (__main__.TestCreateValidLocalStep.test_create_operation_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_create_passes_id_name_desc_flags (__main__.TestCreateValidLocalStep.test_create_passes_id_name_desc_flags)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_create_writes_to_both_files (__main__.TestCreateValidLocalStep.test_create_writes_to_both_files)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delete_delegates_to_manage_step (__main__.TestDeleteStepRemovesFromBothFiles.test_delete_delegates_to_manage_step)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delete_operation_documented (__main__.TestDeleteStepRemovesFromBothFiles.test_delete_operation_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delete_requires_exact_id_confirmation (__main__.TestDeleteStepRemovesFromBothFiles.test_delete_requires_exact_id_confirmation)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delete_warns_about_both_files (__main__.TestDeleteStepRemovesFromBothFiles.test_delete_warns_about_both_files)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_confirmation_before_actual_write (__main__.TestDryRunDoesNotModifyFiles.test_confirmation_before_actual_write)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dry_run_flag_used_in_create (__main__.TestDryRunDoesNotModifyFiles.test_dry_run_flag_used_in_create)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dry_run_precedes_actual_execution (__main__.TestDryRunDoesNotModifyFiles.test_dry_run_precedes_actual_execution)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clear_option_for_code_and_agent_instructions (__main__.TestModifyClearsOptionalField.test_clear_option_for_code_and_agent_instructions)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clear_to_null_option_documented (__main__.TestModifyClearsOptionalField.test_clear_to_null_option_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_delegates_to_manage_step (__main__.TestModifyExistingStepName.test_modify_delegates_to_manage_step)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_operation_documented (__main__.TestModifyExistingStepName.test_modify_operation_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_preserves_unchanged_fields (__main__.TestModifyExistingStepName.test_modify_preserves_unchanged_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_walks_through_each_field (__main__.TestModifyExistingStepName.test_modify_walks_through_each_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_error_handled_by_cli (__main__.TestModifyNonExistentStep.test_modify_error_handled_by_cli)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_lists_steps_when_no_id (__main__.TestModifyNonExistentStep.test_modify_lists_steps_when_no_id)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_modify_only_sends_changed_fields (__main__.TestModifyWithNoFieldFlagsFails.test_modify_only_sends_changed_fields)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_changes_detection (__main__.TestModifyWithNoFieldFlagsFails.test_no_changes_detection)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_clear_is_separate_option_from_set (__main__.TestMutuallyExclusiveFlagsRejected.test_clear_is_separate_option_from_set)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_validation_delegated_to_cli (__main__.TestMutuallyExclusiveFlagsRejected.test_validation_delegated_to_cli)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_create_section_references_cli_execution (__main__.TestRejectDuplicateGlobalIdOnCreate.test_create_section_references_cli_execution)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_direct_json_manipulation_in_create (__main__.TestRejectDuplicateGlobalIdOnCreate.test_no_direct_json_manipulation_in_create)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_all_create_flows_go_through_cli (__main__.TestRejectDuplicateLocalIdOnCreate.test_all_create_flows_go_through_cli)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_dry_run_before_actual_write (__main__.TestRejectDuplicateLocalIdOnCreate.test_dry_run_before_actual_write)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_delegates_to_cli_tool_not_direct_json (__main__.TestRejectPurlinPrefixOnCreate.test_delegates_to_cli_tool_not_direct_json)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_tool_path_uses_tools_root (__main__.TestRejectPurlinPrefixOnCreate.test_tool_path_uses_tools_root)",
+      "status": "PASS"
+    }
+  ]
+}
