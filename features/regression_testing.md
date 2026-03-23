@@ -4,7 +4,7 @@
 > Category: "Test Infrastructure"
 > Prerequisite: features/arch_testing.md
 
-[TODO]
+[TODO] <!-- Architect reset 2026-03-23: new sections 2.2.4, 2.8.1 not yet implemented by Builder -->
 
 ## 1. Overview
 
