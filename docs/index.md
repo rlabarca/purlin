@@ -7,10 +7,14 @@ Purlin is an agentic development framework that coordinates four AI agents -- PM
 ## Agent Use
 
 * [PM Agent Guide](pm-agent-guide.md) -- Practical guide for product managers using the PM agent to create feature specs from ideas, Figma designs, and live pages.
+* [Architect Agent Guide](architect-agent-guide.md) -- How the Architect agent designs specs, manages anchor nodes, and runs release processes.
+* [Builder Agent Guide](builder-agent-guide.md) -- How the Builder agent implements features from specs, writes tests, and verifies visual specifications.
+* [QA Agent Guide](qa-agent-guide.md) -- How the QA agent verifies features, classifies scenarios, and authors regression suites.
 * [Parallel Execution in the Builder](parallel-execution-guide.md) -- How the Builder agent parallelizes independent features within a delivery plan phase using git worktrees.
 
 ## CDD Dashboard
 
+* [CDD Dashboard Guide](cdd-dashboard-guide.md) -- Overview of the CDD Dashboard panels, navigation, and real-time project status visualization.
 * [Reading the CDD Status Grid](status-grid-guide.md) -- How to read the status grid showing every feature's current state across all four roles.
 * [Spec Map Guide](spec-map-guide.md) -- Interactive dependency graph that visualizes feature prerequisites and category groupings.
 * [Agent Configuration Guide](agent-configuration-guide.md) -- Dashboard panel for controlling each agent's model, optimization effort, permissions, and auto-start behavior.
