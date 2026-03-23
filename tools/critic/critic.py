@@ -644,11 +644,29 @@ def parse_fixture_tags(content):
     }
 
 
+def _https_to_ssh(url):
+    """Convert HTTPS GitHub/GitLab URL to SSH equivalent.
+
+    Returns the SSH URL string, or None if not a recognized host.
+    """
+    import re as _re
+    m = _re.match(r'^https://github\.com/([^/]+)/([^/]+?)(?:\.git)?$', url)
+    if m:
+        return f'git@github.com:{m.group(1)}/{m.group(2)}.git'
+    m = _re.match(r'^https://gitlab\.com/([^/]+)/([^/]+?)(?:\.git)?$', url)
+    if m:
+        return f'git@gitlab.com:{m.group(1)}/{m.group(2)}.git'
+    return None
+
+
 def _get_fixture_list(repo_url, project_root=None):
     """Get available fixture tags from a repo via ``fixture list``.
 
     Results are cached per repo URL for the duration of a single Critic run.
     Returns a set of tag strings, or None if the command fails.
+
+    When a remote HTTPS URL returns no tags (common with private repos),
+    the function tries the SSH equivalent for GitHub/GitLab before giving up.
     """
     if repo_url in _fixture_list_cache:
         return _fixture_list_cache[repo_url]
@@ -661,19 +679,36 @@ def _get_fixture_list(repo_url, project_root=None):
         _fixture_list_cache[repo_url] = None
         return None
 
-    try:
-        result = subprocess.run(
-            ['bash', fixture_sh, 'list', repo_url],
-            capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            tag_set = {
-                line.strip() for line in result.stdout.strip().split('\n')
-                if line.strip()
-            }
-            _fixture_list_cache[repo_url] = tag_set
-            return tag_set
-    except (subprocess.TimeoutExpired, OSError):
-        pass
+    def _try_list(url):
+        try:
+            result = subprocess.run(
+                ['bash', fixture_sh, 'list', url],
+                capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                tag_set = {
+                    line.strip() for line in result.stdout.strip().split('\n')
+                    if line.strip()
+                }
+                if tag_set:
+                    return tag_set
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+        return None
+
+    # Try the given URL first
+    tags = _try_list(repo_url)
+    if tags:
+        _fixture_list_cache[repo_url] = tags
+        return tags
+
+    # SSH fallback for HTTPS URLs on known hosts
+    if repo_url.startswith('https://'):
+        ssh_url = _https_to_ssh(repo_url)
+        if ssh_url:
+            tags = _try_list(ssh_url)
+            if tags:
+                _fixture_list_cache[repo_url] = tags
+                return tags
 
     _fixture_list_cache[repo_url] = None
     return None

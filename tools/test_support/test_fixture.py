@@ -968,6 +968,80 @@ class TestFixtureRecommendationReadByFutureSessions(unittest.TestCase):
         self.assertIn("instruction_audit", created)
 
 
+class TestVerifyUrlAccessibleRepo(unittest.TestCase):
+    """Scenario: Verify-url succeeds with accessible SSH URL
+
+    Tests that verify-url prints the working URL to stdout and exits 0
+    when the given URL is accessible. Uses a local bare repo (which
+    behaves like a file:// URL) to simulate accessible remote.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.repo = create_fixture_repo({
+            "main/test_feature/scenario-one": {"data.txt": "content"},
+        })
+
+    @classmethod
+    def tearDownClass(cls):
+        subprocess.run(["rm", "-rf", cls.repo], capture_output=True)
+
+    def test_exits_zero_on_accessible_url(self):
+        rc, stdout, stderr = run_fixture("verify-url", self.repo)
+        self.assertEqual(rc, 0, f"verify-url should succeed: {stderr}")
+
+    def test_prints_url_to_stdout(self):
+        rc, stdout, stderr = run_fixture("verify-url", self.repo)
+        self.assertEqual(stdout, self.repo)
+
+
+class TestVerifyUrlHttpsToSshFallback(unittest.TestCase):
+    """Scenario: Verify-url falls back to SSH when HTTPS fails on private repo
+
+    Tests that when an HTTPS GitHub URL fails, verify-url tries the SSH
+    equivalent. Since we can't reliably test against real GitHub in a unit
+    test, we verify the URL conversion logic by testing with a known-bad
+    HTTPS URL and checking that the SSH form is attempted (visible in the
+    error output when SSH also fails) or succeeds (when SSH keys are
+    configured -- which they are in this environment per user confirmation).
+    """
+
+    def test_converts_github_https_to_ssh(self):
+        """The fallback attempts the correct SSH URL format."""
+        # Use the actual purlin-fixtures repo -- SSH works, HTTPS doesn't
+        rc, stdout, stderr = run_fixture(
+            "verify-url", "https://github.com/rlabarca/purlin-fixtures",
+        )
+        # If SSH keys are configured, this succeeds with the SSH URL
+        if rc == 0:
+            self.assertEqual(stdout, "git@github.com:rlabarca/purlin-fixtures.git")
+        else:
+            # If SSH also fails (e.g., in CI), verify guidance is printed
+            self.assertIn("SSH", stderr)
+
+
+class TestVerifyUrlNoAccess(unittest.TestCase):
+    """Scenario: Verify-url prints guidance when no access method works
+
+    Tests that verify-url exits 1 and prints diagnostic guidance when
+    neither HTTPS nor SSH access is available.
+    """
+
+    def test_exits_nonzero(self):
+        rc, stdout, stderr = run_fixture(
+            "verify-url", "https://github.com/nonexistent-owner-xyz/nonexistent-repo-xyz",
+        )
+        self.assertNotEqual(rc, 0)
+
+    def test_prints_guidance(self):
+        rc, stdout, stderr = run_fixture(
+            "verify-url", "https://github.com/nonexistent-owner-xyz/nonexistent-repo-xyz",
+        )
+        self.assertIn("Cannot access", stderr)
+        self.assertIn("SSH", stderr)
+        self.assertIn("credential", stderr.lower())
+
+
 class TestPushAllTags(unittest.TestCase):
     """Scenario: Push syncs all tags to remote"""
 

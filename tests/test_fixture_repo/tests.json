@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "passed": 38,
+  "passed": 43,
   "failed": 0,
-  "total": 38,
+  "total": 43,
   "test_file": "tools/test_support/test_fixture.py",
   "details": [
     {
@@ -155,6 +155,26 @@
     },
     {
       "test": "test_fixture_usage_sets_timestamp (__main__.TestQARecordsFixtureUsage.test_fixture_usage_sets_timestamp)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_exits_zero_on_accessible_url (__main__.TestVerifyUrlAccessibleRepo.test_exits_zero_on_accessible_url)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prints_url_to_stdout (__main__.TestVerifyUrlAccessibleRepo.test_prints_url_to_stdout)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_converts_github_https_to_ssh (__main__.TestVerifyUrlHttpsToSshFallback.test_converts_github_https_to_ssh)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_exits_nonzero (__main__.TestVerifyUrlNoAccess.test_exits_nonzero)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_prints_guidance (__main__.TestVerifyUrlNoAccess.test_prints_guidance)",
       "status": "PASS"
     }
   ]

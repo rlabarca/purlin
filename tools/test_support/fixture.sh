@@ -41,6 +41,7 @@ Subcommands:
   checkout <repo-url> <tag> [--dir <path>]             Clone fixture at tag
   cleanup <path>                                       Remove fixture directory
   list <repo-url> [--ref <project-ref>]                List fixture tags
+  verify-url <url>                                     Test read/write access
   push <remote-url> [--tag <tag>]                      Push tags to remote
   prune <repo-url> [--ref <project-ref>]               Find orphan fixture tags
 USAGE
@@ -297,6 +298,66 @@ cmd_list() {
     fi
 }
 
+_https_to_ssh() {
+    # Convert HTTPS GitHub/GitLab URL to SSH equivalent.
+    # Returns empty string if not a recognized host.
+    local url="$1"
+    local ssh_url=""
+
+    if [[ "$url" =~ ^https://github\.com/([^/]+)/([^/]+)$ ]]; then
+        local owner="${BASH_REMATCH[1]}"
+        local repo="${BASH_REMATCH[2]}"
+        repo="${repo%.git}"
+        ssh_url="git@github.com:${owner}/${repo}.git"
+    elif [[ "$url" =~ ^https://gitlab\.com/([^/]+)/([^/]+)$ ]]; then
+        local owner="${BASH_REMATCH[1]}"
+        local repo="${BASH_REMATCH[2]}"
+        repo="${repo%.git}"
+        ssh_url="git@gitlab.com:${owner}/${repo}.git"
+    fi
+
+    echo "$ssh_url"
+}
+
+cmd_verify_url() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: verify-url requires <url>" >&2
+        exit 1
+    fi
+
+    local url="$1"
+
+    # Test read access with the given URL
+    if git ls-remote --tags "$url" >/dev/null 2>&1; then
+        echo "$url"
+        return 0
+    fi
+
+    # If HTTPS, try SSH fallback for known hosts
+    if [[ "$url" =~ ^https:// ]]; then
+        local ssh_url
+        ssh_url="$(_https_to_ssh "$url")"
+        if [[ -n "$ssh_url" ]]; then
+            if git ls-remote --tags "$ssh_url" >/dev/null 2>&1; then
+                echo "$ssh_url"
+                return 0
+            fi
+        fi
+    fi
+
+    # No access method worked
+    echo "Cannot access $url for read or write." >&2
+    echo "" >&2
+    echo "For GitHub private repos:" >&2
+    echo "  1. Ensure SSH key is configured: ssh -T git@github.com" >&2
+    echo "  2. Use SSH URL format: git@github.com:<owner>/<repo>.git" >&2
+    echo "" >&2
+    echo "For HTTPS with token:" >&2
+    echo "  1. Configure credential helper: git config credential.helper store" >&2
+    echo "  2. Or use token URL: https://<token>@github.com/<owner>/<repo>" >&2
+    exit 1
+}
+
 cmd_push() {
     if [[ $# -lt 1 ]]; then
         echo "Error: push requires <remote-url>" >&2
@@ -457,6 +518,9 @@ case "$subcommand" in
         ;;
     list)
         cmd_list "$@"
+        ;;
+    verify-url)
+        cmd_verify_url "$@"
         ;;
     push)
         cmd_push "$@"
