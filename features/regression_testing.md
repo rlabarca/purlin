@@ -133,7 +133,7 @@ Run regression suites? [all / per-feature / pre-release / skip]
 
 6. If the user selects a group, QA invokes `/pl-regression-run` with the appropriate `--frequency` filter. If "all", run without filter.
 7. If the user selects "skip", proceed to Phase B. The table served its purpose — the user is now aware.
-8. When `auto_start` is `true`: run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped). Skip non-smoke per-feature suites that are PASS (not stale). Run STALE and NOT_RUN standard per-feature suites automatically. Print the pre-release table but do NOT auto-run pre-release suites (they are long-running and require explicit opt-in).
+8. When `auto_start` is `true`: run STALE and NOT_RUN smoke-tier per-feature suites automatically (smoke regressions should never be skipped). Skip non-smoke per-feature suites that are PASS (not stale). Run STALE and NOT_RUN standard per-feature suites automatically. For pre-release suites: print the table, then ALWAYS prompt the user `"Run pre-release regression suites? [yes / skip]"` — even under auto_start. Pre-release suites are long-running and require explicit opt-in every time. Do NOT silently skip them.
 
 #### 2.2.5 `/pl-regression` -- RETIRED
 
