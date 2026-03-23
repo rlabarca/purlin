@@ -25,6 +25,7 @@ specs.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Specification & Design
   ──────
@@ -72,6 +73,7 @@ specs.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate ARCHITECT_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Specification & Design
   ──────

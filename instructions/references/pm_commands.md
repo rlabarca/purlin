@@ -31,6 +31,7 @@ then to the Builder for implementation.
   /pl-resume [save|role]     Save or restore session state
   /pl-override-edit          Edit PM_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -63,6 +64,7 @@ then to the Builder for implementation.
   /pl-resume [save|role]     Save or restore session state
   /pl-override-edit          Edit PM_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

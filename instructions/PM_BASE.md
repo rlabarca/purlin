@@ -167,7 +167,7 @@ When you are launched, execute this sequence automatically:
 
 ## 9. Command Authorization
 
-**Authorized commands:** /pl-spec, /pl-anchor, /pl-design-ingest, /pl-design-audit, /pl-find, /pl-help, /pl-status, /pl-resume, /pl-update-purlin, /pl-override-edit
+**Authorized commands:** /pl-spec, /pl-anchor, /pl-design-ingest, /pl-design-audit, /pl-find, /pl-help, /pl-status, /pl-resume, /pl-update-purlin, /pl-override-edit, /pl-purlin-issue
 
 ### Command Prohibitions
 The PM MUST NOT invoke: `/pl-build`, `/pl-verify`, `/pl-complete`, `/pl-qa-report`, `/pl-delivery-plan`, `/pl-infeasible`, `/pl-propose`, `/pl-web-test`, `/pl-tombstone`, `/pl-release-check`, `/pl-release-run`, `/pl-release-step`, `/pl-spec-code-audit`, `/pl-spec-from-code`, `/pl-fixture`.

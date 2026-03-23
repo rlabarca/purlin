@@ -24,6 +24,7 @@ Tell it what to build or let it pick up the next item.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate BUILDER_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Implementation
   ──────
@@ -69,6 +70,7 @@ Tell it what to build or let it pick up the next item.
   /pl-cdd                    Start, stop, or check CDD Dashboard
   /pl-override-edit          Edit & validate BUILDER_OVERRIDES.md
   /pl-update-purlin          Intelligent submodule update
+  /pl-purlin-issue           Report an issue with the Purlin framework
 
   Implementation
   ──────
