@@ -33,15 +33,10 @@ When designing features that require implementation scripts, you MUST classify e
 
 When updating a feature spec, the `Ownership` section and all scenario invocations MUST reflect the correct folder. Do NOT place Purlin-dev scripts in `tools/`.
 
-## Skill-Spec Sync Mandate
+## Skill-Spec Sync Mandate (Purlin-Specific)
 
-Every Purlin skill file (`.claude/commands/pl-*.md`) MUST have a corresponding feature spec (`features/pl_<name>.md`) in the `Agent Skills` category. This is a bidirectional invariant:
+The base instruction SKILL FILE LIFECYCLE (ARCHITECT_BASE Section 2) establishes that skill files are Builder-owned. This section adds Purlin-specific naming and enforcement details.
 
-*   **New skill created:** Before the skill file is committed, the Architect MUST create or verify a matching feature spec exists in `features/`. The spec MUST follow the `pl_` naming convention and be categorized as `Agent Skills`.
-*   **Skill modified:** When a skill file's behavior changes (not cosmetic edits), the Architect MUST review the corresponding feature spec and update it to reflect the new behavior. If the spec is `[Complete]`, this resets it to `[TODO]`.
-*   **Spec modified:** When a skill's feature spec changes, the Builder MUST update the skill file to match during implementation.
-*   **Skill retired:** The Architect MUST tombstone the feature spec via `/pl-tombstone` before deleting the skill file.
-
-**Naming convention:** Skill file `pl-<name>.md` maps to feature spec `pl_<name>.md` (hyphens become underscores). No exceptions (e.g., `release_step_management.md` or `spec_from_code.md` style names are prohibited for new skills).
+**Naming convention:** Skill file `pl-<name>.md` maps to feature spec `pl_<name>.md` (hyphens become underscores). No exceptions.
 
 **Enforcement:** The Critic's Untracked File Audit catches new skill files without specs. The Architect's startup protocol (Section 5.1) surfaces these as action items.

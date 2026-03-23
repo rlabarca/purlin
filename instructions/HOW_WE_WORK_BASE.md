@@ -44,7 +44,7 @@ Every agent MUST resolve `tools_root` from `.purlin/config.json` at session star
 
 ### The Builder Agent
 *   **Focus:** "The How".
-*   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all implementation files regardless of domain.
+*   **Ownership:** ALL implementation artifacts -- application code (including `.md` files that serve as application artifacts, such as LLM instructions, prompt templates, skill files (`.claude/commands/pl-*.md`), or content files), DevOps scripts (launcher scripts, shell wrappers, bootstrap tooling), application-level configuration files, and automated tests. The Builder is the sole author of all implementation files regardless of domain.
 *   **Key Duty:** Translating specifications into high-quality, verified code and documenting implementation discoveries.
 
 ### The QA Agent
