@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This feature defines the `refresh_docs` local release step: a local-only documentation freshness review that cross-references each `docs/**/*.md` file against the current implementation state, updates stale content, and generates an index page (`docs/index.md`) that serves as the table of contents for all documentation. This step is intentionally decoupled from any publishing destination (Confluence, GitHub Wiki, etc.) so that downstream publishing steps can depend on it without duplicating the freshness or index logic.
+This feature defines the `refresh_docs` local release step: a local-only documentation freshness review that cross-references each `docs/**/*.md` file against the current implementation state, updates stale content, performs automatic cross-linking of concept mentions, and generates an index page (`docs/index.md`) that serves as the table of contents for all documentation. This step is intentionally decoupled from any publishing destination (Confluence, GitHub Wiki, etc.) so that downstream publishing steps can depend on it without duplicating the freshness, cross-linking, or index logic.
 
 ---
 
@@ -67,7 +67,22 @@ Each doc appears in exactly one section. If a doc could fit multiple sections, p
 
 This step NEVER creates new documentation files other than `docs/index.md`. Existing doc updates and index generation are the only write operations. Documentation gaps are noted in the completion report's Recommendations section.
 
-### 2.6 Completion Report
+### 2.6 Cross-Link Pass
+
+After the freshness review and before index generation, the step performs an automatic cross-linking pass using a curated concept registry (`docs/cross_link_registry.json`):
+
+1. Load `docs/cross_link_registry.json` and validate all `target` values resolve to existing files in `docs/`.
+2. For each `docs/**/*.md` (excluding `index.md`):
+   a. Skip registry entries where the current file IS the target (no self-links).
+   b. Process concepts in order of longest term first to prevent substring conflicts.
+   c. For each concept, find the first plain-text occurrence NOT inside an existing markdown link, heading (`#`), fenced code block, or inline code.
+   d. Replace with `[term](target.md)`.
+   e. Only link the first occurrence per concept per document.
+3. If any links were inserted, commit: `docs: add cross-links`.
+
+The cross-link pass is idempotent: a second run with no registry or content changes produces no modifications.
+
+### 2.7 Completion Report
 
 After review, print a change-focused summary:
 
@@ -77,6 +92,7 @@ After review, print a change-focused summary:
 Local updates (committed):
   CHANGED  testing-workflow-guide.md -- <description>
   OK       parallel-execution-guide.md
+  LINKED   critic-and-cdd-guide.md -- 3 concepts linked
   UPDATED  index.md -- regenerated TOC
 
 -- Recommendations -----------------------------------------
@@ -86,18 +102,18 @@ Consider adding (will auto-sync on next release):
 -----------------------------------------------------------
 ```
 
-Status tags: `CHANGED`/`OK` for local freshness, `UPDATED` for index.md. Recommendations section appears only if gaps are detected.
+Status tags: `CHANGED`/`OK` for local freshness, `LINKED` for cross-linked docs (with concept count), `UPDATED` for index.md. Recommendations section appears only if gaps are detected.
 
-### 2.7 Step Metadata
+### 2.8 Step Metadata
 
 | Field | Value |
 |-------|-------|
 | ID | `refresh_docs` |
 | Friendly Name | `Refresh Documentation` |
 | Code | `null` (interactive step) |
-| Agent Instructions | See Section 2.8 |
+| Agent Instructions | See Section 2.9 |
 
-### 2.8 Agent Instructions (Release Step Content)
+### 2.9 Agent Instructions (Release Step Content)
 
 **Phase 1: Doc Freshness Review**
 
@@ -115,6 +131,18 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPDATED` for index.md. Recomme
    c. Commit each doc update separately: `docs: update <filename> for current implementation`.
 5. For docs with no staleness: confirm they are current.
 
+**Phase 1.5: Cross-Link Pass**
+
+1. Load `docs/cross_link_registry.json`. Validate all `target` values resolve to existing files in `docs/`.
+2. For each `docs/**/*.md` (excluding `index.md`):
+   a. Skip registry entries where the current file IS the target (no self-links).
+   b. For each concept (process longest terms first to prevent substring conflicts):
+      - Find the first plain-text occurrence NOT inside an existing markdown link, heading, fenced code block, or inline code.
+      - Replace with `[term](target.md)`.
+      - Only link the first occurrence per concept per document.
+   c. If any links were inserted, write the file.
+3. Commit all modified docs: `docs: add cross-links`.
+
 **Phase 2: Index Page Generation**
 
 1. Scan `docs/` for all `*.md` files (excluding `index.md` itself and any files in `images/`).
@@ -129,7 +157,7 @@ Status tags: `CHANGED`/`OK` for local freshness, `UPDATED` for index.md. Recomme
 
 **Phase 3: Completion Report**
 
-Print the change-focused summary per Section 2.6.
+Print the change-focused summary per Section 2.7, including `LINKED` status for cross-linked docs.
 
 ---
 
@@ -179,6 +207,45 @@ Print the change-focused summary per Section 2.6.
     Given docs/ contains pm-agent-guide.md
     When the step generates docs/index.md
     Then the entry for PM Agent Guide uses the link format "[PM Agent Guide](pm-agent-guide.md)"
+
+#### Scenario: First occurrence linked, subsequent left plain
+
+    Given docs/testing-workflow-guide.md contains two mentions of "Critic"
+    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
+    When the cross-link pass runs
+    Then the first mention becomes "[Critic](critic-and-cdd-guide.md)"
+    And the second mention remains plain text "Critic"
+
+#### Scenario: Self-reference skipped
+
+    Given docs/critic-and-cdd-guide.md contains a mention of "Critic"
+    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
+    When the cross-link pass processes critic-and-cdd-guide.md
+    Then "Critic" is not linked (self-reference skipped)
+
+#### Scenario: Idempotent on second run
+
+    Given the cross-link pass has already run and inserted links
+    When the cross-link pass runs again with no registry or content changes
+    Then no files are modified
+    And no commit is created
+
+#### Scenario: Code blocks and headings skipped
+
+    Given docs/spec-map-guide.md contains "Critic" inside a fenced code block
+    And docs/spec-map-guide.md contains "Critic" in a heading
+    And docs/spec-map-guide.md contains "Critic" in plain body text
+    When the cross-link pass runs
+    Then only the plain body text occurrence is linked
+    And the code block and heading occurrences remain unchanged
+
+#### Scenario: Existing links not double-wrapped
+
+    Given docs/parallel-execution-guide.md contains "[Critic](critic-and-cdd-guide.md)" (already linked)
+    And no other plain-text occurrence of "Critic" exists in the file
+    When the cross-link pass runs
+    Then the existing link is left unchanged
+    And no new link is inserted for "Critic" in that file
 
 ### QA Scenarios
 
