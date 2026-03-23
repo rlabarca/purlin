@@ -291,14 +291,14 @@ The dashboard refreshes data every 5 seconds. This refresh MUST NOT cause visibl
 
 ### 2.11 Delivery Phase Indicator
 
-*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/delivery_plan.md` and has at least one non-COMPLETE, non-REMOVED phase, the ACTIVE section heading displays phase progress: `ACTIVE (<feature_count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. Examples:
-    *   Serial execution: `ACTIVE (5) [4/10 DONE | 1 RUNNING]`
-    *   Parallel execution: `ACTIVE (5) [4/10 DONE | 3 RUNNING]`
-    *   No phases running yet: `ACTIVE (5) [0/10 DONE]`
-*   **Zero Running Omission:** When `in_progress` is 0 (no phases currently running), the `| <N> RUNNING` segment is omitted. The annotation reads `[<completed>/<total> DONE]`.
+*   **ACTIVE Header Annotation:** When a delivery plan exists at `.purlin/delivery_plan.md` and has at least one non-COMPLETE, non-REMOVED phase, the ACTIVE section heading displays phase progress: `ACTIVE (<feature_count>) [<completed>/<total> DONE | <in_progress> IN PROGRESS]`. The label "IN PROGRESS" reflects dispatched phases within the active execution group -- they may be processed sequentially in one Builder session or in parallel via sub-agents. Examples:
+    *   Single phase: `ACTIVE (5) [4/10 DONE | 1 IN PROGRESS]`
+    *   Execution group (multiple phases dispatched): `ACTIVE (5) [4/10 DONE | 3 IN PROGRESS]`
+    *   No phases dispatched yet: `ACTIVE (5) [0/10 DONE]`
+*   **Zero In-Progress Omission:** When `in_progress` is 0 (no phases currently dispatched), the `| <N> IN PROGRESS` segment is omitted. The annotation reads `[<completed>/<total> DONE]`.
 *   **Parsing:** The CDD tool reads the delivery plan file, matches `## Phase N -- Label [STATUS]` headings (same regex as the phase analyzer), and counts phases by status (COMPLETE, IN_PROGRESS, PENDING, REMOVED). All four statuses are recognized.
 *   **Styling:** The annotation text is styled with `--purlin-warn` (yellow) color, consistent with TODO badge styling. It appears inline after the feature count, separated by a space. Font weight is normal (not bold) to distinguish it from the heading text.
-*   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [4/10 DONE | 2 RUNNING] TODO`.
+*   **Collapsed State:** The phase annotation MUST also appear when the ACTIVE section is collapsed. It renders alongside the collapsed summary badge. Example collapsed state: `> ACTIVE (5) [4/10 DONE | 2 IN PROGRESS] TODO`.
 *   **Disappears When Complete:** When the delivery plan does not exist, or all phases are COMPLETE or REMOVED, the phase annotation is not rendered. Only the standard `ACTIVE (<count>)` heading appears.
 *   **Dynamic Total:** The `total` in the annotation reflects the current phase count in the delivery plan file, which may increase during execution due to plan amendments (QA fix phases). The annotation updates on each 5-second refresh cycle.
 *   **No Per-Feature Changes:** Individual feature status badges (DONE, TODO, FAIL, etc.) are unchanged. The phase indicator is purely a section-level annotation.
@@ -943,9 +943,9 @@ None.
 - [ ] Cells show "??" when no critic.json exists for that feature, using `--purlin-dim` color token for readable contrast in both themes
 - [ ] Each feature with a critic.json shows role status badges in the correct columns
 - [ ] Active section sorts features by urgency (red states first, then yellow/orange, then alphabetical)
-- [ ] When a delivery plan is active with one phase running, ACTIVE header shows `[4/10 DONE | 1 RUNNING]` format
-- [ ] When a delivery plan is active with multiple phases running, annotation shows the correct running count (e.g., `3 RUNNING`)
-- [ ] When no phases are currently running (all PENDING or COMPLETE), the `| N RUNNING` segment is omitted
+- [ ] When a delivery plan is active with one phase in progress, ACTIVE header shows `[4/10 DONE | 1 IN PROGRESS]` format
+- [ ] When a delivery plan is active with multiple phases in progress (execution group), annotation shows the correct count (e.g., `3 IN PROGRESS`)
+- [ ] When no phases are currently in progress (all PENDING or COMPLETE), the `| N IN PROGRESS` segment is omitted
 - [ ] Phase annotation uses TODO/yellow color (--purlin-warn) with normal font weight
 - [ ] Phase annotation visible in both expanded and collapsed ACTIVE section states
 - [ ] Phase annotation disappears when no delivery plan exists or all phases are COMPLETE/REMOVED

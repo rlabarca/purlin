@@ -11,7 +11,7 @@ When the Architect introduces large-scale changes (multiple new feature files, m
 *   **Created by:** Builder, when user approves phased delivery.
 *   **Committed to git:** Yes -- lives outside `.purlin/cache/` (which is gitignored) because it is a coordination artifact read by all agents across sessions, not a regenerable cache file.
 *   **Deleted by:** Builder, when the final phase completes.
-*   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. Exactly one phase may be IN_PROGRESS at a time. COMPLETE phases are immutable historical record.
+*   **Format:** The plan contains a summary, numbered phases (each with status, feature list, completion commit, and QA bugs addressed), and a plan amendments section. Phase statuses are PENDING, IN_PROGRESS, or COMPLETE. When execution groups are in use (Section 10.13), all phases in the active group are marked IN_PROGRESS simultaneously. Only one execution group may be active at a time. COMPLETE phases are immutable historical record.
 *   **Intra-Feature Phasing:** A feature MAY appear in multiple phases. Targeted delivery within a feature uses the existing `[Scope: targeted:...]` mechanism. No new scope types are needed.
 
 ## 10.3 Cross-Session Resumption
@@ -40,7 +40,7 @@ Phased delivery is never automatic unless the user has opted into autonomous exe
 If the Architect modifies feature specs while a delivery plan is active, the Builder detects the mismatch on resume and proposes a plan amendment. Minor changes (added scenarios, clarified requirements) are auto-updated. Major changes (new features, removed phases, restructured dependencies) require user approval before continuing.
 
 ## 10.7 CDD Dashboard Integration
-When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays phase progress as an inline annotation: `ACTIVE (<count>) [<completed>/<total> DONE | <in_progress> RUNNING]`. The `/status.json` API and CLI tool include an optional `delivery_phase` field with aggregate status counts and a per-phase array. When all phases are COMPLETE/REMOVED or no delivery plan exists, the phase annotation and API field are omitted.
+When a delivery plan exists, the CDD Dashboard's ACTIVE section heading displays phase progress as an inline annotation: `ACTIVE (<count>) [<completed>/<total> DONE | <in_progress> IN PROGRESS]`. The label "IN PROGRESS" reflects that these phases are dispatched as an execution group -- they may be processed sequentially within one Builder session or in parallel via sub-agents. The `/status.json` API and CLI tool include an optional `delivery_phase` field with aggregate status counts and a per-phase array. When all phases are COMPLETE/REMOVED or no delivery plan exists, the phase annotation and API field are omitted.
 
 ## 10.8 Phase Sizing Guidance
 
