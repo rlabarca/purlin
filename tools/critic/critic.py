@@ -2033,25 +2033,20 @@ def generate_action_items(feature_result, cdd_status=None):
     # Regression Guidance Detection (policy_critic Section 2.17)
     # When a feature has a ## Regression Guidance section and builder is DONE
     # (lifecycle testing or complete), generate a MEDIUM QA action item.
+    # Suppressed when tests/qa/scenarios/<name>.json exists or
+    # > Regression Coverage: Yes metadata is present.
     if lifecycle_state in ('testing', 'complete'):
-        _rg_path = os.path.join(
-            FEATURES_DIR, os.path.basename(feature_file))
-        if os.path.isfile(_rg_path):
-            _rg_content = read_feature_file(_rg_path)
-            _rg_match = re.search(
-                r'^##\s+Regression\s+Guidance\s*$',
-                _rg_content, re.MULTILINE)
-            if _rg_match:
-                qa_items.append({
-                    'priority': 'MEDIUM',
-                    'category': 'regression_guidance_pending',
-                    'feature': feature_name,
-                    'description': (
-                        f'Regression guidance available for '
-                        f'{feature_name} -- review hints and '
-                        f'create regression harness'
-                    ),
-                })
+        if _has_pending_regression_guidance(feature_file):
+            qa_items.append({
+                'priority': 'MEDIUM',
+                'category': 'regression_guidance_pending',
+                'feature': feature_name,
+                'description': (
+                    f'Regression guidance available for '
+                    f'{feature_name} -- review hints and '
+                    f'create regression harness'
+                ),
+            })
 
     # --- PM items ---
     # Figma Dev Status Advisory Gate (policy_critic Section 2.9)
@@ -2778,6 +2773,40 @@ def _parse_web_test(content):
     return None
 
 
+def _has_pending_regression_guidance(feature_file, content=None):
+    """Check if a feature has unresolved Regression Guidance.
+
+    Returns True when:
+    - The feature has a ``## Regression Guidance`` section, AND
+    - No ``tests/qa/scenarios/<feature_name>.json`` exists, AND
+    - No ``> Regression Coverage: Yes`` metadata is present.
+
+    Used by both ``generate_action_items()`` (to suppress action items)
+    and ``compute_role_status()`` (to block QA CLEAN).
+    """
+    feature_basename = os.path.basename(feature_file)
+    feature_stem = os.path.splitext(feature_basename)[0]
+    feature_path = os.path.join(FEATURES_DIR, feature_basename)
+    if content is None:
+        if not os.path.isfile(feature_path):
+            return False
+        content = read_feature_file(feature_path)
+    # Check for ## Regression Guidance section
+    if not re.search(r'^##\s+Regression\s+Guidance\s*$', content,
+                     re.MULTILINE):
+        return False
+    # Check suppression: tests/qa/scenarios/<feature_name>.json
+    scenario_json = os.path.join(
+        PROJECT_ROOT, 'tests', 'qa', 'scenarios', f'{feature_stem}.json')
+    if os.path.isfile(scenario_json):
+        return False
+    # Check suppression: > Regression Coverage: Yes metadata
+    if re.search(r'^>\s*Regression\s+Coverage:\s*Yes',
+                 content, re.MULTILINE):
+        return False
+    return True
+
+
 # Backward-compatible alias so existing call sites keep working during transition
 _parse_aft_web = _parse_web_test
 
@@ -3139,9 +3168,16 @@ def compute_role_status(feature_result, cdd_status=None):
         qa_status = 'AUTO'
         qa_reason = 'all QA scenarios are auto'
     elif struct_status == 'PASS':
-        # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions matched
-        qa_status = 'CLEAN'
-        qa_reason = 'tests pass, no discoveries'
+        # QA CLEAN Gate — Regression Guidance (critic_role_status §2.7)
+        # QA MUST NOT be CLEAN if feature has ## Regression Guidance
+        # without corresponding regression harness or coverage metadata.
+        if _has_pending_regression_guidance(feature_file, _content):
+            qa_status = 'TODO'
+            qa_reason = 'regression harness authoring pending'
+        else:
+            # CLEAN: tests.json PASS + no FAIL/DISPUTED/TODO conditions
+            qa_status = 'CLEAN'
+            qa_reason = 'tests pass, no discoveries'
     else:
         qa_status = 'N/A'
         qa_reason = 'no QA conditions matched'
