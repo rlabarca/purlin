@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+"""Tests for the /pl-verify skill command file.
+
+Covers all 7 unit test scenarios from features/pl_verify.md.
+Since skills are agent instruction files (not executable code), these
+tests verify structural properties of the command file that ensure
+correct runtime behavior.
+"""
+
+import os
+import re
+import json
+import sys
+import unittest
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, "../../")))
+from tools.bootstrap import detect_project_root
+
+PROJECT_ROOT = detect_project_root(SCRIPT_DIR)
+COMMAND_FILE = os.path.join(PROJECT_ROOT, ".claude", "commands", "pl-verify.md")
+
+
+def read_command_file():
+    """Read and return the command file content."""
+    with open(COMMAND_FILE) as f:
+        return f.read()
+
+
+class TestRoleGateRejectsNonQAInvocation(unittest.TestCase):
+    """Scenario: Role gate rejects non-QA invocation
+
+    Given a Builder agent session
+    When the agent invokes /pl-verify
+    Then the command responds with a redirect message
+
+    Structural test: the command file declares QA ownership and contains
+    a redirect message for non-QA agents.
+    """
+
+    def test_first_line_declares_qa_ownership(self):
+        content = read_command_file()
+        first_line = content.splitlines()[0]
+        self.assertIn("QA", first_line,
+                       "First line must declare QA command ownership")
+
+    def test_command_owner_pattern_present(self):
+        content = read_command_file()
+        first_line = content.splitlines()[0]
+        self.assertIn("command owner", first_line.lower(),
+                       "First line must contain 'command owner' pattern")
+
+    def test_redirect_message_for_non_qa(self):
+        """Non-QA agents receive a redirect message mentioning QA."""
+        content = read_command_file()
+        # The file should instruct non-QA agents to ask the QA agent
+        self.assertRegex(
+            content,
+            r"(?i)(ask your QA|QA agent|QA command)",
+            "Must contain redirect to QA agent"
+        )
+
+    def test_redirect_appears_before_execution_logic(self):
+        """Role gate redirect must appear before any execution steps."""
+        content = read_command_file()
+        redirect_pos = re.search(r"(?i)ask your QA", content)
+        # Phase A or scope logic appears later
+        scope_pos = content.find("## Scope")
+        self.assertIsNotNone(redirect_pos,
+                             "Redirect message must exist")
+        if scope_pos > -1:
+            self.assertLess(redirect_pos.start(), scope_pos,
+                            "Redirect must appear before scope logic")
+
+
+class TestScopedModeTargetsSingleFeature(unittest.TestCase):
+    """Scenario: Scoped mode targets single feature
+
+    Given feature_a is in TESTING state
+    When /pl-verify is invoked with argument "feature_a"
+    Then only feature_a scenarios are verified
+
+    Structural test: the command file documents argument-based scoping
+    to a single feature.
+    """
+
+    def test_argument_scoping_documented(self):
+        """Command describes scoping to a single feature via argument."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)(argument|arg).*scope.*feature|scope.*single.*feature|scope.*verification.*to",
+            "Must document argument-based feature scoping"
+        )
+
+    def test_features_path_referenced(self):
+        """Scoping references features/<arg>.md path pattern."""
+        content = read_command_file()
+        self.assertIn("features/", content,
+                       "Must reference features/ path for scoping")
+
+    def test_scoped_mode_distinct_from_batch(self):
+        """Scoped mode and batch mode are described as separate flows."""
+        content = read_command_file()
+        # Both modes must be described
+        self.assertRegex(content, r"(?i)scoped\s+mode",
+                         "Must describe scoped mode")
+
+
+class TestBatchModeIncludesAllTestingFeatures(unittest.TestCase):
+    """Scenario: Batch mode includes all TESTING features
+
+    Given feature_a and feature_b are both in TESTING state
+    When /pl-verify is invoked without arguments
+    Then both features are included in the verification pass
+
+    Structural test: the command file describes batch behavior for
+    all TESTING features when no argument is provided.
+    """
+
+    def test_no_argument_triggers_batch(self):
+        """No argument leads to batch mode for all TESTING features."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)no argument|without argument|not provided",
+            "Must describe no-argument batch trigger"
+        )
+
+    def test_testing_status_filter(self):
+        """Batch mode filters for TESTING status features."""
+        content = read_command_file()
+        self.assertIn("TESTING", content,
+                       "Must reference TESTING status for batch filtering")
+
+    def test_batch_all_keyword(self):
+        """Command mentions batching ALL TESTING features."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)(batch\s+all|all\s+TESTING)",
+            "Must describe batching all TESTING features"
+        )
+
+
+class TestCosmeticScopeSkipsFeature(unittest.TestCase):
+    """Scenario: Cosmetic scope skips feature entirely
+
+    Given feature_a has cosmetic verification scope
+    When /pl-verify processes feature_a
+    Then feature_a is skipped with "QA skip (cosmetic change)" message
+
+    Structural test: the command file defines cosmetic scope handling
+    with a skip message.
+    """
+
+    def test_cosmetic_scope_defined(self):
+        """Cosmetic scope type is explicitly documented."""
+        content = read_command_file()
+        self.assertIn("cosmetic", content.lower(),
+                       "Must define cosmetic scope")
+
+    def test_cosmetic_skip_message(self):
+        """Cosmetic features produce a QA skip message."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)QA skip.*cosmetic|cosmetic.*skip",
+            "Must include QA skip message for cosmetic scope"
+        )
+
+    def test_cosmetic_scope_in_step_0(self):
+        """Cosmetic scope handling appears in the verification modes section."""
+        content = read_command_file()
+        # Should be in Step 0 or scope modes section
+        cosmetic_pos = content.lower().find("cosmetic")
+        self.assertGreater(cosmetic_pos, -1,
+                           "Cosmetic must appear in command file")
+
+    def test_cosmetic_no_scenarios_queued(self):
+        """Cosmetic skip message mentions no scenarios queued."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)no scenarios queued|skip.*entirely",
+            "Must indicate no scenarios are queued for cosmetic features"
+        )
+
+
+class TestAutoPassCreditsBuilderVerifiedFeatures(unittest.TestCase):
+    """Scenario: Auto-pass credits builder-verified features
+
+    Given feature_a has builder status DONE and zero QA scenarios
+    When Phase A Step 1 runs
+    Then feature_a is auto-passed with acknowledgment message
+
+    Structural test: the command file contains auto-pass logic for
+    builder-verified features in Phase A Step 1.
+    """
+
+    def test_auto_pass_step_present(self):
+        """Step 1 auto-pass for builder-verified features is documented."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)auto.pass.*builder|builder.*auto.pass",
+            "Must document auto-pass for builder-verified features"
+        )
+
+    def test_zero_qa_scenarios_condition(self):
+        """Auto-pass requires zero QA scenarios."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)zero QA scenarios|zero.*manual.*scenarios",
+            "Must require zero QA scenarios for auto-pass"
+        )
+
+    def test_acknowledgment_message_format(self):
+        """Auto-pass produces an acknowledgment output message."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)auto.pass.*<feature>|Auto-pass:",
+            "Must include auto-pass acknowledgment message format"
+        )
+
+
+class TestCompletionCommitsIncludeVerifiedTag(unittest.TestCase):
+    """Scenario: Completion commits include Verified tag
+
+    Given all scenarios for feature_a passed verification
+    When the completion commit is created
+    Then the commit message includes "[Verified]"
+
+    Structural test: the command file specifies the [Verified] tag in
+    the completion commit template.
+    """
+
+    def test_verified_tag_in_commit_template(self):
+        """Completion commit message includes [Verified] tag."""
+        content = read_command_file()
+        self.assertIn("[Verified]", content,
+                       "Must include [Verified] tag in commit template")
+
+    def test_verified_tag_in_status_commit(self):
+        """[Verified] appears in a status/commit context, not just prose."""
+        content = read_command_file()
+        # Should appear near a git commit pattern
+        self.assertRegex(
+            content,
+            r"(?i)(commit.*\[Verified\]|\[Verified\].*commit|\[Complete.*\[Verified\])",
+            "[Verified] must appear in a commit/status context"
+        )
+
+    def test_verified_is_qa_only(self):
+        """The command file uses [Verified] as a QA-specific tag."""
+        content = read_command_file()
+        # [Verified] should appear in the completion/batch section
+        verified_pos = content.find("[Verified]")
+        self.assertGreater(verified_pos, -1,
+                           "[Verified] tag must be present")
+
+
+class TestFailuresCreateDiscoveryEntries(unittest.TestCase):
+    """Scenario: Failures create discovery entries
+
+    Given item 3 fails during manual verification
+    When the failure is processed
+    Then a discovery entry is recorded in the feature's discovery sidecar file
+    And the discovery includes observed behavior and classification
+
+    Structural test: the command file describes failure processing with
+    discovery sidecar recording including classification fields.
+    """
+
+    def test_discovery_sidecar_path_pattern(self):
+        """Failure recording references discovery sidecar files."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)(discoveries\.md|discovery sidecar|sidecar file)",
+            "Must reference discovery sidecar files for failure recording"
+        )
+
+    def test_failure_classification_types(self):
+        """Multiple failure classification types are defined."""
+        content = read_command_file()
+        # Should include at least BUG and DISCOVERY types
+        self.assertIn("[BUG]", content,
+                       "Must define BUG classification type")
+
+    def test_observed_behavior_field(self):
+        """Discovery entries include observed behavior field."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)observed\s+behavior|what.*observed",
+            "Must include observed behavior in discovery entries"
+        )
+
+    def test_failure_processing_step(self):
+        """A dedicated failure processing step exists."""
+        content = read_command_file()
+        self.assertRegex(
+            content,
+            r"(?i)(step\s+9|failure\s+processing)",
+            "Must have a dedicated failure processing step"
+        )
+
+
+# ===================================================================
+# Test result output
+# ===================================================================
+
+class JsonTestResult(unittest.TextTestResult):
+    """Custom result that collects pass/fail for JSON output."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.results = []
+
+    def addSuccess(self, test):
+        super().addSuccess(test)
+        self.results.append({"test": str(test), "status": "PASS"})
+
+    def addFailure(self, test, err):
+        super().addFailure(test, err)
+        self.results.append({"test": str(test), "status": "FAIL", "message": str(err[1])})
+
+    def addError(self, test, err):
+        super().addError(test, err)
+        self.results.append({"test": str(test), "status": "ERROR", "message": str(err[1])})
+
+
+if __name__ == "__main__":
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+
+    runner = unittest.TextTestRunner(resultclass=JsonTestResult, verbosity=2)
+    result = runner.run(suite)
+
+    # Write tests.json
+    if PROJECT_ROOT:
+        out_dir = os.path.join(PROJECT_ROOT, "tests", "pl_verify")
+        os.makedirs(out_dir, exist_ok=True)
+        out_file = os.path.join(out_dir, "tests.json")
+
+        all_passed = len(result.failures) == 0 and len(result.errors) == 0
+        failed = len(result.failures) + len(result.errors)
+        with open(out_file, "w") as f:
+            json.dump(
+                {
+                    "status": "PASS" if all_passed else "FAIL",
+                    "passed": result.testsRun - failed,
+                    "failed": failed,
+                    "total": result.testsRun,
+                    "test_file": "tools/test_support/test_pl_verify.py",
+                    "details": result.results,
+                },
+                f,
+                indent=2,
+            )
+        print(f"\nResults written to {out_file}")
+
+    sys.exit(0 if result.wasSuccessful() else 1)

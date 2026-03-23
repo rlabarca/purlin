@@ -1,0 +1,105 @@
+{
+  "status": "PASS",
+  "passed": 24,
+  "failed": 0,
+  "total": 24,
+  "test_file": "tools/test_support/test_pl_verify.py",
+  "details": [
+    {
+      "test": "test_acknowledgment_message_format (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_acknowledgment_message_format)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_auto_pass_step_present (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_auto_pass_step_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_zero_qa_scenarios_condition (__main__.TestAutoPassCreditsBuilderVerifiedFeatures.test_zero_qa_scenarios_condition)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_batch_all_keyword (__main__.TestBatchModeIncludesAllTestingFeatures.test_batch_all_keyword)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_no_argument_triggers_batch (__main__.TestBatchModeIncludesAllTestingFeatures.test_no_argument_triggers_batch)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_testing_status_filter (__main__.TestBatchModeIncludesAllTestingFeatures.test_testing_status_filter)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verified_is_qa_only (__main__.TestCompletionCommitsIncludeVerifiedTag.test_verified_is_qa_only)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verified_tag_in_commit_template (__main__.TestCompletionCommitsIncludeVerifiedTag.test_verified_tag_in_commit_template)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_verified_tag_in_status_commit (__main__.TestCompletionCommitsIncludeVerifiedTag.test_verified_tag_in_status_commit)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cosmetic_no_scenarios_queued (__main__.TestCosmeticScopeSkipsFeature.test_cosmetic_no_scenarios_queued)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cosmetic_scope_defined (__main__.TestCosmeticScopeSkipsFeature.test_cosmetic_scope_defined)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cosmetic_scope_in_step_0 (__main__.TestCosmeticScopeSkipsFeature.test_cosmetic_scope_in_step_0)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_cosmetic_skip_message (__main__.TestCosmeticScopeSkipsFeature.test_cosmetic_skip_message)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_discovery_sidecar_path_pattern (__main__.TestFailuresCreateDiscoveryEntries.test_discovery_sidecar_path_pattern)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_failure_classification_types (__main__.TestFailuresCreateDiscoveryEntries.test_failure_classification_types)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_failure_processing_step (__main__.TestFailuresCreateDiscoveryEntries.test_failure_processing_step)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_observed_behavior_field (__main__.TestFailuresCreateDiscoveryEntries.test_observed_behavior_field)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_command_owner_pattern_present (__main__.TestRoleGateRejectsNonQAInvocation.test_command_owner_pattern_present)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_first_line_declares_qa_ownership (__main__.TestRoleGateRejectsNonQAInvocation.test_first_line_declares_qa_ownership)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_appears_before_execution_logic (__main__.TestRoleGateRejectsNonQAInvocation.test_redirect_appears_before_execution_logic)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_redirect_message_for_non_qa (__main__.TestRoleGateRejectsNonQAInvocation.test_redirect_message_for_non_qa)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_argument_scoping_documented (__main__.TestScopedModeTargetsSingleFeature.test_argument_scoping_documented)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_features_path_referenced (__main__.TestScopedModeTargetsSingleFeature.test_features_path_referenced)",
+      "status": "PASS"
+    },
+    {
+      "test": "test_scoped_mode_distinct_from_batch (__main__.TestScopedModeTargetsSingleFeature.test_scoped_mode_distinct_from_batch)",
+      "status": "PASS"
+    }
+  ]
+}
