@@ -138,9 +138,9 @@ Phases 20-25 are independent within the group. Depends on Group 2.
 **Completion Commit:** 14a2559
 **QA Bugs Addressed:** --
 
-## Phase 25 — PM & Update Tools [IN_PROGRESS]
+## Phase 25 — PM & Update Tools [COMPLETE]
 **Features:** pm_first_session_guide.md, pl_update_purlin.md
-**Completion Commit:** --
+**Completion Commit:** 4a5c61c
 **QA Bugs Addressed:** --
 
 ## Execution Group 4 — Layer 3 Integration (Phases 26-27)
