@@ -33,23 +33,23 @@
 **QA Bugs Addressed:** --
 **Notes:** Both re-verification only. All dependencies are COMPLETE features. No deps on any TODO feature -- can execute in parallel with Phase 1 (Group 1). Parallel build opportunity (independent features).
 
-## Phase 4 -- Dependent Skills [PENDING]
+## Phase 4 -- Dependent Skills [COMPLETE]
 **Features:** pl_update_purlin.md, cdd_spec_map.md
-**Completion Commit:** --
+**Completion Commit:** 6806939
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** pl_update_purlin depends on config_layering (Phase 2) + project_init (Phase 1); cdd_spec_map depends on cdd_status_monitor (Phase 2). pl_update_purlin is targeted (5 scenarios); cdd_spec_map is re-verification. Parallel build opportunity (independent features).
 
-## Phase 5 -- Branch Collaboration [PENDING]
+## Phase 5 -- Branch Collaboration [COMPLETE]
 **Features:** cdd_branch_collab.md
-**Completion Commit:** --
+**Completion Commit:** 50e2cb8
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** Full implementation, HIGH complexity (67 scenarios). Depends on cdd_status_monitor (Phase 2). Solo phase per sizing cap.
 
-## Phase 6 -- Git Operation Cache [PENDING]
+## Phase 6 -- Git Operation Cache [COMPLETE]
 **Features:** git_operation_cache.md
-**Completion Commit:** --
+**Completion Commit:** 42b2f5d
 **Deferred:** --
 **QA Bugs Addressed:** --
 **Notes:** Full implementation, HIGH complexity (26 scenarios). Depends on cdd_status_monitor (Phase 2) + critic_tool (Phase 1). Solo phase per sizing cap. Can execute in parallel with Phase 4 and Phase 5 (Group 3).
