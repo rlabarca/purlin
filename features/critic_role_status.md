@@ -157,6 +157,8 @@ The per-feature `critic.json` MUST include all four roles in `action_items`, `ro
 
 **Role Status Reason:** For each role, the Critic MUST produce a human-readable one-line reason explaining WHY the role has its current status. Terminal states use brief reasons: `"no action items"` (Architect DONE), `"all tests pass, no open items"` (Builder DONE), `"tests pass, no discoveries"` (QA CLEAN), `"no visual or design work"` (PM N/A). Non-terminal states include the specific trigger: `"spec modified after status commit (implementation exists, all tests pass)"`, `"missing tests.json"`, `"3 open BUGs in discovery sidecar"`, `"2 OPEN SPEC_DISPUTEs"`, etc. This eliminates the need for agents to investigate why a status value was assigned.
 
+**QA CLEAN Gate — Regression Guidance:** QA status MUST NOT be CLEAN if the feature has a `## Regression Guidance` section AND no corresponding `tests/qa/scenarios/<feature_name>.json` exists AND no `> Regression Coverage: Yes` metadata line is present. In this case, QA status is TODO with reason `"regression harness authoring pending"`. This prevents completed features with unresolved regression guidance from disappearing from the QA work queue.
+
 ### 2.7.1 Lifecycle Reset Context
 
 When a feature's lifecycle resets to TODO (spec file modified after status commit), the Critic MUST distinguish between genuinely unimplemented features and features that were reset by a spec touch. For `lifecycle_reset` category action items, the Critic MUST include a `reset_context` object:
