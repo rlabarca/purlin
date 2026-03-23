@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-The QA skill for processing regression test results after execution. Reads enriched `tests.json` results, creates BUG discoveries for failures, computes assertion tier distribution metrics, flags shallow assertion suites, and prints a structured summary with handoff guidance for the Builder.
+The QA skill for processing regression test results after execution. Reads enriched `regression.json` results, creates BUG discoveries for failures, computes assertion tier distribution metrics, flags shallow assertion suites, and prints a structured summary with handoff guidance for the Builder.
 
 ---
 

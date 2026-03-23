@@ -11,10 +11,10 @@
 Provides infrastructure for running full regression suites outside the build cycle. The system has three tiers:
 
 1. **Declarative scenarios** -- QA authors JSON scenario declarations in `tests/qa/scenarios/`. Each file describes what to test, not how to test it.
-2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `tests.json` results. Consumer projects get this via submodule; their Builder never touches it.
+2. **Framework-provided harness runner** -- A Python harness in `tools/test_support/` consumes scenario JSON files, executes them based on harness type, and writes enriched `regression.json` results. Consumer projects get this via submodule; their Builder never touches it.
 3. **Meta-runner** -- A shell script in `tools/test_support/` discovers all scenario files, runs each via the harness runner, continues past failures, and prints a summary.
 
-The Builder focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. QA authors the scenario declarations, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `tests.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
+The Builder focuses on fast unit tests during Step 3; full regression runs at user-chosen intervals, owned end-to-end by QA. QA authors the scenario declarations, composes the regression set, and prints a clear copy-pasteable command for the user to run in an external terminal. Results feed back into the discovery system and enrich `regression.json` with scenario-level context so the Builder can batch-fix failures without re-running the suite.
 
 For the Purlin framework repo, a dev-specific runner script at `dev/regression_runner.sh` provides watch/once modes as an additional convenience (see Section 2.1). This runner is NOT consumer-facing and is NOT part of the composed commands the QA skill prints.
 
@@ -50,7 +50,7 @@ A shell script at `dev/regression_runner.sh` (Purlin-dev-specific, not consumer-
   "exit_code": 0,
   "started_at": "2026-03-18T14:30:01Z",
   "completed_at": "2026-03-18T14:32:15Z",
-  "tests_json_path": "tests/aft_agent/tests.json",
+  "tests_json_path": "tests/aft_agent/regression.json",
   "summary": "21/21 passed"
 }
 ```
@@ -141,7 +141,7 @@ The former unified state-machine skill is deleted. The three explicit skills abo
 
 ### 2.3 Enriched Result Format
 
-Enhance `tests.json` detail entries with optional fields (backward-compatible with existing consumers):
+Enhance `regression.json` detail entries with optional fields (backward-compatible with existing consumers):
 
 - `scenario_ref` -- Feature file path and scenario name (e.g., `features/instruction_audit.md:Single-turn agent test`).
 - `expected` -- Human-readable expected behavior from the Gherkin Then step.
@@ -516,22 +516,22 @@ These handoff messages are mandatory -- they are a required part of each agent's
 
 #### Scenario: Enriched results include scenario-level context
 
-    Given a harness writes tests.json with enriched fields
+    Given a harness writes regression.json with enriched fields
     When the result file is read
     Then each detail entry contains scenario_ref with feature path and scenario name
     And failed entries contain expected and actual_excerpt fields
 
 #### Scenario: Staleness detection prioritizes re-testing
 
-    Given feature A has tests.json from 2 hours ago and source modified 1 hour ago
-    And feature B has tests.json from 1 hour ago and no source modifications
+    Given feature A has regression.json from 2 hours ago and source modified 1 hour ago
+    And feature B has regression.json from 1 hour ago and no source modifications
     When the QA skill computes the eligible list
     Then feature A appears first with a STALE indicator
     And feature B does not appear in the eligible list
 
 #### Scenario: Shallow assertion suite flagged when majority are Tier 1
 
-    Given a harness writes tests.json with 10 detail entries
+    Given a harness writes regression.json with 10 detail entries
     And 6 entries have assertion_tier: 1
     And 4 entries have assertion_tier: 2
     When the QA regression skill reads the results and computes tier distribution
@@ -549,7 +549,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And claude --print is invoked with the specified role and prompt
     And assertions are evaluated against the output
     And the fixture is cleaned up
-    And enriched tests.json is written with scenario_ref and assertion_tier
+    And enriched regression.json is written with scenario_ref and assertion_tier
 
 #### Scenario: Harness runner handles web_test harness type
 
@@ -557,7 +557,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And the scenario specifies a web_test_url
     When the harness runner processes the scenario file
     Then the web test pattern is invoked against the specified URL
-    And enriched tests.json is written with pass/fail results
+    And enriched regression.json is written with pass/fail results
 
 #### Scenario: Harness runner falls back to custom_script
 
@@ -565,7 +565,7 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And the scenario specifies a script_path to a QA-authored script
     When the harness runner processes the scenario file
     Then the script at script_path is executed with --write-results
-    And the script's tests.json output is consumed as the result
+    And the script's regression.json output is consumed as the result
 
 #### Scenario: Meta-runner discovers and runs all scenario files
 
@@ -597,10 +597,10 @@ These handoff messages are mandatory -- they are a required part of each agent's
     And the discovery body includes scenario_ref and actual_excerpt
     And the Critic routes this to the QA column
 
-#### Scenario: Harness runner writes enriched tests.json
+#### Scenario: Harness runner writes enriched regression.json
 
     Given the harness runner has executed all scenarios in a JSON file
-    When it writes the tests.json output
+    When it writes the regression.json output
     Then each detail entry includes scenario_ref with feature path and scenario name
     And each entry includes assertion_tier from the scenario's assertion tier field
     And failed entries include expected and actual_excerpt fields

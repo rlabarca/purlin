@@ -8,7 +8,7 @@
 
 **[DISCOVERY] [ACKNOWLEDGED]** Architect-owned files referenced the retired `/pl-regression` skill name. All 8 references updated in commit 7880f97: QA_BASE.md (5), qa_commands.md (2), test_fixture_repo.md (1). (Severity: HIGH)
 
-**[CLARIFICATION]** The harness runner (`tools/test_support/harness_runner.py`) handles `agent_behavior` scenarios by invoking `claude --print` with the scenario's role and prompt. In test environments, a fake `claude` script is placed on PATH to simulate output. The runner evaluates regex assertions against captured output and writes enriched `tests.json`. (Severity: INFO)
+**[CLARIFICATION]** The harness runner (`tools/test_support/harness_runner.py`) handles `agent_behavior` scenarios by invoking `claude --print` with the scenario's role and prompt. In test environments, a fake `claude` script is placed on PATH to simulate output. The runner evaluates regex assertions against captured output and writes enriched `regression.json`. (Severity: INFO)
 
 **[CLARIFICATION]** The `web_test` harness type uses Python's `urllib.request` for basic HTTP checks. Full web test delegation (Playwright, browser automation) is handled by the consuming project's web test infrastructure; the harness runner provides the dispatch and assertion pipeline. (Severity: INFO)
 

@@ -72,7 +72,7 @@ Each scenario invokes Claude via the `agent_behavior` harness:
   1. QA invokes `/pl-regression-run --frequency pre-release` to include this suite in the eligible list
   2. User runs `dev/run_skill_regression.sh` directly from CLI
   3. Direct harness invocation: `python3 tools/test_support/harness_runner.py tests/qa/scenarios/skill_behavior_regression.json`
-- **Results:** Written to `tests/skill_behavior_regression/tests.json` (standard enriched format per `regression_testing.md` Section 2.3)
+- **Results:** Written to `tests/skill_behavior_regression/regression.json` (standard enriched format per `regression_testing.md` Section 2.3)
 
 ### 2.6 Dev Runner Script (Purlin-Dev Only)
 
