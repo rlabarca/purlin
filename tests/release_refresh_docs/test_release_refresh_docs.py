@@ -262,6 +262,148 @@ class TestIndexUsesRelativeMarkdownLinks(unittest.TestCase):
         self.assertIsNone(step['code'])
 
 
+class TestFirstOccurrenceLinkedSubsequentLeftPlain(unittest.TestCase):
+    """Scenario: First occurrence linked, subsequent left plain
+
+    Given docs/testing-workflow-guide.md contains two mentions of "Critic"
+    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
+    When the cross-link pass runs
+    Then the first mention becomes "[Critic](critic-and-cdd-guide.md)"
+    And the second mention remains plain text "Critic"
+    """
+
+    def test_instructions_specify_first_occurrence_only(self):
+        """Instructions specify linking only the first occurrence."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('first', instructions)
+        self.assertIn('occurrence', instructions)
+
+    def test_instructions_specify_one_link_per_concept_per_document(self):
+        """Instructions limit linking to one per concept per document."""
+        step = _resolve_step()
+        instructions = step['agent_instructions']
+        self.assertIn('first occurrence per concept per document',
+                      instructions.lower())
+
+    def test_instructions_reference_cross_link_registry(self):
+        """Instructions reference the cross_link_registry.json file."""
+        step = _resolve_step()
+        self.assertIn('cross_link_registry.json',
+                      step['agent_instructions'])
+
+
+class TestSelfReferenceSkipped(unittest.TestCase):
+    """Scenario: Self-reference skipped
+
+    Given docs/critic-and-cdd-guide.md contains a mention of "Critic"
+    And "Critic" maps to critic-and-cdd-guide.md in cross_link_registry.json
+    When the cross-link pass processes critic-and-cdd-guide.md
+    Then "Critic" is not linked (self-reference skipped)
+    """
+
+    def test_instructions_skip_self_references(self):
+        """Instructions specify skipping self-links."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('self-link', instructions)
+
+    def test_instructions_skip_when_file_is_target(self):
+        """Instructions specify skipping when current file IS the target."""
+        step = _resolve_step()
+        instructions = step['agent_instructions']
+        self.assertIn('current file IS the target', instructions)
+
+
+class TestIdempotentOnSecondRun(unittest.TestCase):
+    """Scenario: Idempotent on second run
+
+    Given the cross-link pass has already run and inserted links
+    When the cross-link pass runs again with no registry or content changes
+    Then no files are modified
+    And no commit is created
+    """
+
+    def test_instructions_skip_already_linked_text(self):
+        """Instructions specify NOT linking inside existing markdown links."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('existing markdown link', instructions)
+
+    def test_instructions_write_only_if_links_inserted(self):
+        """Instructions write files only if links were inserted."""
+        step = _resolve_step()
+        instructions = step['agent_instructions']
+        self.assertIn('If any links were inserted', instructions)
+
+
+class TestCodeBlocksAndHeadingsSkipped(unittest.TestCase):
+    """Scenario: Code blocks and headings skipped
+
+    Given docs/spec-map-guide.md contains "Critic" inside a fenced code block
+    And docs/spec-map-guide.md contains "Critic" in a heading
+    And docs/spec-map-guide.md contains "Critic" in plain body text
+    When the cross-link pass runs
+    Then only the plain body text occurrence is linked
+    And the code block and heading occurrences remain unchanged
+    """
+
+    def test_instructions_skip_fenced_code_blocks(self):
+        """Instructions specify skipping occurrences in fenced code blocks."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('fenced code block', instructions)
+
+    def test_instructions_skip_headings(self):
+        """Instructions specify skipping occurrences in headings."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('heading', instructions)
+
+    def test_instructions_skip_inline_code(self):
+        """Instructions specify skipping occurrences in inline code."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('inline code', instructions)
+
+    def test_instructions_link_only_plain_text(self):
+        """Instructions specify linking only plain-text occurrences."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('plain-text occurrence', instructions)
+
+
+class TestExistingLinksNotDoubleWrapped(unittest.TestCase):
+    """Scenario: Existing links not double-wrapped
+
+    Given docs/parallel-execution-guide.md contains
+    "[Critic](critic-and-cdd-guide.md)" (already linked)
+    And no other plain-text occurrence of "Critic" exists in the file
+    When the cross-link pass runs
+    Then the existing link is left unchanged
+    And no new link is inserted for "Critic" in that file
+    """
+
+    def test_instructions_exclude_existing_links(self):
+        """Instructions exclude text inside existing markdown links."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('existing markdown link', instructions)
+
+    def test_instructions_process_longest_terms_first(self):
+        """Instructions process concepts longest-first to prevent
+        substring conflicts."""
+        step = _resolve_step()
+        instructions = step['agent_instructions'].lower()
+        self.assertIn('longest term', instructions)
+
+    def test_instructions_replace_with_markdown_link(self):
+        """Instructions specify replacing with [term](target.md) format."""
+        step = _resolve_step()
+        instructions = step['agent_instructions']
+        self.assertIn('[term](target.md)', instructions)
+
+
 if __name__ == '__main__':
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
